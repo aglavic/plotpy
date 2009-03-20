@@ -1,0 +1,22 @@
+#!/bin/bash
+# install plotting scripts
+# if you do not have root privaliges run insall [directory]
+# with a directory in the system path
+
+DIR=$( pwd )
+INSTALL=${1:-/usr/bin}
+
+if [ $INSTALL = /usr/bin ]
+  then sudo ln -s $DIR/plot_SQUID_data.py $INSTALL/plot_SQUID_data
+    sudo ln -s $DIR/plot_4circle_data.py $INSTALL/plot_4circle_data
+    sudo ln -s $DIR/plot_reflectometer_data.py $INSTALL/plot_reflectometer_data
+    sudo ln -s $DIR/psd $INSTALL/psd
+    sudo ln -s $DIR/p4d $INSTALL/p4d
+    sudo ln -s $DIR/prd $INSTALL/prd
+  else ln -s $DIR/plot_SQUID_data.py $INSTALL/plot_SQUID_data
+    ln -s $DIR/plot_4circle_data.py $INSTALL/plot_4circle_data
+    ln -s $DIR/plot_reflectometer_data.py $INSTALL/plot_reflectometer_data
+    ln -s $DIR/psd $INSTALL/psd
+    ln -s $DIR/p4d $INSTALL/p4d
+    ln -s $DIR/prd $INSTALL/prd
+fi

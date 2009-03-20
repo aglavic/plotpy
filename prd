@@ -1,0 +1,2 @@
+#!/bin/bash
+plot_reflectometer_data -no -gui -comb $*

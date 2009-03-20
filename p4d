@@ -1,0 +1,2 @@
+#!/bin/bash
+plot_4circle_data -no -gui -comb $*
