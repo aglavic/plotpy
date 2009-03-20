@@ -26,7 +26,7 @@
 #                                                                                               #
 #################################################################################################
 
-# Pleas do not make any changes here unless you know what you are doing.
+# Pleas do not make any changes here unless you know what you are doing. 
 
 import os
 import gobject
