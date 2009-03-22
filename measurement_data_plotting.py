@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 #
-# Functions to plot measurements by gnuplot script or directly by gnuplot (much faster)
-# Last Changes 17.12.2008
+# Functions to plot measurements by gnuplot script or directly by gnuplot (faster)
+# Last Changes 22.03.2009
 #
 # To do:
-# -clean up the code!
+# -clean up the code!!!!
+# -cut off some plot parameters
 #
 # Pleas do not make any changes here unless you know what you are doing.
 
@@ -17,15 +18,17 @@ import gnuplot_preferences #            File containing variables:
 #                                       output_file_name,x_label,y_label,plot_title,plotting_parameters
 #                                       plotting_parameters_errorbars,titles
 
-
+'''
+    Plotting with direct piping of the data to gnuplot, should work much faster
+    Gnuplot.py must by installed and properly working.
+    files are stored in temporary folder set in gnuplot_preferences
+'''
 def gnuplot_plot(datasets,file_name_prefix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''):
-  # Plotting with direct piping of the data to gnuplot, should work much faster
-  # Gnuplot.py must by installed and properly working.
   gp=gnuplot_preferences
   if globals.debug:
     globals.debug_file.write('call: gnuplot_plot('+str(datasets)+','+str(file_name_prefix)+ ','+  str(title)+ ','+ str(names)+',' + str(with_errorbars)+ ','+ str(output_file)+ ','+ str(additional_info)+ ','+ str(fit_lorentz)+ ','+ str(add_preferences)+')\n')
   import Gnuplot
-
+  
   sample_name=datasets[0].sample_name
   file_numbers=[dataset.number for dataset in datasets]
   if output_file.rsplit('.',1)[1]=='ps': # Determine which terminal to use depending on filename suffix
@@ -111,6 +114,65 @@ def gnuplot_plot(datasets,file_name_prefix, title,names,with_errorbars,output_fi
   return gnuplot_settings#replace_ph(output_file,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info)
 
 '''
+    Function to plot with an additional data and gnuplot file and calling to the gnuplot program
+    files are stored in temporary folder set in gnuplot_preferences
+'''
+def gnuplot_plot_script(datasets,file_name_prefix, file_name_postfix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''): # # Plot with creating a temporal gnuplot skript and executing gnuplot afterwards. Should be much slower when processing many sequences. Mostly the same function as gnuplot_plot above.
+    gp=gnuplot_preferences
+    for dataset in datasets:
+        dataset.export(globals.temp_dir+'tmp_data_'+dataset.number+'.out')
+    sample_name=datasets[0].sample_name
+    file_numbers=[dataset.number for dataset in datasets]
+    if output_file.rsplit('.',1)[1]=='ps':
+        postscript_export=True
+        terminal=gp.set_output_terminal_ps
+    else:
+        postscript_export=False
+        terminal=gp.set_output_terminal_png
+    script_name=globals.temp_dir+replace_ph(gp.gnuplot_file_name,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info)
+    gnuplot_file_text=create_plot_script(datasets,globals.temp_dir+'tmp_data','.out', title,names,with_errorbars,output_file,additional_info,fit_lorentz,add_preferences)
+    write_file=open(script_name,'w')
+    write_file.write( gnuplot_file_text+'\n' )
+    write_file.close()
+    proc = subprocess.Popen([globals.gnuplot_command, script_name], 
+                        shell=False, 
+                        stderr=subprocess.PIPE,
+                        stdout=subprocess.PIPE, 
+                        )
+    stderr_value = proc.communicate()[1]
+    return stderr_value # return the standard error output
+
+def replace_ph(string,datasets,file_name_prefix,file_numbers, title,names,sample_name,number,postscript_export=False,additional_info=''): # replace place holders in string
+  gp=gnuplot_preferences
+  if globals.debug:
+    globals.debug_file.write('call: replace_ph('+ str(string)+ ',' + str(datasets)+ ','+ str(file_name_prefix)+ ','+ str(file_numbers)+ ','+ str(title)+ ','+ str(names)+ ','+ str(sample_name)+ ','+ str(number)+ ','+ str(postscript_export)+ ','+ str(additional_info)+')\n')
+  string=string.\
+  replace('[name]',file_name_prefix).\
+  replace('[name-rmv]',gp.remove_from_name(file_name_prefix)).\
+  replace('[sample]',sample_name).\
+  replace('[nr]',file_numbers[number]).\
+  replace('[add_info]',additional_info).\
+  replace('[info]',datasets[number].info.replace('\n','\n#')).\
+  replace('[x-unit]',datasets[number].xunit()).\
+  replace('[x-dim]',datasets[number].xdim()).\
+  replace('[y-unit]',datasets[number].yunit()).\
+  replace('[y-dim]',datasets[number].ydim()).\
+  replace('[z-unit]',datasets[number].zunit()).\
+  replace('[z-dim]',datasets[number].zdim()).\
+  replace('[title_add]',title).\
+  replace('[titles_add]',names[number]).\
+  replace('[const_unit]',datasets[number].units()[datasets[number].type()]).\
+  replace('[const_dim]',datasets[number].dimensions()[datasets[number].type()]).\
+  replace('[const_value]',str(datasets[number].last()[datasets[number].type()]))
+# translations for postscript export (special characters other than in png export)
+# should be enlongated with other characters
+  if postscript_export: # see gnuplot_preferences.py for this function
+    string=gnuplot_preferences.postscript_replace(string)
+  string=gp.further_replacement(string)
+  string=globals.replace_systemdependent(string)
+  return string 
+ 
+'''
     function to create a script for the gnuplot program to read
 '''
 def create_plot_script(datasets,file_name_prefix,file_name_postfix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''):
@@ -181,63 +243,6 @@ def create_plot_script(datasets,file_name_prefix,file_name_postfix, title,names,
                 str(i)+","+"sigma_"+str(i)+","+"I_"+str(i)+","+"BG_"+str(i)
     return gnuplot_file_text
 
-'''
-    Function to plot with an additional data and gnuplot file and calling to the gnuplot program
-'''
-def gnuplot_plot_script(datasets,file_name_prefix, file_name_postfix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''): # # Plot with creating a temporal gnuplot skript and executing gnuplot afterwards. Should be much slower when processing many sequences. Mostly the same function as gnuplot_plot above.
-    gp=gnuplot_preferences
-    for dataset in datasets:
-        dataset.export(globals.temp_dir+'tmp_data_'+dataset.number+'.out')
-    sample_name=datasets[0].sample_name
-    file_numbers=[dataset.number for dataset in datasets]
-    if output_file.rsplit('.',1)[1]=='ps':
-        postscript_export=True
-        terminal=gp.set_output_terminal_ps
-    else:
-        postscript_export=False
-        terminal=gp.set_output_terminal_png
-    script_name=globals.temp_dir+replace_ph(gp.gnuplot_file_name,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info)
-    gnuplot_file_text=create_plot_script(datasets,globals.temp_dir+'tmp_data','.out', title,names,with_errorbars,output_file,additional_info,fit_lorentz,add_preferences)
-    write_file=open(script_name,'w')
-    write_file.write( gnuplot_file_text+'\n' )
-    write_file.close()
-    proc = subprocess.Popen([globals.gnuplot_command, script_name], 
-                        shell=False, 
-                        stderr=subprocess.PIPE,
-                        stdout=subprocess.PIPE, 
-                        )
-    stderr_value = proc.communicate()[1]
-    return stderr_value # return the standard error output
-
-def replace_ph(string,datasets,file_name_prefix,file_numbers, title,names,sample_name,number,postscript_export=False,additional_info=''): # replace place holders in string
-  gp=gnuplot_preferences
-  if globals.debug:
-    globals.debug_file.write('call: replace_ph('+ str(string)+ ',' + str(datasets)+ ','+ str(file_name_prefix)+ ','+ str(file_numbers)+ ','+ str(title)+ ','+ str(names)+ ','+ str(sample_name)+ ','+ str(number)+ ','+ str(postscript_export)+ ','+ str(additional_info)+')\n')
-  string=string.\
-  replace('[name]',file_name_prefix).\
-  replace('[name-rmv]',gp.remove_from_name(file_name_prefix)).\
-  replace('[sample]',sample_name).\
-  replace('[nr]',file_numbers[number]).\
-  replace('[add_info]',additional_info).\
-  replace('[info]',datasets[number].info.replace('\n','\n#')).\
-  replace('[x-unit]',datasets[number].xunit()).\
-  replace('[x-dim]',datasets[number].xdim()).\
-  replace('[y-unit]',datasets[number].yunit()).\
-  replace('[y-dim]',datasets[number].ydim()).\
-  replace('[z-unit]',datasets[number].zunit()).\
-  replace('[z-dim]',datasets[number].zdim()).\
-  replace('[title_add]',title).\
-  replace('[titles_add]',names[number]).\
-  replace('[const_unit]',datasets[number].units()[datasets[number].type()]).\
-  replace('[const_dim]',datasets[number].dimensions()[datasets[number].type()]).\
-  replace('[const_value]',str(datasets[number].last()[datasets[number].type()]))
-# translations for postscript export (special characters other than in png export)
-# should be enlongated with other characters
-  if postscript_export: # see gnuplot_preferences.py for this function
-    string=gnuplot_preferences.postscript_replace(string)
-  string=gp.further_replacement(string)
-  string=globals.replace_systemdependent(string)
-  return string 
  
 # abstract class for gnuplot fi5ofttting with the above functions. Creates fit function and parameters and collects fitted Data as well. (in the future, still under development)
 class fit_function:

@@ -2,7 +2,7 @@
 #################################################################################################
 #                  Script for graphical user interface to plot measurement data                 #
 #                                       last changes:                                           #
-#                                        18.12.2008                                             #
+#                                        22.03.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
@@ -16,12 +16,16 @@
 # -change x,y and yerror columns via menu selection                                             #
 # -export single or multiple files and combine data in one plot                                 #
 # -print one or all plots (at the moment via linux command line)                                #
-# -posibility to use different gnuplot preferences as xrange and more                           #
-# -fit lorentzian function                                                                      #
+# -posibility to user define different gnuplot preferences freely                               #
+# -posibility to store preferences in profiles and reload them later                            #
+# -show and (export) gnuplot settings file                                                      #
+# -show gnuplot errors in frontend                                                              #
+# -fit pseudo voigt function                                                                    #
 #                                                                                               #
 # To do:                                                                                        #
 # -create print dialog to select Printer and other print parameters                             #
-# -more fitting options                                                                         #
+# -fit any type of function                                                                     #
+# -use with more than one input data file and load file in runtime                              #
 # -code cleanup                                                                                 #
 #                                                                                               #
 #################################################################################################
@@ -714,6 +718,15 @@ class ApplicationMainWindow(gtk.Window):
         sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         text_filed=gtk.Label()
         text_filed.set_markup(plot_text)
+        sw.add_with_viewport(text_filed) # add textbuffer view widget
+        param_dialog.vbox.add(sw)
+        sw = gtk.ScrolledWindow()
+        # Set the adjustments for horizontal and vertical scroll bars.
+        # POLICY_AUTOMATIC will automatically decide whether you need
+        # scrollbars.
+        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        text_filed=gtk.Label()
+        text_filed.set_markup(self.last_plot_text)
         sw.add_with_viewport(text_filed) # add textbuffer view widget
         param_dialog.vbox.add(sw)
         param_dialog.show_all()
