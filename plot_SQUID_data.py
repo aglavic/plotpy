@@ -67,7 +67,7 @@ Sequence settings:
 
 Output settings:
 \t\t-gs\t\tUse gnuplot in script mode, in the case Gnuplot.py is not working (slower)
-\t\t-no\t\tDon't output the data to .out files. Does only work without -gs option. (faster for multiple files/sequences)
+\t\t-o\t\tOutput the data to .out files for later use in other programms.
 \t\t-ni\t\tDon't put informational header in output files. (can be helpful for usage with other programs)
 \t\t-c\t\tJust convert files, do not plot anything
 \t\t-sep [sep]\tUse different seperator for output files (if -gs is given it is ignored)
@@ -120,7 +120,7 @@ plot_with_errorbars=False
 plot_with_GUI=False
 print_plot=False
 column_seperator=' '
-do_output=True
+do_output=False
 info_in_file=True
 select_columns=False
 select_type=False
@@ -172,8 +172,8 @@ for argument in sys.argv[1:len(sys.argv)]:
       list_sequences=True
     elif argument=='-gs':
       gnuplot_script=True
-    elif argument=='-no':
-      do_output=False
+    elif argument=='-o':
+      do_output=True
     elif argument=='-ni':
       info_in_file=False
     elif argument=='-c':
@@ -200,7 +200,7 @@ for argument in sys.argv[1:len(sys.argv)]:
       print help_statement()
     else:
       try:
-	['dia','para','s','s2','i','gs','no','ni','c','sep','l','sc','st','sxy','e','dia-calc','gui','p','cali_reg','debug'].index(argument[1:len(argument)])
+	['dia','para','s','s2','i','gs','o','ni','c','sep','l','sc','st','sxy','e','dia-calc','gui','p','cali_reg','debug'].index(argument[1:len(argument)])
       except ValueError:
 	print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
       else:
@@ -506,7 +506,7 @@ for input_file_name in input_file_names: # process every file given in the comma
 	if list_sequences:
 	  print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),'at %d ' % constant_type[0]+constant_type[1],\
 	  'after %d' % (dataset.data[0].values[0]- measurement[0].data[0].values[0]) +dataset.data[0].unit
-	if do_output | gnuplot_script:
+	if do_output:
 	  dataset.export(input_file_name+'_'+dataset.number+'.out',info_in_file,column_seperator) # write data into files with sequence numbers      
       else:
 	remove.append(dataset)

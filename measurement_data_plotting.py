@@ -184,8 +184,10 @@ def create_plot_script(datasets,file_name_prefix,file_name_postfix, title,names,
 '''
     Function to plot with an additional data and gnuplot file and calling to the gnuplot program
 '''
-def gnuplot_plot_script(datasets,file_name_prefix,file_name_postfix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''): # # Plot with creating a temporal gnuplot skript and executing gnuplot afterwards. Should be much slower when processing many sequences. Mostly the same function as gnuplot_plot above.
+def gnuplot_plot_script(datasets,file_name_prefix, file_name_postfix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''): # # Plot with creating a temporal gnuplot skript and executing gnuplot afterwards. Should be much slower when processing many sequences. Mostly the same function as gnuplot_plot above.
     gp=gnuplot_preferences
+    for dataset in datasets:
+        dataset.export(globals.temp_dir+'tmp_data_'+dataset.number+'.out')
     sample_name=datasets[0].sample_name
     file_numbers=[dataset.number for dataset in datasets]
     if output_file.rsplit('.',1)[1]=='ps':
@@ -195,7 +197,7 @@ def gnuplot_plot_script(datasets,file_name_prefix,file_name_postfix, title,names
         postscript_export=False
         terminal=gp.set_output_terminal_png
     script_name=globals.temp_dir+replace_ph(gp.gnuplot_file_name,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info)
-    gnuplot_file_text=create_plot_script(datasets,file_name_prefix,file_name_postfix, title,names,with_errorbars,output_file,additional_info,fit_lorentz,add_preferences)
+    gnuplot_file_text=create_plot_script(datasets,globals.temp_dir+'tmp_data','.out', title,names,with_errorbars,output_file,additional_info,fit_lorentz,add_preferences)
     write_file=open(script_name,'w')
     write_file.write( gnuplot_file_text+'\n' )
     write_file.close()
