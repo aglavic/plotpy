@@ -257,7 +257,7 @@ class fit_function:
 #+++++++++++++++++ constructor of the Class. ++++++++++++++++++++++++++++
   # parameters is a list of [name,identifyer,startvalue]
   def __init__(self,parameters,function,columns): 
-     #first check if the input is reasonable
+    #first check if the input is reasonable
      if (not ((len(columns)==3)&(type(columns) is list)))|\
       (not type(function) is str)|\
       (not self.test_columns(columns)):
