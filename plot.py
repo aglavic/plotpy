@@ -178,7 +178,7 @@ else:
 
 if active_session.use_gui: # start a new gui session
    plotting_gui.ApplicationMainWindow(active_session)
-      gtk.main()
+   gtk.main()
 else:
    active_session.plot_all()
    
