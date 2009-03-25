@@ -44,9 +44,9 @@ import plot_4circle_data
 import plot_reflectometer_data
 # dictionary for the known measurement types
 known_measurement_types={
-                         'squid': plot_SQUID_data, 
-                         '4circle': plot_4circle_data, 
-                         'reflectometer': plot_reflectometer_data, 
+                         'squid': plot_SQUID_data.squid_session, 
+                         '4circle': plot_4circle_data.circle_session, 
+                         'reflectometer': plot_reflectometer_data.reflectometer_session, 
                          }
 
 '''
@@ -58,10 +58,6 @@ known_measurement_types={
    Specific measurements are childs of this class!
 '''
 class generic_session():
-   #++++++++++++++++++ local variables +++++++++++++++++
-   file_data={} # dictionary for the data objects indexed by filename
-   #------------------ local variables -----------------
-
    #++++++++++++++++++ help text strings +++++++++++++++
    short_help=\
 """
@@ -106,8 +102,11 @@ Plott settings:
 The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you want to change them.
 Data columns and unit transformations are defined in SQUID_preferences.py.
 """
-
    #------------------ help text strings ---------------
+
+   #++++++++++++++++++ local variables +++++++++++++++++
+   file_data={} # dictionary for the data objects indexed by filename
+   #------------------ local variables -----------------
 
    '''
       Class constructor which is called with the command line arguments.
@@ -149,6 +148,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
    '''
    def set_options(self, options, add_options):
       # to be added
+      return []
    
    '''
       Function which reads one datafile and returns a list
@@ -159,4 +159,26 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       data_list=[]
       # to be added
       return data_list
+
+
+'''
+############################################################################
+   Here the actual script starts. It creates one session object according
+   to the selected type of the data and reads all files specified by the
+   user. The session object is then ither used for a direct plotting or
+   piped to a plotting_gui for later use.
+############################################################################
+'''
+if len(sys.argv == 1):
+   print generic_session.short_help
+elif sys.argv[1] in known_measurement_types:
+   active_session=known_measurement_types[sys.argv[1]](sys.argv[2:])
+else:
+   active_session=generic_session(sys.argv[1:])
+
+if active_session.use_gui: # start a new gui session
+   plotting_gui.ApplicationMainWindow(active_session)
+      gtk.main()
+else:
+   active_session.plot_all()
    
