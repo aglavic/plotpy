@@ -97,7 +97,7 @@ Plott settings:
 \t\t-e\t\tPlot with errorbars
 \t\t-gui\t\tShow graphs in plotting GUI (experimental, pygtk package needed)
 
-""" + specific_help + """
+""" + self.specific_help + """
 
 The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you want to change them.
 Data columns and unit transformations are defined in SQUID_preferences.py.
@@ -106,6 +106,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
 
   #++++++++++++++++++ local variables +++++++++++++++++
   file_data={} # dictionary for the data objects indexed by filename
+  active_file_data=None
   #------------------ local variables -----------------
 
   '''
@@ -122,17 +123,17 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       print self.short_help
       return None
     for filename in files:
-      data_list=self.read_file(filename)
-      self.file_data[filename]=data_list
-   
+      self.add_data(self.read_file(filename), filename)
+    active_file_data=file_data[files[0]]
+
   '''
     Function to evaluate the command line arguments.
-    Returns a list of filenames and a dictionary of options.
+    Returns a list of filenames.
   '''
   def read_arguments(self, arguments):
     input_file_names=[]
     last_argument_option=[False,'']
-    for argument in arguments:
+    for argument in arguments: # iterate through all options
       if (argument[0]=='-')|last_argument_option[0]:
           # Cases of arguments:
         if last_argument_option[0]:
@@ -145,6 +146,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
           elif last_argument_option[1]=='i':
             inc=int(argument)
             last_argument_option=[False,'']
+          elif read_argument_add(argument,  last_argument_option):
+            continue
           else:
             input_file_names.append(argument)
             last_argument_option=[False,'']
@@ -178,6 +181,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
           unit_transformation=False
         elif argument=='--help':
           print help_statement()
+        elif read_argument_add(argument):
+          continue
         else:
           try:
             ['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e','gui','p'].index(argument[1:len(argument)])
@@ -187,26 +192,19 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
             last_argument_option=[True,argument[1:len(argument)]]
       else:
         input_file_names.append(argument)
-    return [], {}
+    return input_file_names
       
   '''
     Dummi function for child classes, which makes it possible to
-    use the same constructor for them.
+    add command line options for them.
   '''
-  def read_arguments_add(self, arguments):
-    # the function does nothing
-    return []
-   
-  '''
-    Function to set the global options for this Setting.
-  '''
-  def set_options(self, options, add_options):
-    # to be added
-    return []
+  def read_argument_add(self, argument, last_argument_option=[False, '']):
+    # as function does not contain new options it returns false
+    return False
    
   '''
     Function which reads one datafile and returns a list
-    of measurement_data_structure objects a splitted into
+    of measurement_data_structure objects splitted into
     sequences.
   '''
   def read_file(self, filename):
@@ -214,7 +212,15 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     # to be added
     return data_list
 
-
+  '''
+    Function which ither adds file data to the object or replaces
+    all data by a new list.
+  '''
+  def add_data(self, data_list, name, append=True):
+    if not append:
+      self.file_data={}
+    self.file_data[name]=data_list
+  
 '''
 ############################################################################
   Here the actual script starts. It creates one session object according
