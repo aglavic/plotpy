@@ -50,22 +50,22 @@ known_measurement_types={
                          }
 
 '''
-   This is the class valid the whole session to read the files 
-   and store the measurement data object.
-   It contains the common functions used for every type of data
-   plus data reading for space separated common files.
-   
-   Specific measurements are childs of this class!
+  This is the class valid the whole session to read the files 
+  and store the measurement data object.
+  It contains the common functions used for every type of data
+  plus data reading for space separated common files.
+
+  Specific measurements are childs of this class!
 '''
 class generic_session():
-   #++++++++++++++++++ help text strings +++++++++++++++
-   short_help=\
+  #++++++++++++++++++ help text strings +++++++++++++++
+  short_help=\
 """
 \tUsage: plot.py [type] [files] [options]
 \tRun plot.py --help for more information.
 """
-   specific_help='' # help text for child classes
-   long_help=\
+  specific_help='' # help text for child classes
+  long_help=\
 """
 Script to plot data of measurements using gnuplot.
 Usage: plot.py [type] [files] [options]
@@ -102,79 +102,133 @@ Plott settings:
 The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you want to change them.
 Data columns and unit transformations are defined in SQUID_preferences.py.
 """
-   #------------------ help text strings ---------------
+  #------------------ help text strings ---------------
 
-   #++++++++++++++++++ local variables +++++++++++++++++
-   file_data={} # dictionary for the data objects indexed by filename
-   #------------------ local variables -----------------
+  #++++++++++++++++++ local variables +++++++++++++++++
+  file_data={} # dictionary for the data objects indexed by filename
+  #------------------ local variables -----------------
 
-   '''
-      Class constructor which is called with the command line arguments.
-      Evaluates the command line arguments, creates a file list and
-      starts the data readout procedure.
-   '''
-   def __init__(self, arguments):
-      files, options=self.read_arguments(arguments)
-      if len(files) < 1:
-         print self.short_help
-         return None
-      if 'help' in options:
-         print self.long_help
-         return None
-      add_options=self.read_arguments_add(arguments)
-      self.set_options(options, add_options)
-      for filename in files:
-         data_list=self.read_file(filename)
-         self.file_data[filename]=data_list
+  '''
+    Class constructor which is called with the command line arguments.
+    Evaluates the command line arguments, creates a file list and
+    starts the data readout procedure.
+  '''
+  def __init__(self, arguments):
+    files=self.read_arguments(arguments) # get filenames and set options
+    if files==None: # read_arguments returns none, if help option is set
+      print self.long_help
+      return None
+    elif len(files) < 1: # show help, if there is no file in the list
+      print self.short_help
+      return None
+    for filename in files:
+      data_list=self.read_file(filename)
+      self.file_data[filename]=data_list
    
-   '''
-      Function to evaluate the command line arguments.
-      Returns a list of filenames and a dictionary of options.
-   '''
-   def read_arguments(self, arguments):
-      # to be added
-      return [], {}
+  '''
+    Function to evaluate the command line arguments.
+    Returns a list of filenames and a dictionary of options.
+  '''
+  def read_arguments(self, arguments):
+    input_file_names=[]
+    last_argument_option=[False,'']
+    for argument in arguments:
+      if (argument[0]=='-')|last_argument_option[0]:
+          # Cases of arguments:
+        if last_argument_option[0]:
+          if last_argument_option[1]=='s':
+            seq=[int(argument),seq[1]]
+            last_argument_option=[True,'s2']
+          elif last_argument_option[1]=='s2':
+            seq=[seq[0],int(argument)]
+            last_argument_option=[False,'']
+          elif last_argument_option[1]=='i':
+            inc=int(argument)
+            last_argument_option=[False,'']
+          else:
+            input_file_names.append(argument)
+            last_argument_option=[False,'']
+        elif argument=='-a':
+          single_picture=True
+        elif argument=='-l':
+          list_all=True
+        elif argument=='-ls':
+          list_sequences=True
+        elif argument=='-gs':
+          gnuplot_script=True
+        elif argument=='-o':
+          do_output=True
+        elif argument=='-ni':
+          info_in_file=False
+        elif argument=='-c':
+          plot_data=False
+        elif argument=='-sc':
+          select_columns=True
+        elif argument=='-st':
+          select_type=True
+        elif argument=='-sxy':
+          select_xy=True
+        elif argument=='-e':
+          plot_with_errorbars=True
+        elif argument=='-p':
+          print_plot=True
+        elif argument=='-gui':
+          plot_with_GUI=True
+        elif argument=='-no-trans':
+          unit_transformation=False
+        elif argument=='--help':
+          print help_statement()
+        else:
+          try:
+            ['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e','gui','p'].index(argument[1:len(argument)])
+          except ValueError:
+            print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
+          else:
+            last_argument_option=[True,argument[1:len(argument)]]
+      else:
+        input_file_names.append(argument)
+    return [], {}
       
-   '''
-      Dummi function for child classes, which makes it possible to
-      use the same constructor for them.
-   '''
-   def read_arguments_add(self, arguments):
-      # the function does nothing
-      return []
+  '''
+    Dummi function for child classes, which makes it possible to
+    use the same constructor for them.
+  '''
+  def read_arguments_add(self, arguments):
+    # the function does nothing
+    return []
    
-   '''
-      Function to set the global options for this Setting.
-   '''
-   def set_options(self, options, add_options):
-      # to be added
-      return []
+  '''
+    Function to set the global options for this Setting.
+  '''
+  def set_options(self, options, add_options):
+    # to be added
+    return []
    
-   '''
-      Function which reads one datafile and returns a list
-      of measurement_data_structure objects a splitted into
-      sequences.
-   '''
-   def read_file(self, filename):
-      data_list=[]
-      # to be added
-      return data_list
+  '''
+    Function which reads one datafile and returns a list
+    of measurement_data_structure objects a splitted into
+    sequences.
+  '''
+  def read_file(self, filename):
+    data_list=[]
+    # to be added
+    return data_list
 
 
 '''
 ############################################################################
-   Here the actual script starts. It creates one session object according
-   to the selected type of the data and reads all files specified by the
-   user. The session object is then ither used for a direct plotting or
-   piped to a plotting_gui for later use.
+  Here the actual script starts. It creates one session object according
+  to the selected type of the data and reads all files specified by the
+  user. The session object is then ither used for a direct plotting or
+  piped to a plotting_gui for later use.
 ############################################################################
 '''
 if len(sys.argv == 1):
-   print generic_session.short_help
+  print generic_session.short_help
 elif sys.argv[1] in known_measurement_types:
-   active_session=known_measurement_types[sys.argv[1]](sys.argv[2:])
+  active_session=known_measurement_types[sys.argv[1]](sys.argv[2:])
 else:
-   active_session=generic_session(sys.argv[1:])
+  active_session=generic_session(sys.argv[1:])
 
 if active_session.use_gui: # start a new gui session
    plotting_gui.ApplicationMainWindow(active_session)
