@@ -27,7 +27,6 @@
 #################################################################################################
 
 # importing python modules
-# import from external files and standard python methods
 import os
 import sys
 import math
