@@ -141,19 +141,19 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       self.add_data(self.read_file(filename), filename)
     self.active_file_data=self.file_data[files[0]]
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
-    os_path_stuff() # create temp folder according to OS
+    self.os_path_stuff() # create temp folder according to OS
     if (not self.gnuplot_script): # verify gnuplot.py is installed
       try:
         import Gnuplot
       except ImportError:
         print "Gnuplot.py not available, falling back to script mode!"
         self.gnuplot_script=True
-    if self.plot_with_GUI: # verify pygtk is installed
+    if self.use_gui: # verify pygtk is installed
       try:
         import gtk
       except ImportError:
         print "You have to install pygtk to run in GUI-mode, falling back to command-line mode!"
-        self.plot_with_GUI=False
+        self.use_gui=False
     #---------------- class consturction over ---------------------
 
     
@@ -276,6 +276,24 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     if not append:
       self.file_data={}
     self.file_data[name]=data_list
+    
+  def __iter__(self): # see next()
+    return self
+
+  ''' 
+    function to iterate through the data-points, object can be used in "for bla in data:"
+    also changes the active_file_data
+  '''
+  def next(self): 
+    name_list=self.file_data.items()
+    name_list.sort()
+    if self.index == len(name_list):
+      self.index=0
+      raise StopIteration
+    self.index=self.index+1
+    self.active_file_data=self.file_data[name_list[self.index-1]]
+    return self.active_file_data
+
   
 '''
 ############################################################################
