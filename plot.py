@@ -118,6 +118,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   plot_with_errorbars=False # use errorbars in plot
   print_plot=False # send plots to printer
   unit_transformation=True # make transformations as set in preferences file
+  own_pid=None
   #------------------ local variables -----------------
 
   '''
@@ -126,6 +127,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     starts the data readout procedure.
   '''
   def __init__(self, arguments):
+    #++++++++++++++++ evaluate command line +++++++++++++++++++++++
     files=self.read_arguments(arguments) # get filenames and set options
     if files==None: # read_arguments returns none, if help option is set
       print self.long_help
@@ -134,9 +136,27 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       print self.short_help
       return None
     files.sort()
+    #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
     for filename in files:
       self.add_data(self.read_file(filename), filename)
     self.active_file_data=self.file_data[files[0]]
+    #++++++++++++++++ initialize the session ++++++++++++++++++++++
+    os_path_stuff() # create temp folder according to OS
+    if (not self.gnuplot_script): # verify gnuplot.py is installed
+      try:
+        import Gnuplot
+      except ImportError:
+        print "Gnuplot.py not available, falling back to script mode!"
+        self.gnuplot_script=True
+    if self.plot_with_GUI: # verify pygtk is installed
+      try:
+        import gtk
+      except ImportError:
+        print "You have to install pygtk to run in GUI-mode, falling back to command-line mode!"
+        self.plot_with_GUI=False
+    #---------------- class consturction over ---------------------
+
+    
 
   '''
     Function to evaluate the command line arguments.
@@ -207,7 +227,37 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   def read_argument_add(self, argument, last_argument_option=[False, '']):
     # as function does not contain new options it returns false
     return False
-   
+
+  '''
+    Create the session temp directory
+  '''
+  def os_path_stuff(self):
+    self.own_pid=str(os.getpid())
+    if (os.getenv("TEMP")==None):
+    # Linux case
+      self.temp_dir="/tmp/"
+      # name of the gnuplot command under linux
+      self.gnuplot_command="gnuplot"
+    else:
+    # Windows case
+      self.temp_dir=os.getenv("TEMP")+'\\'
+      # name of the gnuplot command under windows
+      self.gnuplot_command="pgnuplot"
+      def replace_systemdependent(self, string): # replace backthlash by double backthlash for gnuplot under windows
+        return string.replace('\\','\\\\').replace('\\\\\n','\\\n')
+      self.replace_systemdependent=replace_systemdependent
+    self.temp_dir=self.temp_dir+'plottingscript-'+self.own_pid+os.sep
+    os.mkdir(self.temp_dir) # create the temporal directory
+
+
+
+  '''
+    function for path name replacements under windows,
+    in linux this is just a dummi method
+  '''
+  def replace_systemdependent(self, string):
+    return string
+
   '''
     Function which reads one datafile and returns a list
     of measurement_data_structure objects splitted into
@@ -249,4 +299,4 @@ if active_session.use_gui: # start a new gui session
    gtk.main()
 else:
    active_session.plot_all()
-  ''' 
+'''
