@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.5
 #################################################################################################
 #                     Script to plot SQUID-measurements with gnuplot                            #
 #                                       last changes:                                           #

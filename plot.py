@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #################################################################################################
-#                    Script to plot different-measurements with gnuplot                         #
+#                    Script to plot different measurements with gnuplot                         #
 #                  including a graphical user interface and easy andling                        #
 #                                       last changes:                                           #
 #                                        25.03.2008                                             #
