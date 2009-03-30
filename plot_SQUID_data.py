@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python
 #################################################################################################
 #                     Script to plot SQUID-measurements with gnuplot                            #
 #                                       last changes:                                           #
@@ -36,6 +36,35 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
+# import generic_session, which is the parent class for the squid_session
+from plot_generic_data import generic_session
+
+'''
+  Class to handle squid data sessions
+'''
+class squid_session(generic_session):
+  #++++++++++++++ help text string +++++++++++++++++++++++++++
+  specific_help=\
+'''
+SQUID-Data treatment:
+\t\t-para [C]\tInclude paramagnetic correction factor (C/T) [emu*K/Oe]
+\t\t-dia [Chi]\tInclude diamagnetic correction in [10^-9 emu/Oe]
+\t\t-dia-calc [e] [m]\tAdd diamagnetic correction of sample containing elements e
+\t\t\t\t\t with complete mass m in mg. 
+\t\t\t\t\t e is given for example as 'La_1-Fe_2-O_4','la_1-fe2+_2-o_4' or 'La-Fe_2-O_4'.
+\t\t-no-trans\tdon't make a unit transformation
+
+'''
+
+  
+  '''
+    class constructor expands the generic_session constructor
+  '''
+  def __init__(self, arguments):
+    generic_session.__init__(self, arguments)
+  
+'''
+################### old code, that will be deleted after plot.py works propperly ##############
 
 #How to use this script:
 def short_help():
@@ -529,3 +558,4 @@ else:
   for file_name in os.listdir(globals.temp_dir):
     os.remove(globals.temp_dir+file_name)
   os.rmdir(globals.temp_dir)
+'''
