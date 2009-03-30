@@ -103,6 +103,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   #++++++++++++++++++ local variables +++++++++++++++++
   file_data={} # dictionary for the data objects indexed by filename
   active_file_data=None
+  active_file_name=''
   index=0
   # options:
   use_gui=True # activate graphical user interface
@@ -140,6 +141,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     for filename in files:
       self.add_data(self.read_file(filename), filename)
     self.active_file_data=self.file_data[files[0]]
+    self.active_file_name=files[0]
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     self.os_path_stuff() # create temp folder according to OS
     if (not self.gnuplot_script): # verify gnuplot.py is installed
@@ -265,7 +267,34 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   '''
   def read_file(self, filename):
     data_list=[]
-    # to be added
+    dataset=None
+    if os.path.exists(filename):
+      input_file_lines=open(filename,'r').readlines()
+      for line in input_file_lines:
+        if line[0]=='#':
+          continue
+        if (dataset==None and len(line.split())>=2):
+          columns=['col-'+str(number) for number in range(len(line.split()))]
+          dataset=MeasurementData(columns,[], 0, 1, 2)
+          try:
+            dataset.append([float(number) for number in line.split()])
+          except ValueError:
+            print 'Unknown data type in file '+filename+'. Skipped!'
+            return []
+          dataset.info=filename+'-'+str(len(data_list)+1)
+        if  len(line.split())<2: # empty line is treated as sequence splitting
+          if dataset!=None:
+            data_list.append(dataset)
+          dataset=None
+          continue
+        else:
+          try:
+            dataset.append([float(number) for number in line.split()])
+          except ValueError:
+            print 'Unknown data type in file "' + filename + '". Skipped!'
+            return []
+    else:
+      print 'File '+filename+' does not exist.'
     return data_list
 
   '''
@@ -285,14 +314,39 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     also changes the active_file_data
   '''
   def next(self): 
-    name_list=self.file_data.items()
+    name_list=[item[0] for item in self.file_data.items()]
     name_list.sort()
     if self.index == len(name_list):
       self.index=0
       raise StopIteration
     self.index=self.index+1
     self.active_file_data=self.file_data[name_list[self.index-1]]
-    return self.active_file_data
+    self.active_file_name=name_list[self.index-1]
+    return self.active_file_name
+
+  '''
+    Plots the active datasets
+  '''
+  def plot_active(self):
+    if not self.single_picture:
+      for dataset in self.active_file_data:
+        self.plot(dataset, '', self.active_file_name, [self.active_file_name])
+        
+  '''
+    Plot one or a list of datasets
+  '''
+  def plot(self, datasets, file_name_prefix, title, names):
+    if len(datasets)>1:
+      add_info='multi_'
+    else:
+      add_info=''
+    if self.gnuplot_script:
+      output=measurement_data_plotting.gnuplot_plot_script\
+        (datasets,file_name_prefix, '.out', title,names,self.plot_with_errorbars,additional_info=add_info)
+      return output
+    else:
+      return measurement_data_plotting.gnuplot_plot\
+        (datasets,file_name_prefix, title,names,self.plot_with_errorbars,additional_info=add_info)
 
   
 '''
@@ -310,6 +364,7 @@ elif sys.argv[1] in known_measurement_types:
   active_session=known_measurement_types[sys.argv[1]](sys.argv[2:])
 else:
   active_session=generic_session(sys.argv[1:])
+  
   
 '''
 if active_session.use_gui: # start a new gui session
