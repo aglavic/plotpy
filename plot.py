@@ -108,6 +108,16 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
   seq_inc=1 # use every sequence
+  single_picture=False # plot all sequences in one picture
+  list_all=False # show a list of sequences found in the file
+  list_sequences=False # show a list of sequences found in the file which are selected for plotting
+  gnuplot_script=False # use script mode
+  do_output=False # export .out files
+  info_in_file=True # write header in output files
+  plot_data=True # plot the data (otherwise only convert files)
+  plot_with_errorbars=False # use errorbars in plot
+  print_plot=False # send plots to printer
+  unit_transformation=True # make transformations as set in preferences file
   #------------------ local variables -----------------
 
   '''
@@ -154,33 +164,27 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
             input_file_names.append(argument)
             last_argument_option=[False,'']
         elif argument=='-a':
-          single_picture=True
+          self.single_picture=True
         elif argument=='-l':
-          list_all=True
+          self.list_all=True
         elif argument=='-ls':
-          list_sequences=True
+          self.list_sequences=True
         elif argument=='-gs':
-          gnuplot_script=True
+          self.gnuplot_script=True
         elif argument=='-o':
-          do_output=True
+          self.do_output=True
         elif argument=='-ni':
-          info_in_file=False
+          self.info_in_file=False
         elif argument=='-c':
-          plot_data=False
-        elif argument=='-sc':
-          select_columns=True
-        elif argument=='-st':
-          select_type=True
-        elif argument=='-sxy':
-          select_xy=True
+          self.plot_data=False
         elif argument=='-e':
-          plot_with_errorbars=True
+          self.plot_with_errorbars=True
         elif argument=='-p':
-          print_plot=True
+          self.print_plot=True
         elif argument=='-scp':
           self.use_gui=False
         elif argument=='-no-trans':
-          unit_transformation=False
+          self.unit_transformation=False
         elif argument=='--help':
           print self.long_help
         elif self.read_argument_add(argument):
