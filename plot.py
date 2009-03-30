@@ -38,15 +38,15 @@ from gnuplot_preferences import print_command
 import plotting_gui
 
 # import specific measurement modules
-import plot_SQUID_data
-import plot_4circle_data
-import plot_reflectometer_data
+#import plot_SQUID_data
+#import plot_4circle_data
+#import plot_reflectometer_data
 # dictionary for the known measurement types
-known_measurement_types={
-                         'squid': plot_SQUID_data.squid_session, 
+known_measurement_types={}
+'''                         'squid': plot_SQUID_data.squid_session, 
                          '4circle': plot_4circle_data.circle_session, 
                          'reflectometer': plot_reflectometer_data.reflectometer_session, 
-                         }
+                         }'''
 
 '''
   This is the class valid the whole session to read the files 
@@ -90,13 +90,10 @@ Output settings:
 \t\t-p\t\tSend plots to printer specified in gnuplot_perferences.py
 
 Plott settings:
-\t\t-sc\t\tSelect columns different from SQUID_preferences.py settings
-\t\t-st\t\tSelect measurement typs different from SQUID_preferences.py settings
-\t\t-sxy\t\tSelect other x-,y- and dy- columns to plot
 \t\t-e\t\tPlot with errorbars
-\t\t-gui\t\tShow graphs in plotting GUI (experimental, pygtk package needed)
+\t\t-scp\t\tUse script mode, no GUI will be shown
 
-""" + self.specific_help + """
+""" + specific_help + """
 
 The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you want to change them.
 Data columns and unit transformations are defined in SQUID_preferences.py.
@@ -106,6 +103,11 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   #++++++++++++++++++ local variables +++++++++++++++++
   file_data={} # dictionary for the data objects indexed by filename
   active_file_data=None
+  index=0
+  # options:
+  use_gui=True # activate graphical user interface
+  seq=[1, 10000] # use sequences from 1 to 10 000
+  seq_inc=1 # use every sequence
   #------------------ local variables -----------------
 
   '''
@@ -121,9 +123,10 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     elif len(files) < 1: # show help, if there is no file in the list
       print self.short_help
       return None
+    files.sort()
     for filename in files:
       self.add_data(self.read_file(filename), filename)
-    active_file_data=file_data[files[0]]
+    self.active_file_data=self.file_data[files[0]]
 
   '''
     Function to evaluate the command line arguments.
@@ -137,15 +140,15 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
           # Cases of arguments:
         if last_argument_option[0]:
           if last_argument_option[1]=='s':
-            seq=[int(argument),seq[1]]
+            self.seq=[int(argument),self.seq[1]]
             last_argument_option=[True,'s2']
           elif last_argument_option[1]=='s2':
-            seq=[seq[0],int(argument)]
+            self.seq=[self.seq[0],int(argument)]
             last_argument_option=[False,'']
           elif last_argument_option[1]=='i':
-            inc=int(argument)
+            self.seq_inc=int(argument)
             last_argument_option=[False,'']
-          elif read_argument_add(argument,  last_argument_option):
+          elif self.read_argument_add(argument,  last_argument_option):
             continue
           else:
             input_file_names.append(argument)
@@ -174,17 +177,17 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
           plot_with_errorbars=True
         elif argument=='-p':
           print_plot=True
-        elif argument=='-gui':
-          plot_with_GUI=True
+        elif argument=='-scp':
+          self.use_gui=False
         elif argument=='-no-trans':
           unit_transformation=False
         elif argument=='--help':
-          print help_statement()
-        elif read_argument_add(argument):
+          print self.long_help
+        elif self.read_argument_add(argument):
           continue
         else:
           try:
-            ['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e','gui','p'].index(argument[1:len(argument)])
+            ['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e','scp','p'].index(argument[1:len(argument)])
           except ValueError:
             print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
           else:
@@ -228,16 +231,18 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   piped to a plotting_gui for later use.
 ############################################################################
 '''
-if len(sys.argv == 1):
+if (len(sys.argv) == 1):
   print generic_session.short_help
+  exit()
 elif sys.argv[1] in known_measurement_types:
   active_session=known_measurement_types[sys.argv[1]](sys.argv[2:])
 else:
   active_session=generic_session(sys.argv[1:])
-
+  
+'''
 if active_session.use_gui: # start a new gui session
    plotting_gui.ApplicationMainWindow(active_session)
    gtk.main()
 else:
    active_session.plot_all()
-   
+  ''' 
