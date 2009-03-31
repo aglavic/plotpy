@@ -1251,7 +1251,14 @@ class ApplicationMainWindow(gtk.Window):
       self.added_items+=(("File-"+ str(i), None, name, None, None, self.change_active_file),)
     output+='''
       </menu>
-      <separator name='static12'/>
+      <separator name='static12'/>'''
+    #++++++++++++++ create session specific menu ++++++++
+    specific_menu_items=self.active_session.create_menu()
+    output+=specific_menu_items[0]
+    self.added_items+=specific_menu_items[1]
+    #-------------- create session specific menu --------
+    output+='''
+      <separator name='static13'/>
       <menu action='HelpMenu'>
         <menuitem action='About'/>
       </menu>

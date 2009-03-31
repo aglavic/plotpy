@@ -380,3 +380,9 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
         None
     else:
       None
+  
+  '''
+    create a specifig menu for the session
+  '''
+  def create_menu(self):
+    return '',  ()

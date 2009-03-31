@@ -121,6 +121,26 @@ SQUID-Data treatment:
   def read_file(self, file_name):
     return SQUID_read_data.read_data(file_name,self.columns_mapping,self.measurement_types)
   
+  '''
+    create a specifig menu for the squid session
+  '''
+  def create_menu(self):
+    # Create XML for squid menu
+    string='''
+      <menu action='SquidMenu'>
+      
+      </menu>
+    '''
+    # Create actions for the menu
+    actions=(
+            ( "SquidMenu", None,                             # name, stock id
+                "SQUID", None,                    # label, accelerator
+                None,                                   # tooltip
+                None ),
+             )
+    return string,  actions
+
+  
 '''
 ################### old code, that will be deleted after plot.py works propperly ##############
 
