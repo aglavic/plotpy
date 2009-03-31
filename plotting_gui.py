@@ -451,6 +451,15 @@ class ApplicationMainWindow(gtk.Window):
       self.measurement[self.index_mess].logy=self.logy.get_active()
       self.measurement[self.index_mess].logz=self.logz.get_active()
     self.replot() # plot with new Settings
+  
+  '''
+    change the active datafile for plotted sequences
+  '''
+  def change_active_file(self, action):
+    index=int(action.get_name().split('-')[-1])
+    object=self.active_session.file_data.items()[index]
+    self.active_session.change_active(object)
+    self.replot()
 
   def change_range(self,action): # change plotting range according to textinput
     xin=self.x_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
@@ -1224,6 +1233,14 @@ class ApplicationMainWindow(gtk.Window):
         <menuitem action='DeleteProfile' position="bottom"/>
       </menu>
       <separator name='static9'/>
+      <menu action='FilesMenu'>
+      '''
+    for i, name in enumerate([object[0] for object in self.active_session.file_data.items()]):
+      output+="<menuitem action='File-"+ str(i) +"'/>\n"
+      self.added_items+=(("File-"+ str(i), None, name, None, None, self.change_active_file),)
+    output+='''
+      </menu>
+      <separator name='static12'/>
       <menu action='HelpMenu'>
         <menuitem action='About'/>
       </menu>
