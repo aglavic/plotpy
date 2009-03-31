@@ -88,7 +88,7 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #r
   not_found=True
   if (data_1!='NULL')&(data_2!='NULL'):
     for type_i in measurement_types:
-      if check_type(data_1,data_2,type_i)&not_found:
+      if not_found and check_type(data_1,data_2,type_i):
         data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
         data.append(data_1)
         data.append(data_2)
@@ -118,21 +118,21 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #r
         data.append(next_data)
       else:
         output.append(data)
-      next_data_2=read_data_line(input_file_lines[i+1],columns)
-      if next_data_2!='NULL':
-        not_found=True
-        for type_i in measurement_types:
-          if check_type(next_data,next_data_2,type_i)&not_found:
-            data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
-            data.plot_options=type_i[4]
-            not_found=False
-            data.info=info[0]
-            data.sample_name=info[1]
-            data.filters=SQUID_preferences.filters
-            data.append(next_data)
-            data.append(next_data_2)
-      else:
-        return output
+        next_data_2=read_data_line(input_file_lines[i+1],columns)
+        if next_data_2!='NULL':
+          not_found=True
+          for type_i in measurement_types:
+            if check_type(next_data,next_data_2,type_i)&not_found:
+              data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
+              data.plot_options=type_i[4]
+              not_found=False
+              data.info=info[0]
+              data.sample_name=info[1]
+              data.filters=SQUID_preferences.filters
+              data.append(next_data)
+              data.append(next_data_2)
+        else:
+          return output
     else:
       output.append(data)
       return output
@@ -145,10 +145,10 @@ def read_data_line(input_file_line,columns): #read one line and output data as l
     if len(line)>=len(columns):
       for column in columns:
         val=line[column[0]]
-      if not val=='':
-        values.append(float(val))
-      else:
-        values.append(0.)
+        if not val=='':
+          values.append(float(val))
+        else:
+          values.append(0.)
       return values
     else:
       return 'NULL'

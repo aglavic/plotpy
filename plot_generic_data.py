@@ -111,6 +111,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     files.sort()
     #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
     for filename in files:
+      print "Trying to import '" + filename + "'."
       self.add_data(self.read_file(filename), filename)
     self.active_file_data=self.file_data[files[0]]
     self.active_file_name=files[0]

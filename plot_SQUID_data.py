@@ -38,6 +38,9 @@
 
 # import generic_session, which is the parent class for the squid_session
 from plot_generic_data import generic_session
+# importing preferences and data readout
+import SQUID_read_data
+import SQUID_preferences
 
 '''
   Class to handle squid data sessions
@@ -53,7 +56,6 @@ SQUID-Data treatment:
 \t\t\t\t\t with complete mass m in mg. 
 \t\t\t\t\t e is given for example as 'La_1-Fe_2-O_4','la_1-fe2+_2-o_4' or 'La-Fe_2-O_4'.
 \t\t-no-trans\tdon't make a unit transformation
-
 '''
 
   
@@ -61,7 +63,15 @@ SQUID-Data treatment:
     class constructor expands the generic_session constructor
   '''
   def __init__(self, arguments):
+    self.columns_mapping=SQUID_preferences.columns_mapping
+    self.measurement_types=SQUID_preferences.measurement_types
     generic_session.__init__(self, arguments)
+    
+  '''
+    function to read data files
+  '''
+  def read_file(self, file_name):
+    return SQUID_read_data.read_data(file_name,self.columns_mapping,self.measurement_types)
   
 '''
 ################### old code, that will be deleted after plot.py works propperly ##############
