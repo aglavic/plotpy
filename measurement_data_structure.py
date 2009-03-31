@@ -91,9 +91,10 @@ class MeasurementData:
     return len(self.data[0])
 
   def append(self, point): # add point to the sequence
-    if len(point)==len(self.data):
+    data=self.data # speedup data_lookup
+    if len(point)==len(data):
       for i,val in enumerate(point):
-        self.data[i].append(val)
+        data[i].append(val)
       self.number_of_points+=1
       return point#self.get_data(self.number_of_points-1)
     else:
@@ -144,14 +145,14 @@ class MeasurementData:
   def last(self): # return the last datapoint
     return self.get_data(self.number_of_points-1)
 
-  def is_type(self,dataset): # check if a point is consistant with constand data of this sequence
-      output=True
+  def is_type(self, dataset): # check if a point is consistant with constand data of this sequence
+      last=self.last()
       for const in self.const_data:
-        if (abs(dataset[const[0]]-self.last()[const[0]])<const[1].values[0])&output:
-          output=True
+        if (abs(dataset[const[0]]-last[const[0]])<const[1].values[0]):
+          continue
         else:
-          output=False
-      return output
+          return False
+      return True
 
   def units(self): # return units of all columns
     return [value.unit for value in self.data]
@@ -301,9 +302,8 @@ class PysicalProperty:
   def __len__(self): # len(PhysicalProperty) returns number of Datapoints
     return len(self.values)
 
-  def append(self,number): # add value
+  def append(self, number): # add value
     self.values.append(number)
-    return self
 
   def unit_trans(self,transfere): # transform one unit to another transfere is of type [from,b,a,to]
     if transfere[0]==self.unit: # only transform if right 'from' parameter

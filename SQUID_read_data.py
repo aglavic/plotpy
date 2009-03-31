@@ -103,6 +103,9 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #r
     print 'No sequence with right type found!'
     return 'Null'
   data.sample_name=info[1]
+  # trying to speed up function lookup
+  data_is_type=data.is_type
+  data_append=data.append
   count_lines=len(input_file_lines)
   if count_lines>10000:
     sys.stdout.write('Reading progress [%]:   0')
@@ -112,14 +115,14 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #r
       procent=float(i)/count_lines*100.
       sys.stdout.write('\b\b\b'.replace('\b','',3-len('%d' % procent))+'%d' % procent)
       sys.stdout.flush()
-    next_data=read_data_line(line,columns)
-    if next_data!='NULL':
-      if data.is_type(next_data):
-        data.append(next_data)
+    next_data=read_data_line(line, columns)
+    if next_data != 'NULL':
+      if data_is_type(next_data):
+        data_append(next_data)
       else:
         output.append(data)
         next_data_2=read_data_line(input_file_lines[i+1],columns)
-        if next_data_2!='NULL':
+        if next_data_2 != 'NULL':
           not_found=True
           for type_i in measurement_types:
             if check_type(next_data,next_data_2,type_i)&not_found:
@@ -131,6 +134,9 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #r
               data.filters=SQUID_preferences.filters
               data.append(next_data)
               data.append(next_data_2)
+              data_is_type=data.is_type
+              data_append=data.append
+              # trying to speed up function lookup
         else:
           return output
     else:
@@ -139,17 +145,17 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #r
   output.append(data)
   return output
 
-def read_data_line(input_file_line,columns): #read one line and output data as list
-    line=input_file_line.split(',')
-    values=[]
-    if len(line)>=len(columns):
-      for column in columns:
-        val=line[column[0]]
-        if not val=='':
-          values.append(float(val))
-        else:
-          values.append(0.)
-      return values
-    else:
-      return 'NULL'
+def read_data_line(input_file_line, columns): #read one line and output data as list
+  line=input_file_line.split(',')
+  values=[]
+  if len(line)>=len(columns):
+    for column in columns:
+      val=line[column[0]]
+      if val != '':
+        values.append(float(val))
+      else:
+        values.append(0.)
+    return values
+  else:
+    return 'NULL'
   
