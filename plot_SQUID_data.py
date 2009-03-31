@@ -57,6 +57,13 @@ SQUID-Data treatment:
 \t\t\t\t\t e is given for example as 'La_1-Fe_2-O_4','la_1-fe2+_2-o_4' or 'La-Fe_2-O_4'.
 \t\t-no-trans\tdon't make a unit transformation
 '''
+  #------------------ help text strings ---------------
+
+  #++++++++++++++++++ local variables +++++++++++++++++
+  dia_mag_correct=0
+  dia_calc=[False, '', 0.0]
+  para=0
+  #------------------ local variables -----------------
 
   
   '''
@@ -67,6 +74,47 @@ SQUID-Data treatment:
     self.measurement_types=SQUID_preferences.measurement_types
     generic_session.__init__(self, arguments)
     
+  
+  '''
+    additional command line arguments for squid sessions
+  '''
+  def read_argument_add(self, argument, last_argument_option=[False, '']):
+    found=True
+    if (argument[0]=='-') or last_argument_option[0]:
+      # Cases of arguments:
+      if last_argument_option[0]:
+        if last_argument_option[1]=='dia':
+          self.dia_mag_correct=float(argument)
+          last_argument_option=[False,'']
+        elif last_argument_option[1]=='dia-calc':
+          self.dia_calc[0]=True
+          self.dia_calc[1]=argument
+          last_argument_option=[True,'dia-calc2']
+        elif last_argument_option[1]=='dia-calc2':
+          self.dia_calc[2]=float(argument)
+          last_argument_option=[False,'']
+        elif last_argument_option[1]=='para':
+          self.para=float(argument)
+          last_argument_option=[False,'']
+        else:
+          found=False
+      #elif argument=='-l':
+      #  list_all=True
+      #elif argument=='-ls':
+      #  list_sequences=True
+      #elif argument=='-sc':
+      #  select_columns=True
+      #elif argument=='-st':
+      #  select_type=True
+      #elif argument=='-sxy':
+      #  select_xy=True
+      #elif argument=='-calib-long':
+      #  calib_long=True
+      else:
+        found=False
+    return (found, last_argument_option)
+
+
   '''
     function to read data files
   '''

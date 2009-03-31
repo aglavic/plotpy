@@ -71,3 +71,6 @@ if active_session.use_gui: # start a new gui session
 else:
    active_session.plot_all()
 '''
+
+# delete temporal stuff
+active_session.os_cleanup()

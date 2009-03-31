@@ -153,8 +153,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
           elif last_argument_option[1]=='i':
             self.seq_inc=int(argument)
             last_argument_option=[False,'']
-          elif self.read_argument_add(argument,  last_argument_option):
-            continue
+          elif self.read_argument_add(argument,  last_argument_option)[0]:
+            last_argument_option=self.read_argument_add(argument,  last_argument_option)[1]
           else:
             input_file_names.append(argument)
             last_argument_option=[False,'']
@@ -182,8 +182,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
           self.unit_transformation=False
         elif argument=='--help':
           print self.long_help + self.specific_help + self.long_help_end
-        elif self.read_argument_add(argument):
-          continue
+        elif self.read_argument_add(argument,  last_argument_option)[0]:
+          last_argument_option=self.read_argument_add(argument,  last_argument_option)[1]
         else:
           try:
             ['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e','scp','p'].index(argument[1:len(argument)])
@@ -201,7 +201,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   '''
   def read_argument_add(self, argument, last_argument_option=[False, '']):
     # as function does not contain new options it returns false
-    return False
+    return (False, last_argument_option)
 
   '''
     Create the session temp directory
@@ -224,7 +224,13 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     self.temp_dir=self.temp_dir+'plottingscript-'+self.own_pid+os.sep
     os.mkdir(self.temp_dir) # create the temporal directory
 
-
+  '''
+    delete temporal files and folder
+  '''
+  def os_cleanup(self):
+    for file_name in os.listdir(self.temp_dir):
+      os.remove(self.temp_dir+file_name)
+    os.rmdir(self.temp_dir)
 
   '''
     function for path name replacements under windows,
