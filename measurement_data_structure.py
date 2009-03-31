@@ -38,7 +38,7 @@ class MeasurementData:
   view_x=60
   view_z=30
   filters=[] # a list of filters to be applied when returning the data, the format is:
-	     # ( column , from , to , include )
+             # ( column , from , to , include )
 
   def __init__(self, columns, const,x,y,yerror,zdata=-1): # constructor for the class - if the values are not reinitialized we get problem with creating objects with the same variable name
     if globals.debug:
@@ -73,17 +73,17 @@ class MeasurementData:
     filtered=True
     while filtered:
       if self.index == self.number_of_points:
-	self.index=0
-	raise StopIteration
+        self.index=0
+        raise StopIteration
       filtered = False
       for data_filter in self.filters:
-	# if the datapoint is not included (filter[3]=True) or excluded skip it
-	filtered = (filtered | (not ((data_filter[3] & \
-		    (self.data[data_filter[0]].values[self.index]>data_filter[1]) & \
-		    (self.data[data_filter[0]].values[self.index]<data_filter[2])\
-	      ) | ((not data_filter[3]) & \
-		  ((self.data[data_filter[0]].values[self.index]<data_filter[1]) | \
-		    (self.data[data_filter[0]].values[self.index]>data_filter[2]))))))
+        # if the datapoint is not included (filter[3]=True) or excluded skip it
+        filtered = (filtered | (not ((data_filter[3] & \
+                    (self.data[data_filter[0]].values[self.index]>data_filter[1]) & \
+                    (self.data[data_filter[0]].values[self.index]<data_filter[2])\
+              ) | ((not data_filter[3]) & \
+                  ((self.data[data_filter[0]].values[self.index]<data_filter[1]) | \
+                    (self.data[data_filter[0]].values[self.index]>data_filter[2]))))))
       self.index=self.index+1
     return self.get_data(self.index-1)
 
@@ -93,7 +93,7 @@ class MeasurementData:
   def append(self, point): # add point to the sequence
     if len(point)==len(self.data):
       for i,val in enumerate(point):
-	self.data[i].append(val)
+        self.data[i].append(val)
       self.number_of_points+=1
       return point#self.get_data(self.number_of_points-1)
     else:
@@ -147,10 +147,10 @@ class MeasurementData:
   def is_type(self,dataset): # check if a point is consistant with constand data of this sequence
       output=True
       for const in self.const_data:
-	if (abs(dataset[const[0]]-self.last()[const[0]])<const[1].values[0])&output:
-	  output=True
-	else:
-	  output=False
+        if (abs(dataset[const[0]]-self.last()[const[0]])<const[1].values[0])&output:
+          output=True
+        else:
+          output=False
       return output
 
   def units(self): # return units of all columns
@@ -180,30 +180,30 @@ class MeasurementData:
   def unit_trans(self,unit_list): # change units of all columns according to a given list of translations
     for unit in unit_list:
       for value in self.data:
-	if len(unit)==4:
-	  value.unit_trans(unit)
-	else:
-	  value.dim_unit_trans(unit)
+        if len(unit)==4:
+          value.unit_trans(unit)
+        else:
+          value.dim_unit_trans(unit)
       if len(unit)==4:
-	for con in self.const_data:
-	  con[1].unit_trans(unit)
+        for con in self.const_data:
+          con[1].unit_trans(unit)
       else:
-	for con in self.const_data:
-	  con[1].dim_unit_trans(unit)
+        for con in self.const_data:
+          con[1].dim_unit_trans(unit)
     return [self.dimensions(),self.units()]
 
   def unit_trans_one(self,col,unit_list): # change units of one column according to a given list of translations
     for unit in unit_list:
       if len(unit)==4:
-	self.data[col].unit_trans(unit)
+        self.data[col].unit_trans(unit)
       else:
-	self.data[col].dim_unit_trans(unit)
+        self.data[col].dim_unit_trans(unit)
     for con in self.const_data:
       if con[0]==col:
-	if len(unit)==4:
-	    con[1].unit_trans(unit)
-	else:
-	    con[1].dim_unit_trans(unit)
+        if len(unit)==4:
+            con[1].unit_trans(unit)
+        else:
+            con[1].dim_unit_trans(unit)
     return [self.last()[col],self.units()[col]]
 
   def process_funcion(self,function): # processing a function on every data point
@@ -218,28 +218,28 @@ class MeasurementData:
     xto_index=len(self)-1
     for i,value in enumerate(self.data[self.xdata].values):
       if not xfrom==None:
-	if xfrom>=value:
-	  xfrom_index=i
+        if xfrom>=value:
+          xfrom_index=i
       if not xto==None:
-	if xto<=self.data[self.xdata].values[-1-i]:
-	  xto_index=len(self)-1-i
+        if xto<=self.data[self.xdata].values[-1-i]:
+          xto_index=len(self)-1-i
     write_file=open(file_name,'w')
     if print_info:
       write_file.write('# exportet dataset from measurement_data_structure.py\n# Sample: '+self.sample_name+'\n#\n# other informations:\n#'+self.info.replace('\n','\n#'))
       columns=''
       for i in range(len(self.data)):
-	columns=columns+' '+self.dimensions()[i]+'['+self.units()[i]+']'
+        columns=columns+' '+self.dimensions()[i]+'['+self.units()[i]+']'
       write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
     last_point=self.get_data(0)
     for i,point in enumerate(self):
       if (i>=xfrom_index)&(i<=xto_index):
-	if (self.zdata>=0)&(not round(point[self.ydata],5)==round(last_point[self.ydata],5)):
-	  write_file.write('\n')
-	last_point=point
-	line=''
-	for value in point:
-	  line = line+str(value)+seperator
-	write_file.write(line+'\n')
+        if (self.zdata>=0)&(not round(point[self.ydata],5)==round(last_point[self.ydata],5)):
+          write_file.write('\n')
+        last_point=point
+        line=''
+        for value in point:
+          line = line+str(value)+seperator
+        write_file.write(line+'\n')
     write_file.close()
     return xto_index-xfrom_index+1 # return the number of exported data lines
 
@@ -252,9 +252,9 @@ class MeasurementData:
     to_index=len(self)-1
     for i,value in enumerate(self.data[self.xdata].values):
       if value<=xstart:
-	from_index=i
+        from_index=i
       if self.data[self.xdata].values[-1-i]>=xstop:
-	to_index=len(self)-1-i
+        to_index=len(self)-1-i
     max_point=self.data[self.ydata].values.index(self.data[self.ydata].max(from_index,to_index))
     return [self.data[self.xdata].values[max_point],self.data[self.ydata].values[max_point]]
 
@@ -267,9 +267,9 @@ class MeasurementData:
     to_index=len(self)-1
     for i,value in enumerate(self.data[self.xdata].values):
       if value<=xstart:
-	from_index=i
+        from_index=i
       if self.data[self.xdata].values[-1-i]>=xstop:
-	to_index=len(self)-1-i
+        to_index=len(self)-1-i
     max_point=self.data[self.ydata].values.index(self.data[self.ydata].min(from_index,to_index))
     return [self.data[self.xdata].values[max_point],self.data[self.ydata].values[max_point]]
 
@@ -309,7 +309,7 @@ class PysicalProperty:
     if transfere[0]==self.unit: # only transform if right 'from' parameter
       new_values=[]
       for value in self.values:
-	new_values.append(value*transfere[1]+transfere[2])
+        new_values.append(value*transfere[1]+transfere[2])
       self.values=new_values
       self.unit=transfere[3]
       return [self.values[-1],self.unit]
@@ -320,7 +320,7 @@ class PysicalProperty:
     if (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right 'from_dim' and 'from_unit'
       new_values=[]
       for value in self.values:
-	new_values.append(value*transfere[2]+transfere[3])
+        new_values.append(value*transfere[2]+transfere[3])
       self.values=new_values
       self.unit=transfere[5]
       self.dimension=transfere[4]

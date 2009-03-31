@@ -131,20 +131,20 @@ for argument in sys.argv[1:len(sys.argv)]:
       # Cases of arguments:
     if last_argument_option[0]:
       if last_argument_option[1]=='s':
-	seq=[int(argument),seq[1]]
-	last_argument_option=[True,'s2']
+        seq=[int(argument),seq[1]]
+        last_argument_option=[True,'s2']
       elif last_argument_option[1]=='s2':
-	seq=[seq[0],int(argument)]
-	last_argument_option=[False,'']
+        seq=[seq[0],int(argument)]
+        last_argument_option=[False,'']
       elif last_argument_option[1]=='i':
-	inc=int(argument)
-	last_argument_option=[False,'']
+        inc=int(argument)
+        last_argument_option=[False,'']
       elif last_argument_option[1]=='sep':
-	column_seperator=str(argument)
-	last_argument_option=[False,'']
+        column_seperator=str(argument)
+        last_argument_option=[False,'']
       else:
-	input_file_names.append(argument)
-	last_argument_option=[False,'']
+        input_file_names.append(argument)
+        last_argument_option=[False,'']
     elif argument=='-a':
       single_picture=True
     elif argument=='-l':
@@ -181,11 +181,11 @@ for argument in sys.argv[1:len(sys.argv)]:
       print help_statement()
     else:
       try:
-	['s','s2','i','gs','no','ni','c','sep','l','sxy','e','counts','gui','p','logx','logy','comb','debug'].index(argument[1:len(argument)])
+        ['s','s2','i','gs','no','ni','c','sep','l','sxy','e','counts','gui','p','logx','logy','comb','debug'].index(argument[1:len(argument)])
       except ValueError:
-	print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
+        print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
       else:
-	last_argument_option=[True,argument[1:len(argument)]]
+        last_argument_option=[True,argument[1:len(argument)]]
   else:
     input_file_names.append(argument)
 
@@ -261,18 +261,18 @@ def plot_this_measurement(): # does the plotting of one files sequences
       select_new_xy(dataset)
     if single_picture: # if the "plot all in one" option is enabled put all measurements of one type together
       if dataset.type()==single_pictures[-1][1]:
-	single_pictures[-1][0].append(dataset)
+        single_pictures[-1][0].append(dataset)
       else:
-	single_pictures.append([[dataset],dataset.type()])
+        single_pictures.append([[dataset],dataset.type()])
     elif plot_data:
       actual_output=plot([dataset],input_file_name,dataset.short_info,[''],plot_with_errorbars)
       if print_plot:
-	print_queue.append(actual_output) # append every plot to the queue schaduled for printing
+        print_queue.append(actual_output) # append every plot to the queue schaduled for printing
   if plot_data:
     for picture in single_pictures:
       actual_output=plot(picture[0], input_file_name, '',[dataset.short_info for dataset in picture[0]],plot_with_errorbars)
       if print_plot:
-	print_queue.append(actual_output) # append every plot to the queue schaduled for printing
+        print_queue.append(actual_output) # append every plot to the queue schaduled for printing
   if print_plot:
     print_command_string=print_command
     for plot_file in print_queue:
@@ -311,38 +311,38 @@ for input_file_name in input_file_names: # process every file given in the comma
     for i,dataset in enumerate(measurement): # processing transformations,functions and selecting right measurements
       dataset.unit_trans(transformations) # transfrom data to right units
       if not show_counts:
-	units=dataset.units()
-	dataset.process_funcion(counts_to_cps)
-	dataset.unit_trans([['counts',1,0,'counts/s']])
+        units=dataset.units()
+        dataset.process_funcion(counts_to_cps)
+        dataset.unit_trans([['counts',1,0,'counts/s']])
       if show_logx:
-	dataset.logx=True
+        dataset.logx=True
       if show_logy:
-	dataset.logy=True
+        dataset.logy=True
       dataset.number='000000'.replace('0','',6-len(str(len(measurement)+1))+len(str(i+1)))+str(i+1) # set number string depending on the length of the last number
       hkl=[str(round(dataset.data[0].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
       str(round(dataset.data[1].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
       str(round(dataset.data[2].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0')] # h,k,l information from middle of the Scan with 2 post point digits but with trailing 0 striped
       if (dataset.xdata==0)&(dataset.zdata==-1):
-	dataset.short_info='h,'+hkl[1] +','+hkl[2] +' scan'  # set short info as the value of the constant column
+        dataset.short_info='h,'+hkl[1] +','+hkl[2] +' scan'  # set short info as the value of the constant column
       elif (dataset.xdata==1)&(dataset.zdata==-1):
-	dataset.short_info=hkl[0] +',k,'+hkl[2] +' scan'  # set short info as the value of the constant column
+        dataset.short_info=hkl[0] +',k,'+hkl[2] +' scan'  # set short info as the value of the constant column
       elif (dataset.xdata==2)&(dataset.zdata==-1):
-	dataset.short_info=+hkl[0] +','+hkl[1] +',l scan'  # set short info as the value of the constant column
+        dataset.short_info=+hkl[0] +','+hkl[1] +',l scan'  # set short info as the value of the constant column
       elif dataset.zdata>=0:
-	dataset.short_info=dataset.xdim()+dataset.ydim()+' mesh at '+hkl[0]+ ','+hkl[1]+ ','+ hkl[2]   # set short info as the value of the constant column
+        dataset.short_info=dataset.xdim()+dataset.ydim()+' mesh at '+hkl[0]+ ','+hkl[1]+ ','+ hkl[2]   # set short info as the value of the constant column
       else:
-	dataset.short_info=dataset.xdim()+' scan at '+hkl[0] +','+ hkl[1]+ ','+hkl[2]   # set short info as the value of the constant column
+        dataset.short_info=dataset.xdim()+' scan at '+hkl[0] +','+ hkl[1]+ ','+hkl[2]   # set short info as the value of the constant column
       if list_all:
-	print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),\
-	dataset.short_info
+        print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),\
+        dataset.short_info
       if ((i+1>=seq[0])&(i+1<=seq[1])&(((i+1-seq[0]) % inc) == 0)): # Sequence selected?
-	if list_sequences:
-	  print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),\
-	  dataset.short_info
-	if do_output | gnuplot_script:
-	  dataset.export(input_file_name+'_'+dataset.number+'.out',info_in_file,column_seperator) # write data into files with sequence numbers      
+        if list_sequences:
+          print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),\
+          dataset.short_info
+        if do_output | gnuplot_script:
+          dataset.export(input_file_name+'_'+dataset.number+'.out',info_in_file,column_seperator) # write data into files with sequence numbers      
       else:
-	remove.append(dataset)
+        remove.append(dataset)
     for dataset in remove:
       measurement.remove(dataset)
 

@@ -224,33 +224,33 @@ for argument in sys.argv[1:len(sys.argv)]:
       # Cases of arguments:
     if last_argument_option[0]:
       if last_argument_option[1]=='dia':
-	dia_mag_correct=float(argument)
-	last_argument_option=[False,'']
+        dia_mag_correct=float(argument)
+        last_argument_option=[False,'']
       elif last_argument_option[1]=='dia-calc':
-	dia_calc[0]=True
-	dia_calc[1]=argument
-	last_argument_option=[True,'dia-calc2']
+        dia_calc[0]=True
+        dia_calc[1]=argument
+        last_argument_option=[True,'dia-calc2']
       elif last_argument_option[1]=='dia-calc2':
-	dia_calc[2]=float(argument)
-	last_argument_option=[False,'']
+        dia_calc[2]=float(argument)
+        last_argument_option=[False,'']
       elif last_argument_option[1]=='para':
-	para=float(argument)
-	last_argument_option=[False,'']
+        para=float(argument)
+        last_argument_option=[False,'']
       elif last_argument_option[1]=='s':
-	seq=[int(argument),seq[1]]
-	last_argument_option=[True,'s2']
+        seq=[int(argument),seq[1]]
+        last_argument_option=[True,'s2']
       elif last_argument_option[1]=='s2':
-	seq=[seq[0],int(argument)]
-	last_argument_option=[False,'']
+        seq=[seq[0],int(argument)]
+        last_argument_option=[False,'']
       elif last_argument_option[1]=='i':
-	inc=int(argument)
-	last_argument_option=[False,'']
+        inc=int(argument)
+        last_argument_option=[False,'']
       elif last_argument_option[1]=='sep':
-	column_seperator=str(argument)
-	last_argument_option=[False,'']
+        column_seperator=str(argument)
+        last_argument_option=[False,'']
       else:
-	input_file_names.append(argument)
-	last_argument_option=[False,'']
+        input_file_names.append(argument)
+        last_argument_option=[False,'']
     elif argument=='-a':
       single_picture=True
     elif argument=='-l':
@@ -287,11 +287,11 @@ for argument in sys.argv[1:len(sys.argv)]:
       print help_statement()
     else:
       try:
-	['dia','para','s','s2','i','gs','o','ni','c','sep','l','sc','st','sxy','e','dia-calc','gui','p','cali_reg','debug'].index(argument[1:len(argument)])
+        ['dia','para','s','s2','i','gs','o','ni','c','sep','l','sc','st','sxy','e','dia-calc','gui','p','cali_reg','debug'].index(argument[1:len(argument)])
       except ValueError:
-	print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
+        print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
       else:
-	last_argument_option=[True,argument[1:len(argument)]]
+        last_argument_option=[True,argument[1:len(argument)]]
   else:
     input_file_names.append(argument)
 
@@ -395,21 +395,21 @@ def select_new_columns(file_name): # command line input for selection of any col
     number=abs(int(add_map))-1
     for mapping in columns_mapping:
       if number==mapping[1]:
-	if mapping[0] in cols:
-	  remove=mapping
+        if mapping[0] in cols:
+          remove=mapping
       elif number<mapping[1]:
-	mapping[1]=mapping[1]-1
+        mapping[1]=mapping[1]-1
     columns_mapping.remove(remove)
     for ty in measurement_types:
       for ty_0 in ty[0]:
-	if number<ty_0[0]:
-	  ty_0[0]=ty_0[0]-1
+        if number<ty_0[0]:
+          ty_0[0]=ty_0[0]-1
       if number<ty[1]:
-	ty[1]=ty[1]-1
+        ty[1]=ty[1]-1
       if number<ty[2]:
-	ty[2]=ty[2]-1
+        ty[2]=ty[2]-1
       if number<ty[3]:
-	ty[3]=ty[3]-1
+        ty[3]=ty[3]-1
     return True
   else:
     return False
@@ -438,7 +438,7 @@ def select_new_type(file_name): # command line input for measurement types
     selected=''
     for mapping in columns_mapping:
       if mapping[0] in cols:
-	selected=selected+'  '+str(mapping[1])+'-'+mapping[0]
+        selected=selected+'  '+str(mapping[1])+'-'+mapping[0]
     print selected
     const=[]
     const_col=raw_input('Add Constant column (enter to proceed): ')
@@ -517,19 +517,19 @@ def plot_this_measurement(): # does the plotting of one files sequences
       select_new_xy(dataset)
     if single_picture: # if the "plot all in one" option is enabled put all measurements of one type together
       if dataset.type()==single_pictures[-1][1]:
-	single_pictures[-1][0].append(dataset)
+        single_pictures[-1][0].append(dataset)
       else:
-	single_pictures.append([[dataset],dataset.type()])
+        single_pictures.append([[dataset],dataset.type()])
     elif plot_data:
       actual_output=plot([dataset],input_file_name,dataset.short_info,[''],plot_with_errorbars)
       if print_plot:
-	print_queue.append(actual_output) # append every plot to the queue schaduled for printing
+        print_queue.append(actual_output) # append every plot to the queue schaduled for printing
 
   if plot_data:
     for picture in single_pictures:
       actual_output=plot(picture[0], input_file_name, '',[dataset.short_info for dataset in picture[0]],plot_with_errorbars)
       if print_plot:
-	print_queue.append(actual_output) # append every plot to the queue schaduled for printing
+        print_queue.append(actual_output) # append every plot to the queue schaduled for printing
   if print_plot:
     print_command_string=print_command
     for plot_file in print_queue:
@@ -581,22 +581,22 @@ for input_file_name in input_file_names: # process every file given in the comma
     for i,dataset in enumerate(measurement): # processing transformations,functions and selecting right measurements
       dataset.number='000000'.replace('0','',6-len(str(len(measurement)+1))+len(str(i+1)))+str(i+1) # set number string depending on the length of the last number
       if unit_transformation: # Calculate a new SQUID longitudinal regression Factor
-	dataset.unit_trans(transformations) # transfrom data to right units
-	dataset.process_funcion(diamagnetic_correction) # make diamagnetic corrections
-	dataset.process_funcion(paramagnetic_correction) # make paramagnetic corrections
-      constant_type=dataset.unit_trans_one(dataset.type(),transformations_const)	
+        dataset.unit_trans(transformations) # transfrom data to right units
+        dataset.process_funcion(diamagnetic_correction) # make diamagnetic corrections
+        dataset.process_funcion(paramagnetic_correction) # make paramagnetic corrections
+      constant_type=dataset.unit_trans_one(dataset.type(),transformations_const)        
       dataset.short_info='at %d ' % constant_type[0]+constant_type[1] # set short info as the value of the constant column
       if list_all:
-	print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),'at %d ' % constant_type[0]+constant_type[1],\
-	'after %d' % (dataset.data[0].values[0]- measurement[0].data[0].values[0]) +dataset.data[0].unit
+        print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),'at %d ' % constant_type[0]+constant_type[1],\
+        'after %d' % (dataset.data[0].values[0]- measurement[0].data[0].values[0]) +dataset.data[0].unit
       if ((i+1>=seq[0])&(i+1<=seq[1])&(((i+1-seq[0]) % inc) == 0)): # Sequence selected?
-	if list_sequences:
-	  print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),'at %d ' % constant_type[0]+constant_type[1],\
-	  'after %d' % (dataset.data[0].values[0]- measurement[0].data[0].values[0]) +dataset.data[0].unit
-	if do_output:
-	  dataset.export(input_file_name+'_'+dataset.number+'.out',info_in_file,column_seperator) # write data into files with sequence numbers      
+        if list_sequences:
+          print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),'at %d ' % constant_type[0]+constant_type[1],\
+          'after %d' % (dataset.data[0].values[0]- measurement[0].data[0].values[0]) +dataset.data[0].unit
+        if do_output:
+          dataset.export(input_file_name+'_'+dataset.number+'.out',info_in_file,column_seperator) # write data into files with sequence numbers      
       else:
-	remove.append(dataset)
+        remove.append(dataset)
     for dataset in remove:
       measurement.remove(dataset)
 

@@ -138,30 +138,30 @@ for argument in sys.argv[1:len(sys.argv)]:
       # Cases of arguments:
     if last_argument_option[0]:
       if last_argument_option[1]=='s':
-	seq=[int(argument),seq[1]]
-	last_argument_option=[True,'s2']
+        seq=[int(argument),seq[1]]
+        last_argument_option=[True,'s2']
       elif last_argument_option[1]=='s2':
-	seq=[seq[0],int(argument)]
-	last_argument_option=[False,'']
+        seq=[seq[0],int(argument)]
+        last_argument_option=[False,'']
       elif last_argument_option[1]=='fit':
-	export_for_fit=True
-	fit_layers=argument
-	last_argument_option=[True,'fit2']
+        export_for_fit=True
+        fit_layers=argument
+        last_argument_option=[True,'fit2']
       elif last_argument_option[1]=='fit2':
-	fit_thicknesses=argument
-	last_argument_option=[True,'fit3']
+        fit_thicknesses=argument
+        last_argument_option=[True,'fit3']
       elif last_argument_option[1]=='fit3':
-	fit_est_roughness=float(argument)
-	last_argument_option=[False,'']
+        fit_est_roughness=float(argument)
+        last_argument_option=[False,'']
       elif last_argument_option[1]=='i':
-	inc=int(argument)
-	last_argument_option=[False,'']
+        inc=int(argument)
+        last_argument_option=[False,'']
       elif last_argument_option[1]=='sep':
-	column_seperator=str(argument)
-	last_argument_option=[False,'']
+        column_seperator=str(argument)
+        last_argument_option=[False,'']
       else:
-	input_file_names.append(argument)
-	last_argument_option=[False,'']
+        input_file_names.append(argument)
+        last_argument_option=[False,'']
     elif argument=='-a':
       single_picture=True
     elif argument=='-l':
@@ -198,11 +198,11 @@ for argument in sys.argv[1:len(sys.argv)]:
       print help_statement()
     else:
       try:
-	['s','s2','i','gs','no','ni','c','sep','l','e','counts','gui','p','logx','logy','comb','fit','ref','debug'].index(argument[1:len(argument)])
+        ['s','s2','i','gs','no','ni','c','sep','l','e','counts','gui','p','logx','logy','comb','fit','ref','debug'].index(argument[1:len(argument)])
       except ValueError:
-	print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
+        print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
       else:
-	last_argument_option=[True,argument[1:len(argument)]]
+        last_argument_option=[True,argument[1:len(argument)]]
   else:
     input_file_names.append(argument)
 
@@ -295,10 +295,10 @@ def find_total_reflection(dataset): # find angle of total reflection from decay 
     position=point[0]
     if point[0]>0.05:
       if max_value<point[1]:
-	max_value=point[1]
+        max_value=point[1]
       elif max_value>(point[1]*3):
-	dataset.index=0
-	return position
+        dataset.index=0
+        return position
   return position
 
 def read_fit_file(file_name,parameters): # load results of fit file
@@ -397,18 +397,18 @@ def plot_this_measurement(): # does the plotting of one files sequences
   for dataset in measurement: # process every sequence in the measurement
     if single_picture: # if the "plot all in one" option is enabled put all measurements of one type together
       if dataset.type()==single_pictures[-1][1]:
-	single_pictures[-1][0].append(dataset)
+        single_pictures[-1][0].append(dataset)
       else:
-	single_pictures.append([[dataset],dataset.type()])
+        single_pictures.append([[dataset],dataset.type()])
     elif plot_data:
       actual_output=plot([dataset],input_file_name,dataset.short_info,[''],plot_with_errorbars)
       if print_plot:
-	print_queue.append(actual_output) # append every plot to the queue schaduled for printing
+        print_queue.append(actual_output) # append every plot to the queue schaduled for printing
   if plot_data:
     for picture in single_pictures:
       actual_output=plot(picture[0], input_file_name, '',[dataset.short_info for dataset in picture[0]],plot_with_errorbars)
       if print_plot:
-	print_queue.append(actual_output) # append every plot to the queue schaduled for printing
+        print_queue.append(actual_output) # append every plot to the queue schaduled for printing
   if print_plot:
     print_command_string=print_command
     for plot_file in print_queue:
@@ -450,44 +450,44 @@ for input_file_name in input_file_names: # process every file given in the comma
       time_col=1
       th=0
       twoth=0
-      phi=0	  
+      phi=0       
       for line in dataset.info.splitlines():
-	strip=line.split('=')
-	if strip[0]=='STEPTIME':
-	  time_col=float(strip[1])
-	if strip[0]=='THETA':
-	  th=float(strip[1])
-	if strip[0]=='2THETA':
-	  twoth=float(strip[1])
-	if strip[0]=='PHI':
-	  phi=float(strip[1])
+        strip=line.split('=')
+        if strip[0]=='STEPTIME':
+          time_col=float(strip[1])
+        if strip[0]=='THETA':
+          th=float(strip[1])
+        if strip[0]=='2THETA':
+          twoth=float(strip[1])
+        if strip[0]=='PHI':
+          phi=float(strip[1])
       if not show_counts:
-	units=dataset.units()
-	dataset.process_funcion(counts_to_cps)
-	dataset.unit_trans([['counts',1,0,'counts/s']])
+        units=dataset.units()
+        dataset.process_funcion(counts_to_cps)
+        dataset.unit_trans([['counts',1,0,'counts/s']])
       if show_logx:
-	dataset.logx=True
+        dataset.logx=True
       if show_logy:
-	dataset.logy=True
+        dataset.logy=True
       dataset.number='000000'.replace('0','',6-len(str(len(measurement)+1))+len(str(i+1)))+str(i+1) # set number string depending on the length of the last number
       dataset.short_info=' started at Th='+str(round(th,4))+' 2Th='+str(round(twoth,4))+' Phi='+str(round(phi,4))
       if list_all:
-	print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),\
-	dataset.short_info
+        print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),\
+        dataset.short_info
       if ((i+1>=seq[0])&(i+1<=seq[1])&(((i+1-seq[0]) % inc) == 0)): # Sequence selected?
-	if list_sequences:
-	  print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),\
-	  dataset.short_info
-	if do_output | gnuplot_script:
-	  dataset.export(input_file_name+'_'+dataset.number+'.out',info_in_file,column_seperator) # write data into files with sequence numbers      
-	if export_for_fit: # export fit files
-	  export_fit(dataset)
-	  simu=read_simulation(input_file_name+'_'+dataset.number+'.sim')
-	  simu.number='1'+dataset.number
-	  simu.short_info='simulation'
-	  refinements.append(simu)
+        if list_sequences:
+          print dataset.number+':',dataset.ydim()+' vs '+dataset.xdim(),\
+          dataset.short_info
+        if do_output | gnuplot_script:
+          dataset.export(input_file_name+'_'+dataset.number+'.out',info_in_file,column_seperator) # write data into files with sequence numbers      
+        if export_for_fit: # export fit files
+          export_fit(dataset)
+          simu=read_simulation(input_file_name+'_'+dataset.number+'.sim')
+          simu.number='1'+dataset.number
+          simu.short_info='simulation'
+          refinements.append(simu)
       else:
-	remove.append(dataset)
+        remove.append(dataset)
     for dataset in remove:
       measurement.remove(dataset)
     for dataset in refinements:

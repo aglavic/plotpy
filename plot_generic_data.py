@@ -361,3 +361,22 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       return measurement_data_plotting.gnuplot_plot\
         (datasets,file_name_prefix, title,names,self.plot_with_errorbars,additional_info=add_info)
 
+  '''
+    change the active dataset by object or name
+  '''
+  def change_active(self, object=None, name=None):
+    name_list=[item[0] for item in self.file_data.items()]
+    name_list.sort()
+    if object!=None:
+      self.active_file_name=object[0]
+      self.active_file_data=object[1]
+      self.index=name_list.index[object[0]]
+    elif name!=None:
+      try:
+        self.active_file_data=self.file_data[name]
+        self.active_file_name=name
+        self.index=name_list.index[name]
+      except KeyError:
+        None
+    else:
+      None

@@ -36,9 +36,9 @@ def gnuplot_plot(datasets,file_name_prefix, title,names,with_errorbars,output_fi
     postscript_export=False
     terminal=gp.set_output_terminal_png
   if with_errorbars|fit_lorentz: # Design of plot changed when using errorbars
-    plotting_param=gp.plotting_parameters_errorbars
+    plotting_param=str(gp.plotting_parameters_errorbars)
   else:
-    plotting_param=gp.plotting_parameters
+    plotting_param=str(gp.plotting_parameters)
   plotting_param=replace_ph(plotting_param,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info) # replace place holders
   gplot=Gnuplot.Gnuplot(persist=1) # if term is x11 the plot will not close
   gnuplot_settings=gp.gnuplot_file_head+\
@@ -64,7 +64,7 @@ def gnuplot_plot(datasets,file_name_prefix, title,names,with_errorbars,output_fi
       gnuplot_settings=gnuplot_settings+gp.settings_3dmap
     else:
       gnuplot_settings=gnuplot_settings+settings_3d
-    plotting_param=gp.plotting_parameters_3d
+    plotting_param=str(gp.plotting_parameters_3d)
   gnuplot_settings=replace_ph(gnuplot_settings+datasets[0].plot_options,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info) # replacing placeholders
 # Manually mimic the Gnuplot plot function to use multiple plots, which is not easyly possible otherwise.
   gplot(gnuplot_settings)
@@ -92,21 +92,21 @@ def gnuplot_plot(datasets,file_name_prefix, title,names,with_errorbars,output_fi
       datalist=dataset.list()
     if (dataset.zdata>=0): # for 3d-Data we have to create a temporal File
       dataset.export(globals.temp_dir+'tmp_data'+str(i)+'.out')
-      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with_=gp.plotting_param.replace('w ','',1),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.zdata+1))]
+      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with_=str(gp.plotting_param.replace('w ','',1)),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.zdata+1))]
     elif fit_lorentz: # for fitting a temporal File is needed, too
       dataset.export(globals.temp_dir+'tmp_data'+str(i)+'.out')
-      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with_=gp.plotting_param.replace('w ','',1),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1))]
+      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with_=str(gp.plotting_param.replace('w ','',1)),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1))]
       # start gnuplot fitting of one dataset
       gp('fit f_'+str(i)+'(x) "'+globals.temp_dir+'tmp_data'+str(i)+'.out" using '+\
       str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1)+\
       ' via I_'+str(i)+','+'x0_'+str(i)+','+'sigma_'+str(i)+','+'BG_'+str(i)+',eta_'+str(i)+'\n')
-      plot2=Gnuplot.PlotItems.Func('f_'+str(i)+'(x)',with_=gp.plotting_parameters_fit.replace('w ','',1))
+      plot2=Gnuplot.PlotItems.Func('f_'+str(i)+'(x)',with_=str(gp.plotting_parameters_fit.replace('w ','',1)))
       function_title="'psd. Voigt fit: x0=\045.4g; FWHM=\045.3g; I=\045.0g; eta=\045.2g',x0_"+\
       str(i)+","+"abs(sigma_"+str(i)+"*2),"+"I_"+str(i)+","+"eta_"+str(i)
       plot2.set_string_option('title',function_title, 'notitle', 'title sprintf(\045s)')
       plot.append(plot2)
     else:
-      plot=[Gnuplot.PlotItems.Data(datalist,with_=plotting_param.replace('w ','',1),title=names[datasets.index(dataset)])]
+      plot=[Gnuplot.PlotItems.Data(datalist,with_=str(plotting_param.replace('w ','',1)),title=names[datasets.index(dataset)])]
     gplot._add_to_queue(plot)
   gplot.refresh()
   return gnuplot_settings#replace_ph(output_file,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info)
