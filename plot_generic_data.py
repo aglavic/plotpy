@@ -112,7 +112,11 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
     for filename in files:
       print "Trying to import '" + filename + "'."
-      self.add_data(self.read_file(filename), filename)
+      datasets=self.read_file(filename)
+      datasets=self.create_numbers(datasets) # enumerate the sequences and sort out unselected
+      if self.unit_transformation:
+        self.make_transformations(datasets) # make unit transformations
+      self.add_data(datasets, filename)
     self.active_file_data=self.file_data[files[0]]
     self.active_file_name=files[0]
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
@@ -275,6 +279,26 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     else:
       print 'File '+filename+' does not exist.'
     return data_list
+  
+  '''
+    give the sequences numbers with leading zeros
+  '''
+  def create_numbers(self, datasets):
+    filtered_datasets=[]
+    for i, dataset in enumerate(datasets):
+      j=i+1
+      # only use sequences inside the boundaries and with the right increment
+      if (j>=self.seq[0]) and (j<=self.seq[1]) and (((j-self.seq[0]) % self.seq_inc) == 0):
+        filtered_datasets.append(dataset)
+        # set number string depending on the length of the last number
+        dataset.number='000000'.replace('0','',6-len(str(len(datasets)+1))+len(str(i+1)))+str(i+1)
+    return filtered_datasets
+  
+  '''
+    Make unit transformations if set in preferences of child classes
+  '''
+  def make_transformations(self, datasets):
+    None
 
   '''
     Function which ither adds file data to the object or replaces
@@ -289,8 +313,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     return self
 
   ''' 
-    function to iterate through the file_data dictionary, object can be used in "for bla in data:"
-    also changes the active_file_data
+    function to iterate through the file_data dictionary, object can be used in "for name in data:"
+    also changes the active_file_data and active_file_name
   '''
   def next(self): 
     name_list=[item[0] for item in self.file_data.items()]
@@ -309,8 +333,18 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   def plot_active(self):
     if not self.single_picture:
       for dataset in self.active_file_data:
-        self.plot(dataset, '', self.active_file_name, [self.active_file_name])
-        
+        self.plot([dataset], self.active_file_name, dataset.short_info, [''])
+    else:
+      self.plot(self.active_file_data, self.active_file_name, '', [dataset.short_info for dataset in self.active_file_data])
+
+  '''
+    plot everything selected from all files
+  '''
+  def plot_all(self):
+    for name in self:
+      print "Plotting '"+ name +"' sequences."
+      self.plot_active()
+  
   '''
     Plot one or a list of datasets
   '''

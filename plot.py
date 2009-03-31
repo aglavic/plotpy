@@ -55,6 +55,7 @@ known_measurement_types={
   piped to a plotting_gui for later use.
 ############################################################################
 '''
+# initialize session and read data files
 if (len(sys.argv) == 1):
   print generic_session.short_help
   exit()
@@ -62,15 +63,13 @@ elif sys.argv[1] in known_measurement_types:
   active_session=known_measurement_types[sys.argv[1]](sys.argv[2:])
 else:
   active_session=generic_session(sys.argv[1:])
-  
 
-'''
 if active_session.use_gui: # start a new gui session
-   plotting_gui.ApplicationMainWindow(active_session)
-   gtk.main()
-else:
-   active_session.plot_all()
-'''
+  import gtk
+  plotting_gui.ApplicationMainWindow(active_session)
+  gtk.main()
+else: # in command line mode, just plot the selected data.
+  active_session.plot_all()
 
 # delete temporal stuff
 active_session.os_cleanup()

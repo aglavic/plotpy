@@ -25,8 +25,6 @@ import gnuplot_preferences #            File containing variables:
 '''
 def gnuplot_plot(datasets,file_name_prefix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''):
   gp=gnuplot_preferences
-  if globals.debug:
-    globals.debug_file.write('call: gnuplot_plot('+str(datasets)+','+str(file_name_prefix)+ ','+  str(title)+ ','+ str(names)+',' + str(with_errorbars)+ ','+ str(output_file)+ ','+ str(additional_info)+ ','+ str(fit_lorentz)+ ','+ str(add_preferences)+')\n')
   import Gnuplot
   
   sample_name=datasets[0].sample_name
@@ -94,10 +92,10 @@ def gnuplot_plot(datasets,file_name_prefix, title,names,with_errorbars,output_fi
       datalist=dataset.list()
     if (dataset.zdata>=0): # for 3d-Data we have to create a temporal File
       dataset.export(globals.temp_dir+'tmp_data'+str(i)+'.out')
-      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with=plotting_param.replace('w ','',1),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.zdata+1))]
+      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with=gp.plotting_param.replace('w ','',1),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.zdata+1))]
     elif fit_lorentz: # for fitting a temporal File is needed, too
       dataset.export(globals.temp_dir+'tmp_data'+str(i)+'.out')
-      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with=plotting_param.replace('w ','',1),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1))]
+      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with=gp.plotting_param.replace('w ','',1),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1))]
       # start gnuplot fitting of one dataset
       gp('fit f_'+str(i)+'(x) "'+globals.temp_dir+'tmp_data'+str(i)+'.out" using '+\
       str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1)+\
@@ -276,7 +274,7 @@ class fit_function:
       return False
     for number in columns:
       if not type(number) is int:
-	return False
+        return False
     return True
 
   def test_function(self,function): # test if the function only contains x, parameter identifyers or gnuplot functions
@@ -339,9 +337,9 @@ class fit_function:
     for identifyer in self.par_identifyer: # add an index to every identifyer for the via
       fit_string=fit_string+identifyer+'_'+str(i)
       if not identifyer==self.par_identifyer[-1]:
-	fit_string=fit_string+','
+        fit_string=fit_string+','
       else:
-	fit_string=fit_string+'\n'
+        fit_string=fit_string+'\n'
     return fit_string
 
 
