@@ -85,7 +85,7 @@ class ApplicationMainWindow(gtk.Window):
         self.set_screen(parent.get_screen())
     except AttributeError:
         self.connect('destroy', lambda *w: self.main_quit())
-    self.set_title('Plotting GUI - ' + self.measurement[0].sample_name)
+    self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
     self.set_default_size(self.width, self.height)
 
 #+++++++Build widgets in table structure++++++++#
@@ -403,6 +403,8 @@ class ApplicationMainWindow(gtk.Window):
       self.logy.set_active(self.measurement[self.index_mess].logy)
       self.logz.set_active(self.measurement[self.index_mess].logz)
       self.rebuild_menus()
+      self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
+
 
   def change(self,action): # change different plot settings triggered by different events
     if action.get_name()=='x-number':
@@ -459,6 +461,9 @@ class ApplicationMainWindow(gtk.Window):
     index=int(action.get_name().split('-')[-1])
     object=self.active_session.file_data.items()[index]
     self.active_session.change_active(object)
+    self.measurement=self.active_session.active_file_data
+    self.input_file_name=object[0]
+    self.index_mess=0
     self.replot()
 
   def change_range(self,action): # change plotting range according to textinput
@@ -1113,15 +1118,17 @@ class ApplicationMainWindow(gtk.Window):
     return measurement_data_plotting.gnuplot_plot_script(datasets,file_name_prefix, self.script_suf, title,names,with_errorbars,output_file,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
 
   def replot(self,action=None): # recreate the current plot and clear Statusbar
-      global errorbars
-      self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
-      self.label.set_text(self.measurement[self.index_mess].sample_name)
-      self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
-      self.label2.set_text(self.measurement[self.index_mess].short_info)
-      self.last_plot_text=self.plot([self.measurement[self.index_mess]],self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
-      self.set_image()
-      self.reset_statusbar()
-      self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
+    global errorbars
+    self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
+    self.label.set_text(self.measurement[self.index_mess].sample_name)
+    self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
+    self.label2.set_text(self.measurement[self.index_mess].short_info)
+    self.last_plot_text=self.plot([self.measurement[self.index_mess]],self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+    self.set_image()
+    self.reset_statusbar()
+    self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
+    self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
+
 
 
   def reset_statusbar(self): # clear statusbar
@@ -1163,6 +1170,10 @@ class ApplicationMainWindow(gtk.Window):
         self.change ),
     ( "y-number", None,                             # name, stock id
         "Point Number", None,                    # label, accelerator
+        None,                                   # tooltip
+        self.change ),
+    ( "FilesMenu", None,                             # name, stock id
+        "Change active file", None,                    # label, accelerator
         None,                                   # tooltip
         self.change ),
 )

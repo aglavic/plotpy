@@ -370,7 +370,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     if object!=None:
       self.active_file_name=object[0]
       self.active_file_data=object[1]
-      self.index=name_list.index[object[0]]
+      self.index=name_list.index(object[0])
     elif name!=None:
       try:
         self.active_file_data=self.file_data[name]
