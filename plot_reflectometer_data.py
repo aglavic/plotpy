@@ -253,23 +253,23 @@ class reflectometer_session(generic_session):
     return None
 
   def refine_scaling(self, dataset, layers,SF,BG,constrain_array): # refine the scaling factor within the region of total reflection
-    data_lines=dataset.export('/var/tmp/fit_temp.res',False,' ',xfrom=0.005,xto=self.find_total_reflection(dataset))
-    self.create_ent_file(layers,data_lines,'/var/tmp/fit_temp.ent',back_ground=BG,scaling_factor=SF,\
+    data_lines=dataset.export(self.temp_dir+'fit_temp.res',False,' ',xfrom=0.005,xto=self.find_total_reflection(dataset))
+    self.create_ent_file(layers,data_lines,self.temp_dir+'fit_temp.ent',back_ground=BG,scaling_factor=SF,\
       constrains=constrain_array,fit=1,fit_params=[len(layers)*4+2])
-    retcode = subprocess.call(['fit-script', '/var/tmp/fit_temp.res', '/var/tmp/fit_temp.ent', '/var/tmp/fit_temp','20'])
-    scaling_factor=self.read_fit_file('/var/tmp/fit_temp.ref',[str(len(layers)*4+2)])[str(len(layers)*4+2)]
+    retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','20'])
+    scaling_factor=self.read_fit_file(self.temp_dir+'fit_temp.ref',[str(len(layers)*4+2)])[str(len(layers)*4+2)]
     return scaling_factor
 
   def refine_roughnesses(self, dataset, layers,SF,BG,constrain_array): # refine the roughnesses and background after the angle of total reflection
     fit_p=[i*4+4 for i in range(len(layers)-1)]
     fit_p.append(len(layers)*4-1)
     fit_p.sort()
-    data_lines=dataset.export('/var/tmp/fit_temp.res',False,' ',xfrom=self.find_total_reflection(dataset))
-    self.create_ent_file(layers,data_lines,'/var/tmp/fit_temp.ent',back_ground=BG,scaling_factor=SF,\
+    data_lines=dataset.export(self.temp_dir+'fit_temp.res',False,' ',xfrom=self.find_total_reflection(dataset))
+    self.create_ent_file(layers,data_lines,self.temp_dir+'fit_temp.ent',back_ground=BG,scaling_factor=SF,\
       constrains=constrain_array,fit=1,fit_params=fit_p)
-    retcode = subprocess.call(['fit-script', '/var/tmp/fit_temp.res', '/var/tmp/fit_temp.ent', '/var/tmp/fit_temp','50'])
+    retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'])
     fit_p=map(str,fit_p)
-    parameters=self.read_fit_file('/var/tmp/fit_temp.ref',fit_p)
+    parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref',fit_p)
     for i,layer in enumerate(layers):
       if i<len(layers)-1:
         layer[2]=abs(parameters[str(i*4+4)])
