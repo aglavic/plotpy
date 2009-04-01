@@ -38,32 +38,35 @@ class generic_session():
   long_help=\
 """
 Script to plot data of measurements using gnuplot.
+
 Usage: plot.py [type] [files] [options]
 \t\t type can be one of 'squid', '4circle', 'refl' or none
 
-\tOptions:
-\t\t--help\t\tPrint this information, start plot.py [type] --help for a type specific help
+Options:
+\t--help\t\tPrint this information, start plot.py [type] --help for a type specific help
 
-Sequence settings:
-\t\t-a\t\tPlot all sequences in one picture
-\t\t-s [a] [b]\tOnly plot sequence a to b (standard is 1 to 10000)
-\t\t-s2 [b]\t\tSet last sequence to be plotted
-\t\t-i [inc]\tPlot only every inc sequence
-\t\t-l\t\tList sequences in file.
-\t\t-ls\t\tList selected Sequences.
+\tSequence settings:
+\t-a\t\tPlot all sequences in one picture
+\t-s [a] [b]\tOnly plot sequence a to b (standard is 1 to 10000)
+\t-s2 [b]\t\tSet last sequence to be plotted
+\t-i [inc]\tPlot only every inc sequence
+\t-l\t\tList sequences in file.
+\t-ls\t\tList selected Sequences.
 
-Output settings:
-\t\t-gs\t\tUse gnuplot in script mode, in the case Gnuplot.py is not working (slower)
-\t\t-o\t\tOutput the data to .out files for later use in other programms.
-\t\t-ni\t\tDon't put informational header in output files. (can be helpful for usage with other programs)
-\t\t-c\t\tJust convert files, do not plot anything
-\t\t-sep [sep]\tUse different seperator for output files (if -gs is given it is ignored)
-\t\t-p\t\tSend plots to printer specified in gnuplot_perferences.py
+\tOutput settings:
+\t-gs\t\tUse gnuplot in script mode, in the case Gnuplot.py is not working (slower)
+\t-o\t\tOutput the data to .out files for later use in other programms.
+\t-ni\t\tDon't put informational header in output files. (can be helpful for usage with other programs)
+\t-c\t\tJust convert files, do not plot anything
+\t-sep [sep]\tUse different seperator for output files (if -gs is given it is ignored)
+\t-p\t\tSend plots to printer specified in gnuplot_perferences.py
 
-Plott settings:
-\t\t-e\t\tPlot with errorbars
-\t\t-scp\t\tUse script mode, no GUI will be shown
+\tPlott settings:
+\t-e\t\tPlot with errorbars
+\t-scp\t\tUse script mode, no GUI will be shown
 
+\tGeneral Data treatment:
+\t-no-trans\tdon't make a unit transformation
 """
   long_help_end=\
 """
@@ -104,10 +107,10 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     files=self.read_arguments(arguments) # get filenames and set options
     if files==None: # read_arguments returns none, if help option is set
       print self.long_help + self.specific_help + self.long_help_end
-      return None
+      exit()
     elif len(files) < 1: # show help, if there is no file in the list
       print self.short_help
-      return None
+      exit()
     files.sort()
     #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
     for filename in files:
@@ -185,7 +188,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
         elif argument=='-no-trans':
           self.unit_transformation=False
         elif argument=='--help':
-          print self.long_help + self.specific_help + self.long_help_end
+          return None
         elif self.read_argument_add(argument,  last_argument_option)[0]:
           last_argument_option=self.read_argument_add(argument,  last_argument_option)[1]
         else:

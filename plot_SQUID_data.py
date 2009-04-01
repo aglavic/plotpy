@@ -49,13 +49,12 @@ class squid_session(generic_session):
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   specific_help=\
 '''
-SQUID-Data treatment:
-\t\t-para [C]\tInclude paramagnetic correction factor (C/T) [emu*K/Oe]
-\t\t-dia [Chi]\tInclude diamagnetic correction in [10^-9 emu/Oe]
-\t\t-dia-calc [e] [m]\tAdd diamagnetic correction of sample containing elements e
-\t\t\t\t\t with complete mass m in mg. 
-\t\t\t\t\t e is given for example as 'La_1-Fe_2-O_4','la_1-fe2+_2-o_4' or 'La-Fe_2-O_4'.
-\t\t-no-trans\tdon't make a unit transformation
+\tSQUID-Data treatment:
+\t-para [C]\tInclude paramagnetic correction factor (C/T) [emu*K/Oe]
+\t-dia [Chi]\tInclude diamagnetic correction in [10^-9 emu/Oe]
+\t-dia-calc [e] [m]\tAdd diamagnetic correction of sample containing elements e
+\t\t\t\t with complete mass m in mg. 
+\t\t\t\t e is given for example as 'La_1-Fe_2-O_4','la_1-fe2+_2-o_4' or 'La-Fe_2-O_4'.
 '''
   #------------------ help text strings ---------------
 

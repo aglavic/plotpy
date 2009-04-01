@@ -70,6 +70,7 @@ elif sys.argv[1] in known_measurement_types:
 else:
   active_session=generic_session(sys.argv[1:])
 
+
 if active_session.use_gui: # start a new gui session
   import gtk
   plotting_gui.ApplicationMainWindow(active_session)

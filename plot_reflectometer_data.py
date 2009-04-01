@@ -47,8 +47,8 @@ class reflectometer_session(generic_session):
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   specific_help=\
 '''
-Reflectometer-Data treatment:
-\t\t-counts\t\tShow actual counts, not counts/s
+\tReflectometer-Data treatment:
+\t-counts\t\tShow actual counts, not counts/s
 '''
   #------------------ help text strings ---------------
 

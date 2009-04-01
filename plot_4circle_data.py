@@ -49,8 +49,8 @@ class circle_session(generic_session):
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   specific_help=\
 '''
-4 CIRCLE-Data treatment:
-\t\t-counts\t\tShow actual counts, not counts/s
+\t4 CIRCLE-Data treatment:
+\t-counts\t\tShow actual counts, not counts/s
 '''
   #------------------ help text strings ---------------
 
