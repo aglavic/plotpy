@@ -126,7 +126,7 @@ class reflectometer_session(generic_session):
   '''
     Add the data of a new file to the session.
     In addition to generic_session counts per secong
-    corrections are performed here, too.  
+    corrections and fiting are performed here, too.  
   '''
   def add_file(self, filename, append=True):
     datasets=generic_session.add_file(self, filename, append)
@@ -183,9 +183,11 @@ class reflectometer_session(generic_session):
   
   #++++ functions for fitting with fortran program by E. Kentzinger ++++
 
-  def create_ent_file(self, array,points,ent_file_name,\
-    back_ground=0,resolution=3.5,scaling_factor=10,theta_max=2.3,fit=0,fit_params=[1,2],constrains=[]\
-    ): # creates an entrance file for fit.f90 script
+  '''
+    create a .ent file for fit.f90 script from given parameters
+  '''
+  def create_ent_file(self, array, points, ent_file_name, back_ground=0, resolution=3.5, \
+                      scaling_factor=10, theta_max=2.3, fit=0, fit_params=[1], constrains=[]):
     from scattering_length_table import scattering_length_densities
     ent_file=open(ent_file_name,'w')
     ent_file.write('8048.0\tscattering radiaion energy (Cu-Ka)\n'+\
@@ -225,6 +227,10 @@ class reflectometer_session(generic_session):
       str(constrain).strip('[').strip(']').replace(',',' ')+'\t\tindices of those parameters\n')
     ent_file.close()
 
+  '''
+    try to find the angle of total reflection by
+    searching for a decrease of intensity to 1/3
+  '''
   def find_total_reflection(self, dataset): # find angle of total reflection from decay to 1/3 of maximum
     position=0
     max_value=0
@@ -238,7 +244,10 @@ class reflectometer_session(generic_session):
           return position
     return position
 
-  def read_fit_file(self, file_name,parameters): # load results of fit file
+  '''
+    get fit-parameters back from the file
+  '''
+  def read_fit_file(self, file_name, parameters): # load results of fit file
     result={}
     fit_file=open(file_name,'r')
     test_fit=fit_file.readlines()
@@ -252,19 +261,25 @@ class reflectometer_session(generic_session):
           return result
     return None
 
+  '''
+    try to fit the scaling factor before the total reflection angle
+  '''
   def refine_scaling(self, dataset, layers,SF,BG,constrain_array): # refine the scaling factor within the region of total reflection
-    data_lines=dataset.export(self.temp_dir+'fit_temp.res',False,' ',xfrom=0.005,xto=self.find_total_reflection(dataset))
-    self.create_ent_file(layers,data_lines,self.temp_dir+'fit_temp.ent',back_ground=BG,scaling_factor=SF,\
-      constrains=constrain_array,fit=1,fit_params=[len(layers)*4+2])
+    data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=0.005,xto=self.find_total_reflection(dataset))
+    self.create_ent_file(layers,data_lines,self.temp_dir+'fit_temp.ent', back_ground=BG, scaling_factor=SF,\
+      constrains=constrain_array, fit=1,fit_params=[len(layers)*4+2])
     retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','20'])
-    scaling_factor=self.read_fit_file(self.temp_dir+'fit_temp.ref',[str(len(layers)*4+2)])[str(len(layers)*4+2)]
+    scaling_factor=self.read_fit_file(self.temp_dir+'fit_temp.ref', [str(len(layers)*4+2)])[str(len(layers)*4+2)]
     return scaling_factor
 
+  '''
+    try to fit the layer roughnesses
+  '''
   def refine_roughnesses(self, dataset, layers,SF,BG,constrain_array): # refine the roughnesses and background after the angle of total reflection
     fit_p=[i*4+4 for i in range(len(layers)-1)]
     fit_p.append(len(layers)*4-1)
     fit_p.sort()
-    data_lines=dataset.export(self.temp_dir+'fit_temp.res',False,' ',xfrom=self.find_total_reflection(dataset))
+    data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.find_total_reflection(dataset))
     self.create_ent_file(layers,data_lines,self.temp_dir+'fit_temp.ent',back_ground=BG,scaling_factor=SF,\
       constrains=constrain_array,fit=1,fit_params=fit_p)
     retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'])
@@ -284,7 +299,7 @@ class reflectometer_session(generic_session):
   '''
   def export_fit(self, dataset, input_file_name): 
     fit_thick=self.fit_thicknesses
-    # create array of layers
+    #+++++++++++++++++++ create array of layers +++++++++++++++++++
     first_split=self.fit_layers.split('-')
     layer_array=[]
     constrain_array=[]
@@ -311,19 +326,29 @@ class reflectometer_session(generic_session):
           fit_thick=fit_thick.split('-',1)[1]
       else:
           fit_thick=''
-    dataset.unit_trans([['Theta','\\302\\260',4*math.pi/1.54/180*math.pi,0,'q','A^{-1}'],['2 Theta','\\302\\260',2*math.pi/1.54/180*math.pi,0,'q','A^{-1}']])
-    data_lines=dataset.export(input_file_name+'_'+dataset.number+'.res',False,' ') # write data into files with sequence numbers in format ok for fit.f90    
+    #------------------- create array of layers -------------------
+      # convert x values from angle to q
+    dataset.unit_trans([['Theta', '\\302\\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
+                      ['2 Theta', '\\302\\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])
+      # write data into files with sequence numbers in format ok for fit.f90    
+    data_lines=dataset.export(input_file_name+'_'+dataset.number+'.res',False,' ') 
+      # first guess for scaling factor is the maximum intensity
     scaling_fac=(dataset.max(xstart=0.005)[1]/1e5)
+      # first guess for the background is the minimum intensity
     back_gr=dataset.min()[1]
-    if self.try_refine: # Try to refine the scaling factorn, background and roughnesses
+    #+++++ Try to refine the scaling factorn and roughnesses +++++
+    if self.try_refine: 
       scaling_fac=self.refine_scaling(dataset, layer_array,scaling_fac,back_gr,constrain_array)
       result=self.refine_roughnesses(dataset, layer_array,scaling_fac,back_gr,constrain_array)
       layer_array=result[0]
       back_gr=result[1]
-    # create final input file and make a simulation
-    self.create_ent_file(layer_array,data_lines,input_file_name+'_'+dataset.number+'.ent',back_ground=back_gr,\
-      scaling_factor=scaling_fac,constrains=constrain_array)
+    #----- Try to refine the scaling factorn and roughnesses -----
+    #+++++++ create final input file and make a simulation +++++++
+    fit_p=[i*4+1 for i in range(len(layer_array)-1)]
+    self.create_ent_file(layer_array, data_lines, input_file_name+'_'+dataset.number+'.ent', back_ground=back_gr,\
+                          scaling_factor=scaling_fac, constrains=constrain_array,  fit_params=fit_p)
     retcode = subprocess.call(['fit-script', input_file_name+'_'+dataset.number+'.res',\
       input_file_name+'_'+dataset.number+'.ent', input_file_name+'_'+dataset.number])
+    #------- create final input file and make a simulation -------
 
   #---- functions for fitting with fortran program by E. Kentzinger ----

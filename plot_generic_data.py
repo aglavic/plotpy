@@ -118,12 +118,6 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     elif len(files) < 1: # show help, if there is no file in the list
       print self.short_help
       exit()
-    files.sort()
-    #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
-    for filename in files:
-      self.add_file(filename)
-    self.active_file_data=self.file_data[files[0]]
-    self.active_file_name=files[0]
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     self.os_path_stuff() # create temp folder according to OS
     if (not self.gnuplot_script): # verify gnuplot.py is installed
@@ -138,6 +132,12 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       except ImportError:
         print "You have to install pygtk to run in GUI-mode, falling back to command-line mode!"
         self.use_gui=False
+    files.sort()
+    #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
+    for filename in files:
+      self.add_file(filename)
+    self.active_file_data=self.file_data[files[0]]
+    self.active_file_name=files[0]
     #---------------- class consturction over ---------------------
 
     
