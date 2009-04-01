@@ -2,7 +2,7 @@
 #################################################################################################
 #                     Script to plot 4Circle-measurements with gnuplot                          #
 #                                       last changes:                                           #
-#                                        13.12.2008                                             #
+#                                        01.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #

@@ -2,7 +2,7 @@
 #################################################################################################
 #                     Script to plot reflectometer uxd-files with gnuplot                       #
 #                                       last changes:                                           #
-#                                        13.12.2008                                             #
+#                                        01.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
@@ -33,6 +33,82 @@
 #################################################################################################
 
 # Pleas do not make any changes here unless you know what you are doing.
+
+# import generic_session, which is the parent class for the squid_session
+from plot_generic_data import generic_session
+# importing preferences and data readout
+import reflectometer_read_data
+import reflectometer_preferences
+
+'''
+  Class to handle reflectometer data sessions
+'''
+class reflectometer_session(generic_session):
+  #++++++++++++++ help text string +++++++++++++++++++++++++++
+  specific_help=\
+'''
+Reflectometer-Data treatment:
+\t\t-counts\t\tShow actual counts, not counts/s
+'''
+  #------------------ help text strings ---------------
+
+  #++++++++++++++++++ local variables +++++++++++++++++
+  show_counts=False
+  #------------------ local variables -----------------
+
+  
+  '''
+    class constructor expands the generic_session constructor
+  '''
+  def __init__(self, arguments):
+    self.data_columns=reflectometer_preferences.data_columns
+    generic_session.__init__(self, arguments)
+    
+  
+  '''
+    additional command line arguments for reflectometer sessions
+  '''
+  def read_argument_add(self, argument, last_argument_option=[False, '']):
+    found=True
+    if (argument[0]=='-') or last_argument_option[0]:
+      # Cases of arguments:
+      if last_argument_option[0]:
+        found=False
+      elif argument=='-counts':
+        show_counts=True
+      else:
+        found=False
+    return (found, last_argument_option)
+
+
+  '''
+    function to read data files
+  '''
+  def read_file(self, file_name):
+    return reflectometer_read_data.read_data(file_name,self.data_columns)
+  
+  '''
+    create a specifig menu for the Reflectometer session
+  '''
+  def create_menu(self):
+    # Create XML for squid menu
+    string='''
+      <menu action='ReflectometerMenu'>
+      
+      </menu>
+    '''
+    # Create actions for the menu
+    actions=(
+            ( "ReflectometerMenu", None,                             # name, stock id
+                "Reflectometer", None,                    # label, accelerator
+                None,                                   # tooltip
+                None ),
+             )
+    return string,  actions
+
+  
+'''
+################### old code, that will be deleted after plot.py works propperly ##############
 
 #How to use this script:
 def short_help():
@@ -507,3 +583,4 @@ else:
   for file_name in os.listdir(globals.temp_dir):
     os.remove(globals.temp_dir+file_name)
   os.rmdir(globals.temp_dir)
+'''

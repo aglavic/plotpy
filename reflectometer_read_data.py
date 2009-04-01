@@ -21,10 +21,10 @@ def read_data(input_file,data_columns,measurement_data=[]): #read the datafile w
     while len(input_file_lines)>0:
       measurement_info=read_header(input_file_lines)
       if measurement_info=='NULL':
-	break
+        break
       sequence=read_data_lines(input_file_lines,measurement_info,data_columns)
       if not sequence=='NULL':
-	measurement_data.append(sequence)
+        measurement_data.append(sequence)
     return measurement_data
   else:
     print 'File '+input_file+' does not exist.'
@@ -89,7 +89,7 @@ def read_data_line(input_file_line): #read one line and output data as list
     else:
       line=input_file_line.strip().split()
       if len(line)<2:
-	return 'NULL'
+        return 'NULL'
       return [float(line[0]),float(line[1]),math.sqrt(float(line[1]))]
     
 def read_data_last_line(input_file_lines,columns): #returns second last line of one sequence for type finding, second last because of possibility of abborded scans.
