@@ -135,9 +135,11 @@ class squid_session(generic_session):
     string='''
       <menu action='SquidMenu'>
         <menuitem action='SquidDia'/>
+        <menuitem action='SquidPara'/>
       </menu>
     '''
-    # Create actions for the menu
+    # Create actions for the menu, functions are invoked with the window as
+    # third parameter to make interactivity with the GUI possible
     actions=(
             ( "SquidMenu", None,                             # name, stock id
                 "SQUID", None,                    # label, accelerator
@@ -146,7 +148,11 @@ class squid_session(generic_session):
             ( "SquidDia", None,                             # name, stock id
                 "Diamagnetic Correction", None,                    # label, accelerator
                 None,                                   # tooltip
-                None ),
+                self.toggle_correction ),
+            ( "SquidPara", None,                             # name, stock id
+                "Paramagnetic Correction", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.toggle_correction ),
              )
     return string,  actions
   
@@ -163,8 +169,14 @@ class squid_session(generic_session):
     for dataset in datasets:
       if correct_dia:
         dataset.process_funcion(self.diamagnetic_correction)
+        dataset.dia_corrected=True
+      else:
+        dataset.dia_corrected=False
       if correct_para:
         dataset.process_funcion(self.paramagnetic_correction)
+        dataset.para_corrected=True
+      else:
+        dataset.para_corrected=False
       # name the dataset
       constant_type=dataset.unit_trans_one(dataset.type(),SQUID_preferences.transformations_const)        
       dataset.short_info='at %d ' % constant_type[0]+constant_type[1] # set short info as the value of the constant column
@@ -191,6 +203,22 @@ class squid_session(generic_session):
         mag=mapping[1]
     output_data[mag]=output_data[mag] + output_data[field] * self.dia_mag_correct # calculate the linear correction
     return output_data
+  # undo the correction
+  def diamagnetic_correction_undo(self, input_data):
+    output_data=input_data
+    # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
+    field=1
+    mag=3
+    for mapping in self.columns_mapping: 
+      # selection of the columns for H and M, only works with right columns_mapping settings in SQUID_preferences.py
+      if mapping[2][0]=='H':
+        field=mapping[1]
+      if mapping[2][0]=='M_rso':
+        mag=mapping[1]
+      if mapping[2][0]=='M_ac':
+        mag=mapping[1]
+    output_data[mag]=output_data[mag] - output_data[field] * self.dia_mag_correct # calculate the linear correction
+    return output_data
 
   '''
     Calculate a paramagnetic correction for one datapoint.
@@ -215,6 +243,47 @@ class squid_session(generic_session):
         temp=mapping[1]
     output_data[mag]=output_data[mag] - output_data[field] * self.para[0] / (output_data[temp]-self.para[1]) # calculate the paramagnetic correction
     return output_data
+  # undo the correction
+  def paramagnetic_correction_undo(self, input_data):
+    output_data=input_data
+    # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
+    field=1
+    temp=2
+    mag=3
+    for mapping in self.columns_mapping: 
+      # selection of the columns for H and M, only works with right columns_mapping settings in SQUID_preferences.py
+      if mapping[2][0]=='H':
+        field=mapping[1]
+      if mapping[2][0]=='M_rso':
+        mag=mapping[1]
+      if mapping[2][0]=='M_ac':
+        mag=mapping[1]
+      if mapping[2][0]=='T':
+        temp=mapping[1]
+    output_data[mag]=output_data[mag] + output_data[field] * self.para[0] / (output_data[temp]-self.para[1]) # calculate the paramagnetic correction
+    return output_data
+  
+  '''
+    do or undo dia-/paramagnetic correction
+  '''
+  def toggle_correction(self, action, window):
+    name=action.get_name()
+    for dataset in self.active_file_data:
+      if name=='SquidDia':
+        if dataset.dia_corrected:
+          dataset.process_funcion(self.diamagnetic_correction_undo)
+          dataset.dia_corrected=False
+        else:
+          dataset.process_funcion(self.diamagnetic_correction)
+          dataset.dia_corrected=True
+      if name=='SquidPara':
+        if dataset.para_corrected:
+          dataset.process_funcion(self.paramagnetic_correction_undo)
+          dataset.para_corrected=False
+        else:
+          dataset.process_funcion(self.paramagnetic_correction)
+          dataset.para_corrected=True
+    window.replot()
   
   
 '''

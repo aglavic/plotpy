@@ -1171,6 +1171,12 @@ class ApplicationMainWindow(gtk.Window):
 
 #+++++++++++++++++++++Functions responsible for menus and toolbar++++++++++++++++++++++#
 
+  '''
+    Create XML text for the menu and toolbar creation. In addition the variable
+    actions are stored in a list. (See __create_action_group function)
+    The XML text is used for the UIManager to create the bars,for more 
+    information see the pygtk documentation for the UIManager
+  '''
   def build_menu(self): # build the menu-/toolbar, especially for the x and y menus
     self.added_items=(( "xMenu", None,                             # name, stock id
         "x-axes", None,                    # label, accelerator
@@ -1289,7 +1295,7 @@ class ApplicationMainWindow(gtk.Window):
     #++++++++++++++ create session specific menu ++++++++
     specific_menu_items=self.active_session.create_menu()
     output+=specific_menu_items[0]
-    self.added_items+=specific_menu_items[1]
+    self.session_added_items=specific_menu_items[1]
     #-------------- create session specific menu --------
     output+='''
       <separator name='static13'/>
@@ -1313,6 +1319,12 @@ class ApplicationMainWindow(gtk.Window):
     </ui>'''
     return output
 
+  '''
+    Create actions for menus and toolbar.
+    Every entry creates a gtk.Action and the function returns a gtk.ActionGroup.
+    When the action is triggered it calls to a function.
+    For more information see the pygtk documentation for the UIManager
+  '''
   def __create_action_group(self): # define the actions for every menu-/toolbar entry
       entries = (
         ( "FileMenu", None, "_File" ),               # name, stock id, label
@@ -1407,6 +1419,7 @@ class ApplicationMainWindow(gtk.Window):
       # Create the menubar and toolbar
       action_group = gtk.ActionGroup("AppWindowActions")
       action_group.add_actions(entries)
+      action_group.add_actions(self.session_added_items, self)
       return action_group
 
 # Build new menu and toolbar structure
