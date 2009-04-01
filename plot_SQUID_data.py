@@ -2,7 +2,7 @@
 #################################################################################################
 #                     Script to plot SQUID-measurements with gnuplot                            #
 #                                       last changes:                                           #
-#                                        31.03.2009                                             #
+#                                        01.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #

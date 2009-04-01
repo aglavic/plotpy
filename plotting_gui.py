@@ -395,7 +395,7 @@ class ApplicationMainWindow(gtk.Window):
       self.label.set_text(self.measurement[self.index_mess].sample_name)
       self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
       self.label2.set_text(self.measurement[self.index_mess].short_info)
-      self.last_plot_text= self.plot([self.measurement[self.index_mess]],self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+      self.last_plot_text= self.plot(self.active_session, [self.measurement[self.index_mess]],self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
       self.set_image()
       self.reset_statusbar()
       self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
@@ -945,7 +945,7 @@ class ApplicationMainWindow(gtk.Window):
     global errorbars
     if action.get_name()=='ExportAll':
       for dataset in self.measurement:
-        self.last_plot_text=self.plot([dataset],self.input_file_name,dataset.short_info,[''],errorbars,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+        self.last_plot_text=self.plot(self.active_session, [dataset],self.input_file_name,dataset.short_info,[''],errorbars,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
         self.reset_statusbar()
         self.statusbar.push(0,'Export plot number '+dataset.number+'... Done!')
     elif action.get_name()=='MultiPlotExport':
@@ -966,14 +966,14 @@ class ApplicationMainWindow(gtk.Window):
         filter.add_pattern("*")
         file_dialog.add_filter(filter)
       # show multiplot on screen before the file is actually selected
-        self.last_plot_text=self.plot([self.measurement[index] for index in plotlist], self.input_file_name, self.measurement[plotlist[0]].short_info, [self.measurement[index].short_info for index in plotlist], errorbars,self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)     
+        self.last_plot_text=self.plot(self.active_session, [self.measurement[index] for index in plotlist], self.input_file_name, self.measurement[plotlist[0]].short_info, [self.measurement[index].short_info for index in plotlist], errorbars,self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)     
         self.label.set_width_chars(len('Multiplot title')+5)
         self.label.set_text('Multiplot title')
         self.set_image()
         response = file_dialog.run()
         if response == gtk.RESPONSE_OK:
           multi_file_name=file_dialog.get_filename()
-          self.last_plot_text=self.plot([self.measurement[index] for index in plotlist], self.input_file_name, self.measurement[plotlist[0]].short_info, [self.measurement[index].short_info for index in plotlist], errorbars,multi_file_name,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+          self.last_plot_text=self.plot(self.active_session, [self.measurement[index] for index in plotlist], self.input_file_name, self.measurement[plotlist[0]].short_info, [self.measurement[index].short_info for index in plotlist], errorbars,multi_file_name,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
         # give user information in Statusbar
           self.reset_statusbar()
           self.statusbar.push(0,'Export multi-plot '+multi_file_name+'... Done!')
@@ -982,7 +982,7 @@ class ApplicationMainWindow(gtk.Window):
     elif action.get_name()=='MultiPlot':
       for plotlist in self.multiplot:
         if self.index_mess in plotlist:
-          self.last_plot_text=self.plot([self.measurement[index] for index in plotlist], self.input_file_name, self.measurement[plotlist[0]].short_info, [self.measurement[index].short_info for index in plotlist], errorbars,self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)   
+          self.last_plot_text=self.plot(self.active_session, [self.measurement[index] for index in plotlist], self.input_file_name, self.measurement[plotlist[0]].short_info, [self.measurement[index].short_info for index in plotlist], errorbars,self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)   
           self.label.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
           self.label.set_text(self.measurement[self.index_mess].short_info)
           self.set_image()
@@ -1012,7 +1012,7 @@ class ApplicationMainWindow(gtk.Window):
           return False
         file_dialog.destroy()
     #----------------File selection dialog-------------------#
-      self.last_plot_text=self.plot([self.measurement[self.index_mess]], self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars,new_name,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+      self.last_plot_text=self.plot(self.active_session, [self.measurement[self.index_mess]], self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars,new_name,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
       self.reset_statusbar()
       self.statusbar.push(0,'Export plot number '+self.measurement[self.index_mess].number+'... Done!')
 
@@ -1020,7 +1020,7 @@ class ApplicationMainWindow(gtk.Window):
     global errorbars
     if action.get_name()=='Print':
       term='postscript landscape enhanced colour'
-      self.last_plot_text=self.plot([self.measurement[self.index_mess]],self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.ps',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+      self.last_plot_text=self.plot(self.active_session, [self.measurement[self.index_mess]],self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.ps',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
       self.reset_statusbar()
       self.statusbar.push(0,'Printed with: '+print_command)
       os.popen2(print_command+self.active_session.temp_dir+'plot_temp.ps')
@@ -1028,7 +1028,7 @@ class ApplicationMainWindow(gtk.Window):
       term='postscript landscape enhanced colour'
       print_string=print_command
       for dataset in self.measurement: # combine all plot files in one print statement
-        self.last_plot_text=self.plot([dataset],self.input_file_name,dataset.short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp_'+dataset.number+'.ps',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+        self.last_plot_text=self.plot(self.active_session, [dataset],self.input_file_name,dataset.short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp_'+dataset.number+'.ps',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
         print_string=print_string+self.active_session.temp_dir+'plot_temp_'+dataset.number+'.ps '
       self.reset_statusbar()
       self.statusbar.push(0,'Printed with: '+print_command)
@@ -1114,8 +1114,8 @@ class ApplicationMainWindow(gtk.Window):
   def set_image(self): # resize and show temporary gnuplot image
     self.image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file(self.active_session.temp_dir+'plot_temp.png').scale_simple( self.widthf-20,self.heightf-20,gtk.gdk.INTERP_BILINEAR))
 
-  def splot(self,datasets,file_name_prefix, title,names, with_errorbars,output_file='',fit_lorentz=False,add_preferences=''): # plot via script file instead of using python gnuplot pipeing
-    return measurement_data_plotting.gnuplot_plot_script(datasets,file_name_prefix, self.script_suf, title,names,with_errorbars,output_file,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+  def splot(self, session,datasets,file_name_prefix, title,names, with_errorbars,output_file='',fit_lorentz=False,add_preferences=''): # plot via script file instead of using python gnuplot pipeing
+    return measurement_data_plotting.gnuplot_plot_script(session, datasets,file_name_prefix, self.script_suf, title,names,with_errorbars,output_file,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
 
   def replot(self,action=None): # recreate the current plot and clear Statusbar
     global errorbars
@@ -1123,7 +1123,7 @@ class ApplicationMainWindow(gtk.Window):
     self.label.set_text(self.measurement[self.index_mess].sample_name)
     self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
     self.label2.set_text(self.measurement[self.index_mess].short_info)
-    self.last_plot_text=self.plot([self.measurement[self.index_mess]],self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+    self.last_plot_text=self.plot(self.active_session, [self.measurement[self.index_mess]],self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
     self.set_image()
     self.reset_statusbar()
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)

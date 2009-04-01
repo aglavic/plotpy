@@ -364,11 +364,11 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       add_info=''
     if self.gnuplot_script:
       output=measurement_data_plotting.gnuplot_plot_script\
-        (datasets,file_name_prefix, '.out', title,names,self.plot_with_errorbars,additional_info=add_info)
+        (self, datasets,file_name_prefix, '.out', title,names,self.plot_with_errorbars,additional_info=add_info)
       return output
     else:
       return measurement_data_plotting.gnuplot_plot\
-        (datasets,file_name_prefix, title,names,self.plot_with_errorbars,additional_info=add_info)
+        (self, datasets,file_name_prefix, title,names,self.plot_with_errorbars,additional_info=add_info)
 
   '''
     change the active dataset by object or name

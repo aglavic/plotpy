@@ -23,7 +23,7 @@ import gnuplot_preferences #            File containing variables:
     Gnuplot.py must by installed and properly working.
     files are stored in temporary folder set in gnuplot_preferences
 '''
-def gnuplot_plot(datasets,file_name_prefix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''):
+def gnuplot_plot(session, datasets,file_name_prefix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''):
   gp=gnuplot_preferences
   import Gnuplot
   
@@ -39,7 +39,7 @@ def gnuplot_plot(datasets,file_name_prefix, title,names,with_errorbars,output_fi
     plotting_param=str(gp.plotting_parameters_errorbars)
   else:
     plotting_param=str(gp.plotting_parameters)
-  plotting_param=replace_ph(plotting_param,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info) # replace place holders
+  plotting_param=replace_ph(session, plotting_param,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info) # replace place holders
   gplot=Gnuplot.Gnuplot(persist=1) # if term is x11 the plot will not close
   gnuplot_settings=gp.gnuplot_file_head+\
   'set term '+terminal+'\n'+\
@@ -65,7 +65,7 @@ def gnuplot_plot(datasets,file_name_prefix, title,names,with_errorbars,output_fi
     else:
       gnuplot_settings=gnuplot_settings+settings_3d
     plotting_param=str(gp.plotting_parameters_3d)
-  gnuplot_settings=replace_ph(gnuplot_settings+datasets[0].plot_options,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info) # replacing placeholders
+  gnuplot_settings=replace_ph(session, gnuplot_settings+datasets[0].plot_options,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info) # replacing placeholders
 # Manually mimic the Gnuplot plot function to use multiple plots, which is not easyly possible otherwise.
   gplot(gnuplot_settings)
   if datasets[0].logx:
@@ -115,35 +115,33 @@ def gnuplot_plot(datasets,file_name_prefix, title,names,with_errorbars,output_fi
     Function to plot with an additional data and gnuplot file and calling to the gnuplot program
     files are stored in temporary folder set in gnuplot_preferences
 '''
-def gnuplot_plot_script(datasets,file_name_prefix, file_name_postfix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''): # # Plot with creating a temporal gnuplot skript and executing gnuplot afterwards. Should be much slower when processing many sequences. Mostly the same function as gnuplot_plot above.
-    gp=gnuplot_preferences
-    for dataset in datasets:
-        dataset.export(globals.temp_dir+'tmp_data_'+dataset.number+'.out')
-    sample_name=datasets[0].sample_name
-    file_numbers=[dataset.number for dataset in datasets]
-    if output_file.rsplit('.',1)[1]=='ps':
-        postscript_export=True
-        terminal=gp.set_output_terminal_ps
-    else:
-        postscript_export=False
-        terminal=gp.set_output_terminal_png
-    script_name=globals.temp_dir+replace_ph(gp.gnuplot_file_name,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info)
-    gnuplot_file_text=create_plot_script(datasets,globals.temp_dir+'tmp_data','.out', title,names,with_errorbars,output_file,additional_info,fit_lorentz,add_preferences)
-    write_file=open(script_name,'w')
-    write_file.write( gnuplot_file_text+'\n' )
-    write_file.close()
-    proc = subprocess.Popen([globals.gnuplot_command, script_name], 
-                        shell=False, 
-                        stderr=subprocess.PIPE,
-                        stdout=subprocess.PIPE, 
-                        )
-    stderr_value = proc.communicate()[1]
-    return stderr_value # return the standard error output
-
-def replace_ph(string,datasets,file_name_prefix,file_numbers, title,names,sample_name,number,postscript_export=False,additional_info=''): # replace place holders in string
+def gnuplot_plot_script(session,  datasets,file_name_prefix, file_name_postfix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''): # # Plot with creating a temporal gnuplot skript and executing gnuplot afterwards. Should be much slower when processing many sequences. Mostly the same function as gnuplot_plot above.
   gp=gnuplot_preferences
-  if globals.debug:
-    globals.debug_file.write('call: replace_ph('+ str(string)+ ',' + str(datasets)+ ','+ str(file_name_prefix)+ ','+ str(file_numbers)+ ','+ str(title)+ ','+ str(names)+ ','+ str(sample_name)+ ','+ str(number)+ ','+ str(postscript_export)+ ','+ str(additional_info)+')\n')
+  for dataset in datasets:
+    dataset.export(session.temp_dir+'tmp_data_'+dataset.number+'.out')
+  sample_name=datasets[0].sample_name
+  file_numbers=[dataset.number for dataset in datasets]
+  if output_file.rsplit('.',1)[1]=='ps':
+    postscript_export=True
+    terminal=gp.set_output_terminal_ps
+  else:
+    postscript_export=False
+    terminal=gp.set_output_terminal_png
+  script_name=session.temp_dir+replace_ph(session, gp.gnuplot_file_name,datasets,file_name_prefix, file_numbers, title,names,sample_name,0,postscript_export,additional_info)
+  gnuplot_file_text=create_plot_script(session, datasets,file_name_prefix, file_name_postfix, title,names,with_errorbars,output_file,additional_info,fit_lorentz,add_preferences)
+  write_file=open(script_name,'w')
+  write_file.write( gnuplot_file_text+'\n' )
+  write_file.close()
+  proc = subprocess.Popen([session.gnuplot_command, script_name], 
+                      shell=False, 
+                      stderr=subprocess.PIPE,
+                      stdout=subprocess.PIPE, 
+                      )
+  stderr_value = proc.communicate()[1]
+  return stderr_value # return the standard error output
+
+def replace_ph(session, string,datasets,file_name_prefix, file_numbers, title,names,sample_name,number,postscript_export=False,additional_info=''): # replace place holders in string
+  gp=gnuplot_preferences
   string=string.\
   replace('[name]',file_name_prefix).\
   replace('[name-rmv]',gp.remove_from_name(file_name_prefix)).\
@@ -167,13 +165,13 @@ def replace_ph(string,datasets,file_name_prefix,file_numbers, title,names,sample
   if postscript_export: # see gnuplot_preferences.py for this function
     string=gnuplot_preferences.postscript_replace(string)
   string=gp.further_replacement(string)
-  string=globals.replace_systemdependent(string)
+  string=session.replace_systemdependent(string)
   return string 
  
 '''
     function to create a script for the gnuplot program to read
 '''
-def create_plot_script(datasets,file_name_prefix,file_name_postfix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''):
+def create_plot_script(session, datasets,file_name_prefix,file_name_postfix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''):
     gp=gnuplot_preferences # define global gnuplot_preferences modul as local gp 
     sample_name=datasets[0].sample_name
     file_numbers=[dataset.number for dataset in datasets]
@@ -228,14 +226,14 @@ def create_plot_script(datasets,file_name_prefix,file_name_postfix, title,names,
         using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
     gnuplot_file_text=gnuplot_file_text+\
             '# now the plotting function\n'+splot_add+\
-            'plot "'+file_name_prefix+'_'+file_numbers[0]+file_name_postfix+'" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
-    gnuplot_file_text=replace_ph(gnuplot_file_text,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info)
+            'plot "'+session.temp_dir+'tmp_data_'+dataset.number+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+    gnuplot_file_text=replace_ph(session, gnuplot_file_text,datasets,file_name_prefix, file_numbers, title,names,sample_name,0,postscript_export,additional_info)
     if fit_lorentz:
         gnuplot_file_text=gnuplot_file_text+',f_'+str(0)+'(x) '+gp.plotting_parameters_fit+" title sprintf('psd. Voigt fit: x0=\045.4g; FWHM=\045.3g; I=\045.0g; eta=\045.2g',x0_"+\
             str(i)+","+"abs(sigma_"+str(i)+"*2),"+"I_"+str(i)+","+"eta_"+str(i)+')'
     for number in file_numbers[1:len(file_numbers)]:
         gnuplot_file_text=gnuplot_file_text+',\\\n"'+file_name_prefix+'_'+number+file_name_postfix+'" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
-        gnuplot_file_text=replace_ph(gnuplot_file_text,datasets,file_name_prefix,file_numbers, title,names,sample_name,file_numbers.index(number),postscript_export,additional_info)
+        gnuplot_file_text=replace_ph(session, gnuplot_file_text,datasets,file_name_prefix,file_numbers, title,names,sample_name,file_numbers.index(number),postscript_export,additional_info)
         if fit_lorentz:
             gnuplot_file_text=gnuplot_file_text+',f_'+str(i)+'(x) '+gp.plotting_parameters_fit+' title=\'x0=\045g; sigma=\045g; intensity=\045g; background=\045g\',x0_'+\
                 str(i)+","+"sigma_"+str(i)+","+"I_"+str(i)+","+"BG_"+str(i)
