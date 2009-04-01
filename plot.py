@@ -35,14 +35,14 @@ import plotting_gui
 #+++++++++++++++++++++++ import specific measurement modules ++++++++++++++++++++++++++++++
 from plot_generic_data import generic_session
 from plot_SQUID_data import squid_session
-#import plot_4circle_data
+from plot_4circle_data import circle_session
 #import plot_reflectometer_data
 # dictionary for the known measurement types
 known_measurement_types={
                          'squid': squid_session, 
+                         '4circle': circle_session, 
                          }
-'''                         '4circle': plot_4circle_data.circle_session, 
-                         'reflectometer': plot_reflectometer_data.reflectometer_session, 
+'''                         'reflectometer': plot_reflectometer_data.reflectometer_session, 
                          }'''
 
 

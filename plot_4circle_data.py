@@ -35,6 +35,84 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
+
+# import generic_session, which is the parent class for the squid_session
+from plot_generic_data import generic_session
+# importing preferences and data readout
+import circle_read_data
+import circle_preferences
+
+'''
+  Class to handle 4 circle data sessions
+'''
+class circle_session(generic_session):
+  #++++++++++++++ help text string +++++++++++++++++++++++++++
+  specific_help=\
+'''
+4 CIRCLE-Data treatment:
+\t\t-counts\t\tShow actual counts, not counts/s
+'''
+  #------------------ help text strings ---------------
+
+  #++++++++++++++++++ local variables +++++++++++++++++
+  show_counts=False
+  #------------------ local variables -----------------
+
+  
+  '''
+    class constructor expands the generic_session constructor
+  '''
+  def __init__(self, arguments):
+    self.columns_mapping=circle_preferences.columns_mapping
+    self.measurement_types=circle_preferences.measurement_types
+    generic_session.__init__(self, arguments)
+    
+  
+  '''
+    additional command line arguments for squid sessions
+  '''
+  def read_argument_add(self, argument, last_argument_option=[False, '']):
+    found=True
+    if (argument[0]=='-') or last_argument_option[0]:
+      # Cases of arguments:
+      if last_argument_option[0]:
+        found=False
+      elif argument=='-counts':
+        show_counts=True
+      else:
+        found=False
+    return (found, last_argument_option)
+
+
+  '''
+    function to read data files
+  '''
+  def read_file(self, file_name):
+    return circle_read_data.read_data(file_name,self.columns_mapping,self.measurement_types)
+  
+  '''
+    create a specifig menu for the 4circle session
+  '''
+  def create_menu(self):
+    # Create XML for squid menu
+    string='''
+      <menu action='4CircleMenu'>
+      
+      </menu>
+    '''
+    # Create actions for the menu
+    actions=(
+            ( "4CircleMenu", None,                             # name, stock id
+                "4 Circle", None,                    # label, accelerator
+                None,                                   # tooltip
+                None ),
+             )
+    return string,  actions
+
+  
+'''
+################### old code, that will be deleted after plot.py works propperly ##############
+
 #How to use this script:
 def short_help():
   return """\tUsage: plot_4circle_data.py [files] [options]
@@ -360,3 +438,4 @@ else:
   for file_name in os.listdir(globals.temp_dir):
     os.remove(globals.temp_dir+file_name)
   os.rmdir(globals.temp_dir)
+'''
