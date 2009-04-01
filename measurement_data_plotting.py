@@ -226,13 +226,13 @@ def create_plot_script(session, datasets,file_name_prefix,file_name_postfix, tit
         using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
     gnuplot_file_text=gnuplot_file_text+\
             '# now the plotting function\n'+splot_add+\
-            'plot "'+session.temp_dir+'tmp_data_'+dataset.number+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+            'plot "'+session.temp_dir+'tmp_data_'+datasets[0].number+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
     gnuplot_file_text=replace_ph(session, gnuplot_file_text,datasets,file_name_prefix, file_numbers, title,names,sample_name,0,postscript_export,additional_info)
     if fit_lorentz:
         gnuplot_file_text=gnuplot_file_text+',f_'+str(0)+'(x) '+gp.plotting_parameters_fit+" title sprintf('psd. Voigt fit: x0=\045.4g; FWHM=\045.3g; I=\045.0g; eta=\045.2g',x0_"+\
             str(i)+","+"abs(sigma_"+str(i)+"*2),"+"I_"+str(i)+","+"eta_"+str(i)+')'
     for number in file_numbers[1:len(file_numbers)]:
-        gnuplot_file_text=gnuplot_file_text+',\\\n"'+file_name_prefix+'_'+number+file_name_postfix+'" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+        gnuplot_file_text=gnuplot_file_text+',\\\n"'+session.temp_dir+'tmp_data_'+number+file_name_postfix+'" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
         gnuplot_file_text=replace_ph(session, gnuplot_file_text,datasets,file_name_prefix,file_numbers, title,names,sample_name,file_numbers.index(number),postscript_export,additional_info)
         if fit_lorentz:
             gnuplot_file_text=gnuplot_file_text+',f_'+str(i)+'(x) '+gp.plotting_parameters_fit+' title=\'x0=\045g; sigma=\045g; intensity=\045g; background=\045g\',x0_'+\
