@@ -50,7 +50,7 @@ class squid_session(generic_session):
   specific_help=\
 '''
 \tSQUID-Data treatment:
-\t-para [C]\tInclude paramagnetic correction factor (C/T) [emu*K/Oe]
+\t-para [C] [off]\tInclude paramagnetic correction factor (C/(T-off)) [emu*K/Oe]
 \t-dia [Chi]\tInclude diamagnetic correction in [10^-9 emu/Oe]
 \t-dia-calc [e] [m]\tAdd diamagnetic correction of sample containing elements e
 \t\t\t\t with complete mass m in mg. 
@@ -59,9 +59,12 @@ class squid_session(generic_session):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  dia_mag_correct=0
+  file_wildcards=(('squid data files','*.dat'), ('squid raw data files', '*.raw'))
+  # options:
+  dia_mag_correct=0 # diamagnetic correction factor
   dia_calc=[False, '', 0.0]
-  para=0
+  para=[0, 0] # paramagnetic correction factor and T-offset
+  options=generic_session.options+['dia', 'dia-calc', 'para']
   #------------------ local variables -----------------
 
   
@@ -84,7 +87,7 @@ class squid_session(generic_session):
       # Cases of arguments:
       if last_argument_option[0]:
         if last_argument_option[1]=='dia':
-          self.dia_mag_correct=float(argument)
+          self.dia_mag_correct=float(argument)/1e8
           last_argument_option=[False,'']
         elif last_argument_option[1]=='dia-calc':
           self.dia_calc[0]=True
@@ -94,7 +97,10 @@ class squid_session(generic_session):
           self.dia_calc[2]=float(argument)
           last_argument_option=[False,'']
         elif last_argument_option[1]=='para':
-          self.para=float(argument)
+          self.para[0]=float(argument)/1e8
+          last_argument_option=[True,'para2']
+        elif last_argument_option[1]=='para2':
+          self.para[1]=float(argument)
           last_argument_option=[False,'']
         else:
           found=False
@@ -143,7 +149,73 @@ class squid_session(generic_session):
                 None ),
              )
     return string,  actions
+  
+  '''
+    Add the data of a new file to the session.
+    In addition to generic_session dia and paramagnetic
+    corrections are performed here, too.
+  '''
+  def add_file(self, filename, append=True):
+    datasets=generic_session.add_file(self, filename, append)
+    # faster lookup
+    correct_dia=self.dia_mag_correct!=0
+    correct_para=self.dia_mag_correct!=0
+    for dataset in datasets:
+      if correct_dia:
+        dataset.process_funcion(self.diamagnetic_correction)
+      if correct_para:
+        dataset.process_funcion(self.paramagnetic_correction)
+      # name the dataset
+      constant_type=dataset.unit_trans_one(dataset.type(),SQUID_preferences.transformations_const)        
+      dataset.short_info='at %d ' % constant_type[0]+constant_type[1] # set short info as the value of the constant column
 
+
+  #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
+  '''
+    Calculate a diamagnetic correction for one datapoint.
+    This function will be used in process_function() of
+    a measurement_data_structure object.
+  '''
+  def diamagnetic_correction(self, input_data):
+    output_data=input_data
+    # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
+    field=1
+    mag=3
+    for mapping in self.columns_mapping: 
+      # selection of the columns for H and M, only works with right columns_mapping settings in SQUID_preferences.py
+      if mapping[2][0]=='H':
+        field=mapping[1]
+      if mapping[2][0]=='M_rso':
+        mag=mapping[1]
+      if mapping[2][0]=='M_ac':
+        mag=mapping[1]
+    output_data[mag]=output_data[mag] + output_data[field] * self.dia_mag_correct # calculate the linear correction
+    return output_data
+
+  '''
+    Calculate a paramagnetic correction for one datapoint.
+    This function will be used in process_function() of
+    a measurement_data_structure object.
+  '''
+  def paramagnetic_correction(self, input_data):
+    output_data=input_data
+    # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
+    field=1
+    temp=2
+    mag=3
+    for mapping in self.columns_mapping: 
+      # selection of the columns for H and M, only works with right columns_mapping settings in SQUID_preferences.py
+      if mapping[2][0]=='H':
+        field=mapping[1]
+      if mapping[2][0]=='M_rso':
+        mag=mapping[1]
+      if mapping[2][0]=='M_ac':
+        mag=mapping[1]
+      if mapping[2][0]=='T':
+        temp=mapping[1]
+    output_data[mag]=output_data[mag] - output_data[field] * self.para[0] / (output_data[temp]-self.para[1]) # calculate the paramagnetic correction
+    return output_data
+  
   
 '''
 ################### old code, that will be deleted after plot.py works propperly ##############

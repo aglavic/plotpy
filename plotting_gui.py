@@ -465,6 +465,38 @@ class ApplicationMainWindow(gtk.Window):
     self.input_file_name=object[0]
     self.index_mess=0
     self.replot()
+  
+  '''
+    import a new datafile of the same type
+  '''
+  def add_file(self, action):
+    file_names=[]
+    #++++++++++++++++File selection dialog+++++++++++++++++++#
+    file_dialog=gtk.FileChooserDialog(title='Open new datafile...', action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+    file_dialog.set_select_multiple(True)
+    file_dialog.set_default_response(gtk.RESPONSE_OK)
+    #file_dialog.set_current_name(self.input_file_name+'_'+ self.measurement[self.index_mess].number+'.'+self.set_file_type)
+    for wildcard in self.active_session.file_wildcards:
+      filter = gtk.FileFilter()
+      filter.set_name(wildcard[0])
+      filter.add_pattern(wildcard[1])
+      file_dialog.add_filter(filter)
+    response = file_dialog.run()
+    if response == gtk.RESPONSE_OK:
+      file_names=file_dialog.get_filenames()
+    elif response == gtk.RESPONSE_CANCEL:
+      file_dialog.destroy()
+      return False
+    file_dialog.destroy()
+    #----------------File selection dialog-------------------#
+    for file_name in file_names:
+      self.active_session.add_file(file_name, append=True)
+      self.active_session.change_active(name=file_name)
+    self.measurement=self.active_session.active_file_data
+    self.input_file_name=self.active_session.active_file_name
+    self.replot()
+    self.rebuild_menus()
+    return file_names
 
   def change_range(self,action): # change plotting range according to textinput
     xin=self.x_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
@@ -1181,6 +1213,8 @@ class ApplicationMainWindow(gtk.Window):
     output='''<ui>
     <menubar name='MenuBar'>
       <menu action='FileMenu'>
+        <menuitem action='OpenDatafile'/>
+        <separator name='static14'/>
         <menuitem action='Export'/>
         <menuitem action='ExportAs'/>
         <menuitem action='ExportAll'/>
@@ -1285,6 +1319,10 @@ class ApplicationMainWindow(gtk.Window):
         ( "ActionMenu", None, "_Action" ),               # name, stock id, label
         ( "HelpMenu", None, "_Help" ),               # name, stock id, label
         ( "ToolBar", None, "_Toolbar" ),               # name, stock id, label
+        ( "OpenDatafile", gtk.STOCK_SAVE,                    # name, stock id
+          "_Open File","<control>O",                      # label, accelerator
+          "Open a new datafile",                       # tooltip
+          self.add_file ),
         ( "Export", gtk.STOCK_SAVE,                    # name, stock id
           "_Export","<control>E",                      # label, accelerator
           "Export current Plot",                       # tooltip

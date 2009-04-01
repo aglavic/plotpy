@@ -80,6 +80,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   active_file_data=None
   active_file_name=''
   index=0
+  file_wildcards=(('all files', '*'))
+  options=['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e','scp', 'no-trans','help']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -115,12 +117,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     files.sort()
     #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
     for filename in files:
-      print "Trying to import '" + filename + "'."
-      datasets=self.read_file(filename)
-      datasets=self.create_numbers(datasets) # enumerate the sequences and sort out unselected
-      if self.unit_transformation:
-        self.make_transformations(datasets) # make unit transformations
-      self.add_data(datasets, filename)
+      self.add_file(filename)
     self.active_file_data=self.file_data[files[0]]
     self.active_file_name=files[0]
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
@@ -137,10 +134,6 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       except ImportError:
         print "You have to install pygtk to run in GUI-mode, falling back to command-line mode!"
         self.use_gui=False
-    #++++++++++++++++ datatreatment ++++++++++++++++++++++
-    if self.unit_transformation: # make unit transfomation on all datasets
-      for name, datasets in self.file_data.items():
-        self.make_transformations(datasets)
     #---------------- class consturction over ---------------------
 
     
@@ -197,12 +190,10 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
         elif self.read_argument_add(argument,  last_argument_option)[0]:
           last_argument_option=self.read_argument_add(argument,  last_argument_option)[1]
         else:
-          try:
-            ['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e','scp', 'no-trans','help'].index(argument[1:len(argument)])
-          except ValueError:
-            print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
-          else:
+          if argument[1:len(argument)] in self.options:
             last_argument_option=[True,argument[1:len(argument)]]
+          else:
+            print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
       else:
         input_file_names.append(argument)
     return input_file_names
@@ -317,7 +308,24 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     if not append:
       self.file_data={}
     self.file_data[name]=data_list
-    
+  
+  '''
+    Add the data of a new file to the session.
+    Transformations are also done here, so childs
+    will change this function.
+  '''
+  def add_file(self, filename, append=True):
+    print "Trying to import '" + filename + "'."
+    datasets=self.read_file(filename)
+    datasets=self.create_numbers(datasets) # enumerate the sequences and sort out unselected
+    if self.unit_transformation:
+      self.make_transformations(datasets) # make unit transformations
+    self.add_data(datasets, filename, append)
+    #++++++++++++++++ datatreatment ++++++++++++++++++++++
+    if self.unit_transformation: # make unit transfomation on all datasets
+      self.make_transformations(datasets)
+    return datasets # for reuse in child class
+  
   def __iter__(self): # see next()
     return self
 
@@ -384,7 +392,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       try:
         self.active_file_data=self.file_data[name]
         self.active_file_name=name
-        self.index=name_list.index[name]
+        self.index=name_list.index(name)
       except KeyError:
         None
     else:
