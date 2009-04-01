@@ -63,6 +63,8 @@ Options:
 
 \tPlott settings:
 \t-e\t\tPlot with errorbars
+\t-logx\t\tPlot with errorbars
+\t-logy\t\tPlot with errorbars
 \t-scp\t\tUse script mode, no GUI will be shown
 
 \tGeneral Data treatment:
@@ -81,7 +83,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   active_file_name=''
   index=0
   file_wildcards=(('all files', '*'))
-  options=['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e','scp', 'no-trans','help']
+  options=['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e', 'logx', 'logy','scp', 'no-trans','help']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -94,6 +96,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   info_in_file=True # write header in output files
   plot_data=True # plot the data (otherwise only convert files)
   plot_with_errorbars=False # use errorbars in plot
+  logx=False
+  logy=False
   print_plot=False # send plots to printer
   unit_transformation=True # make transformations as set in preferences file
   transformations=[] # a list of unit transformations, that will be performed on the data
@@ -179,6 +183,10 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
           self.plot_data=False
         elif argument=='-e':
           self.plot_with_errorbars=True
+        elif argument=='-logx':
+          self.logx=True
+        elif argument=='-logy':
+          self.logy=True
         elif argument=='-p':
           self.print_plot=True
         elif argument=='-scp':
@@ -324,6 +332,9 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     #++++++++++++++++ datatreatment ++++++++++++++++++++++
     if self.unit_transformation: # make unit transfomation on all datasets
       self.make_transformations(datasets)
+    for dataset in datasets:
+      dataset.logx=self.logx
+      dataset.logy=self.logy
     return datasets # for reuse in child class
   
   def __iter__(self): # see next()

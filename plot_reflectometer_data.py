@@ -25,6 +25,9 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
+# import buildin modules
+import math
+import subprocess
 # import generic_session, which is the parent class for the squid_session
 from plot_generic_data import generic_session
 # importing preferences and data readout
@@ -40,11 +43,22 @@ class reflectometer_session(generic_session):
 '''
 \tReflectometer-Data treatment:
 \t-counts\t\tShow actual counts, not counts/s
+\t-fit [layers] [thicknesses] [est._roughness]
+\t\t\t\tExport measurements for use with fit programm by Emmanuel Kentzinger and create .ent file for it.
+\t\t\t\tlayers is a list of layers with format L1-L2-L3-S or 5[L1_L2]-S, where L,S are the names
+\t\t\t\tof the compounds of the layers and substrate as provided in scattering_length_table.py
+\t\t\t\tthicknesses is a list of layer thicknesses with format LT1-LT2-LT3 or [LT1_LT2] in A
+\t\t\t\test._roughness is the estimated overall roughness to begin with
+\t-ref\t\tTry to refine the scaling factor, background and roughnesses.
 '''
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
+  options=generic_session.options+['fit', 'ref']
+  #options:
   show_counts=False
+  export_for_fit=False
+  try_refine=False
   #------------------ local variables -----------------
 
   
@@ -63,11 +77,22 @@ class reflectometer_session(generic_session):
   def read_argument_add(self, argument, last_argument_option=[False, '']):
     found=True
     if (argument[0]=='-') or last_argument_option[0]:
-      # Cases of arguments:
       if last_argument_option[0]:
-        found=False
+        if last_argument_option[1]=='fit':
+          self.export_for_fit=True
+          self.fit_layers=argument
+          last_argument_option=[True,'fit2']
+        elif last_argument_option[1]=='fit2':
+          self.fit_thicknesses=argument
+          last_argument_option=[True,'fit3']
+        elif last_argument_option[1]=='fit3':
+          self.fit_est_roughness=float(argument)
+          last_argument_option=[False,'']
+      # Cases of arguments:
       elif argument=='-counts':
         self.show_counts=True
+      elif argument=='-ref':
+        self.try_refine=True
       else:
         found=False
     return (found, last_argument_option)
@@ -105,6 +130,7 @@ class reflectometer_session(generic_session):
   '''
   def add_file(self, filename, append=True):
     datasets=generic_session.add_file(self, filename, append)
+    refinements=[]
     for dataset in datasets:
       self.time_col=1
       th=0
@@ -125,6 +151,15 @@ class reflectometer_session(generic_session):
         dataset.process_funcion(self.counts_to_cps)
         dataset.unit_trans([['counts',1,0,'counts/s']])
       dataset.short_info=' started at Th='+str(round(th,4))+' 2Th='+str(round(twoth,4))+' Phi='+str(round(phi,4))
+      if self.export_for_fit: # export fit files
+        self.export_fit(dataset,  filename)
+        simu=reflectometer_read_data.read_simulation(filename+'_'+dataset.number+'.sim')
+        simu.number='1'+dataset.number
+        simu.short_info='simulation'
+        simu.sample_name=dataset.sample_name
+        refinements.append(simu)
+    if self.export_for_fit: # export fit files
+      self.add_data(refinements, filename+"_simulation")
 
 
 
@@ -148,7 +183,7 @@ class reflectometer_session(generic_session):
   
   #++++ functions for fitting with fortran program by E. Kentzinger ++++
 
-  def create_ent_file(array,points,ent_file_name,\
+  def create_ent_file(self, array,points,ent_file_name,\
     back_ground=0,resolution=3.5,scaling_factor=10,theta_max=2.3,fit=0,fit_params=[1,2],constrains=[]\
     ): # creates an entrance file for fit.f90 script
     from scattering_length_table import scattering_length_densities
@@ -190,7 +225,7 @@ class reflectometer_session(generic_session):
       str(constrain).strip('[').strip(']').replace(',',' ')+'\t\tindices of those parameters\n')
     ent_file.close()
 
-  def find_total_reflection(dataset): # find angle of total reflection from decay to 1/3 of maximum
+  def find_total_reflection(self, dataset): # find angle of total reflection from decay to 1/3 of maximum
     position=0
     max_value=0
     for point in dataset:
@@ -203,7 +238,7 @@ class reflectometer_session(generic_session):
           return position
     return position
 
-  def read_fit_file(file_name,parameters): # load results of fit file
+  def read_fit_file(self, file_name,parameters): # load results of fit file
     result={}
     fit_file=open(file_name,'r')
     test_fit=fit_file.readlines()
@@ -217,38 +252,40 @@ class reflectometer_session(generic_session):
           return result
     return None
 
-  def refine_scaling(layers,SF,BG,constrain_array): # refine the scaling factor within the region of total reflection
-    data_lines=dataset.export('/var/tmp/fit_temp.res',False,' ',xfrom=0.005,xto=find_total_reflection(dataset))
-    create_ent_file(layers,data_lines,'/var/tmp/fit_temp.ent',back_ground=BG,scaling_factor=SF,\
+  def refine_scaling(self, dataset, layers,SF,BG,constrain_array): # refine the scaling factor within the region of total reflection
+    data_lines=dataset.export('/var/tmp/fit_temp.res',False,' ',xfrom=0.005,xto=self.find_total_reflection(dataset))
+    self.create_ent_file(layers,data_lines,'/var/tmp/fit_temp.ent',back_ground=BG,scaling_factor=SF,\
       constrains=constrain_array,fit=1,fit_params=[len(layers)*4+2])
     retcode = subprocess.call(['fit-script', '/var/tmp/fit_temp.res', '/var/tmp/fit_temp.ent', '/var/tmp/fit_temp','20'])
-    scaling_factor=read_fit_file('/var/tmp/fit_temp.ref',[str(len(layers)*4+2)])[str(len(layers)*4+2)]
+    scaling_factor=self.read_fit_file('/var/tmp/fit_temp.ref',[str(len(layers)*4+2)])[str(len(layers)*4+2)]
     return scaling_factor
 
-  def refine_roughnesses(layers,SF,BG,constrain_array): # refine the roughnesses and background after the angle of total reflection
-    fit_p=[i*4+4 for i in range(len(layers))]
+  def refine_roughnesses(self, dataset, layers,SF,BG,constrain_array): # refine the roughnesses and background after the angle of total reflection
+    fit_p=[i*4+4 for i in range(len(layers)-1)]
     fit_p.append(len(layers)*4-1)
     fit_p.sort()
-    data_lines=dataset.export('/var/tmp/fit_temp.res',False,' ',xfrom=find_total_reflection(dataset))
-    create_ent_file(layers,data_lines,'/var/tmp/fit_temp.ent',back_ground=BG,scaling_factor=SF,\
+    data_lines=dataset.export('/var/tmp/fit_temp.res',False,' ',xfrom=self.find_total_reflection(dataset))
+    self.create_ent_file(layers,data_lines,'/var/tmp/fit_temp.ent',back_ground=BG,scaling_factor=SF,\
       constrains=constrain_array,fit=1,fit_params=fit_p)
     retcode = subprocess.call(['fit-script', '/var/tmp/fit_temp.res', '/var/tmp/fit_temp.ent', '/var/tmp/fit_temp','50'])
     fit_p=map(str,fit_p)
-    parameters=read_fit_file('/var/tmp/fit_temp.ref',fit_p)
+    parameters=self.read_fit_file('/var/tmp/fit_temp.ref',fit_p)
     for i,layer in enumerate(layers):
       if i<len(layers)-1:
         layer[2]=abs(parameters[str(i*4+4)])
       else:
         layer[2]=abs(parameters[str(i*4+3)])
-    BG=parameters[str(len(layers)*4)]
+    #BG=parameters[str(len(layers)*4)]
     return [layers,BG]
 
-  def export_fit(dataset): # Function to export data for fitting with fit.f90 program
-    fit_thick=fit_thicknesses
-    if globals.debug:
-      globals.debug_file.write('call: export_for_fit()\n')
+  '''
+    Function to export data for fitting with fit.f90 program,
+    has to be reviewd and integrated within GUI
+  '''
+  def export_fit(self, dataset, input_file_name): 
+    fit_thick=self.fit_thicknesses
     # create array of layers
-    first_split=fit_layers.split('-')
+    first_split=self.fit_layers.split('-')
     layer_array=[]
     constrain_array=[]
     layer_index=1
@@ -259,16 +296,16 @@ class reflectometer_session(generic_session):
         second_thick=fit_thick.split('-')[0].lstrip('[').rstrip(']').split('_')
         for j in range(len(second_split)):
           constrain_array.append([])
-          for i in range(count): # repeat every layer in multilayer
-              for j,multi_compound in enumerate(second_split):
-                  constrain_array[-1-j].append((layer_index-1)*4+1) # every layer of same kind will have the same height
-                  layer_array.append([multi_compound,float(second_thick[j]),fit_est_roughness])
-                  layer_index=layer_index+1
+        for i in range(count): # repeat every layer in multilayer
+          for j,multi_compound in enumerate(second_split):
+            constrain_array[-1-j].append((layer_index-1)*4+1) # every layer of same kind will have the same height
+            layer_array.append([multi_compound,float(second_thick[j]),self.fit_est_roughness])
+            layer_index=layer_index+1
       else: # no multilayer
           if len(fit_thick)>0:
-              layer_array.append([compound,float(fit_thick.split('-')[0]),fit_est_roughness])
+              layer_array.append([compound,float(fit_thick.split('-')[0]),self.fit_est_roughness])
           else:
-              layer_array.append([compound,None,fit_est_roughness])
+              layer_array.append([compound,None,self.fit_est_roughness])
           layer_index=layer_index+1
       if len(fit_thick.split('-'))>1: # remove first thickness
           fit_thick=fit_thick.split('-',1)[1]
@@ -278,13 +315,13 @@ class reflectometer_session(generic_session):
     data_lines=dataset.export(input_file_name+'_'+dataset.number+'.res',False,' ') # write data into files with sequence numbers in format ok for fit.f90    
     scaling_fac=(dataset.max(xstart=0.005)[1]/1e5)
     back_gr=dataset.min()[1]
-    if try_refine: # Try to refine the scaling factorn, background and roughnesses
-      scaling_fac=refine_scaling(layer_array,scaling_fac,back_gr,constrain_array)
-      result=refine_roughnesses(layer_array,scaling_fac,back_gr,constrain_array)
+    if self.try_refine: # Try to refine the scaling factorn, background and roughnesses
+      scaling_fac=self.refine_scaling(dataset, layer_array,scaling_fac,back_gr,constrain_array)
+      result=self.refine_roughnesses(dataset, layer_array,scaling_fac,back_gr,constrain_array)
       layer_array=result[0]
       back_gr=result[1]
     # create final input file and make a simulation
-    create_ent_file(layer_array,data_lines,input_file_name+'_'+dataset.number+'.ent',back_ground=back_gr,\
+    self.create_ent_file(layer_array,data_lines,input_file_name+'_'+dataset.number+'.ent',back_ground=back_gr,\
       scaling_factor=scaling_fac,constrains=constrain_array)
     retcode = subprocess.call(['fit-script', input_file_name+'_'+dataset.number+'.res',\
       input_file_name+'_'+dataset.number+'.ent', input_file_name+'_'+dataset.number])
