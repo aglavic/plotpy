@@ -65,6 +65,7 @@ class circle_session(generic_session):
   def __init__(self, arguments):
     self.columns_mapping=circle_preferences.columns_mapping
     self.measurement_types=circle_preferences.measurement_types
+    self.transformations=circle_preferences.transformations
     generic_session.__init__(self, arguments)
     
   

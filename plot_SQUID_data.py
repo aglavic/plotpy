@@ -71,6 +71,7 @@ class squid_session(generic_session):
   def __init__(self, arguments):
     self.columns_mapping=SQUID_preferences.columns_mapping
     self.measurement_types=SQUID_preferences.measurement_types
+    self.transformations=SQUID_preferences.transformations
     generic_session.__init__(self, arguments)
     
   
@@ -127,13 +128,17 @@ class squid_session(generic_session):
     # Create XML for squid menu
     string='''
       <menu action='SquidMenu'>
-      
+        <menuitem action='SquidDia'/>
       </menu>
     '''
     # Create actions for the menu
     actions=(
             ( "SquidMenu", None,                             # name, stock id
                 "SQUID", None,                    # label, accelerator
+                None,                                   # tooltip
+                None ),
+            ( "SquidDia", None,                             # name, stock id
+                "Diamagnetic Correction", None,                    # label, accelerator
                 None,                                   # tooltip
                 None ),
              )

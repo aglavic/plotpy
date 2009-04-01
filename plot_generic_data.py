@@ -94,6 +94,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   plot_with_errorbars=False # use errorbars in plot
   print_plot=False # send plots to printer
   unit_transformation=True # make transformations as set in preferences file
+  transformations=[] # a list of unit transformations, that will be performed on the data
   own_pid=None # stores session process ID
   #------------------ local variables -----------------
 
@@ -136,6 +137,10 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       except ImportError:
         print "You have to install pygtk to run in GUI-mode, falling back to command-line mode!"
         self.use_gui=False
+    #++++++++++++++++ datatreatment ++++++++++++++++++++++
+    if self.unit_transformation: # make unit transfomation on all datasets
+      for name, datasets in self.file_data.items():
+        self.make_transformations(datasets)
     #---------------- class consturction over ---------------------
 
     
@@ -193,7 +198,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
           last_argument_option=self.read_argument_add(argument,  last_argument_option)[1]
         else:
           try:
-            ['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e','scp','p'].index(argument[1:len(argument)])
+            ['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e','scp', 'no-trans','help'].index(argument[1:len(argument)])
           except ValueError:
             print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
           else:
@@ -298,10 +303,11 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     return filtered_datasets
   
   '''
-    Make unit transformations if set in preferences of child classes
+    Make unit transformations of a list of datasets
   '''
   def make_transformations(self, datasets):
-    None
+    for dataset in datasets:
+      dataset.unit_trans(self.transformations)
 
   '''
     Function which ither adds file data to the object or replaces

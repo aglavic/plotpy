@@ -62,6 +62,7 @@ class reflectometer_session(generic_session):
   '''
   def __init__(self, arguments):
     self.data_columns=reflectometer_preferences.data_columns
+    self.transformations=reflectometer.transformations
     generic_session.__init__(self, arguments)
     
   

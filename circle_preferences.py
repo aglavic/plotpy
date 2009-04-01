@@ -6,9 +6,7 @@
 transformations=[\
 ]
 # Transformations for constants (see measurement_types)
-transformations_const=[\
-['T',1000,0,'mT']\
-]
+transformations_const=[]
 # Select the read parameters and mapping to columns as well as dimensions and units 
 #  (every measurement file the positions have to start with 0 and have no holes in between
 # [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
