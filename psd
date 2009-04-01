@@ -1,2 +1,2 @@
 #!/bin/bash
-plot_SQUID_data -gui $*
+plot.py squid $*

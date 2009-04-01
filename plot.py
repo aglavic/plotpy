@@ -37,7 +37,14 @@ from plot_generic_data import generic_session
 from plot_SQUID_data import squid_session
 from plot_4circle_data import circle_session
 from plot_reflectometer_data import reflectometer_session
-# dictionary for the known measurement types
+'''
+  Dictionary for the known measurement types, to create a new measureing type
+  it is only needed to create the seesion class and add it to this dictionary.
+  
+  Although the commandline parameter order is not importent for all other options
+  the type has to be set first, as the other parameters are evaluated according to
+  the session.
+'''
 known_measurement_types={
                          'squid': squid_session, 
                          '4circle': circle_session, 

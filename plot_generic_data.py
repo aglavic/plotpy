@@ -39,7 +39,7 @@ class generic_session():
 """
 Script to plot data of measurements using gnuplot.
 Usage: plot.py [type] [files] [options]
-\t\t type can be one of 'squid', '4circle', 'reflectometer' or none
+\t\t type can be one of 'squid', '4circle', 'refl' or none
 
 \tOptions:
 \t\t--help\t\tPrint this information, start plot.py [type] --help for a type specific help
