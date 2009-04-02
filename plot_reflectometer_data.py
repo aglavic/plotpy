@@ -185,54 +185,10 @@ class reflectometer_session(generic_session):
   #++++ functions for fitting with fortran program by E. Kentzinger ++++
 
   '''
-    create a .ent file for fit.f90 script from given parameters
-  '''
-  def create_ent_file(self, array, points, ent_file_name, back_ground=0, resolution=3.5, \
-                      scaling_factor=10, theta_max=2.3, fit=0, fit_params=[1], constrains=[]):
-    from scattering_length_table import scattering_length_densities
-    ent_file=open(ent_file_name,'w')
-    ent_file.write('8048.0\tscattering radiaion energy (Cu-Ka)\n'+\
-      str(points)+'\tnumber of datapoints\n'+\
-      '\n'+str(len(array))+'\tnumber of interfaces (number of layers + 1)\n'+\
-      '#### Begin of layers, first layer:')
-    i=1
-    for j,layer in enumerate(array):
-      try:
-        SL=scattering_length_densities[layer[0]]
-      except KeyError:
-        print layer[0]+' not found in database. Please edit scattering_length_table.py'
-        SL=[10,1]
-        ent_file.write(' Not in Table')
-      ent_file.write(' '+str(j)+': '+layer[0]+'\n')
-      if not layer[1]==None:
-        ent_file.write(str(layer[1])+'\tlayer thickness (in A)\t\t\tparameter '+str(i)+'\n')
-        i=i+1
-      ent_file.write(str(SL[0])+'\tdelta *1e6\t\t\t\tparameter '+str(i)+'\n')
-      i=i+1
-      ent_file.write(str(SL[1])+'\tdelta/beta\t\t\t\tparameter '+str(i)+'\n')
-      i=i+1
-      ent_file.write(str(layer[2])+'\tlayer roughness (in A)\t\t\tparameter '+str(i)+'\n')
-      i=i+1
-      ent_file.write('#')
-    ent_file.write('### End of layers.\n'+\
-      str(round(back_ground,4))+'\tbackground\t\t\t\tparametar '+str(i)+'\n')
-    i=i+1
-    ent_file.write(str(resolution)+'\tresolution in q (sigma, in 1e-3 A^-1)\tparameter '+str(i)+'\n')
-    i=i+1
-    ent_file.write(str(round(scaling_factor,4))+'\tscaling factor *1e-6\t\t\tparameter '+str(i)+'\n')
-    ent_file.write('\n'+str(theta_max)+'\ttheta_max (in deg) for recalibration\n\n'+\
-      str(fit)+'\t1: fit; 0: simulation\n\n')
-    ent_file.write(str(len(fit_params))+'\t\tNumber of parameters to be fitted\n'+str(fit_params).strip('[').strip(']').replace(',',' ')+'\t\tindices of parameters\n'+str(len(constrains))+'\t\tnumber of constrains\n')
-    for constrain in constrains:
-      ent_file.write(str(len(constrain))+'\t\tnumber of parameters to be kept equal\n'+\
-      str(constrain).strip('[').strip(']').replace(',',' ')+'\t\tindices of those parameters\n')
-    ent_file.close()
-
-  '''
     try to find the angle of total reflection by
     searching for a decrease of intensity to 1/3
   '''
-  def find_total_reflection(self, dataset): # find angle of total reflection from decay to 1/3 of maximum
+  def find_total_reflection(self, dataset):
     position=0
     max_value=0
     for point in dataset:
@@ -248,7 +204,8 @@ class reflectometer_session(generic_session):
   '''
     get fit-parameters back from the file
   '''
-  def read_fit_file(self, file_name, parameters): # load results of fit file
+  def read_fit_file(self, file_name, fit_object):
+    parameters=map(str, fit_object.fit_params)
     result={}
     fit_file=open(file_name,'r')
     test_fit=fit_file.readlines()
@@ -257,7 +214,7 @@ class reflectometer_session(generic_session):
       split=line.split()
       if len(split)>0:
         if split[0] in parameters:
-          result[split[0]]=float(split[1])
+          result[int(split[0])]=float(split[1])
       if len(parameters)==len(result):
           return result
     return None
@@ -265,103 +222,91 @@ class reflectometer_session(generic_session):
   '''
     try to fit the scaling factor before the total reflection angle
   '''
-  def refine_scaling(self, dataset, layers,SF,BG,constrain_array): # refine the scaling factor within the region of total reflection
+  def refine_scaling(self, dataset, fit_object):
+    fit_object.fit=1
     data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=0.005,xto=self.find_total_reflection(dataset))
-    self.create_ent_file(layers,data_lines,self.temp_dir+'fit_temp.ent', back_ground=BG, scaling_factor=SF,\
-      constrains=constrain_array, fit=1,fit_params=[len(layers)*4+2])
+    fit_object.set_fit_parameters(scaling=True) # fit only scaling factor
+    fit_object.number_of_points=data_lines
+    # create the .ent file
+    ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
+    ent_file.write(fit_object.get_ent_str()+'\n')
+    ent_file.close()
     retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','20'])
-    scaling_factor=self.read_fit_file(self.temp_dir+'fit_temp.ref', [str(len(layers)*4+2)])[str(len(layers)*4+2)]
-    return scaling_factor
+    fit_object.scaling_factor=self.read_fit_file(self.temp_dir+'fit_temp.ref', fit_object)[fit_object.fit_params[0]]
+    fit_object.fit=0
+    return retcode
 
   '''
     try to fit the layer roughnesses
   '''
-  def refine_roughnesses(self, dataset, layers,SF,BG,constrain_array): # refine the roughnesses and background after the angle of total reflection
-    fit_p=[i*4+4 for i in range(len(layers)-1)]
-    fit_p.append(len(layers)*4-1)
-    fit_p.sort()
-    data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.find_total_reflection(dataset))
-    self.create_ent_file(layers,data_lines,self.temp_dir+'fit_temp.ent',back_ground=BG,scaling_factor=SF,\
-      constrains=constrain_array,fit=1,fit_params=fit_p)
-    retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'])
-    fit_p=map(str,fit_p)
-    parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref',fit_p)
-    for i,layer in enumerate(layers):
-      if i<len(layers)-1:
-        layer[2]=abs(parameters[str(i*4+4)])
+  def refine_roughnesses(self, dataset, fit_object):
+    fit_object.fit=1
+    layer_dict={}
+    # create parameter dictionary for every (multi)layer, 3 is the roughness
+    for i, layer in enumerate(fit_object.layers):
+      if len(layer)==1:
+        layer_dict[i]=[3]
       else:
-        layer[2]=abs(parameters[str(i*4+3)])
-    #BG=parameters[str(len(layers)*4)]
-    return [layers,BG]
+        layer_dict[i]=[[3] for j in range(len(layer.layers))]
+    data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.find_total_reflection(dataset))
+    fit_object.set_fit_parameters(layer_params=layer_dict, substrate_params=[2]) # set all roughnesses to be fit
+    fit_object.number_of_points=data_lines
+    # create the .ent file
+    ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
+    ent_file.write(fit_object.get_ent_str()+'\n')
+    ent_file.close()
+    retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'])
+    parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref',fit_object)
+    fit_object.get_parameters(parameters)
+    fit_object.fit=0
+    return retcode
 
   '''
     Function to export data for fitting with fit.f90 program,
     has to be reviewd and integrated within GUI
   '''
   def export_fit(self, dataset, input_file_name): 
-    fit_thick=self.fit_thicknesses
-    #+++++++++++++++++++ create array of layers +++++++++++++++++++
-    first_split=self.fit_layers.split('-')
-    layer_array=[]
-    constrain_array=[]
-    layer_index=1
     fit_object=fit_parameter()
+    #+++++++++++++++++++ create fit parameters object +++++++++++++++++++
+    fit_thick=self.fit_thicknesses
+    first_split=self.fit_layers.split('-')
     for compound in first_split:
       if compound[-1]==']': # is there a multilayer
         count=int(compound.split('[')[0])
         second_split=compound.split('[')[1].rstrip(']').split('_')
         second_thick=fit_thick.split('-')[0].lstrip('[').rstrip(']').split('_')
-      # test fit_object
         fit_object.append_multilayer(second_split, map(float, second_thick), [self.fit_est_roughness for i in second_thick], count)
-        for j in range(len(second_split)):
-          constrain_array.append([])
-        for i in range(count): # repeat every layer in multilayer
-          for j,multi_compound in enumerate(second_split):
-            constrain_array[-1-j].append((layer_index-1)*4+1) # every layer of same kind will have the same height
-            layer_array.append([multi_compound,float(second_thick[j]),self.fit_est_roughness])
-            layer_index=layer_index+1
       else: # no multilayer
           if len(fit_thick)>0:
-              layer_array.append([compound,float(fit_thick.split('-')[0]),self.fit_est_roughness])
-            # test fit_object
               fit_object.append_layer(compound, float(fit_thick.split('-')[0]), self.fit_est_roughness)
           else:
-              layer_array.append([compound,None,self.fit_est_roughness])
-            # test fit_object
               fit_object.append_substrate(compound, self.fit_est_roughness)
-          layer_index=layer_index+1
       if len(fit_thick.split('-'))>1: # remove first thickness
           fit_thick=fit_thick.split('-',1)[1]
       else:
           fit_thick=''
-    #------------------- create array of layers -------------------
-    fit_object.set_fit_parameters(\
-      layer_params={1: [[0, 3], [1, 2]]}, \
-      substrate_params=[], \
-      background=False, \
-      resolution=False, \
-      scaling=False)
-    fit_object.set_fit_constrains()
+    #------------------- create fit parameters object -------------------
+    fit_object.set_fit_constrains() # set constrained parameters for multilayer
       # convert x values from angle to q
     dataset.unit_trans([['Theta', '\\302\\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
                       ['2 Theta', '\\302\\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])
       # write data into files with sequence numbers in format ok for fit.f90    
     data_lines=dataset.export(input_file_name+'_'+dataset.number+'.res',False,' ') 
       # first guess for scaling factor is the maximum intensity
-    scaling_fac=(dataset.max(xstart=0.005)[1]/1e5)
+    fit_object.scaling_factor=(dataset.max(xstart=0.005)[1]/1e5)
       # first guess for the background is the minimum intensity
-    back_gr=dataset.min()[1]
+    fit_object.background=dataset.min()[1]
     #+++++ Try to refine the scaling factorn and roughnesses +++++
     if self.try_refine: 
-      scaling_fac=self.refine_scaling(dataset, layer_array,scaling_fac,back_gr,constrain_array)
-      result=self.refine_roughnesses(dataset, layer_array,scaling_fac,back_gr,constrain_array)
-      layer_array=result[0]
-      back_gr=result[1]
+      self.refine_scaling(dataset, fit_object)
+      self.refine_roughnesses(dataset, fit_object)
     #----- Try to refine the scaling factorn and roughnesses -----
     #+++++++ create final input file and make a simulation +++++++
-    fit_p=[i*4+1 for i in range(len(layer_array)-1)]
-    self.create_ent_file(layer_array, data_lines, input_file_name+'_'+dataset.number+'.ent', back_ground=back_gr,\
-                          scaling_factor=scaling_fac, constrains=constrain_array,  fit_params=fit_p)
+    fit_object.number_of_points=data_lines
+    fit_object.set_fit_parameters(background=True)
+    ent_file=open(input_file_name+'_'+dataset.number+'.ent', 'w')
+    ent_file.write(fit_object.get_ent_str()+'\n')
+    ent_file.close()
     retcode = subprocess.call(['fit-script', input_file_name+'_'+dataset.number+'.res',\
       input_file_name+'_'+dataset.number+'.ent', input_file_name+'_'+dataset.number])
     #------- create final input file and make a simulation -------
@@ -505,6 +450,35 @@ class fit_parameter():
     para_index+=1
     fit_params.sort()
     self.fit_params=fit_params
+    
+  '''
+    set layer parameters from existing fit
+  '''
+  def get_parameters(self, parameters):
+    para_index=1
+    for i, layer in enumerate(self.layers):
+      for j in range(4): # every layer parameter
+        if len(layer)==1: # its a single layer
+          if (para_index + j) in self.fit_params:
+            layer.set_param(j, parameters[para_index + j])
+        else:
+          for k in range(len(layer.layers)): # got through sub layers
+            if (para_index + j + k*4) in self.fit_params:
+              layer.layers[k].set_param(j, parameters[para_index + j + k*4])
+      para_index+=len(layer)*4
+    for j in range(3):
+      if para_index in self.fit_params:
+        self.substrate.set_param(j+1, parameters[para_index])
+      para_index+=1
+    if para_index in self.fit_params:
+      self.background=parameters[para_index]
+    para_index+=1
+    if para_index in self.fit_params:
+      self.resolution=parameters[para_index]
+    para_index+=1
+    if para_index in self.fit_params:
+      self.scaling_factor=parameters[para_index]
+    para_index+=1
   
   '''
     set fit constrains depending on (multi)layers
@@ -570,6 +544,19 @@ class fit_layer():
     return list, param_index + 4
   
   '''
+    set own parameters by index
+  '''
+  def set_param(self, index, value):
+    if index==0: 
+      self.thickness=value
+    elif index==1: 
+      self.delta=value
+    elif index==2: 
+      self.d_over_b=value
+    elif index==3: 
+      self.roughness=value
+  
+  '''
     Function to get the text lines for the .ent file.
     Returns the text string and the parameter index increased
     by the number of parameters for the layer.
@@ -619,7 +606,7 @@ class fit_multilayer():
     for j in range(layers):
       for i in params[j]:
         list+=[param_index + i + j * 4 + k * layers * 4 for k in range(self.repititions)]
-    return list, param_index + len(self)
+    return list, param_index + len(self) * 4
   
   '''
     return a list of constainlists according to multilayers
