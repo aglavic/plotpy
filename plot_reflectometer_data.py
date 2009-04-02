@@ -336,12 +336,12 @@ class reflectometer_session(generic_session):
           fit_thick=''
     #------------------- create array of layers -------------------
     fit_object.set_fit_parameters(\
-      #layer_params={1: [[0, 3], [1, 2]]}, \
-      substrate_params=[1], \
+      layer_params={1: [[0, 3], [1, 2]]}, \
+      substrate_params=[], \
       background=False, \
       resolution=False, \
       scaling=False)
-    print fit_object.get_ent_str()
+    fit_object.set_fit_constrains()
       # convert x values from angle to q
     dataset.unit_trans([['Theta', '\\302\\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
                       ['2 Theta', '\\302\\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])
@@ -505,6 +505,21 @@ class fit_parameter():
     para_index+=1
     fit_params.sort()
     self.fit_params=fit_params
+  
+  '''
+    set fit constrains depending on (multi)layers
+    layer_params is a dictionary with the layer number as index
+  '''
+  def set_fit_constrains(self):
+    fit_cons=[]
+    con_index=1
+    for layer in self.layers:
+      if len(layer)>1: # for every multilayer add constrains
+        new_con, con_index=layer.get_fit_cons(con_index)
+        fit_cons+=new_con
+      else:
+        con_index+=4
+    self.constrains=fit_cons
       
 
   '''
@@ -604,6 +619,17 @@ class fit_multilayer():
     for j in range(layers):
       for i in params[j]:
         list+=[param_index + i + j * 4 + k * layers * 4 for k in range(self.repititions)]
+    return list, param_index + len(self)
+  
+  '''
+    return a list of constainlists according to multilayers
+  '''
+  def get_fit_cons(self, param_index):
+    list=[]
+    layers=len(self.layers)
+    for j in range(layers): # iterate through layers
+      for i in range(4): # iterate through parameters
+        list.append([param_index + i + j * 4 + k * layers * 4 for k in range(self.repititions)])
     return list, param_index + len(self)
   
 
