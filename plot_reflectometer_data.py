@@ -158,6 +158,7 @@ class reflectometer_session(generic_session):
         simu.short_info='simulation'
         simu.sample_name=dataset.sample_name
         refinements.append(simu)
+        dataset.plot_together.append(simu)
     if self.export_for_fit: # export fit files
       self.add_data(refinements, filename+"_simulation")
 
@@ -352,3 +353,258 @@ class reflectometer_session(generic_session):
     #------- create final input file and make a simulation -------
 
   #---- functions for fitting with fortran program by E. Kentzinger ----
+
+'''
+  Class to store the parameters of a simulation or fit from the fit.f90 program.
+  Mostly just storing different variables for the layers.
+'''
+class fit_parameter():
+  # parameters for the whole fit
+  radiaion=[8048.0, 'Cu-K_alpha'] # readiation energy of x-rays
+  number_of_points=10 # number of simulated points
+  background=0 # constant background intensity
+  resolution=3.5 # resolution in q in 1e-3 A^-1
+  scaling_factor=1 # intensity of total reflection in 1e6
+  theta_max= 2.3 # angle of total coverage for recalibration
+  layers=[] # a list storing all layers/multilayers
+  substrate=None # data for the substrate
+  # fit specifc parameters
+  fit=0
+  fit_params=[1]
+  constrains=[]
+  
+  '''
+    class constructor
+  '''
+  def __init__(self):
+    # lookup the scattering length density table
+    from scattering_length_table import scattering_length_densities
+    self.scattering_length_densities=scattering_length_densities
+  
+  '''
+    append one layer at bottom from the lookup table defined
+    in scattering_length_densities.py
+  '''
+  def append_layer(self, material, thickness, roughness):
+    try: # if layer not in the table, return False
+      SL=scattering_length_densities[material]
+    except KeyError:
+      return False
+    layer=fit_layer(material, [thickness, SL[0], SL[1], roughness])
+    self.layers.append(layer)
+    return True
+  
+  
+  '''
+    append a multilayer at bottom from the lookup table defined
+    in scattering_length_densities.py
+  '''
+  def append_multilayer(self, materials, thicknesses, roughnesses, repititions, name='Unnamed'):
+    try: # if layer not in the table, return False
+      SLs=[scattering_length_densities[layer] for layer in materials]
+    except KeyError:
+      return False
+    layer_list=[]
+    for i, SL in enumerate(Sls):
+      layer_list.append(fit_layer(material[i], [thicknesses[i], SL[0], SL[1], roughnesses[i]]))
+    multilayer=fit_multilayer(repititions, name, layer_list)
+    self.layers.append(multilayer)
+    return True
+    None
+  
+  '''
+    append substrat from the lookup table defined
+    in scattering_length_densities.py
+  '''
+  def append_substrate(self, material, roughness):
+    try: # if layer not in the table, return False
+      SL=scattering_length_densities[material]
+    except KeyError:
+      return False
+    layer=fit_layer(material, [None, SL[0], SL[1], roughness])
+    self.substrate=layer
+    return True
+    
+  '''
+    create a .ent file for fit.f90 script from given parameters
+    fit parameters have to be set in advance, see set_fit_parameters/set_fit_constrains
+  '''
+  def create_ent_file(self, ent_file_name):
+    ent_string=str(self.radiation[0]) + '\tscattering radiaion energy (' + self.radiation[1] + ')\n'
+    ent_string+=str(self.number_of_points) + '\tnumber of datapoints\n\n'
+    ent_string+=str(self.numer_of_layers()) + '\tnumber of interfaces (number of layers + 1)\n'
+    ent_string+='#### Begin of layers, first layer '
+    # layers and parameters are numbered started with 1
+    leyer_index=1
+    para_index=1
+    # add text for every (multi)layer
+    for layer in self.layers:
+      string,  leyer_index,  para_index=layer.get_ent_text(leyer_index, para_index)
+      ent_string+=string
+    # substrate data
+    string,  leyer_index,  para_index=self.substrate.get_ent_text(leyer_index, para_index-1)
+    ent_string+='\n'.join(string.splitlines()[0]+string.splitlines()[2:])+'\n' # cut the thickness line
+    ent_string+='### End of layers.\n'
+    # more global parameters
+    ent_string+=str(round(self.background, 4)) + '\tbackground\t\t\t\tparametar ' + str(para_index) + '\n'
+    para_index+=1
+    ent_string+=str(self.resolution) + '\tresolution in q (sigma, in 1e-3 A^-1)\tparameter ' + str(para_index) + '\n'
+    para_index+=1
+    ent_string+=str(round(self.scaling_factor, 4)) + '\tscaling factor *1e6\t\t\tparameter ' + str(para_index) + '\n'
+    ent_string+='\n' + str(self.theta_max) + '\ttheta_max (in deg) for recalibration\n'
+    # fit specific parameters
+    ent_string+='#### fit specific parameters:\n'
+    ent_string+=str(self.fit) + '\t1: fit; 0: simulation\n'
+    ent_string+='\n' + str(len(self.fit_params)) + '\t\tNumber of parameters to be fitted\n'
+    ent_string+=' '.join([str(param) for param in self.fit_params]) + '\t\tindices of parameters\n'
+    ent_string+=str(len(self.constrains)) + '\t\tnumber of constrains\n'
+    for constrain in self.constrains:
+      ent_string+=str(len(constrain)) + '\t\tnumber of parameters to be kept equal\n'
+      ent_string+=' '.join([str(param) for param in constrain]) + '\t\tindices of those parameters\n'
+    # write the string into .ent file
+    ent_file=open(ent_file_name,'w')
+    ent_file.write(ent_string)
+    ent_file.close()
+  
+  '''
+    set fit parameters depending on (multi)layers
+    layer_params is a dictionary with the layer number as index
+  '''
+  def set_fit_parameters(self, layer_params={}, substrate_params=[], background=False, resolution=False, scaling=False):
+    fit_params=[]
+    para_index=1
+    for i, layer in enumerate(self.layers):
+      if i in layer_params:
+        new_paras, para_index=layer.get_fit_params(layer_params[i], para_index)
+        fit_params+=new_paras
+      else:
+        para_index+=len(layer)*4
+    for param in substrate_params:
+      fit_params.append(param_index + param)
+    para_index+=3
+    if background:
+      fit_params.append(para_index)
+    para_index+=1
+    if resolution:
+      fit_params.append(para_index)
+    para_index+=1
+    if scaling:
+      fit_params.append(para_index)
+    para_index+=1
+    self.fit_params=fit_params
+      
+
+  '''
+    calculate the number of layers in the file as the layer list can
+    contain multilayer elements
+  '''
+  def number_of_layers(self):
+    i=0
+    for layer in self.layers:
+      i+=len(leyer)
+    return i
+
+'''
+  class for one layer data
+  layer and multilay have the same function to create .ent file text
+'''
+class fit_layer():
+  name=''
+  thickness=1
+  delta=1
+  d_over_b=1
+  roughness=1
+  
+  '''
+    class constructor
+  '''
+  def __init__(self, name='NoName', parameters_list=None):
+    self.name=name
+    if parameters_list!=None:
+      self.thickness=parameters_list[0]
+      self.delta=parameters_list[1]
+      self.d_over_b=parameters_list[2]
+      self.roughness=parameters_list[3]
+  
+  '''
+    length is just one layer, see multilayers
+  '''
+  def __len__(self):
+    return 1
+  
+  '''
+    return a parameter list according to params
+  '''
+  def get_fit_params(self, params, param_index):
+    list=[]
+    for i in params:
+      list.append(param_index + i)
+    return list, param_index + 4
+  
+  '''
+    Function to get the text lines for the .ent file.
+    Returns the text string and the parameter index increased
+    by the number of parameters for the layer.
+  '''
+  def get_ent_text(self, leyer_index, para_index):
+    text='# ' + str(leyer_index) + ': ' + self.name + '\n' # Name comment
+    text+=str(self.thickness) + '\tlayer thickness (in A)\t\t\tparameter ' + str(para_index) + '\n'
+    para_index+=1
+    text+=str(self.delta) + '\tdelta *1e6\t\t\t\tparameter ' + str(para_index) + '\n'
+    para_index+=1
+    text+=str(self.d_over_b) + '\tdelta/beta\t\t\t\tparameter ' + str(para_index) + '\n'
+    para_index+=1
+    text+=str(self.roughness) + '\tlayer roughness (in A)\t\t\tparameter ' + str(para_index) + '\n'
+    para_index+=1
+    leyer_index+=1
+    return text, leyer_index, para_index
+  
+'''
+  class for multilayer data
+'''
+class fit_multilayer():
+  name=''
+  layers=[] # a list of fit_layers
+  repititions=1 # number of times these layers will be repeated
+  
+  '''
+    class constructor
+  '''
+  def __init__(self, repititions=1, name='NoName', leyer_list=None):
+    self.repititions=repititions
+    self.name=name
+    if leyer_list!=None:
+      self.leyers=leyer_list
+  
+  '''
+    length of the object is length of the leyers list * repititions
+  '''
+  def __len__(self):
+    return len(self.leyers) * self.repititions
+
+  '''
+    return a parameter list according to params (list of param lists for multilayer)
+  '''
+  def get_fit_params(self, params, param_index):
+    list=[]
+    layers=len(self.layers)
+    for j in range(layers):
+      for i in params[i]:
+        list+=[param_index + i + j * 4 + k * layer * 4 for k in range(self.repititions)]
+    return list, param_index + len(self)
+  
+
+  '''
+    Function to get the text lines for the .ent file.
+    Returns the text string and the parameter index increased
+    by the number of parameters for the layers.
+  '''
+  def get_ent_text(self, leyer_index, para_index):
+    text='# Begin of multilay ' + self.name
+    for i in range(self.repititions): # repead all leyers
+      for leyer in self.leyers: # add text for every layer
+        str, leyer_index, para_index = leyer.get_ent_text(leyer_index, para_index)
+        text+=str
+    return text
+  
+

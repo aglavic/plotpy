@@ -48,6 +48,8 @@ def gnuplot_plot(session, datasets,file_name_prefix, title,names,with_errorbars,
   'set xlabel "'+gp.x_label+'"\n'+\
   'set ylabel "'+gp.y_label+'"\n'+\
   'set title "'+gp.plot_title+'"\n'
+  if len(datasets)==1: # if there is only one graph don't show a key
+    gnuplot_settings+='unset key'
   if fit_lorentz: # setting functions and startingparameters for lorentz fitting
     for i,dataset in enumerate(datasets):
       gnuplot_settings=gnuplot_settings+\
@@ -172,72 +174,74 @@ def replace_ph(session, string,datasets,file_name_prefix, file_numbers, title,na
     function to create a script for the gnuplot program to read
 '''
 def create_plot_script(session, datasets,file_name_prefix,file_name_postfix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''):
-    gp=gnuplot_preferences # define global gnuplot_preferences modul as local gp 
-    sample_name=datasets[0].sample_name
-    file_numbers=[dataset.number for dataset in datasets]
-    if output_file.rsplit('.',1)[1]=='ps':
-        postscript_export=True
-        terminal=gp.set_output_terminal_ps
-    else:
-        postscript_export=False
-        terminal=gp.set_output_terminal_png
-    if with_errorbars|fit_lorentz:
-        plotting_param=gp.plotting_parameters_errorbars
-        using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].yerror+1)
-    else:
-        plotting_param=gp.plotting_parameters
-        using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)
-    gnuplot_file_text=gp.gnuplot_file_head+\
-            'set term '+terminal+'\n'+\
-            'set output "'+output_file+'"\n'+\
-            'set xlabel "'+gp.x_label+'"\n'+\
-            'set ylabel "'+gp.y_label+'"\n'+\
-            'set title "'+gp.plot_title+'"\n'+\
-            datasets[0].plot_options
-    if fit_lorentz: # define pseudo Voigt Function to be fitted ( f=eta*f_lorentz+(a-eta)*f_gauss )
-        for i,dataset in enumerate(datasets):
-            gnuplot_file_text=gnuplot_file_text+\
-              'f_'+str(i)+'(x)=I_'+str(i)+' * (abs(eta_'+str(i)+')/ ( 1 + ((x - x0_'+str(i)+')/sigma_'+str(i)+')**2) + abs(1-eta_'+str(i)+')*exp((-log(2))*((2*x-2*x0_'+str(i)+')/sigma_'+str(i)+')**2)) + BG_'+str(i)+'\n'+\
-              'I_'+str(i)+'='+str(dataset.max()[1])+'\n'+\
-              'x0_'+str(i)+'='+str(dataset.max()[0])+'\n'+\
-              'sigma_'+str(i)+'='+str(abs(dataset.max()[0]-dataset.min()[0])/4)+'\n'+\
-              'eta_'+str(i)+'=1\n'+\
-              'BG_'+str(i)+'='+str(dataset.min()[1])+'\n'+\
-              'fit f_'+str(i)+'(x) "'+file_name_prefix+'_'+file_numbers[i]+file_name_postfix+'" using '+\
-              str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1)+\
-              ' via I_'+str(i)+','+'x0_'+str(i)+','+'sigma_'+str(i)+','+'BG_'+str(i)+',eta_'+str(i)+'\n'
-    if datasets[0].logx:
-        gnuplot_file_text=gnuplot_file_text+'set log x\n'
-    if datasets[0].logy:
-        gnuplot_file_text=gnuplot_file_text+'set log y\n'
-    if datasets[0].logz:
-        gnuplot_file_text=gnuplot_file_text+'set log z\nset log cb\n'
-    splot_add=''
-    if datasets[0].zdata>=0:
-        plotting_param=gp.plotting_parameters_3d
-        gnuplot_file_text=gnuplot_file_text+'set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
-        'set zlabel "'+z_label+'"\n'+'set cblabel "'+z_label+'"\n'+\
-        settings_3d
-        if ((datasets[0].view_x%180)==0)&((datasets[0].view_z%90)==0):
-            gnuplot_file_text=gnuplot_file_text+settings_3dmap
-        else:
-            gnuplot_file_text=gnuplot_file_text+settings_3d
-        splot_add='s'
-        using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
-    gnuplot_file_text=gnuplot_file_text+\
-            '# now the plotting function\n'+splot_add+\
-            'plot "'+session.temp_dir+'tmp_data_'+datasets[0].number+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
-    gnuplot_file_text=replace_ph(session, gnuplot_file_text,datasets,file_name_prefix, file_numbers, title,names,sample_name,0,postscript_export,additional_info)
-    if fit_lorentz:
-        gnuplot_file_text=gnuplot_file_text+',f_'+str(0)+'(x) '+gp.plotting_parameters_fit+" title sprintf('psd. Voigt fit: x0=\045.4g; FWHM=\045.3g; I=\045.0g; eta=\045.2g',x0_"+\
-            str(i)+","+"abs(sigma_"+str(i)+"*2),"+"I_"+str(i)+","+"eta_"+str(i)+')'
-    for number in file_numbers[1:len(file_numbers)]:
-        gnuplot_file_text=gnuplot_file_text+',\\\n"'+session.temp_dir+'tmp_data_'+number+file_name_postfix+'" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
-        gnuplot_file_text=replace_ph(session, gnuplot_file_text,datasets,file_name_prefix,file_numbers, title,names,sample_name,file_numbers.index(number),postscript_export,additional_info)
-        if fit_lorentz:
-            gnuplot_file_text=gnuplot_file_text+',f_'+str(i)+'(x) '+gp.plotting_parameters_fit+' title=\'x0=\045g; sigma=\045g; intensity=\045g; background=\045g\',x0_'+\
-                str(i)+","+"sigma_"+str(i)+","+"I_"+str(i)+","+"BG_"+str(i)
-    return gnuplot_file_text
+  gp=gnuplot_preferences # define global gnuplot_preferences modul as local gp 
+  sample_name=datasets[0].sample_name
+  file_numbers=[dataset.number for dataset in datasets]
+  if output_file.rsplit('.',1)[1]=='ps':
+    postscript_export=True
+    terminal=gp.set_output_terminal_ps
+  else:
+    postscript_export=False
+    terminal=gp.set_output_terminal_png
+  if with_errorbars|fit_lorentz:
+    plotting_param=gp.plotting_parameters_errorbars
+    using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].yerror+1)
+  else:
+    plotting_param=gp.plotting_parameters
+    using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)
+  gnuplot_file_text=gp.gnuplot_file_head+\
+                    'set term '+terminal+'\n'+\
+                    'set output "'+output_file+'"\n'+\
+                    'set xlabel "'+gp.x_label+'"\n'+\
+                    'set ylabel "'+gp.y_label+'"\n'+\
+                    'set title "'+gp.plot_title+'"\n'
+  if len(datasets)==1: # if there is only one graph don't show a key
+    gnuplot_file_text+='unset key\n'
+  gnuplot_file_text+=datasets[0].plot_options
+  if fit_lorentz: # define pseudo Voigt Function to be fitted ( f=eta*f_lorentz+(a-eta)*f_gauss )
+      for i,dataset in enumerate(datasets):
+          gnuplot_file_text=gnuplot_file_text+\
+            'f_'+str(i)+'(x)=I_'+str(i)+' * (abs(eta_'+str(i)+')/ ( 1 + ((x - x0_'+str(i)+')/sigma_'+str(i)+')**2) + abs(1-eta_'+str(i)+')*exp((-log(2))*((2*x-2*x0_'+str(i)+')/sigma_'+str(i)+')**2)) + BG_'+str(i)+'\n'+\
+            'I_'+str(i)+'='+str(dataset.max()[1])+'\n'+\
+            'x0_'+str(i)+'='+str(dataset.max()[0])+'\n'+\
+            'sigma_'+str(i)+'='+str(abs(dataset.max()[0]-dataset.min()[0])/4)+'\n'+\
+            'eta_'+str(i)+'=1\n'+\
+            'BG_'+str(i)+'='+str(dataset.min()[1])+'\n'+\
+            'fit f_'+str(i)+'(x) "'+file_name_prefix+'_'+file_numbers[i]+file_name_postfix+'" using '+\
+            str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1)+\
+            ' via I_'+str(i)+','+'x0_'+str(i)+','+'sigma_'+str(i)+','+'BG_'+str(i)+',eta_'+str(i)+'\n'
+  if datasets[0].logx:
+      gnuplot_file_text=gnuplot_file_text+'set log x\n'
+  if datasets[0].logy:
+      gnuplot_file_text=gnuplot_file_text+'set log y\n'
+  if datasets[0].logz:
+      gnuplot_file_text=gnuplot_file_text+'set log z\nset log cb\n'
+  splot_add=''
+  if datasets[0].zdata>=0:
+      plotting_param=gp.plotting_parameters_3d
+      gnuplot_file_text=gnuplot_file_text+'set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
+      'set zlabel "'+z_label+'"\n'+'set cblabel "'+z_label+'"\n'+\
+      settings_3d
+      if ((datasets[0].view_x%180)==0)&((datasets[0].view_z%90)==0):
+          gnuplot_file_text=gnuplot_file_text+settings_3dmap
+      else:
+          gnuplot_file_text=gnuplot_file_text+settings_3d
+      splot_add='s'
+      using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
+  gnuplot_file_text=gnuplot_file_text+\
+          '# now the plotting function\n'+splot_add+\
+          'plot "'+session.temp_dir+'tmp_data_'+datasets[0].number+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+  gnuplot_file_text=replace_ph(session, gnuplot_file_text,datasets,file_name_prefix, file_numbers, title,names,sample_name,0,postscript_export,additional_info)
+  if fit_lorentz:
+      gnuplot_file_text=gnuplot_file_text+',f_'+str(0)+'(x) '+gp.plotting_parameters_fit+" title sprintf('psd. Voigt fit: x0=\045.4g; FWHM=\045.3g; I=\045.0g; eta=\045.2g',x0_"+\
+          str(i)+","+"abs(sigma_"+str(i)+"*2),"+"I_"+str(i)+","+"eta_"+str(i)+')'
+  for number in file_numbers[1:len(file_numbers)]:
+      gnuplot_file_text=gnuplot_file_text+',\\\n"'+session.temp_dir+'tmp_data_'+number+file_name_postfix+'" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+      gnuplot_file_text=replace_ph(session, gnuplot_file_text,datasets,file_name_prefix,file_numbers, title,names,sample_name,file_numbers.index(number),postscript_export,additional_info)
+      if fit_lorentz:
+          gnuplot_file_text=gnuplot_file_text+',f_'+str(i)+'(x) '+gp.plotting_parameters_fit+' title=\'x0=\045g; sigma=\045g; intensity=\045g; background=\045g\',x0_'+\
+              str(i)+","+"sigma_"+str(i)+","+"I_"+str(i)+","+"BG_"+str(i)
+  return gnuplot_file_text
 
  
 # abstract class for gnuplot fi5ofttting with the above functions. Creates fit function and parameters and collects fitted Data as well. (in the future, still under development)

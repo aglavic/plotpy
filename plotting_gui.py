@@ -395,7 +395,7 @@ class ApplicationMainWindow(gtk.Window):
       self.label.set_text(self.measurement[self.index_mess].sample_name)
       self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
       self.label2.set_text(self.measurement[self.index_mess].short_info)
-      self.last_plot_text= self.plot(self.active_session, [self.measurement[self.index_mess]],self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+      self.last_plot_text= self.plot(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
       self.set_image()
       self.reset_statusbar()
       self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
@@ -750,7 +750,7 @@ class ApplicationMainWindow(gtk.Window):
 
   def show_last_plot_params(self,action):
       global errorbars
-      plot_text=measurement_data_plotting.create_plot_script([self.measurement[self.index_mess]],self.input_file_name, self.script_suf, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+      plot_text=measurement_data_plotting.create_plot_script(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.script_suf, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
       param_dialog=gtk.Dialog(title='Last plot parameters:')
       param_dialog.set_default_size(600,400)
       sw = gtk.ScrolledWindow()
@@ -768,7 +768,7 @@ class ApplicationMainWindow(gtk.Window):
       # scrollbars.
       sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
       text_filed=gtk.Label()
-      text_filed.set_markup(self.last_plot_text)
+      #text_filed.set_markup(self.last_plot_text)
       sw.add_with_viewport(text_filed) # add textbuffer view widget
       param_dialog.vbox.add(sw)
       param_dialog.show_all()
@@ -977,7 +977,7 @@ class ApplicationMainWindow(gtk.Window):
     global errorbars
     if action.get_name()=='ExportAll':
       for dataset in self.measurement:
-        self.last_plot_text=self.plot(self.active_session, [dataset],self.input_file_name,dataset.short_info,[''],errorbars,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+        self.last_plot_text=self.plot(self.active_session, dataset.plot_together,self.input_file_name,dataset.short_info,[object.short_info for object in dataset.plot_together],errorbars,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
         self.reset_statusbar()
         self.statusbar.push(0,'Export plot number '+dataset.number+'... Done!')
     elif action.get_name()=='MultiPlotExport':
@@ -1044,7 +1044,7 @@ class ApplicationMainWindow(gtk.Window):
           return False
         file_dialog.destroy()
     #----------------File selection dialog-------------------#
-      self.last_plot_text=self.plot(self.active_session, [self.measurement[self.index_mess]], self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars,new_name,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+      self.last_plot_text=self.plot(self.active_session, self.measurement[self.index_mess].plot_together, self.input_file_name, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars,new_name,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
       self.reset_statusbar()
       self.statusbar.push(0,'Export plot number '+self.measurement[self.index_mess].number+'... Done!')
 
@@ -1052,7 +1052,7 @@ class ApplicationMainWindow(gtk.Window):
     global errorbars
     if action.get_name()=='Print':
       term='postscript landscape enhanced colour'
-      self.last_plot_text=self.plot(self.active_session, [self.measurement[self.index_mess]],self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.ps',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+      self.last_plot_text=self.plot(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.ps',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
       self.reset_statusbar()
       self.statusbar.push(0,'Printed with: '+print_command)
       os.popen2(print_command+self.active_session.temp_dir+'plot_temp.ps')
@@ -1060,7 +1060,7 @@ class ApplicationMainWindow(gtk.Window):
       term='postscript landscape enhanced colour'
       print_string=print_command
       for dataset in self.measurement: # combine all plot files in one print statement
-        self.last_plot_text=self.plot(self.active_session, [dataset],self.input_file_name,dataset.short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp_'+dataset.number+'.ps',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+        self.last_plot_text=self.plot(self.active_session, dataset.plot_together,self.input_file_name,dataset.short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp_'+dataset.number+'.ps',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
         print_string=print_string+self.active_session.temp_dir+'plot_temp_'+dataset.number+'.ps '
       self.reset_statusbar()
       self.statusbar.push(0,'Printed with: '+print_command)
@@ -1155,7 +1155,7 @@ class ApplicationMainWindow(gtk.Window):
     self.label.set_text(self.measurement[self.index_mess].sample_name)
     self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
     self.label2.set_text(self.measurement[self.index_mess].short_info)
-    self.last_plot_text=self.plot(self.active_session, [self.measurement[self.index_mess]],self.input_file_name, self.measurement[self.index_mess].short_info,[''],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+    self.last_plot_text=self.plot(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
     self.set_image()
     self.reset_statusbar()
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
