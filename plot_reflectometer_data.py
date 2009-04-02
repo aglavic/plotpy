@@ -28,6 +28,7 @@
 # import buildin modules
 import math
 import subprocess
+import gtk
 # import generic_session, which is the parent class for the squid_session
 from plot_generic_data import generic_session
 # importing preferences and data readout
@@ -59,6 +60,7 @@ class reflectometer_session(generic_session):
   show_counts=False
   export_for_fit=False
   try_refine=False
+  fit_object=None
   #------------------ local variables -----------------
 
   
@@ -111,7 +113,7 @@ class reflectometer_session(generic_session):
     # Create XML for squid menu
     string='''
       <menu action='ReflectometerMenu'>
-      
+        <menuitem action='ReflectometerFit'/>
       </menu>
     '''
     # Create actions for the menu
@@ -120,6 +122,10 @@ class reflectometer_session(generic_session):
                 "Reflectometer", None,                    # label, accelerator
                 None,                                   # tooltip
                 None ),
+            ( "ReflectometerFit", None,                             # name, stock id
+                "Fit...", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.fit_window ),
              )
     return string,  actions
   
@@ -183,6 +189,176 @@ class reflectometer_session(generic_session):
     return output_data
   
   #++++ functions for fitting with fortran program by E. Kentzinger ++++
+
+  #+++++++++++++++++++++++ GUI functions +++++++++++++++++++++++
+
+  '''
+    create a dialog window for the fit options
+  '''
+  def fit_window(self, aciont, window):
+    layer_options={}
+    layer_index=0
+  #+++++++++++++++++ Adding input fields +++++++++++++++++
+    dialog=gtk.Dialog(title='Fit parameters')
+    if self.fit_object!=None:
+      for layer in self.fit_object.layers:
+        layer_options[layer_index]=self.create_layer_options(layer, layer_index, dialog)
+        layer_index+=1
+    table=gtk.Table(1, layer_index + 1, False)
+    for i in range(layer_index):
+      table.attach(layer_options[i],
+          # X direction           Y direction
+          0, 1,                   i, i+1,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+    sw = gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add_with_viewport(table) # add textbuffer view widget
+  #----------------- Adding input fields -----------------
+
+    dialog.vbox.add(sw) # add table to dialog box
+    dialog.set_default_size(450,450)
+    dialog.add_button('Fit/Simulate and Replot',1) # button replot has handler_id 1
+    dialog.connect("response", self.dialog_fit, window)
+    # befor the widget gets destroyed the textbuffer view widget is removed
+    #dialog.connect("destroy",self.close_plot_options_window,sw) 
+    dialog.show_all()
+
+
+  '''
+    create dialog inputs for every layer
+  '''
+  def create_layer_options(self, layer, layer_index, dialog):
+    if len(layer)==1: # single layer
+      align_table=gtk.Table(4, 3, False)
+      text_filed=gtk.Label()
+      text_filed.set_markup(str(layer_index + 1) + ' - ' + layer.name)
+      align_table.attach(text_filed,
+          # X direction           Y direction
+          0, 4,                   0, 1,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      text_filed=gtk.Label()
+      text_filed.set_markup('thickness')
+      align_table.attach(text_filed,
+          # X direction           Y direction
+          0, 1,                   1, 2,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      text_filed=gtk.Label()
+      text_filed.set_markup('delta')
+      align_table.attach(text_filed,
+          # X direction           Y direction
+          1, 2,                   1, 2,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      text_filed=gtk.Label()
+      text_filed.set_markup('delta over beta')
+      align_table.attach(text_filed,
+          # X direction           Y direction
+          2, 3,                   1, 2,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      text_filed=gtk.Label()
+      text_filed.set_markup('roughness')
+      align_table.attach(text_filed,
+          # X direction           Y direction
+          3, 4,                   1, 2,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      thickness=gtk.Entry()
+      thickness.set_width_chars(10)
+      thickness.set_text(str(layer.thickness))
+      align_table.attach(thickness,
+          # X direction           Y direction
+          0, 1,                   2, 3,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      delta=gtk.Entry()
+      delta.set_width_chars(10)
+      delta.set_text(str(layer.delta))
+      align_table.attach(delta,
+          # X direction           Y direction
+          1, 2,                    2, 3,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      d_over_b=gtk.Entry()
+      d_over_b.set_width_chars(12)
+      d_over_b.set_text(str(layer.d_over_b))
+      align_table.attach(d_over_b,
+          # X direction           Y direction
+          2, 3,                    2, 3,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      roughness=gtk.Entry()
+      roughness.set_width_chars(10)
+      roughness.set_text(str(layer.roughness))
+      align_table.attach(roughness,
+          # X direction           Y direction
+          3, 4,                    2, 3,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      dialog.connect('response', layer.dialog_get_params, thickness, delta, d_over_b, roughness) # when apply button is pressed, send data
+    else:
+      align_table=gtk.Table(3, 1 + len(layer.layers), False)
+      text_filed=gtk.Label()
+      text_filed.set_markup('Multilayer')
+      align_table.attach(text_filed,
+          # X direction           Y direction
+          0, 1,                   0, 1,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      text_filed=gtk.Label()
+      text_filed.set_markup(str(layer_index + 1) + ' - ' + layer.name)
+      align_table.attach(text_filed,
+          # X direction           Y direction
+          1, 2,                   0, 1,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      repititions=gtk.Entry()
+      repititions.set_width_chars(3)
+      repititions.set_text(str(layer.repititions))
+      align_table.attach(repititions,
+          # X direction           Y direction
+          2, 3,                    0, 1,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      dialog.connect('response', layer.dialog_get_params, repititions) # when apply button is pressed, send data
+      for i, sub_layer in enumerate(layer.layers):
+        sub_table=self.create_layer_options(sub_layer, i, dialog)
+        align_table.attach(sub_table,
+            # X direction           Y direction
+            1, 3,                   i+1, i+2,
+            gtk.FILL,  gtk.FILL,
+            0,                      0)
+    return align_table
+  
+  '''
+    function invoked when apply button is pressed
+    fits with the new parameters
+  '''
+  def dialog_fit(self, action, response, window):
+    dataset=window.measurement[window.index_mess]
+    data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.find_total_reflection(dataset))
+    self.fit_object.number_of_points=data_lines
+    # create the .ent file
+    ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
+    ent_file.write(self.fit_object.get_ent_str()+'\n')
+    ent_file.close()
+    retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'])
+    simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
+    simu.number='1'+dataset.number
+    simu.short_info='simulation'
+    simu.sample_name=dataset.sample_name
+    dataset.plot_together=[dataset, simu]
+    window.replot()
+    
+
+
+  #----------------------- GUI functions -----------------------
 
   '''
     try to find the angle of total reflection by
@@ -309,6 +485,7 @@ class reflectometer_session(generic_session):
     ent_file.close()
     retcode = subprocess.call(['fit-script', input_file_name+'_'+dataset.number+'.res',\
       input_file_name+'_'+dataset.number+'.ent', input_file_name+'_'+dataset.number])
+    self.fit_object=fit_object
     #------- create final input file and make a simulation -------
 
   #---- functions for fitting with fortran program by E. Kentzinger ----
@@ -544,6 +721,18 @@ class fit_layer():
     return list, param_index + 4
   
   '''
+    function to get parameters from the GUI dialog
+  '''
+  def dialog_get_params(self, action, response, thickness, delta, d_over_b, roughness):
+    try:
+      self.thickness=float(thickness.get_text())
+      self.delta=float(delta.get_text())
+      self.d_over_b=float(d_over_b.get_text())
+      self.roughness=float(roughness.get_text())
+    except ValueError:
+      None
+  
+  '''
     set own parameters by index
   '''
   def set_param(self, index, value):
@@ -607,6 +796,15 @@ class fit_multilayer():
       for i in params[j]:
         list+=[param_index + i + j * 4 + k * layers * 4 for k in range(self.repititions)]
     return list, param_index + len(self) * 4
+  
+  '''
+    function to get parameters from the GUI dialog
+  '''
+  def dialog_get_params(self, action, response, repititions):
+    try:
+      self.repititions=int(repititions.get_text())
+    except ValueError:
+      None
   
   '''
     return a list of constainlists according to multilayers
