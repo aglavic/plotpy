@@ -305,11 +305,14 @@ class reflectometer_session(generic_session):
     layer_array=[]
     constrain_array=[]
     layer_index=1
+    fit_object=fit_parameter()
     for compound in first_split:
       if compound[-1]==']': # is there a multilayer
         count=int(compound.split('[')[0])
         second_split=compound.split('[')[1].rstrip(']').split('_')
         second_thick=fit_thick.split('-')[0].lstrip('[').rstrip(']').split('_')
+      # test fit_object
+        fit_object.append_multilayer(second_split, map(float, second_thick), [self.fit_est_roughness for i in second_thick], count)
         for j in range(len(second_split)):
           constrain_array.append([])
         for i in range(count): # repeat every layer in multilayer
@@ -320,14 +323,25 @@ class reflectometer_session(generic_session):
       else: # no multilayer
           if len(fit_thick)>0:
               layer_array.append([compound,float(fit_thick.split('-')[0]),self.fit_est_roughness])
+            # test fit_object
+              fit_object.append_layer(compound, float(fit_thick.split('-')[0]), self.fit_est_roughness)
           else:
               layer_array.append([compound,None,self.fit_est_roughness])
+            # test fit_object
+              fit_object.append_substrate(compound, self.fit_est_roughness)
           layer_index=layer_index+1
       if len(fit_thick.split('-'))>1: # remove first thickness
           fit_thick=fit_thick.split('-',1)[1]
       else:
           fit_thick=''
     #------------------- create array of layers -------------------
+    fit_object.set_fit_parameters(\
+      #layer_params={1: [[0, 3], [1, 2]]}, \
+      substrate_params=[1], \
+      background=False, \
+      resolution=False, \
+      scaling=False)
+    print fit_object.get_ent_str()
       # convert x values from angle to q
     dataset.unit_trans([['Theta', '\\302\\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
                       ['2 Theta', '\\302\\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])
@@ -360,7 +374,7 @@ class reflectometer_session(generic_session):
 '''
 class fit_parameter():
   # parameters for the whole fit
-  radiaion=[8048.0, 'Cu-K_alpha'] # readiation energy of x-rays
+  radiation=[8048.0, 'Cu-K_alpha'] # readiation energy of x-rays
   number_of_points=10 # number of simulated points
   background=0 # constant background intensity
   resolution=3.5 # resolution in q in 1e-3 A^-1
@@ -387,7 +401,7 @@ class fit_parameter():
   '''
   def append_layer(self, material, thickness, roughness):
     try: # if layer not in the table, return False
-      SL=scattering_length_densities[material]
+      SL=self.scattering_length_densities[material]
     except KeyError:
       return False
     layer=fit_layer(material, [thickness, SL[0], SL[1], roughness])
@@ -401,12 +415,12 @@ class fit_parameter():
   '''
   def append_multilayer(self, materials, thicknesses, roughnesses, repititions, name='Unnamed'):
     try: # if layer not in the table, return False
-      SLs=[scattering_length_densities[layer] for layer in materials]
+      SLs=[self.scattering_length_densities[layer] for layer in materials]
     except KeyError:
       return False
     layer_list=[]
-    for i, SL in enumerate(Sls):
-      layer_list.append(fit_layer(material[i], [thicknesses[i], SL[0], SL[1], roughnesses[i]]))
+    for i, SL in enumerate(SLs):
+      layer_list.append(fit_layer(materials[i], [thicknesses[i], SL[0], SL[1], roughnesses[i]]))
     multilayer=fit_multilayer(repititions, name, layer_list)
     self.layers.append(multilayer)
     return True
@@ -418,7 +432,7 @@ class fit_parameter():
   '''
   def append_substrate(self, material, roughness):
     try: # if layer not in the table, return False
-      SL=scattering_length_densities[material]
+      SL=self.scattering_length_densities[material]
     except KeyError:
       return False
     layer=fit_layer(material, [None, SL[0], SL[1], roughness])
@@ -429,21 +443,21 @@ class fit_parameter():
     create a .ent file for fit.f90 script from given parameters
     fit parameters have to be set in advance, see set_fit_parameters/set_fit_constrains
   '''
-  def create_ent_file(self, ent_file_name):
+  def get_ent_str(self):
     ent_string=str(self.radiation[0]) + '\tscattering radiaion energy (' + self.radiation[1] + ')\n'
     ent_string+=str(self.number_of_points) + '\tnumber of datapoints\n\n'
-    ent_string+=str(self.numer_of_layers()) + '\tnumber of interfaces (number of layers + 1)\n'
+    ent_string+=str(self.number_of_layers() + 1) + '\tnumber of interfaces (number of layers + 1)\n'
     ent_string+='#### Begin of layers, first layer '
     # layers and parameters are numbered started with 1
-    leyer_index=1
+    layer_index=1
     para_index=1
     # add text for every (multi)layer
     for layer in self.layers:
-      string,  leyer_index,  para_index=layer.get_ent_text(leyer_index, para_index)
+      string,  layer_index, para_index=layer.get_ent_text(layer_index, para_index)
       ent_string+=string
     # substrate data
-    string,  leyer_index,  para_index=self.substrate.get_ent_text(leyer_index, para_index-1)
-    ent_string+='\n'.join(string.splitlines()[0]+string.splitlines()[2:])+'\n' # cut the thickness line
+    string,  layer_index, para_index=self.substrate.get_ent_text(layer_index, para_index-1)
+    ent_string+='\n'.join([string.splitlines()[0]]+string.splitlines()[2:]) + '\n' # cut the thickness line
     ent_string+='### End of layers.\n'
     # more global parameters
     ent_string+=str(round(self.background, 4)) + '\tbackground\t\t\t\tparametar ' + str(para_index) + '\n'
@@ -461,10 +475,8 @@ class fit_parameter():
     for constrain in self.constrains:
       ent_string+=str(len(constrain)) + '\t\tnumber of parameters to be kept equal\n'
       ent_string+=' '.join([str(param) for param in constrain]) + '\t\tindices of those parameters\n'
-    # write the string into .ent file
-    ent_file=open(ent_file_name,'w')
-    ent_file.write(ent_string)
-    ent_file.close()
+    return ent_string
+
   
   '''
     set fit parameters depending on (multi)layers
@@ -480,7 +492,7 @@ class fit_parameter():
       else:
         para_index+=len(layer)*4
     for param in substrate_params:
-      fit_params.append(param_index + param)
+      fit_params.append(para_index + param)
     para_index+=3
     if background:
       fit_params.append(para_index)
@@ -491,6 +503,7 @@ class fit_parameter():
     if scaling:
       fit_params.append(para_index)
     para_index+=1
+    fit_params.sort()
     self.fit_params=fit_params
       
 
@@ -501,7 +514,7 @@ class fit_parameter():
   def number_of_layers(self):
     i=0
     for layer in self.layers:
-      i+=len(leyer)
+      i+=len(layer)
     return i
 
 '''
@@ -546,8 +559,8 @@ class fit_layer():
     Returns the text string and the parameter index increased
     by the number of parameters for the layer.
   '''
-  def get_ent_text(self, leyer_index, para_index):
-    text='# ' + str(leyer_index) + ': ' + self.name + '\n' # Name comment
+  def get_ent_text(self, layer_index, para_index):
+    text='# ' + str(layer_index) + ': ' + self.name + '\n' # Name comment
     text+=str(self.thickness) + '\tlayer thickness (in A)\t\t\tparameter ' + str(para_index) + '\n'
     para_index+=1
     text+=str(self.delta) + '\tdelta *1e6\t\t\t\tparameter ' + str(para_index) + '\n'
@@ -556,8 +569,8 @@ class fit_layer():
     para_index+=1
     text+=str(self.roughness) + '\tlayer roughness (in A)\t\t\tparameter ' + str(para_index) + '\n'
     para_index+=1
-    leyer_index+=1
-    return text, leyer_index, para_index
+    layer_index+=1
+    return text, layer_index, para_index
   
 '''
   class for multilayer data
@@ -570,17 +583,17 @@ class fit_multilayer():
   '''
     class constructor
   '''
-  def __init__(self, repititions=1, name='NoName', leyer_list=None):
+  def __init__(self, repititions=1, name='NoName', layer_list=None):
     self.repititions=repititions
     self.name=name
-    if leyer_list!=None:
-      self.leyers=leyer_list
+    if layer_list!=None:
+      self.layers=layer_list
   
   '''
-    length of the object is length of the leyers list * repititions
+    length of the object is length of the layers list * repititions
   '''
   def __len__(self):
-    return len(self.leyers) * self.repititions
+    return len(self.layers) * self.repititions
 
   '''
     return a parameter list according to params (list of param lists for multilayer)
@@ -589,8 +602,8 @@ class fit_multilayer():
     list=[]
     layers=len(self.layers)
     for j in range(layers):
-      for i in params[i]:
-        list+=[param_index + i + j * 4 + k * layer * 4 for k in range(self.repititions)]
+      for i in params[j]:
+        list+=[param_index + i + j * 4 + k * layers * 4 for k in range(self.repititions)]
     return list, param_index + len(self)
   
 
@@ -599,12 +612,12 @@ class fit_multilayer():
     Returns the text string and the parameter index increased
     by the number of parameters for the layers.
   '''
-  def get_ent_text(self, leyer_index, para_index):
+  def get_ent_text(self, layer_index, para_index):
     text='# Begin of multilay ' + self.name
-    for i in range(self.repititions): # repead all leyers
-      for leyer in self.leyers: # add text for every layer
-        str, leyer_index, para_index = leyer.get_ent_text(leyer_index, para_index)
-        text+=str
-    return text
+    for i in range(self.repititions): # repead all layers
+      for layer in self.layers: # add text for every layer
+        string, layer_index, para_index = layer.get_ent_text(layer_index, para_index)
+        text+=string
+    return text,  layer_index,  para_index
   
 
