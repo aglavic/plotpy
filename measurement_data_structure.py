@@ -234,7 +234,7 @@ class MeasurementData:
       write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
     last_point=self.get_data(0)
     for i,point in enumerate(self):
-      if (i>=xfrom_index)&(i<=xto_index):
+      if (i>=xfrom_index) and (i<=xto_index):
         if (self.zdata>=0)&(not round(point[self.ydata],5)==round(last_point[self.ydata],5)):
           write_file.write('\n')
         last_point=point

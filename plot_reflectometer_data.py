@@ -55,12 +55,15 @@ class reflectometer_session(generic_session):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
+  file_wildcards=(('reflectometer data','*.UXD'), )  
   options=generic_session.options+['fit', 'ref']
   #options:
   show_counts=False
   export_for_fit=False
   try_refine=False
   fit_object=None
+  x_from=0.005
+  x_to=''
   #------------------ local variables -----------------
 
   
@@ -195,7 +198,7 @@ class reflectometer_session(generic_session):
   '''
     create a dialog window for the fit options
   '''
-  def fit_window(self, action, window):
+  def fit_window(self, action, window, position=None, size=[500, 400]):
     layer_options={}
     layer_index=0
     layer_params={}
@@ -207,6 +210,8 @@ class reflectometer_session(generic_session):
               }
   #+++++++++++++++++ Adding input fields +++++++++++++++++
     dialog=gtk.Dialog(title='Fit parameters')
+    if position!=None:
+      dialog.move(position[0], position[1])
     #layer parameters
     if self.fit_object!=None:
       for layer in self.fit_object.layers:
@@ -215,7 +220,7 @@ class reflectometer_session(generic_session):
     #create table for widgets
     table=gtk.Table(1, layer_index + 5, False)
     # top parameter
-    align_table=gtk.Table(4, 1, False)
+    align_table=gtk.Table(5, 1, False)
     text_filed=gtk.Label()
     text_filed.set_markup('Beam energy: ')
     align_table.attach(text_filed,
@@ -231,6 +236,33 @@ class reflectometer_session(generic_session):
     align_table.attach(energy,
         # X direction           Y direction
         1, 2,                   0, 1,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)
+    text_filed=gtk.Label()
+    text_filed.set_markup('x-region')
+    align_table.attach(text_filed,
+        # X direction           Y direction
+        2,  3,                   0, 1,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)
+    x_from=gtk.Entry()
+    x_from.set_width_chars(10)
+    x_from.set_text(str(self.x_from))
+    # activating the input will apply the settings, too
+    x_from.connect('activate', self.dialog_activate, dialog)
+    align_table.attach(x_from,
+        # X direction           Y direction
+        3, 4,                   0, 1,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)
+    x_to=gtk.Entry()
+    x_to.set_width_chars(10)
+    x_to.set_text(str(self.x_to))
+    # activating the input will apply the settings, too
+    x_to.connect('activate', self.dialog_activate, dialog)
+    align_table.attach(x_to,
+        # X direction           Y direction
+        4, 5,                   0, 1,
         gtk.FILL,  gtk.FILL,
         0,                      0)
     frame = gtk.Frame()
@@ -358,10 +390,10 @@ class reflectometer_session(generic_session):
     sw.add_with_viewport(table) # add textbuffer view widget
   #----------------- Adding input fields -----------------
     dialog.vbox.add(sw) # add table to dialog box
-    dialog.set_default_size(500,400)
+    dialog.set_default_size(size[0],size[1])
     dialog.add_button('Fit/Simulate and Replot',1) # button replot has handler_id 1
     dialog.connect("response", self.dialog_response, dialog, window, \
-                   [energy, background, resolution, scaling_factor, theta_max], \
+                   [energy, background, resolution, scaling_factor, theta_max, x_from, x_to], \
                    [layer_params, fit_params])
     # befor the widget gets destroyed the textbuffer view widget is removed
     #dialog.connect("destroy",self.close_plot_options_window,sw) 
@@ -548,7 +580,15 @@ class reflectometer_session(generic_session):
         self.fit_object.theta_max=float(parameters_list[4].get_text())
       except ValueError:
         None
-      self.fit_object.set_fit_parameters(layer_params=fit_list[0], substrate_params=fit_list[1][0], \
+      try:
+        self.x_from=float(parameters_list[5].get_text())
+      except ValueError:
+        self.x_from=None
+      try:
+        self.x_to=float(parameters_list[6].get_text())
+      except ValueError:
+        self.x_to=None
+      self.fit_object.set_fit_parameters(layer_params=fit_list[0], substrate_params=map(lambda x: x-1, fit_list[1][0]), \
                                          background=fit_list[1]['background'], \
                                          resolution=fit_list[1]['resolution'], \
                                          scaling=fit_list[1]['scaling'])
@@ -567,24 +607,45 @@ class reflectometer_session(generic_session):
     show the result of a fit and ask to retrieve the result
   '''
   def show_result_window(self, dialog, window, new_fit):
+    old_fit=self.fit_object
     results=gtk.Dialog(title='Fit results:')
     text_string='These are the parameters retrieved by the last fit\n'
-    def get_layer_text(layer):
-      if len(layer)==1: # single layer
-        return 'single'
+    def get_layer_text(new_layer, old_layer, index):
+      text_string=''
+      if len(new_layer)==1: # single layer
+        text_string+=str(index)+' - Layer:\n'
+        if new_layer.thickness!=old_layer.thickness:
+          text_string+='\tthickness:\t%# .6g  \t->   %# .6g \n' % (old_layer.thickness, new_layer.thickness)
+        if new_layer.delta!=old_layer.delta:
+          text_string+='\tdelta:\t\t%# .6g  \t->   %# .6g \n' % (old_layer.delta, new_layer.delta)
+        if new_layer.d_over_b!=old_layer.d_over_b:
+          text_string+='\tdelta/beta:\t%# .6g  \t->   %# .6g \n' % (old_layer.d_over_b, new_layer.d_over_b)
+        if new_layer.roughness!=old_layer.roughness:
+          text_string+='\troughness:\t%# .6g  \t->   %# .6g \n' % (old_layer.roughness, new_layer.roughness)
+        return text_string+'\n'
       else:
-        return 'multi'
-    for i, layer in enumerate(new_fit.layers):
-      text_string+=get_layer_text(layer)
+        text_string+='\n'+str(index)+' - Multilayer:\n'
+        for i,  layer in enumerate(new_layer.layers):
+          text_string+='\t'+get_layer_text(layer, old_layer.layers[i], i)
+        return text_string
+    for i, new_layer in enumerate(new_fit.layers):
+      text_string+=get_layer_text(new_layer, old_fit.layers[i], i)
     # substrate parameters
     text_string+='\nSubstrat:\n'
-    text_string+='\tdelta:\t\t' + str(new_fit.substrate.delta) + '\n'
-    text_string+='\tdelta/beta:\t' + str(new_fit.substrate.d_over_b) + '\n'
-    text_string+='\troughness:\t' + str(new_fit.substrate.roughness) + '\n\n'
+    if old_fit.substrate.delta!=new_fit.substrate.delta:
+      text_string+='\tdelta:\t\t%# .6g  \t->   %# .6g \n' % (old_fit.substrate.delta, new_fit.substrate.delta)
+    if old_fit.substrate.d_over_b!=new_fit.substrate.d_over_b:
+      text_string+='\tdelta/beta:\t%# .6g  \t->   %# .6g \n' %  (old_fit.substrate.d_over_b, new_fit.substrate.d_over_b)
+    if old_fit.substrate.roughness!=new_fit.substrate.roughness:
+      text_string+='\troughness:\t%# .6g  \t->   %# .6g \n' %  (old_fit.substrate.roughness, new_fit.substrate.roughness)
     # global parameters
-    text_string+='Background:\t' + str(new_fit.background) + '\n'
-    text_string+='Resolution:\t' + str(new_fit.resolution) + '\n'
-    text_string+='Scaling Factor:\t' + str(new_fit.scaling_factor) + '\n'
+    text_string+='\n'
+    if old_fit.background!=new_fit.background:
+      text_string+='Background:\t\t%# .6g  \t->   %# .6g \n' %  (old_fit.background, new_fit.background)
+    if old_fit.resolution!=new_fit.resolution:
+      text_string+='Resolution:\t\t%# .6g  \t->   %# .6g \n' %  (old_fit.resolution, new_fit.resolution)
+    if old_fit.scaling_factor!=new_fit.scaling_factor:
+      text_string+='Scaling Factor:\t\t%# .6g  \t->   %# .6g \n' %  (old_fit.scaling_factor, new_fit.scaling_factor)
     text_string+='\n\nDo you want to use these new parameters?'
     text=gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview. 
@@ -616,8 +677,10 @@ class reflectometer_session(generic_session):
   def result_window_response(self, response, dialog, window, new_fit):
     if response==1:
       self.fit_object=new_fit
+      position=dialog.get_position()
+      size=dialog.get_size()
       dialog.destroy()
-      self.fit_window(None, window)
+      self.fit_window(None, window, position=position, size=size)
 
   '''
     function invoked when apply button is pressed
@@ -625,7 +688,7 @@ class reflectometer_session(generic_session):
   '''
   def dialog_fit(self, action, window):
     dataset=window.measurement[window.index_mess]
-    data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.find_total_reflection(dataset))
+    data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.x_from, xto=self.x_to)
     self.fit_object.number_of_points=data_lines
     # create the .ent file
     ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
@@ -755,27 +818,30 @@ class reflectometer_session(generic_session):
     has to be reviewd and integrated within GUI
   '''
   def export_fit(self, dataset, input_file_name): 
-    fit_object=fit_parameter()
-    #+++++++++++++++++++ create fit parameters object +++++++++++++++++++
-    fit_thick=self.fit_thicknesses
-    first_split=self.fit_layers.split('-')
-    for compound in first_split:
-      if compound[-1]==']': # is there a multilayer
-        count=int(compound.split('[')[0])
-        second_split=compound.split('[')[1].rstrip(']').split('_')
-        second_thick=fit_thick.split('-')[0].lstrip('[').rstrip(']').split('_')
-        fit_object.append_multilayer(second_split, map(float, second_thick), [self.fit_est_roughness for i in second_thick], count)
-      else: # no multilayer
-          if len(fit_thick)>0:
-              fit_object.append_layer(compound, float(fit_thick.split('-')[0]), self.fit_est_roughness)
-          else:
-              fit_object.append_substrate(compound, self.fit_est_roughness)
-      if len(fit_thick.split('-'))>1: # remove first thickness
-          fit_thick=fit_thick.split('-',1)[1]
-      else:
-          fit_thick=''
-    #------------------- create fit parameters object -------------------
-    fit_object.set_fit_constrains() # set constrained parameters for multilayer
+    if self.fit_object==None:
+      fit_object=fit_parameter()
+      #+++++++++++++++++++ create fit parameters object +++++++++++++++++++
+      fit_thick=self.fit_thicknesses
+      first_split=self.fit_layers.split('-')
+      for compound in first_split:
+        if compound[-1]==']': # is there a multilayer
+          count=int(compound.split('[')[0])
+          second_split=compound.split('[')[1].rstrip(']').split('_')
+          second_thick=fit_thick.split('-')[0].lstrip('[').rstrip(']').split('_')
+          fit_object.append_multilayer(second_split, map(float, second_thick), [self.fit_est_roughness for i in second_thick], count)
+        else: # no multilayer
+            if len(fit_thick)>0:
+                fit_object.append_layer(compound, float(fit_thick.split('-')[0]), self.fit_est_roughness)
+            else:
+                fit_object.append_substrate(compound, self.fit_est_roughness)
+        if len(fit_thick.split('-'))>1: # remove first thickness
+            fit_thick=fit_thick.split('-',1)[1]
+        else:
+            fit_thick=''
+      #------------------- create fit parameters object -------------------
+    else:
+      fit_object=self.fit_object
+      fit_object.set_fit_constrains() # set constrained parameters for multilayer
       # convert x values from angle to q
     dataset.unit_trans([['Theta', '\\302\\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
                       ['2 Theta', '\\302\\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])
