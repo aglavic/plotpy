@@ -198,15 +198,22 @@ class reflectometer_session(generic_session):
   def fit_window(self, aciont, window):
     layer_options={}
     layer_index=0
+    layer_params={}
+    fit_params={
+              'background':False, 
+              'resolution':False, 
+              'scaling':False, 
+              'actually':False
+              }
   #+++++++++++++++++ Adding input fields +++++++++++++++++
     dialog=gtk.Dialog(title='Fit parameters')
     #layer parameters
     if self.fit_object!=None:
       for layer in self.fit_object.layers:
-        layer_options[layer_index]=self.create_layer_options(layer, layer_index, dialog)
+        layer_options[layer_index]=self.create_layer_options(layer, layer_index, layer_params, dialog)
         layer_index+=1
     #create table for widgets
-    table=gtk.Table(1, layer_index + 4, False)
+    table=gtk.Table(1, layer_index + 5, False)
     # top parameter
     align_table=gtk.Table(4, 1, False)
     text_filed=gtk.Label()
@@ -225,8 +232,11 @@ class reflectometer_session(generic_session):
         # X direction           Y direction
         1, 2,                   0, 1,
         gtk.FILL,  gtk.FILL,
-        0,                      0)   
-    table.attach(align_table,
+        0,                      0)
+    frame = gtk.Frame()
+    frame.set_shadow_type(gtk.SHADOW_IN)
+    frame.add(align_table)
+    table.attach(frame,
           # X direction           Y direction
           0, 1,                   0, 1,
           gtk.FILL,  gtk.FILL,
@@ -239,7 +249,7 @@ class reflectometer_session(generic_session):
           gtk.FILL,  gtk.FILL,
           0,                      0)
     #substrate parameters
-    substrat_options=self.create_layer_options(self.fit_object.substrate, layer_index, dialog, substrate=True)
+    substrat_options=self.create_layer_options(self.fit_object.substrate, 0, fit_params, dialog, substrate=True)
     table.attach(substrat_options,
         # X direction           Y direction
         0, 1,                   layer_index+2, layer_index+3,
@@ -254,9 +264,11 @@ class reflectometer_session(generic_session):
         0, 4,                   0, 1,
         gtk.FILL,  gtk.FILL,
         0,                      0)
-    text_filed=gtk.Label()
-    text_filed.set_markup('Background: ')
-    align_table.attach(text_filed,
+    #text_filed=gtk.Label()
+    #text_filed.set_markup('Background: ')
+    background_x=gtk.CheckButton(label='Background: ', use_underline=True)
+    background_x.connect('toggled', self.toggle_fit_bool_option, fit_params, 'background')
+    align_table.attach(background_x,
         # X direction           Y direction
         0, 1,                   1, 2,
         gtk.FILL,  gtk.FILL,
@@ -271,9 +283,11 @@ class reflectometer_session(generic_session):
         1, 2,                   1, 2,
         gtk.FILL,  gtk.FILL,
         0,                      0)   
-    text_filed=gtk.Label()
-    text_filed.set_markup('Resolution: ')
-    align_table.attach(text_filed,
+    #text_filed=gtk.Label()
+    #text_filed.set_markup('Resolution: ')
+    resolution_x=gtk.CheckButton(label='Resolution: ', use_underline=True)
+    resolution_x.connect('toggled', self.toggle_fit_bool_option, fit_params, 'resolution')
+    align_table.attach(resolution_x,
         # X direction           Y direction
         2, 3,                   1, 2,
         gtk.FILL,  gtk.FILL,
@@ -288,9 +302,11 @@ class reflectometer_session(generic_session):
         3, 4,                   1, 2,
         gtk.FILL,  gtk.FILL,
         0,                      0)   
-    text_filed=gtk.Label()
-    text_filed.set_markup('Scaling: ')
-    align_table.attach(text_filed,
+    #text_filed=gtk.Label()
+    #text_filed.set_markup('Scaling: ')
+    scaling_x=gtk.CheckButton(label='Scaling: ', use_underline=True)
+    scaling_x.connect('toggled', self.toggle_fit_bool_option, fit_params, 'scaling')
+    align_table.attach(scaling_x,
         # X direction           Y direction
         0, 1,                   2, 3,
         gtk.FILL,  gtk.FILL,
@@ -327,6 +343,13 @@ class reflectometer_session(generic_session):
           0, 1,                   layer_index+3, layer_index+4,
           gtk.FILL,  gtk.FILL,
           0,                      0)
+    fit_x=gtk.CheckButton(label='Fit the selected parameters', use_underline=True)
+    fit_x.connect('toggled', self.toggle_fit_bool_option, fit_params, 'actually')
+    table.attach(fit_x,
+          # X direction           Y direction
+          0, 3,                   layer_index+4, layer_index+5,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
     sw = gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
@@ -337,56 +360,69 @@ class reflectometer_session(generic_session):
     dialog.vbox.add(sw) # add table to dialog box
     dialog.set_default_size(450,450)
     dialog.add_button('Fit/Simulate and Replot',1) # button replot has handler_id 1
-    dialog.connect("response", self.dialog_response, window, [energy, background, resolution, scaling_factor, theta_max])
+    dialog.connect("response", self.dialog_response, window, \
+                   [energy, background, resolution, scaling_factor, theta_max], \
+                   [layer_params, fit_params])
     # befor the widget gets destroyed the textbuffer view widget is removed
     #dialog.connect("destroy",self.close_plot_options_window,sw) 
     dialog.show_all()
-    
+    # connect dialog to main window
+    window.open_windows.append(dialog)
+    dialog.connect("destroy", lambda *w: window.open_windows.remove(dialog))
 
   # just responde the right signal, when input gets activated
   def dialog_activate(self, action, dialog):
-    dialog.response(1)
+    dialog.response(2)
 
   '''
     create dialog inputs for every layer
   '''
-  def create_layer_options(self, layer, layer_index, dialog, substrate=False):
+  def create_layer_options(self, layer, layer_index, layer_params, dialog, substrate=False):
     if len(layer)==1: # single layer
-      align_table=gtk.Table(4, 3, False)
+      layer_params[layer_index]=[]
+      align_table=gtk.Table(5, 3, False)
+      layer_title=gtk.Label()
       if not substrate:
-        text_filed=gtk.Label()
-        text_filed.set_markup(str(layer_index + 1) + ' - ' + layer.name)
-        align_table.attach(text_filed,
+        layer_title.set_markup(str(layer_index + 1) + ' - ' + layer.name)
+        align_table.attach(layer_title,
             # X direction           Y direction
             0, 4,                   0, 1,
             gtk.FILL,  gtk.FILL,
             0,                      0)
-        text_filed=gtk.Label()
-        text_filed.set_markup('thickness')
-        align_table.attach(text_filed,
+        #text_filed=gtk.Label()
+        #text_filed.set_markup('thickness')
+        thickness_x=gtk.CheckButton(label='thickness', use_underline=True)
+        thickness_x.connect('toggled', self.toggle_fit_option, layer_params[layer_index], 0)
+        align_table.attach(thickness_x,
             # X direction           Y direction
             0, 1,                   1, 2,
             gtk.FILL,  gtk.FILL,
             0,                      0)
-      text_filed=gtk.Label()
-      text_filed.set_markup('delta')
-      align_table.attach(text_filed,
+      #text_filed=gtk.Label()
+      #text_filed.set_markup('delta')
+      delta_x=gtk.CheckButton(label='delta', use_underline=True)
+      delta_x.connect('toggled', self.toggle_fit_option, layer_params[layer_index], 1)
+      align_table.attach(delta_x,
           # X direction           Y direction
           1, 2,                   1, 2,
           gtk.FILL,  gtk.FILL,
           0,                      0)
-      text_filed=gtk.Label()
-      text_filed.set_markup('delta over beta')
-      align_table.attach(text_filed,
-          # X direction           Y direction
-          2, 3,                   1, 2,
-          gtk.FILL,  gtk.FILL,
-          0,                      0)
-      text_filed=gtk.Label()
-      text_filed.set_markup('roughness')
-      align_table.attach(text_filed,
+      #text_filed=gtk.Label()
+      #text_filed.set_markup('delta over beta')
+      d_over_b_x=gtk.CheckButton(label='delta over beta', use_underline=True)
+      d_over_b_x.connect('toggled', self.toggle_fit_option, layer_params[layer_index], 2)
+      align_table.attach(d_over_b_x,
           # X direction           Y direction
           3, 4,                   1, 2,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      #text_filed=gtk.Label()
+      #text_filed.set_markup('roughness')
+      roughness_x=gtk.CheckButton(label='roughness', use_underline=True)
+      roughness_x.connect('toggled', self.toggle_fit_option, layer_params[layer_index], 3)
+      align_table.attach(roughness_x,
+          # X direction           Y direction
+          4, 5,                   1, 2,
           gtk.FILL,  gtk.FILL,
           0,                      0)
       thickness=gtk.Entry()
@@ -426,6 +462,23 @@ class reflectometer_session(generic_session):
       d_over_b.connect('activate', self.dialog_activate, dialog)
       align_table.attach(d_over_b,
           # X direction           Y direction
+          3, 4,                    2, 3,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      # selection dialog for material
+      SL_selector=gtk.combo_box_new_text()
+      SL_selector.append_text('SL')
+      SL_selector.set_active(0)
+      for i, SL in enumerate(self.fit_object.scattering_length_densities.items()):
+        SL_selector.append_text(SL[0])
+        if layer.delta==SL[1][0] and layer.d_over_b==SL[1][1]:
+          SL_selector.set_active(i+1)
+      SL_selector.connect('changed', self.change_scattering_length, \
+                          SL_selector, layer, delta, d_over_b, \
+                          layer_title, layer_index)
+      layer.SL_selector=SL_selector
+      align_table.attach(SL_selector,
+          # X direction           Y direction
           2, 3,                    2, 3,
           gtk.FILL,  gtk.FILL,
           0,                      0)
@@ -436,12 +489,13 @@ class reflectometer_session(generic_session):
       roughness.connect('activate', self.dialog_activate, dialog)
       align_table.attach(roughness,
           # X direction           Y direction
-          3, 4,                    2, 3,
+          4, 5,                    2, 3,
           gtk.FILL,  gtk.FILL,
           0,                      0)
       dialog.connect('response', layer.dialog_get_params, thickness, delta, d_over_b, roughness) # when apply button is pressed, send data
     else:
-      align_table=gtk.Table(3, 1 + len(layer.layers), False)
+      layer_params[layer_index]={}
+      align_table=gtk.Table(4, 1 + len(layer.layers), False)
       text_filed=gtk.Label()
       text_filed.set_markup('Multilayer')
       align_table.attach(text_filed,
@@ -468,20 +522,24 @@ class reflectometer_session(generic_session):
           0,                      0)
       dialog.connect('response', layer.dialog_get_params, repititions) # when apply button is pressed, send data
       for i, sub_layer in enumerate(layer.layers):
-        sub_table=self.create_layer_options(sub_layer, i, dialog)
+        sub_table=self.create_layer_options(sub_layer, i, layer_params[layer_index], dialog)
         align_table.attach(sub_table,
             # X direction           Y direction
-            1, 3,                   i+1, i+2,
+            1, 4,                   i+1, i+2,
             gtk.FILL,  gtk.FILL,
             0,                      0)
+      frame = gtk.Frame()
+      frame.set_shadow_type(gtk.SHADOW_IN)
+      frame.add(align_table)
+      align_table=frame
     return align_table
   
   
   '''
     handle fit dialog response
   '''
-  def dialog_response(self, action, response, window, parameters_list):
-    if response==1:
+  def dialog_response(self, action, response, window, parameters_list, fit_list):
+    if response>0:
       try:
         self.fit_object.radiation[0]=float(parameters_list[0].get_text())
         self.fit_object.background=float(parameters_list[1].get_text())
@@ -490,7 +548,15 @@ class reflectometer_session(generic_session):
         self.fit_object.theta_max=float(parameters_list[4].get_text())
       except ValueError:
         None
+      self.fit_object.set_fit_parameters(layer_params=fit_list[0], substrate_params=fit_list[1][0], \
+                                         background=fit_list[1]['background'], \
+                                         resolution=fit_list[1]['resolution'], \
+                                         scaling=fit_list[1]['scaling'])
+      if fit_list[1]['actually'] and response==1:
+        self.fit_object.fit=1
+        
       self.dialog_fit(action, window)
+      self.fit_object.fit=0
       
 
   '''
@@ -512,8 +578,38 @@ class reflectometer_session(generic_session):
     simu.sample_name=dataset.sample_name
     dataset.plot_together=[dataset, simu]
     window.replot()
-    
+  
+  '''
+    function to change a layers scattering length parameters
+    when a material is selected
+  '''
+  def change_scattering_length(self, action, SL_selector, layer, delta, d_over_b, layer_title, layer_index):
+    name=layer.SL_selector.get_active_text()
+    try:
+      SL=self.fit_object.scattering_length_densities[name]
+      layer.name=name
+      delta.set_text(str(SL[0]))
+      d_over_b.set_text(str(SL[1]))
+      layer_title.set_markup(str(layer_index + 1) + ' - ' + layer.name)
+    except KeyError:
+      delta.set_text("1")
+      d_over_b.set_text("1")
+  
+  '''
+    add or remove parameter from list
+  '''
+  def toggle_fit_option(self, action, list, number):
+    if number in list:
+      list.remove(number)
+    else:
+      list.append(number)
+    list.sort()
 
+  '''
+    add or remove parameter from list
+  '''
+  def toggle_fit_bool_option(self, action, dict, value):
+    dict[value]=not dict[value]
 
   #----------------------- GUI functions -----------------------
 
@@ -886,7 +982,7 @@ class fit_layer():
       self.delta=float(delta.get_text())
       self.d_over_b=float(d_over_b.get_text())
       self.roughness=float(roughness.get_text())
-    except ValueError:
+    except TypeError:
       None
   
   '''

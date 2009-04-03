@@ -71,6 +71,8 @@ class ApplicationMainWindow(gtk.Window):
       self.plot=self.splot
     else:
       self.plot=measurement_data_plotting.gnuplot_plot
+    # list of active winows, that will be closed with the main program
+    self.open_windows=[]
     # Create a text view widget. When a text view is created it will
     # create an associated textbuffer by default.
     self.plot_options_view = gtk.TextView()
@@ -355,6 +357,8 @@ class ApplicationMainWindow(gtk.Window):
       profile.write(self.config_object['profiles'])
     del self.config_object['profiles']['default']
     self.config_object.write()
+    for window in self.open_windows:
+      window.destroy()
     gtk.main_quit()
 
   def activate_about(self, action): # about dialog to show
