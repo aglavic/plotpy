@@ -200,15 +200,131 @@ class reflectometer_session(generic_session):
     layer_index=0
   #+++++++++++++++++ Adding input fields +++++++++++++++++
     dialog=gtk.Dialog(title='Fit parameters')
+    #layer parameters
     if self.fit_object!=None:
       for layer in self.fit_object.layers:
         layer_options[layer_index]=self.create_layer_options(layer, layer_index, dialog)
         layer_index+=1
-    table=gtk.Table(1, layer_index + 1, False)
+    #create table for widgets
+    table=gtk.Table(1, layer_index + 4, False)
+    # top parameter
+    align_table=gtk.Table(4, 1, False)
+    text_filed=gtk.Label()
+    text_filed.set_markup('Beam energy: ')
+    align_table.attach(text_filed,
+        # X direction           Y direction
+        0, 1,                   0, 1,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)
+    energy=gtk.Entry()
+    energy.set_width_chars(10)
+    energy.set_text(str(self.fit_object.radiation[0]))
+    # activating the input will apply the settings, too
+    energy.connect('activate', self.dialog_activate, dialog)
+    align_table.attach(energy,
+        # X direction           Y direction
+        1, 2,                   0, 1,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)   
+    table.attach(align_table,
+          # X direction           Y direction
+          0, 1,                   0, 1,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+    #layer parameters
     for i in range(layer_index):
       table.attach(layer_options[i],
           # X direction           Y direction
-          0, 1,                   i, i+1,
+          0, 1,                   i+1, i+2,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+    #substrate parameters
+    substrat_options=self.create_layer_options(self.fit_object.substrate, layer_index, dialog, substrate=True)
+    table.attach(substrat_options,
+        # X direction           Y direction
+        0, 1,                   layer_index+2, layer_index+3,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)
+    #bottom parameters
+    align_table=gtk.Table(4, 3, False)
+    text_filed=gtk.Label()
+    text_filed.set_markup('Additional global parameters: ')
+    align_table.attach(text_filed,
+        # X direction           Y direction
+        0, 4,                   0, 1,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)
+    text_filed=gtk.Label()
+    text_filed.set_markup('Background: ')
+    align_table.attach(text_filed,
+        # X direction           Y direction
+        0, 1,                   1, 2,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)
+    background=gtk.Entry()
+    background.set_width_chars(10)
+    background.set_text(str(self.fit_object.background))
+    # activating the input will apply the settings, too
+    background.connect('activate', self.dialog_activate, dialog)
+    align_table.attach(background,
+        # X direction           Y direction
+        1, 2,                   1, 2,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)   
+    text_filed=gtk.Label()
+    text_filed.set_markup('Resolution: ')
+    align_table.attach(text_filed,
+        # X direction           Y direction
+        2, 3,                   1, 2,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)
+    resolution=gtk.Entry()
+    resolution.set_width_chars(10)
+    resolution.set_text(str(self.fit_object.resolution))
+    # activating the input will apply the settings, too
+    resolution.connect('activate', self.dialog_activate, dialog)
+    align_table.attach(resolution,
+        # X direction           Y direction
+        3, 4,                   1, 2,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)   
+    text_filed=gtk.Label()
+    text_filed.set_markup('Scaling: ')
+    align_table.attach(text_filed,
+        # X direction           Y direction
+        0, 1,                   2, 3,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)
+    scaling_factor=gtk.Entry()
+    scaling_factor.set_width_chars(10)
+    scaling_factor.set_text(str(self.fit_object.scaling_factor))
+    # activating the input will apply the settings, too
+    scaling_factor.connect('activate', self.dialog_activate, dialog)
+    align_table.attach(scaling_factor,
+        # X direction           Y direction
+        1, 2,                   2, 3,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)   
+    text_filed=gtk.Label()
+    text_filed.set_markup('Theta_max (in degree): ')
+    align_table.attach(text_filed,
+        # X direction           Y direction
+        2, 3,                   2, 3,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)
+    theta_max=gtk.Entry()
+    theta_max.set_width_chars(10)
+    theta_max.set_text(str(self.fit_object.theta_max))
+    # activating the input will apply the settings, too
+    theta_max.connect('activate', self.dialog_activate, dialog)
+    align_table.attach(theta_max,
+        # X direction           Y direction
+        3, 4,                   2, 3,
+        gtk.FILL,  gtk.FILL,
+        0,                      0)   
+    table.attach(align_table,
+          # X direction           Y direction
+          0, 1,                   layer_index+3, layer_index+4,
           gtk.FILL,  gtk.FILL,
           0,                      0)
     sw = gtk.ScrolledWindow()
@@ -218,36 +334,40 @@ class reflectometer_session(generic_session):
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
     sw.add_with_viewport(table) # add textbuffer view widget
   #----------------- Adding input fields -----------------
-
     dialog.vbox.add(sw) # add table to dialog box
     dialog.set_default_size(450,450)
     dialog.add_button('Fit/Simulate and Replot',1) # button replot has handler_id 1
-    dialog.connect("response", self.dialog_fit, window)
+    dialog.connect("response", self.dialog_response, window, [energy, background, resolution, scaling_factor, theta_max])
     # befor the widget gets destroyed the textbuffer view widget is removed
     #dialog.connect("destroy",self.close_plot_options_window,sw) 
     dialog.show_all()
+    
 
+  # just responde the right signal, when input gets activated
+  def dialog_activate(self, action, dialog):
+    dialog.response(1)
 
   '''
     create dialog inputs for every layer
   '''
-  def create_layer_options(self, layer, layer_index, dialog):
+  def create_layer_options(self, layer, layer_index, dialog, substrate=False):
     if len(layer)==1: # single layer
       align_table=gtk.Table(4, 3, False)
-      text_filed=gtk.Label()
-      text_filed.set_markup(str(layer_index + 1) + ' - ' + layer.name)
-      align_table.attach(text_filed,
-          # X direction           Y direction
-          0, 4,                   0, 1,
-          gtk.FILL,  gtk.FILL,
-          0,                      0)
-      text_filed=gtk.Label()
-      text_filed.set_markup('thickness')
-      align_table.attach(text_filed,
-          # X direction           Y direction
-          0, 1,                   1, 2,
-          gtk.FILL,  gtk.FILL,
-          0,                      0)
+      if not substrate:
+        text_filed=gtk.Label()
+        text_filed.set_markup(str(layer_index + 1) + ' - ' + layer.name)
+        align_table.attach(text_filed,
+            # X direction           Y direction
+            0, 4,                   0, 1,
+            gtk.FILL,  gtk.FILL,
+            0,                      0)
+        text_filed=gtk.Label()
+        text_filed.set_markup('thickness')
+        align_table.attach(text_filed,
+            # X direction           Y direction
+            0, 1,                   1, 2,
+            gtk.FILL,  gtk.FILL,
+            0,                      0)
       text_filed=gtk.Label()
       text_filed.set_markup('delta')
       align_table.attach(text_filed,
@@ -272,14 +392,28 @@ class reflectometer_session(generic_session):
       thickness=gtk.Entry()
       thickness.set_width_chars(10)
       thickness.set_text(str(layer.thickness))
-      align_table.attach(thickness,
-          # X direction           Y direction
-          0, 1,                   2, 3,
-          gtk.FILL,  gtk.FILL,
-          0,                      0)
+      # activating the input will apply the settings, too
+      thickness.connect('activate', self.dialog_activate, dialog)
+      if not substrate:
+        align_table.attach(thickness,
+            # X direction           Y direction
+            0, 1,                   2, 3,
+            gtk.FILL,  gtk.FILL,
+            0,                      0)
+      else:
+        subst=gtk.Label()
+        subst.set_text('Substrate: ')
+        subst.set_width_chars(11)
+        align_table.attach(subst,
+            # X direction           Y direction
+            0, 1,                   2, 3,
+            gtk.FILL,  gtk.FILL,
+            0,                      0)
       delta=gtk.Entry()
       delta.set_width_chars(10)
       delta.set_text(str(layer.delta))
+      # activating the input will apply the settings, too
+      delta.connect('activate', self.dialog_activate, dialog)
       align_table.attach(delta,
           # X direction           Y direction
           1, 2,                    2, 3,
@@ -288,6 +422,8 @@ class reflectometer_session(generic_session):
       d_over_b=gtk.Entry()
       d_over_b.set_width_chars(12)
       d_over_b.set_text(str(layer.d_over_b))
+      # activating the input will apply the settings, too
+      d_over_b.connect('activate', self.dialog_activate, dialog)
       align_table.attach(d_over_b,
           # X direction           Y direction
           2, 3,                    2, 3,
@@ -296,6 +432,8 @@ class reflectometer_session(generic_session):
       roughness=gtk.Entry()
       roughness.set_width_chars(10)
       roughness.set_text(str(layer.roughness))
+      # activating the input will apply the settings, too
+      roughness.connect('activate', self.dialog_activate, dialog)
       align_table.attach(roughness,
           # X direction           Y direction
           3, 4,                    2, 3,
@@ -321,6 +459,8 @@ class reflectometer_session(generic_session):
       repititions=gtk.Entry()
       repititions.set_width_chars(3)
       repititions.set_text(str(layer.repititions))
+      # activating the input will apply the settings, too
+      repititions.connect('activate', self.dialog_activate, dialog)
       align_table.attach(repititions,
           # X direction           Y direction
           2, 3,                    0, 1,
@@ -336,11 +476,28 @@ class reflectometer_session(generic_session):
             0,                      0)
     return align_table
   
+  
+  '''
+    handle fit dialog response
+  '''
+  def dialog_response(self, action, response, window, parameters_list):
+    if response==1:
+      try:
+        self.fit_object.radiation[0]=float(parameters_list[0].get_text())
+        self.fit_object.background=float(parameters_list[1].get_text())
+        self.fit_object.resolution=float(parameters_list[2].get_text())
+        self.fit_object.scaling_factor=float(parameters_list[3].get_text())
+        self.fit_object.theta_max=float(parameters_list[4].get_text())
+      except ValueError:
+        None
+      self.dialog_fit(action, window)
+      
+
   '''
     function invoked when apply button is pressed
     fits with the new parameters
   '''
-  def dialog_fit(self, action, response, window):
+  def dialog_fit(self, action, window):
     dataset=window.measurement[window.index_mess]
     data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.find_total_reflection(dataset))
     self.fit_object.number_of_points=data_lines
@@ -557,7 +714,7 @@ class fit_parameter():
       SL=self.scattering_length_densities[material]
     except KeyError:
       return False
-    layer=fit_layer(material, [None, SL[0], SL[1], roughness])
+    layer=fit_layer(material, [0., SL[0], SL[1], roughness])
     self.substrate=layer
     return True
     
