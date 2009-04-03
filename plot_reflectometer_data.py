@@ -195,7 +195,7 @@ class reflectometer_session(generic_session):
   '''
     create a dialog window for the fit options
   '''
-  def fit_window(self, aciont, window):
+  def fit_window(self, action, window):
     layer_options={}
     layer_index=0
     layer_params={}
@@ -358,9 +358,9 @@ class reflectometer_session(generic_session):
     sw.add_with_viewport(table) # add textbuffer view widget
   #----------------- Adding input fields -----------------
     dialog.vbox.add(sw) # add table to dialog box
-    dialog.set_default_size(450,450)
+    dialog.set_default_size(500,400)
     dialog.add_button('Fit/Simulate and Replot',1) # button replot has handler_id 1
-    dialog.connect("response", self.dialog_response, window, \
+    dialog.connect("response", self.dialog_response, dialog, window, \
                    [energy, background, resolution, scaling_factor, theta_max], \
                    [layer_params, fit_params])
     # befor the widget gets destroyed the textbuffer view widget is removed
@@ -538,7 +538,7 @@ class reflectometer_session(generic_session):
   '''
     handle fit dialog response
   '''
-  def dialog_response(self, action, response, window, parameters_list, fit_list):
+  def dialog_response(self, action, response, dialog, window, parameters_list, fit_list):
     if response>0:
       try:
         self.fit_object.radiation[0]=float(parameters_list[0].get_text())
@@ -554,10 +554,70 @@ class reflectometer_session(generic_session):
                                          scaling=fit_list[1]['scaling'])
       if fit_list[1]['actually'] and response==1:
         self.fit_object.fit=1
-        
       self.dialog_fit(action, window)
+      # read fit parameters from file and create new object
+      if fit_list[1]['actually'] and response==1: 
+        parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)
+        new_fit=self.fit_object.copy()
+        new_fit.get_parameters(parameters)
+        self.show_result_window(dialog, window, new_fit)
       self.fit_object.fit=0
-      
+
+  '''
+    show the result of a fit and ask to retrieve the result
+  '''
+  def show_result_window(self, dialog, window, new_fit):
+    results=gtk.Dialog(title='Fit results:')
+    text_string='These are the parameters retrieved by the last fit\n'
+    def get_layer_text(layer):
+      if len(layer)==1: # single layer
+        return 'single'
+      else:
+        return 'multi'
+    for i, layer in enumerate(new_fit.layers):
+      text_string+=get_layer_text(layer)
+    # substrate parameters
+    text_string+='\nSubstrat:\n'
+    text_string+='\tdelta:\t\t' + str(new_fit.substrate.delta) + '\n'
+    text_string+='\tdelta/beta:\t' + str(new_fit.substrate.d_over_b) + '\n'
+    text_string+='\troughness:\t' + str(new_fit.substrate.roughness) + '\n\n'
+    # global parameters
+    text_string+='Background:\t' + str(new_fit.background) + '\n'
+    text_string+='Resolution:\t' + str(new_fit.resolution) + '\n'
+    text_string+='Scaling Factor:\t' + str(new_fit.scaling_factor) + '\n'
+    text_string+='\n\nDo you want to use these new parameters?'
+    text=gtk.TextView()
+    # Retrieving a reference to a textbuffer from a textview. 
+    buffer = text.get_buffer()
+    buffer.set_text(text_string)
+    sw = gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add_with_viewport(text) # add textbuffer view widget
+    sw.show_all()
+    results.vbox.add(sw) # add table to dialog box
+    results.set_default_size(350,450)
+    results.add_button('OK',1) # button replot has handler_id 1
+    results.add_button('Cancle',2) # button replot has handler_id 2
+    #dialog.connect("response", self.result_window_response, dialog, window, new_fit)
+    # connect dialog to main window
+    window.open_windows.append(dialog)
+    results.connect("destroy", lambda *w: window.open_windows.remove(dialog))
+    response=results.run()
+    self.result_window_response(response, dialog, window, new_fit)
+    results.destroy()
+    
+  '''
+    depending of response to result window use new fit parameters
+    or old ones.
+  '''
+  def result_window_response(self, response, dialog, window, new_fit):
+    if response==1:
+      self.fit_object=new_fit
+      dialog.destroy()
+      self.fit_window(None, window)
 
   '''
     function invoked when apply button is pressed
@@ -925,6 +985,24 @@ class fit_parameter():
         con_index+=4
     self.constrains=fit_cons
       
+  '''
+    create a copy of this object
+  '''
+  def copy(self):
+    from copy import deepcopy as copy
+    new_fit=fit_parameter()
+    new_fit.radiation=copy(self.radiation)
+    new_fit.number_of_points=self.number_of_points
+    new_fit.background=self.background
+    new_fit.resolution=self.resolution
+    new_fit.scaling_factor=self.scaling_factor
+    new_fit.theta_max=self.theta_max
+    new_fit.layers=[layer.copy() for layer in self.layers]
+    new_fit.substrate=self.substrate.copy()
+    new_fit.fit=self.fit
+    new_fit.fit_params=copy(self.fit_params)
+    new_fit.constrains=copy(self.constrains)
+    return new_fit
 
   '''
     calculate the number of layers in the file as the layer list can
@@ -964,6 +1042,18 @@ class fit_layer():
   def __len__(self):
     return 1
   
+  '''
+    create a copy of this object
+  '''
+  def copy(self):
+    return fit_layer(name=self.name, \
+                     parameters_list=[\
+                          self.thickness, \
+                          self.delta, \
+                          self.d_over_b, \
+                          self.roughness])
+
+
   '''
     return a parameter list according to params
   '''
@@ -1038,6 +1128,15 @@ class fit_multilayer():
   '''
   def __len__(self):
     return len(self.layers) * self.repititions
+
+  '''
+    create a copy of this object
+  '''
+  def copy(self):
+    new_multilayer=fit_multilayer(name=self.name)
+    new_multilayer.repititions=self.repititions
+    new_multilayer.layers=[layer.copy() for layer in self.layers]
+    return new_multilayer
 
   '''
     return a parameter list according to params (list of param lists for multilayer)
