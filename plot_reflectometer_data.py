@@ -29,6 +29,8 @@
 import math
 import subprocess
 import gtk
+import time
+import threading
 # import generic_session, which is the parent class for the squid_session
 from plot_generic_data import generic_session
 # importing preferences and data readout
@@ -619,8 +621,8 @@ class reflectometer_session(generic_session):
       if fit_list[1]['actually'] and response==3:
         self.fit_object.fit=1
       self.dialog_fit(action, window)
-      # read fit parameters from file and create new object
-      if fit_list[1]['actually'] and response==3: 
+      # read fit parameters from file and create new object, if process is killed ignore
+      if fit_list[1]['actually'] and response==3 and self.fit_object.fit==1: 
         parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)
         new_fit=self.fit_object.copy()
         new_fit.get_parameters(parameters)
@@ -754,7 +756,8 @@ class reflectometer_session(generic_session):
     ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    # open a background process for the fit function
+    #open a background process for the fit function
+    global proc
     proc = subprocess.Popen(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'], 
                         shell=False, 
                         stderr=subprocess.PIPE,
@@ -763,7 +766,11 @@ class reflectometer_session(generic_session):
     if self.fit_object.fit!=1: # if this is not a fit just wait till finished
       stderr_value = proc.communicate()[1]
     else:
-      self.open_status_dialog(proc)
+      self.open_status_dialog()
+      if proc.poll()==None: # if the process is abborted, plot without fit
+        subprocess.call(['killall', 'fit.o'])
+        self.fit_object.fit=0
+        self.dialog_fit(action, window)
     simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
     simu.number='1'+dataset.number
     simu.short_info='simulation'
@@ -775,16 +782,13 @@ class reflectometer_session(generic_session):
     when fit process is started, create a window with
     status informations and a kill button
   '''
-  def open_status_dialog(self, proc):
-    import time
-    start=time.time()
-    sec=0
+  def open_status_dialog(self):
+    global status, buffer
     status=gtk.Dialog(title='Fit status after 0 seconds')
-    text_string='Empty\n'
     text=gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview. 
     buffer = text.get_buffer()
-    buffer.set_text(text_string)
+    buffer.set_text('')
     sw = gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
@@ -795,17 +799,12 @@ class reflectometer_session(generic_session):
     status.set_default_size(350,450)
     status.add_button('Kill Process',1) # button kill has handler_id 1
     #status.connect("response", lambda *w: proc.terminate())
-    #status.show_all()
-    status.show_now()
-    
-    while proc.poll()==None:
-      time.sleep(1)
-      sec+=1
-      #if (time.time()-start)>sec+1:
-        #sec=int(time.time()-start)
-      status.set_title('Fit status after ' +str(sec)+ ' seconds')
-      print sec
-      #status.show_now()
+    status.show_all()
+    gtk.gdk.threads_init()
+    loop=ProcessLoop()
+    loop.active_session=self
+    loop.start()
+    status.run()
     status.destroy()
   
 
@@ -1365,3 +1364,30 @@ class fit_multilayer():
     return text,  layer_index,  para_index
   
 
+
+class ProcessLoop(threading.Thread):
+  active_session=None
+
+  def run(self):
+    global status
+    sec=0    
+    #While the stopthread event isn't setted, the thread keeps going on
+    while proc.poll()==None:
+      try:
+        file=open(self.active_session.temp_dir+'fit_temp.ref', 'r')
+        text=file.read()
+        file.close()
+        if text=='':
+          text='Empty .ref file.'
+      except:
+        text='Empty .ref file.'
+      gtk.gdk.threads_enter()
+      status.set_title('Fit status after ' + str(sec) + ' seconds')
+      buffer.set_text(text)
+      gtk.gdk.threads_leave()
+      time.sleep(1)
+      sec+=1
+    gtk.gdk.threads_enter()
+    buffer.set_text('')
+    status.destroy()
+    gtk.gdk.threads_leave()
