@@ -27,6 +27,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 # import buildin modules
+import os
 import math
 import subprocess
 import gtk
@@ -165,7 +166,7 @@ class reflectometer_session(generic_session):
       dataset.short_info=' started at Th='+str(round(th,4))+' 2Th='+str(round(twoth,4))+' Phi='+str(round(phi,4))
       if self.export_for_fit: # export fit files
         self.export_fit(dataset,  filename)
-        simu=reflectometer_read_data.read_simulation(filename+'_'+dataset.number+'.sim')
+        simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
         simu.number='1'+dataset.number
         simu.short_info='simulation'
         simu.sample_name=dataset.sample_name
@@ -394,9 +395,11 @@ class reflectometer_session(generic_session):
   #----------------- Adding input fields -----------------
     dialog.vbox.add(sw) # add table to dialog box
     dialog.set_default_size(size[0],size[1])
-    dialog.add_button('New Layer',1) # button new layer has handler_id 1
-    dialog.add_button('New Multilayer',2) # button new multilayer has handler_id 2
-    dialog.add_button('Fit/Simulate and Replot',3) # button replot has handler_id 3
+    dialog.add_button('Export',1) # button new layer has handler_id 1
+    dialog.add_button('Import',2) # button new layer has handler_id 2
+    dialog.add_button('New Layer',3) # button new layer has handler_id 3
+    dialog.add_button('New Multilayer',4) # button new multilayer has handler_id 4
+    dialog.add_button('Fit/Simulate and Replot',5) # button replot has handler_id 5
     dialog.connect("response", self.dialog_response, dialog, window, \
                    [energy, background, resolution, scaling_factor, theta_max, x_from, x_to], \
                    [layer_params, fit_params])
@@ -409,7 +412,7 @@ class reflectometer_session(generic_session):
 
   # just responde the right signal, when input gets activated
   def dialog_activate(self, action, dialog):
-    dialog.response(4)
+    dialog.response(6)
 
   '''
     create dialog inputs for every layer
@@ -598,7 +601,7 @@ class reflectometer_session(generic_session):
     handle fit dialog response
   '''
   def dialog_response(self, action, response, dialog, window, parameters_list, fit_list):
-    if response>=3:
+    if response>=5:
       try:
         self.fit_object.radiation[0]=float(parameters_list[0].get_text())
         self.fit_object.background=float(parameters_list[1].get_text())
@@ -628,15 +631,20 @@ class reflectometer_session(generic_session):
         new_fit=self.fit_object.copy()
         new_fit.get_parameters(parameters)
         self.show_result_window(dialog, window, new_fit)
+      os.remove(self.temp_dir+'fit_temp.ref')
       self.fit_object.fit=0
-    elif response==1: # new layer
+    elif response==3: # new layer
       self.fit_object.layers.append(fit_layer())
       self.rebuild_dialog(dialog, window)
-    elif response==2: # new multilayer
+    elif response==4: # new multilayer
       multilayer=fit_multilayer()
       multilayer.layers.append(fit_layer())
       self.fit_object.layers.append(multilayer)
       self.rebuild_dialog(dialog, window)
+    elif response==1: # export .ent
+      None
+    elif response==2: # import .ent
+      None
 
   '''
     show the result of a fit and ask to retrieve the result
@@ -713,6 +721,9 @@ class reflectometer_session(generic_session):
     if response==1:
       self.fit_object=new_fit
       self.rebuild_dialog(dialog, window)
+    else:
+      self.fit_object.fit=0
+      self.dialog_fit(None, window)
 
   ''''
     reopen the fit dialog window to redraw all buttons with a
@@ -753,6 +764,7 @@ class reflectometer_session(generic_session):
     dataset=window.measurement[window.index_mess]
     data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.x_from, xto=self.x_to)
     self.fit_object.number_of_points=data_lines
+    self.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
     ent_file.write(self.fit_object.get_ent_str()+'\n')
@@ -881,50 +893,50 @@ class reflectometer_session(generic_session):
   '''
     try to fit the scaling factor before the total reflection angle
   '''
-  def refine_scaling(self, dataset, fit_object):
-    fit_object.fit=1
+  def refine_scaling(self, dataset):
+    self.fit_object.fit=1
     data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=0.005,xto=self.find_total_reflection(dataset))
-    fit_object.set_fit_parameters(scaling=True) # fit only scaling factor
-    fit_object.number_of_points=data_lines
+    self.fit_object.set_fit_parameters(scaling=True) # fit only scaling factor
+    self.fit_object.number_of_points=data_lines
     # create the .ent file
     ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
-    ent_file.write(fit_object.get_ent_str()+'\n')
+    ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
     retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','20'])
-    fit_object.scaling_factor=self.read_fit_file(self.temp_dir+'fit_temp.ref', fit_object)[fit_object.fit_params[0]]
-    fit_object.fit=0
+    self.fit_object.scaling_factor=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)[self.fit_object.fit_params[0]]
+    self.fit_object.fit=0
     return retcode
 
   '''
     try to fit the layer roughnesses
   '''
-  def refine_roughnesses(self, dataset, fit_object):
-    fit_object.fit=1
+  def refine_roughnesses(self, dataset):
+    self.fit_object.fit=1
     layer_dict={}
     # create parameter dictionary for every (multi)layer, 3 is the roughness
-    for i, layer in enumerate(fit_object.layers):
+    for i, layer in enumerate(self.fit_object.layers):
       if not layer.multilayer:
         layer_dict[i]=[3]
       else:
         layer_dict[i]=[[3] for j in range(len(layer.layers))]
     data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.find_total_reflection(dataset))
-    fit_object.set_fit_parameters(layer_params=layer_dict, substrate_params=[2]) # set all roughnesses to be fit
-    fit_object.number_of_points=data_lines
+    self.fit_object.set_fit_parameters(layer_params=layer_dict, substrate_params=[2]) # set all roughnesses to be fit
+    self.fit_object.number_of_points=data_lines
     # create the .ent file
     ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
-    ent_file.write(fit_object.get_ent_str()+'\n')
+    ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
     retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'])
-    parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref',fit_object)
-    fit_object.get_parameters(parameters)
-    fit_object.fit=0
+    parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref',self.fit_object)
+    self.fit_object.get_parameters(parameters)
+    self.fit_object.fit=0
     return retcode
 
   '''
     Function to export data for fitting with fit.f90 program,
     has to be reviewd and integrated within GUI
   '''
-  def export_fit(self, dataset, input_file_name): 
+  def export_fit(self, dataset, input_file_name):
     if self.fit_object==None:
       fit_object=fit_parameter()
       #+++++++++++++++++++ create fit parameters object +++++++++++++++++++
@@ -945,33 +957,38 @@ class reflectometer_session(generic_session):
             fit_thick=fit_thick.split('-',1)[1]
         else:
             fit_thick=''
+      self.fit_object=fit_object
       #------------------- create fit parameters object -------------------
-    else:
-      fit_object=self.fit_object
-      fit_object.set_fit_constrains() # set constrained parameters for multilayer
+    self.fit_object.set_fit_constrains() # set constrained parameters for multilayer
       # convert x values from angle to q
     dataset.unit_trans([['Theta', '\\302\\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
                       ['2 Theta', '\\302\\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])
-      # write data into files with sequence numbers in format ok for fit.f90    
-    data_lines=dataset.export(input_file_name+'_'+dataset.number+'.res',False,' ') 
       # first guess for scaling factor is the maximum intensity
-    fit_object.scaling_factor=(dataset.max(xstart=0.005)[1]/1e5)
+    self.fit_object.scaling_factor=(dataset.max(xstart=0.005)[1]/1e5)
       # first guess for the background is the minimum intensity
-    fit_object.background=dataset.min()[1]
+    self.fit_object.background=dataset.min()[1]
     #+++++ Try to refine the scaling factorn and roughnesses +++++
     if self.try_refine: 
-      self.refine_scaling(dataset, fit_object)
-      self.refine_roughnesses(dataset, fit_object)
+      self.refine_scaling(dataset)
+      self.refine_roughnesses(dataset)
     #----- Try to refine the scaling factorn and roughnesses -----
     #+++++++ create final input file and make a simulation +++++++
-    fit_object.number_of_points=data_lines
-    fit_object.set_fit_parameters(background=True)
-    ent_file=open(input_file_name+'_'+dataset.number+'.ent', 'w')
-    ent_file.write(fit_object.get_ent_str()+'\n')
+      # write data into files with sequence numbers in format ok for fit.f90    
+    data_lines=dataset.export(self.temp_dir+'fit_temp.res',False,' ') 
+    self.fit_object.number_of_points=data_lines
+    self.fit_object.set_fit_parameters(background=True)
+    ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
+    ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    retcode = subprocess.call(['fit-script', input_file_name+'_'+dataset.number+'.res',\
-      input_file_name+'_'+dataset.number+'.ent', input_file_name+'_'+dataset.number])
-    self.fit_object=fit_object
+    #retcode = subprocess.call(['fit-script', input_file_name+'_'+dataset.number+'.res',\
+    #  input_file_name+'_'+dataset.number+'.ent', input_file_name+'_'+dataset.number])
+    proc = subprocess.Popen(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'], 
+                        shell=False, 
+                        stderr=subprocess.PIPE,
+                        stdout=subprocess.PIPE, 
+                        )
+    if self.fit_object.fit!=1: # if this is not a fit just wait till finished
+      stderr_value = proc.communicate()[1]
     #------- create final input file and make a simulation -------
 
   #---- functions for fitting with fortran program by E. Kentzinger ----
@@ -1386,10 +1403,10 @@ class ProcessLoop(threading.Thread):
       except:
         text='Empty .ref file.'
       gtk.gdk.threads_enter()
-      status.set_title('Fit status after ' + str(sec) + ' seconds')
+      status.set_title('Fit status after ' + str(sec/5) + ' seconds')
       buffer.set_text(text)
       gtk.gdk.threads_leave()
-      time.sleep(1)
+      time.sleep(0.2)
       sec+=1
     gtk.gdk.threads_enter()
     buffer.set_text('')
