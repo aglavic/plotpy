@@ -215,7 +215,7 @@ class reflectometer_session(generic_session):
     #layer parameters
     if self.fit_object!=None:
       for layer in self.fit_object.layers:
-        layer_options[layer_index]=self.create_layer_options(layer, layer_index, layer_params, dialog)
+        layer_options[layer_index]=self.create_layer_options(layer, layer_index, layer_params, dialog, window)
         layer_index+=1
     #create table for widgets
     table=gtk.Table(1, layer_index + 5, False)
@@ -281,7 +281,7 @@ class reflectometer_session(generic_session):
           gtk.FILL,  gtk.FILL,
           0,                      0)
     #substrate parameters
-    substrat_options=self.create_layer_options(self.fit_object.substrate, 0, fit_params, dialog, substrate=True)
+    substrat_options=self.create_layer_options(self.fit_object.substrate, 0, fit_params, dialog, window, substrate=True)
     table.attach(substrat_options,
         # X direction           Y direction
         0, 1,                   layer_index+2, layer_index+3,
@@ -391,7 +391,9 @@ class reflectometer_session(generic_session):
   #----------------- Adding input fields -----------------
     dialog.vbox.add(sw) # add table to dialog box
     dialog.set_default_size(size[0],size[1])
-    dialog.add_button('Fit/Simulate and Replot',1) # button replot has handler_id 1
+    dialog.add_button('New Layer',1) # button new layer has handler_id 1
+    dialog.add_button('New Multilayer',2) # button new multilayer has handler_id 2
+    dialog.add_button('Fit/Simulate and Replot',3) # button replot has handler_id 3
     dialog.connect("response", self.dialog_response, dialog, window, \
                    [energy, background, resolution, scaling_factor, theta_max, x_from, x_to], \
                    [layer_params, fit_params])
@@ -404,15 +406,15 @@ class reflectometer_session(generic_session):
 
   # just responde the right signal, when input gets activated
   def dialog_activate(self, action, dialog):
-    dialog.response(2)
+    dialog.response(4)
 
   '''
     create dialog inputs for every layer
   '''
-  def create_layer_options(self, layer, layer_index, layer_params, dialog, substrate=False):
-    if len(layer)==1: # single layer
+  def create_layer_options(self, layer, layer_index, layer_params, dialog, window, substrate=False):
+    if not layer.multilayer: # single layer
       layer_params[layer_index]=[]
-      align_table=gtk.Table(5, 3, False)
+      align_table=gtk.Table(6, 3, False)
       layer_title=gtk.Label()
       if not substrate:
         layer_title.set_markup(str(layer_index + 1) + ' - ' + layer.name)
@@ -477,6 +479,14 @@ class reflectometer_session(generic_session):
             0, 1,                   2, 3,
             gtk.FILL,  gtk.FILL,
             0,                      0)
+      if not substrate:
+        delete=gtk.Button(label='DEL', use_underline=True)
+        delete.connect('clicked', self.delete_layer, layer, dialog, window)
+        align_table.attach(delete,
+            # X direction           Y direction
+            5, 6,                    2, 3,
+            gtk.FILL,  gtk.FILL,
+            0,                      0)
       delta=gtk.Entry()
       delta.set_width_chars(10)
       delta.set_text(str(layer.delta))
@@ -527,7 +537,7 @@ class reflectometer_session(generic_session):
       dialog.connect('response', layer.dialog_get_params, thickness, delta, d_over_b, roughness) # when apply button is pressed, send data
     else:
       layer_params[layer_index]={}
-      align_table=gtk.Table(4, 1 + len(layer.layers), False)
+      align_table=gtk.Table(5, 1 + len(layer.layers), False)
       text_filed=gtk.Label()
       text_filed.set_markup('Multilayer')
       align_table.attach(text_filed,
@@ -552,12 +562,26 @@ class reflectometer_session(generic_session):
           2, 3,                    0, 1,
           gtk.FILL,  gtk.FILL,
           0,                      0)
+      add=gtk.Button(label='Add Layer', use_underline=True)
+      add.connect('clicked', self.add_multilayer, layer, dialog, window)
+      align_table.attach(add,
+          # X direction           Y direction
+          3, 4,                    0, 1,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
+      delete=gtk.Button(label='DEL', use_underline=True)
+      delete.connect('clicked', self.delete_multilayer, layer, dialog, window)
+      align_table.attach(delete,
+          # X direction           Y direction
+          4, 5,                    0, 1,
+          gtk.FILL,  gtk.FILL,
+          0,                      0)
       dialog.connect('response', layer.dialog_get_params, repititions) # when apply button is pressed, send data
       for i, sub_layer in enumerate(layer.layers):
-        sub_table=self.create_layer_options(sub_layer, i, layer_params[layer_index], dialog)
+        sub_table=self.create_layer_options(sub_layer, i, layer_params[layer_index], dialog, window)
         align_table.attach(sub_table,
             # X direction           Y direction
-            1, 4,                   i+1, i+2,
+            1, 5,                   i+1, i+2,
             gtk.FILL,  gtk.FILL,
             0,                      0)
       frame = gtk.Frame()
@@ -571,7 +595,7 @@ class reflectometer_session(generic_session):
     handle fit dialog response
   '''
   def dialog_response(self, action, response, dialog, window, parameters_list, fit_list):
-    if response>0:
+    if response>=3:
       try:
         self.fit_object.radiation[0]=float(parameters_list[0].get_text())
         self.fit_object.background=float(parameters_list[1].get_text())
@@ -592,16 +616,24 @@ class reflectometer_session(generic_session):
                                          background=fit_list[1]['background'], \
                                          resolution=fit_list[1]['resolution'], \
                                          scaling=fit_list[1]['scaling'])
-      if fit_list[1]['actually'] and response==1:
+      if fit_list[1]['actually'] and response==3:
         self.fit_object.fit=1
       self.dialog_fit(action, window)
       # read fit parameters from file and create new object
-      if fit_list[1]['actually'] and response==1: 
+      if fit_list[1]['actually'] and response==3: 
         parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)
         new_fit=self.fit_object.copy()
         new_fit.get_parameters(parameters)
         self.show_result_window(dialog, window, new_fit)
       self.fit_object.fit=0
+    elif response==1: # new layer
+      self.fit_object.layers.append(fit_layer())
+      self.rebuild_dialog(dialog, window)
+    elif response==2: # new multilayer
+      multilayer=fit_multilayer()
+      multilayer.layers.append(fit_layer())
+      self.fit_object.layers.append(multilayer)
+      self.rebuild_dialog(dialog, window)
 
   '''
     show the result of a fit and ask to retrieve the result
@@ -677,10 +709,38 @@ class reflectometer_session(generic_session):
   def result_window_response(self, response, dialog, window, new_fit):
     if response==1:
       self.fit_object=new_fit
-      position=dialog.get_position()
-      size=dialog.get_size()
-      dialog.destroy()
-      self.fit_window(None, window, position=position, size=size)
+      self.rebuild_dialog(dialog, window)
+
+  ''''
+    reopen the fit dialog window to redraw all buttons with a
+    new fit_parameters object
+  '''
+  def rebuild_dialog(self, dialog, window):
+    position=dialog.get_position()
+    size=dialog.get_size()
+    dialog.destroy()
+    self.fit_window(None, window, position=position, size=size)
+
+  '''
+    remove a layer after button is pressed
+  '''
+  def delete_layer(self, action, layer, dialog, window):
+    self.fit_object.remove_layer(layer)
+    self.rebuild_dialog(dialog, window)
+  
+  '''
+    add a layer to the multilayer after button is pressed
+  '''
+  def add_multilayer(self, action, multilayer, dialog, window):
+    multilayer.layers.append(fit_layer())
+    self.rebuild_dialog(dialog, window)
+  
+  '''
+    remove a multilayer after button is pressed
+  '''
+  def delete_multilayer(self, action, multilayer, dialog, window):
+    self.fit_object.layers.remove(multilayer)
+    self.rebuild_dialog(dialog, window)
 
   '''
     function invoked when apply button is pressed
@@ -796,7 +856,7 @@ class reflectometer_session(generic_session):
     layer_dict={}
     # create parameter dictionary for every (multi)layer, 3 is the roughness
     for i, layer in enumerate(fit_object.layers):
-      if len(layer)==1:
+      if not layer.multilayer:
         layer_dict[i]=[3]
       else:
         layer_dict[i]=[[3] for j in range(len(layer.layers))]
@@ -909,6 +969,13 @@ class fit_parameter():
     self.layers.append(layer)
     return True
   
+  def remove_layer(self, layer):
+    if layer in self.layers: # single layer can be removed directly
+      self.layers.remove(layer)
+    else: # multilayer layers have to be searched first
+      for multilayer in [a_layer for a_layer in self.layers if a_layer.multilayer]:
+        if layer in multilayer.layers:
+          multilayer.layers.remove(layer)
   
   '''
     append a multilayer at bottom from the lookup table defined
@@ -1014,7 +1081,7 @@ class fit_parameter():
     para_index=1
     for i, layer in enumerate(self.layers):
       for j in range(4): # every layer parameter
-        if len(layer)==1: # its a single layer
+        if not layer.multilayer==1: # its a single layer
           if (para_index + j) in self.fit_params:
             layer.set_param(j, parameters[para_index + j])
         else:
@@ -1044,7 +1111,7 @@ class fit_parameter():
     fit_cons=[]
     con_index=1
     for layer in self.layers:
-      if len(layer)>1: # for every multilayer add constrains
+      if layer.multilayer: # for every multilayer add constrains
         new_con, con_index=layer.get_fit_cons(con_index)
         fit_cons+=new_con
       else:
@@ -1085,6 +1152,7 @@ class fit_parameter():
   layer and multilay have the same function to create .ent file text
 '''
 class fit_layer():
+  multilayer=False
   name=''
   thickness=1
   delta=1
@@ -1179,15 +1247,15 @@ class fit_multilayer():
   name=''
   layers=[] # a list of fit_layers
   repititions=1 # number of times these layers will be repeated
+  multilayer=True
   
   '''
     class constructor
   '''
-  def __init__(self, repititions=1, name='NoName', layer_list=None):
+  def __init__(self, repititions=1, name='NoName', layer_list=[]):
     self.repititions=repititions
     self.name=name
-    if layer_list!=None:
-      self.layers=layer_list
+    self.layers=layer_list
   
   '''
     length of the object is length of the layers list * repititions
