@@ -17,6 +17,7 @@
 # -convert to counts/s                                                                          #
 # -create .ent file for fit.f90 script from Emmanuel Kentzinger and refine some parameters      #
 # -send all files to printer after processing (linux commandline printing)                      #
+# -complete gui control over the fit program                                                    #
 #                                                                                               #
 # To do:                                                                                        #
 # -subtract background measured in another file                                                 #
@@ -1364,7 +1365,10 @@ class fit_multilayer():
     return text,  layer_index,  para_index
   
 
-
+'''
+  to make it possible to kill the fit process while GTK outputs
+  the data, we have to create a looping thread
+'''
 class ProcessLoop(threading.Thread):
   active_session=None
 
