@@ -754,14 +754,61 @@ class reflectometer_session(generic_session):
     ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'])
+    # open a background process for the fit function
+    proc = subprocess.Popen(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'], 
+                        shell=False, 
+                        stderr=subprocess.PIPE,
+                        stdout=subprocess.PIPE, 
+                        )
+    if self.fit_object.fit!=1: # if this is not a fit just wait till finished
+      stderr_value = proc.communicate()[1]
+    else:
+      self.open_status_dialog(proc)
     simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
     simu.number='1'+dataset.number
     simu.short_info='simulation'
     simu.sample_name=dataset.sample_name
     dataset.plot_together=[dataset, simu]
     window.replot()
+
+  '''
+    when fit process is started, create a window with
+    status informations and a kill button
+  '''
+  def open_status_dialog(self, proc):
+    import time
+    start=time.time()
+    sec=0
+    status=gtk.Dialog(title='Fit status after 0 seconds')
+    text_string='Empty\n'
+    text=gtk.TextView()
+    # Retrieving a reference to a textbuffer from a textview. 
+    buffer = text.get_buffer()
+    buffer.set_text(text_string)
+    sw = gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add_with_viewport(text) # add textbuffer view widget
+    status.vbox.add(sw) # add table to dialog box
+    status.set_default_size(350,450)
+    status.add_button('Kill Process',1) # button kill has handler_id 1
+    #status.connect("response", lambda *w: proc.terminate())
+    #status.show_all()
+    status.show_now()
+    
+    while proc.poll()==None:
+      time.sleep(1)
+      sec+=1
+      #if (time.time()-start)>sec+1:
+        #sec=int(time.time()-start)
+      status.set_title('Fit status after ' +str(sec)+ ' seconds')
+      print sec
+      #status.show_now()
+    status.destroy()
   
+
   '''
     function to change a layers scattering length parameters
     when a material is selected
