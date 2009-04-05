@@ -641,6 +641,7 @@ class reflectometer_session(generic_session):
       multilayer.layers.append(fit_layer())
       self.fit_object.layers.append(multilayer)
       self.rebuild_dialog(dialog, window)
+######################################## File import/export here !!!!!!!!!!! ###################################################
     elif response==1: # export .ent
       None
     elif response==2: # import .ent
