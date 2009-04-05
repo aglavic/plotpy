@@ -2,7 +2,7 @@
 #################################################################################################
 #                     Script to plot reflectometer uxd-files with gnuplot                       #
 #                                       last changes:                                           #
-#                                        01.04.2009                                             #
+#                                        05.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
@@ -16,6 +16,7 @@
 # -select sequences to be plotted                                                               #
 # -convert to counts/s                                                                          #
 # -create .ent file for fit.f90 script from Emmanuel Kentzinger and refine some parameters      #
+# -GUI control over all fit parameters                                                          #
 # -send all files to printer after processing (linux commandline printing)                      #
 # -complete gui control over the fit program                                                    #
 #                                                                                               #
@@ -81,10 +82,10 @@ class reflectometer_session(generic_session):
     class constructor expands the generic_session constructor
   '''
   def __init__(self, arguments):
+    self.fit_object=fit_parameter()
     self.data_columns=reflectometer_preferences.data_columns
     self.transformations=reflectometer_preferences.transformations
     generic_session.__init__(self, arguments)
-    self.fit_object=fit_parameter()
     
   
   '''
