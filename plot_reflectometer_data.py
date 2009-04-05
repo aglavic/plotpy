@@ -29,6 +29,7 @@
 
 # import buildin modules
 import os
+import sys
 import math
 import subprocess
 import gtk
@@ -895,6 +896,13 @@ class reflectometer_session(generic_session):
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
     proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',20)
+    sec=0.
+    while proc.poll()==None:
+      time.sleep(0.1)
+      sec+=0.1
+      sys.stdout.write( '\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b'+\
+                        'Script running for % 6dsec' % sec)
+      sys.stdout.flush()
     retcode = proc.communicate()
     parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref',self.fit_object)
     self.fit_object.get_parameters(parameters)
@@ -936,7 +944,9 @@ class reflectometer_session(generic_session):
     self.fit_object.background=dataset.min()[1]
     #+++++ Try to refine the scaling factorn and roughnesses +++++
     if self.try_refine: 
+      print "Try to refine scaling"
       self.refine_scaling(dataset)
+      print "Try to refine roughnesses"
       self.refine_roughnesses(dataset)
     #----- Try to refine the scaling factorn and roughnesses -----
     #+++++++ create final input file and make a simulation +++++++
@@ -947,6 +957,7 @@ class reflectometer_session(generic_session):
     ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
+    print "Simulate the measurement"
     proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',20)
     retcode = proc.communicate()
     #------- create final input file and make a simulation -------
