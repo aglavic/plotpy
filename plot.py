@@ -61,6 +61,7 @@ known_measurement_types={
   piped to a plotting_gui for later use.
 ############################################################################
 '''
+
 # initialize session and read data files
 if (len(sys.argv) == 1):
   print generic_session.short_help

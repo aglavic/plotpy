@@ -39,6 +39,11 @@ from plot_generic_data import generic_session
 import reflectometer_read_data
 import reflectometer_preferences
 
+fortran_compiler='gfortran'
+fortran_compiler_options='-O2'
+fit_program_code='fit/fit.f90'
+fit_program_executible='fit/fit.o'
+
 '''
   Class to handle reflectometer data sessions
 '''
@@ -66,8 +71,9 @@ class reflectometer_session(generic_session):
   export_for_fit=False
   try_refine=False
   fit_object=None
-  x_from=0.005
+  x_from=0.005 # fit only x regions between x_from and x_to
   x_to=''
+  max_iter=50 # maximal iterations in fit
   #------------------ local variables -----------------
 
   
@@ -78,6 +84,7 @@ class reflectometer_session(generic_session):
     self.data_columns=reflectometer_preferences.data_columns
     self.transformations=reflectometer_preferences.transformations
     generic_session.__init__(self, arguments)
+    self.fit_object=fit_parameter()
     
   
   '''
@@ -121,6 +128,8 @@ class reflectometer_session(generic_session):
     string='''
       <menu action='ReflectometerMenu'>
         <menuitem action='ReflectometerFit'/>
+        <menuitem action='ReflectometerExport'/>
+        <menuitem action='ReflectometerImport'/>
       </menu>
     '''
     # Create actions for the menu
@@ -133,6 +142,14 @@ class reflectometer_session(generic_session):
                 "Fit...", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.fit_window ),
+            ( "ReflectometerExport", None,                             # name, stock id
+                "Export Fit Parameters...", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.export_fit_dialog ),
+            ( "ReflectometerImport", None,                             # name, stock id
+                "Import Fit Parameters...", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.import_fit_dialog ),
              )
     return string,  actions
   
@@ -171,7 +188,7 @@ class reflectometer_session(generic_session):
         simu.short_info='simulation'
         simu.sample_name=dataset.sample_name
         refinements.append(simu)
-        dataset.plot_together.append(simu)
+        dataset.plot_together=[dataset, simu]
     if self.export_for_fit: # export fit files
       self.add_data(refinements, filename+"_simulation")
 
@@ -203,6 +220,9 @@ class reflectometer_session(generic_session):
     create a dialog window for the fit options
   '''
   def fit_window(self, action, window, position=None, size=[500, 400]):
+    if self.fit_object.layers==[]:
+      self.fit_object.append_layer('Unknown', 10., 5.)
+      self.fit_object.append_substrate('Unknown', 5.)
     layer_options={}
     layer_index=0
     layer_params={}
@@ -217,27 +237,24 @@ class reflectometer_session(generic_session):
     if position!=None:
       dialog.move(position[0], position[1])
     #layer parameters
-    if self.fit_object!=None:
-      for layer in self.fit_object.layers:
-        layer_options[layer_index]=self.create_layer_options(layer, layer_index, layer_params, dialog, window)
-        layer_index+=1
+    for layer in self.fit_object.layers:
+      layer_options[layer_index]=self.create_layer_options(layer, layer_index, layer_params, dialog, window)
+      layer_index+=1
     #create table for widgets
     table=gtk.Table(1, layer_index + 5, False)
+    table.set_row_spacings(10)
     # top parameter
-    align_table=gtk.Table(5, 1, False)
+    align_table=gtk.Table(3, 1, False)
+    align_table.set_col_spacings(15)
     text_filed=gtk.Label()
     text_filed.set_markup('Beam energy: ')
-    align_table.attach(text_filed,
-        # X direction           Y direction
-        0, 1,                   0, 1,
-        gtk.FILL,  gtk.FILL,
-        0,                      0)
+    align_table.attach(text_filed, 0, 1, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
     energy=gtk.Entry()
     energy.set_width_chars(10)
     energy.set_text(str(self.fit_object.radiation[0]))
     # activating the input will apply the settings, too
     energy.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(energy, 1, 2,  0, 1, gtk.FILL, gtk.FILL, 0, 0)
+    align_table.attach(energy, 1, 2,  0, 1, gtk.FILL, gtk.FILL, 0, 3)
     text_filed=gtk.Label()
     text_filed.set_markup('x-region')
     align_table.attach(text_filed, 2, 3,  0, 1, gtk.FILL, gtk.FILL, 0, 0)
@@ -264,10 +281,11 @@ class reflectometer_session(generic_session):
     substrat_options=self.create_layer_options(self.fit_object.substrate, 0, fit_params, dialog, window, substrate=True)
     table.attach(substrat_options, 0, 1, layer_index+2, layer_index+3, gtk.FILL,  gtk.FILL, 0, 0)
     #bottom parameters
-    align_table=gtk.Table(4, 3, False)
+    align_table=gtk.Table(4, 4, False)
+    align_table.set_col_spacings(10)
     text_filed=gtk.Label()
     text_filed.set_markup('Additional global parameters: ')
-    align_table.attach(text_filed, 0, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
+    align_table.attach(text_filed, 0, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 5)
     background_x=gtk.CheckButton(label='Background: ', use_underline=True)
     background_x.connect('toggled', self.toggle_fit_bool_option, fit_params, 'background')
     align_table.attach(background_x, 0, 1, 1, 2, gtk.FILL,  gtk.FILL, 0, 0)
@@ -296,7 +314,7 @@ class reflectometer_session(generic_session):
     scaling_factor.connect('activate', self.dialog_activate, dialog)
     align_table.attach(scaling_factor, 1, 2, 2, 3, gtk.FILL, gtk.FILL, 0, 0)   
     text_filed=gtk.Label()
-    text_filed.set_markup('Theta_max (in degree): ')
+    text_filed.set_markup('Theta_max (\302\260): ')
     align_table.attach(text_filed, 2, 3, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
     theta_max=gtk.Entry()
     theta_max.set_width_chars(10)
@@ -304,10 +322,23 @@ class reflectometer_session(generic_session):
     # activating the input will apply the settings, too
     theta_max.connect('activate', self.dialog_activate, dialog)
     align_table.attach(theta_max, 3, 4, 2, 3, gtk.FILL, gtk.FILL, 0, 0)   
-    table.attach(align_table, 0, 1, layer_index+3, layer_index+4, gtk.FILL,  gtk.FILL, 0, 0)
-    fit_x=gtk.CheckButton(label='Fit the selected parameters', use_underline=True)
+    # fit-settings
+    fit_x=gtk.CheckButton(label='Fit selected', use_underline=True)
     fit_x.connect('toggled', self.toggle_fit_bool_option, fit_params, 'actually')
-    table.attach(fit_x, 0, 3, layer_index+4, layer_index+5, gtk.FILL, gtk.FILL, 0, 0)
+    align_table.attach(fit_x, 0, 2, 3, 4, gtk.FILL, gtk.FILL, 0, 0)
+    max_iter=gtk.Entry()
+    max_iter.set_width_chars(4)
+    max_iter.set_text(str(self.max_iter))
+    # activating the input will apply the settings, too
+    max_iter.connect('activate', self.dialog_activate, dialog)
+    align_table.attach(max_iter, 2, 3, 3, 4, 0, gtk.FILL, 0, 0)   
+    text_filed=gtk.Label()
+    text_filed.set_markup('max. iterations')
+    align_table.attach(text_filed, 3, 4, 3, 4, gtk.FILL, gtk.FILL, 0, 0)
+    frame = gtk.Frame()
+    frame.set_shadow_type(gtk.SHADOW_IN)
+    frame.add(align_table)
+    table.attach(frame, 0, 1, layer_index+3, layer_index+4, gtk.FILL,  gtk.FILL, 0, 0)
     sw = gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
@@ -317,14 +348,12 @@ class reflectometer_session(generic_session):
   #----------------- Adding input fields -----------------
     dialog.vbox.add(sw) # add table to dialog box
     dialog.set_default_size(size[0],size[1])
-    dialog.add_button('Export',1) # button new layer has handler_id 1
-    dialog.add_button('Import',2) # button new layer has handler_id 2
     dialog.add_button('New Layer',3) # button new layer has handler_id 3
     dialog.add_button('New Multilayer',4) # button new multilayer has handler_id 4
     dialog.add_button('Fit/Simulate and Replot',5) # button replot has handler_id 5
     dialog.connect("response", self.dialog_response, dialog, window, \
                    [energy, background, resolution, scaling_factor, theta_max, x_from, x_to], \
-                   [layer_params, fit_params])
+                   [layer_params, fit_params, max_iter])
     # befor the widget gets destroyed the textbuffer view widget is removed
     #dialog.connect("destroy",self.close_plot_options_window,sw) 
     dialog.show_all()
@@ -355,6 +384,13 @@ class reflectometer_session(generic_session):
         thickness_x=gtk.CheckButton(label='thickness', use_underline=True)
         thickness_x.connect('toggled', self.toggle_fit_option, layer_params[layer_index], 0)
         align_table.attach(thickness_x, 0, 1, 1, 2, gtk.FILL, gtk.FILL, 0, 0)
+      else:
+        layer_title.set_markup('Substrate - ' + layer.name)
+        align_table.attach(layer_title, 0, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
+        spacer=gtk.Label()
+        spacer.set_markup('  ')
+        spacer.set_width_chars(11)
+        align_table.attach(spacer, 0, 1, 1, 2, gtk.FILL, gtk.FILL, 0, 0)
       delta_x=gtk.CheckButton(label='delta', use_underline=True)
       delta_x.connect('toggled', self.toggle_fit_option, layer_params[layer_index], 1)
       align_table.attach(delta_x, 1, 2, 1, 2, gtk.FILL, gtk.FILL, 0, 0)
@@ -372,12 +408,6 @@ class reflectometer_session(generic_session):
       thickness.connect('activate', self.dialog_activate, dialog)
       if not substrate:
         align_table.attach(thickness, 0, 1, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
-      else:
-        subst=gtk.Label()
-        subst.set_text('Substrate: ')
-        subst.set_width_chars(11)
-        align_table.attach(subst, 0, 1, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
-      if not substrate:
         delete=gtk.Button(label='DEL', use_underline=True)
         delete.connect('clicked', self.delete_layer, layer, dialog, window)
         align_table.attach(delete, 5, 6, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
@@ -403,7 +433,7 @@ class reflectometer_session(generic_session):
           SL_selector.set_active(i+1)
       SL_selector.connect('changed', self.change_scattering_length, \
                           SL_selector, layer, delta, d_over_b, \
-                          layer_title, layer_index)
+                          layer_title, layer_index, substrate)
       layer.SL_selector=SL_selector
       align_table.attach(SL_selector, 2, 3, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
       roughness=gtk.Entry()
@@ -418,6 +448,7 @@ class reflectometer_session(generic_session):
       #++++++++++++++++++ multilayer fileds +++++++++++++++++++++++++
       layer_params[layer_index]={}
       align_table=gtk.Table(5, 1 + len(layer.layers), False)
+      align_table.set_row_spacings(5)
       text_filed=gtk.Label()
       text_filed.set_markup('Multilayer')
       align_table.attach(text_filed, 0, 1, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
@@ -473,11 +504,15 @@ class reflectometer_session(generic_session):
                                          background=fit_list[1]['background'], \
                                          resolution=fit_list[1]['resolution'], \
                                          scaling=fit_list[1]['scaling'])
-      if fit_list[1]['actually'] and response==3:
+      try:
+        self.max_iter=int(fit_list[2].get_text())
+      except ValueError:
+        self.max_iter=50
+      if fit_list[1]['actually'] and response==5:
         self.fit_object.fit=1
       self.dialog_fit(action, window)
       # read fit parameters from file and create new object, if process is killed ignore
-      if fit_list[1]['actually'] and response==3 and self.fit_object.fit==1: 
+      if fit_list[1]['actually'] and response==5 and self.fit_object.fit==1: 
         parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)
         new_fit=self.fit_object.copy()
         new_fit.get_parameters(parameters)
@@ -485,18 +520,14 @@ class reflectometer_session(generic_session):
       os.remove(self.temp_dir+'fit_temp.ref')
       self.fit_object.fit=0
     elif response==3: # new layer
-      self.fit_object.layers.append(fit_layer())
+      new_layer=fit_layer()
+      self.fit_object.layers.append(new_layer)
       self.rebuild_dialog(dialog, window)
     elif response==4: # new multilayer
       multilayer=fit_multilayer()
       multilayer.layers.append(fit_layer())
       self.fit_object.layers.append(multilayer)
       self.rebuild_dialog(dialog, window)
-######################################## File import/export here !!!!!!!!!!! ###################################################
-    elif response==1: # export .ent
-      None
-    elif response==2: # import .ent
-      None
 
   '''
     show the result of a fit and ask to retrieve the result
@@ -598,7 +629,8 @@ class reflectometer_session(generic_session):
     add a layer to the multilayer after button is pressed
   '''
   def add_multilayer(self, action, multilayer, dialog, window):
-    multilayer.layers.append(fit_layer())
+    new_layer=fit_layer()
+    multilayer.layers.append(new_layer)
     self.rebuild_dialog(dialog, window)
   
   '''
@@ -614,6 +646,9 @@ class reflectometer_session(generic_session):
   '''
   def dialog_fit(self, action, window):
     dataset=window.measurement[window.index_mess]
+      # convert x values from angle to q
+    dataset.unit_trans([['Theta', '\\302\\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
+                      ['2 Theta', '\\302\\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])    
     data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.x_from, xto=self.x_to)
     self.fit_object.number_of_points=data_lines
     self.fit_object.set_fit_constrains()
@@ -623,11 +658,7 @@ class reflectometer_session(generic_session):
     ent_file.close()
     #open a background process for the fit function
     global proc
-    proc = subprocess.Popen(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'], 
-                        shell=False, 
-                        stderr=subprocess.PIPE,
-                        stdout=subprocess.PIPE, 
-                        )
+    proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',self.max_iter)
     if self.fit_object.fit!=1: # if this is not a fit just wait till finished
       stderr_value = proc.communicate()[1]
     else:
@@ -677,14 +708,17 @@ class reflectometer_session(generic_session):
     function to change a layers scattering length parameters
     when a material is selected
   '''
-  def change_scattering_length(self, action, SL_selector, layer, delta, d_over_b, layer_title, layer_index):
+  def change_scattering_length(self, action, SL_selector, layer, delta, d_over_b, layer_title, layer_index, substrate):
     name=layer.SL_selector.get_active_text()
     try:
       SL=self.fit_object.scattering_length_densities[name]
       layer.name=name
       delta.set_text(str(SL[0]))
       d_over_b.set_text(str(SL[1]))
-      layer_title.set_markup(str(layer_index + 1) + ' - ' + layer.name)
+      if substrate:
+        layer_title.set_markup('Substrate - ' + layer.name)
+      else:
+        layer_title.set_markup(str(layer_index + 1) + ' - ' + layer.name)
     except KeyError:
       delta.set_text("1")
       d_over_b.set_text("1")
@@ -705,6 +739,64 @@ class reflectometer_session(generic_session):
   def toggle_fit_bool_option(self, action, dict, value):
     dict[value]=not dict[value]
 
+  '''
+    file selection dialog for parameter import from .ent file
+  '''
+  def import_fit_dialog(self, action, window):
+    #++++++++++++++++File selection dialog+++++++++++++++++++#
+    file_dialog=gtk.FileChooserDialog(title='Open new datafile...', action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+    file_dialog.set_default_response(gtk.RESPONSE_OK)
+    filter = gtk.FileFilter()
+    filter.set_name('Entry file')
+    filter.add_pattern('*.ent')
+    file_dialog.add_filter(filter)
+    filter = gtk.FileFilter()
+    filter.set_name('All')
+    filter.add_pattern('*.*')
+    file_dialog.add_filter(filter)
+    response = file_dialog.run()
+    if response == gtk.RESPONSE_OK:
+      file_name=file_dialog.get_filename()
+    elif response == gtk.RESPONSE_CANCEL:
+      file_dialog.destroy()
+      return False
+    file_dialog.destroy()
+    #----------------File selection dialog-------------------#
+    self.fit_object=fit_parameter()
+    self.fit_object.read_params_from_file(file_name)
+    self.dialog_fit(action, window)
+    return True
+  
+  
+  '''
+    file selection dialog for parameter export from .ent file
+  '''
+  def export_fit_dialog(self, action, window):
+    #++++++++++++++++File selection dialog+++++++++++++++++++#
+    file_dialog=gtk.FileChooserDialog(title='Open new datafile...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+    file_dialog.set_default_response(gtk.RESPONSE_OK)
+    file_dialog.set_current_name(self.active_file_name+'.ent')
+    filter = gtk.FileFilter()
+    filter.set_name('Entry file')
+    filter.add_pattern('*.ent')
+    file_dialog.add_filter(filter)
+    filter = gtk.FileFilter()
+    filter.set_name('All')
+    filter.add_pattern('*.*')
+    file_dialog.add_filter(filter)
+    response = file_dialog.run()
+    if response == gtk.RESPONSE_OK:
+      file_name=file_dialog.get_filename()
+    elif response == gtk.RESPONSE_CANCEL:
+      file_dialog.destroy()
+      return False
+    file_dialog.destroy()
+    #----------------File selection dialog-------------------#
+    file_handler=open(file_name, 'w')
+    file_handler.write(self.fit_object.get_ent_str())
+    file_handler.close
+    return True
+  
   #----------------------- GUI functions -----------------------
 
   '''
@@ -712,13 +804,22 @@ class reflectometer_session(generic_session):
     compiled, will also do that.
     It only startes the sub process, which is returned.
   '''
-  def call_fit_program(self, file_res, file_ent, file_out, max_iter):
-    
-    proc = subprocess.Popen(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'], 
+  def call_fit_program(self, file_ent, file_res, file_out, max_iter):
+    code=self.script_path + fit_program_code
+    exe=self.script_path + fit_program_executible
+    # has the program been changed or does it not exist
+    if (not os.path.exists(exe)) or \
+      ((os.stat(code)[8]-os.stat(exe)[8]) > 0):
+      # compile the program
+      print 'Compiling fit program!'
+      subprocess.call([fortran_compiler, fortran_compiler_options, code, '-o', exe])
+      print 'Compiled'
+    process = subprocess.Popen([exe, file_ent, file_res, file_out+'.ref', file_out+'.sim', str(max_iter)], 
                         shell=False, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         )
+    return process
     
   '''
     try to find the angle of total reflection by
@@ -767,7 +868,8 @@ class reflectometer_session(generic_session):
     ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','20'])
+    proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',20)
+    retcode = proc.communicate()
     self.fit_object.scaling_factor=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)[self.fit_object.fit_params[0]]
     self.fit_object.fit=0
     return retcode
@@ -791,7 +893,8 @@ class reflectometer_session(generic_session):
     ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    retcode = subprocess.call(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'])
+    proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',20)
+    retcode = proc.communicate()
     parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref',self.fit_object)
     self.fit_object.get_parameters(parameters)
     self.fit_object.fit=0
@@ -802,8 +905,7 @@ class reflectometer_session(generic_session):
     has to be reviewd and integrated within GUI
   '''
   def export_fit(self, dataset, input_file_name):
-    if self.fit_object==None:
-      fit_object=fit_parameter()
+    if self.fit_object.layers==[]:
       #+++++++++++++++++++ create fit parameters object +++++++++++++++++++
       fit_thick=self.fit_thicknesses
       first_split=self.fit_layers.split('-')
@@ -812,17 +914,16 @@ class reflectometer_session(generic_session):
           count=int(compound.split('[')[0])
           second_split=compound.split('[')[1].rstrip(']').split('_')
           second_thick=fit_thick.split('-')[0].lstrip('[').rstrip(']').split('_')
-          fit_object.append_multilayer(second_split, map(float, second_thick), [self.fit_est_roughness for i in second_thick], count)
+          self.fit_object.append_multilayer(second_split, map(float, second_thick), [self.fit_est_roughness for i in second_thick], count)
         else: # no multilayer
             if len(fit_thick)>0:
-                fit_object.append_layer(compound, float(fit_thick.split('-')[0]), self.fit_est_roughness)
+                self.fit_object.append_layer(compound, float(fit_thick.split('-')[0]), self.fit_est_roughness)
             else:
-                fit_object.append_substrate(compound, self.fit_est_roughness)
+                self.fit_object.append_substrate(compound, self.fit_est_roughness)
         if len(fit_thick.split('-'))>1: # remove first thickness
             fit_thick=fit_thick.split('-',1)[1]
         else:
             fit_thick=''
-      self.fit_object=fit_object
       #------------------- create fit parameters object -------------------
     self.fit_object.set_fit_constrains() # set constrained parameters for multilayer
       # convert x values from angle to q
@@ -845,15 +946,8 @@ class reflectometer_session(generic_session):
     ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    #retcode = subprocess.call(['fit-script', input_file_name+'_'+dataset.number+'.res',\
-    #  input_file_name+'_'+dataset.number+'.ent', input_file_name+'_'+dataset.number])
-    proc = subprocess.Popen(['fit-script', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp','50'], 
-                        shell=False, 
-                        stderr=subprocess.PIPE,
-                        stdout=subprocess.PIPE, 
-                        )
-    if self.fit_object.fit!=1: # if this is not a fit just wait till finished
-      stderr_value = proc.communicate()[1]
+    proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',20)
+    retcode = proc.communicate()
     #------- create final input file and make a simulation -------
 
   #---- functions for fitting with fortran program by E. Kentzinger ----
@@ -874,7 +968,7 @@ class fit_parameter():
   substrate=None # data for the substrate
   # fit specifc parameters
   fit=0
-  fit_params=[1]
+  fit_params=[]
   constrains=[]
   
   '''
@@ -884,6 +978,10 @@ class fit_parameter():
     # lookup the scattering length density table
     from scattering_length_table import scattering_length_densities
     self.scattering_length_densities=scattering_length_densities
+    self.layers=[]
+    self.substrate=None
+    self.fit_params=[]
+    self.constrains=[]
   
   '''
     append one layer at bottom from the lookup table defined
@@ -892,18 +990,26 @@ class fit_parameter():
   def append_layer(self, material, thickness, roughness):
     try: # if layer not in the table, return False
       SL=self.scattering_length_densities[material]
+      result=True
     except KeyError:
-      return False
+      SL=[1., 1.]
+      material='Unknown'
+      result=False
     layer=fit_layer(material, [thickness, SL[0], SL[1], roughness])
     self.layers.append(layer)
-    return True
-  
+    return result
+
+  '''
+    Remove a layer ither directly or from a multilayer
+    inside. Strings of the object have to be compared,
+    as __eq__ is defined in fit_layer only by the settings.
+  '''
   def remove_layer(self, layer):
-    if layer in self.layers: # single layer can be removed directly
+    if str(layer) in map(str, self.layers): # single layer can be removed directly
       self.layers.remove(layer)
     else: # multilayer layers have to be searched first
       for multilayer in [a_layer for a_layer in self.layers if a_layer.multilayer]:
-        if layer in multilayer.layers:
+        if str(layer) in map(str, multilayer.layers):
           multilayer.layers.remove(layer)
   
   '''
@@ -930,11 +1036,14 @@ class fit_parameter():
   def append_substrate(self, material, roughness):
     try: # if layer not in the table, return False
       SL=self.scattering_length_densities[material]
+      result=True
     except KeyError:
-      return False
+      material='Unknown'
+      SL=[1., 1.]
+      result=False
     layer=fit_layer(material, [0., SL[0], SL[1], roughness])
     self.substrate=layer
-    return True
+    return result
     
   '''
     create a .ent file for fit.f90 script from given parameters
@@ -1075,6 +1184,122 @@ class fit_parameter():
     for layer in self.layers:
       i+=len(layer)
     return i
+  
+  '''
+    read data from .ent file
+  '''
+  def read_params_from_file(self, file):
+    lines=open(file, 'r').readlines()
+    lines.reverse()
+    self.radiation[0]=float(lines.pop().split()[0])
+    lines.pop()
+    lines.pop()
+    number_of_layers=int(lines.pop().split()[0])
+    # read layer data
+    self.layers=[]
+    for i in range(number_of_layers-1):
+      comment=lines.pop()
+      if comment[0]=='#' and len(comment.split(':'))>=2: # if created by this programm, get name
+        name=comment.split(':', 1)[1].strip('\n').lstrip()
+      else:
+        name='NoName'
+      parameters=[]
+      parameters.append(float(lines.pop().split()[0]))
+      parameters.append(float(lines.pop().split()[0]))
+      parameters.append(float(lines.pop().split()[0]))
+      parameters.append(float(lines.pop().split()[0]))
+      layer=fit_layer(name=name, parameters_list=parameters)
+      self.layers.append(layer)
+    # read substrate data
+    comment=lines.pop()
+    if comment[0]=='#' and len(comment.split(':'))>=2: # if created by this programm, get name
+      name=comment.split(':', 1)[1].strip('\n').lstrip()
+    else:
+      name='NoName'
+    parameters=[]
+    parameters.append(0)
+    parameters.append(float(lines.pop().split()[0]))
+    parameters.append(float(lines.pop().split()[0]))
+    parameters.append(float(lines.pop().split()[0]))
+    self.substrate=fit_layer(name=name, parameters_list=parameters)
+    # read last parameters
+    lines.pop()
+    self.background=float(lines.pop().split()[0])
+    self.resolution=float(lines.pop().split()[0])
+    self.scaling_factor=float(lines.pop().split()[0])
+    lines.pop()
+    self.theta_max=float(lines.pop().split()[0])
+    self.combine_layers()
+
+  '''
+    Function which tries to combine layers with the same parameters
+    to a multilayer object. This needs a lot of list processing
+    but essentially, it creates a list of periodically equal
+    layers and changes these in the layers list to multilayers.
+  '''
+  def combine_layers(self):
+    candidates=[]
+    for i, layer in enumerate(self.layers):
+      for candidate in candidates:
+        if i<candidate[1]:
+          if i-candidate[0]+candidate[1]<len(self.layers) and\
+            i-candidate[0]-candidate[1]>=0:
+            if layer!=self.layers[i-candidate[0]+candidate[1]] and\
+              layer!=self.layers[i-candidate[0]-candidate[1]]:
+              candidates.remove(candidate)
+      for j, layer2 in enumerate(self.layers[i+1:]):
+        if layer==layer2:
+          candidates.append([i, j+i+1])
+    remove=[]
+    # first delete all candidates, which have larger distances
+    for i, candidate in enumerate(candidates):
+      for candidate2 in candidates[i+1:]:
+        if candidate2[0]==candidate[0] and not candidate2 in remove:
+          remove.append(candidate2)
+    for remover in remove:
+      candidates.remove(remover)
+    remove=[]
+    # now combine followup repititions
+    for i, candidate in enumerate(candidates):
+      for candidate2 in candidates[i+1:]:
+        if candidate2[0]==candidate[-1] and not candidate2 in remove:
+          candidate.append(candidate2[1])
+          remove.append(candidate2)
+    for remover in remove:
+      candidates.remove(remover)
+    # now we have lists of layers with the same settings, 
+    # we only have to create the multilayers and delete them
+    multilayers=[]
+    remove_layers=[]
+    start_indices=[]
+    while len(candidates)>0:
+      from copy import deepcopy as copy
+      first=copy(candidates[0])
+      layers_in=[]
+      for i in range(first[1]-first[0]):
+        remove_layers+=[self.layers[j] for j in candidates[i]]
+        layers_in.append(self.layers[first[0]+i])
+      for i in range(first[1]-first[0]):
+        candidates.pop(0)
+      multilayers.append([len(first), layers_in]) # [repititions, layers]
+      start_indices.append(first[0])
+    new_layers=[]
+    i=0
+    while self.layers!=[]:
+      if not self.layers[0] in remove_layers:
+        new_layers.append(self.layers.pop(0))
+      elif len(start_indices)>0 and i==start_indices[0]:
+        start_indices.pop(0)
+        new=multilayers.pop(0)
+        new_multilayer=fit_multilayer(new[0], layer_list=new[1])
+        new_layers.append(new_multilayer)
+        self.layers.pop(0)
+      else:
+        self.layers.pop(0)
+      i+=1
+    self.layers=new_layers
+    
+
 
 '''
   class for one layer data
@@ -1098,12 +1323,35 @@ class fit_layer():
       self.delta=parameters_list[1]
       self.d_over_b=parameters_list[2]
       self.roughness=parameters_list[3]
+    else:
+      self.multilayer=False
+      self.name=''
+      self.thickness=1
+      self.delta=1
+      self.d_over_b=1
+      self.roughness=1
   
   '''
     length is just one layer, see multilayers
   '''
   def __len__(self):
     return 1
+  
+  '''
+    test if two layers have the same parameters
+  '''
+  def __eq__(self, other):
+    if self.multilayer==other.multilayer and\
+          self.thickness==other.thickness and\
+          self.delta==other.delta and\
+          self.d_over_b==other.d_over_b and\
+          self.roughness==other.roughness:
+      return True
+    else:
+      return False
+  
+  def __ne__(self, other):
+    return not self.__eq__(other)
   
   '''
     create a copy of this object
@@ -1174,17 +1422,19 @@ class fit_layer():
 '''
 class fit_multilayer():
   name=''
-  layers=[] # a list of fit_layers
   repititions=1 # number of times these layers will be repeated
   multilayer=True
   
   '''
     class constructor
   '''
-  def __init__(self, repititions=1, name='NoName', layer_list=[]):
+  def __init__(self, repititions=1, name='NoName', layer_list=None):
     self.repititions=repititions
     self.name=name
-    self.layers=layer_list
+    if layer_list!=None:
+      self.layers=layer_list
+    else:
+      self.layers=[]
   
   '''
     length of the object is length of the layers list * repititions

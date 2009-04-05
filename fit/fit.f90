@@ -1,4 +1,4 @@
-program fit_logspecrefgauss
+program fit_logspecrefgauss 
     implicit real*8 (a-h,o-z)
     parameter(maxint=25,map=4*maxint+3,ndatap=10000)
     real*8 lambda
@@ -200,9 +200,9 @@ program fit_logspecrefgauss
        dchisq=dabs(chisq-chisq0)/chisq0
         ! this was chisq.ge.chisq0 resulting in very long iterations
         ! don't know if this is correct too
-       if (chisq.gt.chisq0) then
+       if (chisq.ge.chisq0) then
          itest=0
-       else if (dchisq.le.1.0d-2) then
+       else if (dchisq.le.1.0d-2.or.alamda.gt.1.0d6) then
          itest=itest+1
        endif
        if (itest.eq.5) goto 88
