@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-#
-# Some general settings for the 4circle plotting script 'plot_circle_data.py'
+'''
+ Some general settings for the 4circle plotting script 'plot_circle_data.py' 
+'''
 
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
 transformations=[\

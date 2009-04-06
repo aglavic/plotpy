@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# A table of compounds and their scattering length density for x-ray K_alpha
+''' A table of compounds and their scattering length density for x-ray K_alpha '''
 #
 # {'name': [sl_density,delta/beta]}
 #

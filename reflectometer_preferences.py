@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-#
-# Some general settings for the reflectometer plotting script 'plot_reflectometer_data.py'
+''' Some general settings for the reflectometer plotting script 'plot_reflectometer_data.py' '''
 
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
 transformations=[\

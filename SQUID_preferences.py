@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-#
-# Some general settings for the SQUID plotting script 'plot_SQUID_data.py'
+'''
+ Some general settings for the SQUID plotting script 'plot_SQUID_data.py'
+'''
 
 # Diamagnetic correction applied to every measurement (for example the used sample holder)
 dia_mag_correct=0

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-#
-# Variables for gnuplot options to be used by plot commands
-# Script specific settings in own gnuplot_preferences_???.py
+''' 
+ Variables for gnuplot options to be used by plot commands.
+'''
 #
 # place holders:
 #

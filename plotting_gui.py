@@ -45,10 +45,15 @@ from gnuplot_preferences import output_file_name,print_command,titles
 import gnuplot_preferences
 
 #++++++++++++++++++++++++ ApplicationMainWindow Class +++++++++++++++++++++++++++++++++#
-# Everything the GUI does is in this Class
 class ApplicationMainWindow(gtk.Window):
+  '''
+    Everything the GUI does is in this Class.
+  '''
 #+++++++++++++++++++++++++++++++Window Constructor+++++++++++++++++++++++++++++++++++++#
   def __init__(self, active_session, parent=None, script_suf='',preferences_file='',plugin_widget=None):
+    '''
+      Class constructor which builds the main window with it's menus, buttons and the plot area.
+    '''
     global errorbars
   # set class variables
     self.height=600 # window height
@@ -319,18 +324,29 @@ class ApplicationMainWindow(gtk.Window):
 #++++++++++++++++++++++++++++++++++Event hanling+++++++++++++++++++++++++++++++++++++++#
 
   #++++++++++++++++++++++++++++Interrupt Events++++++++++++++++++++++++++++++++++#
-  def update_size(self, widget, event): # if resize event is triggered the window size variables are changed.
+  def update_size(self, widget, event):
+    '''
+      If resize event is triggered the window size variables are changed.
+    '''
     if (not ((self.width==event.width)&(self.height==event.height))):
       self.image.hide()
       self.image_shown=False
       self.width=event.width
       self.height=event.height
 
-  def update_frame_size(self, widget, event): # if resize event is triggered the window size variables are changed.
+  def update_frame_size(self, widget, event): 
+    '''
+      If resize event is triggered the window size variables are changed.
+    '''
     self.heightf=event.height
     self.widthf=event.width
 
-  def update_picture(self, widget, event): # the first event after starting to resize triggers rescaling the picture and showing it. Is only executed, if this event is not a resize event. So the picture is hidden while reesizing and reshown after.
+  def update_picture(self, widget, event):
+    '''
+      The first event after starting to resize triggers rescaling the picture and showing it. 
+      Is only executed, if this event is not a resize event. 
+      So the picture is hidden while reesizing and reshown after.
+    '''
     if not ((event.type == gtk.gdk.EXPOSE)|(event.type == gtk.gdk.CONFIGURE)|(event.type == gtk.gdk.PROPERTY_NOTIFY)|(event.type==gtk.gdk.WINDOW_STATE)):
       if (not self.image_shown):
         self.widthf=self.frame1.get_allocation().width
@@ -344,6 +360,9 @@ class ApplicationMainWindow(gtk.Window):
 
   #++++++++++++++++++++++++++Menu/Toolbar Events+++++++++++++++++++++++++++++++++#
   def main_quit(self, action=None):
+    '''
+      When window is closed save the settings in home folder.
+    '''
     try:
       os.mkdir(os.path.expanduser('~')+'/.plotting_gui')
     except OSError:
@@ -364,56 +383,65 @@ class ApplicationMainWindow(gtk.Window):
       window.destroy()
     gtk.main_quit()
 
-  def activate_about(self, action): # about dialog to show
-      dialog = gtk.AboutDialog()
-      dialog.set_name("Plotting GUI")
-      dialog.set_copyright("\302\251 Copyright Artur Glavic")
-      dialog.set_website("http://www.fz-juelich.de/iff")
-      ## Close dialog on user response
-      dialog.connect ("response", lambda d, r: d.destroy())
-      dialog.show()
+  def activate_about(self, action):
+    '''
+      Show the about dialog.
+    '''
+    dialog = gtk.AboutDialog()
+    dialog.set_name("Plotting GUI")
+    dialog.set_copyright("\302\251 Copyright Artur Glavic")
+    dialog.set_website("http://www.fz-juelich.de/iff")
+    ## Close dialog on user response
+    dialog.connect ("response", lambda d, r: d.destroy())
+    dialog.show()
       
-  def iterate_through_measurements(self, action): # change the plot with arrows in toolbar
-      global errorbars
-      if action.get_name()=='Prev':
-        self.index_mess=max(0,self.index_mess-1)
+  def iterate_through_measurements(self, action):
+    ''' 
+      Change the active plot with arrows in toolbar.
+    '''
+    global errorbars
+    if action.get_name()=='Prev':
+      self.index_mess=max(0,self.index_mess-1)
+      self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
+    elif action.get_name()=='First':
+      self.index_mess=0
+      self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
+    elif action.get_name()=='Last':
+      self.index_mess=len(self.measurement)-1
+      self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
+    elif action.get_name()=='Next':
+        self.index_mess=min(len(self.measurement)-1,self.index_mess+1)
         self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
-      elif action.get_name()=='First':
-        self.index_mess=0
+    else:
+        for i,data in enumerate(self.measurement):
+          if int(data.number)<=int(self.plot_page_entry.get_text()):
+            self.index_mess=i
         self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
-      elif action.get_name()=='Last':
-        self.index_mess=len(self.measurement)-1
-        self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
-      elif action.get_name()=='Next':
-          self.index_mess=min(len(self.measurement)-1,self.index_mess+1)
-          self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
-      else:
-          for i,data in enumerate(self.measurement):
-            if int(data.number)<=int(self.plot_page_entry.get_text()):
-              self.index_mess=i
-          self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
-      if self.index_mess>=len(self.measurement):
-        self.index_mess=len(self.measurement)-1
-      if self.index_mess<0:
-        self.index_mess=0
-    # change label and plot other picture
-      self.show_add_info(None)
-      self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
-      self.label.set_text(self.measurement[self.index_mess].sample_name)
-      self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
-      self.label2.set_text(self.measurement[self.index_mess].short_info)
-      self.last_plot_text= self.plot(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
-      self.set_image()
-      self.reset_statusbar()
-      self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
-      self.logx.set_active(self.measurement[self.index_mess].logx)
-      self.logy.set_active(self.measurement[self.index_mess].logy)
-      self.logz.set_active(self.measurement[self.index_mess].logz)
-      self.rebuild_menus()
-      self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
+    if self.index_mess>=len(self.measurement):
+      self.index_mess=len(self.measurement)-1
+    if self.index_mess<0:
+      self.index_mess=0
+  # change label and plot other picture
+    self.show_add_info(None)
+    self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
+    self.label.set_text(self.measurement[self.index_mess].sample_name)
+    self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
+    self.label2.set_text(self.measurement[self.index_mess].short_info)
+    self.last_plot_text= self.plot(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+    self.set_image()
+    self.reset_statusbar()
+    self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
+    self.logx.set_active(self.measurement[self.index_mess].logx)
+    self.logy.set_active(self.measurement[self.index_mess].logy)
+    self.logz.set_active(self.measurement[self.index_mess].logz)
+    self.rebuild_menus()
+    self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
 
 
-  def change(self,action): # change different plot settings triggered by different events
+  def change(self,action):
+    '''
+      Change different plot settings triggered by different events.    
+    '''
     if action.get_name()=='x-number':
       self.measurement[self.index_mess].xdata=-1
     elif action.get_name()=='y-number':
@@ -461,10 +489,10 @@ class ApplicationMainWindow(gtk.Window):
       self.measurement[self.index_mess].logz=self.logz.get_active()
     self.replot() # plot with new Settings
   
-  '''
-    change the active datafile for plotted sequences
-  '''
   def change_active_file(self, action):
+    '''
+      Change the active datafile for plotted sequences.
+    '''
     index=int(action.get_name().split('-')[-1])
     object=self.active_session.file_data.items()[index]
     self.active_session.change_active(object)
@@ -473,10 +501,10 @@ class ApplicationMainWindow(gtk.Window):
     self.index_mess=0
     self.replot()
   
-  '''
-    import a new datafile of the same type
-  '''
   def add_file(self, action):
+    '''
+      Import a new datafile of the same type.
+    '''
     file_names=[]
     #++++++++++++++++File selection dialog+++++++++++++++++++#
     file_dialog=gtk.FileChooserDialog(title='Open new datafile...', action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
@@ -505,7 +533,10 @@ class ApplicationMainWindow(gtk.Window):
     self.rebuild_menus()
     return file_names
 
-  def change_range(self,action): # change plotting range according to textinput
+  def change_range(self,action):
+    '''
+      Change plotting range according to textinput.
+    '''
     xin=self.x_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
     yin=self.y_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
     zin=self.z_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
@@ -557,9 +588,11 @@ class ApplicationMainWindow(gtk.Window):
     '\n'+self.z_range+'\n'
     self.replot() # plot with new settings
 
-  # open a dialog window to inser additional gnuplot commands
-  # after opening the button is rerouted
   def open_plot_options_window(self,action):
+    '''
+      Open a dialog window to insert additional gnuplot commands.
+      After opening the button is rerouted.
+    '''
   #+++++++++++++++++ Adding input fields in table +++++++++++++++++
     dialog=gtk.Dialog(title='Custom Gnuplot settings')
     table=gtk.Table(6,13,False)
@@ -674,8 +707,10 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_options_handler_id=self.plot_options_button.connect("clicked",self.button_close_plot_options_window,dialog)
     self.plot_options_window_open=True
 
-  # remove the textbox when dialog is closed
   def close_plot_options_window(self,dialog,sw):
+    '''
+      Remove the textbox when dialog is closed.
+    '''
     dialog.hide()
     sw.remove(self.plot_options_view)
     # reroute the button to open a new window
@@ -683,14 +718,18 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_options_handler_id=self.plot_options_button.connect("clicked",self.open_plot_options_window)
     self.plot_options_window_open=False
 
-  # hide dialog window and reroute button
   def button_close_plot_options_window(self,button,dialog):
+    '''
+      Hide dialog window and reroute button.
+    '''
     dialog.destroy()
 
-  # plot with new commands from dialog window
   def change_plot_options(self,widget,action,\
     terminal_png,terminal_ps,x_label,y_label,z_label,\
       plotting_parameters,plotting_parameters_errorbars,plotting_parameters_3d):
+    '''
+      Plot with new commands from dialog window.
+    '''
     if action==1:
       self.measurement[self.index_mess].plot_options=\
         self.plot_options_buffer.get_text(\
@@ -706,16 +745,20 @@ class ApplicationMainWindow(gtk.Window):
       gnuplot_preferences.plotting_parameters_3d=plotting_parameters_3d.get_text()
       self.replot() # plot with new settings
 
-  # load a plot profile
   def load_profile(self,action):
+    '''
+      Load a plot profile.
+    '''
     self.profiles[action.get_name()].load(self)
     if self.plot_options_window_open:
       self.plot_options_button.emit("clicked")
       self.plot_options_button.emit("clicked")
 
 
-  # save a plot profile
   def save_profile(self,action):
+    '''
+      Save a plot profile.
+    '''
     name_dialog=gtk.Dialog(title='Enter profile name:')
     name_entry=gtk.Entry()
     name_entry.show()
@@ -729,8 +772,10 @@ class ApplicationMainWindow(gtk.Window):
     self.profiles[name].save(self)
     self.rebuild_menus()
 
-  # delete a plot profile
   def delete_profile(self,action):
+    '''
+      Delete a plot profile.
+    '''
     delete_dialog=gtk.Dialog(title='Delete profile')
     self.delete_name=''
     radio_group=None
@@ -756,31 +801,39 @@ class ApplicationMainWindow(gtk.Window):
     self.delete_name=action.get_label()
 
   def show_last_plot_params(self,action):
-      global errorbars
-      plot_text=measurement_data_plotting.create_plot_script(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.script_suf, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
-      param_dialog=gtk.Dialog(title='Last plot parameters:')
-      param_dialog.set_default_size(600,400)
-      sw = gtk.ScrolledWindow()
-      # Set the adjustments for horizontal and vertical scroll bars.
-      # POLICY_AUTOMATIC will automatically decide whether you need
-      # scrollbars.
-      sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-      text_filed=gtk.Label()
-      text_filed.set_markup(plot_text)
-      sw.add_with_viewport(text_filed) # add textbuffer view widget
-      param_dialog.vbox.add(sw)
-      sw = gtk.ScrolledWindow()
-      # Set the adjustments for horizontal and vertical scroll bars.
-      # POLICY_AUTOMATIC will automatically decide whether you need
-      # scrollbars.
-      sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-      text_filed=gtk.Label()
-      #text_filed.set_markup(self.last_plot_text)
-      sw.add_with_viewport(text_filed) # add textbuffer view widget
-      param_dialog.vbox.add(sw)
-      param_dialog.show_all()
+    '''
+      Show a text window with the text, that would be used for gnuplot to
+      plot the current measurement.
+    '''
+    global errorbars
+    plot_text=measurement_data_plotting.create_plot_script(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.script_suf, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+    param_dialog=gtk.Dialog(title='Last plot parameters:')
+    param_dialog.set_default_size(600,400)
+    sw = gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    text_filed=gtk.Label()
+    text_filed.set_markup(plot_text)
+    sw.add_with_viewport(text_filed) # add textbuffer view widget
+    param_dialog.vbox.add(sw)
+    sw = gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    text_filed=gtk.Label()
+    #text_filed.set_markup(self.last_plot_text)
+    sw.add_with_viewport(text_filed) # add textbuffer view widget
+    param_dialog.vbox.add(sw)
+    param_dialog.show_all()
 
   def change_data_filter(self,action):
+    '''
+      A dialog to select filter options, that removes points from the
+      plotted dataset.
+    '''
     filters=[]
     data=self.measurement[self.index_mess]
     filter_dialog=gtk.Dialog(title='Filter the plotted data:')
@@ -828,8 +881,11 @@ class ApplicationMainWindow(gtk.Window):
     self.replot()
     
 
-  # create all widgets for the filter selection and place them in a table
   def get_new_filter(self,table,row,data,parameters=(-1,0,0,False)):
+    ''' 
+      Create all widgets for the filter selection in 
+      change_data_filter dialog and place them in a table.
+    '''
     column=gtk.combo_box_new_text()
     column.append_text('None')
     for column_dim in data.dimensions():
@@ -865,7 +921,10 @@ class ApplicationMainWindow(gtk.Window):
                 0,                         0);
     return (column,from_data,to_data,include)
 
-  def show_add_info(self,action): # show or hide advanced options
+  def show_add_info(self,action):
+    '''
+      Show or hide advanced options widgets.
+    '''
     if self.check_add.get_active():
       if action==None: # only resize picture if the length of additional settings changed
         if (self.logz.get_property('visible') & (self.measurement[self.index_mess].zdata<0))\
@@ -921,7 +980,11 @@ class ApplicationMainWindow(gtk.Window):
 
       
 
-  def apply_to_all(self,action): # apply changed plotsettings to all plots
+  def apply_to_all(self,action): 
+    '''
+      Apply changed plotsettings to all plots. This includes x,y,z-ranges,
+      logarithmic plotting and the custom plot settings.
+    '''
     for dataset in self.measurement:
       dataset.xdata=self.measurement[self.index_mess].xdata
       dataset.ydata=self.measurement[self.index_mess].ydata
@@ -933,14 +996,21 @@ class ApplicationMainWindow(gtk.Window):
       self.reset_statusbar()
       self.statusbar.push(0,'Applied settings to all Plots!')
 
-  def add_multiplot(self,action): # add or remove this item from multiplot list, which is a linst of plotnumbers of the same Type
+  def add_multiplot(self,action): 
+    '''
+      Add or remove the active dataset from multiplot list, 
+      which is a list of plotnumbers of the same Type.
+    '''
     if (action.get_name()=='AddAll')&(len(self.measurement)<40): # dont autoadd more than 40
       for i in range(len(self.measurement)):
         self.do_add_multiplot(i)
     else:
       self.do_add_multiplot(self.index_mess)
 
-  def do_add_multiplot(self,index): # add one item to multiplot devided by plots of same type
+  def do_add_multiplot(self,index): 
+    '''
+      Add one item to multiplot list devided by plots of the same type.
+    '''
     changed=False
     for plotlist in self.multiplot:
       if index in plotlist:
@@ -973,14 +1043,21 @@ class ApplicationMainWindow(gtk.Window):
         mp_list=mp_list+'\n'+self.measurement[index2].number
     self.multi_list.set_markup(' Multiplot List: \n'+mp_list)
 
-  def toggle_error_bars(self,action): # show or remove error bars from plots
+  def toggle_error_bars(self,action):
+    '''
+      Show or remove error bars in plots.
+    '''
     global errorbars
     errorbars= not errorbars
     self.reset_statusbar()
     self.replot()
     self.statusbar.push(0,'Show errorbars='+str(errorbars))
 
-  def export_plot(self,action): # function for every export action
+  def export_plot(self,action): 
+    '''
+      Function for every export action. Export is made as .png or .ps depending
+      on the selected file name.
+    '''
     global errorbars
     if action.get_name()=='ExportAll':
       for dataset in self.measurement:
@@ -1055,7 +1132,10 @@ class ApplicationMainWindow(gtk.Window):
       self.reset_statusbar()
       self.statusbar.push(0,'Export plot number '+self.measurement[self.index_mess].number+'... Done!')
 
-  def print_plot(self,action): # send plot to printer, can also print every Plot
+  def print_plot(self,action): 
+    '''
+      Send plot to printer, can also print every plot.
+    '''
     global errorbars
     if action.get_name()=='Print':
       term='postscript landscape enhanced colour'
@@ -1094,6 +1174,11 @@ class ApplicationMainWindow(gtk.Window):
 #+++++++++++++++++++++++++++Functions for initializing etc+++++++++++++++++++++++++++++#
 
   def read_config_file(self):
+    '''
+      Read the options that have been stored in a config file in an earlier session.
+      The ConfigObj python module is used to save the settings in an .ini file
+      as this is an easy way to store dictionaries.
+    '''
     self.config_object=ConfigObj(os.path.expanduser('~')+'/.plotting_gui/config.ini')
     self.config_object.indent_type='\t'
     try:
@@ -1128,6 +1213,10 @@ class ApplicationMainWindow(gtk.Window):
       return False
 
   def read_window_config(self,config_file):
+    '''
+      Read the window config parameters from the old own format.
+      This will be removed, when everything is saved in the .ini file.
+    '''
     line=config_file.readline().rstrip('\n').lstrip('\t')
     while not line=='[/window]':
       if line=='[height]':
@@ -1150,13 +1239,22 @@ class ApplicationMainWindow(gtk.Window):
 
 #++++++++++++++Functions for displaying graphs plotting and status infos+++++++++++++++#
 
-  def set_image(self): # resize and show temporary gnuplot image
+  def set_image(self):
+    '''
+      Resize and show temporary gnuplot image.
+    '''
     self.image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file(self.active_session.temp_dir+'plot_temp.png').scale_simple( self.widthf-20,self.heightf-20,gtk.gdk.INTERP_BILINEAR))
 
-  def splot(self, session,datasets,file_name_prefix, title,names, with_errorbars,output_file='',fit_lorentz=False,add_preferences=''): # plot via script file instead of using python gnuplot pipeing
+  def splot(self, session,datasets,file_name_prefix, title,names, with_errorbars,output_file='',fit_lorentz=False,add_preferences=''):
+    '''
+      Plot via script file instead of using python gnuplot pipeing.
+    '''
     return measurement_data_plotting.gnuplot_plot_script(session, datasets,file_name_prefix, self.script_suf, title,names,with_errorbars,output_file,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
 
-  def replot(self,action=None): # recreate the current plot and clear Statusbar
+  def replot(self,action=None): 
+    '''
+      Recreate the current plot and clear statusbar.
+    '''
     global errorbars
     self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
     self.label.set_text(self.measurement[self.index_mess].sample_name)
@@ -1170,7 +1268,10 @@ class ApplicationMainWindow(gtk.Window):
 
 
 
-  def reset_statusbar(self): # clear statusbar
+  def reset_statusbar(self): 
+    '''
+      Clear statusbar.
+    '''
     self.statusbar.pop(0)
     self.statusbar.push(0,'')
 
@@ -1178,13 +1279,13 @@ class ApplicationMainWindow(gtk.Window):
 
 #+++++++++++++++++++++Functions responsible for menus and toolbar++++++++++++++++++++++#
 
-  '''
-    Create XML text for the menu and toolbar creation. In addition the variable
-    actions are stored in a list. (See __create_action_group function)
-    The XML text is used for the UIManager to create the bars,for more 
-    information see the pygtk documentation for the UIManager
-  '''
-  def build_menu(self): # build the menu-/toolbar, especially for the x and y menus
+  def build_menu(self):
+    '''
+      Create XML text for the menu and toolbar creation. In addition the variable
+      actions are stored in a list. (See __create_action_group function)
+      The XML text is used for the UIManager to create the bars,for more 
+      information see the pygtk documentation for the UIManager
+    '''
     self.added_items=(( "xMenu", None,                             # name, stock id
         "x-axes", None,                    # label, accelerator
         "xMenu",                                   # tooltip
@@ -1220,8 +1321,7 @@ class ApplicationMainWindow(gtk.Window):
     ( "FilesMenu", None,                             # name, stock id
         "Change active file", None,                    # label, accelerator
         None,                                   # tooltip
-        self.change ),
-)
+        self.change ),)
   # Menus allways present
     output='''<ui>
     <menubar name='MenuBar'>
@@ -1326,121 +1426,123 @@ class ApplicationMainWindow(gtk.Window):
     </ui>'''
     return output
 
-  '''
-    Create actions for menus and toolbar.
-    Every entry creates a gtk.Action and the function returns a gtk.ActionGroup.
-    When the action is triggered it calls to a function.
-    For more information see the pygtk documentation for the UIManager
-  '''
-  def __create_action_group(self): # define the actions for every menu-/toolbar entry
-      entries = (
-        ( "FileMenu", None, "_File" ),               # name, stock id, label
-        ( "ActionMenu", None, "_Action" ),               # name, stock id, label
-        ( "HelpMenu", None, "_Help" ),               # name, stock id, label
-        ( "ToolBar", None, "_Toolbar" ),               # name, stock id, label
-        ( "OpenDatafile", gtk.STOCK_SAVE,                    # name, stock id
-          "_Open File","<control>O",                      # label, accelerator
-          "Open a new datafile",                       # tooltip
-          self.add_file ),
-        ( "Export", gtk.STOCK_SAVE,                    # name, stock id
-          "_Export","<control>E",                      # label, accelerator
-          "Export current Plot",                       # tooltip
-          self.export_plot ),
-        ( "ExportAs", gtk.STOCK_SAVE,                  # name, stock id
-          "Export As...", None,                       # label, accelerator
-          "Export Plot under other name",                          # tooltip
-          self.export_plot ),
-        ( "Print", gtk.STOCK_PRINT,                  # name, stock id
-          "_Print...", "<control>P",                       # label, accelerator
-          None,                          # tooltip
-          self.print_plot ),
-        ( "PrintAll", gtk.STOCK_PRINT,                  # name, stock id
-          "Print All Plots...", None,                       # label, accelerator
-          None,                          # tooltip
-          self.print_plot ),
-        ( "Quit", gtk.STOCK_QUIT,                    # name, stock id
-          "_Quit", "<control>Q",                     # label, accelerator
-          "Quit",                                    # tooltip
-          self.main_quit ),
-        ( "About", None,                             # name, stock id
-          "About", None,                    # label, accelerator
-          "About",                                   # tooltip
-          self.activate_about ),
-        ( "First", gtk.STOCK_GOTO_FIRST,                    # name, stock id
-          "First", "<control><shift>B",                     # label, accelerator
-          "First Plot",                                    # tooltip
-          self.iterate_through_measurements),
-        ( "Prev", gtk.STOCK_GO_BACK,                    # name, stock id
-          "Prev", "<control>B",                     # label, accelerator
-          "Previous Plot",                                    # tooltip
-          self.iterate_through_measurements),
-        ( "Next", gtk.STOCK_GO_FORWARD,                    # name, stock id
-          "_Next", "<control>N",                     # label, accelerator
-          "Next Plot",                                    # tooltip
-          self.iterate_through_measurements),
-        ( "Last", gtk.STOCK_GOTO_LAST,                    # name, stock id
-          "Last", "<control><shift>N",                     # label, accelerator
-          "Last Plot",                                    # tooltip
-          self.iterate_through_measurements),
-        ( "ShowPlotparams", None,                    # name, stock id
-          "Show plot parameters", None,                     # label, accelerator
-          "Show the gnuplot parameters used for plot.",                                    # tooltip
-          self.show_last_plot_params),
-        ( "FilterData", None,                    # name, stock id
-          "Filter the data points", None,                     # label, accelerator
-          None,                                    # tooltip
-          self.change_data_filter),
-        ( "Apply", gtk.STOCK_CONVERT,                    # name, stock id
-          "Apply", None,                     # label, accelerator
-          "Apply current plot settings to all sequences",                                    # tooltip
-          self.apply_to_all),
-        ( "ExportAll", gtk.STOCK_EXECUTE,                    # name, stock id
-          "Exp. All", None,                     # label, accelerator
-          "Export all sequences",                                    # tooltip
-          self.export_plot),
-        ( "ErrorBars", gtk.STOCK_ADD,                    # name, stock id
-          "E.Bars", None,                     # label, accelerator
-          "Toggle errorbars",                                    # tooltip
-          self.toggle_error_bars),
-        ( "AddMulti", gtk.STOCK_JUMP_TO,                    # name, stock id
-          "Add", None,                     # label, accelerator
-          "Add/Remove plot to/from multi-plot list",                                    # tooltip
-          self.add_multiplot),
-        ( "AddAll", gtk.STOCK_JUMP_TO,                    # name, stock id
-          "Add all to Multiplot", None,                     # label, accelerator
-          "Add/Remove all sequences to/from multi-plot list",                                    # tooltip
-          self.add_multiplot),
-        ( "FitLorentz", None,                    # name, stock id
-          "Fit with pseudo Voigt", None,                     # label, accelerator
-          "Try to fit one peak with pseudo Voigt function",                                    # tooltip
-          self.change),
-        ( "MultiPlot", gtk.STOCK_YES,                    # name, stock id
-          "Multi", None,                     # label, accelerator
-          "Show Multi-plot",                                    # tooltip
-          self.export_plot),
-        ( "MultiPlotExport", None,                    # name, stock id
-          "Export Multi-plots", None,                     # label, accelerator
-          "Export Multi-plots",                                    # tooltip
-          self.export_plot),
-      )+self.added_items;
-      # Create the menubar and toolbar
-      action_group = gtk.ActionGroup("AppWindowActions")
-      action_group.add_actions(entries)
-      action_group.add_actions(self.session_added_items, self)
-      return action_group
+  def __create_action_group(self):
+    '''
+      Create actions for menus and toolbar.
+      Every entry creates a gtk.Action and the function returns a gtk.ActionGroup.
+      When the action is triggered it calls to a function.
+      For more information see the pygtk documentation for the UIManager and ActionGroups.
+    '''
+    entries = (
+      ( "FileMenu", None, "_File" ),               # name, stock id, label
+      ( "ActionMenu", None, "_Action" ),               # name, stock id, label
+      ( "HelpMenu", None, "_Help" ),               # name, stock id, label
+      ( "ToolBar", None, "_Toolbar" ),               # name, stock id, label
+      ( "OpenDatafile", gtk.STOCK_SAVE,                    # name, stock id
+        "_Open File","<control>O",                      # label, accelerator
+        "Open a new datafile",                       # tooltip
+        self.add_file ),
+      ( "Export", gtk.STOCK_SAVE,                    # name, stock id
+        "_Export","<control>E",                      # label, accelerator
+        "Export current Plot",                       # tooltip
+        self.export_plot ),
+      ( "ExportAs", gtk.STOCK_SAVE,                  # name, stock id
+        "Export As...", None,                       # label, accelerator
+        "Export Plot under other name",                          # tooltip
+        self.export_plot ),
+      ( "Print", gtk.STOCK_PRINT,                  # name, stock id
+        "_Print...", "<control>P",                       # label, accelerator
+        None,                          # tooltip
+        self.print_plot ),
+      ( "PrintAll", gtk.STOCK_PRINT,                  # name, stock id
+        "Print All Plots...", None,                       # label, accelerator
+        None,                          # tooltip
+        self.print_plot ),
+      ( "Quit", gtk.STOCK_QUIT,                    # name, stock id
+        "_Quit", "<control>Q",                     # label, accelerator
+        "Quit",                                    # tooltip
+        self.main_quit ),
+      ( "About", None,                             # name, stock id
+        "About", None,                    # label, accelerator
+        "About",                                   # tooltip
+        self.activate_about ),
+      ( "First", gtk.STOCK_GOTO_FIRST,                    # name, stock id
+        "First", "<control><shift>B",                     # label, accelerator
+        "First Plot",                                    # tooltip
+        self.iterate_through_measurements),
+      ( "Prev", gtk.STOCK_GO_BACK,                    # name, stock id
+        "Prev", "<control>B",                     # label, accelerator
+        "Previous Plot",                                    # tooltip
+        self.iterate_through_measurements),
+      ( "Next", gtk.STOCK_GO_FORWARD,                    # name, stock id
+        "_Next", "<control>N",                     # label, accelerator
+        "Next Plot",                                    # tooltip
+        self.iterate_through_measurements),
+      ( "Last", gtk.STOCK_GOTO_LAST,                    # name, stock id
+        "Last", "<control><shift>N",                     # label, accelerator
+        "Last Plot",                                    # tooltip
+        self.iterate_through_measurements),
+      ( "ShowPlotparams", None,                    # name, stock id
+        "Show plot parameters", None,                     # label, accelerator
+        "Show the gnuplot parameters used for plot.",                                    # tooltip
+        self.show_last_plot_params),
+      ( "FilterData", None,                    # name, stock id
+        "Filter the data points", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.change_data_filter),
+      ( "Apply", gtk.STOCK_CONVERT,                    # name, stock id
+        "Apply", None,                     # label, accelerator
+        "Apply current plot settings to all sequences",                                    # tooltip
+        self.apply_to_all),
+      ( "ExportAll", gtk.STOCK_EXECUTE,                    # name, stock id
+        "Exp. All", None,                     # label, accelerator
+        "Export all sequences",                                    # tooltip
+        self.export_plot),
+      ( "ErrorBars", gtk.STOCK_ADD,                    # name, stock id
+        "E.Bars", None,                     # label, accelerator
+        "Toggle errorbars",                                    # tooltip
+        self.toggle_error_bars),
+      ( "AddMulti", gtk.STOCK_JUMP_TO,                    # name, stock id
+        "Add", None,                     # label, accelerator
+        "Add/Remove plot to/from multi-plot list",                                    # tooltip
+        self.add_multiplot),
+      ( "AddAll", gtk.STOCK_JUMP_TO,                    # name, stock id
+        "Add all to Multiplot", None,                     # label, accelerator
+        "Add/Remove all sequences to/from multi-plot list",                                    # tooltip
+        self.add_multiplot),
+      ( "FitLorentz", None,                    # name, stock id
+        "Fit with pseudo Voigt", None,                     # label, accelerator
+        "Try to fit one peak with pseudo Voigt function",                                    # tooltip
+        self.change),
+      ( "MultiPlot", gtk.STOCK_YES,                    # name, stock id
+        "Multi", None,                     # label, accelerator
+        "Show Multi-plot",                                    # tooltip
+        self.export_plot),
+      ( "MultiPlotExport", None,                    # name, stock id
+        "Export Multi-plots", None,                     # label, accelerator
+        "Export Multi-plots",                                    # tooltip
+        self.export_plot),
+    )+self.added_items;
+    # Create the menubar and toolbar
+    action_group = gtk.ActionGroup("AppWindowActions")
+    action_group.add_actions(entries)
+    action_group.add_actions(self.session_added_items, self)
+    return action_group
 
-# Build new menu and toolbar structure
   def rebuild_menus(self):
-      ui_info=self.build_menu() # build structure of menu and toolbar
-      # remove old menu
-      self.UIManager.remove_ui(self.toolbar_ui_id)
-      self.UIManager.remove_action_group(self.toolbar_action_group)
-      self.toolbar_action_group=self.__create_action_group()
-      self.UIManager.insert_action_group(self.toolbar_action_group, 0) # create action groups for menu and toolbar
-      try:
-          self.toolbar_ui_id = self.UIManager.add_ui_from_string(ui_info)
-      except gobject.GError, msg:
-          print "building menus failed: %s" % ms
+    '''
+      Build new menu and toolbar structure.
+    '''
+    ui_info=self.build_menu() # build structure of menu and toolbar
+    # remove old menu
+    self.UIManager.remove_ui(self.toolbar_ui_id)
+    self.UIManager.remove_action_group(self.toolbar_action_group)
+    self.toolbar_action_group=self.__create_action_group()
+    self.UIManager.insert_action_group(self.toolbar_action_group, 0) # create action groups for menu and toolbar
+    try:
+        self.toolbar_ui_id = self.UIManager.add_ui_from_string(ui_info)
+    except gobject.GError, msg:
+        print "building menus failed: %s" % ms
 
     
 #---------------------Functions responsible for menus and toolbar----------------------#
@@ -1448,8 +1550,10 @@ class ApplicationMainWindow(gtk.Window):
 #------------------------ ApplicationMainWindow Class ---------------------------------#
 
 #+++++++++++++++++++++++++++++ PlotProfile Class ++++++++++++++++++++++++++++++++++++++#
-# class for storing a profile of plot options for later use
 class PlotProfile:
+  '''
+    Class for storing a profile of plot options for later use.
+  '''
   name='default'
   set_output_terminal_png=''
   set_output_terminal_ps=''
@@ -1462,41 +1566,57 @@ class PlotProfile:
   additional_commands=''
 
   def __init__(self,name):
+    '''
+      Class constructor.
+    '''
     self.name=name
 
   def save(self, active_class):
-        self.additional_commands=\
-          active_class.plot_options_buffer.get_text(\
-            active_class.plot_options_buffer.get_start_iter(),\
-            active_class.plot_options_buffer.get_end_iter())
-        self.set_output_terminal_png=gnuplot_preferences.set_output_terminal_png
-        self.set_output_terminal_ps=gnuplot_preferences.set_output_terminal_ps
-        self.x_label=gnuplot_preferences.x_label
-        self.y_label=gnuplot_preferences.y_label
-        self.z_label=gnuplot_preferences.z_label
-        self.plotting_parameters=gnuplot_preferences.plotting_parameters
-        self.plotting_parameters_errorbars=gnuplot_preferences.plotting_parameters_errorbars
-        self.plotting_parameters_3d=gnuplot_preferences.plotting_parameters_3d
+    '''
+      Save the active plot settings as a Profile.
+    '''
+    self.additional_commands=\
+      active_class.plot_options_buffer.get_text(\
+        active_class.plot_options_buffer.get_start_iter(),\
+        active_class.plot_options_buffer.get_end_iter())
+    self.set_output_terminal_png=gnuplot_preferences.set_output_terminal_png
+    self.set_output_terminal_ps=gnuplot_preferences.set_output_terminal_ps
+    self.x_label=gnuplot_preferences.x_label
+    self.y_label=gnuplot_preferences.y_label
+    self.z_label=gnuplot_preferences.z_label
+    self.plotting_parameters=gnuplot_preferences.plotting_parameters
+    self.plotting_parameters_errorbars=gnuplot_preferences.plotting_parameters_errorbars
+    self.plotting_parameters_3d=gnuplot_preferences.plotting_parameters_3d
 
   def load(self, active_class):
-        active_class.measurement[active_class.index_mess].plot_options = self.additional_commands
-        active_class.plot_options_buffer.set_text(self.additional_commands)
-        gnuplot_preferences.set_output_terminal_png=self.set_output_terminal_png
-        gnuplot_preferences.set_output_terminal_ps=self.set_output_terminal_ps
-        gnuplot_preferences.x_label=self.x_label
-        gnuplot_preferences.y_label=self.y_label
-        gnuplot_preferences.z_label=self.z_label
-        gnuplot_preferences.plotting_parameters=self.plotting_parameters
-        gnuplot_preferences.plotting_parameters_errorbars=self.plotting_parameters_errorbars
-        gnuplot_preferences.plotting_parameters_3d=self.plotting_parameters_3d
-        active_class.replot() # plot with new settings
+    '''
+      Load a stored plot options profile.
+    '''
+    active_class.measurement[active_class.index_mess].plot_options = self.additional_commands
+    active_class.plot_options_buffer.set_text(self.additional_commands)
+    gnuplot_preferences.set_output_terminal_png=self.set_output_terminal_png
+    gnuplot_preferences.set_output_terminal_ps=self.set_output_terminal_ps
+    gnuplot_preferences.x_label=self.x_label
+    gnuplot_preferences.y_label=self.y_label
+    gnuplot_preferences.z_label=self.z_label
+    gnuplot_preferences.plotting_parameters=self.plotting_parameters
+    gnuplot_preferences.plotting_parameters_errorbars=self.plotting_parameters_errorbars
+    gnuplot_preferences.plotting_parameters_3d=self.plotting_parameters_3d
+    active_class.replot() # plot with new settings
 
   def prnt(self):
+    '''
+      Show the profile settings.
+    '''
     print self.name,self.set_output_terminal_png,self.set_output_terminal_ps,\
       self.x_label,self.y_label,self.z_label,self.plotting_parameters, \
       self.plotting_parameters_errorbars,self.plotting_parameters_3d,self.additional_commands
 
   def write(self,config_object):
+    '''
+      Export the profile settings to a dictionary which is needed
+      to store it with the ConfigObj.
+    '''
     config_object[self.name]={}
     config=config_object[self.name]
     config['set_output_terminal_png']=self.set_output_terminal_png
@@ -1510,6 +1630,9 @@ class PlotProfile:
     config['additional_commands']=self.additional_commands
 
   def read(self,config_object):
+    '''
+      Read a profile from a dictionary, see write.
+    '''
     config=config_object[self.name]
     self.set_output_terminal_png=config['set_output_terminal_png']
     self.set_output_terminal_ps=config['set_output_terminal_ps']

@@ -1,9 +1,10 @@
-# configobj.py
-# A config file reader/writer that supports nested sections in config files.
-# Copyright (C) 2005-2008 Michael Foord, Nicola Larosa
-# E-mail: fuzzyman AT voidspace DOT org DOT uk
-#         nico AT tekNico DOT net
-
+#!/usr/bin/env python
+''' 
+  A config file reader/writer that supports nested sections in config files.
+ Copyright (C) 2005-2008 Michael Foord, Nicola Larosa
+ E-mail: fuzzyman AT voidspace DOT org DOT uk
+         nico AT tekNico DOT net
+'''
 # ConfigObj 4
 # http://www.voidspace.org.uk/python/configobj.html
 
