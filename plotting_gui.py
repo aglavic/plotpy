@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+'''
+  class for GTK GUI
+'''
 #################################################################################################
 #                  Script for graphical user interface to plot measurement data                 #
 #                                       last changes:                                           #

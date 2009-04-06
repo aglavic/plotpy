@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+'''
+  class for 4 circle data sessions
+'''
 #################################################################################################
 #                     Script to plot 4Circle-measurements with gnuplot                          #
 #                                       last changes:                                           #
@@ -26,17 +29,16 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
-
 # import generic_session, which is the parent class for the squid_session
 from plot_generic_data import generic_session
 # importing preferences and data readout
 import circle_read_data
 import circle_preferences
 
-'''
-  Class to handle 4 circle data sessions
-'''
 class circle_session(generic_session):
+  '''
+    Class to handle 4 circle data sessions
+  '''
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   specific_help=\
 '''
@@ -50,20 +52,20 @@ class circle_session(generic_session):
   #------------------ local variables -----------------
 
   
-  '''
-    class constructor expands the generic_session constructor
-  '''
   def __init__(self, arguments):
+    '''
+      class constructor expands the generic_session constructor
+    '''
     self.columns_mapping=circle_preferences.columns_mapping
     self.measurement_types=circle_preferences.measurement_types
     self.transformations=circle_preferences.transformations
     generic_session.__init__(self, arguments)
     
   
-  '''
-    additional command line arguments for squid sessions
-  '''
   def read_argument_add(self, argument, last_argument_option=[False, '']):
+    '''
+      additional command line arguments for squid sessions
+    '''
     found=True
     if (argument[0]=='-') or last_argument_option[0]:
       # Cases of arguments:
@@ -76,16 +78,16 @@ class circle_session(generic_session):
     return (found, last_argument_option)
 
 
-  '''
-    function to read data files
-  '''
   def read_file(self, file_name):
+    '''
+      function to read data files
+    '''
     return circle_read_data.read_data(file_name,self.columns_mapping,self.measurement_types)
   
-  '''
-    create a specifig menu for the 4circle session
-  '''
   def create_menu(self):
+    '''
+      create a specifig menu for the 4circle session
+    '''
     # Create XML for squid menu
     string='''
       <menu action='4CircleMenu'>

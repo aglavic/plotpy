@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+'''
+  main script which imports the other modules
+'''
 #################################################################################################
 #                    Script to plot different measurements with gnuplot                         #
 #                  including a graphical user interface and easy andling                        #

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+'''
+  class for squid data sessions
+'''
 #################################################################################################
 #                     Script to plot SQUID-measurements with gnuplot                            #
 #                                       last changes:                                           #
@@ -34,10 +37,10 @@ from plot_generic_data import generic_session
 import SQUID_read_data
 import SQUID_preferences
 
-'''
-  Class to handle squid data sessions
-'''
 class squid_session(generic_session):
+  '''
+    Class to handle squid data sessions
+  '''
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   specific_help=\
 '''
@@ -60,20 +63,20 @@ class squid_session(generic_session):
   #------------------ local variables -----------------
 
   
-  '''
-    class constructor expands the generic_session constructor
-  '''
   def __init__(self, arguments):
+    '''
+      class constructor expands the generic_session constructor
+    '''
     self.columns_mapping=SQUID_preferences.columns_mapping
     self.measurement_types=SQUID_preferences.measurement_types
     self.transformations=SQUID_preferences.transformations
     generic_session.__init__(self, arguments)
     
   
-  '''
-    additional command line arguments for squid sessions
-  '''
   def read_argument_add(self, argument, last_argument_option=[False, '']):
+    '''
+      additional command line arguments for squid sessions
+    '''
     found=True
     if (argument[0]=='-') or last_argument_option[0]:
       # Cases of arguments:
@@ -113,16 +116,16 @@ class squid_session(generic_session):
     return (found, last_argument_option)
 
 
-  '''
-    function to read data files
-  '''
   def read_file(self, file_name):
+    '''
+      function to read data files
+    '''
     return SQUID_read_data.read_data(file_name,self.columns_mapping,self.measurement_types)
   
-  '''
-    create a specifig menu for the squid session
-  '''
   def create_menu(self):
+    '''
+      create a specifig menu for the squid session
+    '''
     # Create XML for squid menu
     string='''
       <menu action='SquidMenu'>
@@ -148,12 +151,12 @@ class squid_session(generic_session):
              )
     return string,  actions
   
-  '''
-    Add the data of a new file to the session.
-    In addition to generic_session dia and paramagnetic
-    corrections are performed here, too.
-  '''
   def add_file(self, filename, append=True):
+    '''
+      Add the data of a new file to the session.
+      In addition to generic_session dia and paramagnetic
+      corrections are performed here, too.
+    '''
     datasets=generic_session.add_file(self, filename, append)
     # faster lookup
     correct_dia=self.dia_mag_correct!=0
@@ -175,12 +178,12 @@ class squid_session(generic_session):
 
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
-  '''
-    Calculate a diamagnetic correction for one datapoint.
-    This function will be used in process_function() of
-    a measurement_data_structure object.
-  '''
   def diamagnetic_correction(self, input_data):
+    '''
+      Calculate a diamagnetic correction for one datapoint.
+      This function will be used in process_function() of
+      a measurement_data_structure object.
+    '''
     output_data=input_data
     # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
     field=1
@@ -195,8 +198,8 @@ class squid_session(generic_session):
         mag=mapping[1]
     output_data[mag]=output_data[mag] + output_data[field] * self.dia_mag_correct # calculate the linear correction
     return output_data
-  # undo the correction
   def diamagnetic_correction_undo(self, input_data):
+    ''' undo the correction '''
     output_data=input_data
     # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
     field=1
@@ -212,12 +215,12 @@ class squid_session(generic_session):
     output_data[mag]=output_data[mag] - output_data[field] * self.dia_mag_correct # calculate the linear correction
     return output_data
 
-  '''
-    Calculate a paramagnetic correction for one datapoint.
-    This function will be used in process_function() of
-    a measurement_data_structure object.
-  '''
   def paramagnetic_correction(self, input_data):
+    '''
+      Calculate a paramagnetic correction for one datapoint.
+      This function will be used in process_function() of
+      a measurement_data_structure object.
+    '''
     output_data=input_data
     # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
     field=1
@@ -235,8 +238,8 @@ class squid_session(generic_session):
         temp=mapping[1]
     output_data[mag]=output_data[mag] - output_data[field] * self.para[0] / (output_data[temp]-self.para[1]) # calculate the paramagnetic correction
     return output_data
-  # undo the correction
   def paramagnetic_correction_undo(self, input_data):
+    ''' undo the correction '''
     output_data=input_data
     # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
     field=1
@@ -255,10 +258,10 @@ class squid_session(generic_session):
     output_data[mag]=output_data[mag] + output_data[field] * self.para[0] / (output_data[temp]-self.para[1]) # calculate the paramagnetic correction
     return output_data
   
-  '''
-    do or undo dia-/paramagnetic correction
-  '''
   def toggle_correction(self, action, window):
+    '''
+      do or undo dia-/paramagnetic correction
+    '''
     name=action.get_name()
     for dataset in self.active_file_data:
       if name=='SquidDia':

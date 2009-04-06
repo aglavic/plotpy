@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+'''
+  gneric session class, parent class for all sessions
+'''
 #################################################################################################
 #                    Script to plot different measurements with gnuplot                         #
 #                    this is the class used as parent for every session                         #
@@ -19,15 +22,15 @@ from measurement_data_structure import *
 import measurement_data_plotting
 from gnuplot_preferences import print_command
 
-'''
-  This is the class valid the whole session to read the files 
-  and store the measurement data object.
-  It contains the common functions used for every type of data
-  plus data reading for space separated common files.
-
-  Specific measurements are childs of this class!
-'''
 class generic_session:
+  '''
+    This is the class valid the whole session to read the files 
+    and store the measurement data object.
+    It contains the common functions used for every type of data
+    plus data reading for space separated common files.
+
+    Specific measurements are childs of this class!
+  '''
   #++++++++++++++++++ help text strings +++++++++++++++
   short_help=\
 """
@@ -104,12 +107,12 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   own_pid=None # stores session process ID
   #------------------ local variables -----------------
 
-  '''
-    Class constructor which is called with the command line arguments.
-    Evaluates the command line arguments, creates a file list and
-    starts the data readout procedure.
-  '''
   def __init__(self, arguments):
+    '''
+      Class constructor which is called with the command line arguments.
+      Evaluates the command line arguments, creates a file list and
+      starts the data readout procedure.
+    '''
     #++++++++++++++++ evaluate command line +++++++++++++++++++++++
     files=self.read_arguments(arguments) # get filenames and set options
     if files==None: # read_arguments returns none, if help option is set
@@ -142,11 +145,11 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
 
     
 
-  '''
-    Function to evaluate the command line arguments.
-    Returns a list of filenames.
-  '''
   def read_arguments(self, arguments):
+    '''
+      Function to evaluate the command line arguments.
+      Returns a list of filenames.
+    '''
     input_file_names=[]
     last_argument_option=[False,'']
     for argument in arguments: # iterate through all options
@@ -206,18 +209,18 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
         input_file_names.append(argument)
     return input_file_names
       
-  '''
-    Dummi function for child classes, which makes it possible to
-    add command line options for them.
-  '''
   def read_argument_add(self, argument, last_argument_option=[False, '']):
+    '''
+      Dummi function for child classes, which makes it possible to
+      add command line options for them.
+    '''
     # as function does not contain new options it returns false
     return (False, last_argument_option)
 
-  '''
-    Create the session temp directory
-  '''
   def os_path_stuff(self):
+    '''
+      Create the session temp directory
+    '''
     self.own_pid=str(os.getpid())
     script_path=os.path.dirname(os.path.realpath(__file__))
     if (os.getenv("TEMP")==None):
@@ -238,27 +241,27 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     self.temp_dir=self.temp_dir+'plottingscript-'+self.own_pid+os.sep
     os.mkdir(self.temp_dir) # create the temporal directory
 
-  '''
-    delete temporal files and folder
-  '''
   def os_cleanup(self):
+    '''
+      delete temporal files and folder
+    '''
     for file_name in os.listdir(self.temp_dir):
       os.remove(self.temp_dir+file_name)
     os.rmdir(self.temp_dir)
 
-  '''
-    function for path name replacements under windows,
-    in linux this is just a dummi method
-  '''
   def replace_systemdependent(self, string):
+    '''
+      function for path name replacements under windows,
+      in linux this is just a dummi method
+    '''
     return string
 
-  '''
-    Function which reads one datafile and returns a list
-    of measurement_data_structure objects splitted into
-    sequences.
-  '''
   def read_file(self, filename):
+    '''
+      Function which reads one datafile and returns a list
+      of measurement_data_structure objects splitted into
+      sequences.
+    '''
     data_list=[]
     dataset=None
     if os.path.exists(filename):
@@ -290,10 +293,10 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       print 'File '+filename+' does not exist.'
     return data_list
   
-  '''
-    give the sequences numbers with leading zeros
-  '''
   def create_numbers(self, datasets):
+    '''
+      give the sequences numbers with leading zeros
+    '''
     filtered_datasets=[]
     for i, dataset in enumerate(datasets):
       j=i+1
@@ -304,28 +307,28 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
         dataset.number='000000'.replace('0','',6-len(str(len(datasets)+1))+len(str(i+1)))+str(i+1)
     return filtered_datasets
   
-  '''
-    Make unit transformations of a list of datasets
-  '''
   def make_transformations(self, datasets):
+    '''
+      Make unit transformations of a list of datasets
+    '''
     for dataset in datasets:
       dataset.unit_trans(self.transformations)
 
-  '''
-    Function which ither adds file data to the object or replaces
-    all data by a new list.
-  '''
   def add_data(self, data_list, name, append=True):
+    '''
+      Function which ither adds file data to the object or replaces
+      all data by a new list.
+    '''
     if not append:
       self.file_data={}
     self.file_data[name]=data_list
   
-  '''
-    Add the data of a new file to the session.
-    Transformations are also done here, so childs
-    will change this function.
-  '''
   def add_file(self, filename, append=True):
+    '''
+      Add the data of a new file to the session.
+      Transformations are also done here, so childs
+      will change this function.
+    '''
     print "Trying to import '" + filename + "'."
     datasets=self.read_file(filename)
     datasets=self.create_numbers(datasets) # enumerate the sequences and sort out unselected
@@ -343,11 +346,11 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   def __iter__(self): # see next()
     return self
 
-  ''' 
-    function to iterate through the file_data dictionary, object can be used in "for name in data:"
-    also changes the active_file_data and active_file_name
-  '''
   def next(self): 
+    ''' 
+      function to iterate through the file_data dictionary, object can be used in "for name in data:"
+      also changes the active_file_data and active_file_name
+    '''
     name_list=[item[0] for item in self.file_data.items()]
     name_list.sort()
     if self.index == len(name_list):
@@ -358,28 +361,28 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     self.active_file_name=name_list[self.index-1]
     return self.active_file_name
 
-  '''
-    Plots the active datasets
-  '''
   def plot_active(self):
+    '''
+      Plots the active datasets
+    '''
     if not self.single_picture:
       for dataset in self.active_file_data:
         self.plot([dataset], self.active_file_name, dataset.short_info, [''])
     else:
       self.plot(self.active_file_data, self.active_file_name, '', [dataset.short_info for dataset in self.active_file_data])
 
-  '''
-    plot everything selected from all files
-  '''
   def plot_all(self):
+    '''
+      plot everything selected from all files
+    '''
     for name in self:
       print "Plotting '"+ name +"' sequences."
       self.plot_active()
   
-  '''
-    Plot one or a list of datasets
-  '''
   def plot(self, datasets, file_name_prefix, title, names):
+    '''
+      Plot one or a list of datasets
+    '''
     if len(datasets)>1:
       add_info='multi_'
     else:
@@ -392,10 +395,10 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       return measurement_data_plotting.gnuplot_plot\
         (self, datasets,file_name_prefix, title,names,self.plot_with_errorbars,additional_info=add_info)
 
-  '''
-    change the active dataset by object or name
-  '''
   def change_active(self, object=None, name=None):
+    '''
+      change the active dataset by object or name
+    '''
     name_list=[item[0] for item in self.file_data.items()]
     name_list.sort()
     if object!=None:
@@ -412,8 +415,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     else:
       None
   
-  '''
-    create a specifig menu for the session
-  '''
   def create_menu(self):
+    '''
+      create a specifig menu for the session
+    '''
     return '',  ()
