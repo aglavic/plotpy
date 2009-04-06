@@ -1,15 +1,11 @@
 #!/usr/bin/env python
+'''
+ Classes for storing the measurement data of any session.
+ Units and dimensions are also stored for easier accessing and transformation.
+'''
 #
-# Class for storing the measurement data of any kind
-# units and dimensions are also stored for easier accessing and transformation
+# Last change: 06.04.09
 #
-# At this moment used for SQUID,4circle and reflectometer plotting
-#  can easyly be used for other file types togather with measurement_data_plotting.py
-#
-# Last change: 26.11.08
-#
-# To do:
-# -clean up code and create better class structure with childs
 
 # Pleas do not make any changes here unless you know what you are doing.
 
@@ -17,6 +13,12 @@ import globals
 
 #++++++++++++++++++++++++++++++++++++++MeasurementData-Class+++++++++++++++++++++++++++++++++++++++++++++++++++++#
 class MeasurementData:
+  '''
+    The main class for the data storage. Stores the data as a list of
+    PhysicalProperty objects. Sample name and measurement informations
+    are stored as well as plot options and columns which have to stay
+    constant in one sequence.
+  '''
   number_of_points=0 #count number of stored data-points
   index=0
 # every data value is a pysical property
@@ -40,7 +42,12 @@ class MeasurementData:
   filters=[] # a list of filters to be applied when returning the data, the format is:
              # ( column , from , to , include )
 
-  def __init__(self, columns, const,x,y,yerror,zdata=-1): # constructor for the class - if the values are not reinitialized we get problem with creating objects with the same variable name
+  def __init__(self, columns, const,x,y,yerror,zdata=-1): 
+    '''
+      Constructor for the class.
+      If the values are not reinitialized we get problems
+      with the creation of objects with the same variable name.
+    '''
     if globals.debug:
       globals.debug_file.write('construct MeasurementData(self,'+ str(columns)+','+ str(const)+','+ str(x)+','+ str(y)+','+ str(yerror)+','+ str(zdata)+ ')\n')
     self.number_of_points=0 #counts number of stored data-points
@@ -68,9 +75,11 @@ class MeasurementData:
   def __iter__(self): # see next()
     return self
  
-# function to iterate through the data-points, object can be used in "for bla in data:"
-# skippes pointes that are filtered
   def next(self): 
+    '''
+      Function to iterate through the data-points, object can be used in "for bla in data:".
+      Skippes pointes that are filtered.
+    '''
     filtered=True
     while filtered:
       if self.index == self.number_of_points:
@@ -88,10 +97,16 @@ class MeasurementData:
       self.index=self.index+1
     return self.get_data(self.index-1)
 
-  def __len__(self): # len(MeasurementData) returns number of Datapoints
+  def __len__(self): 
+    '''
+      len(MeasurementData) returns number of Datapoints.
+    '''
     return len(self.data[0])
 
-  def append(self, point): # add point to the sequence
+  def append(self, point):
+    '''
+      Add a point to this sequence.
+    '''
     data=self.data # speedup data_lookup
     if len(point)==len(data):
       for i,val in enumerate(point):
@@ -101,15 +116,24 @@ class MeasurementData:
     else:
       return 'NULL'
 
-  def get_data(self,count): # get datapoint at position count
+  def get_data(self,count): 
+    '''
+      Get datapoint at position count.
+    '''
     return [value.values[count] for value in self.data]
 
-  def set_data(self,point,count): # set datapoint at position count
+  def set_data(self,point,count): 
+    '''
+      Set datapoint at position count.
+    '''
     for value in self.data:
       value.values[count]=point[self.data.index(value)]
     return self.get_data(count)
 
-  def list(self): # get x-y list of all data
+  def list(self): 
+    '''
+      Get x-y list of all data.
+    '''
     if (self.xdata<0)&(self.ydata<0):
       return [[i+1,i+1] for i,point in enumerate(self)]
     elif self.xdata<0:
@@ -121,7 +145,10 @@ class MeasurementData:
     else:
       return [[point[self.xdata],point[self.ydata]] for point in self]
 
-  def list_err(self): # get x-y-dy list of all data
+  def list_err(self): 
+    '''
+      Get x-y-dy list of all data.
+    '''
     if (self.xdata<0)&(self.ydata<0):
       return [[i+1,i+1,point[self.yerror]] for i,point in enumerate(self)]
     elif self.xdata<0:
@@ -131,55 +158,97 @@ class MeasurementData:
     else:
       return [[point[self.xdata],point[self.ydata],point[self.yerror]] for point in self]
 
-  def listxy(self,x,y): # get x-y list of data with different x,y values
+  def listxy(self,x,y): 
+    '''
+      Get x-y list of data with different x,y values.
+    '''
     return [[point[x],point[y]] for point in self]
 
-  def type(self): # short form to get the first constant data column
+  def type(self): 
+    '''
+      Short form to get the first constant data column.
+    '''
     if len(self.const_data)>0:
       return self.const_data[0][0]
     else:
       return 0
 
-  def first(self): # return the first datapoint
+  def first(self): 
+    '''
+      Return the first datapoint.
+    '''
     return self.get_data(0)
 
-  def last(self): # return the last datapoint
+  def last(self): 
+    '''
+      Return the last datapoint.
+    '''
     return self.get_data(self.number_of_points-1)
 
-  def is_type(self, dataset): # check if a point is consistant with constand data of this sequence
-      last=self.last()
-      for const in self.const_data:
-        if (abs(dataset[const[0]]-last[const[0]])<const[1].values[0]):
-          continue
-        else:
-          return False
-      return True
+  def is_type(self, dataset): 
+    '''
+      Check if a point is consistant with constand data of this sequence.
+    '''
+    last=self.last()
+    for const in self.const_data:
+      if (abs(dataset[const[0]]-last[const[0]])<const[1].values[0]):
+        continue
+      else:
+        return False
+    return True
 
-  def units(self): # return units of all columns
+  def units(self): 
+    '''
+      Return units of all columns.
+    '''
     return [value.unit for value in self.data]
 
-  def dimensions(self): # return dimensions of all columns
+  def dimensions(self): 
+    '''
+      Return dimensions of all columns-
+    '''
     return [value.dimension for value in self.data]
 
-  def xunit(self): # get unit of xcolumn
+  def xunit(self): 
+    '''
+      Get unit of xcolumn.
+    '''
     return self.units()[self.xdata]
 
-  def yunit(self): # get unit of ycolumn
+  def yunit(self): 
+    '''
+      Get unit of ycolumn.
+    '''
     return self.units()[self.ydata]
 
-  def zunit(self): # get unit of ycolumn
+  def zunit(self): 
+    '''
+      Get unit of ycolumn.
+    '''
     return self.units()[self.zdata]
 
-  def xdim(self): # get dimension of xcolumn
+  def xdim(self): 
+    '''
+      Get dimension of xcolumn.
+    '''
     return self.dimensions()[self.xdata]
 
-  def ydim(self): # get dimension of ycolumn
+  def ydim(self): 
+    ''' 
+      Get dimension of ycolumn.
+    '''
     return self.dimensions()[self.ydata]
 
-  def zdim(self): # get dimension of ycolumn
+  def zdim(self): 
+    '''
+      Get dimension of ycolumn.
+    '''
     return self.dimensions()[self.zdata]
 
-  def unit_trans(self,unit_list): # change units of all columns according to a given list of translations
+  def unit_trans(self,unit_list): 
+    '''
+      Change units of all columns according to a given list of translations.
+    '''
     for unit in unit_list:
       for value in self.data:
         if len(unit)==4:
@@ -194,7 +263,10 @@ class MeasurementData:
           con[1].dim_unit_trans(unit)
     return [self.dimensions(),self.units()]
 
-  def unit_trans_one(self,col,unit_list): # change units of one column according to a given list of translations
+  def unit_trans_one(self,col,unit_list): 
+    '''
+      Change units of one column according to a given list of translations.
+    '''
     for unit in unit_list:
       if len(unit)==4:
         self.data[col].unit_trans(unit)
@@ -208,14 +280,20 @@ class MeasurementData:
             con[1].dim_unit_trans(unit)
     return [self.last()[col],self.units()[col]]
 
-  def process_funcion(self,function): # processing a function on every data point
+  def process_funcion(self,function): 
+    '''
+      Processing a function on every data point.
+    '''
     for i in range(self.number_of_points):
       point = self.get_data(i)
       self.set_data(function(point),i)
     return self.last()
 
-  def export(self,file_name,print_info=True,seperator=' ',xfrom=None,xto=None): # write data in text file seperated by 'seperator'
-    # find indices within the selected export range between xfrom and xto, xvalues must be sorted for this to work
+  def export(self,file_name,print_info=True,seperator=' ',xfrom=None,xto=None): 
+    '''
+      Write data in text file seperated by 'seperator'.
+    '''
+    # Find indices within the selected export range between xfrom and xto, xvalues must be sorted for this to work.
     xfrom_index=0
     xto_index=len(self)-1
     for i,value in enumerate(self.data[self.xdata].values):
@@ -245,7 +323,10 @@ class MeasurementData:
     write_file.close()
     return xto_index-xfrom_index+1 # return the number of exported data lines
 
-  def max(self,xstart=None,xstop=None): # returns x and y value of point with maximum x
+  def max(self,xstart=None,xstop=None): 
+    '''
+      Returns x and y value of point with maximum x.
+    '''
     if xstart==None:
       xstart=self.data[self.xdata].min()
     if xstop==None:
@@ -260,7 +341,10 @@ class MeasurementData:
     max_point=self.data[self.ydata].values.index(self.data[self.ydata].max(from_index,to_index))
     return [self.data[self.xdata].values[max_point],self.data[self.ydata].values[max_point]]
 
-  def min(self,xstart=None,xstop=None): # returns x and y value of point with minimum x
+  def min(self,xstart=None,xstop=None): 
+    '''
+      Returns x and y value of point with minimum x.
+    '''
     if xstart==None:
       xstart=self.data[self.xdata].min()
     if xstop==None:
@@ -278,13 +362,20 @@ class MeasurementData:
 
 #--------------------------------------MeasurementData-Class-----------------------------------------------------#
       
-# Class for any physical property
 class PysicalProperty:
+  '''
+    Class for any physical property. Stores the data, unit and dimension
+    to make unit transformations possible.
+  '''
   index=0
   values=[]
   unit=''
   dimension=''
+  
   def __init__(self, dimension_in, unit_in):
+    '''
+      Class constructor.
+    '''
     self.values=[]
     self.index=0
     self.unit=unit_in
@@ -293,20 +384,32 @@ class PysicalProperty:
   def __iter__(self): # see next()
     return self
  
-  def next(self): # function to iterate through the data-points, object can be used in "for bla in data:"
+  def next(self): 
+    '''
+      Function to iterate through the data-points, object can be used in "for bla in data:".
+    '''
     if self.index == len(self.values):
       self.index=0
       raise StopIteration
     self.index=self.index+1
     return self.values[index]
 
-  def __len__(self): # len(PhysicalProperty) returns number of Datapoints
+  def __len__(self): 
+    '''
+      len(PhysicalProperty) returns number of Datapoints.
+    '''
     return len(self.values)
 
-  def append(self, number): # add value
+  def append(self, number): 
+    '''
+      Add value.
+    '''
     self.values.append(number)
 
-  def unit_trans(self,transfere): # transform one unit to another transfere is of type [from,b,a,to]
+  def unit_trans(self,transfere): 
+    '''
+      Transform one unit to another. transfere variable is of type [from,b,a,to].
+    '''
     if transfere[0]==self.unit: # only transform if right 'from' parameter
       new_values=[]
       for value in self.values:
@@ -317,7 +420,11 @@ class PysicalProperty:
     else:
       return [self.values[-1],self.unit]
 
-  def dim_unit_trans(self,transfere): # transform dim. and unit to another [from_dim,from_unit,b,a,to_dim,to_unit]
+  def dim_unit_trans(self,transfere): 
+    '''
+      Transform dimension and unit to another. Variable transfere is of type
+      [from_dim,from_unit,b,a,to_dim,to_unit].
+    '''
     if (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right 'from_dim' and 'from_unit'
       new_values=[]
       for value in self.values:
@@ -330,11 +437,17 @@ class PysicalProperty:
       return False
 
   def max(self,from_index=0,to_index=None):
+    '''
+      Return maximum value in data.
+    '''
     if to_index==None:
       to_index=len(self)-1
     return max([self.values[i] for i in range(from_index,to_index)])
 
   def min(self,from_index=0,to_index=None):
+    '''
+      Return minimum value in data.
+    '''
     if to_index==None:
       to_index=len(self)-1
     return min([self.values[i] for i in range(from_index,to_index)])
