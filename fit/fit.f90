@@ -1,6 +1,6 @@
 program fit_logspecrefgauss 
     implicit real*8 (a-h,o-z)
-    parameter(maxint=25,map=4*maxint+3,ndatap=10000)
+    parameter(maxint=250,map=4*maxint+3,ndatap=10000)
     real*8 lambda
     integer maximum_iter
     character*128 data_file,ent_file,res_output_file,sim_output_file,maximum_iterations
@@ -280,7 +280,7 @@ program fit_logspecrefgauss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      function refconv(q,a)
      implicit real*8 (a-h,o-z)
-     parameter(maxint=25,map=4*maxint+3)
+     parameter(maxint=250,map=4*maxint+3)
      dimension a(map)
      real*8 lambda
      common/const/lambda,ma
@@ -303,7 +303,8 @@ program fit_logspecrefgauss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      subroutine qsimp(x1,x2,s,a)
      implicit real*8 (a-h,o-z)
-     parameter(maxint=25,map=4*maxint+3,eps=1.d-2,jmax=30)
+     parameter(maxint=250,map=4*maxint+3)
+     parameter(eps=1.d-2,jmax=30)
      dimension a(map)
      ost=-1.d30
      os= -1.d30
@@ -322,7 +323,7 @@ program fit_logspecrefgauss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      subroutine trapzd(x1,x2,s,n,a,it)
      implicit real*8 (a-h,o-z)
-     parameter(maxint=25,map=4*maxint+3)
+     parameter(maxint=250,map=4*maxint+3)
      dimension a(map)
      if (n.eq.1) then
        s=0.5d0*(x2-x1)*(gaussref(x1,a)+gaussref(x2,a))
@@ -345,7 +346,7 @@ program fit_logspecrefgauss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      function gaussref(x,a)
      implicit real*8 (a-h,o-z)
-     parameter(maxint=25,map=4*maxint+3)
+     parameter(maxint=250,map=4*maxint+3)
      dimension a(map)
      common/pos/q,sigma
      gaussref=dexp(-(x-q)*(x-q)/(2.d0*sigma*sigma))*ref(x,a)
@@ -355,7 +356,7 @@ program fit_logspecrefgauss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      function ref(q,a)
      implicit real*8 (a-h,o-z)
-     parameter(maxint=25,map=4*maxint+3)
+     parameter(maxint=250,map=4*maxint+3)
      dimension a(map)
      real*8 lambda
      dimension z(maxint),delta(maxint+1),beta(maxint+1),sigma(maxint)
@@ -460,7 +461,8 @@ program fit_logspecrefgauss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda,ochisq)
       implicit real*8 (a-h,o-z)
-      parameter (maxint=25,map=4*maxint+3,ndatap=10000)
+      parameter (maxint=250,map=4*maxint+3)
+      parameter(ndatap=10000)
       dimension x(ndatap),y(ndatap),sig(ndatap),a(map),lista(map),covar(map,map)
       dimension alpha(map,map),atry(map),beta(map),da(map),oneda(map,1)
       common/ninterf/nint
@@ -561,7 +563,7 @@ program fit_logspecrefgauss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine covsrt(covar,ma,lista,mfit)
       implicit real*8 (a-h,o-z)
-      parameter (maxint=25,map=4*maxint+3)
+      parameter (maxint=250,map=4*maxint+3)
       dimension covar(map,map),lista(map)
       do 12 j=1,ma-1
         do 11 i=j+1,ma
@@ -597,7 +599,7 @@ program fit_logspecrefgauss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine gaussj(a,n,b,m)
       implicit real*8 (a-h,o-z)
-      parameter (maxint=25,map=4*maxint+3)
+      parameter (maxint=250,map=4*maxint+3)
       dimension a(map,map),b(map,1),ipiv(map),indxr(map),indxc(map)
       do 11 j=1,n
         ipiv(j)=0
@@ -672,7 +674,8 @@ program fit_logspecrefgauss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       implicit real*8 (a-h,o-z)
-      parameter(maxint=25,map=4*maxint+3,ndatap=10000)
+      parameter(maxint=250,map=4*maxint+3)
+      parameter(ndatap=10000)
       dimension x(ndatap),y(ndatap),sig(ndatap),alpha(map,map),beta(map),lista(map),a(map)
       dimension dyda(map,ndatap)
       dimension dydap(map,ndatap)
