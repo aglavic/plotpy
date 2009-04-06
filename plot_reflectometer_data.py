@@ -46,10 +46,10 @@ fortran_compiler_options='-O2'
 fit_program_code='fit/fit.f90'
 fit_program_executible='fit/fit.o'
 
-'''
-  Class to handle reflectometer data sessions
-'''
 class reflectometer_session(generic_session):
+  '''
+    Class to handle reflectometer data sessions
+  '''
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   specific_help=\
 '''
@@ -87,6 +87,8 @@ class reflectometer_session(generic_session):
     self.data_columns=reflectometer_preferences.data_columns
     self.transformations=reflectometer_preferences.transformations
     generic_session.__init__(self, arguments)
+    # initialize the GTK thread engine used in show_result_window
+    gtk.gdk.threads_init()    
     
   
   '''
@@ -698,7 +700,6 @@ class reflectometer_session(generic_session):
     status.add_button('Kill Process',1) # button kill has handler_id 1
     #status.connect("response", lambda *w: proc.terminate())
     status.show_all()
-    gtk.gdk.threads_init()
     loop=ProcessLoop()
     loop.active_session=self
     loop.start()
@@ -968,7 +969,7 @@ class reflectometer_session(generic_session):
   Class to store the parameters of a simulation or fit from the fit.f90 program.
   Mostly just storing different variables for the layers.
 '''
-class fit_parameter():
+class fit_parameter:
   # parameters for the whole fit
   radiation=[8048.0, 'Cu-K_alpha'] # readiation energy of x-rays
   number_of_points=10 # number of simulated points
@@ -1317,7 +1318,7 @@ class fit_parameter():
   class for one layer data
   layer and multilay have the same function to create .ent file text
 '''
-class fit_layer():
+class fit_layer:
   multilayer=False
   name=''
   thickness=1
@@ -1432,7 +1433,7 @@ class fit_layer():
 '''
   class for multilayer data
 '''
-class fit_multilayer():
+class fit_multilayer:
   name=''
   repititions=1 # number of times these layers will be repeated
   multilayer=True

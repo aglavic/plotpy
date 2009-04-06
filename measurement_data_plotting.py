@@ -236,7 +236,7 @@ def create_plot_script(session, datasets,file_name_prefix,file_name_postfix, tit
       gnuplot_file_text=gnuplot_file_text+',f_'+str(0)+'(x) '+gp.plotting_parameters_fit+" title sprintf('psd. Voigt fit: x0=\045.4g; FWHM=\045.3g; I=\045.0g; eta=\045.2g',x0_"+\
           str(i)+","+"abs(sigma_"+str(i)+"*2),"+"I_"+str(i)+","+"eta_"+str(i)+')'
   for number in file_numbers[1:len(file_numbers)]:
-      gnuplot_file_text=gnuplot_file_text+',\\\n"'+session.temp_dir+'tmp_data_'+number+file_name_postfix+'" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+      gnuplot_file_text=gnuplot_file_text+',\\\n"'+session.temp_dir+'tmp_data_'+number+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
       gnuplot_file_text=replace_ph(session, gnuplot_file_text,datasets,file_name_prefix,file_numbers, title,names,sample_name,file_numbers.index(number),postscript_export,additional_info)
       if fit_lorentz:
           gnuplot_file_text=gnuplot_file_text+',f_'+str(i)+'(x) '+gp.plotting_parameters_fit+' title=\'x0=\045g; sigma=\045g; intensity=\045g; background=\045g\',x0_'+\

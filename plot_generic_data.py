@@ -27,7 +27,7 @@ from gnuplot_preferences import print_command
 
   Specific measurements are childs of this class!
 '''
-class generic_session():
+class generic_session:
   #++++++++++++++++++ help text strings +++++++++++++++
   short_help=\
 """
