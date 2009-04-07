@@ -13,7 +13,8 @@ import math
 from measurement_data_structure import *
 
 
-def read_data(input_file,data_columns,measurement_data=[]): #read the datafile with diamagnetic correction
+def read_data(input_file,data_columns): #read the datafile with diamagnetic correction
+  measurement_data=[]
   if os.path.exists(input_file):
     global sample_name
     sample_name=''
