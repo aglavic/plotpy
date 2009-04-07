@@ -156,9 +156,7 @@ program fit_logspecrefgauss
      write(8,*)
      itest=0
      do 10 iter=1,maximum_iter !maximum iterations, standart 1000
-       do i=1,10
-         write(8,*) '############################################################'
-       enddo
+        write(8,*) '############################################################'
        write(8,*)
        write(8,*)
        write(8,*) 'iter=',iter,' itest=',itest,' alamda=',alamda
@@ -200,9 +198,9 @@ program fit_logspecrefgauss
        dchisq=dabs(chisq-chisq0)/chisq0
         ! this was chisq.ge.chisq0 resulting in very long iterations
         ! don't know if this is correct too
-       if (chisq.ge.chisq0) then
+       if (chisq.ge.chisq0.and.alamda.le.1.0d10) then
          itest=0
-       else if (dchisq.le.1.0d-2.or.alamda.gt.1.0d6) then
+       else if (dchisq.le.1.0d-2.or.alamda.gt.1.0d10) then
          itest=itest+1
        endif
        if (itest.eq.5) goto 88

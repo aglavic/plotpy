@@ -49,7 +49,7 @@ def gnuplot_plot(session, datasets,file_name_prefix, title,names,with_errorbars,
   'set ylabel "'+gp.y_label+'"\n'+\
   'set title "'+gp.plot_title+'"\n'
   if len(datasets)==1: # if there is only one graph don't show a key
-    gnuplot_settings+='unset key'
+    gnuplot_settings+='unset key\n'
   if fit_lorentz: # setting functions and startingparameters for lorentz fitting
     for i,dataset in enumerate(datasets):
       gnuplot_settings=gnuplot_settings+\

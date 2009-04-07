@@ -54,6 +54,7 @@ fortran_compiler_march=None#'-march=nocona'
 fit_program_code='fit/fit.f90'
 fit_program_executible='fit/fit.o'
 
+
 class reflectometer_session(generic_session):
   '''
     Class to handle reflectometer data sessions
@@ -84,6 +85,7 @@ class reflectometer_session(generic_session):
   x_from=0.005 # fit only x regions between x_from and x_to
   x_to=''
   max_iter=50 # maximal iterations in fit
+  max_alambda=10
   #------------------ local variables -----------------
 
   
@@ -525,10 +527,11 @@ class reflectometer_session(generic_session):
       self.dialog_fit(action, window)
       # read fit parameters from file and create new object, if process is killed ignore
       if fit_list[1]['actually'] and response==5 and self.fit_object.fit==1: 
-        parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)
+        parameters, errors=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)
         new_fit=self.fit_object.copy()
         new_fit.get_parameters(parameters)
-        self.show_result_window(dialog, window, new_fit)
+        sorted_errors=new_fit.get_errors(errors)
+        self.show_result_window(dialog, window, new_fit, sorted_errors)
       os.remove(self.temp_dir+'fit_temp.ref')
       self.fit_object.fit=0
     elif response==3: # new layer
@@ -541,49 +544,59 @@ class reflectometer_session(generic_session):
       self.fit_object.layers.append(multilayer)
       self.rebuild_dialog(dialog, window)
 
-  def show_result_window(self, dialog, window, new_fit):
+  def show_result_window(self, dialog, window, new_fit, sorted_errors):
     '''
       show the result of a fit and ask to retrieve the result
     '''
     old_fit=self.fit_object
     results=gtk.Dialog(title='Fit results:')
     text_string='These are the parameters retrieved by the last fit\n'
-    def get_layer_text(new_layer, old_layer, index):
+    def get_layer_text(new_layer, old_layer, index, index_add=''):
       text_string=''
       if len(new_layer)==1: # single layer
         text_string+=str(index)+' - Layer:\n'
         if new_layer.thickness!=old_layer.thickness:
-          text_string+='\tthickness:\t%# .6g  \t->   %# .6g \n' % (old_layer.thickness, new_layer.thickness)
+          text_string+='\tthickness:\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+              (old_layer.thickness, new_layer.thickness, sorted_errors[index_add+str(index)+','+str(0)])
         if new_layer.delta!=old_layer.delta:
-          text_string+='\tdelta:\t\t%# .6g  \t->   %# .6g \n' % (old_layer.delta, new_layer.delta)
+          text_string+='\tdelta:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+              (old_layer.delta, new_layer.delta, sorted_errors[index_add+str(index)+','+str(1)])
         if new_layer.d_over_b!=old_layer.d_over_b:
-          text_string+='\tdelta/beta:\t%# .6g  \t->   %# .6g \n' % (old_layer.d_over_b, new_layer.d_over_b)
+          text_string+='\tdelta/beta:\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+              (old_layer.d_over_b, new_layer.d_over_b, sorted_errors[index_add+str(index)+','+str(2)])
         if new_layer.roughness!=old_layer.roughness:
-          text_string+='\troughness:\t%# .6g  \t->   %# .6g \n' % (old_layer.roughness, new_layer.roughness)
+          text_string+='\troughness:\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+              (old_layer.roughness, new_layer.roughness, sorted_errors[index_add+str(index)+','+str(3)])
         return text_string+'\n'
       else:
         text_string+='\n'+str(index)+' - Multilayer:\n'
         for i,  layer in enumerate(new_layer.layers):
-          text_string+='\t'+get_layer_text(layer, old_layer.layers[i], i)
+          text_string+='\t'+get_layer_text(layer, old_layer.layers[i], i, index_add=str(index)+',')
         return text_string
     for i, new_layer in enumerate(new_fit.layers):
       text_string+=get_layer_text(new_layer, old_fit.layers[i], i)
     # substrate parameters
     text_string+='\nSubstrat:\n'
     if old_fit.substrate.delta!=new_fit.substrate.delta:
-      text_string+='\tdelta:\t\t%# .6g  \t->   %# .6g \n' % (old_fit.substrate.delta, new_fit.substrate.delta)
+      text_string+='\tdelta:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+          (old_fit.substrate.delta, new_fit.substrate.delta, sorted_errors['substrate0'])
     if old_fit.substrate.d_over_b!=new_fit.substrate.d_over_b:
-      text_string+='\tdelta/beta:\t%# .6g  \t->   %# .6g \n' %  (old_fit.substrate.d_over_b, new_fit.substrate.d_over_b)
+      text_string+='\tdelta/beta:\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+          (old_fit.substrate.d_over_b, new_fit.substrate.d_over_b, sorted_errors['substrate1'])
     if old_fit.substrate.roughness!=new_fit.substrate.roughness:
-      text_string+='\troughness:\t%# .6g  \t->   %# .6g \n' %  (old_fit.substrate.roughness, new_fit.substrate.roughness)
+      text_string+='\troughness:\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+          (old_fit.substrate.roughness, new_fit.substrate.roughness, sorted_errors['substrate2'])
     # global parameters
     text_string+='\n'
     if old_fit.background!=new_fit.background:
-      text_string+='Background:\t\t%# .6g  \t->   %# .6g \n' %  (old_fit.background, new_fit.background)
+      text_string+='Background:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+        (old_fit.background, new_fit.background, sorted_errors['background'])
     if old_fit.resolution!=new_fit.resolution:
-      text_string+='Resolution:\t\t%# .6g  \t->   %# .6g \n' %  (old_fit.resolution, new_fit.resolution)
+      text_string+='Resolution:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+        (old_fit.resolution, new_fit.resolution, sorted_errors['resolution'])
     if old_fit.scaling_factor!=new_fit.scaling_factor:
-      text_string+='Scaling Factor:\t\t%# .6g  \t->   %# .6g \n' %  (old_fit.scaling_factor, new_fit.scaling_factor)
+      text_string+='Scaling Factor:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+          (old_fit.scaling_factor, new_fit.scaling_factor, sorted_errors['scaling'])
     text_string+='\n\nDo you want to use these new parameters?'
     text=gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview. 
@@ -597,7 +610,7 @@ class reflectometer_session(generic_session):
     sw.add_with_viewport(text) # add textbuffer view widget
     sw.show_all()
     results.vbox.add(sw) # add table to dialog box
-    results.set_default_size(350,450)
+    results.set_default_size(500,450)
     results.add_button('OK',1) # button replot has handler_id 1
     results.add_button('Cancle',2) # button replot has handler_id 2
     #dialog.connect("response", self.result_window_response, dialog, window, new_fit)
@@ -674,9 +687,9 @@ class reflectometer_session(generic_session):
     if self.fit_object.fit!=1: # if this is not a fit just wait till finished
       stderr_value = proc.communicate()[1]
     else:
-      self.open_status_dialog()
-      if proc.poll()==None: # if the process is abborted, plot without fit
-        subprocess.call(['killall', 'fit.o'])
+      response=self.open_status_dialog()
+      if response==1: # if the process is abborted, plot without fit
+        proc.kill()
         self.fit_object.fit=0
         self.dialog_fit(action, window)
     simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
@@ -691,28 +704,29 @@ class reflectometer_session(generic_session):
       when fit process is started, create a window with
       status informations and a kill button
     '''
-    global status, buffer
+    global status, text_view
     status=gtk.Dialog(title='Fit status after 0 seconds')
-    text=gtk.TextView()
+    text_view=gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview. 
-    buffer = text.get_buffer()
+    buffer = text_view.get_buffer()
     buffer.set_text('')
     sw = gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
     # scrollbars.
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    sw.add_with_viewport(text) # add textbuffer view widget
+    sw.add(text_view) # add textbuffer view widget
     status.vbox.add(sw) # add table to dialog box
-    status.set_default_size(350,450)
+    status.set_default_size(500,450)
     status.add_button('Kill Process',1) # button kill has handler_id 1
     #status.connect("response", lambda *w: proc.terminate())
     status.show_all()
     loop=ProcessLoop()
     loop.active_session=self
     loop.start()
-    status.run()
+    response=status.run()
     status.destroy()
+    return response
   
 
   def change_scattering_length(self, action, SL_selector, layer, delta, d_over_b, layer_title, layer_index, substrate):
@@ -830,6 +844,8 @@ class reflectometer_session(generic_session):
       code=open(code_file, 'r').read()
       # compile the program with constants suitable for this dataset
       code_tmp=code.replace('maxint=25', 'maxint='+str(self.fit_object.number_of_layers()+1))
+      code_tmp=code.replace('.and.alamda.le.1.0d10', '.and.alamda.le.1.0d'+str(self.max_alambda))
+      code_tmp=code.replace('.or.alamda.gt.1.0d10', '.or.alamda.gt.1.0d'+str(self.max_alambda))
       tmp_file=open(code_file.split('.f90')[0] + '_tmp.f90', 'w')
       tmp_file.write(code_tmp)
       tmp_file.close()
@@ -871,6 +887,7 @@ class reflectometer_session(generic_session):
     '''
     parameters=map(str, fit_object.fit_params)
     result={}
+    errors={}
     fit_file=open(file_name,'r')
     test_fit=fit_file.readlines()
     fit_file.close()
@@ -879,8 +896,12 @@ class reflectometer_session(generic_session):
       if len(split)>0:
         if split[0] in parameters:
           result[int(split[0])]=float(split[1])
+          try:
+            errors[int(split[0])]=float(split[3])
+          except ValueError:
+            None
       if len(parameters)==len(result):
-          return result
+          return result, errors
     return None
 
   def refine_scaling(self, dataset):
@@ -897,7 +918,8 @@ class reflectometer_session(generic_session):
     ent_file.close()
     proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',20)
     retcode = proc.communicate()
-    self.fit_object.scaling_factor=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)[self.fit_object.fit_params[0]]
+    paramerters, errors=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)
+    self.fit_object.scaling_factor=parameters[self.fit_object.fit_params[0]]
     self.fit_object.fit=0
     return retcode
 
@@ -929,7 +951,7 @@ class reflectometer_session(generic_session):
                         'Script running for % 6dsec' % sec)
       sys.stdout.flush()
     retcode = proc.communicate()
-    parameters=self.read_fit_file(self.temp_dir+'fit_temp.ref',self.fit_object)
+    parameters, errors=self.read_fit_file(self.temp_dir+'fit_temp.ref',self.fit_object)
     self.fit_object.get_parameters(parameters)
     self.fit_object.fit=0
     return retcode
@@ -1176,6 +1198,37 @@ class fit_parameter:
     if para_index in self.fit_params:
       self.scaling_factor=parameters[para_index]
     para_index+=1
+  
+  def get_errors(self, errors):
+    '''
+      convert errors dictionary from parameter indices to layer indices
+    '''
+    para_index=1
+    errors_out={}
+    for i, layer in enumerate(self.layers):
+      for j in range(4): # every layer parameter
+        if not layer.multilayer==1: # its a single layer
+          if (para_index + j) in self.fit_params:
+            errors_out[str(i) + ',' + str(j)]=errors[para_index + j]
+        else:
+          for k in range(len(layer.layers)): # got through sub layers
+            if (para_index + j + k*4) in self.fit_params:
+              errors_out[str(i) + ',' + str(k) + ',' + str(j)]=errors[para_index + j + k*4]
+      para_index+=len(layer)*4
+    for j in range(3):
+      if para_index in self.fit_params:
+        errors_out['substrate'+str(j)]=errors[para_index]
+      para_index+=1
+    if para_index in self.fit_params:
+      errors_out['background']=errors[para_index]
+    para_index+=1
+    if para_index in self.fit_params:
+      errors_out['resolution']=errors[para_index]
+    para_index+=1
+    if para_index in self.fit_params:
+      errors_out['scaling']=errors[para_index]
+    para_index+=1
+    return errors_out
   
   def set_fit_constrains(self):
     '''
@@ -1546,9 +1599,9 @@ class ProcessLoop(threading.Thread):
       While the fit program is running, the .ref file
       is regularly read and shown in the status dialog.
     '''
-    global status
+    global status, text_view
     sec=0    
-    #While the stopthread event isn't setted, the thread keeps going on
+    buffer=text_view.get_buffer()
     while proc.poll()==None:
       try:
         file=open(self.active_session.temp_dir+'fit_temp.ref', 'r')
@@ -1561,10 +1614,11 @@ class ProcessLoop(threading.Thread):
       gtk.gdk.threads_enter()
       status.set_title('Fit status after ' + str(sec/5) + ' seconds')
       buffer.set_text(text)
+      position=buffer.get_end_iter()
+      text_view.scroll_to_iter(position, 0)
       gtk.gdk.threads_leave()
       time.sleep(0.2)
       sec+=1
     gtk.gdk.threads_enter()
-    buffer.set_text('')
     status.destroy()
     gtk.gdk.threads_leave()
