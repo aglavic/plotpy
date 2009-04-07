@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-#
-# Functions to read from reflectometer UXD data file
-# mostly just string processing.
-# MeasurementData Object from 'measurement_data_structure' is used to store the data points.
-# read_data is the main procedure, returning a list of MeasurementData objects
+'''
+  Functions to read from reflectometer UXD data file. Mostly just string processing.
+  MeasurementData Object from 'measurement_data_structure' is used to store the data points.
+  read_data is the main procedure, returning a list of MeasurementData objects
+'''
 
 # Pleas do not make any changes here unless you know what you are doing.
 
@@ -13,7 +13,10 @@ import math
 from measurement_data_structure import *
 
 
-def read_data(input_file,data_columns): #read the datafile with diamagnetic correction
+def read_data(input_file,data_columns): 
+  '''
+    Read the datafile.  
+  '''
   measurement_data=[]
   if os.path.exists(input_file):
     global sample_name
@@ -31,23 +34,10 @@ def read_data(input_file,data_columns): #read the datafile with diamagnetic corr
     print 'File '+input_file+' does not exist.'
     return measurement_data
 
-def get_columns(input_file): # just return the columns present in file
-  if os.path.exists(input_file):
-    input_file_handler=open(input_file,'r')
-    if input_file_handler.readline().find('[Header]')>=0:
-      measurement_info=read_header(input_file_handler)
-    else:
-      print "Wrong file type! Doesn't contain header information."
-      return 'NULL'
-    out=input_file_handler.readline().split(',')
-    input_file_handler.close()
-    return out
-  else:
-    print 'File '+input_file+' does not exist.'
-    return 'NULL'
-  
-
-def read_header(input_file_lines): #read header of datafile
+def read_header(input_file_lines): 
+  '''
+    Read header of datafile.
+  '''
   output=''
   for i in range(len(input_file_lines)):
     line=input_file_lines.pop(0)
@@ -58,10 +48,10 @@ def read_header(input_file_lines): #read header of datafile
       output=output+line.rstrip('\n').rstrip('\r').lstrip('_').lstrip(';')+'\n'
   return 'NULL'
 
-def column_compare(col1,col2):
-   return (col1[1]-col2[1])
-
-def read_data_lines(input_file_lines,info,data_columns): #read data points line by line
+def read_data_lines(input_file_lines,info,data_columns): 
+  '''
+    Read data points line by line.
+  '''
   global sample_name
   output=[] #initialise data array containing data objects
   data_info=''
@@ -84,24 +74,22 @@ def read_data_lines(input_file_lines,info,data_columns): #read data points line 
       return data
   return data
 
-def read_data_line(input_file_line): #read one line and output data as list
-    if input_file_line[0]==';':
+def read_data_line(input_file_line): 
+  '''
+    Read one line and output data as list.
+  '''
+  if input_file_line[0]==';':
+    return 'NULL'
+  else:
+    line=input_file_line.strip().split()
+    if len(line)<2:
       return 'NULL'
-    else:
-      line=input_file_line.strip().split()
-      if len(line)<2:
-        return 'NULL'
-      return [float(line[0]),float(line[1]),math.sqrt(float(line[1]))]
-    
-def read_data_last_line(input_file_lines,columns): #returns second last line of one sequence for type finding, second last because of possibility of abborded scans.
-  for i,line in enumerate(input_file_lines):
-    if line[0]=='#':
-      return read_data_line(input_file_lines[i-2],columns)
-    elif len(line.split())<2:
-      return read_data_line(input_file_lines[i-2],columns)
-  return read_data_line(input_file_lines[-2],columns)
+    return [float(line[0]),float(line[1]),math.sqrt(float(line[1]))]
 
 def read_simulation(file_name):
+  '''
+    Read a fit.f90 output file as MeasurementData object.
+  '''
   sim_file=open(file_name,'r')
   sim_lines=sim_file.readlines()
   sim_file.close()
