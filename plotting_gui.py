@@ -5,14 +5,10 @@
 #################################################################################################
 #                  Script for graphical user interface to plot measurement data                 #
 #                                       last changes:                                           #
-#                                        31.03.2009                                             #
+#                                        08.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
-#                                                                                               #
-# Additional Files: measurement_data_structure.py - classes storing the measured data           #
-#                   measurement_data_plotting.py - plotting functions                           #
-#                   gnuplot_preferences.py - settings for gnuplot output                        #
 #                                                                                               #
 # Features at the moment:                                                                       #
 # -show plots from any MeasurementData structure defined in measurement_data_structure.py       #
@@ -28,42 +24,46 @@
 # To do:                                                                                        #
 # -create print dialog to select Printer and other print parameters                             #
 # -fit any type of function                                                                     #
-# -use with more than one input data file and load file in runtime                              #
 # -code cleanup                                                                                 #
 #                                                                                               #
 #################################################################################################
 
 # Pleas do not make any changes here unless you know what you are doing. 
 
+#+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
+# python modules
 import os
 import gobject
 import gtk
+# own modules
 # Module to save and load variables from/to config files
 from configobj import ConfigObj
 import measurement_data_plotting
 from gnuplot_preferences import output_file_name,print_command,titles
 import gnuplot_preferences
+#----------------------- importing modules --------------------------
 
-#++++++++++++++++++++++++ ApplicationMainWindow Class +++++++++++++++++++++++++++++++++#
+#+++++++++++++++++++++++++ ApplicationMainWindow Class ++++++++++++++++++++++++++++++++++#
 class ApplicationMainWindow(gtk.Window):
   '''
     Everything the GUI does is in this Class.
   '''
-#+++++++++++++++++++++++++++++++Window Constructor+++++++++++++++++++++++++++++++++++++#
+  #+++++++++++++++++++++++++++++++Window Constructor+++++++++++++++++++++++++++++++++++++#
   def __init__(self, active_session, parent=None, script_suf='',preferences_file='',plugin_widget=None):
     '''
       Class constructor which builds the main window with it's menus, buttons and the plot area.
     '''
     global errorbars
-  # set class variables
+    # TODO: remove global errorbars variable and put in session or m_d_structure
+    #+++++++++++++++++ set class variables ++++++++++++++++++
     self.height=600 # window height
     self.width=700  # window width
-    self.heightf=100
-    self.widthf=100
+    self.heightf=100 # picture frame height
+    self.widthf=100 # pricture frame width
     self.set_file_type=output_file_name.rsplit('.',1)[1] # export file type
-    self.measurement=active_session.active_file_data
+    self.measurement=active_session.active_file_data # active data file measurements
     self.input_file_name=active_session.active_file_name # name of source data file
-    self.active_session=active_session
+    self.active_session=active_session # session object passed by plot.py
     self.script_suf=script_suf # suffix for script mode gnuplot input data
     self.index_mess=0 # which data sequence is plotted at the moment
     self.multiplot=[] # list for sequences combined in multiplot
@@ -71,44 +71,60 @@ class ApplicationMainWindow(gtk.Window):
     self.y_range='set autoscale y'
     self.z_range='set autoscale z\nset autoscale cb'
     self.fit_lorentz=False
+    # TODO: remove preferences file (also from m_d_plotting
     self.preferences_file=preferences_file
+    # TODO: remove or reactivate plugin_widget
     self.plugin_widget=plugin_widget
-    self.plot_options_window_open=False
+    self.plot_options_window_open=False # is the dialog window for the plot options active?
     errorbars=False # show errorbars?
     if active_session.gnuplot_script: # define the plotting function depending on script mode flag
       self.plot=self.splot
     else:
       self.plot=measurement_data_plotting.gnuplot_plot
-    # list of active winows, that will be closed with the main program
+    # list of active winows, that will be closed with this main window
     self.open_windows=[]
     # Create a text view widget. When a text view is created it will
     # create an associated textbuffer by default.
     self.plot_options_view = gtk.TextView()
-    # Retrieving a reference to a textbuffer from a textview. 
+    # Retrieving a reference to a textbuffer from a textview.
+    # TODO: call buffer directly from textview widget
     self.plot_options_buffer = self.plot_options_view.get_buffer()
+    #----------------- set class variables ------------------
 
-# Reading config file
+
+    # Reading config file
     self.read_config_file()
-# Create the toplevel window
+    # Create the toplevel window
     gtk.Window.__init__(self)
+    # TODO: check if we can savely remove this check and connect destroy directly
     try:
         self.set_screen(parent.get_screen())
     except AttributeError:
         self.connect('destroy', lambda *w: self.main_quit())
+    # Set the title of the window, will be changed when the active plot changes
     self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
+    # Set the main windwo size to default or the last settings saved in config file
     self.set_default_size(self.width, self.height)
 
-#+++++++Build widgets in table structure++++++++#
-    table = gtk.Table(3, 6, False)
+    #+++++++Build widgets in table structure++++++++
+    table = gtk.Table(3, 6, False) # the main table
     self.add(table)
 
-# Menu and toolbar creation
-    ui_info=self.build_menu() # build structure of menu and toolbar
-    self.UIManager = gtk.UIManager()
+    #++++++++++ Menu and toolbar creation ++++++++++
+    '''
+      We use the UIManager to create the menus and toolbar. 
+      It creates widgets and actions according to the XML string
+      created by build_menu() and gtk.ActionGroup created by
+      __create_action_group(). See the pygtk documentation
+      for more information.
+    '''
+    ui_info=self.build_menu() # build XML structure of menu and toolbar
+    self.UIManager = gtk.UIManager() # construct a new UIManager object
     self.set_data("ui-manager", self.UIManager)
-    self.toolbar_action_group=self.__create_action_group()
-    self.UIManager.insert_action_group(self.toolbar_action_group, 0) # create action groups for menu and toolbar
+    self.toolbar_action_group=self.__create_action_group() # create action group
+    self.UIManager.insert_action_group(self.toolbar_action_group, 0)
     self.add_accel_group(self.UIManager.get_accel_group())
+    # don't crash if the menu creation fails
     try:
         self.toolbar_ui_id = self.UIManager.add_ui_from_string(ui_info)
     except gobject.GError, msg:
@@ -116,25 +132,24 @@ class ApplicationMainWindow(gtk.Window):
     self.menu_bar = self.UIManager.get_widget("/MenuBar")
     self.menu_bar.show()
 
-# put menu at top position, only expand in x direction
+    # put menu at top position, only expand in x direction
     table.attach(self.menu_bar,
         # X direction #          # Y direction
-        0, 2,                      0, 1,
+        0, 3,                      0, 1,
         gtk.EXPAND | gtk.FILL,     0,
         0,                         0);
-# put toolbar at below menubar, only expand in x direction
+    # put toolbar at below menubar, only expand in x direction
     bar = self.UIManager.get_widget("/ToolBar")
     bar.set_tooltips(True)
     bar.show()
     table.attach(bar,
         # X direction #       # Y direction
-        0, 2,                   1, 2,
+        0, 3,                   1, 2,
         gtk.EXPAND | gtk.FILL,  0,
         0,                      0)
+    #---------- Menu and toolbar creation ----------
 
-
-
-# custom widget on the right, can be used to include specific settings
+    # custom widget on the right, can be used to include specific settings
     if not self.plugin_widget==None:
       align=gtk.Alignment(0, 0.05, 1, 0)
       align.add(self.plugin_widget)
@@ -144,20 +159,24 @@ class ApplicationMainWindow(gtk.Window):
           gtk.FILL,  gtk.EXPAND | gtk.FILL,
           0,                      0)
 
-# create image region and image for the plot
+    #++++++++++ create image region and image for the plot ++++++++++
+    # plot title label entries
+    # TODO: don't lose entry when not pressing enter
     top_table=gtk.Table(2, 1, False)
+    # first entry for sample name part of title
     self.label = gtk.Entry()
-    self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
+    self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5) # title width
     self.label.set_text(self.measurement[self.index_mess].sample_name)
-    self.label.connect("activate",self.change)
+    self.label.connect("activate",self.change) # changed entry triggers change() function 
+    # second entry for additional infor part ofr title
     self.label2 = gtk.Entry()
-    self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
+    self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5) # title width
     self.label2.set_text(self.measurement[self.index_mess].short_info)
-    self.label2.connect("activate",self.change)
-
+    self.label2.connect("activate",self.change) # changed entry triggers change() function 
+    # TODO: put this to a different location
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
     self.plot_options_view.show()
-
+    # attach entrys to sub table
     top_table.attach(self.label,
         # X direction           Y direction
         0, 1,                   0, 1,
@@ -168,52 +187,50 @@ class ApplicationMainWindow(gtk.Window):
         1, 2,                   0, 1,
         gtk.FILL,  gtk.FILL,
         0,                      0)
-    align = gtk.Alignment(0.5, 0.5, 0, 0)
+    align = gtk.Alignment(0.5, 0.5, 0, 0) # center the entrys
     align.add(top_table)
-
-# put label below menubar on left column, only expand in x direction
+    # put label below menubar on left column, only expand in x direction
     table.attach(align,
         # X direction           Y direction
         0, 1,                   2, 3,
         gtk.FILL,  gtk.FILL,
         0,                      0)
 
-# frame region for the image
+    # frame region for the image
     self.frame1 = gtk.Frame()
     self.frame1.set_shadow_type(gtk.SHADOW_IN)
+    # TODO: do we need alignment?
     align = gtk.Alignment(0.5, 0.5, 1, 1)
     align.add(self.frame1)
-
-# image object for the plots
+    # image object for the plots
+    # TODO: faster resizeing with scrollable window perhaps?
     self.image = gtk.Image()    
     self.image_shown=False # variable to decrease changes in picture size
     self.frame1.add(self.image)
-
-# put image below label on left column, expand frame in all directions
+    # put image below label on left column, expand frame in all directions
     table.attach(align,
         # X direction           Y direction
         0, 1,                   3, 4,
         gtk.EXPAND | gtk.FILL,  gtk.EXPAND | gtk.FILL,
         0,                      0)
+    #---------- create image region and image for the plot ----------
 
-# Create region for multiplot list
+    # Create region for multiplot list
     self.multi_list = gtk.Label();
     self.multi_list.set_markup(' Multiplot List: ')
     align = gtk.Alignment(0, 0.05, 1, 0) # align top
     align.add(self.multi_list)
-
-# put multiplot list right from the picture, expand only in y
+    # put multiplot list right from the picture, expand only in y
     table.attach(align,
         # X direction           Y direction
         1, 2,                   3, 4,
         gtk.FILL,  gtk.EXPAND | gtk.FILL,
         0,                      0)
 
-
-# Create additional setting input for the plot
-    align = gtk.Alignment(0,0,0,0)
+    #++++++++++ Create additional setting input for the plot ++++++++++
+    # TODO: allways show or save view status of plot settings, use it every time!
     align_table = gtk.Table(12, 2, False)
-  # jumpt to sequence input
+    # input for jumping to a data sequence
     page_label=gtk.Label()
     page_label.set_markup('Go to Plot:')
     align_table.attach(page_label,0,1,0,1,gtk.FILL,gtk.FILL,0,0)
@@ -222,11 +239,11 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
     self.plot_page_entry.connect("activate",self.iterate_through_measurements)
     align_table.attach(self.plot_page_entry,1,2,0,1,gtk.FILL,gtk.FILL,0,0)
-  # checkbox for more Settings
+    # checkbox for more Settings
     self.check_add=gtk.CheckButton(label='Show more options.', use_underline=True)
     self.check_add.connect("toggled",self.show_add_info)
     align_table.attach(self.check_add,2,3,0,1,gtk.EXPAND|gtk.FILL,gtk.FILL,0,0)
-  # x,y ranges
+    # x,y ranges
     self.x_range_in=gtk.Entry()
     self.x_range_in.set_width_chars(6)
     self.x_range_in.connect("activate",self.change_range)
@@ -241,18 +258,20 @@ class ApplicationMainWindow(gtk.Window):
     align_table.attach(self.x_range_in,4,5,0,1,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.y_range_label,5,7,0,1,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.y_range_in,7,9,0,1,gtk.FILL,gtk.FILL,0,0)
-  # checkboxes for log x and log y
+    # checkboxes for log x and log y
+    # TODO: toggle logx,y according to active setting
     self.logx=gtk.CheckButton(label='log x', use_underline=True)
     self.logy=gtk.CheckButton(label='log y', use_underline=True)
     self.logx.connect("toggled",self.change)
     self.logy.connect("toggled",self.change)
     align_table.attach(self.logx,9,10,0,1,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.logy,10,11,0,1,gtk.FILL,gtk.FILL,0,0)
+    # button to open additional plot options dialog
     self.plot_options_button=gtk.ToolButton(gtk.STOCK_EDIT)
     self.plot_options_button.set_tooltip(gtk.Tooltips(),'Add custom Gnuplot commands')
     self.plot_options_handler_id=self.plot_options_button.connect("clicked",self.open_plot_options_window)
     align_table.attach(self.plot_options_button,11,12,0,2,gtk.FILL,gtk.FILL,0,0)
-  # z range and log z checkbox
+    # z range and log z checkbox
     self.z_range_in=gtk.Entry()
     self.z_range_in.set_width_chars(6)
     self.z_range_in.connect("activate",self.change_range)
@@ -260,7 +279,7 @@ class ApplicationMainWindow(gtk.Window):
     self.z_range_label.set_markup('z-range:')
     self.logz=gtk.CheckButton(label='log z', use_underline=True)
     self.logz.connect("toggled",self.change)
-  # 3d Viewpoint buttons
+    # 3d Viewpoint buttons to rotate the view
     self.view_left=gtk.ToolButton(gtk.STOCK_GO_BACK)
     self.view_up=gtk.ToolButton(gtk.STOCK_GO_UP)
     self.view_down=gtk.ToolButton(gtk.STOCK_GO_DOWN)
@@ -276,29 +295,29 @@ class ApplicationMainWindow(gtk.Window):
     align_table.attach(self.view_down,7,8,1,2,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.view_right,8,9,1,2,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.logz,9,10,1,2,gtk.FILL,gtk.FILL,0,0)
-# add all those options
+    # add all those options
+    align = gtk.Alignment(0,0,0,0) # align the table left
     align.add(align_table)
-
-# put plot settings below Plot
+    # put plot settings below Plot
     table.attach(align,
         # X direction           Y direction
         0, 2,                   4, 5,
         gtk.FILL,  gtk.FILL,
         0,                      0)
+    #---------- Create additional setting input for the plot ----------
 
-# Create statusbar
+    # Create statusbar
     self.statusbar = gtk.Statusbar()
-
-# put statusbar below everything
+    # put statusbar below everything
     table.attach(self.statusbar,
         # X direction           Y direction
         0, 2,                   5, 6,
         gtk.EXPAND | gtk.FILL,  0,
         0,                      0)
 
-#+++++++Build widgets in table structure++++++++#
+    #-------Build widgets in table structure--------
 
-# show the window, hide advanced settings and catch resize events
+    # show the window, hide advanced settings and catch resize events
     self.show_all()
     self.x_range_in.hide()
     self.y_range_in.hide()
@@ -318,16 +337,19 @@ class ApplicationMainWindow(gtk.Window):
     #self.frame1.connect("size-allocate", self.update_frame_size)
     self.connect("event-after", self.update_picture)
     self.replot()
+    self.check_add.set_active(True)
+    self.check_add.toggled()
 
-#-------------------------------Window Constructor-------------------------------------#
+  #-------------------------------Window Constructor-------------------------------------#
 
-#++++++++++++++++++++++++++++++++++Event hanling+++++++++++++++++++++++++++++++++++++++#
+  #++++++++++++++++++++++++++++++++++Event hanling+++++++++++++++++++++++++++++++++++++++#
 
   #++++++++++++++++++++++++++++Interrupt Events++++++++++++++++++++++++++++++++++#
   def update_size(self, widget, event):
     '''
       If resize event is triggered the window size variables are changed.
     '''
+    # TODO: review resize handling of the image
     if (not ((self.width==event.width)&(self.height==event.height))):
       self.image.hide()
       self.image_shown=False
@@ -337,6 +359,7 @@ class ApplicationMainWindow(gtk.Window):
   def update_frame_size(self, widget, event): 
     '''
       If resize event is triggered the window size variables are changed.
+      Not in use, will be removed after review.
     '''
     self.heightf=event.height
     self.widthf=event.width
@@ -362,7 +385,10 @@ class ApplicationMainWindow(gtk.Window):
   def main_quit(self, action=None):
     '''
       When window is closed save the settings in home folder.
+      All open dialogs are closed before exit.
     '''
+    # TODO: put window setting in ConfigObject
+    # Own config structure
     try:
       os.mkdir(os.path.expanduser('~')+'/.plotting_gui')
     except OSError:
@@ -374,6 +400,7 @@ class ApplicationMainWindow(gtk.Window):
     '\n\t[/window]\n')
     config_file.write('[/plotting_gui_config]\n')
     config_file.close()
+    # ConfigObject config structure for profiles
     self.config_object['profiles']={}
     for name, profile in self.profiles.items():
       profile.write(self.config_object['profiles'])
@@ -389,7 +416,7 @@ class ApplicationMainWindow(gtk.Window):
     '''
     dialog = gtk.AboutDialog()
     dialog.set_name("Plotting GUI")
-    dialog.set_copyright("\302\251 Copyright Artur Glavic")
+    dialog.set_copyright("\302\251 Copyright Artur Glavic\n a.glavic@fz-juelich.de")
     dialog.set_website("http://www.fz-juelich.de/iff")
     ## Close dialog on user response
     dialog.connect ("response", lambda d, r: d.destroy())
@@ -400,6 +427,7 @@ class ApplicationMainWindow(gtk.Window):
       Change the active plot with arrows in toolbar.
     '''
     global errorbars
+    # change number for active plot put it in the plot page entry box at the bottom
     if action.get_name()=='Prev':
       self.index_mess=max(0,self.index_mess-1)
       self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
@@ -410,30 +438,42 @@ class ApplicationMainWindow(gtk.Window):
       self.index_mess=len(self.measurement)-1
       self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
     elif action.get_name()=='Next':
-        self.index_mess=min(len(self.measurement)-1,self.index_mess+1)
-        self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
+      self.index_mess=min(len(self.measurement)-1,self.index_mess+1)
+      self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
     else:
-        for i,data in enumerate(self.measurement):
-          if int(data.number)<=int(self.plot_page_entry.get_text()):
-            self.index_mess=i
-        self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
+      for i,data in enumerate(self.measurement):
+        if int(data.number)<=int(self.plot_page_entry.get_text()):
+          self.index_mess=i
+      self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
+    # check for valid number
     if self.index_mess>=len(self.measurement):
       self.index_mess=len(self.measurement)-1
     if self.index_mess<0:
       self.index_mess=0
-  # change label and plot other picture
+    # change label and plot other picture
     self.show_add_info(None)
     self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
     self.label.set_text(self.measurement[self.index_mess].sample_name)
     self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
     self.label2.set_text(self.measurement[self.index_mess].short_info)
-    self.last_plot_text= self.plot(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+    # plot the data
+    self.last_plot_text= self.plot(self.active_session,
+                                   self.measurement[self.index_mess].plot_together,
+                                   self.input_file_name, 
+                                   self.measurement[self.index_mess].short_info,
+                                   [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                                   errorbars, 
+                                   output_file=self.active_session.temp_dir+'plot_temp.png',
+                                   fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+    # load created image
     self.set_image()
     self.reset_statusbar()
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
+    # set log checkbox according to active measurement
     self.logx.set_active(self.measurement[self.index_mess].logx)
     self.logy.set_active(self.measurement[self.index_mess].logy)
     self.logz.set_active(self.measurement[self.index_mess].logz)
+    # recreate the menus, if the columns for this dataset aren't the same
     self.rebuild_menus()
     self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
 
@@ -442,6 +482,7 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Change different plot settings triggered by different events.    
     '''
+    # change the plotted columns
     if action.get_name()=='x-number':
       self.measurement[self.index_mess].xdata=-1
     elif action.get_name()=='y-number':
@@ -455,10 +496,9 @@ class ApplicationMainWindow(gtk.Window):
     elif action.get_name()[0]=='d':
       dim=action.get_name()[3:]
       self.measurement[self.index_mess].yerror=self.measurement[self.index_mess].dimensions().index(dim)
-    elif action.get_name()=='y-number':
-      self.measurement[self.index_mess].ydata=-1
     elif action.get_name()=='FitLorentz':
       self.fit_lorentz = not self.fit_lorentz
+    # change 3d view position
     elif action==self.view_left:
       if self.measurement[self.index_mess].view_z>=10:
         self.measurement[self.index_mess].view_z=self.measurement[self.index_mess].view_z-10
@@ -479,10 +519,13 @@ class ApplicationMainWindow(gtk.Window):
         self.measurement[self.index_mess].view_x=self.measurement[self.index_mess].view_x-10
       else:
         self.measurement[self.index_mess].view_x=170
+    # change plot title labels
     elif action==self.label:
       self.measurement[self.index_mess].sample_name=self.label.get_text()
     elif action==self.label2:
       self.measurement[self.index_mess].short_info=self.label2.get_text()
+    # change log settings
+    # TODO: check if realy log was triggering this action
     else:
       self.measurement[self.index_mess].logx=self.logx.get_active()
       self.measurement[self.index_mess].logy=self.logy.get_active()
@@ -498,19 +541,21 @@ class ApplicationMainWindow(gtk.Window):
     self.active_session.change_active(object)
     self.measurement=self.active_session.active_file_data
     self.input_file_name=object[0]
+    # reset index to the first sequence in that file
     self.index_mess=0
     self.replot()
   
   def add_file(self, action):
     '''
-      Import a new datafile of the same type.
+      Import one or more new datafiles of the same type.
     '''
     file_names=[]
     #++++++++++++++++File selection dialog+++++++++++++++++++#
-    file_dialog=gtk.FileChooserDialog(title='Open new datafile...', action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+    file_dialog=gtk.FileChooserDialog(title='Open new datafile...', 
+                                      action=gtk.FILE_CHOOSER_ACTION_OPEN, 
+                                      buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
     file_dialog.set_select_multiple(True)
     file_dialog.set_default_response(gtk.RESPONSE_OK)
-    #file_dialog.set_current_name(self.input_file_name+'_'+ self.measurement[self.index_mess].number+'.'+self.set_file_type)
     for wildcard in self.active_session.file_wildcards:
       filter = gtk.FileFilter()
       filter.set_name(wildcard[0])
@@ -524,19 +569,23 @@ class ApplicationMainWindow(gtk.Window):
       return False
     file_dialog.destroy()
     #----------------File selection dialog-------------------#
+    # try to import the selected files and append them to the active sesssion
     for file_name in file_names:
       self.active_session.add_file(file_name, append=True)
       self.active_session.change_active(name=file_name)
+    # set the last imported file as active
     self.measurement=self.active_session.active_file_data
     self.input_file_name=self.active_session.active_file_name
     self.replot()
     self.rebuild_menus()
+    # TODO: do we need to return the file name?
     return file_names
 
   def change_range(self,action):
     '''
       Change plotting range according to textinput.
     '''
+    # get selected ranges
     xin=self.x_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
     yin=self.y_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
     zin=self.z_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
@@ -544,6 +593,7 @@ class ApplicationMainWindow(gtk.Window):
     lines_old=self.measurement[self.index_mess].plot_options.split('\n')
     lines_new=[]
     for line in lines_old:
+      # remove lines, which contain scaling settings
       if not ((' autoscale ' in line)|\
         (' xrange ' in line)|\
         (' yrange ' in line)|\
@@ -551,37 +601,35 @@ class ApplicationMainWindow(gtk.Window):
         (' cbrange ' in line)):
         lines_new.append(line)
     self.measurement[self.index_mess].plot_options="\n".join(lines_new)
-
-    if len(xin)==2:
-      if xin[0].replace('-','').replace('e','').replace('.','',1).isdigit()&\
-        xin[1].replace('-','').replace('e','').replace('.','',1).isdigit():
-        self.x_range='set xrange ['+str(xin[0])+':'+str(xin[1])+']'
-      else:
-        self.x_range='set autoscale x'
-        self.x_range_in.set_text('')
+    # only use settings, if they are valid numbers
+    if (len(xin)==2) and\
+        ((xin[0].replace('-','').replace('e','').replace('.','',1).isdigit())|\
+          (xin[0]==''))&\
+        ((xin[1].replace('-','').replace('e','').replace('.','',1).isdigit())|\
+        (xin[1]=='')):
+      self.x_range='set xrange ['+str(xin[0])+':'+str(xin[1])+']'
     else:
       self.x_range='set autoscale x'
       self.x_range_in.set_text('')
-    if len(yin)==2:
-      if yin[0].replace('-','').replace('e','').replace('.','',1).isdigit()&\
-        yin[1].replace('-','').replace('e','').replace('.','',1).isdigit():
-        self.y_range='set yrange ['+str(yin[0])+':'+str(yin[1])+']'
-      else:
-        self.y_range='set autoscale y'
-        self.y_range_in.set_text('')
+    if (len(yin)==2) and\
+        ((yin[0].replace('-','').replace('e','').replace('.','',1).isdigit())|\
+          (yin[0]==''))&\
+        ((yin[1].replace('-','').replace('e','').replace('.','',1).isdigit())|\
+        (yin[1]=='')):
+      self.y_range='set yrange ['+str(yin[0])+':'+str(yin[1])+']'
     else:
       self.y_range='set autoscale y'
       self.y_range_in.set_text('')
-    if len(zin)==2:
-      if zin[0].replace('-','').replace('e','').replace('.','',1).isdigit()&\
-        zin[1].replace('-','').replace('e','').replace('.','',1).isdigit():
-        self.z_range='set zrange ['+str(zin[0])+':'+str(zin[1])+']\nset cbrange ['+str(zin[0])+':'+str(zin[1])+']'
-      else:
-        self.z_range='set autoscale z\nset autoscale cb'
-        self.z_range_in.set_text('')
+    if (len(zin)==2) and\
+        ((zin[0].replace('-','').replace('e','').replace('.','',1).isdigit())|\
+          (zin[0]==''))&\
+        ((zin[1].replace('-','').replace('e','').replace('.','',1).isdigit())|\
+        (yin[1]=='')):
+      self.z_range='set zrange ['+str(zin[0])+':'+str(zin[1])+']\nset cbrange ['+str(zin[0])+':'+str(zin[1])+']'
     else:
       self.z_range='set autoscale z\nset autoscale cb'
       self.z_range_in.set_text('')
+    # add the ranges to the plot options
     self.measurement[self.index_mess].plot_options=self.measurement[self.index_mess].plot_options+\
     self.x_range+\
     '\n'+self.y_range+\
@@ -593,10 +641,10 @@ class ApplicationMainWindow(gtk.Window):
       Open a dialog window to insert additional gnuplot commands.
       After opening the button is rerouted.
     '''
-  #+++++++++++++++++ Adding input fields in table +++++++++++++++++
+    #+++++++++++++++++ Adding input fields in table +++++++++++++++++
     dialog=gtk.Dialog(title='Custom Gnuplot settings')
     table=gtk.Table(6,13,False)
-
+    
     # PNG terminal
     label=gtk.Label()
     label.set_markup('Terminal for PNG export (as shown in GUI Window):')
@@ -674,7 +722,6 @@ class ApplicationMainWindow(gtk.Window):
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
 
-
     # additional Gnuplot commands
     label=gtk.Label()
     label.set_markup('Gnuplot commands executed additionally:')
@@ -691,25 +738,28 @@ class ApplicationMainWindow(gtk.Window):
                 gtk.EXPAND | gtk.FILL,     gtk.EXPAND | gtk.FILL,
                 0,                         0);
     table.show_all()
-  #----------------- Adding input fields in table -----------------
-
+    #----------------- Adding input fields in table -----------------
     dialog.vbox.add(table) # add table to dialog box
     dialog.set_default_size(300,200)
     dialog.add_button('Apply and Replot',1) # button replot has handler_id 1
-    dialog.connect("response",self.change_plot_options,\
-      terminal_png,terminal_ps,x_label,y_label,z_label,\
-      plotting_parameters,plotting_parameters_errorbars,plotting_parameters_3d)
+    dialog.connect("response", self.change_plot_options,
+                  terminal_png, terminal_ps, x_label, y_label, z_label,
+                  plotting_parameters, plotting_parameters_errorbars, plotting_parameters_3d)
     # befor the widget gets destroyed the textbuffer view widget is removed
     dialog.connect("destroy",self.close_plot_options_window,sw) 
     dialog.show()
-    # reroute the button to hide the windoe
+    # reroute the button to close the dialog, not open it
     self.plot_options_button.disconnect(self.plot_options_handler_id)
-    self.plot_options_handler_id=self.plot_options_button.connect("clicked",self.button_close_plot_options_window,dialog)
+    self.plot_options_handler_id=self.plot_options_button.connect("clicked",lambda *w: dialog.destroy())
     self.plot_options_window_open=True
+    # connect dialog to main window
+    self.open_windows.append(dialog)
+    dialog.connect("destroy", lambda *w: self.open_windows.remove(dialog))    
 
   def close_plot_options_window(self,dialog,sw):
     '''
-      Remove the textbox when dialog is closed.
+      Reroute the plot options button and remove the textbox when dialog is closed.
+      If this is not done, the textbox gets destroyed and we can't reopen the dialog.
     '''
     dialog.hide()
     sw.remove(self.plot_options_view)
@@ -718,18 +768,14 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_options_handler_id=self.plot_options_button.connect("clicked",self.open_plot_options_window)
     self.plot_options_window_open=False
 
-  def button_close_plot_options_window(self,button,dialog):
-    '''
-      Hide dialog window and reroute button.
-    '''
-    dialog.destroy()
-
   def change_plot_options(self,widget,action,\
     terminal_png,terminal_ps,x_label,y_label,z_label,\
       plotting_parameters,plotting_parameters_errorbars,plotting_parameters_3d):
     '''
-      Plot with new commands from dialog window.
+      Plot with new commands from dialog window. Gets triggerd when the apply
+      button is pressed.
     '''
+    # only apply when the triggered action is realy the apply button.
     if action==1:
       self.measurement[self.index_mess].plot_options=\
         self.plot_options_buffer.get_text(\
@@ -749,16 +795,17 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Load a plot profile.
     '''
+    # trigger load function from a profile in the dictionary
     self.profiles[action.get_name()].load(self)
     if self.plot_options_window_open:
       self.plot_options_button.emit("clicked")
       self.plot_options_button.emit("clicked")
 
-
   def save_profile(self,action):
     '''
       Save a plot profile.
     '''
+    # open a dialog asking for the profile name
     name_dialog=gtk.Dialog(title='Enter profile name:')
     name_entry=gtk.Entry()
     name_entry.show()
@@ -768,17 +815,21 @@ class ApplicationMainWindow(gtk.Window):
     response = name_dialog.run()
     name=name_entry.get_text()
     name_dialog.destroy()
+    # add the profile to the profiles dictionary
     self.profiles[name]= PlotProfile(name)
     self.profiles[name].save(self)
+    # new profile has to be added to the menu
     self.rebuild_menus()
 
   def delete_profile(self,action):
     '''
       Delete a plot profile.
     '''
+    # open a dialog for selecting the profiel to be deleted
     delete_dialog=gtk.Dialog(title='Delete profile')
     self.delete_name=''
     radio_group=None
+    # create a list of radio buttons for the profiles
     for profile in self.profiles.items():
       if radio_group==None:
         entry=gtk.RadioButton(group=None, label=profile[0])
@@ -791,10 +842,12 @@ class ApplicationMainWindow(gtk.Window):
     delete_dialog.add_button('Delete',1)
     delete_dialog.add_button('Abbort',2)
     response = delete_dialog.run()
+    # only delet when the response is 'Delete'
     if (response == 1) & ( not self.delete_name == '' ):
       del self.profiles[self.delete_name]
     del self.delete_name
     delete_dialog.destroy()
+    # remove the deleted profile from the menu
     self.rebuild_menus()
 
   def set_delete_name(self,action):
@@ -806,7 +859,20 @@ class ApplicationMainWindow(gtk.Window):
       plot the current measurement.
     '''
     global errorbars
-    plot_text=measurement_data_plotting.create_plot_script(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.script_suf, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+    # FIXME: The reported errors does only work in script mode
+    # FIXME: only show error box, when there actually is an error
+    # FIXME: open the window when there has been a gnuplot error
+    plot_text=measurement_data_plotting.create_plot_script(
+                         self.active_session, 
+                         self.measurement[self.index_mess].plot_together,
+                         self.input_file_name, 
+                         self.script_suf, 
+                         self.measurement[self.index_mess].short_info,
+                         [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                         errorbars, 
+                         output_file=self.active_session.temp_dir+'plot_temp.png',
+                         fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+    # create a dialog to show the plot text for the active data
     param_dialog=gtk.Dialog(title='Last plot parameters:')
     param_dialog.set_default_size(600,400)
     sw = gtk.ScrolledWindow()
@@ -828,12 +894,16 @@ class ApplicationMainWindow(gtk.Window):
     sw.add_with_viewport(text_filed) # add textbuffer view widget
     param_dialog.vbox.add(sw)
     param_dialog.show_all()
+    # connect dialog to main window
+    self.open_windows.append(param_dialog)
+    param_dialog.connect("destroy", lambda *w: self.open_windows.remove(param_dialog))    
+
 
   def change_data_filter(self,action):
     '''
-      A dialog to select filter options, that removes points from the
-      plotted dataset.
+      A dialog to select filters, that remove points from the plotted dataset.
     '''
+    # TODO: let filter dialog stay open while replotting
     filters=[]
     data=self.measurement[self.index_mess]
     filter_dialog=gtk.Dialog(title='Filter the plotted data:')
@@ -847,6 +917,7 @@ class ApplicationMainWindow(gtk.Window):
     table=gtk.Table(1,5,False)
     sw.add_with_viewport(table) # add textbuffer view widget
     filter_dialog.vbox.add(sw)
+    # add lines for every active filter
     for data_filter in data.filters:
       filters.append(self.get_new_filter(table,table_rows,data,data_filter))
       table_rows+=1
@@ -854,17 +925,21 @@ class ApplicationMainWindow(gtk.Window):
     filters.append(self.get_new_filter(table,table_rows,data))
     table_rows+=1
     table.resize(table_rows,5)
+    # add dialog buttons
     filter_dialog.add_button('New Filter',2)
     filter_dialog.add_button('Apply changes',1)
     filter_dialog.add_button('Cancel',0)
     filter_dialog.show_all()
+    # open dialog and wait for a response
     response=filter_dialog.run()
+    # if the response is 'New Filter' add a new filter row and rerun the dialog
     while(response==2):
       filters.append(self.get_new_filter(table,table_rows,data))
       table_rows+=1
       table.resize(table_rows,5)
       filter_dialog.show_all()
       response=filter_dialog.run()
+    # if response is apply change the dataset filters
     if response==1:
       new_filters=[]
       for filter_widgets in filters:
@@ -877,17 +952,19 @@ class ApplicationMainWindow(gtk.Window):
           filter_widgets[3].get_active())\
           )
       data.filters=new_filters
+    # close dialog and replot
     filter_dialog.destroy()
     self.replot()
     
 
   def get_new_filter(self,table,row,data,parameters=(-1,0,0,False)):
     ''' 
-      Create all widgets for the filter selection in 
+      Create all widgets for the filter selection of one filter in 
       change_data_filter dialog and place them in a table.
     '''
     column=gtk.combo_box_new_text()
     column.append_text('None')
+    # drop down menu for the columns present in the dataset
     for column_dim in data.dimensions():
       column.append_text(column_dim)
     column.set_active(parameters[0]+1)
@@ -1011,6 +1088,7 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Add one item to multiplot list devided by plots of the same type.
     '''
+    # FIXME: does not work with differnt files
     changed=False
     for plotlist in self.multiplot:
       if index in plotlist:
@@ -1022,18 +1100,18 @@ class ApplicationMainWindow(gtk.Window):
           self.multiplot.remove(plotlist)
       else:
         if ((self.measurement[index].dimensions()==self.measurement[plotlist[0]].dimensions())&\
-        (self.measurement[index].xdata==self.measurement[plotlist[0]].xdata)&\
-        (self.measurement[index].ydata==self.measurement[plotlist[0]].ydata)&\
-        (self.measurement[index].zdata==self.measurement[plotlist[0]].zdata)):
+            (self.measurement[index].xdata==self.measurement[plotlist[0]].xdata)&\
+            (self.measurement[index].ydata==self.measurement[plotlist[0]].ydata)&\
+            (self.measurement[index].zdata==self.measurement[plotlist[0]].zdata)):
           plotlist.append(index)
           self.reset_statusbar()
           self.statusbar.push(0,'Plot '+self.measurement[index].number+' added.')
           changed=True
     # recreate the shown multiplot list
     if not changed:
-          self.multiplot.append([index])
-          self.reset_statusbar()
-          self.statusbar.push(0,'Plot '+self.measurement[index].number+' added.')
+      self.multiplot.append([index])
+      self.reset_statusbar()
+      self.statusbar.push(0,'Plot '+self.measurement[index].number+' added.')
     mp_list=''
     for i,plotlist in enumerate(self.multiplot):
       if i>0:
@@ -1061,15 +1139,24 @@ class ApplicationMainWindow(gtk.Window):
     global errorbars
     if action.get_name()=='ExportAll':
       for dataset in self.measurement:
-        self.last_plot_text=self.plot(self.active_session, dataset.plot_together,self.input_file_name,dataset.short_info,[object.short_info for object in dataset.plot_together],errorbars,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+        self.last_plot_text=self.plot(self.active_session, 
+                                      dataset.plot_together,
+                                      self.input_file_name,
+                                      dataset.short_info,
+                                      [object.short_info for object in dataset.plot_together],
+                                      errorbars,
+                                      fit_lorentz=self.fit_lorentz,
+                                      add_preferences=self.preferences_file)
         self.reset_statusbar()
         self.statusbar.push(0,'Export plot number '+dataset.number+'... Done!')
     elif action.get_name()=='MultiPlotExport':
       for plotlist in self.multiplot:
-    #++++++++++++++++File selection dialog+++++++++++++++++++#
+        #++++++++++++++++File selection dialog+++++++++++++++++++#
         file_dialog=gtk.FileChooserDialog(title='Export multi-plot as...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
         file_dialog.set_default_response(gtk.RESPONSE_OK)
-        file_dialog.set_current_name(self.input_file_name+'_multi_'+ self.measurement[plotlist[0]].number+'.'+self.set_file_type)
+        file_dialog.set_current_name(self.input_file_name + '_multi_'+ \
+                                     self.measurement[plotlist[0]].number + '.' + self.set_file_type)
+        # create the filters in the file selection dialog
         filter = gtk.FileFilter()
         filter.set_name("Images (png/ps)")
         filter.add_mime_type("image/png")
@@ -1081,32 +1168,57 @@ class ApplicationMainWindow(gtk.Window):
         filter.set_name("All files")
         filter.add_pattern("*")
         file_dialog.add_filter(filter)
-      # show multiplot on screen before the file is actually selected
-        self.last_plot_text=self.plot(self.active_session, [self.measurement[index] for index in plotlist], self.input_file_name, self.measurement[plotlist[0]].short_info, [self.measurement[index].short_info for index in plotlist], errorbars,self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)     
+        # show multiplot on screen before the file is actually selected
+        self.last_plot_text=self.plot(self.active_session, 
+                                      [self.measurement[index] for index in plotlist], 
+                                      self.input_file_name, 
+                                      self.measurement[plotlist[0]].short_info, 
+                                      [self.measurement[index].short_info for index in plotlist], 
+                                      errorbars,self.active_session.temp_dir+'plot_temp.png',
+                                      fit_lorentz=self.fit_lorentz,
+                                      add_preferences=self.preferences_file)     
         self.label.set_width_chars(len('Multiplot title')+5)
         self.label.set_text('Multiplot title')
         self.set_image()
         response = file_dialog.run()
         if response == gtk.RESPONSE_OK:
           multi_file_name=file_dialog.get_filename()
-          self.last_plot_text=self.plot(self.active_session, [self.measurement[index] for index in plotlist], self.input_file_name, self.measurement[plotlist[0]].short_info, [self.measurement[index].short_info for index in plotlist], errorbars,multi_file_name,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
-        # give user information in Statusbar
+          self.last_plot_text=self.plot(self.active_session, 
+                                        [self.measurement[index] for index in plotlist], 
+                                        self.input_file_name, 
+                                        self.measurement[plotlist[0]].short_info, 
+                                        [self.measurement[index].short_info for index in plotlist], 
+                                        errorbars,
+                                        multi_file_name,
+                                        fit_lorentz=self.fit_lorentz,
+                                        add_preferences=self.preferences_file)
+          # give user information in Statusbar
           self.reset_statusbar()
-          self.statusbar.push(0,'Export multi-plot '+multi_file_name+'... Done!')
+          self.statusbar.push(0,'Export multi-plot ' + multi_file_name + '... Done!')
         file_dialog.destroy()
-    #----------------File selection dialog-------------------#
+        #----------------File selection dialog-------------------#
     elif action.get_name()=='MultiPlot':
       for plotlist in self.multiplot:
         if self.index_mess in plotlist:
-          self.last_plot_text=self.plot(self.active_session, [self.measurement[index] for index in plotlist], self.input_file_name, self.measurement[plotlist[0]].short_info, [self.measurement[index].short_info for index in plotlist], errorbars,self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)   
+          self.last_plot_text=self.plot(self.active_session, 
+                                        [self.measurement[index] for index in plotlist], 
+                                        self.input_file_name, 
+                                        self.measurement[plotlist[0]].short_info, 
+                                        [self.measurement[index].short_info for index in plotlist], 
+                                        errorbars,
+                                        self.active_session.temp_dir+'plot_temp.png',
+                                        fit_lorentz=self.fit_lorentz,
+                                        add_preferences=self.preferences_file)   
           self.label.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
           self.label.set_text(self.measurement[self.index_mess].short_info)
           self.set_image()
     else:
       new_name=output_file_name
       if action.get_name()=='ExportAs':
-    #++++++++++++++++File selection dialog+++++++++++++++++++#
-        file_dialog=gtk.FileChooserDialog(title='Export plot as...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+        #++++++++++++++++File selection dialog+++++++++++++++++++#
+        file_dialog=gtk.FileChooserDialog(title='Export plot as...', 
+                                          action=gtk.FILE_CHOOSER_ACTION_SAVE, 
+                                          buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
         file_dialog.set_default_response(gtk.RESPONSE_OK)
         file_dialog.set_current_name(self.input_file_name+'_'+ self.measurement[self.index_mess].number+'.'+self.set_file_type)
         filter = gtk.FileFilter()
@@ -1127,8 +1239,16 @@ class ApplicationMainWindow(gtk.Window):
           file_dialog.destroy()
           return False
         file_dialog.destroy()
-    #----------------File selection dialog-------------------#
-      self.last_plot_text=self.plot(self.active_session, self.measurement[self.index_mess].plot_together, self.input_file_name, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars,new_name,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+        #----------------File selection dialog-------------------#
+      self.last_plot_text=self.plot(self.active_session, 
+                                    self.measurement[self.index_mess].plot_together, 
+                                    self.input_file_name, 
+                                    self.measurement[self.index_mess].short_info,
+                                    [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                                    errorbars,
+                                    new_name,
+                                    fit_lorentz=self.fit_lorentz,
+                                    add_preferences=self.preferences_file)
       self.reset_statusbar()
       self.statusbar.push(0,'Export plot number '+self.measurement[self.index_mess].number+'... Done!')
 
@@ -1139,7 +1259,15 @@ class ApplicationMainWindow(gtk.Window):
     global errorbars
     if action.get_name()=='Print':
       term='postscript landscape enhanced colour'
-      self.last_plot_text=self.plot(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.ps',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+      self.last_plot_text=self.plot(self.active_session, 
+                                    self.measurement[self.index_mess].plot_together,
+                                    self.input_file_name, 
+                                    self.measurement[self.index_mess].short_info,
+                                    [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                                    errorbars, 
+                                    output_file=self.active_session.temp_dir+'plot_temp.ps',
+                                    fit_lorentz=self.fit_lorentz,
+                                    add_preferences=self.preferences_file)
       self.reset_statusbar()
       self.statusbar.push(0,'Printed with: '+print_command)
       os.popen2(print_command+self.active_session.temp_dir+'plot_temp.ps')
@@ -1147,31 +1275,39 @@ class ApplicationMainWindow(gtk.Window):
       term='postscript landscape enhanced colour'
       print_string=print_command
       for dataset in self.measurement: # combine all plot files in one print statement
-        self.last_plot_text=self.plot(self.active_session, dataset.plot_together,self.input_file_name,dataset.short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp_'+dataset.number+'.ps',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+        self.last_plot_text=self.plot(self.active_session, 
+                                      dataset.plot_together,
+                                      self.input_file_name,
+                                      dataset.short_info,
+                                      [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                                      errorbars, 
+                                      output_file=self.active_session.temp_dir+'plot_temp_'+dataset.number+'.ps',
+                                      fit_lorentz=self.fit_lorentz,
+                                      add_preferences=self.preferences_file)
         print_string=print_string+self.active_session.temp_dir+'plot_temp_'+dataset.number+'.ps '
       self.reset_statusbar()
       self.statusbar.push(0,'Printed with: '+print_command)
       os.popen2(print_string)
-    # In the future, setting up propper printing dialog here:
-    #operation=gtk.PrintOperation()
-    #operation.set_job_name('Print SQUID Data Nr.'+str(self.index_mess))
-    #operation.set_n_pages(1)
-    #response=operation.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG)
-    #if response == gtk.PRINT_OPERATION_RESULT_ERROR:
-    #   error_dialog = gtk.MessageDialog(parent,
-    #                                    gtk.DIALOG_DESTROY_WITH_PARENT,
-    #                                    gtk.MESSAGE_ERROR,
-    #                                     gtk.BUTTONS_CLOSE,
-    #                                     "Error printing file:\n")
-    #   error_dialog.connect("response", lambda w,id: w.destroy())
-    #   error_dialog.show()
-    #elif response == gtk.PRINT_OPERATION_RESULT_APPLY:
-    #    settings = operation.get_print_settings()
+      # TODO: In the future, setting up propper printing dialog here:
+      #operation=gtk.PrintOperation()
+      #operation.set_job_name('Print SQUID Data Nr.'+str(self.index_mess))
+      #operation.set_n_pages(1)
+      #response=operation.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG)
+      #if response == gtk.PRINT_OPERATION_RESULT_ERROR:
+      #   error_dialog = gtk.MessageDialog(parent,
+      #                                    gtk.DIALOG_DESTROY_WITH_PARENT,
+      #                                    gtk.MESSAGE_ERROR,
+      #                                     gtk.BUTTONS_CLOSE,
+      #                                     "Error printing file:\n")
+      #   error_dialog.connect("response", lambda w,id: w.destroy())
+      #   error_dialog.show()
+      #elif response == gtk.PRINT_OPERATION_RESULT_APPLY:
+      #    settings = operation.get_print_settings()
   #--------------------------Menu/Toolbar Events---------------------------------#
 
-#----------------------------------Event hanling---------------------------------------#
+  #----------------------------------Event hanling---------------------------------------#
 
-#+++++++++++++++++++++++++++Functions for initializing etc+++++++++++++++++++++++++++++#
+  #+++++++++++++++++++++++++++Functions for initializing etc+++++++++++++++++++++++++++++#
 
   def read_config_file(self):
     '''
@@ -1179,8 +1315,11 @@ class ApplicationMainWindow(gtk.Window):
       The ConfigObj python module is used to save the settings in an .ini file
       as this is an easy way to store dictionaries.
     '''
+    # create the object with association to an inifile in the user folder
+    # have to test if this works under windows
     self.config_object=ConfigObj(os.path.expanduser('~')+'/.plotting_gui/config.ini')
     self.config_object.indent_type='\t'
+    # If the inifile exists import the profiles but override default profile.
     try:
       self.profiles={'default': PlotProfile('default')}
       self.profiles['default'].save(self)
@@ -1188,14 +1327,17 @@ class ApplicationMainWindow(gtk.Window):
         self.profiles[name[0]]=PlotProfile(name[0])
         self.profiles[name[0]].read(self.config_object['profiles'])
     except KeyError:
+      # create a new object if the file did not exist.
       self.config_object['profiles']={}
       self.profiles={'default': PlotProfile('default')}
       self.profiles['default'].save(self)
+    
+    # Open the other config file which uses it's own format
+    # TODO: Put all configurations in one file.
     try:
       config_file=open(os.path.expanduser('~')+'/.plotting_gui/plotting_gui.config','r')
     except IOError:
       return False
-
     # functions for different parts of config file
     config_parts={\
       '[window]' : lambda config_file : self.read_window_config(config_file),\
@@ -1235,23 +1377,38 @@ class ApplicationMainWindow(gtk.Window):
   def config_file_end(self,config_file):
     return False
 
-#---------------------------Functions for initializing etc-----------------------------#
+  #---------------------------Functions for initializing etc-----------------------------#
 
-#++++++++++++++Functions for displaying graphs plotting and status infos+++++++++++++++#
+  #++++++++++++++Functions for displaying graphs plotting and status infos+++++++++++++++#
 
   def set_image(self):
     '''
       Resize and show temporary gnuplot image.
     '''
-    self.image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file(self.active_session.temp_dir+'plot_temp.png').scale_simple( self.widthf-20,self.heightf-20,gtk.gdk.INTERP_BILINEAR))
+    # TODO: errorhandling
+    self.image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file(\
+                              self.active_session.temp_dir + 'plot_temp.png'\
+                              ).scale_simple(self.widthf-20,
+                                            self.heightf-20,
+                                            gtk.gdk.INTERP_BILINEAR))
 
-  def splot(self, session,datasets,file_name_prefix, title,names, with_errorbars,output_file='',fit_lorentz=False,add_preferences=''):
+  def splot(self, session, datasets, file_name_prefix, title, names, 
+            with_errorbars, output_file='', fit_lorentz=False, add_preferences=''):
     '''
       Plot via script file instead of using python gnuplot pipeing.
     '''
-    return measurement_data_plotting.gnuplot_plot_script(session, datasets,file_name_prefix, self.script_suf, title,names,with_errorbars,output_file,fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+    return measurement_data_plotting.gnuplot_plot_script(session, 
+                                                         datasets,
+                                                         file_name_prefix, 
+                                                         self.script_suf, 
+                                                         title,
+                                                         names,
+                                                         with_errorbars,
+                                                         output_file,
+                                                         fit_lorentz=self.fit_lorentz,
+                                                         add_preferences=self.preferences_file)
 
-  def replot(self,action=None): 
+  def replot(self, action=None): 
     '''
       Recreate the current plot and clear statusbar.
     '''
@@ -1260,7 +1417,15 @@ class ApplicationMainWindow(gtk.Window):
     self.label.set_text(self.measurement[self.index_mess].sample_name)
     self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
     self.label2.set_text(self.measurement[self.index_mess].short_info)
-    self.last_plot_text=self.plot(self.active_session, self.measurement[self.index_mess].plot_together,self.input_file_name, self.measurement[self.index_mess].short_info,[object.short_info for object in self.measurement[self.index_mess].plot_together],errorbars, output_file=self.active_session.temp_dir+'plot_temp.png',fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
+    self.last_plot_text=self.plot(self.active_session, 
+                                  self.measurement[self.index_mess].plot_together,
+                                  self.input_file_name, 
+                                  self.measurement[self.index_mess].short_info,
+                                  [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                                  errorbars, 
+                                  output_file=self.active_session.temp_dir+'plot_temp.png',
+                                  fit_lorentz=self.fit_lorentz,
+                                  add_preferences=self.preferences_file)
     self.set_image()
     self.reset_statusbar()
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
@@ -1275,9 +1440,9 @@ class ApplicationMainWindow(gtk.Window):
     self.statusbar.pop(0)
     self.statusbar.push(0,'')
 
-#--------------Functions for displaying graphs plotting and status infos---------------#
+  #--------------Functions for displaying graphs plotting and status infos---------------#
 
-#+++++++++++++++++++++Functions responsible for menus and toolbar++++++++++++++++++++++#
+  #+++++++++++++++++++++Functions responsible for menus and toolbar++++++++++++++++++++++#
 
   def build_menu(self):
     '''
@@ -1354,7 +1519,7 @@ class ApplicationMainWindow(gtk.Window):
         <menuitem action='ShowPlotparams'/>
       </menu>
       <separator name='static6'/>'''
-  # Menus for column selection created depending on input measurement
+    # Menus for column selection created depending on input measurement
     output=output+'''
       <menu action='xMenu'>
         <menuitem action='x-number'/>
@@ -1377,7 +1542,7 @@ class ApplicationMainWindow(gtk.Window):
     for dimension in self.measurement[self.index_mess].dimensions():
       output=output+"<menuitem action='dy-"+dimension+"'/>"
       self.added_items=self.added_items+(("dy-"+dimension, None,dimension,None,None,self.change),)
-  # allways present stuff and toolbar
+    # allways present stuff and toolbar
     output+='''     </menu>
       <separator name='static7'/>
       <menu action='Profiles'>
@@ -1545,11 +1710,11 @@ class ApplicationMainWindow(gtk.Window):
         print "building menus failed: %s" % ms
 
     
-#---------------------Functions responsible for menus and toolbar----------------------#
+  #---------------------Functions responsible for menus and toolbar----------------------#
 
-#------------------------ ApplicationMainWindow Class ---------------------------------#
+#------------------------- ApplicationMainWindow Class ----------------------------------#
 
-#+++++++++++++++++++++++++++++ PlotProfile Class ++++++++++++++++++++++++++++++++++++++#
+#++++++++++++++++++++++++++++++ PlotProfile Class +++++++++++++++++++++++++++++++++++++++#
 class PlotProfile:
   '''
     Class for storing a profile of plot options for later use.
@@ -1647,4 +1812,4 @@ class PlotProfile:
 
 
 
-#----------------------------- PlotProfile Class --------------------------------------#
+#------------------------------ PlotProfile Class ---------------------------------------#

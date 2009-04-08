@@ -6,7 +6,7 @@
 #                    Script to plot different measurements with gnuplot                         #
 #                  including a graphical user interface and easy andling                        #
 #                                       last changes:                                           #
-#                                        31.03.2008                                             #
+#                                        08.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
@@ -29,17 +29,22 @@
 #                                                                                               #
 #################################################################################################
 
-# importing python modules
+#+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
+# python modules
 import sys
 
-# importing own modules
+# own modules
+# GUI module
 import plotting_gui
-
-#+++++++++++++++++++++++ import specific measurement modules ++++++++++++++++++++++++++++++
+# specific measurement classes
+# parent class
 from plot_generic_data import generic_session
+# derived classes
 from plot_SQUID_data import squid_session
 from plot_4circle_data import circle_session
 from plot_reflectometer_data import reflectometer_session
+#----------------------- importing modules --------------------------
+
 '''
   Dictionary for the known measurement types, to create a new measureing type
   it is only needed to create the seesion class and add it to this dictionary.
@@ -67,20 +72,23 @@ known_measurement_types={
 
 # initialize session and read data files
 if (len(sys.argv) == 1):
+  # if no input parameter given, print the short help string
   print generic_session.short_help
   exit()
-elif sys.argv[1] in known_measurement_types:
+elif sys.argv[1] in known_measurement_types: 
+  # type is found in dictionary, using specific session
   active_session=known_measurement_types[sys.argv[1]](sys.argv[2:])
 else:
+  # type is not found, using generic session
   active_session=generic_session(sys.argv[1:])
 
 
 if active_session.use_gui: # start a new gui session
   import gtk
   plotting_gui.ApplicationMainWindow(active_session)
-  gtk.main()
+  gtk.main() # start GTK engine
 else: # in command line mode, just plot the selected data.
   active_session.plot_all()
 
-# delete temporal stuff
+# delete temporal files and folder
 active_session.os_cleanup()
