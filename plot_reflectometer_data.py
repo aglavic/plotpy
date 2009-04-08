@@ -826,10 +826,11 @@ class reflectometer_session(generic_session):
 
   def call_fit_program(self, file_ent, file_res, file_out, max_iter):
     '''
-      This function calls the fit.f90 program and if it is not
-      compiled, will also do that. The maxint parameter in the
-      fit.f90 code is replaced by the real number of layers.
-      It only startes the sub process, which is returned.
+      This function calls the fit.f90 program and if it is not compiled with 
+      those settings, will compile it with the number of layres present in 
+      the current simulation. For this the maxint parameter in the fit.f90 
+      code is replaced by the real number of layers. It does not wait for the 
+      program to finish, it only startes the sub process, which is returned.
     '''
     code_file=self.script_path + fit_program_code
     exe=self.script_path + fit_program_executible
@@ -844,8 +845,8 @@ class reflectometer_session(generic_session):
       code=open(code_file, 'r').read()
       # compile the program with constants suitable for this dataset
       code_tmp=code.replace('maxint=25', 'maxint='+str(self.fit_object.number_of_layers()+1))
-      code_tmp=code.replace('.and.alamda.le.1.0d10', '.and.alamda.le.1.0d'+str(self.max_alambda))
-      code_tmp=code.replace('.or.alamda.gt.1.0d10', '.or.alamda.gt.1.0d'+str(self.max_alambda))
+      code_tmp=code_tmp.replace('.and.alamda.le.1.0d10', '.and.alamda.le.1.0d'+str(self.max_alambda))
+      code_tmp=code_tmp.replace('.or.alamda.gt.1.0d10', '.or.alamda.gt.1.0d'+str(self.max_alambda))
       tmp_file=open(code_file.split('.f90')[0] + '_tmp.f90', 'w')
       tmp_file.write(code_tmp)
       tmp_file.close()
