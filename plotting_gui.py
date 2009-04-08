@@ -262,6 +262,8 @@ class ApplicationMainWindow(gtk.Window):
     # TODO: toggle logx,y according to active setting
     self.logx=gtk.CheckButton(label='log x', use_underline=True)
     self.logy=gtk.CheckButton(label='log y', use_underline=True)
+    self.logx.set_active(self.measurement[self.index_mess].logx)
+    self.logy.set_active(self.measurement[self.index_mess].logy)
     self.logx.connect("toggled",self.change)
     self.logy.connect("toggled",self.change)
     align_table.attach(self.logx,9,10,0,1,gtk.FILL,gtk.FILL,0,0)
@@ -278,6 +280,7 @@ class ApplicationMainWindow(gtk.Window):
     self.z_range_label=gtk.Label()
     self.z_range_label.set_markup('z-range:')
     self.logz=gtk.CheckButton(label='log z', use_underline=True)
+    self.logz.set_active(self.measurement[self.index_mess].logz)
     self.logz.connect("toggled",self.change)
     # 3d Viewpoint buttons to rotate the view
     self.view_left=gtk.ToolButton(gtk.STOCK_GO_BACK)

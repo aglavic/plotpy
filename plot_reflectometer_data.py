@@ -195,6 +195,8 @@ class reflectometer_session(generic_session):
         dataset.process_funcion(self.counts_to_cps)
         dataset.unit_trans([['counts',1,0,'counts/s']])
       dataset.short_info=' started at Th='+str(round(th,4))+' 2Th='+str(round(twoth,4))+' Phi='+str(round(phi,4))
+      dataset.logx=self.logx
+      dataset.logy=self.logy
       if self.export_for_fit: # export fit files
         self.export_fit(dataset,  filename)
         simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')

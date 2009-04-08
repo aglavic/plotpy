@@ -6,7 +6,7 @@
 #                    Script to plot different measurements with gnuplot                         #
 #                    this is the class used as parent for every session                         #
 #                                       last changes:                                           #
-#                                        31.03.2008                                             #
+#                                        08.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
