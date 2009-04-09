@@ -723,9 +723,10 @@ class reflectometer_session(generic_session):
     status.add_button('Kill Process',1) # button kill has handler_id 1
     status.connect("response", kill_process, self, window)
     status.show_all()
-    sec=0.5
+    status.set_modal(True)
+    sec=0.2
     # speedup by using non global functions
-    clock=time.clock
+    clock=time.time
     start=clock()
     set_title=status.set_title
     set_text=buffer.set_text
@@ -733,8 +734,10 @@ class reflectometer_session(generic_session):
     scroll_to_iter=text_view.scroll_to_iter
     main_iteration=gtk.main_iteration
     file_name=self.temp_dir+'fit_temp.ref'
+    i=0
+    # while the process is running ceep reading the .ref output file
     while proc.poll()==None:
-      if (time.clock()-sec)>=start:
+      if i%10==0: # every 10th loop the file is read
         try:
           file=open(file_name, 'r')
           text=file.read()
@@ -746,14 +749,17 @@ class reflectometer_session(generic_session):
         set_title('Fit status after ' + str(round(clock()-start, 1)) + ' seconds')
         set_text(text)
         scroll_to_iter(get_iter(), 0)
-        sec+=0.5
+        sec+=0.2
         main_iteration(False)
-      else:
+      else: # the other loops just go to the GTK main loop to paint the dialog
         main_iteration(False)
+      i+=1
+    # threading does not work in windows!
     #loop=ProcessLoop()
     #loop.active_session=self
     #loop.start()
     #response=status.run()
+    status.set_modal(False)
     status.destroy()
   
 
