@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 '''
-  gneric session class, parent class for all sessions
+  Gneric session class, parent class for all sessions. This includes commandline argument
+  processing, help text, generic file readout, os specific temp file handling and storing
+  of global variables.
 '''
 #################################################################################################
 #                    Script to plot different measurements with gnuplot                         #
@@ -25,7 +27,7 @@ from gnuplot_preferences import print_command
 class generic_session:
   '''
     This is the class valid the whole session to read the files 
-    and store the measurement data object.
+    and store the measurement data objects.
     It contains the common functions used for every type of data
     plus data reading for space separated common files.
 
@@ -82,10 +84,11 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
 
   #++++++++++++++++++ local variables +++++++++++++++++
   file_data={} # dictionary for the data objects indexed by filename
-  active_file_data=None
-  active_file_name=''
+  active_file_data=None # pointer for the data of the current file
+  active_file_name='' # the name of the current file
   index=0
-  file_wildcards=(('all files', '*'))
+  file_wildcards=(('all files', '*')) # wildcards for the file open dialog of the GUI
+  # known command line options list
   options=['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e', 'logx', 'logy','scp', 'no-trans','help']
   # options:
   use_gui=True # activate graphical user interface
@@ -99,8 +102,9 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   info_in_file=True # write header in output files
   plot_data=True # plot the data (otherwise only convert files)
   plot_with_errorbars=False # use errorbars in plot
-  logx=False
-  logy=False
+  logx=False # plot logarithmic in x direction
+  logy=False # plot logarithmic in y direction
+  # TODO: command line file printing hast to be added.
   print_plot=False # send plots to printer
   unit_transformation=True # make transformations as set in preferences file
   transformations=[] # a list of unit transformations, that will be performed on the data
@@ -198,6 +202,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
           self.unit_transformation=False
         elif argument=='--help':
           return None
+        # evaluate child arguments
         elif self.read_argument_add(argument,  last_argument_option)[0]:
           last_argument_option=self.read_argument_add(argument,  last_argument_option)[1]
         else:
@@ -219,7 +224,9 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
 
   def os_path_stuff(self):
     '''
-      Create the session temp directory
+      Create the session temp directory. Is only called once
+      when initializing the session. Has not been tested in
+      OSX.
     '''
     self.own_pid=str(os.getpid())
     script_path=os.path.dirname(os.path.realpath(__file__))
@@ -243,7 +250,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
 
   def os_cleanup(self):
     '''
-      delete temporal files and folder
+      Delete temporal files and folder.
     '''
     for file_name in os.listdir(self.temp_dir):
       os.remove(self.temp_dir+file_name)
@@ -251,8 +258,9 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
 
   def replace_systemdependent(self, string):
     '''
-      function for path name replacements under windows,
-      in linux this is just a dummi method
+      Function for path name replacements. Only under windows,
+      in linux this is just a dummi method returning the same
+      string.
     '''
     return string
 
@@ -260,19 +268,20 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     '''
       Function which reads one datafile and returns a list
       of measurement_data_structure objects splitted into
-      sequences.
+      sequences. Every child class will overwrite this.
     '''
     data_list=[]
     dataset=None
-    if os.path.exists(filename):
+    if os.path.exists(filename): # Test if the file exists
       input_file_lines=open(filename,'r').readlines()
+      # iterate through all lines and split the columns.
       for line in input_file_lines:
-        if line[0]=='#':
+        if line[0]=='#': # ignore comment lines
           continue
         if (dataset==None and len(line.split())>=2):
           columns=['col-'+str(number) for number in range(len(line.split()))]
           dataset=MeasurementData(columns,[], 0, 1, 2)
-          try:
+          try: # only import numbers
             dataset.append([float(number) for number in line.split()])
           except ValueError:
             print 'Unknown data type in file '+filename+'. Skipped!'
@@ -295,7 +304,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   
   def create_numbers(self, datasets):
     '''
-      give the sequences numbers with leading zeros
+      Give the sequences numbers with leading zeros depending on the
+      number of sequences present in the file.
     '''
     filtered_datasets=[]
     for i, dataset in enumerate(datasets):
@@ -309,15 +319,16 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   
   def make_transformations(self, datasets):
     '''
-      Make unit transformations of a list of datasets
+      Make unit transformations of a list of datasets.
     '''
+    # TODO: Add unit transformation to GUI.
     for dataset in datasets:
       dataset.unit_trans(self.transformations)
 
   def add_data(self, data_list, name, append=True):
     '''
       Function which ither adds file data to the object or replaces
-      all data by a new list.
+      all data by a new dictionary.
     '''
     if not append:
       self.file_data={}
@@ -348,12 +359,12 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
 
   def next(self): 
     ''' 
-      function to iterate through the file_data dictionary, object can be used in "for name in data:"
-      also changes the active_file_data and active_file_name
+      Function to iterate through the file_data dictionary. Object can be used in "for name in data:".
+      Also changes the active_file_data and active_file_name.
     '''
     name_list=[item[0] for item in self.file_data.items()]
     name_list.sort()
-    if self.index == len(name_list):
+    if self.index == len(name_list): # after last stop iteration and go to first again
       self.index=0
       raise StopIteration
     self.index=self.index+1
@@ -363,7 +374,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
 
   def plot_active(self):
     '''
-      Plots the active datasets
+      Plots the active datasets.
     '''
     if not self.single_picture:
       for dataset in self.active_file_data:
@@ -373,7 +384,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
 
   def plot_all(self):
     '''
-      plot everything selected from all files
+      Plot everything selected from all files.
     '''
     for name in self:
       print "Plotting '"+ name +"' sequences."
@@ -381,8 +392,9 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   
   def plot(self, datasets, file_name_prefix, title, names):
     '''
-      Plot one or a list of datasets
+      Plot one or a list of datasets.
     '''
+    # TODO: Use one plot function for GUI and script mode.
     if len(datasets)>1:
       add_info='multi_'
     else:
@@ -397,7 +409,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
 
   def change_active(self, object=None, name=None):
     '''
-      change the active dataset by object or name
+      Change the active data file by object or name.
     '''
     name_list=[item[0] for item in self.file_data.items()]
     name_list.sort()
@@ -417,6 +429,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   
   def create_menu(self):
     '''
-      create a specifig menu for the session
+      Create a specifig menu for the session. Only child classes
+      will add anything here.
     '''
     return '',  ()
