@@ -98,7 +98,7 @@ class reflectometer_session(generic_session):
     self.transformations=reflectometer_preferences.transformations
     generic_session.__init__(self, arguments)
     # initialize the GTK thread engine used in show_result_window
-    gtk.gdk.threads_init()    
+    #gtk.gdk.threads_init()    
     
   
   def read_argument_add(self, argument, last_argument_option=[False, '']):
@@ -689,11 +689,7 @@ class reflectometer_session(generic_session):
     if self.fit_object.fit!=1: # if this is not a fit just wait till finished
       stderr_value = proc.communicate()[1]
     else:
-      response=self.open_status_dialog()
-      if response==1: # if the process is abborted, plot without fit
-        proc.kill()
-        self.fit_object.fit=0
-        self.dialog_fit(action, window)
+      self.open_status_dialog(window)
     simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
     simu.number='1'+dataset.number
     simu.short_info='simulation'
@@ -701,12 +697,16 @@ class reflectometer_session(generic_session):
     dataset.plot_together=[dataset, simu]
     window.replot()
 
-  def open_status_dialog(self):
+  def open_status_dialog(self, window):
     '''
       when fit process is started, create a window with
       status informations and a kill button
     '''
-    global status, text_view
+    def kill_process(action, response, session, window):
+      if response==1: # if the process is abborted, plot without fit
+        proc.kill()
+        session.fit_object.fit=0
+        session.dialog_fit(action, window)      
     status=gtk.Dialog(title='Fit status after 0 seconds')
     text_view=gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview. 
@@ -721,14 +721,40 @@ class reflectometer_session(generic_session):
     status.vbox.add(sw) # add table to dialog box
     status.set_default_size(500,450)
     status.add_button('Kill Process',1) # button kill has handler_id 1
-    #status.connect("response", lambda *w: proc.terminate())
+    status.connect("response", kill_process, self, window)
     status.show_all()
-    loop=ProcessLoop()
-    loop.active_session=self
-    loop.start()
-    response=status.run()
+    sec=0.5
+    # speedup by using non global functions
+    clock=time.clock
+    start=clock()
+    set_title=status.set_title
+    set_text=buffer.set_text
+    get_iter=buffer.get_end_iter
+    scroll_to_iter=text_view.scroll_to_iter
+    main_iteration=gtk.main_iteration
+    file_name=self.temp_dir+'fit_temp.ref'
+    while proc.poll()==None:
+      if (time.clock()-sec)>=start:
+        try:
+          file=open(file_name, 'r')
+          text=file.read()
+          file.close()
+          if text=='':
+            text='Empty .ref file.'
+        except:
+          text='Empty .ref file.'
+        set_title('Fit status after ' + str(round(clock()-start, 1)) + ' seconds')
+        set_text(text)
+        scroll_to_iter(get_iter(), 0)
+        sec+=0.5
+        main_iteration(False)
+      else:
+        main_iteration(False)
+    #loop=ProcessLoop()
+    #loop.active_session=self
+    #loop.start()
+    #response=status.run()
     status.destroy()
-    return response
   
 
   def change_scattering_length(self, action, SL_selector, layer, delta, d_over_b, layer_title, layer_index, substrate):
@@ -921,7 +947,7 @@ class reflectometer_session(generic_session):
     ent_file.close()
     proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',20)
     retcode = proc.communicate()
-    paramerters, errors=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)
+    parameters, errors=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)
     self.fit_object.scaling_factor=parameters[self.fit_object.fit_params[0]]
     self.fit_object.fit=0
     return retcode

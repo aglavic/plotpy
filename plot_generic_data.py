@@ -242,7 +242,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       self.script_path=script_path + '\\'
       # name of the gnuplot command under windows
       self.gnuplot_command="pgnuplot"
-      def replace_systemdependent(self, string): # replace backthlash by double backthlash for gnuplot under windows
+      def replace_systemdependent( string): # replace backthlash by double backthlash for gnuplot under windows
         return string.replace('\\','\\\\').replace('\\\\\n','\\\n')
       self.replace_systemdependent=replace_systemdependent
     self.temp_dir=self.temp_dir+'plottingscript-'+self.own_pid+os.sep
@@ -378,7 +378,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     '''
     if not self.single_picture:
       for dataset in self.active_file_data:
-        self.plot([dataset], self.active_file_name, dataset.short_info, [''])
+        self.plot(dataset.plot_together, self.active_file_name, dataset.short_info, ['' for i in range(len(dataset.plot_together))])
     else:
       self.plot(self.active_file_data, self.active_file_name, '', [dataset.short_info for dataset in self.active_file_data])
 

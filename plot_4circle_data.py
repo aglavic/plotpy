@@ -2,6 +2,9 @@
 '''
   class for 4 circle data sessions
 '''
+# FIXME: read mesh data
+# FIXME: sample infos
+# TODO: fit psd.Voigt
 #################################################################################################
 #                     Script to plot 4Circle-measurements with gnuplot                          #
 #                                       last changes:                                           #

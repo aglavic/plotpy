@@ -40,7 +40,7 @@ def gnuplot_plot(session, datasets,file_name_prefix, title,names,with_errorbars,
   else:
     plotting_param=str(gp.plotting_parameters)
   plotting_param=replace_ph(session, plotting_param,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info) # replace place holders
-  gplot=Gnuplot.Gnuplot(persist=1) # if term is x11 the plot will not close
+  gplot=Gnuplot.Gnuplot() # if term is x11 the plot will not close
   gnuplot_settings=gp.gnuplot_file_head+\
   'set term '+terminal+'\n'+\
   'set output "'+output_file+'"\n'+\
