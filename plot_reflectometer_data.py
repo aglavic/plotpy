@@ -174,7 +174,7 @@ class reflectometer_session(generic_session):
       corrections and fiting are performed here, too.  
     '''
     datasets=generic_session.add_file(self, filename, append)
-    refinements=[]
+    #refinements=[]
     for dataset in datasets:
       self.time_col=1
       th=0
@@ -200,13 +200,13 @@ class reflectometer_session(generic_session):
       if self.export_for_fit: # export fit files
         self.export_fit(dataset,  filename)
         simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
-        simu.number='1'+dataset.number
+        simu.number='sim_'+dataset.number
         simu.short_info='simulation'
         simu.sample_name=dataset.sample_name
-        refinements.append(simu)
+        #refinements.append(simu)
         dataset.plot_together=[dataset, simu]
-    if self.export_for_fit: # export fit files
-      self.add_data(refinements, filename+"_simulation")
+    #if self.export_for_fit: # export fit files
+     # self.add_data(refinements, filename+"_simulation")
 
 
 
@@ -691,7 +691,7 @@ class reflectometer_session(generic_session):
     else:
       self.open_status_dialog(window)
     simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
-    simu.number='1'+dataset.number
+    simu.number='sim_'+dataset.number
     simu.short_info='simulation'
     simu.sample_name=dataset.sample_name
     dataset.plot_together=[dataset, simu]
@@ -702,11 +702,22 @@ class reflectometer_session(generic_session):
       when fit process is started, create a window with
       status informations and a kill button
     '''
-    def kill_process(action, response, session, window):
+    def status_response(action, response, session, window):
       if response==1: # if the process is abborted, plot without fit
         proc.kill()
         session.fit_object.fit=0
-        session.dialog_fit(action, window)      
+        session.dialog_fit(action, window)
+      elif response==2:
+        replot_present(session, window)
+      
+    def replot_present(session, window):
+      dataset=window.measurement[window.index_mess]        
+      simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
+      simu.number='sim_'+dataset.number
+      simu.short_info='simulation'
+      simu.sample_name=dataset.sample_name
+      dataset.plot_together=[dataset, simu]
+      window.replot()      
     status=gtk.Dialog(title='Fit status after 0 seconds')
     text_view=gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview. 
@@ -720,40 +731,37 @@ class reflectometer_session(generic_session):
     sw.add(text_view) # add textbuffer view widget
     status.vbox.add(sw) # add table to dialog box
     status.set_default_size(500,450)
+    status.add_button('Plot present simulation',2) # button kill has handler_id 2
     status.add_button('Kill Process',1) # button kill has handler_id 1
-    status.connect("response", kill_process, self, window)
+    status.connect("response", status_response, self, window)
     status.show_all()
     status.set_modal(True)
     sec=0.2
-    # speedup by using non global functions
-    clock=time.time
-    start=clock()
-    set_title=status.set_title
-    set_text=buffer.set_text
-    get_iter=buffer.get_end_iter
-    scroll_to_iter=text_view.scroll_to_iter
+    start=time.time()
     main_iteration=gtk.main_iteration
     file_name=self.temp_dir+'fit_temp.ref'
     i=0
     # while the process is running ceep reading the .ref output file
+    file=open(file_name, 'r')
     while proc.poll()==None:
       if i%10==0: # every 10th loop the file is read
         try:
-          file=open(file_name, 'r')
+          file.seek(0)
           text=file.read()
-          file.close()
           if text=='':
             text='Empty .ref file.'
         except:
           text='Empty .ref file.'
-        set_title('Fit status after ' + str(round(clock()-start, 1)) + ' seconds')
-        set_text(text)
-        scroll_to_iter(get_iter(), 0)
+        status.set_title('Fit status after ' + str(round(time.time()-start, 1)) + ' seconds')
+        if buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())!=text:
+          buffer.set_text(text)
+          text_view.scroll_to_iter(buffer.get_end_iter(), 0)
         sec+=0.2
         main_iteration(False)
       else: # the other loops just go to the GTK main loop to paint the dialog
         main_iteration(False)
       i+=1
+    file.close()
     # threading does not work in windows!
     #loop=ProcessLoop()
     #loop.active_session=self
@@ -1278,8 +1286,12 @@ class fit_parameter:
         fit_cons+=new_con
       else:
         con_index+=4
-    self.constrains=fit_cons
-      
+    self.constrains=[]
+    # remove constrains not importent for the fitted parameters
+    for constrain in fit_cons:
+      if constrain[0] in self.fit_params:
+        self.constrains.append(constrain)
+
   def copy(self):
     '''
       create a copy of this object

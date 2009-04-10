@@ -12,6 +12,7 @@ program fit_logspecrefgauss
     common/const2/mfit
     common/ida/ida(map),icons,ii(map)
     common/cal/theta_max,width,rnorm
+    common/file/res_output_file
 
   !! to avoid new compiling for every file, commandline options from
     call getarg(1,ent_file)
@@ -25,7 +26,7 @@ program fit_logspecrefgauss
       read(maximum_iterations,*) maximum_iter
   endif
   open(5,file=ent_file)
-  open(8,file=res_output_file)
+  open(8,file=res_output_file, ACCESS='SEQUENTIAL', FORM='FORMATTED')
 
      read (5,*) energy
      lambda=12398.4d0/energy
@@ -163,6 +164,8 @@ program fit_logspecrefgauss
        write(8,*)
        chisq0=chisq
        call mrqmin (x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda,ochisq_extern)
+       close(8)
+       open(8,file=res_output_file, ACCESS='APPEND', FORM='FORMATTED')       
        write(8,*)
        write(8,*) 'kept parameters :'
        np=0
@@ -237,25 +240,25 @@ program fit_logspecrefgauss
 !!$       do i=1,mfit
 !!$         write(8,500) (covar(lista(i),lista(j)),j=1,mfit)
 !!$       enddo
-     open(4,file='param')
-     np=0
-     do i=2,nint
-       write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
-       write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
-       write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
-       write(4,100) np+4,' ',a(np+4),' +/- ',dsqrt(covar(np+4,np+4))*chi
-       np=np+4
-       write(4,*)
-     enddo
-     write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
-     write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
-     write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
-     np=np+3
-     write(4,*)
-     write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
-     write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
-     write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
-     close(4)
+    ! open(4,file='param')
+    ! np=0
+    ! do i=2,nint
+    !   write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
+    !   write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
+    !   write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
+    !   write(4,100) np+4,' ',a(np+4),' +/- ',dsqrt(covar(np+4,np+4))*chi
+    !   np=np+4
+    !   write(4,*)
+    ! enddo
+    ! write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
+    ! write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
+    ! write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
+    ! np=np+3
+    ! write(4,*)
+    ! write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
+    ! write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
+    ! write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
+    ! close(4)
      else
        write(8,*) 'not enough iterations, iter=',iter
      endif
@@ -463,7 +466,12 @@ program fit_logspecrefgauss
       parameter(ndatap=10000)
       dimension x(ndatap),y(ndatap),sig(ndatap),a(map),lista(map),covar(map,map)
       dimension alpha(map,map),atry(map),beta(map),da(map),oneda(map,1)
+      character*128 res_output_file
       common/ninterf/nint
+      common/file/res_output_file
+
+      close(8)
+      open(8,file=res_output_file, ACCESS='APPEND', FORM='FORMATTED')             
       if(alamda.lt.0.d0) then
         kk=mfit+1
         do 12 j=1,ma
@@ -481,6 +489,8 @@ program fit_logspecrefgauss
         if (kk.ne.(ma+1)) write(*,*) 'mrqmin : improper permutation in lista'
         alamda=0.001d0
         write(8,*) 'begin of first mrqcof in mrqmin'
+        close(8)
+        open(8,file=res_output_file, ACCESS='APPEND', FORM='FORMATTED')             
         call mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
         write(8,*) 'end of first mrqcof in mrqmin'
         ochisq=chisq
@@ -508,6 +518,8 @@ program fit_logspecrefgauss
       endif
       if(alamda.eq.0.d0) then
         write(8,*) 'begin of second mrqcof in mrqmin'
+        close(8)
+        open(8,file=res_output_file, ACCESS='APPEND', FORM='FORMATTED')               
         call mrqcof(x,y,sig,ndata,atry,ma,lista,mfit,covar,da,chisq,alamda)
         write(8,*) 'end of second mrqcof in mrqmin'
         do j=1,mfit
@@ -539,6 +551,8 @@ program fit_logspecrefgauss
       enddo
       write(8,*)
       write(8,*) 'begin of third mrqcof in mrqmin'
+      close(8)
+      open(8,file=res_output_file, ACCESS='APPEND', FORM='FORMATTED')       
       call mrqcof(x,y,sig,ndata,atry,ma,lista,mfit,covar,da,chisq,alamda)
       write(8,*) 'end of third mrqcof in mrqmin'
       if (chisq.lt.ochisq) then
@@ -677,8 +691,11 @@ program fit_logspecrefgauss
       dimension x(ndatap),y(ndatap),sig(ndatap),alpha(map,map),beta(map),lista(map),a(map)
       dimension dyda(map,ndatap)
       dimension dydap(map,ndatap)
+      character*128 res_output_file
       common/valder/ymod(ndatap),yplus(map,ndatap),da(map),dyda1(map,ndatap)
       common/ida/ida(map),icons,ii(map)
+      common/file/res_output_file
+      
       do 12 j=1,mfit
         do 11 k=1,j
           alpha(j,k)=0.d0
@@ -700,10 +717,12 @@ program fit_logspecrefgauss
             dyda1(lista(j),i)=(yplus(lista(j),i)-ymod(i))/(da(j)/2.d0)
           enddo
           a(lista(j))=a(lista(j))-da(j)/2.d0
-10      continue        
+10      continue   
         write(8,*) 'dyda s before the constraints'
         do 13 j=1,mfit
           write(8,*) lista(j),dyda1(lista(j),1),dyda1(lista(j),ndata+1)
+        close(8)
+        open(8,file=res_output_file, ACCESS='APPEND', FORM='FORMATTED')       
 13      continue
       else
         do 8 i=1,ndata
