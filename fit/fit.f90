@@ -126,11 +126,10 @@ program fit_logspecrefgauss
     write(8,*)
     close(5)
 
-    ochisq_extern=1.d0 ! workaround for global ochisq
     alamda=-1.d0
     iter=0
     write(8,*) 'iter=',iter,' alamda=',alamda
-    call mrqmin (x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda,ochisq_extern)
+    call mrqmin (x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
     write(8,*) 'kept parameters :'
     np=0
     do i=2,nint
@@ -163,7 +162,7 @@ program fit_logspecrefgauss
         write(8,*) 'iter=',iter,' itest=',itest,' alamda=',alamda
         write(8,*)
         chisq0=chisq
-        call mrqmin (x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda,ochisq_extern)
+        call mrqmin (x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
         close(8)
         open(8,file=res_output_file, ACCESS='APPEND', FORM='FORMATTED')       
         write(8,*)
@@ -211,7 +210,7 @@ program fit_logspecrefgauss
 88  if (iter.lt.1000) then
         alamda=0.d0
         write(8,*) 'itest=',itest,' alamda=',alamda
-        call mrqmin (x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda,ochisq_extern)
+        call mrqmin (x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
         write(8,*) 'list of parameters:'
         write(8,*) 'chi2= ',chisq
         chi=dsqrt(chisq/dfloat(ndata-mfit+icons))
@@ -466,7 +465,7 @@ function gauss(x)
 end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda,ochisq)
+subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
     implicit real*8 (a-h,o-z)
     parameter (maxint=25,map=4*maxint+3)
     parameter(ndatap=10000)
@@ -475,6 +474,8 @@ subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda,ochisq)
     character*128 res_output_file
     common/ninterf/nint
     common/file/res_output_file
+    common/global_maps/atry,beta,da,oneda
+    common/global_ochisq/ochisq
 
     close(8)
     open(8,file=res_output_file, ACCESS='APPEND', FORM='FORMATTED')             
@@ -733,29 +734,29 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
             open(8,file=res_output_file, ACCESS='APPEND', FORM='FORMATTED')       
 13      continue
     else
-        !! FIXME: Error with double loop
-        do 8 i=1,ndata
+        do i=1,ndata
             ymod(i)=dexp(dlog(10.d0)*ymod(i))
-            do 8 j=1,mfit
+            do j=1,mfit
                 yplus(lista(j),i)=dexp(dlog(10.d0)*yplus(lista(j),i))
                 dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/(da(j)/2.d0)
-8       continue
+            enddo
+        enddo
     endif
-    !! FIXME: Error with double loop
     if(icons.eq.0.and.alamda.ne.0.d0) then
-        do 9 j=1,mfit
-            do 9 i=1,ndata
-            dyda(lista(j),i)=dyda1(lista(j),i)
-9       continue
+        do j=1,mfit
+            do i=1,ndata
+                dyda(lista(j),i)=dyda1(lista(j),i)
+            enddo
+        enddo
     endif
 
     ! taking into account the constraints :
     if(icons.gt.0.and.alamda.ne.0.d0) then
-        !! FIXME: Error with double loop
-        do 5 j=1,mfit
-            do 5 i=1,ndata
-            dydap(lista(j),i)=dyda1(lista(j),i)
-5       continue
+        do j=1,mfit
+            do i=1,ndata
+                dydap(lista(j),i)=dyda1(lista(j),i)
+            enddo
+        enddo
         do 4 j=1,mfit
             ncons=0
             do 3 k=1,icons
@@ -764,23 +765,23 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
                         do i=1,ndata
                             dydap(lista(j),i)=0.d0
                         enddo
-                        !! FIXME: Error with double loop
-                        do 1 m=1,ii(k)
+                        do m=1,ii(k)
                             !                  write(8,*) 'lista(j),ida(ncons+m)=',lista(j),ida(ncons+m)
-                            do 1 i=1,ndata
-                            dydap(lista(j),i)=dydap(lista(j),i)+dyda1(ida(ncons+m),i)/ii(k)*1.d0
-1                       continue
+                            do i=1,ndata
+                                dydap(lista(j),i)=dydap(lista(j),i)+dyda1(ida(ncons+m),i)/ii(k)*1.d0
+                            enddo
+                        enddo
                         goto 4
                     endif
 2               continue
                 ncons=ncons+ii(k)
 3           continue
 4       continue
-        !! FIXME: Error with double loop
-        do 6 j=1,mfit
-            do 6 i=1,ndata
+        do j=1,mfit
+            do i=1,ndata
                 dyda(lista(j),i)=dydap(lista(j),i)
-6       continue
+            enddo
+        enddo
         write(8,*) 'new dyda s after taking into account the constraints'
         do 7 j=1,mfit
             write(8,*) lista(j),dyda(lista(j),1),dyda(lista(j),ndata+1)
@@ -814,12 +815,11 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
             chisq=chisq+dy*dy*sig2i
 23      continue
     endif
-    !! FIXME: Error with double loop
-    do 17 j=2,mfit
-        do 17 k=1,j-1
+    do j=2,mfit
+        do k=1,j-1
             alpha(k,j)=alpha(j,k)
-    17    continue
-
+        enddo
+    enddo
     write(8,*) 'end of mrqcof'
     return
 end

@@ -742,16 +742,24 @@ class reflectometer_session(generic_session):
     file_name=self.temp_dir+'fit_temp.ref'
     i=0
     # while the process is running ceep reading the .ref output file
-    file=open(file_name, 'r')
+    try:
+      file=open(file_name, 'r')
+    except:
+      file=None
+      text='Empty .ref file.'
     while proc.poll()==None:
       if i%10==0: # every 10th loop the file is read
-        try:
+        if file==None:
+          try:
+            file=open(file_name, 'r')
+          except:
+            file=None
+            text='Empty .ref file.'
+        else:
           file.seek(0)
           text=file.read()
           if text=='':
             text='Empty .ref file.'
-        except:
-          text='Empty .ref file.'
         status.set_title('Fit status after ' + str(round(time.time()-start, 1)) + ' seconds')
         if buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())!=text:
           buffer.set_text(text)
