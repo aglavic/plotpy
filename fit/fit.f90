@@ -170,12 +170,12 @@ program fit_logspecrefgauss
         write(8,*) 'kept parameters :'
         np=0
         do i=2,nint
-        write(8,*) np+1,' ',a(np+1)
-        write(8,*) np+2,' ',a(np+2)
-        write(8,*) np+3,' ',a(np+3)
-        write(8,*) np+4,' ',a(np+4)
-        np=np+4
-        write(8,*)
+            write(8,*) np+1,' ',a(np+1)
+            write(8,*) np+2,' ',a(np+2)
+            write(8,*) np+3,' ',a(np+3)
+            write(8,*) np+4,' ',a(np+4)
+            np=np+4
+            write(8,*)
         enddo
         write(8,*) np+1,' ',a(np+1)
         write(8,*) np+2,' ',a(np+2)
@@ -188,9 +188,9 @@ program fit_logspecrefgauss
         write(8,*)
         open(9,file=sim_output_file)
         do i=1,1000
-        xx=x(ndata)*i/1000.d0
-        yy=refconv(xx,a)
-        write(9,*) xx,' ',yy
+            xx=x(ndata)*i/1000.d0
+            yy=refconv(xx,a)
+            write(9,*) xx,' ',yy
         enddo
         close(9)
         !       chi=dsqrt(chisq/dfloat(ndata-mfit+icons))
@@ -202,78 +202,78 @@ program fit_logspecrefgauss
         ! this was chisq.ge.chisq0 resulting in very long iterations
         ! don't know if this is correct too
         if (chisq.ge.chisq0.and.alamda.le.1.0d10) then
-        itest=0
+            itest=0
         else if (dchisq.le.1.0d-2.or.alamda.gt.1.0d10) then
-        itest=itest+1
+            itest=itest+1
         endif
         if (itest.eq.5) goto 88
 10  continue
-    88   if (iter.lt.1000) then
-    alamda=0.d0
-    write(8,*) 'itest=',itest,' alamda=',alamda
-    call mrqmin (x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda,ochisq_extern)
-    write(8,*) 'list of parameters:'
-    write(8,*) 'chi2= ',chisq
-    chi=dsqrt(chisq/dfloat(ndata-mfit+icons))
-    write(8,*) 'normalized chi= ',chi
-    write(8,*) 'fit obtained in ', iter,' iterations'
-    write(8,*) 'list of parameters with uncertaincies multiplied by morm. chi :'
-    np=0
-    do i=2,nint
-    write(8,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
-    write(8,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
-    write(8,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
-    write(8,100) np+4,' ',a(np+4),' +/- ',dsqrt(covar(np+4,np+4))*chi
-    np=np+4
-    write(8,*)
-    enddo
-    write(8,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
-    write(8,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
-    write(8,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
-    np=np+3
-    write(8,*)
-    write(8,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
-    write(8,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
-    write(8,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
-    !!$       write(8,*)
-    !!$       write(8,*) 'covariance matrix :' 
-    !!$       do i=1,mfit
-    !!$         write(8,500) (covar(lista(i),lista(j)),j=1,mfit)
-    !!$       enddo
-    ! open(4,file='param')
-    ! np=0
-    ! do i=2,nint
-    !   write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
-    !   write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
-    !   write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
-    !   write(4,100) np+4,' ',a(np+4),' +/- ',dsqrt(covar(np+4,np+4))*chi
-    !   np=np+4
-    !   write(4,*)
-    ! enddo
-    ! write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
-    ! write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
-    ! write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
-    ! np=np+3
-    ! write(4,*)
-    ! write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
-    ! write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
-    ! write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
-    ! close(4)
+88  if (iter.lt.1000) then
+        alamda=0.d0
+        write(8,*) 'itest=',itest,' alamda=',alamda
+        call mrqmin (x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda,ochisq_extern)
+        write(8,*) 'list of parameters:'
+        write(8,*) 'chi2= ',chisq
+        chi=dsqrt(chisq/dfloat(ndata-mfit+icons))
+        write(8,*) 'normalized chi= ',chi
+        write(8,*) 'fit obtained in ', iter,' iterations'
+        write(8,*) 'list of parameters with uncertaincies multiplied by morm. chi :'
+        np=0
+        do i=2,nint
+            write(8,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
+            write(8,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
+            write(8,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
+            write(8,100) np+4,' ',a(np+4),' +/- ',dsqrt(covar(np+4,np+4))*chi
+            np=np+4
+            write(8,*)
+        enddo
+        write(8,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
+        write(8,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
+        write(8,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
+        np=np+3
+        write(8,*)
+        write(8,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
+        write(8,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
+        write(8,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
+        !!$       write(8,*)
+        !!$       write(8,*) 'covariance matrix :' 
+        !!$       do i=1,mfit
+        !!$         write(8,500) (covar(lista(i),lista(j)),j=1,mfit)
+        !!$       enddo
+        ! open(4,file='param')
+        ! np=0
+        ! do i=2,nint
+        !   write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
+        !   write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
+        !   write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
+        !   write(4,100) np+4,' ',a(np+4),' +/- ',dsqrt(covar(np+4,np+4))*chi
+        !   np=np+4
+        !   write(4,*)
+        ! enddo
+        ! write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
+        ! write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
+        ! write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
+        ! np=np+3
+        ! write(4,*)
+        ! write(4,100) np+1,' ',a(np+1),' +/- ',dsqrt(covar(np+1,np+1))*chi
+        ! write(4,100) np+2,' ',a(np+2),' +/- ',dsqrt(covar(np+2,np+2))*chi
+        ! write(4,100) np+3,' ',a(np+3),' +/- ',dsqrt(covar(np+3,np+3))*chi
+        ! close(4)
     else
-    write(8,*) 'not enough iterations, iter=',iter
+        write(8,*) 'not enough iterations, iter=',iter
     endif
-    100  format(10x,i3,a1,f13.5,a5,f13.5)
-    500  format(50f10.5)
+100 format(10x,i3,a1,f13.5,a5,f13.5)
+500 format(50f10.5)
     write(8,*)
     write(8,*) 'results generated with program "fit_logspecrefgauss.f90"'   
 
 
-    77   close(8)
+77  close(8)
     open(9,file=sim_output_file)
     do i=1,1000
-    xx=x(ndata)*i/1000.d0
-    yy=refconv(xx,a)
-    write(9,*) xx,' ',yy
+        xx=x(ndata)*i/1000.d0
+        yy=refconv(xx,a)
+        write(9,*) xx,' ',yy
     enddo
     close(9)
 end
