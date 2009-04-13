@@ -4,7 +4,7 @@
 '''
 # FIXME: read mesh data
 # FIXME: sample infos
-# TODO: fit psd.Voigt
+# TODO: fit psd.bVoigt
 #################################################################################################
 #                     Script to plot 4Circle-measurements with gnuplot                          #
 #                                       last changes:                                           #
