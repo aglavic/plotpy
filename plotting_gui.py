@@ -887,6 +887,10 @@ class ApplicationMainWindow(gtk.Window):
     table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0);
     # errors of the last plot
     if self.last_plot_text!='':
+      # Label
+      label=gtk.Label()
+      label.set_markup('Error during execution:')
+      table.attach(label, 0, 1, 2, 3, 0, 0, 0, 0);
       sw = gtk.ScrolledWindow()
       # Set the adjustments for horizontal and vertical scroll bars.
       # POLICY_AUTOMATIC will automatically decide whether you need
@@ -895,7 +899,7 @@ class ApplicationMainWindow(gtk.Window):
       text_filed=gtk.Label()
       text_filed.set_markup(self.last_plot_text)
       sw.add_with_viewport(text_filed) # add textbuffer view widget
-      table.attach(sw, 0, 1, 2, 3, gtk.EXPAND|gtk.FILL, gtk.FILL, 0, 0);
+      table.attach(sw, 0, 1, 3, 4, gtk.EXPAND|gtk.FILL, gtk.FILL, 0, 0);
     param_dialog.vbox.add(table)
     param_dialog.show_all()
     # connect dialog to main window

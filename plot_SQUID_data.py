@@ -172,11 +172,10 @@ class squid_session(generic_session):
         dataset.para_corrected=True
       else:
         dataset.para_corrected=False
-      dataset.logx=self.logx
-      dataset.logy=self.logy
       # name the dataset
       constant_type=dataset.unit_trans_one(dataset.type(),SQUID_preferences.transformations_const)        
       dataset.short_info='at %d ' % constant_type[0]+constant_type[1] # set short info as the value of the constant column
+    return datasets
 
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++

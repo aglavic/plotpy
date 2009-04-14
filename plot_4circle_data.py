@@ -111,6 +111,7 @@ class circle_session(generic_session):
         dataset.short_info=dataset.xdim()+dataset.ydim()+' mesh at '+hkl[0]+ ','+hkl[1]+ ','+ hkl[2]
       else:
         dataset.short_info=dataset.xdim()+' scan at '+hkl[0] +','+ hkl[1]+ ','+hkl[2]
+    return datasets
 
   def create_menu(self):
     '''

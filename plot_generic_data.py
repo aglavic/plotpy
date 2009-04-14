@@ -152,9 +152,19 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
         print "You have to install pygtk to run in GUI-mode, falling back to command-line mode!"
         self.use_gui=False
     files.sort()
+    remove=[]
     #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
     for filename in files:
-      self.add_file(filename)
+      if self.add_file(filename)==[]:
+        # if a file is empty or a reading error occures remove it.
+        remove.append(filename)
+    for rem in remove:
+      files.remove(rem)
+
+    if len(files) == 0: # show help, if there is no valid file in the list
+      print "No valid datafile found!"
+      print self.short_help
+      exit()
     self.active_file_data=self.file_data[files[0]]
     self.active_file_name=files[0]
     #---------------- class consturction over ---------------------
@@ -354,6 +364,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     '''
     print "Trying to import '" + filename + "'."
     datasets=self.read_file(filename)
+    if datasets=='NULL':
+      return []
     datasets=self.create_numbers(datasets) # enumerate the sequences and sort out unselected
     if self.unit_transformation:
       self.make_transformations(datasets) # make unit transformations

@@ -114,7 +114,7 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #r
     if (i+1)%10000==0:
       procent=float(i)/count_lines*100.
       sys.stdout.write('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b'+\
-                        'Reading progress [%%]: % 2d' % procent)
+                        'Reading progress [%%]: %3d' % procent)
       sys.stdout.flush()
     next_data=read_data_line(line, columns)
     if next_data != 'NULL':
@@ -143,6 +143,10 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #r
     else:
       output.append(data)
       return output
+  if count_lines>10000:
+    sys.stdout.write('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b'+\
+                    'Done!                                              \n')
+    sys.stdout.flush()
   output.append(data)
   return output
 
