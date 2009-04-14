@@ -26,7 +26,6 @@ import gnuplot_preferences #            File containing variables:
 def gnuplot_plot(session, datasets,file_name_prefix, title,names,with_errorbars,output_file=gnuplot_preferences.output_file_name,additional_info='',fit_lorentz=False,add_preferences=''):
   gp=gnuplot_preferences
   import Gnuplot
-  
   sample_name=datasets[0].sample_name
   file_numbers=[dataset.number for dataset in datasets]
   if output_file.rsplit('.',1)[1]=='ps': # Determine which terminal to use depending on filename suffix
@@ -111,7 +110,10 @@ def gnuplot_plot(session, datasets,file_name_prefix, title,names,with_errorbars,
       plot=[Gnuplot.PlotItems.Data(datalist,with_=str(plotting_param.replace('w ','',1)),title=names[datasets.index(dataset)])]
     gplot._add_to_queue(plot)
   gplot.refresh()
-  return gnuplot_settings#replace_ph(output_file,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info)
+  gplot.close()
+  # read stdout and stderr from gnuplot
+  output=(session.gnuplot_output[0].read(), session.gnuplot_output[1].read())
+  return unicode(output[1]) # return the stderror
 
 '''
     Function to plot with an additional data and gnuplot file and calling to the gnuplot program
@@ -139,8 +141,8 @@ def gnuplot_plot_script(session,  datasets,file_name_prefix, file_name_postfix, 
                       stderr=subprocess.PIPE,
                       stdout=subprocess.PIPE, 
                       )
-  stderr_value = proc.communicate()[1]
-  return stderr_value # return the standard error output
+  output = proc.communicate()
+  return output[1] # return the standard error output
 
 def replace_ph(session, string,datasets,file_name_prefix, file_numbers, title,names,sample_name,number,postscript_export=False,additional_info=''): # replace place holders in string
   gp=gnuplot_preferences

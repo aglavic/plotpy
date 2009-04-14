@@ -59,6 +59,32 @@ known_measurement_types={
                          'refl': reflectometer_session, 
                          }
 
+  
+class RedirectOutput:
+  '''
+    Class to redirect the all print statements when useing the GUI.
+  '''
+  def __init__(self, plotting_session):
+    '''Class consturctor.'''
+    self.content = []
+    self.plotting_session=plotting_session
+    #self.gtk=gtk
+
+  def write(self, string):
+    '''Add content.'''
+    string=string.replace('\b', '')
+    self.content.append(string)
+    while '\n' in self.content:
+      self.content.remove('\n')
+    if (len(string.splitlines())>0) and string.splitlines()[-1]!='':
+      self.plotting_session.statusbar.push(0, string.splitlines()[-1])
+  
+  def flush(self):
+    '''Show last content line in statusbar.'''
+    if (len(self.content)>0):
+      self.plotting_session.statusbar.push(0, self.content[-1])
+      gtk.main_iteration(False)
+
 
 
 '''
@@ -85,7 +111,12 @@ else:
 
 if active_session.use_gui: # start a new gui session
   import gtk
-  plotting_gui.ApplicationMainWindow(active_session)
+  plotting_session=plotting_gui.ApplicationMainWindow(active_session)
+  # redirect script output to session objects
+  active_session.stdout=RedirectOutput(plotting_session)
+  active_session.stderr=RedirectOutput(plotting_session)
+  sys.stdout=active_session.stdout
+  sys.stderr=active_session.stderr  
   gtk.main() # start GTK engine
 else: # in command line mode, just plot the selected data.
   active_session.plot_all()

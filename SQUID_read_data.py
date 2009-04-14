@@ -113,7 +113,8 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #r
   for i,line in enumerate(input_file_lines): # append data from one sequence to the object or create new object for the next sequence
     if (i+1)%10000==0:
       procent=float(i)/count_lines*100.
-      sys.stdout.write('\b\b\b'.replace('\b','',3-len('%d' % procent))+'%d' % procent)
+      sys.stdout.write('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b'+\
+                        'Reading progress [%%]: % 2d' % procent)
       sys.stdout.flush()
     next_data=read_data_line(line, columns)
     if next_data != 'NULL':

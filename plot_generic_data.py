@@ -18,6 +18,7 @@
 # importing python modules
 import os
 import math
+import subprocess
 
 # importing own modules
 from measurement_data_structure import *
@@ -129,6 +130,17 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     self.os_path_stuff() # create temp folder according to OS
     if (not self.gnuplot_script): # verify gnuplot.py is installed
       try:
+        # replace os.popen function to make the output readable
+        def new_popen(cmd, ignore, bufsize=0):
+          proc=subprocess.Popen(cmd, 
+                                shell=True, 
+                                bufsize=bufsize, 
+                                stdin=subprocess.PIPE, 
+                                stdout=subprocess.PIPE, 
+                                stderr=subprocess.PIPE)
+          self.gnuplot_output=(proc.stdout, proc.stderr)
+          return proc.stdin
+        os.popen=new_popen        
         import Gnuplot
       except ImportError:
         print "Gnuplot.py not available, falling back to script mode!"

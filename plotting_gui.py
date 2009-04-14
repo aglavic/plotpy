@@ -311,6 +311,7 @@ class ApplicationMainWindow(gtk.Window):
 
     # Create statusbar
     self.statusbar = gtk.Statusbar()
+    self.statusbar.set_has_resize_grip(True)
     # put statusbar below everything
     table.attach(self.statusbar,
         # X direction           Y direction
@@ -455,30 +456,14 @@ class ApplicationMainWindow(gtk.Window):
       self.index_mess=0
     # change label and plot other picture
     self.show_add_info(None)
-    self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
-    self.label.set_text(self.measurement[self.index_mess].sample_name)
-    self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
-    self.label2.set_text(self.measurement[self.index_mess].short_info)
-    # plot the data
-    self.last_plot_text= self.plot(self.active_session,
-                                   self.measurement[self.index_mess].plot_together,
-                                   self.input_file_name, 
-                                   self.measurement[self.index_mess].short_info,
-                                   [object.short_info for object in self.measurement[self.index_mess].plot_together],
-                                   errorbars, 
-                                   output_file=self.active_session.temp_dir+'plot_temp.png',
-                                   fit_lorentz=self.fit_lorentz,add_preferences=self.preferences_file)
-    # load created image
-    self.set_image()
-    self.reset_statusbar()
-    self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
     # set log checkbox according to active measurement
     self.logx.set_active(self.measurement[self.index_mess].logx)
     self.logy.set_active(self.measurement[self.index_mess].logy)
     self.logz.set_active(self.measurement[self.index_mess].logz)
     # recreate the menus, if the columns for this dataset aren't the same
     self.rebuild_menus()
-    self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
+    # plot the data
+    self.replot()
 
 
   def change(self,action):
@@ -860,11 +845,8 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Show a text window with the text, that would be used for gnuplot to
       plot the current measurement.
-    '''
+    '''    
     global errorbars
-    # FIXME: The reported errors does only work in script mode
-    # FIXME: only show error box, when there actually is an error
-    # FIXME: open the window when there has been a gnuplot error
     plot_text=measurement_data_plotting.create_plot_script(
                          self.active_session, 
                          self.measurement[self.index_mess].plot_together,
@@ -878,6 +860,15 @@ class ApplicationMainWindow(gtk.Window):
     # create a dialog to show the plot text for the active data
     param_dialog=gtk.Dialog(title='Last plot parameters:')
     param_dialog.set_default_size(600,400)
+    # alignment table
+    table=gtk.Table(1,4,False)
+    
+    # Label
+    label=gtk.Label()
+    label.set_markup('Gnuplot input for the last plot:')
+    table.attach(label, 0, 1, 0, 1, 0, 0, 0, 0);
+
+    # plot options
     sw = gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
@@ -886,16 +877,19 @@ class ApplicationMainWindow(gtk.Window):
     text_filed=gtk.Label()
     text_filed.set_markup(plot_text)
     sw.add_with_viewport(text_filed) # add textbuffer view widget
-    param_dialog.vbox.add(sw)
-    sw = gtk.ScrolledWindow()
-    # Set the adjustments for horizontal and vertical scroll bars.
-    # POLICY_AUTOMATIC will automatically decide whether you need
-    # scrollbars.
-    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    text_filed=gtk.Label()
-    #text_filed.set_markup(self.last_plot_text)
-    sw.add_with_viewport(text_filed) # add textbuffer view widget
-    param_dialog.vbox.add(sw)
+    table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0);
+    # errors of the last plot
+    if self.last_plot_text!='':
+      sw = gtk.ScrolledWindow()
+      # Set the adjustments for horizontal and vertical scroll bars.
+      # POLICY_AUTOMATIC will automatically decide whether you need
+      # scrollbars.
+      sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+      text_filed=gtk.Label()
+      text_filed.set_markup(self.last_plot_text)
+      sw.add_with_viewport(text_filed) # add textbuffer view widget
+      table.attach(sw, 0, 1, 2, 3, gtk.EXPAND|gtk.FILL, gtk.FILL, 0, 0);
+    param_dialog.vbox.add(table)
     param_dialog.show_all()
     # connect dialog to main window
     self.open_windows.append(param_dialog)
@@ -1429,10 +1423,14 @@ class ApplicationMainWindow(gtk.Window):
                                   output_file=self.active_session.temp_dir+'plot_temp.png',
                                   fit_lorentz=self.fit_lorentz,
                                   add_preferences=self.preferences_file)
-    self.set_image()
-    self.reset_statusbar()
+    if self.last_plot_text!='':
+      self.statusbar.push(0, 'Gnuplot error!')
+      self.show_last_plot_params(None)
+    else:
+      self.set_image()
+      self.reset_statusbar()
+      self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
-    self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
 
 
 
