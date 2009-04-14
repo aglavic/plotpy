@@ -17,13 +17,17 @@ import globals
 def read_data(input_file,columns_mapping,measurement_types,measurement_data=[]): #read the datafile with diamagnetic correction
   if os.path.exists(input_file):
     input_file_lines=open(input_file,'r').readlines()
+    first=True
     while len(input_file_lines)>0:
       measurement_info=read_header(input_file_lines)
       if measurement_info=='NULL':
         break
+      first=False
       sequence=read_data_lines(input_file_lines,measurement_info,columns_mapping,measurement_types)
       if not sequence=='NULL':
         measurement_data.append(sequence)
+    if first:
+      print "Wrong file type, no columns defined in header (#L)!"
     return measurement_data
   else:
     print 'File '+input_file+' does not exist.'

@@ -27,8 +27,10 @@ def read_data(input_file,data_columns):
       if measurement_info=='NULL':
         break
       sequence=read_data_lines(input_file_lines,measurement_info,data_columns)
-      if not sequence=='NULL':
+      if sequence!='NULL':
         measurement_data.append(sequence)
+      else:
+        return 'NULL'
     return measurement_data
   else:
     print 'File '+input_file+' does not exist.'
@@ -55,6 +57,7 @@ def read_data_lines(input_file_lines,info,data_columns):
   global sample_name
   output=[] #initialise data array containing data objects
   data_info=''
+  scantype=None
   for line in info[0].splitlines():
     setting=line.split('=')
     if setting[0]=='SAMPLE':
@@ -62,6 +65,9 @@ def read_data_lines(input_file_lines,info,data_columns):
     if setting[0]=='DRIVE':
       scantype=setting[1].strip("'")
     data_info=data_info+line+'\n'
+  if scantype==None:
+    print "Wrong file type, no 'DRIVE' defined in header!"
+    return 'NULL'
   data=MeasurementData([data_columns[scantype],data_columns['COUNTS'],['error','counts']],[],0,1,2)
   data.info=data_info
   data.sample_name=sample_name
