@@ -65,7 +65,7 @@ def gnuplot_plot(session, datasets,file_name_prefix, title,names,with_errorbars,
     if ((datasets[0].view_x%180)==0)&((datasets[0].view_z%90)==0):
       gnuplot_settings=gnuplot_settings+gp.settings_3dmap
     else:
-      gnuplot_settings=gnuplot_settings+settings_3d
+      gnuplot_settings=gnuplot_settings+gp.settings_3d
     plotting_param=str(gp.plotting_parameters_3d)
   gnuplot_settings=replace_ph(session, gnuplot_settings+datasets[0].plot_options,datasets,file_name_prefix,file_numbers, title,names,sample_name,0,postscript_export,additional_info) # replacing placeholders
 # Manually mimic the Gnuplot plot function to use multiple plots, which is not easyly possible otherwise.
@@ -94,10 +94,10 @@ def gnuplot_plot(session, datasets,file_name_prefix, title,names,with_errorbars,
       datalist=dataset.list()
     if (dataset.zdata>=0): # for 3d-Data we have to create a temporal File
       dataset.export(globals.temp_dir+'tmp_data'+str(i)+'.out')
-      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with_=str(gp.plotting_param.replace('w ','',1)),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.zdata+1))]
+      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with_=str(plotting_param.replace('w ','',1)),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.zdata+1))]
     elif fit_lorentz: # for fitting a temporal File is needed, too
       dataset.export(globals.temp_dir+'tmp_data'+str(i)+'.out')
-      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with_=str(gp.plotting_param.replace('w ','',1)),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1))]
+      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',with_=str(plotting_param.replace('w ','',1)),title=names[datasets.index(dataset)],using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1))]
       # start gnuplot fitting of one dataset
       gp('fit f_'+str(i)+'(x) "'+globals.temp_dir+'tmp_data'+str(i)+'.out" using '+\
       str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1)+\

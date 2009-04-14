@@ -2,9 +2,7 @@
 '''
   class for 4 circle data sessions
 '''
-# FIXME: read mesh data
-# FIXME: sample infos
-# TODO: fit psd.bVoigt
+# TODO: fit psd.Voigt
 #################################################################################################
 #                     Script to plot 4Circle-measurements with gnuplot                          #
 #                                       last changes:                                           #
@@ -86,7 +84,34 @@ class circle_session(generic_session):
       function to read data files
     '''
     return circle_read_data.read_data(file_name,self.columns_mapping,self.measurement_types)
-  
+
+
+
+  def add_file(self, filename, append=True):
+    '''
+      Add the data of a new file to the session.
+      In addition to generic_session short info is set.
+    '''
+    datasets=generic_session.add_file(self, filename, append)
+    # faster lookup
+    for dataset in datasets:
+      dataset.logx=self.logx
+      dataset.logy=self.logy
+      # name the dataset
+      hkl=[str(round(dataset.data[0].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
+      str(round(dataset.data[1].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
+      str(round(dataset.data[2].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0')] # h,k,l information from middle of the Scan with 2 post point digits but with trailing 0 striped      
+      if (dataset.xdata==0)&(dataset.zdata==-1):
+        dataset.short_info='h,'+hkl[1] +','+hkl[2] +' scan'
+      elif (dataset.xdata==1)&(dataset.zdata==-1):
+        dataset.short_info=hkl[0] +',k,'+hkl[2] +' scan'
+      elif (dataset.xdata==2)&(dataset.zdata==-1):
+        dataset.short_info=+hkl[0] +','+hkl[1] +',l scan'
+      elif dataset.zdata>=0:
+        dataset.short_info=dataset.xdim()+dataset.ydim()+' mesh at '+hkl[0]+ ','+hkl[1]+ ','+ hkl[2]
+      else:
+        dataset.short_info=dataset.xdim()+' scan at '+hkl[0] +','+ hkl[1]+ ','+hkl[2]
+
   def create_menu(self):
     '''
       create a specifig menu for the 4circle session
