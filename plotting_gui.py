@@ -234,7 +234,7 @@ class ApplicationMainWindow(gtk.Window):
     page_label=gtk.Label()
     page_label.set_markup('Go to Plot:')
     align_table.attach(page_label,0,1,0,1,gtk.FILL,gtk.FILL,0,0)
-    self.plot_page_entry=gtk.Entry(max=int(self.measurement[-1].number))
+    self.plot_page_entry=gtk.Entry(max=len(self.measurement[-1].number))
     self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
     self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
     self.plot_page_entry.connect("activate",self.iterate_through_measurements)
@@ -531,6 +531,9 @@ class ApplicationMainWindow(gtk.Window):
     self.input_file_name=object[0]
     # reset index to the first sequence in that file
     self.index_mess=0
+    self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
+    self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
+    self.plot_page_entry.set_max_length(len(self.measurement[-1].number))
     self.replot()
   
   def add_file(self, action):
@@ -564,6 +567,10 @@ class ApplicationMainWindow(gtk.Window):
     # set the last imported file as active
     self.measurement=self.active_session.active_file_data
     self.input_file_name=self.active_session.active_file_name
+    self.index_mess=0
+    self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
+    self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
+    self.plot_page_entry.set_max_length(len(self.measurement[-1].number))
     self.replot()
     self.rebuild_menus()
     # TODO: do we need to return the file name?
