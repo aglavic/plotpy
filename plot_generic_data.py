@@ -301,7 +301,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
         if line[0]=='#': # ignore comment lines
           continue
         if (dataset==None and len(line.split())>=2):
-          columns=['col-'+str(number) for number in range(len(line.split()))]
+          columns=[('col-'+str(number), '') for number in range(len(line.split()))]
           dataset=MeasurementData(columns,[], 0, 1, 2)
           try: # only import numbers
             dataset.append([float(number) for number in line.split()])
@@ -320,9 +320,9 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
           except ValueError:
             print 'Unknown data type in file "' + filename + '". Skipped!'
             return []
+      return data_list
     else:
       print 'File '+filename+' does not exist.'
-    return data_list
   
   def create_numbers(self, datasets):
     '''
