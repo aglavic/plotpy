@@ -10,20 +10,11 @@
 #                                                                                               #
 #                                                                                               #
 # Features at the moment:                                                                       #
-# -convert SQUID .dat files to .out space(and other)seperated text files, splitted by sequences #
-# -plot every sequence as extra picture or in one graph (MvsT or MvsH is found by const. H/T)   #
-# -list seqences present in file                                                                #
-# -process more than one file (wild cards possible)                                             #
-# -select sequences to be plotted                                                               #
-# -select columns to be plotted                                                                 #
+# -import mpms and ppms .dat, splitted by sequences                                             #
 # -convert units to SI (or any selected)                                                        #
-# -remove diamagnetic contribution (as constant and calculated from elements and mass)          #
+# -remove diamagnetic and paramagnetic contribution                                             #
+#  (as constant and calculated from elements and mass)                                          #
 # -process raw data files (sequence splitting see SQUID_preferences.py)                         #
-# -send all files to printer after processing (linux commandline printing)                      #
-#                                                                                               #
-# To do:                                                                                        #
-# -subtract background measured in another file                                                 #
-# -process raw data more user freindly than in SQUID (select point directly?)                   #
 #                                                                                               #
 #################################################################################################
 

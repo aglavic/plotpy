@@ -11,6 +11,12 @@
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
 #                                                                                               #
+# Features at the moment:                                                                       #
+# -process command line parameters                                                              #
+# -process more than one file (wild cards possible)                                             #
+# -select sequences to be plotted                                                               #
+# -send all files to printer after processing (linux commandline printing)                      #
+#                                                                                               #
 #################################################################################################
 
 # importing python modules

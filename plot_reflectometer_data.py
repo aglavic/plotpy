@@ -9,20 +9,12 @@
 #                         please report bugs to a.glavic@fz-juelich.de                          #
 #                                                                                               #
 # Features at the moment:                                                                       #
-# -convert uxd files to .out space(and other)seperated text files, splitted by sequences        #
+# -import uxd files                                                                             #
 # -plot every sequence as extra picture or in one graph                                         # 
 #    (phi,th,chi scan found automatically)                                                      #
-# -list seqences present in file                                                                #
-# -process more than one file (wild cards possible)                                             #
-# -select sequences to be plotted                                                               #
 # -convert to counts/s                                                                          #
 # -create .ent file for fit.f90 script from Emmanuel Kentzinger and refine some parameters      #
-# -GUI control over all fit parameters                                                          #
-# -send all files to printer after processing (linux commandline printing)                      #
-# -complete gui control over the fit program                                                    #
-#                                                                                               #
-# To do:                                                                                        #
-# -subtract background measured in another file                                                 #
+# -complete GUI control over the fit program                                                    #
 #                                                                                               #
 #################################################################################################
 

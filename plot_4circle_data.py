@@ -10,19 +10,11 @@
 #                         please report bugs to a.glavic@fz-juelich.de                          #
 #                                                                                               #
 # Features at the moment:                                                                       #
-# -convert spec .spec files to .out space(and other)seperated text files, splitted by sequences #
+# -import spec .spec files, splitted by sequences                                               #
 # -plot every sequence as extra picture or in one graph                                         # 
 #    (h,k,l,phi,th,chi scan/mesh found by const. columns)                                       #
-# -list seqences present in file                                                                #
-# -process more than one file (wild cards possible)                                             #
-# -select sequences to be plotted                                                               #
-# -select columns to be plotted                                                                 #
 # -convert to counts/s                                                                          #
-# -send all files to printer after processing (linux commandline printing)                      #
 # -plot meshes in 3d                                                                            #
-#                                                                                               #
-# To do:                                                                                        #
-# -subtract background measured in another file                                                 #
 #                                                                                               #
 #################################################################################################
 

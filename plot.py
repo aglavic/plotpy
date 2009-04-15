@@ -9,21 +9,20 @@
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
 #                                                                                               #
-# Additional Files: measurement_data_structure.py - classes storing the measured data           #
+# Additional Files: plot_generic_data.py - session class, parent for the other sessions         #
+#                   measurement_data_structure.py - classes storing the measured data           #
 #                   measurement_data_plotting.py - plotting functions                           #
+#                   plot_SQUID_data.py - squid session class for mpms,ppms data                 #
+#                   SQUID_preferences.py - settings for the squid session                       #
 #                   SQUID_read_data.py - functions for data extraction                          #
+#                   plot_4circle_data.py - 4circle session class for spec data                  #
+#                   circle_preferences.py - settings for the 4circle session                    #
+#                   circle_read_data.py - functions for data extraction                         #
+#                   plot_reflectometer_data.py - reflectometer session class                    #
+#                   reflectometer_preferences.py - settings for the reflectometer session(+fit) #
+#                   reflectometer_read_data.py - functions for data extraction                  #
 #                   gnuplot_preferences.py - settings for gnuplot output                        #
-#                   gnuplot_preferences_SQID.py - additional settings only for this script      #
 #                   plotting_gui.py - plotting in graphical user interface (pygtk dependency!)  #
-#                                                                                               #
-# Features at the moment:                                                                       #
-# -convert .out space(and other)seperated text files, splitted by sequences                     #
-# -plot every sequence as extra picture or in one graph                                         #
-# -process more than one file (wild cards possible)                                             #
-# -select columns to be plotted                                                                 #
-# -convert units to SI (or any selected)                                                        #
-# -send all files to printer after processing (linux commandline printing)                      #
-# -GUI with many features                                                                       #
 #                                                                                               #
 #################################################################################################
 
