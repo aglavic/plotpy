@@ -1,11 +1,7 @@
 #!/usr/bin/env python
-#
-# Add-on for plot_SQUID_data.py to help calculating the SQUID calibration factors
-#
-# written by Artur Glavic ( a.glavic@fz-juelich.de )
-#
-# Last Changes: 17.12.08
-#
+'''
+ Add-on for plot_SQUID_data.py to help calculating the SQUID calibration factors
+'''
 
 # Defining global constants
 global Chi_Pd, m_Pd

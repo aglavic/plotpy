@@ -59,7 +59,7 @@ measurement_types=[\
 [[[1,1]],2,3,4,''],\
 # MvsH T is constant
 [[[2,0.25]],1,3,4,'set key outside\n']\
-] # raw data measureing with temperature shown, MvsT with constand H,MvsH with constand T
+]
 
 # permanent datafilters applied, a list of
 # ( column , from , to , include )

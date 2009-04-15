@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-#
-# Functions to read from SQUID data file
-# mostly just string processing.
-# MeasurementData Object from 'measurement_data_structure' is used to store the data points.
-# read_data is the main procedure, returning a list of MeasurementData objects
+'''
+  Functions to read from a SQUID data file.
+  Mostly just string processing.
+  MeasurementData Object from 'measurement_data_structure' is used to store the data points.
+  read_data is the main procedure, returning a list of MeasurementData objects
+'''
 
 # Pleas do not make any changes here unless you know what you are doing.
 
@@ -14,7 +15,10 @@ from measurement_data_structure import *
 import SQUID_preferences
 import globals
 
-def read_data(input_file,columns_mapping,measurement_types): #read the datafile with diamagnetic correction
+def read_data(input_file,columns_mapping,measurement_types): 
+  '''
+    Read the ppms/mpms datafile.  
+  '''
   if os.path.exists(input_file):
     input_file_lines=open(input_file,'r').readlines()
     if input_file_lines[0].find('[Header]')>=0:
@@ -30,7 +34,10 @@ def read_data(input_file,columns_mapping,measurement_types): #read the datafile 
     print 'File '+input_file+' does not exist.'
     return 'NULL'
 
-def get_columns(input_file): # just return the columns present in file
+def get_columns(input_file): 
+  '''
+    Just return the columns present in the file.
+  '''
   if os.path.exists(input_file):
     input_file_handler=open(input_file,'r')
     if input_file_handler.readline().find('[Header]')>=0:
@@ -49,7 +56,10 @@ def get_columns(input_file): # just return the columns present in file
     return 'NULL'
   
 
-def read_header(input_file_lines): #read header of datafile
+def read_header(input_file_lines): 
+  '''
+    Read header of the datafile.
+  '''
   output=['','']
   for i in range(len(input_file_lines)):
     line=input_file_lines[i].split(', ', 2)
@@ -62,6 +72,9 @@ def read_header(input_file_lines): #read header of datafile
   return output
 
 def check_type(data_1,data_2,type_i):
+  '''
+    Check if the data from two lines belong to the same sequence.
+  '''
   output=True
   for ty in type_i[0]:
     if (abs(data_1[ty[0]]-data_2[ty[0]])<ty[1])&output:
@@ -70,7 +83,10 @@ def check_type(data_1,data_2,type_i):
       output=False
   return output
   
-def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #read data points line by line
+def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): 
+  '''
+    Read data points line by line.
+  '''
   output=[] #initialise data array containing data objects
   line=input_file_lines.pop(0).split(',')
   count=1
@@ -150,7 +166,10 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #r
   output.append(data)
   return output
 
-def read_data_line(input_file_line, columns): #read one line and output data as list
+def read_data_line(input_file_line, columns): 
+  '''
+    Read one line of data and output the data as a list.
+  '''
   line=input_file_line.split(',')
   values=[]
   if len(line)>=len(columns):

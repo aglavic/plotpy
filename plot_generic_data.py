@@ -7,8 +7,6 @@
 #################################################################################################
 #                    Script to plot different measurements with gnuplot                         #
 #                    this is the class used as parent for every session                         #
-#                                       last changes:                                           #
-#                                        08.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
@@ -327,7 +325,10 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   def create_numbers(self, datasets):
     '''
       Give the sequences numbers with leading zeros depending on the
-      number of sequences present in the file.
+      number of sequences present in the file. Mostly usefull for
+      file name perpose.
+      This function also filteres the dataset for the values given
+      by "-s from to" and "-i increment".
     '''
     filtered_datasets=[]
     for i, dataset in enumerate(datasets):
@@ -386,6 +387,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       Function to iterate through the file_data dictionary. Object can be used in "for name in data:".
       Also changes the active_file_data and active_file_name.
     '''
+    # TODO: In GUI export all files at once.
     name_list=[item[0] for item in self.file_data.items()]
     name_list.sort()
     if self.index == len(name_list): # after last stop iteration and go to first again
@@ -418,7 +420,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     '''
       Plot one or a list of datasets.
     '''
-    # TODO: Use one plot function for GUI and script mode.
+    # TODO: Use one plot function for GUI and script mode with less parameters.
     if len(datasets)>1:
       add_info='multi_'
     else:

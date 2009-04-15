@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ''' 
- A table of elements, there diamagnetic moment per mol and elemental weight.
+ A table of elements, their diamagnetic moment per mol and elemental weight.
 '''
 #
 # ['name',mol mass,mol dia(10^-6emu/mol)]

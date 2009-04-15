@@ -4,8 +4,6 @@
 '''
 #################################################################################################
 #                  Script for graphical user interface to plot measurement data                 #
-#                                       last changes:                                           #
-#                                        08.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #

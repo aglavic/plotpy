@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-#
-# Functions to read from 4circle data file
-# mostly just string processing.
-# MeasurementData Object from 'measurement_data_structure' is used to store the data points.
-# read_data is the main procedure, returning a list of MeasurementData objects
+'''
+  Functions to read from a 4circle data file (spec).
+  Mostly just string processing.
+  MeasurementData Object from 'measurement_data_structure' is used to store the data points.
+  read_data is the main procedure, returning a list of MeasurementData objects
+'''
 
 # Pleas do not make any changes here unless you know what you are doing.
 
@@ -14,7 +15,10 @@ from measurement_data_structure import *
 import globals
 
 
-def read_data(input_file,columns_mapping,measurement_types,measurement_data=[]): #read the datafile with diamagnetic correction
+def read_data(input_file,columns_mapping,measurement_types,measurement_data=[]): 
+  '''
+    Read the datafile.
+  '''
   if os.path.exists(input_file):
     input_file_lines=open(input_file,'r').readlines()
     first=True
@@ -34,7 +38,10 @@ def read_data(input_file,columns_mapping,measurement_types,measurement_data=[]):
     return measurement_data
 
 
-def read_header(input_file_lines): #read header of datafile
+def read_header(input_file_lines): 
+  '''
+    Read header of datafile and return the columns present.
+  '''
   output=''
   for i in range(len(input_file_lines)):
     line=input_file_lines.pop(0)
@@ -46,9 +53,16 @@ def read_header(input_file_lines): #read header of datafile
   return 'NULL'
 
 def column_compare(col1,col2):
-   return (col1[1]-col2[1])
+  '''
+    Compare the second entry of two lists.
+  '''
+  return (col1[1]-col2[1])
 
 def check_type(data_1,data_2,type_i):
+  '''
+    Compare the data of two lines to check 
+    if they belong to the same sequence. 
+  '''
   output=True
   for ty in type_i[0]:
     if len(data_1)>ty[0]+1:
@@ -60,11 +74,14 @@ def check_type(data_1,data_2,type_i):
       return False
   return output
   
-def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #read data points line by line
+def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): 
+  '''
+    Read data points line by line.
+  '''
   output=[] #initialise data array containing data objects
   count=1
   columns=[]
-# define which columns contain the relevant data
+  # define which columns contain the relevant data
   for item in info[1]:
     count=count+1
     for mapping in columns_mapping:
@@ -110,27 +127,34 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): #r
       return data
   return data
 
-def read_data_line(input_file_line,columns): #read one line and output data as list
-    if input_file_line[0]=='#':
-      if input_file_line[1]=='C':
-        return 'Comment'
-      else:
-        return 'NULL'
+def read_data_line(input_file_line,columns): 
+  '''
+    Read one line and output data as list.
+  '''
+  if input_file_line[0]=='#':
+    if input_file_line[1]=='C':
+      return 'Comment'
     else:
-      line=input_file_line.split()
-      values=[]
-      if len(line)>=len(columns):
-        for column in columns:
-          if line[column[0]]=='':
-            values.append(0.)
-          else:
-            values.append(float(line[column[0]]))
-        values.append(max(math.sqrt(float(line[-1])),1))
-        return values
-      else:
-        return 'NULL'
-    
-def read_data_last_line(input_file_lines,columns): #returns second last line of one sequence for type finding, second last because of possibility of abborded scans.
+      return 'NULL'
+  else:
+    line=input_file_line.split()
+    values=[]
+    if len(line)>=len(columns):
+      for column in columns:
+        if line[column[0]]=='':
+          values.append(0.)
+        else:
+          values.append(float(line[column[0]]))
+      values.append(max(math.sqrt(float(line[-1])),1))
+      return values
+    else:
+      return 'NULL'
+
+def read_data_last_line(input_file_lines,columns): 
+  '''
+    Returns second last line of one sequence for type finding.
+    Second last because of possibility of abborted scans.
+  '''
   for i,line in enumerate(input_file_lines):
     if line[0]=='#':
       return read_data_line(input_file_lines[i-2],columns)

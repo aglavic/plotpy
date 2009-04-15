@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 '''
-  main script which imports the other modules
+  Main script which imports the other modules.
 '''
 #################################################################################################
 #                    Script to plot different measurements with gnuplot                         #
 #                  including a graphical user interface and easy andling                        #
-#                                       last changes:                                           #
-#                                        08.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #

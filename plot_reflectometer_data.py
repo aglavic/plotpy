@@ -4,8 +4,6 @@
 '''
 #################################################################################################
 #                     Script to plot reflectometer uxd-files with gnuplot                       #
-#                                       last changes:                                           #
-#                                        06.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
@@ -37,7 +35,6 @@ import math
 import subprocess
 import gtk
 import time
-import threading
 # import generic_session, which is the parent class for the squid_session
 from plot_generic_data import generic_session
 # importing preferences and data readout
@@ -47,7 +44,7 @@ import reflectometer_preferences
 fortran_compiler='gfortran'
 # compiler optimization options as can be found in the manual,
 # add your cpu flag here to increase performance of the fit
-# stdandart cpu flags are:
+# stdandard cpu flags are:
 # i686 / pentium4 / athlon / k8 / amdfam10 (athlon64) / nocona (p4-64bit)
 fortran_compiler_options='-O3'
 fortran_compiler_march=None#'-march=nocona'
@@ -78,14 +75,15 @@ class reflectometer_session(generic_session):
   file_wildcards=(('reflectometer data','*.UXD'), )  
   options=generic_session.options+['fit', 'ref']
   #options:
-  show_counts=False
-  export_for_fit=False
-  try_refine=False
-  fit_object=None
+  show_counts=False # dont convert to conts/s
+  export_for_fit=False # make the changes needed for the fit program to work
+  try_refine=False # try to refine scaling and roughnesses
+  # TODO: store fit in corresponding dataset
+  fit_object=None # used for storing the fit parameters 
   x_from=0.005 # fit only x regions between x_from and x_to
   x_to=''
   max_iter=50 # maximal iterations in fit
-  max_alambda=10
+  max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
   #------------------ local variables -----------------
 
   
@@ -93,12 +91,10 @@ class reflectometer_session(generic_session):
     '''
       class constructor expands the generic_session constructor
     '''
-    self.fit_object=fit_parameter()
-    self.data_columns=reflectometer_preferences.data_columns
-    self.transformations=reflectometer_preferences.transformations
+    self.fit_object=fit_parameter() # create a new empty fit_parameter object
+    self.data_columns=reflectometer_preferences.data_columns # read data columns from preferences
+    self.transformations=reflectometer_preferences.transformations # read transformations from preferences
     generic_session.__init__(self, arguments)
-    # initialize the GTK thread engine used in show_result_window
-    #gtk.gdk.threads_init()    
     
   
   def read_argument_add(self, argument, last_argument_option=[False, '']):
@@ -170,8 +166,8 @@ class reflectometer_session(generic_session):
   def add_file(self, filename, append=True):
     '''
       Add the data of a new file to the session.
-      In addition to generic_session counts per secong
-      corrections and fiting are performed here, too.  
+      In addition to generic_session counts per second
+      corrections and fitting are performed here, too.  
     '''
     datasets=generic_session.add_file(self, filename, append)
     #refinements=[]
@@ -203,6 +199,7 @@ class reflectometer_session(generic_session):
         simu.sample_name=dataset.sample_name
         #refinements.append(simu)
         dataset.plot_together=[dataset, simu]
+    # TODO: GUI selection to show only data or fit
     #if self.export_for_fit: # export fit files
      # self.add_data(refinements, filename+"_simulation")
     return datasets
@@ -552,6 +549,7 @@ class reflectometer_session(generic_session):
     old_fit=self.fit_object
     results=gtk.Dialog(title='Fit results:')
     text_string='These are the parameters retrieved by the last fit\n'
+    #+++++++++++ get_layer_text responde function ++++++++++++++++
     def get_layer_text(new_layer, old_layer, index, index_add=''):
       text_string=''
       if len(new_layer)==1: # single layer
@@ -574,6 +572,7 @@ class reflectometer_session(generic_session):
         for i,  layer in enumerate(new_layer.layers):
           text_string+='\t'+get_layer_text(layer, old_layer.layers[i], i, index_add=str(index)+',')
         return text_string
+    #----------- get_layer_text responde function ----------------
     for i, new_layer in enumerate(new_fit.layers):
       text_string+=get_layer_text(new_layer, old_fit.layers[i], i)
     # substrate parameters
@@ -613,7 +612,7 @@ class reflectometer_session(generic_session):
     results.vbox.add(sw) # add table to dialog box
     results.set_default_size(500,450)
     results.add_button('OK',1) # button replot has handler_id 1
-    results.add_button('Cancle',2) # button replot has handler_id 2
+    results.add_button('Cancel',2) # button replot has handler_id 2
     #dialog.connect("response", self.result_window_response, dialog, window, new_fit)
     # connect dialog to main window
     window.open_windows.append(dialog)
@@ -683,7 +682,6 @@ class reflectometer_session(generic_session):
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
     #open a background process for the fit function
-    global proc
     proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',self.max_iter)
     if self.fit_object.fit!=1: # if this is not a fit just wait till finished
       stderr_value = proc.communicate()[1]
@@ -716,7 +714,8 @@ class reflectometer_session(generic_session):
       simu.short_info='simulation'
       simu.sample_name=dataset.sample_name
       dataset.plot_together=[dataset, simu]
-      window.replot()      
+      window.replot()  
+      
     status=gtk.Dialog(title='Fit status after 0 seconds')
     text_view=gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview. 
@@ -769,11 +768,6 @@ class reflectometer_session(generic_session):
         main_iteration(False)
       i+=1
     file.close()
-    # threading does not work in windows!
-    #loop=ProcessLoop()
-    #loop.active_session=self
-    #loop.start()
-    #response=status.run()
     status.set_modal(False)
     status.destroy()
   
@@ -1638,41 +1632,3 @@ class fit_multilayer:
         string, layer_index, para_index = layer.get_ent_text(layer_index, para_index)
         text+=string
     return text,  layer_index,  para_index
-  
-
-class ProcessLoop(threading.Thread):
-  '''
-    to make it possible to kill the fit process while GTK outputs
-    the data, we have to create a looping thread
-  '''
-  active_session=None
-
-  def run(self):
-    '''
-      Standart function called from Thread.start().
-      While the fit program is running, the .ref file
-      is regularly read and shown in the status dialog.
-    '''
-    global status, text_view
-    sec=0    
-    buffer=text_view.get_buffer()
-    while proc.poll()==None:
-      try:
-        file=open(self.active_session.temp_dir+'fit_temp.ref', 'r')
-        text=file.read()
-        file.close()
-        if text=='':
-          text='Empty .ref file.'
-      except:
-        text='Empty .ref file.'
-      gtk.gdk.threads_enter()
-      status.set_title('Fit status after ' + str(sec/5) + ' seconds')
-      buffer.set_text(text)
-      position=buffer.get_end_iter()
-      text_view.scroll_to_iter(position, 0)
-      gtk.gdk.threads_leave()
-      time.sleep(0.2)
-      sec+=1
-    gtk.gdk.threads_enter()
-    status.destroy()
-    gtk.gdk.threads_leave()

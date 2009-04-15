@@ -24,13 +24,15 @@
 # [const_value] - first constant data value
 
 #header information printed in gnuplot.tmp file, not really important
-gnuplot_file_head='#Gnuplot inputfile to plot the SQUID data\n#[info]\n'
+gnuplot_file_head='#Gnuplot inputfile to plot the data of plot.py\n#[info]\n'
 gnuplot_file_name='gnuplot.tmp'
 # Linux printing command (works properly with .ps, problems with png with wrong size)
 print_command="lpr -P IFF17c4 -J \'plot_SQUID_data.py output\'  "
 
-# set suffix replacement
 def remove_from_name(name):
+  '''
+    Set suffix replacement.
+  '''
   output=name.replace('.dat','').replace('.raw','')
   return output
 
@@ -39,7 +41,7 @@ encoding='iso_8859_1'
 # set the terminal options for the gnuplot output (postscript could need other labels)
 # used is determined by file name
 set_output_terminal_png='png enhanced size 1024,768 font "/usr/share/fonts/truetype/msttcorefonts/arial.ttf" 18' #transparent
-set_output_terminal_ps='postscript landscape enhanced colour "Arial" 28 solid lw 3'
+set_output_terminal_ps='postscript landscape enhanced colour "Arial" 24 solid lw 2'
 
 # set output file name, the postfix has to be chosen consistant to the 'set term' statement
 output_file_name='[name]_[add_info][nr].png'
@@ -56,6 +58,7 @@ plotting_parameters='w lines lw 2' # plotting x-y
 plotting_parameters_errorbars='w errorbars pt 5 ps 0.5 lw 2' # plotting with errorbars
 plotting_parameters_3d='w pm3d' # plotting 3d
 plotting_parameters_fit='w lines lw 3'
+# TODO: color selection
 settings_3d='set style line 100 lt 6 lw 2\nset pm3d hidden3d 100\nset ticslevel 0.05\n'+\
 'set palette defined (0 "blue",50 "green", 100 "yellow",200 "red",255 "purple")\n'
 settings_3dmap='set pm3d map interpolate 5,5\nset ticslevel 0.05\n'+\
@@ -63,21 +66,17 @@ settings_3dmap='set pm3d map interpolate 5,5\nset ticslevel 0.05\n'+\
 # title for a curve
 titles='[titles_add]'
 
-# Replace special characters when using Postscript export instead of png
 def postscript_replace(string):
-    return string.replace('\\316\\274','{/Symbol m}').\
-    replace('\\302\\267','\\267').\
-    replace('\\302\\260','\\260')
+  '''
+    Replace special characters when using Postscript export instead of png.
+  '''
+  return string.replace('\\316\\274','{/Symbol m}').\
+  replace('\\302\\267','\\267').\
+  replace('\\302\\260','\\260')
 
-# String replacements done last, for example when an Item has empty unit replace [] with nothing
 def further_replacement(string):
-    return string.replace('[]','')
-
-# For testing the place holders:
-#file_head="""#name=[name] , name-rmv=[name-rmv] , sample=[sample]
-#nr=[nr] , x-unit=[x-unit] , y-unit=[y-unit]
-#x-dim=[x-dim] , y-dim=[y-dim] , title_add=[title_add] , titles_add=[titles_add]
-#const_unit=[const_unit] , const_dim=[const_dim] , const_value=[const_value]
-#header=[header]"""
-
+  '''
+    String replacements done last, for example when an Item has empty unit replace [] with nothing.
+  '''
+  return string.replace('[]','')
 

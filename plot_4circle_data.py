@@ -5,8 +5,6 @@
 # TODO: fit psd.Voigt
 #################################################################################################
 #                     Script to plot 4Circle-measurements with gnuplot                          #
-#                                       last changes:                                           #
-#                                        01.04.2009                                             #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
@@ -61,6 +59,7 @@ class circle_session(generic_session):
     self.measurement_types=circle_preferences.measurement_types
     self.transformations=circle_preferences.transformations
     generic_session.__init__(self, arguments)
+    # TODO: counts to cps
     
   
   def read_argument_add(self, argument, last_argument_option=[False, '']):
