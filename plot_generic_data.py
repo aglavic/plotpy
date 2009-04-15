@@ -263,12 +263,14 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     script_path=os.path.dirname(os.path.realpath(__file__))
     if (os.getenv("TEMP")==None):
     # Linux case
+      self.system='linux'
       self.temp_dir="/tmp/"
       self.script_path=script_path + '/'
       # name of the gnuplot command under linux
       self.gnuplot_command="gnuplot"
     else:
     # Windows case
+      self.system='windows'
       self.temp_dir=os.getenv("TEMP")+'\\'
       self.script_path=script_path + '\\'
       # name of the gnuplot command under windows

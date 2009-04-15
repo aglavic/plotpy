@@ -662,6 +662,7 @@ class reflectometer_session(generic_session):
       function invoked when apply button is pressed
       fits with the new parameters
     '''
+    global proc
     dataset=window.measurement[window.index_mess]
       # convert x values from angle to q
     dataset.unit_trans([['Theta', '\\302\\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
@@ -691,6 +692,7 @@ class reflectometer_session(generic_session):
       when fit process is started, create a window with
       status informations and a kill button
     '''
+    global proc
     def status_response(action, response, session, window):
       if response==1: # if the process is abborted, plot without fit
         proc.kill()
@@ -944,6 +946,7 @@ class reflectometer_session(generic_session):
     '''
       try to fit the scaling factor before the total reflection angle
     '''
+    global proc
     self.fit_object.fit=1
     data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=0.005,xto=self.find_total_reflection(dataset))
     self.fit_object.set_fit_parameters(scaling=True) # fit only scaling factor
@@ -963,6 +966,7 @@ class reflectometer_session(generic_session):
     '''
       try to fit the layer roughnesses
     '''
+    global proc    
     self.fit_object.fit=1
     layer_dict={}
     # create parameter dictionary for every (multi)layer, 3 is the roughness
@@ -996,6 +1000,7 @@ class reflectometer_session(generic_session):
     '''
       Function to export data for fitting with fit.f90 program.
     '''
+    global proc
     if self.fit_object.layers==[]:
       #+++++++++++++++++++ create fit parameters object +++++++++++++++++++
       fit_thick=self.fit_thicknesses
