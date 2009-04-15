@@ -110,6 +110,10 @@ class circle_session(generic_session):
         dataset.short_info=dataset.xdim()+dataset.ydim()+' mesh at '+hkl[0]+ ','+hkl[1]+ ','+ hkl[2]
       else:
         dataset.short_info=dataset.xdim()+' scan at '+hkl[0] +','+ hkl[1]+ ','+hkl[2]
+      if not self.show_counts:
+        self.units=dataset.units()
+        dataset.process_funcion(self.counts_to_cps)
+        dataset.unit_trans([['counts',1,0,'counts/s']])
     return datasets
 
   def create_menu(self):
@@ -131,3 +135,23 @@ class circle_session(generic_session):
              )
     return string,  actions
 
+  #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
+
+  def counts_to_cps(self, input_data):
+    '''
+      Calculate counts/s for one datapoint.
+      This function will be used in process_function() of
+      a measurement_data_structure object.
+    '''
+    output_data=input_data
+    counts_column=[]
+    time_column=0
+    for i,unit in enumerate(self.units): 
+  # selection of the columns for counts
+      if unit=='counts':
+        counts_column.append(i)
+      if unit=='s':
+        time_column=i
+    for counts in counts_column:
+      output_data[counts]=output_data[counts]/output_data[time_column]# calculate cps
+    return output_data

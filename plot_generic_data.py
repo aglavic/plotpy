@@ -54,16 +54,9 @@ Options:
 \t-s [a] [b]\tOnly plot sequence a to b (standard is 1 to 10000)
 \t-s2 [b]\t\tSet last sequence to be plotted
 \t-i [inc]\tPlot only every inc sequence
-\t-l\t\tList sequences in file.
-\t-ls\t\tList selected Sequences.
 
 \tOutput settings:
 \t-gs\t\tUse gnuplot in script mode, in the case Gnuplot.py is not working (slower)
-\t-o\t\tOutput the data to .out files for later use in other programms.
-\t-ni\t\tDon't put informational header in output files. (can be helpful for usage with other programs)
-\t-c\t\tJust convert files, do not plot anything
-\t-sep [sep]\tUse different seperator for output files (if -gs is given it is ignored)
-\t-p\t\tSend plots to printer specified in gnuplot_perferences.py
 
 \tPlott settings:
 \t-e\t\tPlot with errorbars
@@ -74,6 +67,18 @@ Options:
 \tGeneral Data treatment:
 \t-no-trans\tdon't make a unit transformation
 """
+  # TODO: implement these settings
+  '''
+  \t-l\t\tList sequences in file.
+  \t-ls\t\tList selected Sequences.
+
+  \t-o\t\tOutput the data to .out files for later use in other programms.
+  \t-ni\t\tDon't put informational header in output files. (can be helpful for usage with other programs)
+  \t-c\t\tJust convert files, do not plot anything
+  \t-sep [sep]\tUse different seperator for output files (if -gs is given it is ignored)
+  \t-p\t\tSend plots to printer specified in gnuplot_perferences.py
+  '''
+
   long_help_end=\
 """
 The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you want to change them.
@@ -88,7 +93,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   index=0
   file_wildcards=(('all files', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
-  options=['s','s2','i','gs','o','ni','c','l','sc','st','sxy','e', 'logx', 'logy','scp', 'no-trans','help']
+  options=['s','s2','i','gs','o','ni','c','sc','st','sxy','e', 'logx', 'logy','scp', 'no-trans','help']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -196,10 +201,10 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
             last_argument_option=[False,'']
         elif argument=='-a':
           self.single_picture=True
-        elif argument=='-l':
-          self.list_all=True
-        elif argument=='-ls':
-          self.list_sequences=True
+       # elif argument=='-l':
+       #   self.list_all=True
+       # elif argument=='-ls':
+       #   self.list_sequences=True
         elif argument=='-gs':
           self.gnuplot_script=True
         elif argument=='-o':

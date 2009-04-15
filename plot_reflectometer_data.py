@@ -221,7 +221,7 @@ class reflectometer_session(generic_session):
       if unit=='counts':
         counts_column.append(i)
     for counts in counts_column:
-      output_data[counts]=output_data[counts]/self.time_col # calculate the linear correction
+      output_data[counts]=output_data[counts]/self.time_col # calculate the cps
     return output_data
   
   #++++ functions for fitting with fortran program by E. Kentzinger ++++

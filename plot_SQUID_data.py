@@ -45,10 +45,13 @@ class squid_session(generic_session):
 \tSQUID-Data treatment:
 \t-para [C] [off]\tInclude paramagnetic correction factor (C/(T-off)) [emu*K/Oe]
 \t-dia [Chi]\tInclude diamagnetic correction in [10^-9 emu/Oe]
-\t-dia-calc [e] [m]\tAdd diamagnetic correction of sample containing elements e
-\t\t\t\t with complete mass m in mg. 
-\t\t\t\t e is given for example as 'La_1-Fe_2-O_4','la_1-fe2+_2-o_4' or 'La-Fe_2-O_4'.
 '''
+  # TODO: implement this.
+  '''
+  \t-dia-calc [e] [m]\tAdd diamagnetic correction of sample containing elements e
+  \t\t\t\t with complete mass m in mg. 
+  \t\t\t\t e is given for example as 'La_1-Fe_2-O_4','la_1-fe2+_2-o_4' or 'La-Fe_2-O_4'.
+  '''
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
