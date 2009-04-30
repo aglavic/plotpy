@@ -62,7 +62,7 @@ class FitFunction:
     # if the fit converged use the new parameters and store the old ones in the history variable.
     if ier in [1, 2, 3, 4]:
       self.parameters_history=self.parameters
-      self.parameters=new_params
+      self.parameters=list(new_params)
     return mesg
   
   def simulate(self, x):
@@ -98,12 +98,22 @@ class FitSum(FitFunction):
     '''
       Use the refined paramters for the origin functions, too.
     '''
-    mesg=FitSum.refine(self, dataset_x, dataset_y)
-    index=len(self.origin[0].paramters)
+    mesg=FitFunction.refine(self, dataset_x, dataset_y)
+    index=len(self.origin[0].parameters)
     self.origin[0].paramters=self.parameters[:index]
     self.origin[1].paramters=self.parameters[index:]
     return mesg
 
+  def simulate(self, x):
+    '''
+      Return simulated y-values for a list of giver x-values.
+    '''
+    try:
+      y=list(self.fit_function(self.parameters, x))
+    except TypeError:
+      # x is list and the function is only defined for one point.
+      y= map((lambda x_i: function(params, x_i)), x)
+    return y
 
 #+++++++++++++++++++++++++++++++++ Define common functions for fits +++++++++++++++++++++++++++++++++
 
