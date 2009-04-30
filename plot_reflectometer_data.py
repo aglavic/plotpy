@@ -39,7 +39,7 @@ fortran_compiler='gfortran'
 # stdandard cpu flags are:
 # i686 / pentium4 / athlon / k8 / amdfam10 (athlon64) / nocona (p4-64bit)
 fortran_compiler_options='-O3'
-fortran_compiler_march=None#'-march=nocona'
+fortran_compiler_march='-march=nocona'#None
 fit_program_code='fit/fit.f90'
 fit_program_executible='fit/fit.o'
 
@@ -415,6 +415,9 @@ class reflectometer_session(generic_session):
         delete=gtk.Button(label='DEL', use_underline=True)
         delete.connect('clicked', self.delete_layer, layer, dialog, window)
         align_table.attach(delete, 5, 6, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
+        delete=gtk.Button(label='UP', use_underline=True)
+        delete.connect('clicked', self.up_layer, layer, dialog, window)
+        align_table.attach(delete, 6, 7, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
       delta=gtk.Entry()
       delta.set_width_chars(10)
       delta.set_text(str(layer.delta))
@@ -471,6 +474,9 @@ class reflectometer_session(generic_session):
       delete=gtk.Button(label='DEL', use_underline=True)
       delete.connect('clicked', self.delete_multilayer, layer, dialog, window)
       align_table.attach(delete, 4, 5, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
+      delete=gtk.Button(label='UP', use_underline=True)
+      delete.connect('clicked', self.up_layer, layer, dialog, window)
+      align_table.attach(delete, 5, 6, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
       dialog.connect('response', layer.dialog_get_params, repititions) # when apply button is pressed, send data
       # sublayers are appended to the align_table via recursion
       for i, sub_layer in enumerate(layer.layers):
@@ -642,6 +648,34 @@ class reflectometer_session(generic_session):
     self.fit_object.remove_layer(layer)
     self.rebuild_dialog(dialog, window)
   
+  def up_layer(self, action, layer, dialog, window):
+    '''
+      remove a layer after button is pressed
+    '''
+    # is the layer not part of a multilayer?
+    if layer in self.fit_object.layers:
+      self.fit_object.layers=self.move_layer_up_in_list(layer, self.fit_object.layers)
+      self.rebuild_dialog(dialog, window)
+    else: # it is a part of a multilayer, try to find it
+      for layer_in in self.fit_object.layers:
+        if layer_in.multilayer:
+          if layer in layer_in.layers:
+            layer_in.layers=self.move_layer_up_in_list(layer, layer_in.layers)
+            self.rebuild_dialog(dialog, window)
+
+  
+  def move_layer_up_in_list(self, layer, old_layer_list):
+      index_layer=old_layer_list.index(layer)
+      new_layer_list=[]
+      if index_layer > 1:
+        new_layer_list=old_layer_list[:index_layer-1] 
+      new_layer_list.append(layer)
+      if index_layer > 0:
+        new_layer_list.append(old_layer_list[index_layer-1])
+      if index_layer <= len(old_layer_list):
+        new_layer_list+=old_layer_list[index_layer+1:]
+      return new_layer_list
+
   def add_multilayer(self, action, multilayer, dialog, window):
     '''
       add a layer to the multilayer after button is pressed

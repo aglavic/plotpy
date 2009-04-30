@@ -207,7 +207,7 @@ def gnuplot_plot_script(session,
                       stdout=subprocess.PIPE, 
                       )
   output = proc.communicate()
-  return output[1] # return the standard error output
+  return output[0]+output[1] # return the standard error output
 
 def replace_ph(session, 
                string,
