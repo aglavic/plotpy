@@ -63,6 +63,20 @@ class FitFunction:
     return mesg
 
 
+class FitSum(FitFunction):
+  '''
+    Fit the Sum of two FitFunctions.
+  '''
+  def __init__(self, func1,  func2):
+    self.name=func1.name + ' + ' + func2.name
+    self.parameters=func1.parameters + func2.parameters
+    self.parameter_names=[name + '1' for name in func1.parameter_names] + [name + '2' for name in func2.parameter_names]
+    self.fit_function_text=func1.fit_function_text + ' + ' + func2.fit_function_text
+    self.fit_function = lambda p, x: \
+        func1.fit_function(p[0:len(func1.parameters)], x) + \
+        func2.fit_function(p[len(func1.parameters):], x)
+
+
 #+++++++++++++++++++++++++++++++++ Define common functions for fits +++++++++++++++++++++++++++++++++
 
 class FitLinear(FitFunction):
