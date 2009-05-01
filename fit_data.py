@@ -9,13 +9,7 @@
 import numpy
 from scipy.optimize import leastsq
 from math import pi, sqrt
-
-class FitSession:
-  '''
-    Class used to fit a set of functions to a given measurement_data_structure.
-  '''
-  def __init__(self):
-    None
+from measurement_data_structure import MeasurementData
 
 class FitFunction:
   '''
@@ -61,9 +55,14 @@ class FitFunction:
     new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, self.parameters, args=(dataset_y, dataset_x), full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     if ier in [1, 2, 3, 4]:
-      self.parameters_history=self.parameters
-      self.parameters=list(new_params)
+      self.set_parameters(new_params)
     return mesg
+
+  def set_parameters(self, new_params):
+    '''Set new parameters and store old ones in history.'''
+    self.parameters_history=self.parameters
+    self.parameters=list(new_params)
+
   
   def simulate(self, x):
     '''
@@ -94,15 +93,14 @@ class FitSum(FitFunction):
         func2.fit_function(p[len(func1.parameters):], x)
     self.origin=(func1, func2)
   
-  def refine(self, dataset_x, dataset_y):
+  def set_parameters(self, new_params):
     '''
-      Use the refined paramters for the origin functions, too.
+      Set new parameters and pass them to orign functions.
     '''
-    mesg=FitFunction.refine(self, dataset_x, dataset_y)
+    FitFunction.set_parameters(self, new_params)
     index=len(self.origin[0].parameters)
-    self.origin[0].paramters=self.parameters[:index]
-    self.origin[1].paramters=self.parameters[index:]
-    return mesg
+    self.origin[0].set_paramters(self.parameters[:index])
+    self.origin[1].set_paramters(self.parameters[index:])
 
   def simulate(self, x):
     '''
@@ -172,3 +170,101 @@ class FitGaussian(FitFunction):
   fit_function_text='f(x)=A*exp(-0.5*(x-x_0)/sigma) + b'
 
   __init__=FitFunction.__init__
+
+class FitSession:
+  '''
+    Class used to fit a set of functions to a given measurement_data_structure.
+    Provides the interface between the MeasurementData and the FitFunction.
+  '''
+  
+  # class variables
+  data=None
+  # a dictionary of known fit functions
+  available_functions={
+                       FitLinear.name: FitLinear, 
+                       FitQuadratic.name: FitQuadratic, 
+                       FitExponential.name: FitExponential, 
+                       FitGaussian.name: FitGaussian
+                       }
+  
+  def __init__(self,  dataset):
+    '''
+      Constructor creating pointer to the dataset.
+    '''
+    self.functions=[] # a list of sequences (FitFunction, fit, plot) to be used
+    self.data=dataset
+
+  def add_function(self, function_name):
+    '''
+      Add a function to the list of fitted functions.
+    '''
+    if function_name in self.available_functions:
+      self.functions.append(( self.available_functions[function_name]([]), True, True))
+      return True
+    else:
+      return False
+  
+  def get_functions(self):
+    '''
+      Return a list of the available functions.
+    '''
+    list=self.available_functions.items()
+    list=[l[0] for l in list]
+    list.sort()
+    return list
+
+  def sum(self, index_1, index_2):
+    '''
+      Create a sum of the functions with index 1 and 2.
+      Function 1 and 2 are set not to be fitted.
+    '''
+    functions=self.functions
+    if (index_1 < len(functions)) and (index_2 < len(functions)):
+      functions.append(( FitSum(functions[index_1][0], functions[index_2][0]), True, True))
+      functions[index_1][1]=False
+      functions[index_2][1]=False
+  
+  def fit(self):
+    '''
+      Fit all funcions in the list where the fit parameter is set to True.
+    '''
+    for function in self.functions:
+      if function[1]:
+        data=self.data.list()
+        data_x=[d[0] for d in data]
+        data_y=[d[1] for d in data]
+        fuction[0].refine(data_x, data_y)
+        return True
+      else:
+        return False
+
+  def simulate(self):
+    '''
+      Create MeasurementData objects for every fitfunction.
+    '''
+    self.result_data=[]
+    dimensions=self.data.dimensions()
+    units=self.data.units()
+    colmun_1=(dimensions[self.data.xdata], units[self.data.xdata])
+    colmun_2=(dimensions[self.data.ydata], units[self.data.ydata])
+    plot_list=[]
+    for function in self.functions:
+      self.result_data.append(MeasurementData([column_1, column_2], # columns
+                                              [], # const_columns
+                                              0, # x-column
+                                              1, # y-column
+                                              1  # yerror-column
+                                              ))
+      result=self.result_data[-1]
+      if function[2]:
+        data=self.data.list()
+        data_x=[d[0] for d in data]
+        data_y=fuction[0].simulate(data_x)
+        for i in range(len(data_x)):
+          result.append((data_x[i], data_y[i]))
+        result.short_info=function[0].fit_function_text + 'with '
+        for i in range(function[0].parameters):
+          result.short_info+=function[0].parameter_names[i]+\
+                              '='+function[0].parameters[i]+' '
+        plot_list.append(result)
+    self.data.plot_together=plot_list  
