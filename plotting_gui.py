@@ -962,6 +962,27 @@ class ApplicationMainWindow(gtk.Window):
     filter_dialog.destroy()
     self.replot()
     
+  def fit_dialog(self,action):
+    '''
+      A dialog to fit the data with a set of functions.
+    '''
+    from fit_data import FitSession
+    fit_session=FitSession(self.measurement[self.index_mess])
+    fit_dialog=gtk.Dialog(title='Fit...')
+    fit_dialog.set_default_size(600,400)
+    sw = gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add_with_viewport(fit_session.get_dialog()) # add fit dialog
+    fit_dialog.vbox.add(sw)
+    response=fit_dialog.run()
+
+    # close dialog and replot
+    fit_dialog.destroy()
+    self.replot()
+    
 
   def get_new_filter(self,table,row,data,parameters=(-1,0,0,False)):
     ''' 
@@ -1522,7 +1543,7 @@ class ApplicationMainWindow(gtk.Window):
         <menuitem action='AddMulti'/>
         <menuitem action='AddAll'/>
         <separator name='static4'/>
-        <menuitem action='FitLorentz'/>
+        <menuitem action='FitData'/>
         <separator name='static5'/>
         <menuitem action='FilterData'/>
         <separator name='static6'/>
@@ -1685,10 +1706,10 @@ class ApplicationMainWindow(gtk.Window):
         "Add all to Multiplot", None,                     # label, accelerator
         "Add/Remove all sequences to/from multi-plot list",                                    # tooltip
         self.add_multiplot),
-      ( "FitLorentz", None,                    # name, stock id
-        "Fit with pseudo Voigt", None,                     # label, accelerator
-        "Try to fit one peak with pseudo Voigt function",                                    # tooltip
-        self.change),
+      ( "FitData", None,                    # name, stock id
+        "Fit data...", None,                     # label, accelerator
+        "Dialog for fitting of a function to the active dataset.",                                    # tooltip
+        self.fit_dialog),
       ( "MultiPlot", gtk.STOCK_YES,                    # name, stock id
         "Multi", None,                     # label, accelerator
         "Show Multi-plot",                                    # tooltip

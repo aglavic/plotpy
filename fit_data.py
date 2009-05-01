@@ -10,6 +10,8 @@ import numpy
 from scipy.optimize import leastsq
 from math import pi, sqrt
 from measurement_data_structure import MeasurementData
+# for dialog window import gtk
+import gtk
 
 class FitFunction:
   '''
@@ -87,7 +89,13 @@ class FitSum(FitFunction):
     self.name=func1.name + ' + ' + func2.name
     self.parameters=func1.parameters + func2.parameters
     self.parameter_names=[name + '1' for name in func1.parameter_names] + [name + '2' for name in func2.parameter_names]
-    self.fit_function_text=func1.fit_function_text + ' + ' + func2.fit_function_text
+    function_text=func1.fit_function_text
+    for i in range(len(funct1.parameters)):
+      function_text.replace(func1.parameter_names[i], func1.parameter_names[i]+'1')
+    self.fit_function_text=function_text
+    for i in range(len(funct2.parameters)):
+      function_text.replace(func2.parameter_names[i], func2.parameter_names[i]+'2')
+    self.fit_function_text+=' + ' + function_text
     self.fit_function = lambda p, x: \
         func1.fit_function(p[0:len(func1.parameters)], x) + \
         func2.fit_function(p[len(func1.parameters):], x)
@@ -95,12 +103,12 @@ class FitSum(FitFunction):
   
   def set_parameters(self, new_params):
     '''
-      Set new parameters and pass them to orign functions.
+      Set new parameters and pass them to origin functions.
     '''
     FitFunction.set_parameters(self, new_params)
     index=len(self.origin[0].parameters)
-    self.origin[0].set_paramters(self.parameters[:index])
-    self.origin[1].set_paramters(self.parameters[index:])
+    self.origin[0].set_parameters(self.parameters[:index])
+    self.origin[1].set_parameters(self.parameters[index:])
 
   def simulate(self, x):
     '''
@@ -199,7 +207,7 @@ class FitSession:
       Add a function to the list of fitted functions.
     '''
     if function_name in self.available_functions:
-      self.functions.append(( self.available_functions[function_name]([]), True, True))
+      self.functions.append([self.available_functions[function_name]([]), True, True])
       return True
     else:
       return False
@@ -220,7 +228,7 @@ class FitSession:
     '''
     functions=self.functions
     if (index_1 < len(functions)) and (index_2 < len(functions)):
-      functions.append(( FitSum(functions[index_1][0], functions[index_2][0]), True, True))
+      functions.append([FitSum(functions[index_1][0], functions[index_2][0]), True, True])
       functions[index_1][1]=False
       functions[index_2][1]=False
   
@@ -233,10 +241,7 @@ class FitSession:
         data=self.data.list()
         data_x=[d[0] for d in data]
         data_y=[d[1] for d in data]
-        fuction[0].refine(data_x, data_y)
-        return True
-      else:
-        return False
+        function[0].refine(data_x, data_y)
 
   def simulate(self):
     '''
@@ -245,8 +250,8 @@ class FitSession:
     self.result_data=[]
     dimensions=self.data.dimensions()
     units=self.data.units()
-    colmun_1=(dimensions[self.data.xdata], units[self.data.xdata])
-    colmun_2=(dimensions[self.data.ydata], units[self.data.ydata])
+    column_1=(dimensions[self.data.xdata], units[self.data.xdata])
+    column_2=(dimensions[self.data.ydata], units[self.data.ydata])
     plot_list=[]
     for function in self.functions:
       self.result_data.append(MeasurementData([column_1, column_2], # columns
@@ -257,14 +262,21 @@ class FitSession:
                                               ))
       result=self.result_data[-1]
       if function[2]:
-        data=self.data.list()
-        data_x=[d[0] for d in data]
-        data_y=fuction[0].simulate(data_x)
+        data_xy=self.data.list()
+        data_x=[d[0] for d in data_xy]
+        data_y=function[0].simulate(data_x)
         for i in range(len(data_x)):
           result.append((data_x[i], data_y[i]))
-        result.short_info=function[0].fit_function_text + 'with '
-        for i in range(function[0].parameters):
-          result.short_info+=function[0].parameter_names[i]+\
-                              '='+function[0].parameters[i]+' '
+        function_text=function[0].fit_function_text
+        for i in range(len(function[0].parameters)):
+          function_text.replace(function[0].parameter_names[i], str(function[0].parameters[i]))
+        result.short_info='fit: ' + function_text
         plot_list.append(result)
-    self.data.plot_together=plot_list  
+    self.data.plot_together=[self.data] + plot_list  
+
+  def get_dialog(self):
+    '''
+      Return a dialog widget for the interaction with this class.
+    '''
+    align_table=gtk.Table(1,5,False)
+    return align_table
