@@ -90,11 +90,12 @@ class FitSum(FitFunction):
     self.parameters=func1.parameters + func2.parameters
     self.parameter_names=[name + '1' for name in func1.parameter_names] + [name + '2' for name in func2.parameter_names]
     function_text=func1.fit_function_text
-    for i in range(len(funct1.parameters)):
-      function_text.replace(func1.parameter_names[i], func1.parameter_names[i]+'1')
+    for i in range(len(func1.parameters)):
+      function_text=function_text.replace(func1.parameter_names[i], func1.parameter_names[i]+'1')
     self.fit_function_text=function_text
-    for i in range(len(funct2.parameters)):
-      function_text.replace(func2.parameter_names[i], func2.parameter_names[i]+'2')
+    function_text=func2.fit_function_text
+    for i in range(len(func2.parameters)):
+      function_text=function_text.replace(func2.parameter_names[i], func2.parameter_names[i]+'2')
     self.fit_function_text+=' + ' + function_text
     self.fit_function = lambda p, x: \
         func1.fit_function(p[0:len(func1.parameters)], x) + \
@@ -133,7 +134,7 @@ class FitLinear(FitFunction):
   parameters=[1, 0]
   parameter_names=['a', 'b']
   fit_function=lambda self, p, x: p[0] * numpy.array(x) + p[1]
-  fit_function_text='f(x)=a*x + b'
+  fit_function_text='a*x + b'
 
   __init__=FitFunction.__init__
 
@@ -147,7 +148,7 @@ class FitQuadratic(FitFunction):
   parameters=[1, 0,  0]
   parameter_names=['a', 'b', 'c']
   fit_function=lambda self, p, x: p[0] * numpy.array(x)**2 + p[1] * numpy.array(x) + p[2]
-  fit_function_text='f(x)=a*x**2 + b*x + c'
+  fit_function_text='a*x**2 + b*x + c'
 
   __init__=FitFunction.__init__
 
@@ -161,7 +162,7 @@ class FitExponential(FitFunction):
   parameters=[1, 1, 0]
   parameter_names=['A', 'B', 'C']
   fit_function=lambda self, p, x: p[0] * numpy.exp(p[1] * numpy.array(x)) + p[2]
-  fit_function_text='f(x)=A*exp(B*x) + C'
+  fit_function_text='A*exp(B*x) + C'
 
   __init__=FitFunction.__init__
 
@@ -172,12 +173,43 @@ class FitGaussian(FitFunction):
   
   # define class variables.
   name="Gaussian"
-  parameters=[1, 0, 1, 0]
-  parameter_names=['A', 'x_0', 'sigma', 'b']
-  fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2) + p[3]
-  fit_function_text='f(x)=A*exp(-0.5*(x-x_0)/sigma) + b'
+  parameters=[1, 0, 1]
+  parameter_names=['A', 'x_0', 'sigma']
+  fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2)
+  fit_function_text='A*exp(-0.5*(x-x_0)/sigma)'
 
   __init__=FitFunction.__init__
+
+class FitLorentzian(FitFunction):
+  '''
+    Fit a lorentz function.
+  '''
+  
+  # define class variables.
+  name="Lorentzian"
+  parameters=[1, 0, 1]
+  parameter_names=['I', 'x_0', 'gamma' ]
+  fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2)
+  fit_function_text='A/(1 + ((x-x_0)/gamma)**2)'
+
+  __init__=FitFunction.__init__
+
+class FitLorentzian(FitFunction):
+  '''
+    Fit a voigt function.
+  '''
+  
+  # define class variables.
+  name="Voigt"
+  parameters=[1, 0, 1]
+  parameter_names=['I', 'x_0', 'gamma' ]
+  fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2)
+  fit_function_text='A/(1 + ((x-x_0)/gamma)**2)'
+
+  __init__=FitFunction.__init__
+
+
+#--------------------------------- Define common functions for fits ---------------------------------
 
 class FitSession:
   '''
@@ -192,7 +224,8 @@ class FitSession:
                        FitLinear.name: FitLinear, 
                        FitQuadratic.name: FitQuadratic, 
                        FitExponential.name: FitExponential, 
-                       FitGaussian.name: FitGaussian
+                       FitGaussian.name: FitGaussian, 
+                       FitLorentzian.name: FitLorentzian
                        }
   
   def __init__(self,  dataset):
@@ -211,6 +244,12 @@ class FitSession:
       return True
     else:
       return False
+  
+  def del_function(self, function_obj):
+    '''
+      Delete a function to the list of fitted functions.
+    '''
+    self.functions=[func for func in self.functions if func[0]!=function_obj]
   
   def get_functions(self):
     '''
@@ -269,7 +308,7 @@ class FitSession:
           result.append((data_x[i], data_y[i]))
         function_text=function[0].fit_function_text
         for i in range(len(function[0].parameters)):
-          function_text.replace(function[0].parameter_names[i], str(function[0].parameters[i]))
+          function_text=function_text.replace(function[0].parameter_names[i], "%.6g" % function[0].parameters[i], 2)
         result.short_info='fit: ' + function_text
         plot_list.append(result)
     self.data.plot_together=[self.data] + plot_list  
@@ -278,38 +317,59 @@ class FitSession:
     '''
       Return a dialog widget for the interaction with this class.
     '''
+    def set_function_param(action, function, index):
+      '''
+        Toggle a setting in the functions list.
+      '''
+      function[index]=not function[index]
     entries=[]
-    align_table=gtk.Table(4,len(self.functions)*2+1,False)
+    align_table=gtk.Table(5,len(self.functions)*2+2,False)
     for i, function in enumerate(self.functions):
       text=gtk.Label(function[0].name + ': ')
       align_table.attach(text,
                   # X direction #          # Y direction
-                  0, 1,                      i*2, i*2+1,
+                  0, 2,                      i*2, i*2+1,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       text=gtk.Label(function[0].fit_function_text)
       align_table.attach(text,
                   # X direction #          # Y direction
-                  1, 2,                      i*2, i*2+1,
+                  4, 5,                      i*2, i*2+1,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
-      new_line, entry=self.function_line(function[0])
+      new_line, entry=self.function_line(function[0], dialog, window)
       entries.append(entry)
       align_table.attach(new_line,
                   # X direction #          # Y direction
-                  1, 2,                      i*2+1, i*2+2,
+                  4, 5,                      i*2+1, i*2+2,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
-      text=gtk.Label('fit')
+      text=gtk.Label(' fit ')
       align_table.attach(text,
                   # X direction #          # Y direction
                   2, 3,                      i*2, i*2+1,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
-      text=gtk.Label('show')
+      toggle_fit=gtk.CheckButton()
+      toggle_fit.set_active(function[1])
+      toggle_fit.connect('toggled', set_function_param, function, 1)
+      align_table.attach(toggle_fit,
+                  # X direction #          # Y direction
+                  2, 3,                      i*2+1, i*2+2,
+                  gtk.EXPAND,     gtk.EXPAND,
+                  0,                         0);
+      text=gtk.Label(' show ')
       align_table.attach(text,
                   # X direction #          # Y direction
                   3, 4,                      i*2, i*2+1,
+                  gtk.EXPAND,     gtk.EXPAND,
+                  0,                         0);
+      toggle_show=gtk.CheckButton()
+      toggle_show.set_active(function[2])
+      toggle_show.connect('toggled', set_function_param, function, 2)
+      align_table.attach(toggle_show,
+                  # X direction #          # Y direction
+                  3, 4,                      i*2+1, i*2+2,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
     # Options for new functions
@@ -319,35 +379,99 @@ class FitSession:
       new_function.append_text(name)
     align_table.attach(add_button,
                 # X direction #          # Y direction
-                0, 1,                      len(self.functions)*2, len(self.functions)*2+1,
+                0, 1,                      len(self.functions)*2+1, len(self.functions)*2+2,
+                gtk.EXPAND,     gtk.EXPAND,
+                0,                         0);
+    sum_button=gtk.Button(label='Combine')
+    align_table.attach(sum_button,
+                # X direction #          # Y direction
+                1, 2,                       len(self.functions)*2+1, len(self.functions)*2+2,
+                gtk.EXPAND,     gtk.EXPAND,
+                0,                         0);
+    fit_button=gtk.Button(label='Fit and Replot')
+    align_table.attach(fit_button,
+                # X direction #          # Y direction
+                2, 4,                      len(self.functions)*2, len(self.functions)*2+2,
                 gtk.EXPAND,     gtk.EXPAND,
                 0,                         0);
     align_table.attach(new_function,
                 # X direction #          # Y direction
-                1, 2,                      len(self.functions)*2, len(self.functions)*2+1,
+                0, 2,                      len(self.functions)*2, len(self.functions)*2+1,
                 gtk.EXPAND,     gtk.EXPAND,
                 0,                         0);
     add_button.connect('clicked', self.add_function_dialog, new_function, dialog, window)
-    return align_table
+    sum_button.connect('clicked', self.combine_dialog, dialog, window)
+    fit_button.connect('clicked', self.fit_from_dialog, entries, dialog, window)
+    align=gtk.Alignment(0.5, 0.5, 0, 0)
+    align.add(align_table)
+    return align
   
-  def function_line(self, function):
-    table=gtk.Table(len(function.parameters)*2, 1, False)
+  def function_line(self, function, dialog, window):
+    table=gtk.Table(len(function.parameters)*2+1, 1, False)
     entries=[]
     for i, parameter in enumerate(function.parameters):
       text=gtk.Label(function.parameter_names[i])
       entries.append(gtk.Entry())
       entries[i].set_width_chars(8)
-      entries[i].set_text(str(parameter))
+      entries[i].set_text("%.6g" % parameter)
       table.attach(text, i*2, i*2+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
       table.attach(entries[i], i*2+1, i*2+2, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+    del_button=gtk.Button(label='DEL')
+    table.attach(del_button, len(function.parameters)*2, len(function.parameters)*2+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+    del_button.connect('clicked', self.del_function_dialog, function, dialog, window)
     return table, entries
 
-  
-  
   def add_function_dialog(self, action, name, dialog, window):
     '''
-      Add a functio via dialog access.
+      Add a function via dialog access.
     '''
     self.add_function(name.get_active_text())
     dialog.destroy()
     window.fit_dialog(None)
+  
+  def del_function_dialog(self, action, function, dialog, window):
+    '''
+      Delete a function via dialog access.
+    '''
+    self.del_function(function)
+    dialog.destroy()
+    window.fit_dialog(None)
+  
+  def fit_from_dialog(self, action, entries, dialog, window):
+    '''
+      Trigger the fit, simulation and replot functions.
+    '''
+    for i, function in enumerate(self.functions):
+      for j,  entry in enumerate(entries[i]):
+        function[0].parameters[j]=float(entry.get_text().replace(',', '.'))
+    self.fit()
+    self.simulate()
+    dialog.destroy()
+    window.replot()
+    window.fit_dialog(None)
+
+  def combine_dialog(self, action, dialog, window):
+    if len(self.functions)<2:
+      return False
+    function_1=gtk.combo_box_new_text()
+    for i, function in enumerate(self.functions):
+      function_1.append_text(str(i)+': '+function[0].name)
+    function_2=gtk.combo_box_new_text()
+    for i, function in enumerate(self.functions):
+      function_2.append_text(str(i)+': '+function[0].name)
+    combine_dialog=gtk.Dialog(title='Fit...')
+    combine_dialog.set_default_size(400,150)
+    combine_dialog.vbox.add(function_1)
+    combine_dialog.vbox.add(function_2)
+    combine_dialog.add_button('Add: a + b',2)
+    combine_dialog.add_button('Add: a(b)',3)
+    combine_dialog.add_button('Cancel',1)
+    combine_dialog.show_all()
+    result=combine_dialog.run()
+    selected=[int(function_1.get_active_text().split(':')[0]), int(function_2.get_active_text().split(':')[0])]
+    if result in [2, 3]:
+      if result==2:
+        self.sum(selected[0], selected[1])
+        dialog.destroy()
+        window.fit_dialog(None)
+    combine_dialog.destroy()

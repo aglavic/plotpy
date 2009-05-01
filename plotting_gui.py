@@ -458,6 +458,9 @@ class ApplicationMainWindow(gtk.Window):
     self.logx.set_active(self.measurement[self.index_mess].logx)
     self.logy.set_active(self.measurement[self.index_mess].logy)
     self.logz.set_active(self.measurement[self.index_mess].logz)
+    # close all open dialogs
+    for window in self.open_windows:
+      window.destroy()
     # recreate the menus, if the columns for this dataset aren't the same
     self.rebuild_menus()
     # plot the data
@@ -1022,6 +1025,7 @@ class ApplicationMainWindow(gtk.Window):
     sw.add_with_viewport(fit_session.get_dialog(self, fit_dialog)) # add fit dialog
     fit_dialog.vbox.add(sw)
     response=fit_dialog.show_all()
+    self.open_windows.append(fit_dialog)
 
   def show_add_info(self,action):
     '''
