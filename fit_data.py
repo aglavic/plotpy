@@ -274,9 +274,80 @@ class FitSession:
         plot_list.append(result)
     self.data.plot_together=[self.data] + plot_list  
 
-  def get_dialog(self):
+  def get_dialog(self, window, dialog):
     '''
       Return a dialog widget for the interaction with this class.
     '''
-    align_table=gtk.Table(1,5,False)
+    entries=[]
+    align_table=gtk.Table(4,len(self.functions)*2+1,False)
+    for i, function in enumerate(self.functions):
+      text=gtk.Label(function[0].name + ': ')
+      align_table.attach(text,
+                  # X direction #          # Y direction
+                  0, 1,                      i*2, i*2+1,
+                  gtk.EXPAND,     gtk.EXPAND,
+                  0,                         0);
+      text=gtk.Label(function[0].fit_function_text)
+      align_table.attach(text,
+                  # X direction #          # Y direction
+                  1, 2,                      i*2, i*2+1,
+                  gtk.EXPAND,     gtk.EXPAND,
+                  0,                         0);
+      new_line, entry=self.function_line(function[0])
+      entries.append(entry)
+      align_table.attach(new_line,
+                  # X direction #          # Y direction
+                  1, 2,                      i*2+1, i*2+2,
+                  gtk.EXPAND,     gtk.EXPAND,
+                  0,                         0);
+      text=gtk.Label('fit')
+      align_table.attach(text,
+                  # X direction #          # Y direction
+                  2, 3,                      i*2, i*2+1,
+                  gtk.EXPAND,     gtk.EXPAND,
+                  0,                         0);
+      text=gtk.Label('show')
+      align_table.attach(text,
+                  # X direction #          # Y direction
+                  3, 4,                      i*2, i*2+1,
+                  gtk.EXPAND,     gtk.EXPAND,
+                  0,                         0);
+    # Options for new functions
+    new_function=gtk.combo_box_new_text()
+    add_button=gtk.Button(label='Add Function')
+    for name in self.get_functions():
+      new_function.append_text(name)
+    align_table.attach(add_button,
+                # X direction #          # Y direction
+                0, 1,                      len(self.functions)*2, len(self.functions)*2+1,
+                gtk.EXPAND,     gtk.EXPAND,
+                0,                         0);
+    align_table.attach(new_function,
+                # X direction #          # Y direction
+                1, 2,                      len(self.functions)*2, len(self.functions)*2+1,
+                gtk.EXPAND,     gtk.EXPAND,
+                0,                         0);
+    add_button.connect('clicked', self.add_function_dialog, new_function, dialog, window)
     return align_table
+  
+  def function_line(self, function):
+    table=gtk.Table(len(function.parameters)*2, 1, False)
+    entries=[]
+    for i, parameter in enumerate(function.parameters):
+      text=gtk.Label(function.parameter_names[i])
+      entries.append(gtk.Entry())
+      entries[i].set_width_chars(8)
+      entries[i].set_text(str(parameter))
+      table.attach(text, i*2, i*2+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+      table.attach(entries[i], i*2+1, i*2+2, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+    return table, entries
+
+  
+  
+  def add_function_dialog(self, action, name, dialog, window):
+    '''
+      Add a functio via dialog access.
+    '''
+    self.add_function(name.get_active_text())
+    dialog.destroy()
+    window.fit_dialog(None)

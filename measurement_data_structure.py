@@ -71,6 +71,7 @@ class MeasurementData:
       self.const_data.append([con[0],PysicalProperty(self.data[con[0]].dimension,self.data[con[0]].unit)])
       self.const_data[-1][1].append(con[1])
     self.plot_together=[self] # list of datasets, which will be plotted together
+    self.fit_object=None
 
   def __iter__(self): # see next()
     return self

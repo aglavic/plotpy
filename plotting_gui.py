@@ -962,28 +962,6 @@ class ApplicationMainWindow(gtk.Window):
     filter_dialog.destroy()
     self.replot()
     
-  def fit_dialog(self,action):
-    '''
-      A dialog to fit the data with a set of functions.
-    '''
-    from fit_data import FitSession
-    fit_session=FitSession(self.measurement[self.index_mess])
-    fit_dialog=gtk.Dialog(title='Fit...')
-    fit_dialog.set_default_size(600,400)
-    sw = gtk.ScrolledWindow()
-    # Set the adjustments for horizontal and vertical scroll bars.
-    # POLICY_AUTOMATIC will automatically decide whether you need
-    # scrollbars.
-    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    sw.add_with_viewport(fit_session.get_dialog()) # add fit dialog
-    fit_dialog.vbox.add(sw)
-    response=fit_dialog.run()
-
-    # close dialog and replot
-    fit_dialog.destroy()
-    self.replot()
-    
-
   def get_new_filter(self,table,row,data,parameters=(-1,0,0,False)):
     ''' 
       Create all widgets for the filter selection of one filter in 
@@ -1024,6 +1002,26 @@ class ApplicationMainWindow(gtk.Window):
                 gtk.EXPAND | gtk.FILL,     gtk.EXPAND | gtk.FILL,
                 0,                         0);
     return (column,from_data,to_data,include)
+
+  def fit_dialog(self,action):
+    '''
+      A dialog to fit the data with a set of functions.
+    '''
+    dataset=self.measurement[self.index_mess]
+    if dataset.fit_object==None:
+      from fit_data import FitSession
+      dataset.fit_object=FitSession(dataset)
+    fit_session=dataset.fit_object
+    fit_dialog=gtk.Dialog(title='Fit...')
+    fit_dialog.set_default_size(600,400)
+    sw = gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add_with_viewport(fit_session.get_dialog(self, fit_dialog)) # add fit dialog
+    fit_dialog.vbox.add(sw)
+    response=fit_dialog.show_all()
 
   def show_add_info(self,action):
     '''
