@@ -47,6 +47,7 @@ class FitFunction:
       Function used by leastsq to compute the difference between the simulation and data.
       For normal functions this is just the difference between y and simulation(x) but
       can be overwritten e.g. to increase speed or fit to log(x).
+      If the dataset has yerror values they are used as weight.
     '''
     # function is called len(x) times, this is just to speed up the lookup procedure
     function=self.fit_function
@@ -80,7 +81,9 @@ class FitFunction:
     return mesg
 
   def set_parameters(self, new_params):
-    '''Set new parameters and store old ones in history.'''
+    '''
+      Set new parameters and store old ones in history.
+    '''
     self.parameters_history=self.parameters
     self.parameters=list(new_params)
 
@@ -105,6 +108,7 @@ class FitSum(FitFunction):
   '''
     Fit the Sum of two FitFunctions.
   '''
+  
   def __init__(self, func1,  func2):
     '''
       Construct a sum of two functions to use for fit.
@@ -168,7 +172,7 @@ class FitQuadratic(FitFunction):
   parameters=[1, 0,  0]
   parameter_names=['a', 'b', 'c']
   fit_function=lambda self, p, x: p[0] * numpy.array(x)**2 + p[1] * numpy.array(x) + p[2]
-  fit_function_text='a*x**2 + b*x + c'
+  fit_function_text='a*x^2 + b*x + c'
 
   def __init__(self, initial_parameters):
     '''
@@ -231,7 +235,7 @@ class FitLorentzian(FitFunction):
   parameters=[1, 0, 1]
   parameter_names=['I', 'x_0', 'gamma' ]
   fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2)
-  fit_function_text='A/(1 + ((x-x_0)/gamma)**2)'
+  fit_function_text='A/(1 + ((x-x_0)/gamma)^2)'
 
   def __init__(self, initial_parameters):
     '''
@@ -244,7 +248,7 @@ class FitLorentzian(FitFunction):
 
 class FitVoigt(FitFunction):
   '''
-    Fit a voigt function.
+    Fit a voigt function using the representation as real part of the complex error function.
   '''
   
   # define class variables.
@@ -391,18 +395,23 @@ class FitSession:
         plot_list.append(result)
     self.data.plot_together=[self.data] + plot_list  
 
+
+  #+++++++++++++++++++++++++ methods for GUI dialog ++++++++++++++++++++
   def get_dialog(self, window, dialog):
     '''
       Return a dialog widget for the interaction with this class.
     '''
     def set_function_param(action, function, index):
       '''
-        Toggle a setting in the functions list.
+        Toggle a setting in the functions list. 
+        Called when check button is pressed.
       '''
       function[index]=not function[index]
+    
     entries=[]
     align_table=gtk.Table(5,len(self.functions)*2+2,False)
     for i, function in enumerate(self.functions):
+      #+++++++ create a row for every function in the list +++++++
       text=gtk.Label(function[0].name + ': ')
       align_table.attach(text,
                   # X direction #          # Y direction
@@ -450,11 +459,11 @@ class FitSession:
                   3, 4,                      i*2+1, i*2+2,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
+      #------- create a row for every function in the list -------
     # Options for new functions
     new_function=gtk.combo_box_new_text()
     add_button=gtk.Button(label='Add Function')
-    for name in self.get_functions():
-      new_function.append_text(name)
+    map(new_function.append_text, self.get_functions())
     align_table.attach(add_button,
                 # X direction #          # Y direction
                 0, 1,                      len(self.functions)*2+1, len(self.functions)*2+2,
@@ -477,14 +486,19 @@ class FitSession:
                 0, 2,                      len(self.functions)*2, len(self.functions)*2+1,
                 gtk.EXPAND,     gtk.EXPAND,
                 0,                         0);
+    # connect the window signals to the handling methods
     add_button.connect('clicked', self.add_function_dialog, new_function, dialog, window)
     sum_button.connect('clicked', self.combine_dialog, dialog, window)
     fit_button.connect('clicked', self.fit_from_dialog, entries, dialog, window)
-    align=gtk.Alignment(0.5, 0.5, 0, 0)
+    align=gtk.Alignment(0.5, 0.5, 0, 0) # the table is centered in the dialog window
     align.add(align_table)
     return align
   
   def function_line(self, function, dialog, window):
+    '''
+      Create the widgets for one function and return a table of these.
+      The entry widgets are returned in a list to be able to read them.
+    '''
     table=gtk.Table(len(function.parameters)*2+1, 1, False)
     entries=[]
     for i, parameter in enumerate(function.parameters):
@@ -502,6 +516,7 @@ class FitSession:
   def add_function_dialog(self, action, name, dialog, window):
     '''
       Add a function via dialog access.
+      Standart parameters are used.
     '''
     self.add_function(name.get_active_text())
     size=dialog.get_size()
@@ -523,6 +538,7 @@ class FitSession:
     '''
       Trigger the fit, simulation and replot functions.
     '''
+    # TODO: Go back in history after fit.
     for i, function in enumerate(self.functions):
       for j,  entry in enumerate(entries[i]):
         function[0].parameters[j]=float(entry.get_text().replace(',', '.'))
@@ -535,6 +551,10 @@ class FitSession:
     window.fit_dialog(None, size, position)
 
   def combine_dialog(self, action, dialog, window):
+    '''
+      A dialog window to combine two fit functions.
+    '''
+    # TODO: Make a(b) working.
     if len(self.functions)<2:
       return False
     function_1=gtk.combo_box_new_text()
@@ -561,3 +581,5 @@ class FitSession:
         dialog.destroy()
         window.fit_dialog(None, size, position)
     combine_dialog.destroy()
+
+  #------------------------- methods for GUI dialog ---------------------
