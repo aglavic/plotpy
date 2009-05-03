@@ -33,6 +33,15 @@ from plot_generic_data import generic_session
 import reflectometer_read_data
 import reflectometer_preferences
 
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.5.2"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Development"
+
 fortran_compiler='gfortran'
 # compiler optimization options as can be found in the manual,
 # add your cpu flag here to increase performance of the fit

@@ -3,6 +3,15 @@
  Some general settings for the SQUID plotting script 'plot_SQUID_data.py'
 '''
 
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.5.1"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Production"
+
 # Diamagnetic correction applied to every measurement (for example the used sample holder)
 dia_mag_correct=0
 

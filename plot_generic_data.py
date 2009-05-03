@@ -29,6 +29,15 @@ from measurement_data_structure import *
 import measurement_data_plotting
 from gnuplot_preferences import print_command
 
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.5.1"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Production"
+
 class generic_session:
   '''
     This is the class valid the whole session to read the files 

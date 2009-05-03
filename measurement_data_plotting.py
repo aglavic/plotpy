@@ -13,6 +13,15 @@ import subprocess
 import globals
 import gnuplot_preferences
 
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.5.2"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Development"
+
 def gnuplot_plot(session, 
                  datasets,
                  file_name_prefix, 

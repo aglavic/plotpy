@@ -42,6 +42,15 @@ from plot_4circle_data import circle_session
 from plot_reflectometer_data import reflectometer_session
 #----------------------- importing modules --------------------------
 
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.5.1"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Production"
+
 '''
   Dictionary for the known measurement types, to create a new measureing type
   it is only needed to create the seesion class and add it to this dictionary.

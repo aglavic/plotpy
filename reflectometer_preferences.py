@@ -1,5 +1,16 @@
 #!/usr/bin/env python
-''' Some general settings for the reflectometer plotting script 'plot_reflectometer_data.py' '''
+'''
+  Some general settings for the reflectometer plotting script 'plot_reflectometer_data.py' 
+'''
+
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.5.1"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Production"
 
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
 transformations=[\

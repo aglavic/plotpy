@@ -2,6 +2,16 @@
 ''' 
  Variables for gnuplot options to be used by plot commands.
 '''
+
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.5.1"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Production"
+
 #
 # place holders:
 #

@@ -2,7 +2,6 @@
 '''
   class for 4 circle data sessions
 '''
-# TODO: fit psd.Voigt
 #################################################################################################
 #                     Script to plot 4Circle-measurements with gnuplot                          #
 #                                                                                               #
@@ -25,6 +24,15 @@ from plot_generic_data import generic_session
 # importing preferences and data readout
 import circle_read_data
 import circle_preferences
+
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.5.1"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Development"
 
 class circle_session(generic_session):
   '''

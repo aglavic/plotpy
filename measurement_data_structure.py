@@ -3,13 +3,19 @@
  Classes for storing the measurement data of any session.
  Units and dimensions are also stored for easier accessing and transformation.
 '''
-#
-# Last change: 06.04.09
-#
 
 # Pleas do not make any changes here unless you know what you are doing.
 
 import globals
+
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.5.1"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Production"
 
 #++++++++++++++++++++++++++++++++++++++MeasurementData-Class+++++++++++++++++++++++++++++++++++++++++++++++++++++#
 class MeasurementData:

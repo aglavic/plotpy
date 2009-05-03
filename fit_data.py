@@ -14,6 +14,15 @@ from measurement_data_structure import MeasurementData
 # for dialog window import gtk
 import gtk
 
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.6"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Development"
+
 class FitFunction:
   '''
     Root class for fittable functions. Parant of all other functions.

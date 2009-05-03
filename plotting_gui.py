@@ -41,6 +41,15 @@ from gnuplot_preferences import output_file_name,print_command,titles
 import gnuplot_preferences
 #----------------------- importing modules --------------------------
 
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.5.2"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Production"
+
 #+++++++++++++++++++++++++ ApplicationMainWindow Class ++++++++++++++++++++++++++++++++++#
 class ApplicationMainWindow(gtk.Window):
   '''

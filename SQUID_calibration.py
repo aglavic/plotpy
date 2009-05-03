@@ -3,6 +3,15 @@
  Add-on for plot_SQUID_data.py to help calculating the SQUID calibration factors
 '''
 
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.4.3"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Prototype"
+
 # Defining global constants
 global Chi_Pd, m_Pd
 # Suszeptability of Paladium at Roomtemperature:

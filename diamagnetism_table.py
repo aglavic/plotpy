@@ -2,6 +2,16 @@
 ''' 
  A table of elements, their diamagnetic moment per mol and elemental weight.
 '''
+
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.5.1"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Production"
+
 #
 # ['name',mol mass,mol dia(10^-6emu/mol)]
 #
