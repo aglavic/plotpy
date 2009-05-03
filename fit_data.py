@@ -8,6 +8,7 @@
 # import mathematic functions and least square fit which uses the Levenberg-Marquardt algorithm.
 import numpy
 from scipy.optimize import leastsq
+from scipy.special import erf, erfc
 from math import pi, sqrt
 from measurement_data_structure import MeasurementData
 # for dialog window import gtk
@@ -32,7 +33,7 @@ class FitFunction:
     if len(self.parameters)==len(initial_parameters):
       self.parameters=initial_parameters
 
-  def residuals(self, params, y, x):
+  def residuals(self, params, y, x, yerror=None):
     '''
       Function used by leastsq to compute the difference between the simulation and data.
       For normal functions this is just the difference between y and simulation(x) but
@@ -40,15 +41,24 @@ class FitFunction:
     '''
     # function is called len(x) times, this is just to speed up the lookup procedure
     function=self.fit_function
-    # if function is defined for lists (e.g. numpy) use this functionality
-    try:
-      err=y-function(params, x)
-    except TypeError:
-      # x and y are lists and the function is only defined for one point.
-      err= map((lambda x_i: y[x.index(x_i)]-function(params, x_i)), x)
-    return err
+    if yerror==None: # is error list given?
+      # if function is defined for arrays (e.g. numpy) use this functionality
+      try:
+        err=y-function(params, x)
+      except TypeError:
+        # x and y are lists and the function is only defined for one point.
+        err= map((lambda x_i: y[x.index(x_i)]-function(params, x_i)), x)
+      return err
+    else:
+      # if function is defined for arrays (e.g. numpy) use this functionality
+      try:
+        err=(y-function(params, x))/yerror
+      except TypeError:
+        # x and y are lists and the function is only defined for one point.
+        err= map((lambda x_i: (y[x.index(x_i)]-function(params, x_i))/yerror[x.index(x_i)]), x)
+      return err      
   
-  def refine(self,  dataset_x,  dataset_y):
+  def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
     '''
       Do the least square refinement to the given dataset. If the fit converges
       the new parameters are stored.
@@ -74,7 +84,7 @@ class FitFunction:
       y=list(self.fit_function(self.parameters, x))
     except TypeError:
       # x is list and the function is only defined for one point.
-      y= map((lambda x_i: function(params, x_i)), x)
+      y= map((lambda x_i: self.fit_function(self.parameters, x_i)), x)
     return y
 
 
@@ -194,19 +204,26 @@ class FitLorentzian(FitFunction):
 
   __init__=FitFunction.__init__
 
-class FitLorentzian(FitFunction):
+class FitVoigt(FitFunction):
   '''
     Fit a voigt function.
   '''
   
   # define class variables.
   name="Voigt"
-  parameters=[1, 0, 1]
-  parameter_names=['I', 'x_0', 'gamma' ]
-  fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2)
-  fit_function_text='A/(1 + ((x-x_0)/gamma)**2)'
+  parameters=[1, 0, 1, 1]
+  parameter_names=['I', 'x_0', 'gamma', 'sigma']
+  fit_function_text='I, x_0, gamma, sigma'
+  sqrt2=numpy.sqrt(2)
+  sqrt2pi=numpy.sqrt(2*numpy.pi)
 
   __init__=FitFunction.__init__
+  
+  def fit_function(self, p, x):
+    z=(numpy.array(x) - p[1] + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
+    w=numpy.exp(-1*z**2)*(1-erf(-1j*z))
+    value=p[0] * w.real / abs(p[3])/self.sqrt2pi
+    return value
 
 
 #--------------------------------- Define common functions for fits ---------------------------------
@@ -225,6 +242,7 @@ class FitSession:
                        FitQuadratic.name: FitQuadratic, 
                        FitExponential.name: FitExponential, 
                        FitGaussian.name: FitGaussian, 
+                       FitVoigt.name: FitVoigt, 
                        FitLorentzian.name: FitLorentzian
                        }
   
@@ -275,12 +293,20 @@ class FitSession:
     '''
       Fit all funcions in the list where the fit parameter is set to True.
     '''
+    if (self.data.yerror>=0) and (self.data.yerror!=self.data.ydata)\
+        and (self.data.yerror!=self.data.xdata):
+      data=self.data.list_err()
+      data_x=[d[0] for d in data]
+      data_y=[d[1] for d in data]
+      data_yerror=[d[2] for d in data]
+    else:
+      data=self.data.list()
+      data_x=[d[0] for d in data]
+      data_y=[d[1] for d in data]
+      data_yerror=None
     for function in self.functions:
       if function[1]:
-        data=self.data.list()
-        data_x=[d[0] for d in data]
-        data_y=[d[1] for d in data]
-        function[0].refine(data_x, data_y)
+        function[0].refine(data_x, data_y, data_yerror)
 
   def simulate(self):
     '''
