@@ -857,7 +857,7 @@ class ApplicationMainWindow(gtk.Window):
     global errorbars
     plot_text=measurement_data_plotting.create_plot_script(
                          self.active_session, 
-                         self.measurement[self.index_mess].plot_together,
+                         [self.measurement[self.index_mess]],
                          self.input_file_name, 
                          self.script_suf, 
                          self.measurement[self.index_mess].short_info,
@@ -1006,7 +1006,7 @@ class ApplicationMainWindow(gtk.Window):
                 0,                         0);
     return (column,from_data,to_data,include)
 
-  def fit_dialog(self,action):
+  def fit_dialog(self,action, size=(600, 400), position=None):
     '''
       A dialog to fit the data with a set of functions.
     '''
@@ -1016,7 +1016,9 @@ class ApplicationMainWindow(gtk.Window):
       dataset.fit_object=FitSession(dataset)
     fit_session=dataset.fit_object
     fit_dialog=gtk.Dialog(title='Fit...')
-    fit_dialog.set_default_size(600,400)
+    fit_dialog.set_default_size(size[0], size[1])
+    if position!=None:
+      fit_dialog.move(position[0], position[1])
     sw = gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
@@ -1270,7 +1272,7 @@ class ApplicationMainWindow(gtk.Window):
         file_dialog.destroy()
         #----------------File selection dialog-------------------#
       self.last_plot_text=self.plot(self.active_session, 
-                                    self.measurement[self.index_mess].plot_together, 
+                                    [self.measurement[self.index_mess]], 
                                     self.input_file_name, 
                                     self.measurement[self.index_mess].short_info,
                                     [object.short_info for object in self.measurement[self.index_mess].plot_together],
@@ -1289,7 +1291,7 @@ class ApplicationMainWindow(gtk.Window):
     if action.get_name()=='Print':
       term='postscript landscape enhanced colour'
       self.last_plot_text=self.plot(self.active_session, 
-                                    self.measurement[self.index_mess].plot_together,
+                                    [self.measurement[self.index_mess]],
                                     self.input_file_name, 
                                     self.measurement[self.index_mess].short_info,
                                     [object.short_info for object in self.measurement[self.index_mess].plot_together],
@@ -1305,7 +1307,7 @@ class ApplicationMainWindow(gtk.Window):
       print_string=print_command
       for dataset in self.measurement: # combine all plot files in one print statement
         self.last_plot_text=self.plot(self.active_session, 
-                                      dataset.plot_together,
+                                      [dataset],
                                       self.input_file_name,
                                       dataset.short_info,
                                       [object.short_info for object in self.measurement[self.index_mess].plot_together],
@@ -1447,7 +1449,7 @@ class ApplicationMainWindow(gtk.Window):
     self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
     self.label2.set_text(self.measurement[self.index_mess].short_info)
     self.last_plot_text=self.plot(self.active_session, 
-                                  self.measurement[self.index_mess].plot_together,
+                                  [self.measurement[self.index_mess]],
                                   self.input_file_name, 
                                   self.measurement[self.index_mess].short_info,
                                   [object.short_info for object in self.measurement[self.index_mess].plot_together],

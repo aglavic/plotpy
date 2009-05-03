@@ -156,6 +156,8 @@ class MeasurementData:
       return [[i+1,point[self.ydata],point[self.yerror]] for i,point in enumerate(self)]
     elif self.ydata<0:
       return [[point[self.xdata],i+1,point[self.yerror]] for i,point in enumerate(self)]
+    elif self.yerror<0:
+      return [[point[self.xdata],point[self.ydata],0] for i,point in enumerate(self)]
     else:
       return [[point[self.xdata],point[self.ydata],point[self.yerror]] for point in self]
 

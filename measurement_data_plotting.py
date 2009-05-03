@@ -31,7 +31,10 @@ def gnuplot_plot(session,
   gp=gnuplot_preferences # short form for gnuplot_preferences
   import Gnuplot
   sample_name=datasets[0].sample_name
-  file_numbers=[dataset.number for dataset in datasets]
+  file_numbers=[]
+  for j, dataset in enumerate(datasets):
+    for i, attachedset in enumerate(dataset.plot_together):
+      file_numbers.append(str(j)+'-'+str(i))
   if output_file.rsplit('.',1)[1]=='ps': # Determine which terminal to use depending on filename suffix
     postscript_export=True
     terminal=gp.set_output_terminal_ps
@@ -51,7 +54,7 @@ def gnuplot_plot(session,
                             title,
                             names,
                             sample_name,
-                            0,
+                            (0, 0, 0),
                             postscript_export,
                             additional_info) 
   gplot=Gnuplot.Gnuplot() # if term is x11 the plot will not close
@@ -62,19 +65,8 @@ def gnuplot_plot(session,
   'set xlabel "'+gp.x_label+'"\n'+\
   'set ylabel "'+gp.y_label+'"\n'+\
   'set title "'+gp.plot_title+'"\n'
-  if len(datasets)==1: # if there is only one graph don't show a key
+  if (len(datasets)==1) and (len(datasets[0].plot_together)==1): # if there is only one graph don't show a key
     gnuplot_settings+='unset key\n'
-  if fit_lorentz: # setting functions and startingparameters for lorentz fitting
-    for i,dataset in enumerate(datasets):
-      gnuplot_settings=gnuplot_settings+\
-            'f_'+str(i)+'(x)=I_'+str(i)+' * (abs(eta_'+str(i)+')/ ( 1 + ((x - x0_'+str(i)+\
-            ')/sigma_'+str(i)+')**2) + abs(1-eta_'+str(i)+')*exp((-log(2))*((2*x-2*x0_'+str(i)+\
-            ')/sigma_'+str(i)+')**2)) + BG_'+str(i)+'\n'+\
-            'I_'+str(i)+'='+str(dataset.max()[1])+'\n'+\
-            'x0_'+str(i)+'='+str(dataset.max()[0])+'\n'+\
-            'sigma_'+str(i)+'='+str(abs(dataset.max()[0]-dataset.min()[0])/4)+'\n'+\
-            'eta_'+str(i)+'=1\n'+\
-            'BG_'+str(i)+'='+str(dataset.min()[1])+'\n'
   if datasets[0].zdata>=0: # plotting in 3D?
     gnuplot_settings=gnuplot_settings+'set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
             'set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
@@ -92,7 +84,7 @@ def gnuplot_plot(session,
                               title,
                               names,
                               sample_name,
-                              0,
+                              (0, 0, 0),
                               postscript_export,
                               additional_info) 
   # Manually mimic the Gnuplot plot function to use multiple plots, which is not easyly possible otherwise.
@@ -115,6 +107,8 @@ def gnuplot_plot(session,
     gplot.plotcmd = 'plot'
   gplot._clear_queue()
   for i,dataset in enumerate(datasets):
+  #++++++++++++++++++++++++ add each dataset to the plot +++++++++++++
+    together_list=[use for use in dataset.plot_together if use!=dataset]
     if with_errorbars:
       datalist=dataset.list_err()
     else:
@@ -125,26 +119,28 @@ def gnuplot_plot(session,
                                    with_=str(plotting_param.replace('w ','',1)),
                                    title=names[datasets.index(dataset)],
                                    using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.zdata+1))]
-    elif fit_lorentz: # for fitting a temporal File is needed, too
-      dataset.export(globals.temp_dir+'tmp_data'+str(i)+'.out')
-      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',
-                                   with_=str(plotting_param.replace('w ','',1)),
-                                   title=names[datasets.index(dataset)],
-                                   using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1))]
-      # start gnuplot fitting of one dataset
-      gp('fit f_'+str(i)+'(x) "'+globals.temp_dir+'tmp_data'+str(i)+'.out" using '+\
-          str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1)+\
-          ' via I_'+str(i)+','+'x0_'+str(i)+','+'sigma_'+str(i)+','+'BG_'+str(i)+',eta_'+str(i)+'\n')
-      plot2=Gnuplot.PlotItems.Func('f_'+str(i)+'(x)',with_=str(gp.plotting_parameters_fit.replace('w ','',1)))
-      function_title="'psd. Voigt fit: x0=\045.4g; FWHM=\045.3g; I=\045.0g; eta=\045.2g',x0_"+\
-          str(i)+","+"abs(sigma_"+str(i)+"*2),"+"I_"+str(i)+","+"eta_"+str(i)
-      plot2.set_string_option('title',function_title, 'notitle', 'title sprintf(\045s)')
-      plot.append(plot2)
     else:
       plot=[Gnuplot.PlotItems.Data(datalist,
                                    with_=str(plotting_param.replace('w ','',1)),
                                    title=names[datasets.index(dataset)])]
     gplot._add_to_queue(plot)
+
+  #------------------------ add each dataset to the plot --------------
+    for j,attachedset in enumerate(together_list):
+      #++++++++++++++++++++++++ add attached datasets to the plot +++++++++++++
+      datalist=attachedset.list()
+      if (attachedset.zdata>=0): # for 3d-Data we have to create a temporal File
+        attachedset.export(globals.temp_dir+'tmp_data'+str(i)+'-'+str(j)+'.out')
+        plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',
+                                     with_=str(plotting_param.replace('w ','',1)),
+                                     title=attachedset.short_info,
+                                     using=str(attachedset.xdata+1)+':'+str(attachedset.ydata+1)+':'+str(attachedset.zdata+1))]
+      else:
+        plot=[Gnuplot.PlotItems.Data(datalist,
+                                     with_=str(gp.plotting_parameters).replace('w ','',1),
+                                     title=attachedset.short_info)]
+      gplot._add_to_queue(plot)
+    #------------------------  add attached datasets to the plot --------------
   gplot.refresh()
   gplot.close()
   # read stdout and stderr from gnuplot
@@ -166,10 +162,12 @@ def gnuplot_plot_script(session,
       Files are stored in temporary folder set in gnuplot_preferences.
   '''
   gp=gnuplot_preferences # short form for gnuplot_preferences
-  for dataset in datasets:
-    dataset.export(session.temp_dir+'tmp_data_'+dataset.number+'.out')
+  file_numbers=[]
+  for j, dataset in enumerate(datasets):
+    for i, attachedset in enumerate(dataset.plot_together):
+      file_numbers.append(str(j)+'-'+str(i))
+      attachedset.export(session.temp_dir+'tmp_data_'+str(j)+'-'+str(i)+'.out')
   sample_name=datasets[0].sample_name
-  file_numbers=[dataset.number for dataset in datasets]
   if output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
@@ -184,7 +182,7 @@ def gnuplot_plot_script(session,
                                           title,
                                           names,
                                           sample_name,
-                                          0,
+                                          (0, 0, 0),
                                           postscript_export,
                                           additional_info)
   gnuplot_file_text=create_plot_script(session, 
@@ -223,25 +221,27 @@ def replace_ph(session,
   '''
     Replace place holders in a string.
   '''
+  datanr=number[0]
+  withnr=number[1]
   gp=gnuplot_preferences
   string=string.\
   replace('[name]',file_name_prefix).\
   replace('[name-rmv]',gp.remove_from_name(file_name_prefix)).\
   replace('[sample]',sample_name).\
-  replace('[nr]',file_numbers[number]).\
+  replace('[nr]',file_numbers[number[2]]).\
   replace('[add_info]',additional_info).\
-  replace('[info]',datasets[number].info.replace('\n','\n#')).\
-  replace('[x-unit]',datasets[number].xunit()).\
-  replace('[x-dim]',datasets[number].xdim()).\
-  replace('[y-unit]',datasets[number].yunit()).\
-  replace('[y-dim]',datasets[number].ydim()).\
-  replace('[z-unit]',datasets[number].zunit()).\
-  replace('[z-dim]',datasets[number].zdim()).\
+  replace('[info]',datasets[datanr].plot_together[withnr].info.replace('\n','\n#')).\
+  replace('[x-unit]',datasets[datanr].plot_together[withnr].xunit()).\
+  replace('[x-dim]',datasets[datanr].plot_together[withnr].xdim()).\
+  replace('[y-unit]',datasets[datanr].plot_together[withnr].yunit()).\
+  replace('[y-dim]',datasets[datanr].plot_together[withnr].ydim()).\
+  replace('[z-unit]',datasets[datanr].plot_together[withnr].zunit()).\
+  replace('[z-dim]',datasets[datanr].plot_together[withnr].zdim()).\
   replace('[title_add]',title).\
-  replace('[titles_add]',names[number]).\
-  replace('[const_unit]',datasets[number].units()[datasets[number].type()]).\
-  replace('[const_dim]',datasets[number].dimensions()[datasets[number].type()]).\
-  replace('[const_value]',str(datasets[number].last()[datasets[number].type()]))
+  replace('[titles_add]',names[number[2]]).\
+  replace('[const_unit]',datasets[datanr].plot_together[withnr].units()[datasets[datanr].plot_together[withnr].type()]).\
+  replace('[const_dim]',datasets[datanr].plot_together[withnr].dimensions()[datasets[datanr].plot_together[withnr].type()]).\
+  replace('[const_value]',str(datasets[datanr].plot_together[withnr].last()[datasets[datanr].plot_together[withnr].type()]))
 # translations for postscript export (special characters other than in png export)
 # should be enlongated with other characters
   if postscript_export: # see gnuplot_preferences.py for this function
@@ -266,14 +266,17 @@ def create_plot_script(session,
   '''
   gp=gnuplot_preferences # define global gnuplot_preferences modul as local gp 
   sample_name=datasets[0].sample_name
-  file_numbers=[dataset.number for dataset in datasets]
+  file_numbers=[]
+  for j, dataset in enumerate(datasets):
+    for i, attachedset in enumerate(dataset.plot_together):
+      file_numbers.append(str(j)+'-'+str(i))
   if output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
   else:
     postscript_export=False
     terminal=gp.set_output_terminal_png
-  if with_errorbars|fit_lorentz:
+  if with_errorbars:
     plotting_param=gp.plotting_parameters_errorbars
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].yerror+1)
   else:
@@ -285,60 +288,43 @@ def create_plot_script(session,
                     'set xlabel "'+gp.x_label+'"\n'+\
                     'set ylabel "'+gp.y_label+'"\n'+\
                     'set title "'+gp.plot_title+'"\n'
-  if len(datasets)==1: # if there is only one graph don't show a key
+  if (len(datasets)==1) and (len(datasets[0].plot_together)==1): # if there is only one graph don't show a key
     gnuplot_file_text+='unset key\n'
   gnuplot_file_text+=datasets[0].plot_options
-  if fit_lorentz: # define pseudo Voigt Function to be fitted ( f=eta*f_lorentz+(a-eta)*f_gauss )
-      for i,dataset in enumerate(datasets):
-          gnuplot_file_text=gnuplot_file_text+\
-            'f_'+str(i)+'(x)=I_'+str(i)+' * (abs(eta_'+str(i)+')/ ( 1 + ((x - x0_'+str(i)+\
-            ')/sigma_'+str(i)+')**2) + abs(1-eta_'+str(i)+')*exp((-log(2))*((2*x-2*x0_'+str(i)+\
-            ')/sigma_'+str(i)+')**2)) + BG_'+str(i)+'\n'+\
-            'I_'+str(i)+'='+str(dataset.max()[1])+'\n'+\
-            'x0_'+str(i)+'='+str(dataset.max()[0])+'\n'+\
-            'sigma_'+str(i)+'='+str(abs(dataset.max()[0]-dataset.min()[0])/4)+'\n'+\
-            'eta_'+str(i)+'=1\n'+\
-            'BG_'+str(i)+'='+str(dataset.min()[1])+'\n'+\
-            'fit f_'+str(i)+'(x) "'+file_name_prefix+'_'+file_numbers[i]+file_name_postfix+'" using '+\
-            str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.yerror+1)+\
-            ' via I_'+str(i)+','+'x0_'+str(i)+','+'sigma_'+str(i)+','+'BG_'+str(i)+',eta_'+str(i)+'\n'
   if datasets[0].logx:
-      gnuplot_file_text=gnuplot_file_text+'set log x\n'
+    gnuplot_file_text=gnuplot_file_text+'set log x\n'
   if datasets[0].logy:
-      gnuplot_file_text=gnuplot_file_text+'set log y\n'
+    gnuplot_file_text=gnuplot_file_text+'set log y\n'
   if datasets[0].logz:
-      gnuplot_file_text=gnuplot_file_text+'set log z\nset log cb\n'
+    gnuplot_file_text=gnuplot_file_text+'set log z\nset log cb\n'
   splot_add=''
   if datasets[0].zdata>=0:
-      plotting_param=gp.plotting_parameters_3d
-      gnuplot_file_text=gnuplot_file_text+'set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
-      'set zlabel "'+z_label+'"\n'+'set cblabel "'+z_label+'"\n'+\
-      settings_3d
-      if ((datasets[0].view_x%180)==0)&((datasets[0].view_z%90)==0):
-          gnuplot_file_text=gnuplot_file_text+settings_3dmap
-      else:
-          gnuplot_file_text=gnuplot_file_text+settings_3d
-      splot_add='s'
-      using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
+    plotting_param=gp.plotting_parameters_3d
+    gnuplot_file_text=gnuplot_file_text+'set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
+        'set zlabel "'+z_label+'"\n'+'set cblabel "'+z_label+'"\n'+\
+        settings_3d
+    if ((datasets[0].view_x%180)==0)&((datasets[0].view_z%90)==0):
+      gnuplot_file_text=gnuplot_file_text+settings_3dmap
+    else:
+      gnuplot_file_text=gnuplot_file_text+settings_3d
+    splot_add='s'
+    using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
   gnuplot_file_text=gnuplot_file_text+\
-          '# now the plotting function\n'+splot_add+\
-          'plot "'+session.temp_dir+'tmp_data_'+datasets[0].number+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+        '# now the plotting function\n'+splot_add+\
+        'plot "'+session.temp_dir+'tmp_data_'+file_numbers[0]+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
   gnuplot_file_text=replace_ph(session, 
-                               gnuplot_file_text,
-                               datasets,
-                               file_name_prefix, 
-                               file_numbers, 
-                               title,
-                               names,
-                               sample_name,
-                               0,
-                               postscript_export,
-                               additional_info)
-  if fit_lorentz:
-      gnuplot_file_text=gnuplot_file_text+',f_'+str(0)+'(x) '+gp.plotting_parameters_fit+\
-          " title sprintf('psd. Voigt fit: x0=\045.4g; FWHM=\045.3g; I=\045.0g; eta=\045.2g',x0_"+\
-          str(i)+","+"abs(sigma_"+str(i)+"*2),"+"I_"+str(i)+","+"eta_"+str(i)+')'
+                             gnuplot_file_text,
+                             datasets,
+                             file_name_prefix, 
+                             file_numbers, 
+                             title,
+                             names,
+                             sample_name,
+                             (0, 0, 0),
+                             postscript_export,
+                             additional_info)
   for number in file_numbers[1:len(file_numbers)]:
+    if number.split('-')[1]=='0':
       gnuplot_file_text=gnuplot_file_text+',\\\n"'+session.temp_dir+'tmp_data_'+number+\
           '.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
       gnuplot_file_text=replace_ph(session, 
@@ -349,13 +335,27 @@ def create_plot_script(session,
                                    title,
                                    names,
                                    sample_name,
-                                   file_numbers.index(number),
+                                   (int(number.split('-')[0]), 0, file_numbers.index(number)),
                                    postscript_export,
                                    additional_info)
-      if fit_lorentz:
-          gnuplot_file_text=gnuplot_file_text+',f_'+str(i)+'(x) '+\
-              gp.plotting_parameters_fit+' title=\'x0=\045g; sigma=\045g; intensity=\045g; background=\045g\',x0_'+\
-              str(i)+","+"sigma_"+str(i)+","+"I_"+str(i)+","+"BG_"+str(i)
+    else:
+      i, j=(int(number.split('-')[0]), int(number.split('-')[1]))
+      using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
+                          str(datasets[i].plot_together[j].ydata+1)+':'+\
+                          str(datasets[i].plot_together[j].yerror+1)
+      gnuplot_file_text=gnuplot_file_text+',\\\n"'+session.temp_dir+'tmp_data_'+number+\
+          '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
+      gnuplot_file_text=replace_ph(session, 
+                                   gnuplot_file_text,
+                                   datasets,
+                                   file_name_prefix,
+                                   file_numbers, 
+                                   title,
+                                   names,
+                                   sample_name,
+                                   (int(number.split('-')[0]), int(number.split('-')[1]), file_numbers.index(number)),
+                                   postscript_export,
+                                   additional_info)
   return gnuplot_file_text
 
  

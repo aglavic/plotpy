@@ -8,7 +8,7 @@
 # import mathematic functions and least square fit which uses the Levenberg-Marquardt algorithm.
 import numpy
 from scipy.optimize import leastsq
-from scipy.special import erf, erfc
+from scipy.special import wofz
 from math import pi, sqrt
 from measurement_data_structure import MeasurementData
 # for dialog window import gtk
@@ -139,7 +139,15 @@ class FitLinear(FitFunction):
   fit_function=lambda self, p, x: p[0] * numpy.array(x) + p[1]
   fit_function_text='a*x + b'
 
-  __init__=FitFunction.__init__
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    if len(self.parameters)==len(initial_parameters):
+      self.parameters=initial_parameters
+    else:
+      self.parameters=[1, 0]
+
 
 class FitQuadratic(FitFunction):
   '''
@@ -153,7 +161,14 @@ class FitQuadratic(FitFunction):
   fit_function=lambda self, p, x: p[0] * numpy.array(x)**2 + p[1] * numpy.array(x) + p[2]
   fit_function_text='a*x**2 + b*x + c'
 
-  __init__=FitFunction.__init__
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    if len(self.parameters)==len(initial_parameters):
+      self.parameters=initial_parameters
+    else:
+      self.parameters=[1, 0, 0]
 
 class FitExponential(FitFunction):
   '''
@@ -167,7 +182,14 @@ class FitExponential(FitFunction):
   fit_function=lambda self, p, x: p[0] * numpy.exp(p[1] * numpy.array(x)) + p[2]
   fit_function_text='A*exp(B*x) + C'
 
-  __init__=FitFunction.__init__
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    if len(self.parameters)==len(initial_parameters):
+      self.parameters=initial_parameters
+    else:
+      self.parameters=[1, 0, 0]
 
 class FitGaussian(FitFunction):
   '''
@@ -181,7 +203,14 @@ class FitGaussian(FitFunction):
   fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2)
   fit_function_text='A*exp(-0.5*(x-x_0)/sigma)'
 
-  __init__=FitFunction.__init__
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    if len(self.parameters)==len(initial_parameters):
+      self.parameters=initial_parameters
+    else:
+      self.parameters=[1, 0, 1]
 
 class FitLorentzian(FitFunction):
   '''
@@ -195,7 +224,14 @@ class FitLorentzian(FitFunction):
   fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2)
   fit_function_text='A/(1 + ((x-x_0)/gamma)**2)'
 
-  __init__=FitFunction.__init__
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    if len(self.parameters)==len(initial_parameters):
+      self.parameters=initial_parameters
+    else:
+      self.parameters=[1, 0, 1]
 
 class FitVoigt(FitFunction):
   '''
@@ -206,18 +242,30 @@ class FitVoigt(FitFunction):
   name="Voigt"
   parameters=[1, 0, 1, 1]
   parameter_names=['I', 'x_0', 'gamma', 'sigma']
-  fit_function_text='I, x_0, gamma, sigma'
+  fit_function_text='I * Re(w(z))/Re(w(z_0)); w=(x-x_0)/sigma/sqrt(2)'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
 
-  __init__=FitFunction.__init__
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    if len(self.parameters)==len(initial_parameters):
+      self.parameters=initial_parameters
+    else:
+      self.parameters=[1, 0, 1, 1]
   
   def fit_function(self, p, x):
+    '''
+      Return the Voigt profile of x.
+      It is calculated using the complex error function,
+      see Wikipedia articel on Voigt-profile for the details.
+    '''
     x=numpy.float64(numpy.array(x))
     p=numpy.float64(numpy.array(p))
     z=(x - p[1] + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
-    w=numpy.exp(-1*z**2)*(1-erf(-1j*z))
-    value=p[0] * w.real / abs(p[3])/self.sqrt2pi
+    z0=(0. + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
+    value=p[0] * wofz(z).real / wofz(z0).real
     return value
 
 
@@ -318,7 +366,7 @@ class FitSession:
                                               [], # const_columns
                                               0, # x-column
                                               1, # y-column
-                                              1  # yerror-column
+                                              -1  # yerror-column
                                               ))
       result=self.result_data[-1]
       if function[2]:
@@ -447,16 +495,20 @@ class FitSession:
       Add a function via dialog access.
     '''
     self.add_function(name.get_active_text())
+    size=dialog.get_size()
+    position=dialog.get_position()
     dialog.destroy()
-    window.fit_dialog(None)
+    window.fit_dialog(None, size, position)
   
   def del_function_dialog(self, action, function, dialog, window):
     '''
       Delete a function via dialog access.
     '''
     self.del_function(function)
+    size=dialog.get_size()
+    position=dialog.get_position()
     dialog.destroy()
-    window.fit_dialog(None)
+    window.fit_dialog(None, size, position)
   
   def fit_from_dialog(self, action, entries, dialog, window):
     '''
@@ -467,9 +519,11 @@ class FitSession:
         function[0].parameters[j]=float(entry.get_text().replace(',', '.'))
     self.fit()
     self.simulate()
+    size=dialog.get_size()
+    position=dialog.get_position()
     dialog.destroy()
     window.replot()
-    window.fit_dialog(None)
+    window.fit_dialog(None, size, position)
 
   def combine_dialog(self, action, dialog, window):
     if len(self.functions)<2:
@@ -493,6 +547,8 @@ class FitSession:
     if result in [2, 3]:
       if result==2:
         self.sum(selected[0], selected[1])
+        size=dialog.get_size()
+        position=dialog.get_position()
         dialog.destroy()
-        window.fit_dialog(None)
+        window.fit_dialog(None, size, position)
     combine_dialog.destroy()
