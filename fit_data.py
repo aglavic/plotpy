@@ -76,16 +76,20 @@ class FitFunction:
     self.parameters=list(new_params)
 
   
-  def simulate(self, x):
+  def simulate(self, x, interpolate=5):
     '''
       Return simulated y-values for a list of giver x-values.
     '''
+    xint=[]
+    for i, xi in enumerate(x[:-1]):
+      for j in range(interpolate):
+        xint.append(xi + float(x[i+1]-xi)/interpolate * j)
     try:
-      y=list(self.fit_function(self.parameters, x))
+      y=list(self.fit_function(self.parameters, xint))
     except TypeError:
       # x is list and the function is only defined for one point.
-      y= map((lambda x_i: self.fit_function(self.parameters, x_i)), x)
-    return y
+      y= map((lambda x_i: self.fit_function(self.parameters, x_i)), xint)
+    return xint, y
 
 
 class FitSum(FitFunction):
@@ -120,17 +124,6 @@ class FitSum(FitFunction):
     index=len(self.origin[0].parameters)
     self.origin[0].set_parameters(self.parameters[:index])
     self.origin[1].set_parameters(self.parameters[index:])
-
-  def simulate(self, x):
-    '''
-      Return simulated y-values for a list of giver x-values.
-    '''
-    try:
-      y=list(self.fit_function(self.parameters, x))
-    except TypeError:
-      # x is list and the function is only defined for one point.
-      y= map((lambda x_i: function(params, x_i)), x)
-    return y
 
 #+++++++++++++++++++++++++++++++++ Define common functions for fits +++++++++++++++++++++++++++++++++
 
@@ -220,7 +213,9 @@ class FitVoigt(FitFunction):
   __init__=FitFunction.__init__
   
   def fit_function(self, p, x):
-    z=(numpy.array(x) - p[1] + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
+    x=numpy.float64(numpy.array(x))
+    p=numpy.float64(numpy.array(p))
+    z=(x - p[1] + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
     w=numpy.exp(-1*z**2)*(1-erf(-1j*z))
     value=p[0] * w.real / abs(p[3])/self.sqrt2pi
     return value
@@ -329,9 +324,9 @@ class FitSession:
       if function[2]:
         data_xy=self.data.list()
         data_x=[d[0] for d in data_xy]
-        data_y=function[0].simulate(data_x)
-        for i in range(len(data_x)):
-          result.append((data_x[i], data_y[i]))
+        fit_x, fit_y=function[0].simulate(data_x)
+        for i in range(len(fit_x)):
+          result.append((fit_x[i], fit_y[i]))
         function_text=function[0].fit_function_text
         for i in range(len(function[0].parameters)):
           function_text=function_text.replace(function[0].parameter_names[i], "%.6g" % function[0].parameters[i], 2)
