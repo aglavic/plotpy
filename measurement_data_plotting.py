@@ -310,12 +310,12 @@ def create_plot_script(session,
   if datasets[0].zdata>=0:
     plotting_param=gp.plotting_parameters_3d
     gnuplot_file_text=gnuplot_file_text+'set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
-        'set zlabel "'+z_label+'"\n'+'set cblabel "'+z_label+'"\n'+\
-        settings_3d
+        'set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'+\
+        gp.settings_3d
     if ((datasets[0].view_x%180)==0)&((datasets[0].view_z%90)==0):
-      gnuplot_file_text=gnuplot_file_text+settings_3dmap
+      gnuplot_file_text=gnuplot_file_text+gp.settings_3dmap
     else:
-      gnuplot_file_text=gnuplot_file_text+settings_3d
+      gnuplot_file_text=gnuplot_file_text+gp.settings_3d
     splot_add='s'
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
   gnuplot_file_text=gnuplot_file_text+\

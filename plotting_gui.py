@@ -629,7 +629,7 @@ class ApplicationMainWindow(gtk.Window):
         ((zin[0].replace('-','').replace('e','').replace('.','',1).isdigit())|\
           (zin[0]==''))&\
         ((zin[1].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-        (yin[1]=='')):
+        (zin[1]=='')):
       self.z_range='set zrange ['+str(zin[0])+':'+str(zin[1])+']\nset cbrange ['+str(zin[0])+':'+str(zin[1])+']'
     else:
       self.z_range='set autoscale z\nset autoscale cb'
