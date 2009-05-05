@@ -335,7 +335,7 @@ class MeasurementData:
         if point1[c2]>point2[c2]:
           return 1
         if point1[c2]<point2[c2]:
-          return 1
+          return -1
         return 0
       data_xysort=copy(data)
       data_yxsort=data
