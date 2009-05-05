@@ -235,7 +235,6 @@ class ApplicationMainWindow(gtk.Window):
         0,                      0)
 
     #++++++++++ Create additional setting input for the plot ++++++++++
-    # TODO: allways show or save view status of plot settings, use it every time!
     align_table = gtk.Table(12, 2, False)
     # input for jumping to a data sequence
     page_label=gtk.Label()

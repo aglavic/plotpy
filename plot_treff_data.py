@@ -15,7 +15,7 @@
 
 # import generic_session, which is the parent class for the squid_session
 from plot_generic_data import generic_session
-# importing preferences and data readout
+# importing data readout
 import treff_read_data
 
 __author__ = "Artur Glavic"
@@ -25,7 +25,7 @@ __license__ = "None"
 __version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
-__status__ = "Prototype"
+__status__ = "Development"
 
 class treff_session(generic_session):
   '''
@@ -34,13 +34,11 @@ class treff_session(generic_session):
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   specific_help=\
 '''
-\t4 CIRCLE-Data treatment:
-\t-counts\t\tShow actual counts, not counts/s
+\tTREFF-Data treatment:
 '''
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  show_counts=False
   file_wildcards=(('All','*'), )  
   #------------------ local variables -----------------
 
@@ -60,8 +58,8 @@ class treff_session(generic_session):
       # Cases of arguments:
       if last_argument_option[0]:
         found=False
-      elif argument=='-counts':
-        show_counts=True
+      #elif argument=='-counts':
+      #  show_counts=True
       else:
         found=False
     return (found, last_argument_option)
@@ -69,34 +67,21 @@ class treff_session(generic_session):
 
   def read_file(self, file_name):
     '''
-      function to read data files
+      Function to read data files.
     '''
     return treff_read_data.read_data(file_name)
 
-
-
-  def add_file(self, filename, append=True):
-    '''
-      Add the data of a new file to the session.
-      In addition to generic_session short info is set.
-    '''
-    datasets=generic_session.add_file(self, filename, append)
-    # faster lookup
-    for dataset in datasets:
-      dataset.logx=self.logx
-      dataset.logy=self.logy
-    return datasets
 
   def create_menu(self):
     '''
       create a specifig menu for the 4circle session
     '''
     # Create XML for squid menu
-    string='''
-      <menu action='TREFF'>
-      
-      </menu>
-    '''
+    string=''#'
+      #<menu action='TREFF'>
+      #
+      #</menu>
+    #'''
     # Create actions for the menu
     actions=(
             ( "TREFF", None,                             # name, stock id

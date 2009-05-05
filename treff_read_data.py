@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 '''
-  Functions to read from treff data and .img. files. Mostly just string processing.
+  Functions to read from treff data and .img. files.
   MeasurementData Object from 'measurement_data_structure' is used to store the data points.
-  read_data is the main procedure, returning a list of MeasurementData objects
+  read_data is the main procedure, returning a list of MeasurementData objects.
+  Image files can be gziped or plain.
 '''
 
 # Pleas do not make any changes here unless you know what you are doing.
+# TODO: import 1d scan, too.
 
 import os
 import math
@@ -18,12 +20,11 @@ __license__ = "None"
 __version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
-__status__ = "Prototype"
+__status__ = "Development"
 
 # globals
 detector_rows_map=[[j+i*256 for i in range(256)] for j in range(256)]
 pixelbreite=0.014645
-
 
 def read_data(file_name):
   '''
@@ -43,6 +44,7 @@ def read_data(file_name):
   comments=map(string_or_float, lines_columns)
   headers=filter(lambda i: not comments[lines_columns.index(i)], lines_columns)
   data_lines=filter(lambda i: comments[lines_columns.index(i)], lines_columns)
+  # define the data columns
   columns_line=headers[2]
   if 'MF' in columns_line:
     columns_line.insert(columns_line.index('MF'), 'MF [G]')
@@ -77,6 +79,7 @@ def read_data(file_name):
         const_information[' '.join(line[0:2])]=float(line[2])
       except:
         None
+  
   # devide polarization directions
   data_uu_lines=filter(lambda line: line[columns['Polarization']]=='uu', data_lines)
   data_dd_lines=filter(lambda line: line[columns['Polarization']]=='dd', data_lines)
@@ -84,16 +87,16 @@ def read_data(file_name):
   data_du_lines=filter(lambda line: line[columns['Polarization']]=='du', data_lines)
   data_xx_lines=filter(lambda line: line[columns['Polarization']]=='xx', data_lines)
   del(data_lines)
-  # import calibration from file
+  # import calibration from file, need to get this as relative path
   cali_file='/home/glavic/Software/Scripte/Plotting/treff/KALIBR2.DAT'
   cali_open=open(cali_file, 'r')
   calibration=map(float, cali_open.readlines())
   cali_open.close()
-  
+  # get the path of the input file for the images
   path_name=os.path.dirname(file_name)
   if len(path_name)>0:
     path_name+='/'
-  
+  #++++++++++++ evaluating images and creating data objects ++++++++++++
   output=[]
   if len(data_uu_lines)>0:
     print "Evaluating up-up images."
@@ -124,7 +127,8 @@ def read_data(file_name):
 
 def string_or_float(string_line):
   '''
-    Short help function to test if first column is a float number.
+    Short function to test if first column of a line is a float number or string.
+    Used to devide Header/Comment from Data lines.
   '''
   if len(string_line)==0:
     return False
@@ -135,6 +139,11 @@ def string_or_float(string_line):
     return False
 
 def integrate_pictures(data_lines, columns, const_information, data_path, calibration):
+  '''
+    Integrate detector rows of the image files corresponding to one polarization direction.
+    This function is tuned quite much for fast readout, so some parts are a bit tricky.
+  '''
+  # create the data object
   data_object=MeasurementData([['alpha_i', 'mrad'], 
                                ['alpha_f', 'mrad'], 
                                ['alpha_i-alpha_f', 'mrad'], 
@@ -143,11 +152,12 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                ['log_{10}(Intensity)', 'a.u.'], 
                                ['error','a.u.']], 
                               [], 0, 1, 6, 4)
+  # alpha_i is used as main column for the line splitteng used for pm3d
   data_object.scan_line_constant=0
   data_list=[]
   for line in data_lines:
     if float(line[columns['Monitor']]) == 0.:
-      continue
+      continue # measurement error, nothing to do
     if os.path.exists(data_path + line[columns['Image']]):
       # unziped images
       img_file=open(data_path + line[columns['Image']], 'r')
@@ -156,8 +166,10 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
       import gzip
       img_file=gzip.open(data_path + line[columns['Image']] + '.gz', 'rb')
     else:
+      # no image file
       print 'Image ' + data_path + line[columns['Image']] + '(.gz) does not exist, check your files.'
-      return None
+      continue
+    # define alphai and alphaf (for the detector center)
     if columns['omega'] >= 0:
       alphai = float(line[columns['omega']])
     else:
@@ -166,28 +178,35 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
       alphaf_center = float(line[columns['detector']]) - alphai
     else:
       alphaf_center = const_information['detector'] - alphai
-    # read the data of an image file and convet it to integer
-    # every image file consists of 256 rows and 256 columns of the detector
+    # read the data of an image file and split the lines 
     img_data=img_file.read()[:-1]
     img_file.close()
     img_data=img_data.split('\n')
+    # integrate the image
     data_list+=integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, pixelbreite)
   data_append=data_object.append
+  # append the integrated data to the object
   map(data_append, data_list)
   return data_object
 
 def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, pixelbreite):
   '''
     Map detector columns to alphai, alphaf and intensities.
+    Quite optimized, too.
   '''
   from math import sqrt, log10
   data_list=[]
+  # for faster function lookup
   append_to_list=data_list.append
+  # every image file consists of 256 rows and 256 columns of the detector
+  # as the sum function returns 0 for empty list we can remove '0' from the lists
+  # to increase the speed of the integer conversion
   parts=[[img_data[i] for i in map_i if not img_data[i] is '0'] for map_i in detector_rows_map]
   monitor=float(line[columns['Monitor']])
   for i in range(256):
     if calibration[i] <= 0 :
-      continue
+      continue # ignore blind spots of detector
+    # convet strings into integer
     int_data=map(int, parts[i])
     img_integral=sum(int_data)
     alphaf = alphaf_center + pixelbreite * (130.8 - i)
@@ -197,7 +216,7 @@ def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibr
     else:
       logintensity = -10.0
     error = sqrt(img_integral) / monitor * calibration[i]
-    # convert to mrad
+    # convert to mrad and create point list.
     append_to_list([17.45329 * alphai, 
                     17.45329 * alphaf, 
                     17.45329 * (alphai - alphaf), 
@@ -208,6 +227,6 @@ def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibr
   return data_list
 
 
-if __name__ == '__main__':    #code to execute if called from command-line
+if __name__ == '__main__':    #code to execute if called from command-line for testing
   import sys
   read_data(sys.argv[1])
