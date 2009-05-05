@@ -874,8 +874,8 @@ class ApplicationMainWindow(gtk.Window):
           plot_text=measurement_data_plotting.create_plot_script(
                                         self.active_session, 
                                         [item[0] for item in plotlist], 
-                                        plotlist[0][1], 
                                         self.active_session.active_file_name, 
+                                        '', 
                                         plotlist[0][0].short_info, 
                                         [item[0].short_info for item in plotlist], 
                                         errorbars,
@@ -886,8 +886,8 @@ class ApplicationMainWindow(gtk.Window):
       plot_text=measurement_data_plotting.create_plot_script(
                          self.active_session, 
                          [self.measurement[self.index_mess]],
-                         self.input_file_name, 
                          self.active_session.active_file_name, 
+                         '', 
                          self.measurement[self.index_mess].short_info,
                          [object.short_info for object in self.measurement[self.index_mess].plot_together],
                          errorbars, 
@@ -1211,10 +1211,10 @@ class ApplicationMainWindow(gtk.Window):
       #++++++++++++++++File selection dialog+++++++++++++++++++#
       file_dialog=gtk.FileChooserDialog(title='Save Gnuplot and Datafiles...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
       file_dialog.set_default_response(gtk.RESPONSE_OK)
-      if action.get_name()=='MultiPlot':
+      if self.active_multiplot:
         file_dialog.set_current_name(self.active_session.active_file_name + '_multi_')
       else:
-        file_dialog.set_current_name(self.active_session.active_file_name)
+        file_dialog.set_current_name(self.active_session.active_file_name + '_')
       # create the filters in the file selection dialog
       filter = gtk.FileFilter()
       filter.set_name("Gnuplot (.gp)/Output (.out)")
@@ -1226,22 +1226,24 @@ class ApplicationMainWindow(gtk.Window):
       filter.add_pattern("*")
       file_dialog.add_filter(filter)
       response = file_dialog.run()
-      if response == gtk.RESPONSE_OK:
-        common_file_prefix=file_dialog.get_filename()
+      if response != gtk.RESPONSE_OK:
+        file_dialog.destroy()
+        return None
+      common_file_prefix=file_dialog.get_filename()
       file_dialog.destroy()
-      if action.get_name()=='MultiPlot':
+      if self.active_multiplot:
         for plotlist in self.multiplot:
           itemlist=[item[0] for item in plotlist]
           if self.measurement[self.index_mess] in itemlist:
             plot_text=measurement_data_plotting.create_plot_script(
                                           self.active_session, 
                                           [item[0] for item in plotlist], 
-                                          plotlist[0][1], 
                                           common_file_prefix, 
+                                          '', 
                                           plotlist[0][0].short_info, 
                                           [item[0].short_info for item in plotlist], 
                                           errorbars,
-                                          self.active_session.temp_dir+'plot_temp.png',
+                                          common_file_prefix + '.png',
                                           fit_lorentz=False,
                                           add_preferences=self.preferences_file)
         file_numbers=[]
@@ -1253,12 +1255,12 @@ class ApplicationMainWindow(gtk.Window):
         plot_text=measurement_data_plotting.create_plot_script(
                            self.active_session, 
                            [self.measurement[self.index_mess]],
-                           self.input_file_name, 
                            common_file_prefix, 
+                           '', 
                            self.measurement[self.index_mess].short_info,
                            [object.short_info for object in self.measurement[self.index_mess].plot_together],
                            errorbars, 
-                           output_file=self.active_session.temp_dir+'plot_temp.png',
+                           output_file=common_file_prefix + '.png',
                            fit_lorentz=False,
                            add_preferences=self.preferences_file)
         file_numbers=[]
@@ -1267,7 +1269,7 @@ class ApplicationMainWindow(gtk.Window):
         for i, attachedset in enumerate(dataset.plot_together):
           file_numbers.append(str(j)+'-'+str(i))
           attachedset.export(common_file_prefix+str(j)+'-'+str(i)+'.out')
-      open(common_file_prefix+'.gp', 'w').write(plot_text)
+      open(common_file_prefix+'.gp', 'w').write(plot_text+'\n')
       
       #----------------File selection dialog-------------------#      
     elif action.get_name()=='ExportAll':
@@ -1653,7 +1655,7 @@ class ApplicationMainWindow(gtk.Window):
     output='''<ui>
     <menubar name='MenuBar'>
       <menu action='FileMenu'>
-        <menuitem action='OpenDatafile'/>SaveGPL
+        <menuitem action='OpenDatafile'/>
         <menuitem action='SaveGPL'/>
         <separator name='static14'/>
         <menuitem action='Export'/>
