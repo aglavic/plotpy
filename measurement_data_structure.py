@@ -303,15 +303,15 @@ class MeasurementData:
       Write data in text file seperated by 'seperator'.
     '''
     # Find indices within the selected export range between xfrom and xto, xvalues must be sorted for this to work.
-    xfrom_index=0
-    xto_index=len(self)-1
-    for i,value in enumerate(self.data[self.xdata].values):
-      if not xfrom==None:
-        if xfrom>=value:
-          xfrom_index=i
-      if not xto==None:
-        if xto<=self.data[self.xdata].values[-1-i]:
-          xto_index=len(self)-1-i
+#    xfrom_index=0
+#    xto_index=len(self)-1
+#    for i,value in enumerate(self.data[self.xdata].values):
+#      if not xfrom==None:
+#        if xfrom>=value:
+#          xfrom_index=i
+#      if not xto==None:
+#        if xto<=self.data[self.xdata].values[-1-i]:
+#          xto_index=len(self)-1-i
     write_file=open(file_name,'w')
     if print_info:
       write_file.write('# exportet dataset from measurement_data_structure.py\n# Sample: '+self.sample_name+'\n#\n# other informations:\n#'+self.info.replace('\n','\n#'))
@@ -319,18 +319,45 @@ class MeasurementData:
       for i in range(len(self.data)):
         columns=columns+' '+self.dimensions()[i]+'['+self.units()[i]+']'
       write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
-    last_point=self.get_data(0)
-    for i,point in enumerate(self):
-      if (i>=xfrom_index) and (i<=xto_index):
-        if (self.zdata>=0) and (not round(point[self.ydata],5)==round(last_point[self.ydata],5)):
-          write_file.write('\n')
-        last_point=point
-        line=''
-        for value in point:
-          line = line+str(value)+seperator
-        write_file.write(line+'\n')
+    data=[point for point in self if (((xfrom is None) or (point[self.xdata]<=xfrom)) and \
+                                      ((xfrom is None) or (point[self.xdata]<=xfrom)))]
+    # convert Numbers to str
+    if self.zdata>=0:
+      from copy import deepcopy as copy
+      xd=self.xdata
+      yd=self.ydata
+      def compare_xy_columns(point1, point2, c1, c2):
+        '''Compare two points by two'''
+        if point1[c1]>point2[c1]:
+          return 1
+        if point1[c1]<point2[c1]:
+          return -1
+        if point1[c2]>point2[c2]:
+          return 1
+        if point1[c2]<point2[c2]:
+          return 1
+        return 0
+      data_xysort=copy(data)
+      data_yxsort=data
+      data_xysort.sort(lambda p1, p2: compare_xy_columns(p1, p2, xd, yd))
+      data_yxsort.sort(lambda p1, p2: compare_xy_columns(p1, p2, yd, xd))
+      # insert blanck lines between scans for 3d plot
+      insert_indices_xy=[i for i in range(len(data)-1) if (data_xysort[i+1][yd]<data_xysort[i][yd])]
+      insert_indices_yx=[i for i in range(len(data)-1) if (data_yxsort[i+1][xd]<data_yxsort[i][xd])]
+      if len(insert_indices_xy) <= len(insert_indices_yx):
+        insert_indices=insert_indices_xy
+        data=data_xysort
+      else:
+        insert_indices=insert_indices_yx
+        data=data_yxsort
+    data_str=map(lambda point: map(lambda number: "%g" % number, point), data)
+    data_lines=map(seperator.join, data_str)
+    if self.zdata>=0:
+      for i, j in enumerate(insert_indices):
+        data_lines.insert(i+j+1, '')
+    write_file.write('\n'.join(data_lines))
     write_file.close()
-    return xto_index-xfrom_index+1 # return the number of exported data lines
+    return len(data_lines) # return the number of exported data lines
 
   def max(self,xstart=None,xstop=None): 
     '''

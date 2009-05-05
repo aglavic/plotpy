@@ -122,7 +122,7 @@ def integrate_pictures(data_lines, columns, data_path, calibration):
                                ['Intensity', 'a.u.'], 
                                ['log_{10}(Intensity)', 'a.u.'], 
                                ['error','a.u.']], 
-                              [], 1, 0, 4, 3)
+                              [], 0, 1, 4, 3)
   data_list=[]
   pixelbreite=0.014645
   for line in data_lines:
@@ -161,10 +161,6 @@ def integrate_pictures(data_lines, columns, data_path, calibration):
                           intensity, 
                           logintensity, 
                           error])
-  # sort for alphaf
-  data_list.sort(lambda entry1, entry2: cmp(entry1[1], entry2[1]))
-  # sort for alphai
-  data_list.sort(lambda entry1, entry2: cmp(entry1[0], entry2[0]))
   map(data_object.append, data_list)
   return data_object
 
