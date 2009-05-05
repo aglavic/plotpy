@@ -43,7 +43,8 @@ def read_data(file_name):
   # get the columns of interest
   columns={ 'Image': columns_line.index('Image'), 
            'Polarization': columns_line.index('Pol.'),
-           'Monitor': columns_line.index('MonBurg')
+#           'Monitor': columns_line.index('MonBurg')
+           'Monitor': columns_line.index('Monitor')
            }
   for line in headers[0:6]:
     if line[0] == 'Scan':
@@ -61,6 +62,7 @@ def read_data(file_name):
   data_dd_lines=filter(lambda line: line[columns['Polarization']]=='dd', data_lines)
   data_ud_lines=filter(lambda line: line[columns['Polarization']]=='ud', data_lines)
   data_du_lines=filter(lambda line: line[columns['Polarization']]=='du', data_lines)
+  data_xx_lines=filter(lambda line: line[columns['Polarization']]=='xx', data_lines)
   del(data_lines)
   # import calibration from file
   cali_file='/home/glavic/Software/Scripte/Plotting/treff/KALIBR2.DAT'
@@ -71,19 +73,34 @@ def read_data(file_name):
   path_name=os.path.dirname(file_name)
   if len(path_name)>0:
     path_name+='/'
-  print "Evaluating up-up images."
-  data_uu=integrate_pictures(data_uu_lines, columns, path_name, calibration)
-  data_uu.short_info='++'
-  print "Evaluating down-down images."
-  data_dd=integrate_pictures(data_dd_lines, columns, path_name, calibration)
-  data_dd.short_info='--'
-  print "Evaluating up-down images."
-  data_ud=integrate_pictures(data_ud_lines, columns, path_name, calibration)
-  data_ud.short_info='+-'
-  print "Evaluating down-up images."
-  data_du=integrate_pictures(data_du_lines, columns, path_name, calibration)
-  data_du.short_info='-+'
-  return [data_uu, data_dd, data_ud, data_du]
+  
+  output=[]
+  if len(data_uu_lines)>0:
+    print "Evaluating up-up images."
+    data_uu=integrate_pictures(data_uu_lines, columns, path_name, calibration)
+    data_uu.short_info='++'
+    output.append(data_uu)
+  if len(data_dd_lines)>0:
+    print "Evaluating down-down images."
+    data_dd=integrate_pictures(data_dd_lines, columns, path_name, calibration)
+    data_dd.short_info='--'
+    output.append(data_dd)
+  if len(data_ud_lines)>0:
+    print "Evaluating up-down images."
+    data_ud=integrate_pictures(data_ud_lines, columns, path_name, calibration)
+    data_ud.short_info='+-'
+    output.append(data_ud)
+  if len(data_du_lines)>0:
+    print "Evaluating down-up images."
+    data_du=integrate_pictures(data_du_lines, columns, path_name, calibration)
+    data_du.short_info='-+'
+    output.append(data_du)
+  if len(data_xx_lines)>0:
+    print "Evaluating unpolarized images."
+    data_xx=integrate_pictures(data_xx_lines, columns, path_name, calibration)
+    data_xx.short_info='unpolarized'
+    output.append(data_xx)
+  return output
 
 def string_or_float(string_line):
   '''
@@ -100,8 +117,8 @@ def string_or_float(string_line):
 def integrate_pictures(data_lines, columns, data_path, calibration):
   from math import sqrt, log10
   #from numpy import float64 as float
-  data_object=MeasurementData([['alphai', 'mrad'], 
-                               ['alphaf', 'mrad'], 
+  data_object=MeasurementData([['alpha_i', 'mrad'], 
+                               ['alpha_f', 'mrad'], 
                                ['Intensity', 'a.u.'], 
                                ['log_{10}(Intensity)', 'a.u.'], 
                                ['error','a.u.']], 
@@ -128,21 +145,22 @@ def integrate_pictures(data_lines, columns, data_path, calibration):
     img_data=map(int, img_data.split('\n'))
     # map detector columns to alphai, alphaf and intensities
     for i in range(256):
-      img_integral=sum(img_data[i*256:(i+1)*256])
-      alphaf = alphaf_center + pixelbreite * (130.8 - i)
-      intensity = img_integral / float(line[columns['Monitor']]) * calibration[i]
-      if intensity > 0:
-        logintensity = log10 (intensity)
-      else:
-        logintensity = -10.0
-      error = sqrt(img_integral) / float(line[columns['Monitor']]) * calibration[i]
-      if calibration[i] > 0 :
-        # convert to mrad
-        data_list.append([17.45329 * alphai, 
-                        17.45329 * alphaf, 
-                        intensity, 
-                        logintensity, 
-                        error])
+      if float(line[columns['Monitor']]) != 0.:
+        img_integral=sum(img_data[i*256:(i+1)*256])
+        alphaf = alphaf_center + pixelbreite * (130.8 - i)
+        intensity = img_integral / float(line[columns['Monitor']]) * calibration[i]
+        if intensity > 0:
+          logintensity = log10 (intensity)
+        else:
+          logintensity = -10.0
+        error = sqrt(img_integral) / float(line[columns['Monitor']]) * calibration[i]
+        if calibration[i] > 0 :
+          # convert to mrad
+          data_list.append([17.45329 * alphai, 
+                          17.45329 * alphaf, 
+                          intensity, 
+                          logintensity, 
+                          error])
   # sort for alphaf
   data_list.sort(lambda entry1, entry2: cmp(entry1[1], entry2[1]))
   # sort for alphai
