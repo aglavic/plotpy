@@ -80,30 +80,32 @@ class MeasurementData:
     self.fit_object=None
 
   def __iter__(self): # see next()
-    return self
- 
-  def next(self): 
     '''
       Function to iterate through the data-points, object can be used in "for bla in data:".
       Skippes pointes that are filtered.
     '''
-    filtered=True
-    while filtered:
-      if self.index == self.number_of_points:
-        self.index=0
-        raise StopIteration
-      filtered = False
-      for data_filter in self.filters:
-        # if the datapoint is not included (filter[3]=True) or excluded skip it
-        filtered = (filtered | (not ((data_filter[3] & \
-                    (self.data[data_filter[0]].values[self.index]>data_filter[1]) & \
-                    (self.data[data_filter[0]].values[self.index]<data_filter[2])\
-              ) | ((not data_filter[3]) & \
-                  ((self.data[data_filter[0]].values[self.index]<data_filter[1]) | \
-                    (self.data[data_filter[0]].values[self.index]>data_filter[2]))))))
-      self.index=self.index+1
-    return self.get_data(self.index-1)
-
+    data_pointer=0
+    # for faster access use local variables
+    data=self.data
+    get_data=self.get_data
+    filters=self.filters
+    number_points=len(data[0])
+    values=[value.values for value in data]
+    while data_pointer<number_points:
+      filtered=True
+      while filtered:
+        filtered = False
+        for data_filter in filters:
+          # if the datapoint is not included (filter[3]=True) or excluded skip it
+          filtered = (filtered | (not ((data_filter[3] & \
+                      (data[data_filter[0]].values[data_pointer]>data_filter[1]) & \
+                      (data[data_filter[0]].values[data_pointer]<data_filter[2])\
+                ) | ((not data_filter[3]) & \
+                    ((data[data_filter[0]].values[data_pointer]<data_filter[1]) | \
+                      (data[data_filter[0]].values[data_pointer]>data_filter[2]))))))
+        data_pointer+=1
+      yield [value[(data_pointer-1)] for value in values]
+ 
   def __len__(self): 
     '''
       len(MeasurementData) returns number of Datapoints.
@@ -115,9 +117,12 @@ class MeasurementData:
       Add a point to this sequence.
     '''
     data=self.data # speedup data_lookup
+    append_fast=list.append
+    def d_append(property, value):
+      append_fast(property.values, value)
     if len(point)==len(data):
       for i,val in enumerate(point):
-        data[i].append(val)
+        d_append(data[i], val)
       self.number_of_points+=1
       return point#self.get_data(self.number_of_points-1)
     else:
@@ -141,16 +146,18 @@ class MeasurementData:
     '''
       Get x-y list of all data.
     '''
-    if (self.xdata<0)&(self.ydata<0):
-      return [[i+1,i+1] for i,point in enumerate(self)]
-    elif self.xdata<0:
-      return [[i+1,point[self.ydata]] for i,point in enumerate(self)]
-    elif self.ydata<0:
-      return [[point[self.xdata],i+1] for i,point in enumerate(self)]
-    elif self.zdata>=0:
-      return [[point[self.xdata],point[self.ydata],point[self.zdata]] for point in self]
-    else:
-      return [[point[self.xdata],point[self.ydata]] for point in self]
+    xd=self.xdata
+    yd=self.xdata
+    zd=self.xdata
+    if (xd>=0) and (yd>=0):
+      if (zd<0):
+        return [[point[xd],point[yd]] for point in self]
+      return [[point[xd],point[yd],point[zd]] for point in self]
+    elif yd>=0:
+      return [[i+1,point[yd]] for i,point in enumerate(self)]
+    elif xd>=0:
+      return [[point[xd],i+1] for i,point in enumerate(self)]
+    return [[i+1,i+1] for i,point in enumerate(self)]
 
   def list_err(self): 
     '''
@@ -302,45 +309,31 @@ class MeasurementData:
     '''
       Write data in text file seperated by 'seperator'.
     '''
-    # Find indices within the selected export range between xfrom and xto, xvalues must be sorted for this to work.
-#    xfrom_index=0
-#    xto_index=len(self)-1
-#    for i,value in enumerate(self.data[self.xdata].values):
-#      if not xfrom==None:
-#        if xfrom>=value:
-#          xfrom_index=i
-#      if not xto==None:
-#        if xto<=self.data[self.xdata].values[-1-i]:
-#          xto_index=len(self)-1-i
-    write_file=open(file_name,'w')
-    if print_info:
-      write_file.write('# exportet dataset from measurement_data_structure.py\n# Sample: '+self.sample_name+'\n#\n# other informations:\n#'+self.info.replace('\n','\n#'))
-      columns=''
-      for i in range(len(self.data)):
-        columns=columns+' '+self.dimensions()[i]+'['+self.units()[i]+']'
-      write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
     data=[point for point in self if (((xfrom is None) or (point[self.xdata]<=xfrom)) and \
                                       ((xfrom is None) or (point[self.xdata]<=xfrom)))]
     # convert Numbers to str
     if self.zdata>=0:
-      from copy import deepcopy as copy
       xd=self.xdata
       yd=self.ydata
-      def compare_xy_columns(point1, point2, c1, c2):
-        '''Compare two points by two'''
-        if point1[c1]>point2[c1]:
+      def compare_xy_columns(point1, point2):
+        '''Compare two points by y- and x-column'''
+        if point1[xd]>point2[xd]:
           return 1
-        if point1[c1]<point2[c1]:
+        if point1[xd]<point2[xd]:
           return -1
-        if point1[c2]>point2[c2]:
+        return cmp(point1[yd], point2[yd])
+          
+      def compare_yx_columns(point1, point2):
+        if point1[xd]>point2[yd]:
           return 1
-        if point1[c2]<point2[c2]:
+        if point1[xd]<point2[yd]:
           return -1
-        return 0
-      data_xysort=copy(data)
+        return cmp(point1[xd], point2[xd])
+
+      data_xysort=list(data)
       data_yxsort=data
-      data_xysort.sort(lambda p1, p2: compare_xy_columns(p1, p2, xd, yd))
-      data_yxsort.sort(lambda p1, p2: compare_xy_columns(p1, p2, yd, xd))
+      data_xysort.sort(compare_xy_columns)
+      data_yxsort.sort(compare_yx_columns)
       # insert blanck lines between scans for 3d plot
       insert_indices_xy=[i for i in range(len(data)-1) if (data_xysort[i+1][yd]<data_xysort[i][yd])]
       insert_indices_yx=[i for i in range(len(data)-1) if (data_yxsort[i+1][xd]<data_yxsort[i][xd])]
@@ -350,11 +343,19 @@ class MeasurementData:
       else:
         insert_indices=insert_indices_yx
         data=data_yxsort
-    data_str=map(lambda point: map(lambda number: "%g" % number, point), data)
+    float_format='{0:g}'.format
+    data_str=map(lambda point: map(float_format, point), data)
     data_lines=map(seperator.join, data_str)
     if self.zdata>=0:
       for i, j in enumerate(insert_indices):
         data_lines.insert(i+j+1, '')
+    write_file=open(file_name,'w')
+    if print_info:
+      write_file.write('# exportet dataset from measurement_data_structure.py\n# Sample: '+self.sample_name+'\n#\n# other informations:\n#'+self.info.replace('\n','\n#'))
+      columns=''
+      for i in range(len(self.data)):
+        columns=columns+' '+self.dimensions()[i]+'['+self.units()[i]+']'
+      write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
     write_file.write('\n'.join(data_lines))
     write_file.close()
     return len(data_lines) # return the number of exported data lines

@@ -71,8 +71,8 @@ plotting_parameters_fit='w lines lw 3'
 # TODO: color selection
 settings_3d='set style line 100 lt 6 lw 2\nset pm3d hidden3d 100\nset ticslevel 0.05\n'+\
 'set palette defined (0 "blue",50 "green", 100 "yellow",200 "red",255 "purple")\n'
-settings_3dmap='set pm3d map interpolate 5,5\nset ticslevel 0.05\n'+\
-'set palette defined (0 "blue",50 "green", 80 "yellow",150 "red",200 "purple", 255 "black")\n'
+settings_3dmap='set pm3d map interpolate 5,5\nset ticslevel 0.05\n'#+\
+#'set palette defined (0 "blue",50 "green", 80 "yellow",150 "red",200 "purple", 255 "black")\n'
 # title for a curve
 titles='[titles_add]'
 

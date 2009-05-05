@@ -43,20 +43,32 @@ def read_data(file_name):
   # get the columns of interest
   columns={ 'Image': columns_line.index('Image'), 
            'Polarization': columns_line.index('Pol.'),
-           'Monitor': columns_line.index('MonBurg')
-#           'Monitor': columns_line.index('Monitor')
+           'Monitor': columns_line.index('Monitor'), 
+           'omega': -1, 
+           'detector': -1
            }
   for line in headers[0:6]:
     if line[0] == 'Scan':
       if line[-1] == 'omega':
         columns['omega']=0
-      else:
+      elif line[-1] == 'detector':
         columns['detector']=0
     if line[0] == '2nd':
       if line[-1] == 'omega':
         columns['omega']=1
-      else:
+      elif line[-1] == 'detector':
         columns['detector']=1
+  const_information={}
+  for line in headers[6:]:
+    try:
+      const_information[line[0]]=float(line[1])
+    except IndexError:
+      None
+    except ValueError:
+      try:
+        const_information[' '.join(line[0:2])]=float(line[2])
+      except:
+        None
   # devide polarization directions
   data_uu_lines=filter(lambda line: line[columns['Polarization']]=='uu', data_lines)
   data_dd_lines=filter(lambda line: line[columns['Polarization']]=='dd', data_lines)
@@ -115,17 +127,17 @@ def string_or_float(string_line):
     return False
 
 def integrate_pictures(data_lines, columns, data_path, calibration):
-  from math import sqrt, log10
-  #from numpy import float64 as float
   data_object=MeasurementData([['alpha_i', 'mrad'], 
                                ['alpha_f', 'mrad'], 
                                ['Intensity', 'a.u.'], 
                                ['log_{10}(Intensity)', 'a.u.'], 
                                ['error','a.u.']], 
-                              [], 0, 1, 4, 3)
+                              [], 0, 1, 4, 2)
   data_list=[]
   pixelbreite=0.014645
   for line in data_lines:
+    if float(line[columns['Monitor']]) == 0.:
+      continue
     if os.path.exists(data_path + line[columns['Image']]):
       # unziped images
       img_file=open(data_path + line[columns['Image']], 'r')
@@ -142,27 +154,38 @@ def integrate_pictures(data_lines, columns, data_path, calibration):
     # every image file consists of 256 rows and 256 columns of the detector
     img_data=img_file.read()[:-1]
     img_file.close()
-    img_data=map(int, img_data.split('\n'))
-    # map detector columns to alphai, alphaf and intensities
-    for i in range(256):
-      if float(line[columns['Monitor']]) != 0.:
-        img_integral=sum(img_data[i*256:(i+1)*256])
-        alphaf = alphaf_center + pixelbreite * (130.8 - i)
-        intensity = img_integral / float(line[columns['Monitor']]) * calibration[i]
-        if intensity > 0:
-          logintensity = log10(intensity)
-        else:
-          logintensity = -10.0
-        error = sqrt(img_integral) / float(line[columns['Monitor']]) * calibration[i]
-        if calibration[i] > 0 :
-          # convert to mrad
-          data_list.append([17.45329 * alphai, 
-                          17.45329 * alphaf, 
-                          intensity, 
-                          logintensity, 
-                          error])
-  map(data_object.append, data_list)
+    img_data=img_data.split('\n')
+    data_list+=integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, pixelbreite)
+  data_append=data_object.append
+  map(data_append, data_list)
   return data_object
+
+def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, pixelbreite):
+  '''Map detector columns to alphai, alphaf and intensities.'''
+  from math import sqrt, log10
+  data_list=[]
+  append_to_list=data_list.append
+  parts=map(lambda i: img_data[i*256:(i+1)*256], range(256))
+  for i in range(256):
+    if calibration[i] <= 0 :
+      continue
+    int_data=map(int, parts[i])
+    img_integral=sum(int_data)
+    alphaf = alphaf_center + pixelbreite * (130.8 - i)
+    intensity = img_integral / float(line[columns['Monitor']]) * calibration[i]
+    if intensity > 0:
+      logintensity = log10(intensity)
+    else:
+      logintensity = -10.0
+    error = sqrt(img_integral) / float(line[columns['Monitor']]) * calibration[i]
+      # convert to mrad
+    append_to_list([17.45329 * alphai, 
+                    17.45329 * alphaf, 
+                    intensity, 
+                    logintensity, 
+                    error])
+  return data_list
+
 
 if __name__ == '__main__':    #code to execute if called from command-line
   import sys
