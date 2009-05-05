@@ -37,6 +37,7 @@ class MeasurementData:
   logy=False
   logz=False
   zdata=-1
+  scan_line_constant=-1 # the column to sort the data for when using 3d plots.
   const_data=[] # select, which data should not be varied in this maesurement and the accouracy
   info=''
   short_info=''
@@ -118,13 +119,11 @@ class MeasurementData:
     '''
     data=self.data # speedup data_lookup
     append_fast=list.append
-    def d_append(property, value):
-      append_fast(property.values, value)
     if len(point)==len(data):
       for i,val in enumerate(point):
-        d_append(data[i], val)
+        append_fast(data[i].values, val)
       self.number_of_points+=1
-      return point#self.get_data(self.number_of_points-1)
+      return point
     else:
       return 'NULL'
 
@@ -315,34 +314,50 @@ class MeasurementData:
     if self.zdata>=0:
       xd=self.xdata
       yd=self.ydata
-      def compare_xy_columns(point1, point2):
-        '''Compare two points by y- and x-column'''
-        if point1[xd]>point2[xd]:
-          return 1
-        if point1[xd]<point2[xd]:
-          return -1
-        return cmp(point1[yd], point2[yd])
-          
-      def compare_yx_columns(point1, point2):
-        if point1[xd]>point2[yd]:
-          return 1
-        if point1[xd]<point2[yd]:
-          return -1
-        return cmp(point1[xd], point2[xd])
-
-      data_xysort=list(data)
-      data_yxsort=data
-      data_xysort.sort(compare_xy_columns)
-      data_yxsort.sort(compare_yx_columns)
-      # insert blanck lines between scans for 3d plot
-      insert_indices_xy=[i for i in range(len(data)-1) if (data_xysort[i+1][yd]<data_xysort[i][yd])]
-      insert_indices_yx=[i for i in range(len(data)-1) if (data_yxsort[i+1][xd]<data_yxsort[i][xd])]
-      if len(insert_indices_xy) <= len(insert_indices_yx):
-        insert_indices=insert_indices_xy
-        data=data_xysort
+      if self.scan_line_constant >= 0:
+        scan_line_constant=self.scan_line_constant
+        if xd!=scan_line_constant:
+          cmp_to=xd
+        else:
+          cmp_to=yd
+        def compare_columns(point1, point2):
+          if point1[scan_line_constant]>point2[scan_line_constant]:
+            return 1
+          if point1[scan_line_constant]<point2[scan_line_constant]:
+            return -1
+          return cmp(point1[cmp_to], point2[cmp_to])
+        data.sort(compare_columns)
+        insert_indices=[i for i in range(len(data)-1) if (data[i+1][cmp_to]<data[i][cmp_to])]
       else:
-        insert_indices=insert_indices_yx
-        data=data_yxsort
+        def compare_xy_columns(point1, point2):
+          '''Compare two points by y- and x-column'''
+          if point1[xd]>point2[xd]:
+            return 1
+          if point1[xd]<point2[xd]:
+            return -1
+          return cmp(point1[yd], point2[yd])
+            
+        def compare_yx_columns(point1, point2):
+          if point1[yd]>point2[yd]:
+            return 1
+          if point1[yd]<point2[yd]:
+            return -1
+          return cmp(point1[xd], point2[xd])
+        
+
+        data_xysort=list(data)
+        data_yxsort=data
+        data_xysort.sort(compare_xy_columns)
+        data_yxsort.sort(compare_yx_columns)
+        # insert blanck lines between scans for 3d plot
+        insert_indices_xy=[i for i in range(len(data)-1) if (data_xysort[i+1][yd]<data_xysort[i][yd])]
+        insert_indices_yx=[i for i in range(len(data)-1) if (data_yxsort[i+1][xd]<data_yxsort[i][xd])]
+        if len(insert_indices_xy) <= len(insert_indices_yx):
+          insert_indices=insert_indices_xy
+          data=data_xysort
+        else:
+          insert_indices=insert_indices_yx
+          data=data_yxsort
     float_format='{0:g}'.format
     data_str=map(lambda point: map(float_format, point), data)
     data_lines=map(seperator.join, data_str)

@@ -196,7 +196,7 @@ def gnuplot_plot_script(session,
                                           additional_info)
   gnuplot_file_text=create_plot_script(session, 
                                        datasets,
-                                       file_name_prefix, 
+                                       session.temp_dir+'tmp_data_', 
                                        file_name_postfix, 
                                        title,
                                        names,
@@ -310,17 +310,16 @@ def create_plot_script(session,
   if datasets[0].zdata>=0:
     plotting_param=gp.plotting_parameters_3d
     gnuplot_file_text=gnuplot_file_text+'set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
-        'set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'+\
-        gp.settings_3d
+        'set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
     if ((datasets[0].view_x%180)==0)&((datasets[0].view_z%90)==0):
-      gnuplot_file_text=gnuplot_file_text+gp.settings_3dmap
+      gnuplot_file_text+=gp.settings_3dmap
     else:
-      gnuplot_file_text=gnuplot_file_text+gp.settings_3d
+      gnuplot_file_text+=gp.settings_3d
     splot_add='s'
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
   gnuplot_file_text=gnuplot_file_text+\
         '# now the plotting function\n'+splot_add+\
-        'plot "'+session.temp_dir+'tmp_data_'+file_numbers[0]+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+        'plot "'+file_name_prefix+file_numbers[0]+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
   gnuplot_file_text=replace_ph(session, 
                              gnuplot_file_text,
                              datasets,
@@ -334,7 +333,7 @@ def create_plot_script(session,
                              additional_info)
   for number in file_numbers[1:len(file_numbers)]:
     if number.split('-')[1]=='0':
-      gnuplot_file_text=gnuplot_file_text+',\\\n"'+session.temp_dir+'tmp_data_'+number+\
+      gnuplot_file_text=gnuplot_file_text+',\\\n"'+file_name_prefix+number+\
           '.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
       gnuplot_file_text=replace_ph(session, 
                                    gnuplot_file_text,
@@ -352,7 +351,7 @@ def create_plot_script(session,
       using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
                           str(datasets[i].plot_together[j].ydata+1)+':'+\
                           str(datasets[i].plot_together[j].yerror+1)
-      gnuplot_file_text=gnuplot_file_text+',\\\n"'+session.temp_dir+'tmp_data_'+number+\
+      gnuplot_file_text=gnuplot_file_text+',\\\n"'+file_name_prefix+number+\
           '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
       gnuplot_file_text=replace_ph(session, 
                                    gnuplot_file_text,

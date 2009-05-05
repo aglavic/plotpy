@@ -41,7 +41,7 @@ class treff_session(generic_session):
 
   #++++++++++++++++++ local variables +++++++++++++++++
   show_counts=False
-  file_wildcards=(('4circle data','*.spec'), )  
+  file_wildcards=(('All','*'), )  
   #------------------ local variables -----------------
 
   

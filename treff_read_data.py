@@ -20,16 +20,24 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Prototype"
 
+# globals
+detector_rows_map=[[j+i*256 for i in range(256)] for j in range(256)]
+pixelbreite=0.014645
+
+
 def read_data(file_name):
   '''
     Read the data of a treff raw data file, integrate the corresponding .img files.
   '''
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
-    return None
+    return 'NULL'
   file_handler=open(file_name, 'r')
   lines=file_handler.readlines()
   file_handler.close()
+  if len(lines)<5:
+    print 'Not a valid datafile, skipped.'
+    return 'NULL'
   # devide comment lines from data lines
   lines_columns=map(str.split, lines)
   comments=map(string_or_float, lines_columns)
@@ -47,21 +55,21 @@ def read_data(file_name):
            'omega': -1, 
            'detector': -1
            }
-  for line in headers[0:6]:
-    if line[0] == 'Scan':
-      if line[-1] == 'omega':
-        columns['omega']=0
-      elif line[-1] == 'detector':
-        columns['detector']=0
-    if line[0] == '2nd':
-      if line[-1] == 'omega':
-        columns['omega']=1
-      elif line[-1] == 'detector':
-        columns['detector']=1
   const_information={}
-  for line in headers[6:]:
+  for line in headers:
     try:
-      const_information[line[0]]=float(line[1])
+      if line[0] == 'Scan':
+        if line[-1] == 'omega':
+          columns['omega']=0
+        elif line[-1] == 'detector':
+          columns['detector']=0
+      elif line[0] == '2nd':
+        if line[-1] == 'omega':
+          columns['omega']=1
+        elif line[-1] == 'detector':
+          columns['detector']=1
+      else:
+        const_information[line[0]]=float(line[1])
     except IndexError:
       None
     except ValueError:
@@ -89,34 +97,34 @@ def read_data(file_name):
   output=[]
   if len(data_uu_lines)>0:
     print "Evaluating up-up images."
-    data_uu=integrate_pictures(data_uu_lines, columns, path_name, calibration)
+    data_uu=integrate_pictures(data_uu_lines, columns, const_information, path_name, calibration)
     data_uu.short_info='++'
     output.append(data_uu)
   if len(data_dd_lines)>0:
     print "Evaluating down-down images."
-    data_dd=integrate_pictures(data_dd_lines, columns, path_name, calibration)
+    data_dd=integrate_pictures(data_dd_lines, columns, const_information, path_name, calibration)
     data_dd.short_info='--'
     output.append(data_dd)
   if len(data_ud_lines)>0:
     print "Evaluating up-down images."
-    data_ud=integrate_pictures(data_ud_lines, columns, path_name, calibration)
+    data_ud=integrate_pictures(data_ud_lines, columns, const_information, path_name, calibration)
     data_ud.short_info='+-'
     output.append(data_ud)
   if len(data_du_lines)>0:
     print "Evaluating down-up images."
-    data_du=integrate_pictures(data_du_lines, columns, path_name, calibration)
+    data_du=integrate_pictures(data_du_lines, columns, const_information, path_name, calibration)
     data_du.short_info='-+'
     output.append(data_du)
   if len(data_xx_lines)>0:
     print "Evaluating unpolarized images."
-    data_xx=integrate_pictures(data_xx_lines, columns, path_name, calibration)
+    data_xx=integrate_pictures(data_xx_lines, columns, const_information, path_name, calibration)
     data_xx.short_info='unpolarized'
     output.append(data_xx)
   return output
 
 def string_or_float(string_line):
   '''
-    Short help function test if first column is a float number.
+    Short help function to test if first column is a float number.
   '''
   if len(string_line)==0:
     return False
@@ -126,15 +134,17 @@ def string_or_float(string_line):
   except ValueError:
     return False
 
-def integrate_pictures(data_lines, columns, data_path, calibration):
+def integrate_pictures(data_lines, columns, const_information, data_path, calibration):
   data_object=MeasurementData([['alpha_i', 'mrad'], 
                                ['alpha_f', 'mrad'], 
+                               ['alpha_i-alpha_f', 'mrad'], 
+                               ['alpha_i+alpha_f', 'mrad'], 
                                ['Intensity', 'a.u.'], 
                                ['log_{10}(Intensity)', 'a.u.'], 
                                ['error','a.u.']], 
-                              [], 0, 1, 4, 2)
+                              [], 0, 1, 6, 4)
+  data_object.scan_line_constant=0
   data_list=[]
-  pixelbreite=0.014645
   for line in data_lines:
     if float(line[columns['Monitor']]) == 0.:
       continue
@@ -148,8 +158,14 @@ def integrate_pictures(data_lines, columns, data_path, calibration):
     else:
       print 'Image ' + data_path + line[columns['Image']] + '(.gz) does not exist, check your files.'
       return None
-    alphai = float(line[columns['omega']])
-    alphaf_center = float(line[columns['detector']]) - alphai
+    if columns['omega'] >= 0:
+      alphai = float(line[columns['omega']])
+    else:
+      alphai = const_information['omega']
+    if columns['detector'] >= 0:
+      alphaf_center = float(line[columns['detector']]) - alphai
+    else:
+      alphaf_center = const_information['detector'] - alphai
     # read the data of an image file and convet it to integer
     # every image file consists of 256 rows and 256 columns of the detector
     img_data=img_file.read()[:-1]
@@ -161,26 +177,31 @@ def integrate_pictures(data_lines, columns, data_path, calibration):
   return data_object
 
 def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, pixelbreite):
-  '''Map detector columns to alphai, alphaf and intensities.'''
+  '''
+    Map detector columns to alphai, alphaf and intensities.
+  '''
   from math import sqrt, log10
   data_list=[]
   append_to_list=data_list.append
-  parts=map(lambda i: img_data[i*256:(i+1)*256], range(256))
+  parts=[[img_data[i] for i in map_i if not img_data[i] is '0'] for map_i in detector_rows_map]
+  monitor=float(line[columns['Monitor']])
   for i in range(256):
     if calibration[i] <= 0 :
       continue
     int_data=map(int, parts[i])
     img_integral=sum(int_data)
     alphaf = alphaf_center + pixelbreite * (130.8 - i)
-    intensity = img_integral / float(line[columns['Monitor']]) * calibration[i]
+    intensity = img_integral / monitor * calibration[i]
     if intensity > 0:
       logintensity = log10(intensity)
     else:
       logintensity = -10.0
-    error = sqrt(img_integral) / float(line[columns['Monitor']]) * calibration[i]
-      # convert to mrad
+    error = sqrt(img_integral) / monitor * calibration[i]
+    # convert to mrad
     append_to_list([17.45329 * alphai, 
                     17.45329 * alphaf, 
+                    17.45329 * (alphai - alphaf), 
+                    17.45329 * (alphai + alphaf), 
                     intensity, 
                     logintensity, 
                     error])

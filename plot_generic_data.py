@@ -75,8 +75,9 @@ Options:
 
 \tPlott settings:
 \t-e\t\tPlot with errorbars
-\t-logx\t\tPlot with errorbars
-\t-logy\t\tPlot with errorbars
+\t-logx\t\tPlot logarithmic in x
+\t-logy\t\tPlot logarithmic in y
+\t-logz\t\tPlot logarithmic in z
 \t-scp\t\tUse script mode, no GUI will be shown
 
 \tGeneral Data treatment:
@@ -108,7 +109,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   index=0
   file_wildcards=(('all files', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
-  options=['s','s2','i','gs','o','ni','c','sc','st','sxy','e', 'logx', 'logy','scp', 'no-trans','help']
+  options=['s','s2','i','gs','o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans','help']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -123,6 +124,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   plot_with_errorbars=False # use errorbars in plot
   logx=False # plot logarithmic in x direction
   logy=False # plot logarithmic in y direction
+  logz=False # plot logarithmic in z direction
   # TODO: command line file printing hast to be added.
   print_plot=False # send plots to printer
   unit_transformation=True # make transformations as set in preferences file
@@ -234,6 +236,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
           self.logx=True
         elif argument=='-logy':
           self.logy=True
+        elif argument=='-logz':
+          self.logz=True
         elif argument=='-p':
           self.print_plot=True
         elif argument=='-scp':
@@ -399,6 +403,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     for dataset in datasets:
       dataset.logx=self.logx
       dataset.logy=self.logy
+      dataset.logz=self.logz
     return datasets # for reuse in child class
   
   def __iter__(self): # see next()
