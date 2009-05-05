@@ -43,8 +43,8 @@ def read_data(file_name):
   # get the columns of interest
   columns={ 'Image': columns_line.index('Image'), 
            'Polarization': columns_line.index('Pol.'),
-#           'Monitor': columns_line.index('MonBurg')
-           'Monitor': columns_line.index('Monitor')
+           'Monitor': columns_line.index('MonBurg')
+#           'Monitor': columns_line.index('Monitor')
            }
   for line in headers[0:6]:
     if line[0] == 'Scan':
@@ -150,7 +150,7 @@ def integrate_pictures(data_lines, columns, data_path, calibration):
         alphaf = alphaf_center + pixelbreite * (130.8 - i)
         intensity = img_integral / float(line[columns['Monitor']]) * calibration[i]
         if intensity > 0:
-          logintensity = log10 (intensity)
+          logintensity = log10(intensity)
         else:
           logintensity = -10.0
         error = sqrt(img_integral) / float(line[columns['Monitor']]) * calibration[i]
