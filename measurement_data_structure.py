@@ -147,8 +147,8 @@ class MeasurementData:
       Get x-y list of all data.
     '''
     xd=self.xdata
-    yd=self.xdata
-    zd=self.xdata
+    yd=self.ydata
+    zd=self.zdata
     if (xd>=0) and (yd>=0):
       if (zd<0):
         return [[point[xd],point[yd]] for point in self]
@@ -163,16 +163,21 @@ class MeasurementData:
     '''
       Get x-y-dy list of all data.
     '''
-    if (self.xdata<0)&(self.ydata<0):
-      return [[i+1,i+1,point[self.yerror]] for i,point in enumerate(self)]
-    elif self.xdata<0:
-      return [[i+1,point[self.ydata],point[self.yerror]] for i,point in enumerate(self)]
-    elif self.ydata<0:
-      return [[point[self.xdata],i+1,point[self.yerror]] for i,point in enumerate(self)]
-    elif self.yerror<0:
-      return [[point[self.xdata],point[self.ydata],0] for i,point in enumerate(self)]
-    else:
-      return [[point[self.xdata],point[self.ydata],point[self.yerror]] for point in self]
+    xd=self.xdata
+    yd=self.ydata
+    ye=self.yerror
+    zd=self.zdata
+    if ye<0:
+      return [point.append(0) for point in self.list()]
+    if (xd>=0) and (yd>=0):
+      if (zd<0):
+        return [[point[xd], point[yd], point[ye]] for point in self]
+      return [[point[xd], point[yd], point[zd], point[ye]] for point in self]
+    elif yd>=0:
+      return [[i+1, point[yd], point[ye]] for i,point in enumerate(self)]
+    elif xd>=0:
+      return [[point[xd], i+1, point[ye]] for i,point in enumerate(self)]
+    return [[i+1,i+1, point[ye]] for i,point in enumerate(self)]
 
   def listxy(self,x,y): 
     '''

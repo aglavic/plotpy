@@ -718,21 +718,35 @@ class ApplicationMainWindow(gtk.Window):
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
     # parameters for plot in 3d
-    label=gtk.Label()
-    label.set_markup('Parameters for 3d plot:')
-    table.attach(label, 0, 6, 9, 10, 0, 0, 0, 0);
+    label3d=gtk.Label()
+    label3d.set_markup('Parameters for 3d plot:')
+    table.attach(label3d, 0, 6, 9, 10, 0, 0, 0, 0);
     plotting_parameters_3d=gtk.Entry()
     plotting_parameters_3d.set_text(gnuplot_preferences.plotting_parameters_3d)
     table.attach(plotting_parameters_3d,
                 # X direction #          # Y direction
-                0, 3,                      10, 11,
+                0, 3,                      10, 12,
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
+    plotting_settings_3d=gtk.TextView()
+    plotting_settings_3d.get_buffer().set_text(gnuplot_preferences.settings_3d)
+    table.attach(plotting_settings_3d,
+                # X direction #          # Y direction
+                3, 6,                      10, 11,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         5);
+    plotting_settings_3dmap=gtk.TextView()
+    plotting_settings_3dmap.get_buffer().set_text(gnuplot_preferences.settings_3dmap)
+    table.attach(plotting_settings_3dmap,
+                # X direction #          # Y direction
+                3, 6,                      11, 12,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         5);
 
     # additional Gnuplot commands
     label=gtk.Label()
     label.set_markup('Gnuplot commands executed additionally:')
-    table.attach(label, 0, 6, 11, 12, 0, 0, 0, 0);
+    table.attach(label, 0, 6, 12, 13, 0, 0, 0, 0);
     sw = gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
@@ -741,17 +755,29 @@ class ApplicationMainWindow(gtk.Window):
     sw.add(self.plot_options_view) # add textbuffer view widget
     table.attach(sw,
                 # X direction #          # Y direction
-                0, 6,                      12, 13,
+                0, 6,                      13, 14,
                 gtk.EXPAND | gtk.FILL,     gtk.EXPAND | gtk.FILL,
                 0,                         0);
     table.show_all()
+    if self.measurement[self.index_mess].zdata<0:
+      label3d.hide()
+      plotting_parameters_3d.hide()
+      plotting_settings_3d.hide()
+      plotting_settings_3dmap.hide()
     #----------------- Adding input fields in table -----------------
     dialog.vbox.add(table) # add table to dialog box
     dialog.set_default_size(300,200)
     dialog.add_button('Apply and Replot',1) # button replot has handler_id 1
     dialog.connect("response", self.change_plot_options,
-                  terminal_png, terminal_ps, x_label, y_label, z_label,
-                  plotting_parameters, plotting_parameters_errorbars, plotting_parameters_3d)
+                               terminal_png, terminal_ps, 
+                               x_label, 
+                               y_label, 
+                               z_label,
+                               plotting_parameters, 
+                               plotting_parameters_errorbars, 
+                               plotting_parameters_3d, 
+                               plotting_settings_3d, 
+                               plotting_settings_3dmap)
     # befor the widget gets destroyed the textbuffer view widget is removed
     dialog.connect("destroy",self.close_plot_options_window,sw) 
     dialog.show()
@@ -775,9 +801,17 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_options_handler_id=self.plot_options_button.connect("clicked",self.open_plot_options_window)
     self.plot_options_window_open=False
 
-  def change_plot_options(self,widget,action,\
-    terminal_png,terminal_ps,x_label,y_label,z_label,\
-      plotting_parameters,plotting_parameters_errorbars,plotting_parameters_3d):
+  def change_plot_options(self,widget,action,
+                          terminal_png,
+                          terminal_ps,
+                          x_label,
+                          y_label,
+                          z_label,
+                          plotting_parameters,
+                          plotting_parameters_errorbars,
+                          plotting_parameters_3d, 
+                          plotting_settings_3d, 
+                          plotting_settings_3dmap):
     '''
       Plot with new commands from dialog window. Gets triggerd when the apply
       button is pressed.
@@ -796,6 +830,10 @@ class ApplicationMainWindow(gtk.Window):
       gnuplot_preferences.plotting_parameters=plotting_parameters.get_text()
       gnuplot_preferences.plotting_parameters_errorbars=plotting_parameters_errorbars.get_text()
       gnuplot_preferences.plotting_parameters_3d=plotting_parameters_3d.get_text()
+      buffer=plotting_settings_3d.get_buffer()
+      gnuplot_preferences.settings_3d=buffer.get_text(buffer.get_start_iter(),buffer.get_end_iter())
+      buffer=plotting_settings_3dmap.get_buffer()
+      gnuplot_preferences.settings_3dmap=buffer.get_text(buffer.get_start_iter(),buffer.get_end_iter())
       self.replot() # plot with new settings
 
   def load_profile(self,action):
