@@ -26,7 +26,7 @@ __status__ = "Development"
 detector_rows_map=[[j+i*256 for i in range(256)] for j in range(256)]
 pixelbreite=0.014645
 
-def read_data(file_name):
+def read_data(file_name, script_path):
   '''
     Read the data of a treff raw data file, integrate the corresponding .img files.
   '''
@@ -88,7 +88,7 @@ def read_data(file_name):
   data_xx_lines=filter(lambda line: line[columns['Polarization']]=='xx', data_lines)
   del(data_lines)
   # import calibration from file, need to get this as relative path
-  cali_file='/home/glavic/Software/Scripte/Plotting/treff/KALIBR2.DAT'
+  cali_file=script_path+'treff/KALIBR2.DAT'
   cali_open=open(cali_file, 'r')
   calibration=map(float, cali_open.readlines())
   cali_open.close()

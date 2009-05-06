@@ -234,6 +234,7 @@ def replace_ph(session,
   withnr=number[1]
   gp=gnuplot_preferences
   string=string.\
+  replace('[script-path]',session.script_path).\
   replace('[name]',file_name_prefix).\
   replace('[name-rmv]',gp.remove_from_name(file_name_prefix)).\
   replace('[sample]',sample_name).\

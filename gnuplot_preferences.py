@@ -50,7 +50,7 @@ def remove_from_name(name):
 encoding='iso_8859_1'
 # set the terminal options for the gnuplot output (postscript could need other labels)
 # used is determined by file name
-set_output_terminal_png='png enhanced size 1024,768 font "/usr/share/fonts/truetype/msttcorefonts/arial.ttf" 18' #transparent
+set_output_terminal_png='png enhanced size 1024,768 font "[script-path]fonts/arial.ttf" 16' #transparent
 set_output_terminal_ps='postscript landscape enhanced colour "Arial" 24 solid lw 2'
 
 # set output file name, the postfix has to be chosen consistant to the 'set term' statement

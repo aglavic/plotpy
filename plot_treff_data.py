@@ -69,7 +69,7 @@ class treff_session(generic_session):
     '''
       Function to read data files.
     '''
-    return treff_read_data.read_data(file_name)
+    return treff_read_data.read_data(file_name, self.script_path)
 
 
   def create_menu(self):

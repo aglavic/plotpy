@@ -7,6 +7,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 import globals
+from sys import hexversion
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -358,7 +359,11 @@ class MeasurementData:
         else:
           insert_indices=insert_indices_yx
           data=data_yxsort
-    float_format='{0:g}'.format
+    if hex(hexversion) >= '0x2060000': # test if format function is available (py 2.6.0)
+      float_format='{0:g}'.format
+    else:
+      def float_format(string):
+        return "%g" % string
     data_str=map(lambda point: map(float_format, point), data)
     data_lines=map(seperator.join, data_str)
     if self.zdata>=0:
