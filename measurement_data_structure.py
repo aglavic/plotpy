@@ -312,12 +312,12 @@ class MeasurementData:
     '''
       Write data in text file seperated by 'seperator'.
     '''
-    data=[point for point in self if (((xfrom is None) or (point[self.xdata]<=xfrom)) and \
-                                      ((xfrom is None) or (point[self.xdata]<=xfrom)))]
+    xd=self.xdata
+    yd=self.ydata
+    data=[point for point in self if (((xfrom is None) or (point[xd]>=xfrom)) and \
+                                      ((xto is None) or (point[xd]<=xto)))]
     # convert Numbers to str
     if self.zdata>=0:
-      xd=self.xdata
-      yd=self.ydata
       if self.scan_line_constant >= 0:
         scan_line_constant=self.scan_line_constant
         if xd!=scan_line_constant:
@@ -379,7 +379,7 @@ class MeasurementData:
       for i in range(len(self.data)):
         columns=columns+' '+self.dimensions()[i]+'['+self.units()[i]+']'
       write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
-    write_file.write('\n'.join(data_lines))
+    write_file.write('\n'.join(data_lines)+'\n')
     write_file.close()
     return len(data_lines) # return the number of exported data lines
 

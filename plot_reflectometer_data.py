@@ -80,7 +80,9 @@ class reflectometer_session(generic_session):
   export_for_fit=False # make the changes needed for the fit program to work
   try_refine=False # try to refine scaling and roughnesses
   # TODO: store fit in corresponding dataset
-  fit_object=None # used for storing the fit parameters 
+  fit_object=None # used for storing the fit parameters
+  fit_object_history=[]
+  fit_object_future=[]
   x_from=0.005 # fit only x regions between x_from and x_to
   x_to=''
   max_iter=50 # maximal iterations in fit
@@ -229,7 +231,7 @@ class reflectometer_session(generic_session):
 
   #+++++++++++++++++++++++ GUI functions +++++++++++++++++++++++
 
-  def fit_window(self, action, window, position=None, size=[500, 400]):
+  def fit_window(self, action, window, position=None, size=[580, 550]):
     '''
       create a dialog window for the fit options
     '''
@@ -334,7 +336,7 @@ class reflectometer_session(generic_session):
     theta_max.set_text(str(self.fit_object.theta_max))
     # activating the input will apply the settings, too
     theta_max.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(theta_max, 3, 4, 2, 3, gtk.FILL, gtk.FILL, 0, 0)   
+    align_table.attach(theta_max, 3, 4, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
     # fit-settings
     fit_x=gtk.CheckButton(label='Fit selected', use_underline=True)
     fit_x.connect('toggled', self.toggle_fit_bool_option, fit_params, 'actually')
@@ -348,6 +350,14 @@ class reflectometer_session(generic_session):
     text_filed=gtk.Label()
     text_filed.set_markup('max. iterations')
     align_table.attach(text_filed, 3, 4, 3, 4, gtk.FILL, gtk.FILL, 0, 0)
+    if self.fit_object_history!=[]:
+      history_back=gtk.Button(label='Undo (%i)' % len(self.fit_object_history), use_underline=True)
+      history_back.connect('clicked', self.fit_history, True, dialog, window)
+      align_table.attach(history_back, 1, 2, 4, 5, gtk.FILL, gtk.FILL, 0, 0)
+    if self.fit_object_future!=[]:
+      history_forward=gtk.Button(label='Redo (%i)' % len(self.fit_object_future), use_underline=True)
+      history_forward.connect('clicked', self.fit_history, False, dialog, window)
+      align_table.attach(history_forward, 2, 3, 4, 5, gtk.FILL, gtk.FILL, 0, 0)
     frame = gtk.Frame()
     frame.set_shadow_type(gtk.SHADOW_IN)
     frame.add(align_table)
@@ -634,11 +644,22 @@ class reflectometer_session(generic_session):
       or old ones.
     '''
     if response==1:
+      self.fit_object_history.append(self.fit_object)
+      self.fit_object_future=[]
       self.fit_object=new_fit
       self.rebuild_dialog(dialog, window)
     else:
       self.fit_object.fit=0
       self.dialog_fit(None, window)
+
+  def fit_history(self, action, back, dialog, window):
+    if back:
+      self.fit_object_future=[self.fit_object] + self.fit_object_future
+      self.fit_object=self.fit_object_history.pop(-1)
+    else:
+      self.fit_object_history.append(self.fit_object)
+      self.fit_object=self.fit_object_future.pop(0)
+    self.rebuild_dialog(dialog, window)
 
   def rebuild_dialog(self, dialog, window):
     '''
