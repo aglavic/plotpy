@@ -355,7 +355,7 @@ class reflectometer_session(generic_session):
       history_back.connect('clicked', self.fit_history, True, dialog, window)
       align_table.attach(history_back, 1, 2, 4, 5, gtk.FILL, gtk.FILL, 0, 0)
     if self.fit_object_future!=[]:
-      history_forward=gtk.Button(label='Redo (%i)' % len(self.fit_object_future), use_underline=True)
+      history_forward=gtk.Button(label='Redo (%i)' % len(self.fit_object_futur), use_underline=True)
       history_forward.connect('clicked', self.fit_history, False, dialog, window)
       align_table.attach(history_forward, 2, 3, 4, 5, gtk.FILL, gtk.FILL, 0, 0)
     frame = gtk.Frame()

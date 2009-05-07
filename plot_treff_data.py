@@ -39,7 +39,7 @@ class treff_session(generic_session):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  file_wildcards=(('All','*'), )  
+  file_wildcards=(('All','*'), ('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'))  
   #------------------ local variables -----------------
 
   
