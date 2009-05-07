@@ -32,6 +32,7 @@ class FitFunction:
   name="Unnamed"
   parameters=[]
   parameter_names=[]
+  parameters_history=None
   fit_function=lambda self, p, x: 0.
   fit_function_text='f(x)'
   
@@ -102,6 +103,15 @@ class FitFunction:
       # x is list and the function is only defined for one point.
       y= map((lambda x_i: self.fit_function(self.parameters, x_i)), xint)
     return xint, y
+  
+  def history_back(self, action, dialog, window):
+    active_params=self.parameters
+    self.parameters=self.parameters_history
+    self.parameters_history=active_params
+    size=dialog.get_size()
+    position=dialog.get_position()
+    dialog.destroy()
+    window.fit_dialog(None, size, position)
 
 
 class FitSum(FitFunction):
@@ -194,6 +204,27 @@ class FitExponential(FitFunction):
   parameter_names=['A', 'B', 'C']
   fit_function=lambda self, p, x: p[0] * numpy.exp(p[1] * numpy.array(x)) + p[2]
   fit_function_text='A*exp(B*x) + C'
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    if len(self.parameters)==len(initial_parameters):
+      self.parameters=initial_parameters
+    else:
+      self.parameters=[1, 1, 0]
+
+class FitOneOverX(FitFunction):
+  '''
+    Fit a one over x function.
+  '''
+  
+  # define class variables.
+  name="1/x"
+  parameters=[1, 0, 0]
+  parameter_names=['C', 'x_0', 'D']
+  fit_function=lambda self, p, x: p[0] * 1 / (numpy.array(x) - p[1]) + p[2]
+  fit_function_text='C/(x-x_0) + D'
 
   def __init__(self, initial_parameters):
     '''
@@ -299,6 +330,7 @@ class FitSession:
                        FitExponential.name: FitExponential, 
                        FitGaussian.name: FitGaussian, 
                        FitVoigt.name: FitVoigt, 
+                       FitOneOverX.name: FitOneOverX, 
                        FitLorentzian.name: FitLorentzian
                        }
   
@@ -418,6 +450,14 @@ class FitSession:
                   0, 2,                      i*2, i*2+1,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
+      if function[0].parameters_history is not None:
+        back_button=gtk.Button(label='Undo')
+        align_table.attach(back_button,
+                    # X direction #          # Y direction
+                    0, 2,                      i*2+1, i*2+2,
+                    gtk.EXPAND,     gtk.EXPAND,
+                    0,                         0);
+        back_button.connect('clicked', function[0].history_back, dialog, window)
       text=gtk.Label(function[0].fit_function_text)
       align_table.attach(text,
                   # X direction #          # Y direction
