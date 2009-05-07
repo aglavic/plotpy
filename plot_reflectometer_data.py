@@ -73,7 +73,7 @@ class reflectometer_session(generic_session):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  file_wildcards=(('reflectometer data','*.UXD'), )  
+  file_wildcards=(('reflectometer (.UXD)','*.[Uu][Xx][Dd]'), ('All','*'))  
   options=generic_session.options+['fit', 'ref']
   #options:
   show_counts=False # dont convert to conts/s

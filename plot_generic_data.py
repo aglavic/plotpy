@@ -128,6 +128,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   logx=False # plot logarithmic in x direction
   logy=False # plot logarithmic in y direction
   logz=False # plot logarithmic in z direction
+  picture_width='800'
+  picture_height='600'
   # TODO: command line file printing hast to be added.
   print_plot=False # send plots to printer
   unit_transformation=True # make transformations as set in preferences file
@@ -405,7 +407,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     else:
       print "Trying to import '" + filename + "'."
       datasets=self.read_file(filename)
-      if datasets!=[]:
+      if datasets!=[] and datasets!=[]:
         pickling=open(filename + '.mds', 'wb')
         dump(datasets, pickling, 2)
         pickling.close()

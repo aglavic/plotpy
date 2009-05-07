@@ -61,6 +61,7 @@ class ApplicationMainWindow(gtk.Window):
       Class constructor which builds the main window with it's menus, buttons and the plot area.
     '''
     global errorbars
+    gnuplot_preferences.set_output_terminal_png=gnuplot_preferences.set_output_terminal_png_GUI
     # TODO: remove global errorbars variable and put in session or m_d_structure
     #+++++++++++++++++ set class variables ++++++++++++++++++
     self.height=600 # window height
@@ -213,7 +214,13 @@ class ApplicationMainWindow(gtk.Window):
     # TODO: faster resizeing with scrollable window perhaps?
     self.image = gtk.Image()    
     self.image_shown=False # variable to decrease changes in picture size
-    self.frame1.add(self.image)
+    sw = gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add_with_viewport(self.image) 
+    self.frame1.add(sw)
     # put image below label on left column, expand frame in all directions
     table.attach(align,
         # X direction           Y direction
@@ -344,9 +351,10 @@ class ApplicationMainWindow(gtk.Window):
     self.view_up.hide()
     self.view_down.hide()
     self.view_right.hide()
-    self.connect("configure-event", self.update_size)
+    #self.connect("configure-event", self.update_size)
     #self.frame1.connect("size-allocate", self.update_frame_size)
     self.connect("event-after", self.update_picture)
+
     self.replot()
     self.check_add.set_active(True)
     self.check_add.toggled()
@@ -388,6 +396,9 @@ class ApplicationMainWindow(gtk.Window):
         self.set_image()
         self.image.show()
         self.image_shown=True
+        def new_update_picture(widget, event):
+          None
+        self.update_picture=new_update_picture
 
 
   #----------------------------Interrupt Events----------------------------------#
@@ -562,7 +573,8 @@ class ApplicationMainWindow(gtk.Window):
     for wildcard in self.active_session.file_wildcards:
       filter = gtk.FileFilter()
       filter.set_name(wildcard[0])
-      filter.add_pattern(wildcard[1])
+      for pattern in wildcard[1:]:
+        filter.add_pattern(pattern)
       file_dialog.add_filter(filter)
     response = file_dialog.run()
     if response == gtk.RESPONSE_OK:
@@ -1563,11 +1575,12 @@ class ApplicationMainWindow(gtk.Window):
       Resize and show temporary gnuplot image.
     '''
     # TODO: errorhandling
-    self.image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file(\
-                              self.active_session.temp_dir + 'plot_temp.png'\
-                              ).scale_simple(self.widthf-20,
-                                            self.heightf-20,
-                                            gtk.gdk.INTERP_BILINEAR))
+    self.image.set_from_file(self.active_session.temp_dir + 'plot_temp.png')
+    #self.image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file(\
+    #                          self.active_session.temp_dir + 'plot_temp.png'\
+    #                          ).scale_simple(self.widthf-20,
+    #                                        self.heightf-20,
+    #                                        gtk.gdk.INTERP_BILINEAR))
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
             with_errorbars, output_file='', fit_lorentz=False, add_preferences=''):
@@ -1590,6 +1603,8 @@ class ApplicationMainWindow(gtk.Window):
       Recreate the current plot and clear statusbar.
     '''
     global errorbars
+    self.active_session.picture_width=str(self.frame1.get_allocation().width-20)
+    self.active_session.picture_height=str(self.frame1.get_allocation().height-20)
     if self.active_multiplot:
       for plotlist in self.multiplot:
         itemlist=[item[0] for item in plotlist]

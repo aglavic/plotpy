@@ -55,7 +55,7 @@ class squid_session(generic_session):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  file_wildcards=(('squid data files','*.dat'), ('squid raw data files', '*.raw'))
+  file_wildcards=(('SQUID (.dat/.raw)','*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]'), ('All', '*'))
   # options:
   dia_mag_correct=0 # diamagnetic correction factor
   dia_calc=[False, '', 0.0]
