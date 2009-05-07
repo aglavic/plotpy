@@ -23,6 +23,7 @@
 import os
 import math
 import subprocess
+from cPickle import load, dump
 
 # importing own modules
 from measurement_data_structure import *
@@ -70,8 +71,9 @@ Options:
 \t-s2 [b]\t\tSet last sequence to be plotted
 \t-i [inc]\tPlot only every inc sequence
 
-\tOutput settings:
+\tInput/Output settings:
 \t-gs\t\tUse gnuplot in script mode, in the case Gnuplot.py is not working (slower)
+\t-rd\t\tRead file directly, do not use .mds file created in earlier runs.
 
 \tPlott settings:
 \t-e\t\tPlot with errorbars
@@ -84,7 +86,8 @@ Options:
 \t-no-trans\tdon't make a unit transformation
 """
   # TODO: implement these settings
-  '''
+  '''    from cPickle import load, dump
+
   \t-l\t\tList sequences in file.
   \t-ls\t\tList selected Sequences.
 
@@ -109,7 +112,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   index=0
   file_wildcards=(('all files', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
-  options=['s','s2','i','gs','o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans','help']
+  options=['s','s2','i','gs','rd', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans','help']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -130,6 +133,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   unit_transformation=True # make transformations as set in preferences file
   transformations=[] # a list of unit transformations, that will be performed on the data
   own_pid=None # stores session process ID
+  read_directly=False # don't use pickled file, read the data diretly
   #------------------ local variables -----------------
 
   def __init__(self, arguments):
@@ -224,6 +228,8 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
        #   self.list_sequences=True
         elif argument=='-gs':
           self.gnuplot_script=True
+        elif argument=='-rd':
+          self.read_directly=True
         elif argument=='-o':
           self.do_output=True
         elif argument=='-ni':
@@ -389,8 +395,20 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       Transformations are also done here, so childs
       will change this function.
     '''
-    print "Trying to import '" + filename + "'."
-    datasets=self.read_file(filename)
+    # for faster access the MeasurementData object are saved via cPickle
+    # when this file exists it is used to reload it.
+    if os.path.exists(filename + '.mds') and not self.read_directly:
+      print "Importing previously saved data from '" +filename + ".mds'."
+      pickled=open(filename + '.mds', 'rb')
+      datasets=load(pickled)
+      pickled.close()
+    else:
+      print "Trying to import '" + filename + "'."
+      datasets=self.read_file(filename)
+      if datasets!=[]:
+        pickling=open(filename + '.mds', 'wb')
+        dump(datasets, pickling, 2)
+        pickling.close()
     if datasets=='NULL':
       return []
     datasets=self.create_numbers(datasets) # enumerate the sequences and sort out unselected

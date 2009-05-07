@@ -89,24 +89,22 @@ class MeasurementData:
     data_pointer=0
     # for faster access use local variables
     data=self.data
-    get_data=self.get_data
     filters=self.filters
     number_points=len(data[0])
-    values=[value.values for value in data]
     while data_pointer<number_points:
-      filtered=True
-      while filtered:
-        filtered = False
-        for data_filter in filters:
-          # if the datapoint is not included (filter[3]=True) or excluded skip it
-          filtered = (filtered | (not ((data_filter[3] & \
-                      (data[data_filter[0]].values[data_pointer]>data_filter[1]) & \
-                      (data[data_filter[0]].values[data_pointer]<data_filter[2])\
-                ) | ((not data_filter[3]) & \
-                    ((data[data_filter[0]].values[data_pointer]<data_filter[1]) | \
-                      (data[data_filter[0]].values[data_pointer]>data_filter[2]))))))
-        data_pointer+=1
-      yield [value[(data_pointer-1)] for value in values]
+      filtered=False
+      for data_filter in filters:
+        # if the datapoint is not included (filter[3]=True) or excluded skip it
+        filtered = (filtered or (not ((data_filter[3] and \
+                    (data[data_filter[0]].values[data_pointer]>data_filter[1]) and \
+                    (data[data_filter[0]].values[data_pointer]<data_filter[2])\
+              ) or ((not data_filter[3]) and \
+                  ((data[data_filter[0]].values[data_pointer]<data_filter[1]) or \
+                    (data[data_filter[0]].values[data_pointer]>data_filter[2]))))))
+      data_pointer+=1
+      if filtered:
+        continue
+      yield [value.values[(data_pointer-1)] for value in data]
  
   def __len__(self): 
     '''
