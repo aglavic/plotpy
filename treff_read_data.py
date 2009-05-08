@@ -7,7 +7,6 @@
 '''
 
 # Pleas do not make any changes here unless you know what you are doing.
-# TODO: import 1d scan, too.
 
 import os
 import math
@@ -25,6 +24,11 @@ __status__ = "Development"
 # globals
 detector_rows_map=[[j+i*256 for i in range(256)] for j in range(256)]
 pixelbreite=0.014645
+lambda_treff=4.8
+
+pi_4_over_lambda=4*math.pi/lambda_treff
+to_mrad=math.pi/180*1000
+to_rad=math.pi/180
 
 def read_data(file_name, script_path):
   '''
@@ -54,6 +58,8 @@ def read_data(file_name, script_path):
   columns={ 'Image': columns_line.index('Image'), 
            'Polarization': columns_line.index('Pol.'),
            'Monitor': columns_line.index('Monitor'), 
+           '2DWindow': columns_line.index('2DWind.'), 
+           'DetectorTotal': columns_line.index('2DTotal'), 
            'omega': -1, 
            'detector': -1
            }
@@ -61,6 +67,7 @@ def read_data(file_name, script_path):
   for line in headers:
     try:
       if line[0] == 'Scan':
+        columns['Scantype']=line[-1]
         if line[-1] == 'omega':
           columns['omega']=0
         elif line[-1] == 'detector':
@@ -97,33 +104,44 @@ def read_data(file_name, script_path):
   if len(path_name)>0:
     path_name+='/'
   #++++++++++++ evaluating images and creating data objects ++++++++++++
-  output=[]
+  maps=[]
+  scans=[]
   if len(data_uu_lines)>0:
     print "Evaluating up-up images."
-    data_uu=integrate_pictures(data_uu_lines, columns, const_information, path_name, calibration)
+    data_uu, scan_uu=integrate_pictures(data_uu_lines, columns, const_information, path_name, calibration)
     data_uu.short_info='++'
-    output.append(data_uu)
+    maps.append(data_uu)
+    scan_uu.short_info='++'
+    scans.append(scan_uu)
   if len(data_dd_lines)>0:
     print "Evaluating down-down images."
-    data_dd=integrate_pictures(data_dd_lines, columns, const_information, path_name, calibration)
+    data_dd, scan_dd=integrate_pictures(data_dd_lines, columns, const_information, path_name, calibration)
     data_dd.short_info='--'
-    output.append(data_dd)
+    maps.append(data_dd)
+    scan_dd.short_info='--'
+    scans.append(scan_dd)
   if len(data_ud_lines)>0:
     print "Evaluating up-down images."
-    data_ud=integrate_pictures(data_ud_lines, columns, const_information, path_name, calibration)
+    data_ud, scan_ud=integrate_pictures(data_ud_lines, columns, const_information, path_name, calibration)
     data_ud.short_info='+-'
-    output.append(data_ud)
+    maps.append(data_ud)
+    scan_ud.short_info='+-'
+    scans.append(scan_ud)
   if len(data_du_lines)>0:
     print "Evaluating down-up images."
-    data_du=integrate_pictures(data_du_lines, columns, const_information, path_name, calibration)
+    data_du, scan_du=integrate_pictures(data_du_lines, columns, const_information, path_name, calibration)
     data_du.short_info='-+'
-    output.append(data_du)
+    maps.append(data_du)
+    scan_du.short_info='-+'
+    scans.append(scan_du)
   if len(data_xx_lines)>0:
     print "Evaluating unpolarized images."
-    data_xx=integrate_pictures(data_xx_lines, columns, const_information, path_name, calibration)
-    data_xx.short_info='unpolarized'
-    output.append(data_xx)
-  return output
+    data_xx, scan_xx=integrate_pictures(data_xx_lines, columns, const_information, path_name, calibration)
+    data_uu.short_info='unpolarized'
+    maps.append(data_xx)
+    scan_xx.short_info='unpolarized'
+    scans.append(scan_xx)
+  return maps + scans
 
 def string_or_float(string_line):
   '''
@@ -143,21 +161,35 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     Integrate detector rows of the image files corresponding to one polarization direction.
     This function is tuned quite much for fast readout, so some parts are a bit tricky.
   '''
+  sqrt=math.sqrt
   # create the data object
-  data_object=MeasurementData([['alpha_i', 'mrad'], 
-                               ['alpha_f', 'mrad'], 
-                               ['alpha_i-alpha_f', 'mrad'], 
-                               ['alpha_i+alpha_f', 'mrad'], 
+  data_object=MeasurementData([['\316\261_i', 'mrad'], 
+                               ['\316\261_f', 'mrad'], 
+                               ['q_x', '\303\205'], 
+                               ['q_z', '\303\205'], 
                                ['Intensity', 'a.u.'], 
                                ['log_{10}(Intensity)', 'a.u.'], 
                                ['error','a.u.']], 
                               [], 0, 1, 6, 4)
+  scan_data_object=MeasurementData([[columns['Scantype'], 'mrad'], 
+                               ['2DWindow', 'counts'], 
+                               ['DetectorTotal', 'counts'], 
+                               ['error','counts'], 
+                               ['errorTotal','counts']], 
+                              [], 0, 1, 3)
+  
   # alpha_i is used as main column for the line splitteng used for pm3d
   data_object.scan_line_constant=0
   data_list=[]
+  scan_data_list=[]
   for line in data_lines:
     if float(line[columns['Monitor']]) == 0.:
       continue # measurement error, nothing to do
+    scan_data_list.append(map(float, (line[0], 
+                                      line[columns['2DWindow']], 
+                                      line[columns['DetectorTotal']], 
+                                      line[columns['2DWindow']], 
+                                      line[columns['DetectorTotal']])))
     if os.path.exists(data_path + line[columns['Image']]):
       # unziped images
       img_file=open(data_path + line[columns['Image']], 'r')
@@ -185,16 +217,25 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     # integrate the image
     data_list+=integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, pixelbreite)
   data_append=data_object.append
+  scan_data_append=scan_data_object.append
   # append the integrated data to the object
   map(data_append, data_list)
-  return data_object
+  # sqrt of intensities is error
+  def sqrt_34(point):
+    point[3]=sqrt(point[3])
+    point[4]=sqrt(point[4])
+  map(sqrt_34, scan_data_list)
+  map(scan_data_append, scan_data_list)
+  return data_object, scan_data_object
 
 def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, pixelbreite):
   '''
     Map detector columns to alphai, alphaf and intensities.
     Quite optimized, too.
   '''
-  from math import sqrt, log10
+  sqrt=math.sqrt
+  log10=math.log10
+  sin=math.sin
   data_list=[]
   # for faster function lookup
   append_to_list=data_list.append
@@ -217,13 +258,13 @@ def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibr
       logintensity = -10.0
     error = sqrt(img_integral) / monitor * calibration[i]
     # convert to mrad and create point list.
-    append_to_list([17.45329 * alphai, 
-                    17.45329 * alphaf, 
-                    17.45329 * (alphai - alphaf), 
-                    17.45329 * (alphai + alphaf), 
+    append_to_list((to_mrad * alphai, 
+                    to_mrad * alphaf, 
+                    pi_4_over_lambda*sin(to_rad * (alphai - alphaf) / 2), 
+                    pi_4_over_lambda*sin(to_rad * (alphai + alphaf) / 2), 
                     intensity, 
                     logintensity, 
-                    error])
+                    error))
   return data_list
 
 

@@ -40,6 +40,9 @@ class treff_session(generic_session):
 
   #++++++++++++++++++ local variables +++++++++++++++++
   file_wildcards=(('All','*'), ('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'))  
+#  transformations=[\
+#  ['','',1,0,'',''],\
+#  ]  
   #------------------ local variables -----------------
 
   

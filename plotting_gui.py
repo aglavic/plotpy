@@ -1256,6 +1256,8 @@ class ApplicationMainWindow(gtk.Window):
       on the selected file name.
     '''
     global errorbars
+    self.active_session.picture_width='1600'
+    self.active_session.picture_height='1200'
     if action.get_name()=='SaveGPL':
       #++++++++++++++++File selection dialog+++++++++++++++++++#
       file_dialog=gtk.FileChooserDialog(title='Save Gnuplot and Datafiles...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
