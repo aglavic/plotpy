@@ -458,14 +458,15 @@ class FitSession:
                     gtk.EXPAND,     gtk.EXPAND,
                     0,                         0);
         back_button.connect('clicked', function[0].history_back, dialog, window)
-      text=gtk.Label(function[0].fit_function_text)
+      text=gtk.Entry()
+      text.set_text(function[0].fit_function_text)
       align_table.attach(text,
                   # X direction #          # Y direction
                   4, 5,                      i*2, i*2+1,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       new_line, entry=self.function_line(function[0], dialog, window)
-      entries.append(entry)
+      entries.append(entry+[text])
       align_table.attach(new_line,
                   # X direction #          # Y direction
                   4, 5,                      i*2+1, i*2+2,
@@ -580,8 +581,9 @@ class FitSession:
     '''
     # TODO: Go back in history after fit.
     for i, function in enumerate(self.functions):
-      for j,  entry in enumerate(entries[i]):
+      for j,  entry in enumerate(entries[i][:-1]):
         function[0].parameters[j]=float(entry.get_text().replace(',', '.'))
+      function[0].fit_function_text=entries[i][-1].get_text()
     self.fit()
     self.simulate()
     size=dialog.get_size()
