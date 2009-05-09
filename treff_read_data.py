@@ -7,10 +7,9 @@
 '''
 
 # Pleas do not make any changes here unless you know what you are doing.
-
 import os
 import math
-from measurement_data_structure import *
+from measurement_data_structure import MeasurementData
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -22,13 +21,13 @@ __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
 # globals
-detector_rows_map=[[j+i*256 for i in range(256)] for j in range(256)]
-pixelbreite=0.014645
-lambda_treff=4.8
+DETECTOR_ROWS_MAP=[[j+i*256 for i in range(256)] for j in range(256)]
+PIXEL_WIDTH=0.014645
+LAMBDA_TREFF=4.8
 
-pi_4_over_lambda=4*math.pi/lambda_treff
-to_mrad=math.pi/180*1000
-to_rad=math.pi/180
+PI_4_OVER_LAMBDA=4*math.pi/LAMBDA_TREFF
+GRAD_TO_MRAD=math.pi/180*1000
+GRAD_TO_RAD=math.pi/180
 
 def read_data(file_name, script_path):
   '''
@@ -215,7 +214,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     img_file.close()
     img_data=img_data.split('\n')
     # integrate the image
-    data_list+=integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, pixelbreite)
+    data_list+=integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, PIXEL_WIDTH)
   data_append=data_object.append
   scan_data_append=scan_data_object.append
   # append the integrated data to the object
@@ -242,7 +241,7 @@ def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibr
   # every image file consists of 256 rows and 256 columns of the detector
   # as the sum function returns 0 for empty list we can remove '0' from the lists
   # to increase the speed of the integer conversion
-  parts=[[img_data[i] for i in map_i if not img_data[i] is '0'] for map_i in detector_rows_map]
+  parts=[[img_data[i] for i in map_i if not img_data[i] is '0'] for map_i in DETECTOR_ROWS_MAP]
   monitor=float(line[columns['Monitor']])
   for i in range(256):
     if calibration[i] <= 0 :
@@ -258,10 +257,10 @@ def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibr
       logintensity = -10.0
     error = sqrt(img_integral) / monitor * calibration[i]
     # convert to mrad and create point list.
-    append_to_list((to_mrad * alphai, 
-                    to_mrad * alphaf, 
-                    pi_4_over_lambda*sin(to_rad * (alphai - alphaf) / 2), 
-                    pi_4_over_lambda*sin(to_rad * (alphai + alphaf) / 2), 
+    append_to_list((GRAD_TO_MRAD * alphai, 
+                    GRAD_TO_MRAD * alphaf, 
+                    PI_4_OVER_LAMBDA*sin(GRAD_TO_RAD * (alphai - alphaf) / 2), 
+                    PI_4_OVER_LAMBDA*sin(GRAD_TO_RAD * (alphai + alphaf) / 2), 
                     intensity, 
                     logintensity, 
                     error))

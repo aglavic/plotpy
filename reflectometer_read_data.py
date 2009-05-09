@@ -6,11 +6,10 @@
 '''
 
 # Pleas do not make any changes here unless you know what you are doing.
-
 import os
 import sys
 import math
-from measurement_data_structure import *
+from measurement_data_structure import MeasurementData
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -22,7 +21,7 @@ __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
 
-def read_data(input_file,data_columns): 
+def read_data(input_file,DATA_COLUMNS): 
   '''
     Read the datafile.  
   '''
@@ -35,7 +34,7 @@ def read_data(input_file,data_columns):
       measurement_info=read_header(input_file_lines)
       if measurement_info=='NULL':
         break
-      sequence=read_data_lines(input_file_lines,measurement_info,data_columns)
+      sequence=read_data_lines(input_file_lines,measurement_info,DATA_COLUMNS)
       if sequence!='NULL':
         measurement_data.append(sequence)
       else:
@@ -59,7 +58,7 @@ def read_header(input_file_lines):
       output=output+line.rstrip('\n').rstrip('\r').lstrip('_').lstrip(';')+'\n'
   return 'NULL'
 
-def read_data_lines(input_file_lines,info,data_columns): 
+def read_data_lines(input_file_lines,info,DATA_COLUMNS): 
   '''
     Read data points line by line.
   '''
@@ -77,7 +76,7 @@ def read_data_lines(input_file_lines,info,data_columns):
   if scantype==None:
     print "Wrong file type, no 'DRIVE' defined in header!"
     return 'NULL'
-  data=MeasurementData([data_columns[scantype],data_columns['COUNTS'],['error','counts']],[],0,1,2)
+  data=MeasurementData([DATA_COLUMNS[scantype],DATA_COLUMNS['COUNTS'],['error','counts']],[],0,1,2)
   data.info=data_info
   data.sample_name=sample_name
   while len(input_file_lines)>0: # append data from one sequence to the object or create new object for the next sequence

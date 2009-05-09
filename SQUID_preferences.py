@@ -17,19 +17,19 @@ dia_mag_correct=0
 
 
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
-transformations=[\
+TRANSFORMATIONS=[\
 ['H','Oe',1e-4,0,'\\316\\274_0\\302\\267H','T'],\
 ['emu',1e-3,0,'A\\302\\267m\\262'],\
 ['s',1./60,0,'min']\
 ]
-# Transformations for constants (see measurement_types)
-transformations_const=[\
+# Transformations for constants (see MEASUREMENT_TYPES)
+TRANSFORMATIONS_CONST=[\
 ['T',1000,0,'mT']\
 ]
 # Select the read parameters and mapping to columns as well as dimensions and units 
 #  (every measurement file the positions have to start with 0 and have no holes in between
 # [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
-columns_mapping=[\
+COLUMNS_MAPPING=[\
 ['Time',0,['time','s']]\
 ,['Time Stamp (sec)',0,['time','s']]\
 ,['Magnetic Field (Oe)',1,['H','Oe']]\
@@ -61,7 +61,7 @@ columns_mapping=[\
 # The first measurement fitting is used (so you should put stricter rules before others).
 # If no type fits the data collected nothing will be plotted. 
 # Diviations are only compared with last datapoint, so slow increases won't trigger a new sequence.
-measurement_types=[\
+MEASUREMENT_TYPES=[\
 # raw data, sequence have same time stamp, temperature should be shown for every sequence (div=300K always true)
 [[[2,300],[0,1]],3,4,4,''],\
 # MvsT, H is constant

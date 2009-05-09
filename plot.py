@@ -35,12 +35,12 @@ import sys
 import plotting_gui
 # specific measurement classes
 # parent class
-from plot_generic_data import generic_session
+from plot_generic_data import GenericSession
 # derived classes
-from plot_SQUID_data import squid_session
-from plot_4circle_data import circle_session
-from plot_reflectometer_data import reflectometer_session
-from plot_treff_data import treff_session
+from plot_SQUID_data import SquidSession
+from plot_4circle_data import CircleSession
+from plot_reflectometer_data import ReflectometerSession
+from plot_treff_data import TreffSession
 #----------------------- importing modules --------------------------
 
 __author__ = "Artur Glavic"
@@ -61,16 +61,16 @@ __status__ = "Production"
   the session.
 '''
 known_measurement_types={
-                         'squid': squid_session, 
-                         '4circle': circle_session, 
-                         'refl': reflectometer_session, 
-                         'treff': treff_session, 
+                         'squid': SquidSession, 
+                         '4circle': CircleSession, 
+                         'refl': ReflectometerSession, 
+                         'treff': TreffSession, 
                          }
 
   
 class RedirectOutput:
   '''
-    Class to redirect the all print statements when useing the GUI.
+    Class to redirect all print statements when useing the GUI.
   '''
   def __init__(self, plotting_session):
     '''Class consturctor.'''
@@ -107,14 +107,14 @@ class RedirectOutput:
 # initialize session and read data files
 if (len(sys.argv) == 1):
   # if no input parameter given, print the short help string
-  print generic_session.short_help
+  print GenericSession.SHORT_HELP
   exit()
 elif sys.argv[1] in known_measurement_types: 
   # type is found in dictionary, using specific session
   active_session=known_measurement_types[sys.argv[1]](sys.argv[2:])
 else:
   # type is not found, using generic session
-  active_session=generic_session(sys.argv[1:])
+  active_session=GenericSession(sys.argv[1:])
 
 
 if active_session.use_gui: # start a new gui session

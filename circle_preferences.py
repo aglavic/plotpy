@@ -13,14 +13,14 @@ __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
-transformations=[\
+TRANSFORMATIONS=[\
 ]
-# Transformations for constants (see measurement_types)
-transformations_const=[]
+# Transformations for constants (see MEASUREMENT_TYPES)
+TRANSFORMATIONS_CONST=[]
 # Select the read parameters and mapping to columns as well as dimensions and units 
 #  (every measurement file the positions have to start with 0 and have no holes in between
 # [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
-columns_mapping=[\
+COLUMNS_MAPPING=[\
 ['Two Theta',7,['2Theta','\\302\\260']]\
 ,['Theta',7,['Theta','\\302\\260']]\
 ,['Chi',7,['Chi','\\302\\260']]\
@@ -38,7 +38,7 @@ columns_mapping=[\
 # The first measurement fitting is used (so you should put stricter rules before others).
 # If no type fits the data collected nothing will be plotted. 
 # Diviations are only compared with last datapoint, so slow increases won't trigger a new sequence.
-measurement_types=[\
+MEASUREMENT_TYPES=[\
 # Theta/2Theta/chi/phi scans
 [[[7,500]],7,6,8,'']\
 # h scan

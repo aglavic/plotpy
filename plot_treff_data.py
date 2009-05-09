@@ -13,8 +13,8 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
-# import generic_session, which is the parent class for the squid_session
-from plot_generic_data import generic_session
+# import GenericSession, which is the parent class for the squid_session
+from plot_generic_data import GenericSession
 # importing data readout
 import treff_read_data
 
@@ -27,20 +27,20 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-class treff_session(generic_session):
+class TreffSession(GenericSession):
   '''
     Class to handle treff data sessions
   '''
   #++++++++++++++ help text string +++++++++++++++++++++++++++
-  specific_help=\
+  SPECIFIC_HELP=\
 '''
 \tTREFF-Data treatment:
 '''
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  file_wildcards=(('All','*'), ('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'))  
-#  transformations=[\
+  FILE_WILDCARDS=(('All','*'), ('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'))  
+#  TRANSFORMATIONS=[\
 #  ['','',1,0,'',''],\
 #  ]  
   #------------------ local variables -----------------
@@ -48,9 +48,9 @@ class treff_session(generic_session):
   
   def __init__(self, arguments):
     '''
-      class constructor expands the generic_session constructor
+      class constructor expands the GenericSession constructor
     '''
-    generic_session.__init__(self, arguments)
+    GenericSession.__init__(self, arguments)
   
   def read_argument_add(self, argument, last_argument_option=[False, '']):
     '''
@@ -72,7 +72,7 @@ class treff_session(generic_session):
     '''
       Function to read data files.
     '''
-    return treff_read_data.read_data(file_name, self.script_path)
+    return treff_read_data.read_data(file_name, self.SCRIPT_PATH)
 
 
   def create_menu(self):
@@ -95,4 +95,3 @@ class treff_session(generic_session):
     return string,  actions
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
-

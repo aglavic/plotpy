@@ -37,7 +37,7 @@ import gtk
 # Module to save and load variables from/to config files
 from configobj import ConfigObj
 import measurement_data_plotting
-from gnuplot_preferences import output_file_name,print_command,titles
+from gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
 import gnuplot_preferences
 #----------------------- importing modules --------------------------
 
@@ -570,7 +570,7 @@ class ApplicationMainWindow(gtk.Window):
                                       buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
     file_dialog.set_select_multiple(True)
     file_dialog.set_default_response(gtk.RESPONSE_OK)
-    for wildcard in self.active_session.file_wildcards:
+    for wildcard in self.active_session.FILE_WILDCARDS:
       filter = gtk.FileFilter()
       filter.set_name(wildcard[0])
       for pattern in wildcard[1:]:
@@ -928,7 +928,7 @@ class ApplicationMainWindow(gtk.Window):
                                         plotlist[0][0].short_info, 
                                         [item[0].short_info for item in plotlist], 
                                         errorbars,
-                                        self.active_session.temp_dir+'plot_temp.png',
+                                        self.active_session.TEMP_DIR+'plot_temp.png',
                                         fit_lorentz=False,
                                         add_preferences=self.preferences_file)   
     else:
@@ -940,7 +940,7 @@ class ApplicationMainWindow(gtk.Window):
                          self.measurement[self.index_mess].short_info,
                          [object.short_info for object in self.measurement[self.index_mess].plot_together],
                          errorbars, 
-                         output_file=self.active_session.temp_dir+'plot_temp.png',
+                         output_file=self.active_session.TEMP_DIR+'plot_temp.png',
                          fit_lorentz=False,
                          add_preferences=self.preferences_file)
     # create a dialog to show the plot text for the active data
@@ -1089,7 +1089,7 @@ class ApplicationMainWindow(gtk.Window):
       A dialog to fit the data with a set of functions.
     '''
     dataset=self.measurement[self.index_mess]
-    if dataset.fit_object==None:
+    if (dataset.fit_object==None):
       from fit_data import FitSession
       dataset.fit_object=FitSession(dataset)
     fit_session=dataset.fit_object
@@ -1361,7 +1361,7 @@ class ApplicationMainWindow(gtk.Window):
                                       plotlist[0][0].short_info, 
                                       [item[0].short_info for item in plotlist], 
                                       errorbars,
-                                      self.active_session.temp_dir+'plot_temp.png',
+                                      self.active_session.TEMP_DIR+'plot_temp.png',
                                       fit_lorentz=False,
                                       add_preferences=self.preferences_file)     
         self.label.set_width_chars(len('Multiplot title')+5)
@@ -1397,7 +1397,7 @@ class ApplicationMainWindow(gtk.Window):
                                         plotlist[0][0].short_info, 
                                         [item[0].short_info for item in plotlist], 
                                         errorbars,
-                                        self.active_session.temp_dir+'plot_temp.png',
+                                        self.active_session.TEMP_DIR+'plot_temp.png',
                                         fit_lorentz=False,
                                         add_preferences=self.preferences_file)   
           self.label.set_width_chars(len(itemlist[0].short_info)+5)
@@ -1456,15 +1456,15 @@ class ApplicationMainWindow(gtk.Window):
                                     self.measurement[self.index_mess].short_info,
                                     [object.short_info for object in self.measurement[self.index_mess].plot_together],
                                     errorbars, 
-                                    output_file=self.active_session.temp_dir+'plot_temp.ps',
+                                    output_file=self.active_session.TEMP_DIR+'plot_temp.ps',
                                     fit_lorentz=False,
                                     add_preferences=self.preferences_file)
       self.reset_statusbar()
-      self.statusbar.push(0,'Printed with: '+print_command)
-      os.popen2(print_command+self.active_session.temp_dir+'plot_temp.ps')
+      self.statusbar.push(0,'Printed with: '+PRINT_COMMAND)
+      os.popen2(PRINT_COMMAND+self.active_session.TEMP_DIR+'plot_temp.ps')
     elif action.get_name()=='PrintAll':
       term='postscript landscape enhanced colour'
-      print_string=print_command
+      print_string=PRINT_COMMAND
       for dataset in self.measurement: # combine all plot files in one print statement
         self.last_plot_text=self.plot(self.active_session, 
                                       [dataset],
@@ -1472,12 +1472,12 @@ class ApplicationMainWindow(gtk.Window):
                                       dataset.short_info,
                                       [object.short_info for object in self.measurement[self.index_mess].plot_together],
                                       errorbars, 
-                                      output_file=self.active_session.temp_dir+'plot_temp_'+dataset.number+'.ps',
+                                      output_file=self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps',
                                       fit_lorentz=False,
                                       add_preferences=self.preferences_file)
-        print_string=print_string+self.active_session.temp_dir+'plot_temp_'+dataset.number+'.ps '
+        print_string=print_string+self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps '
       self.reset_statusbar()
-      self.statusbar.push(0,'Printed with: '+print_command)
+      self.statusbar.push(0,'Printed with: '+PRINT_COMMAND)
       os.popen2(print_string)
       # TODO: In the future, setting up propper printing dialog here:
       #operation=gtk.PrintOperation()
@@ -1577,9 +1577,9 @@ class ApplicationMainWindow(gtk.Window):
       Resize and show temporary gnuplot image.
     '''
     # TODO: errorhandling
-    self.image.set_from_file(self.active_session.temp_dir + 'plot_temp.png')
+    self.image.set_from_file(self.active_session.TEMP_DIR + 'plot_temp.png')
     #self.image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file(\
-    #                          self.active_session.temp_dir + 'plot_temp.png'\
+    #                          self.active_session.TEMP_DIR + 'plot_temp.png'\
     #                          ).scale_simple(self.widthf-20,
     #                                        self.heightf-20,
     #                                        gtk.gdk.INTERP_BILINEAR))
@@ -1617,7 +1617,7 @@ class ApplicationMainWindow(gtk.Window):
                                         plotlist[0][0].short_info, 
                                         [item[0].short_info for item in plotlist], 
                                         errorbars,
-                                        self.active_session.temp_dir+'plot_temp.png',
+                                        self.active_session.TEMP_DIR+'plot_temp.png',
                                         fit_lorentz=False,
                                         add_preferences=self.preferences_file)   
           self.label.set_width_chars(len(itemlist[0].short_info)+5)
@@ -1633,7 +1633,7 @@ class ApplicationMainWindow(gtk.Window):
                                   self.measurement[self.index_mess].short_info,
                                   [object.short_info for object in self.measurement[self.index_mess].plot_together],
                                   errorbars, 
-                                  output_file=self.active_session.temp_dir+'plot_temp.png',
+                                  output_file=self.active_session.TEMP_DIR+'plot_temp.png',
                                   fit_lorentz=False,
                                   add_preferences=self.preferences_file)
     if self.last_plot_text!='':
@@ -1733,8 +1733,12 @@ class ApplicationMainWindow(gtk.Window):
         <separator name='static4'/>
         <menuitem action='FitData'/>
         <separator name='static5'/>
+        '''
+    if (self.active_session.ALLOW_FIT):
+      output+='''
         <menuitem action='FilterData'/>
-        <separator name='static6'/>
+        '''
+    output+='''<separator name='static6'/>
         <menuitem action='ShowPlotparams'/>
       </menu>
       <separator name='static6'/>'''

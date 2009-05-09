@@ -7,7 +7,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -34,10 +34,10 @@ __status__ = "Production"
 # [const_value] - first constant data value
 
 #header information printed in gnuplot.tmp file, not really important
-gnuplot_file_head='#Gnuplot inputfile to plot the data of plot.py\n#[info]\n'
+GNUPLOT_FILE_HEAD='#Gnuplot inputfile to plot the data of plot.py\n#[info]\n'
 gnuplot_file_name='gnuplot.tmp'
 # Linux printing command (works properly with .ps, problems with png with wrong size)
-print_command="lpr -P IFF17c4 -J \'plot_SQUID_data.py output\'  "
+PRINT_COMMAND="lpr -P IFF17c4 -J \'plot_SQUID_data.py output\'  "
 
 def remove_from_name(name):
   '''
@@ -47,7 +47,7 @@ def remove_from_name(name):
   return output
 
 # character encoding in gnuplot
-encoding='iso_8859_1'
+ENCODING='iso_8859_1'
 # set the terminal options for the gnuplot output (postscript could need other labels)
 # used is determined by file name
 set_output_terminal_png='png enhanced size 1024,768 font "[script-path]fonts/arial.ttf" 16' #transparent
@@ -88,6 +88,7 @@ def postscript_replace(string):
   '''
     Replace special characters when using Postscript export instead of png.
   '''
+  # TODO: Add common characters for replacement.
   return string.replace('\\316\\274','{/Symbol m}').\
   replace('\\302\\267','\\267').\
   replace('\\302\\260','\\260')
@@ -97,4 +98,3 @@ def further_replacement(string):
     String replacements done last, for example when an Item has empty unit replace [] with nothing.
   '''
   return string.replace('[]','')
-

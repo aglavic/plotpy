@@ -7,13 +7,10 @@
 '''
 
 # Pleas do not make any changes here unless you know what you are doing.
-
-
 import os
 import sys
-from measurement_data_structure import *
+from measurement_data_structure import MeasurementData
 import SQUID_preferences
-import globals
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -24,7 +21,7 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
-def read_data(input_file,columns_mapping,measurement_types): 
+def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
   '''
     Read the ppms/mpms datafile.  
   '''
@@ -34,7 +31,7 @@ def read_data(input_file,columns_mapping,measurement_types):
       measurement_info=read_header(input_file_lines)
       while input_file_lines.pop(0).find('[Data]')==-1:
         continue
-      measurement_data=read_data_lines(input_file_lines,measurement_info,columns_mapping,measurement_types)
+      measurement_data=read_data_lines(input_file_lines,measurement_info,COLUMNS_MAPPING,MEASUREMENT_TYPES)
     else:
       print "Wrong file type! Doesn't contain header information."
       return 'NULL'
@@ -92,7 +89,7 @@ def check_type(data_1,data_2,type_i):
       output=False
   return output
   
-def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): 
+def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
   '''
     Read data points line by line.
   '''
@@ -103,7 +100,7 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types):
 # define which columns contain the relevant data
   for item in line:
     count=count+1
-    for mapping in columns_mapping:
+    for mapping in COLUMNS_MAPPING:
       if item==mapping[0]:
         columns.append([count-2,mapping[1],mapping[2]])
     columns.sort(key=lambda x:x[1])
@@ -112,7 +109,7 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types):
   data_2=read_data_line(input_file_lines.pop(0),columns)
   not_found=True
   if (data_1!='NULL')&(data_2!='NULL'):
-    for type_i in measurement_types:
+    for type_i in MEASUREMENT_TYPES:
       if not_found and check_type(data_1,data_2,type_i):
         data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
         data.append(data_1)
@@ -150,7 +147,7 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types):
         next_data_2=read_data_line(input_file_lines[i+1],columns)
         if next_data_2 != 'NULL':
           not_found=True
-          for type_i in measurement_types:
+          for type_i in MEASUREMENT_TYPES:
             if check_type(next_data,next_data_2,type_i)&not_found:
               data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
               data.plot_options=type_i[4]

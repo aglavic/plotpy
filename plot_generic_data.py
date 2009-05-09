@@ -24,11 +24,11 @@ import os
 import math
 import subprocess
 from cPickle import load, dump
+from measurement_data_structure import MeasurementData
+import measurement_data_plotting
+from gnuplot_preferences import PRINT_COMMAND
 
 # importing own modules
-from measurement_data_structure import *
-import measurement_data_plotting
-from gnuplot_preferences import print_command
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -39,7 +39,7 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
-class generic_session:
+class GenericSession:
   '''
     This is the class valid the whole session to read the files 
     and store the measurement data objects.
@@ -49,13 +49,13 @@ class generic_session:
     Specific measurements are childs of this class!
   '''
   #++++++++++++++++++ help text strings +++++++++++++++
-  short_help=\
+  SHORT_HELP=\
 """
 \tUsage: plot.py [type] [files] [options]
 \tRun plot.py --help for more information.
 """
-  specific_help='' # help text for child classes
-  long_help=\
+  SPECIFIC_HELP='' # help text for child classes
+  LONG_HELP=\
 """
 Script to plot data of measurements using gnuplot.
 
@@ -98,7 +98,7 @@ Options:
   \t-p\t\tSend plots to printer specified in gnuplot_perferences.py
   '''
 
-  long_help_end=\
+  LONG_HELP_END=\
 """
 The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you want to change them.
 Data columns and unit transformations are defined in SQUID_preferences.py.
@@ -110,9 +110,9 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   active_file_data=None # pointer for the data of the current file
   active_file_name='' # the name of the current file
   index=0
-  file_wildcards=(('all files', '*')) # wildcards for the file open dialog of the GUI
+  FILE_WILDCARDS=(('all files', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
-  options=['s','s2','i','gs','rd', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans','help']
+  COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans','help']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -133,8 +133,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
   # TODO: command line file printing hast to be added.
   print_plot=False # send plots to printer
   unit_transformation=True # make transformations as set in preferences file
-  transformations=[] # a list of unit transformations, that will be performed on the data
-  own_pid=None # stores session process ID
+  TRANSFORMATIONS=[] # a list of unit TRANSFORMATIONS, that will be performed on the data
   read_directly=False # don't use pickled file, read the data diretly
   #------------------ local variables -----------------
 
@@ -147,13 +146,39 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     #++++++++++++++++ evaluate command line +++++++++++++++++++++++
     files=self.read_arguments(arguments) # get filenames and set options
     if files==None: # read_arguments returns none, if help option is set
-      print self.long_help + self.specific_help + self.long_help_end
+      print self.LONG_HELP + self.SPECIFIC_HELP + self.LONG_HELP_END
       exit()
     elif len(files) < 1: # show help, if there is no file in the list
-      print self.short_help
+      print self.SHORT_HELP
       exit()
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     self.os_path_stuff() # create temp folder according to OS
+    self.try_import_externals()
+    files.sort()
+    remove=[]
+    #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
+    for filename in files:
+      if self.add_file(filename)==[]:
+        # if a file is empty or a reading error occured remove it.
+        remove.append(filename)
+    for rem in remove:
+      files.remove(rem)
+
+    if len(files) == 0: # show help, if there is no valid file in the list
+      print "No valid datafile found!"
+      print self.SHORT_HELP
+      exit()
+    self.active_file_data=self.file_data[files[0]]
+    self.active_file_name=files[0]
+
+  #---------------- class consturction over ---------------------
+
+  def try_import_externals(self):
+    '''
+      Try to import modules not part of core python.
+      Gnuplot.py has no error reporting, so we change some settings
+      to make it work.
+    '''
     if (not self.gnuplot_script): # verify gnuplot.py is installed
       try:
         # replace os.popen function to make the output readable
@@ -177,25 +202,13 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       except ImportError:
         print "You have to install pygtk to run in GUI-mode, falling back to command-line mode!"
         self.use_gui=False
-    files.sort()
-    remove=[]
-    #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
-    for filename in files:
-      if self.add_file(filename)==[]:
-        # if a file is empty or a reading error occures remove it.
-        remove.append(filename)
-    for rem in remove:
-      files.remove(rem)
-
-    if len(files) == 0: # show help, if there is no valid file in the list
-      print "No valid datafile found!"
-      print self.short_help
-      exit()
-    self.active_file_data=self.file_data[files[0]]
-    self.active_file_name=files[0]
-    #---------------- class consturction over ---------------------
-
-    
+    try: # verify mathematic modules needed for fitting
+      import numpy
+      import scipy
+      self.ALLOW_FIT=True
+    except ImportError:
+      print "Numpy and/or Scipy is not installed, fitting will not be possible."
+      self.ALLOW_FIT=Fals
 
   def read_arguments(self, arguments):
     '''
@@ -258,7 +271,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
         elif self.read_argument_add(argument,  last_argument_option)[0]:
           last_argument_option=self.read_argument_add(argument,  last_argument_option)[1]
         else:
-          if argument[1:len(argument)] in self.options:
+          if argument[1:len(argument)] in self.COMMANDLINE_OPTIONS:
             last_argument_option=[True,argument[1:len(argument)]]
           else:
             print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
@@ -280,35 +293,35 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       when initializing the session. Has not been tested in
       OSX.
     '''
-    self.own_pid=str(os.getpid())
-    script_path=os.path.dirname(os.path.realpath(__file__))
+    self.OWN_PID=str(os.getpid())
+    SCRIPT_PATH=os.path.dirname(os.path.realpath(__file__))
     if (os.getenv("TEMP")==None):
     # Linux case
-      self.system='linux'
-      self.temp_dir="/tmp/"
-      self.script_path=script_path + '/'
+      self.OPERATING_SYSTEM='linux'
+      self.TEMP_DIR="/tmp/"
+      self.SCRIPT_PATH=SCRIPT_PATH + '/'
       # name of the gnuplot command under linux
-      self.gnuplot_command="gnuplot"
+      self.GNUPLOT_COMMAND="gnuplot"
     else:
     # Windows case
-      self.system='windows'
-      self.temp_dir=os.getenv("TEMP")+'\\'
-      self.script_path=script_path + '\\'
+      self.OPERATING_SYSTEM='windows'
+      self.TEMP_DIR=os.getenv("TEMP")+'\\'
+      self.SCRIPT_PATH=SCRIPT_PATH + '\\'
       # name of the gnuplot command under windows
-      self.gnuplot_command="pgnuplot"
+      self.GNUPLOT_COMMAND="pgnuplot"
       def replace_systemdependent( string): # replace backthlash by double backthlash for gnuplot under windows
         return string.replace('\\','\\\\').replace('\\\\\n','\\\n')
       self.replace_systemdependent=replace_systemdependent
-    self.temp_dir=self.temp_dir+'plottingscript-'+self.own_pid+os.sep
-    os.mkdir(self.temp_dir) # create the temporal directory
+    self.TEMP_DIR=self.TEMP_DIR+'plottingscript-'+self.OWN_PID+os.sep
+    os.mkdir(self.TEMP_DIR) # create the temporal directory
 
   def os_cleanup(self):
     '''
       Delete temporal files and folder.
     '''
-    for file_name in os.listdir(self.temp_dir):
-      os.remove(self.temp_dir+file_name)
-    os.rmdir(self.temp_dir)
+    for file_name in os.listdir(self.TEMP_DIR):
+      os.remove(self.TEMP_DIR+file_name)
+    os.rmdir(self.TEMP_DIR)
 
   def replace_systemdependent(self, string):
     '''
@@ -380,7 +393,7 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     '''
     # TODO: Add unit transformation to GUI.
     for dataset in datasets:
-      dataset.unit_trans(self.transformations)
+      dataset.unit_trans(self.TRANSFORMATIONS)
 
   def add_data(self, data_list, name, append=True):
     '''
@@ -397,8 +410,9 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
       Transformations are also done here, so childs
       will change this function.
     '''
-    # for faster access the MeasurementData object are saved via cPickle
+    # for faster access the MeasurementData objects are saved via cPickle
     # when this file exists it is used to reload it.
+    # This can be ignored by the command line option '-rd'
     if os.path.exists(filename + '.mds') and not self.read_directly:
       print "Importing previously saved data from '" +filename + ".mds'."
       pickled=open(filename + '.mds', 'rb')
@@ -414,18 +428,28 @@ Data columns and unit transformations are defined in SQUID_preferences.py.
     if datasets=='NULL':
       return []
     datasets=self.create_numbers(datasets) # enumerate the sequences and sort out unselected
-    if self.unit_transformation:
-      self.make_transformations(datasets) # make unit transformations
     self.add_data(datasets, filename, append)
     #++++++++++++++++ datatreatment ++++++++++++++++++++++
+    self.new_file_data_treatment(datasets)
+    return datasets # for reuse in child class
+
+  def new_file_data_treatment(self, datasets):
+    '''
+      Perform common datatreatment tasks on all Datasets.
+    '''
     if self.unit_transformation: # make unit transfomation on all datasets
       self.make_transformations(datasets)
     for dataset in datasets:
-      dataset.logx=self.logx
-      dataset.logy=self.logy
-      dataset.logz=self.logz
-    return datasets # for reuse in child class
-  
+      self.single_dataset_data_treatment(dataset)
+
+  def single_dataset_data_treatment(self, dataset):
+    '''
+      Perform actions on every dataset that is imported.
+    '''
+    dataset.logx=self.logx
+    dataset.logy=self.logy
+    dataset.logz=self.logz
+
   def __iter__(self): # see next()
     return self
 

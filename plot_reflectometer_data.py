@@ -27,8 +27,8 @@ import math
 import subprocess
 import gtk
 import time
-# import generic_session, which is the parent class for the squid_session
-from plot_generic_data import generic_session
+# import GenericSession, which is the parent class for the squid_session
+from plot_generic_data import GenericSession
 # importing preferences and data readout
 import reflectometer_read_data
 import reflectometer_preferences
@@ -42,23 +42,23 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-fortran_compiler='gfortran'
+FORTRAN_COMPILER='gfortran'
 # compiler optimization options as can be found in the manual,
 # add your cpu flag here to increase performance of the fit
 # stdandard cpu flags are:
 # i686 / pentium4 / athlon / k8 / amdfam10 (athlon64) / nocona (p4-64bit)
-fortran_compiler_options='-O3'
-fortran_compiler_march='-march=nocona'#None
-fit_program_code='fit/fit.f90'
-fit_program_executible='fit/fit.o'
+FORTRAN_COMPILER_OPTIONS='-O3'
+FORTRAN_COMPILER_MARCH='-march=nocona'#None
+FIT_PROGRAM_CODE_FILE='fit/fit.f90'
+FIT_PROGRAM_EXECUTIBLE='fit/fit.o'
 
 
-class reflectometer_session(generic_session):
+class ReflectometerSession(GenericSession):
   '''
     Class to handle reflectometer data sessions
   '''
   #++++++++++++++ help text string +++++++++++++++++++++++++++
-  specific_help=\
+  SPECIFIC_HELP=\
 '''
 \tReflectometer-Data treatment:
 \t-counts\t\tShow actual counts, not counts/s
@@ -73,8 +73,8 @@ class reflectometer_session(generic_session):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  file_wildcards=(('reflectometer (.UXD)','*.[Uu][Xx][Dd]'), ('All','*'))  
-  options=generic_session.options+['fit', 'ref']
+  FILE_WILDCARDS=(('reflectometer (.UXD)','*.[Uu][Xx][Dd]'), ('All','*'))  
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['fit', 'ref']
   #options:
   show_counts=False # dont convert to conts/s
   export_for_fit=False # make the changes needed for the fit program to work
@@ -92,12 +92,12 @@ class reflectometer_session(generic_session):
   
   def __init__(self, arguments):
     '''
-      class constructor expands the generic_session constructor
+      class constructor expands the GenericSession constructor
     '''
     self.fit_object=fit_parameter() # create a new empty fit_parameter object
-    self.data_columns=reflectometer_preferences.data_columns # read data columns from preferences
-    self.transformations=reflectometer_preferences.transformations # read transformations from preferences
-    generic_session.__init__(self, arguments)
+    self.DATA_COLUMNS=reflectometer_preferences.DATA_COLUMNS # read data columns from preferences
+    self.TRANSFORMATIONS=reflectometer_preferences.TRANSFORMATIONS # read TRANSFORMATIONS from preferences
+    GenericSession.__init__(self, arguments)
     
   
   def read_argument_add(self, argument, last_argument_option=[False, '']):
@@ -131,7 +131,7 @@ class reflectometer_session(generic_session):
     '''
       function to read data files
     '''
-    return reflectometer_read_data.read_data(file_name,self.data_columns)
+    return reflectometer_read_data.read_data(file_name,self.DATA_COLUMNS)
   
   def create_menu(self):
     '''
@@ -169,10 +169,10 @@ class reflectometer_session(generic_session):
   def add_file(self, filename, append=True):
     '''
       Add the data of a new file to the session.
-      In addition to generic_session counts per second
+      In addition to GenericSession counts per second
       corrections and fitting are performed here, too.  
     '''
-    datasets=generic_session.add_file(self, filename, append)
+    datasets=GenericSession.add_file(self, filename, append)
     #refinements=[]
     for dataset in datasets:
       self.time_col=1
@@ -196,7 +196,7 @@ class reflectometer_session(generic_session):
       dataset.short_info=' started at Th='+str(round(th,4))+' 2Th='+str(round(twoth,4))+' Phi='+str(round(phi,4))
       if self.export_for_fit: # export fit files
         self.export_fit(dataset,  filename)
-        simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
+        simu=reflectometer_read_data.read_simulation(self.TEMP_DIR+'fit_temp.sim')
         simu.number='sim_'+dataset.number
         simu.short_info='simulation'
         simu.sample_name=dataset.sample_name
@@ -453,7 +453,7 @@ class reflectometer_session(generic_session):
       SL_selector=gtk.combo_box_new_text()
       SL_selector.append_text('SL')
       SL_selector.set_active(0)
-      for i, SL in enumerate(self.fit_object.scattering_length_densities.items()):
+      for i, SL in enumerate(self.fit_object.SCATTERING_LENGTH_DENSITIES.items()):
         SL_selector.append_text(SL[0])
         if layer.delta==SL[1][0] and layer.d_over_b==SL[1][1]:
           SL_selector.set_active(i+1)
@@ -542,12 +542,12 @@ class reflectometer_session(generic_session):
       self.dialog_fit(action, window)
       # read fit parameters from file and create new object, if process is killed ignore
       if fit_list[1]['actually'] and response==5 and self.fit_object.fit==1: 
-        parameters, errors=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)
+        parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref', self.fit_object)
         new_fit=self.fit_object.copy()
         new_fit.get_parameters(parameters)
         sorted_errors=new_fit.get_errors(errors)
         self.show_result_window(dialog, window, new_fit, sorted_errors)
-      os.remove(self.temp_dir+'fit_temp.ref')
+      os.remove(self.TEMP_DIR+'fit_temp.ref')
       self.fit_object.fit=0
     elif response==3: # new layer
       new_layer=fit_layer()
@@ -731,20 +731,20 @@ class reflectometer_session(generic_session):
       # convert x values from angle to q
     dataset.unit_trans([['Theta', '\\302\\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
                       ['2 Theta', '\\302\\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])    
-    data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.x_from, xto=self.x_to)
+    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, ' ', xfrom=self.x_from, xto=self.x_to)
     self.fit_object.number_of_points=data_lines
     self.fit_object.set_fit_constrains()
     # create the .ent file
-    ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
+    ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
     #open a background process for the fit function
-    proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',self.max_iter)
+    proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',self.max_iter)
     if self.fit_object.fit!=1: # if this is not a fit just wait till finished
       stderr_value = proc.communicate()[1]
     else:
       self.open_status_dialog(window)
-    simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
+    simu=reflectometer_read_data.read_simulation(self.TEMP_DIR+'fit_temp.sim')
     simu.number='sim_'+dataset.number
     simu.short_info='simulation'
     simu.sample_name=dataset.sample_name
@@ -767,7 +767,7 @@ class reflectometer_session(generic_session):
       
     def replot_present(session, window):
       dataset=window.measurement[window.index_mess]        
-      simu=reflectometer_read_data.read_simulation(self.temp_dir+'fit_temp.sim')
+      simu=reflectometer_read_data.read_simulation(self.TEMP_DIR+'fit_temp.sim')
       simu.number='sim_'+dataset.number
       simu.short_info='simulation'
       simu.sample_name=dataset.sample_name
@@ -795,7 +795,7 @@ class reflectometer_session(generic_session):
     sec=0.2
     start=time.time()
     main_iteration=gtk.main_iteration
-    file_name=self.temp_dir+'fit_temp.ref'
+    file_name=self.TEMP_DIR+'fit_temp.ref'
     i=0
     # while the process is running ceep reading the .ref output file
     try:
@@ -837,7 +837,7 @@ class reflectometer_session(generic_session):
     '''
     name=layer.SL_selector.get_active_text()
     try:
-      SL=self.fit_object.scattering_length_densities[name]
+      SL=self.fit_object.SCATTERING_LENGTH_DENSITIES[name]
       layer.name=name
       delta.set_text(str(SL[0]))
       d_over_b.set_text(str(SL[1]))
@@ -933,8 +933,8 @@ class reflectometer_session(generic_session):
       code is replaced by the real number of layers. It does not wait for the 
       program to finish, it only startes the sub process, which is returned.
     '''
-    code_file=self.script_path + fit_program_code
-    exe=self.script_path + fit_program_executible
+    code_file=self.SCRIPT_PATH + FIT_PROGRAM_CODE_FILE
+    exe=self.SCRIPT_PATH + FIT_PROGRAM_EXECUTIBLE
     try:
       code_tmp=open(code_file.split('.f90')[0] + '_tmp.f90', 'r').read()
     except IOError:
@@ -952,11 +952,11 @@ class reflectometer_session(generic_session):
       tmp_file.write(code_tmp)
       tmp_file.close()
       print 'Compiling fit program!'
-      call_params=[fortran_compiler, code_file.split('.f90')[0] + '_tmp.f90', '-o', exe]
-      if  fortran_compiler_options!=None:
-        call_params.append(fortran_compiler_options)
-      if  fortran_compiler_march!=None:
-        call_params.append(fortran_compiler_march)
+      call_params=[FORTRAN_COMPILER, code_file.split('.f90')[0] + '_tmp.f90', '-o', exe]
+      if  FORTRAN_COMPILER_OPTIONS!=None:
+        call_params.append(FORTRAN_COMPILER_OPTIONS)
+      if  FORTRAN_COMPILER_MARCH!=None:
+        call_params.append(FORTRAN_COMPILER_MARCH)
       subprocess.call(call_params)
       print 'Compiled'
     process = subprocess.Popen([exe, file_ent, file_res, file_out+'.ref', file_out+'.sim', str(max_iter)], 
@@ -1012,16 +1012,16 @@ class reflectometer_session(generic_session):
     '''
     global proc
     self.fit_object.fit=1
-    data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=0.005,xto=self.find_total_reflection(dataset))
+    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, ' ', xfrom=0.005,xto=self.find_total_reflection(dataset))
     self.fit_object.set_fit_parameters(scaling=True) # fit only scaling factor
     self.fit_object.number_of_points=data_lines
     # create the .ent file
-    ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
+    ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',20)
+    proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',20)
     retcode = proc.communicate()
-    parameters, errors=self.read_fit_file(self.temp_dir+'fit_temp.ref', self.fit_object)
+    parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref', self.fit_object)
     self.fit_object.scaling_factor=parameters[self.fit_object.fit_params[0]]
     self.fit_object.fit=0
     return retcode
@@ -1039,14 +1039,14 @@ class reflectometer_session(generic_session):
         layer_dict[i]=[3]
       else:
         layer_dict[i]=[[3] for j in range(len(layer.layers))]
-    data_lines=dataset.export(self.temp_dir+'fit_temp.res', False, ' ', xfrom=self.find_total_reflection(dataset))
+    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, ' ', xfrom=self.find_total_reflection(dataset))
     self.fit_object.set_fit_parameters(layer_params=layer_dict, substrate_params=[2]) # set all roughnesses to be fit
     self.fit_object.number_of_points=data_lines
     # create the .ent file
-    ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
+    ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',20)
+    proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',20)
     sec=0.
     while proc.poll()==None:
       time.sleep(0.1)
@@ -1055,7 +1055,7 @@ class reflectometer_session(generic_session):
                         'Script running for % 6dsec' % sec)
       sys.stdout.flush()
     retcode = proc.communicate()
-    parameters, errors=self.read_fit_file(self.temp_dir+'fit_temp.ref',self.fit_object)
+    parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref',self.fit_object)
     self.fit_object.get_parameters(parameters)
     self.fit_object.fit=0
     return retcode
@@ -1102,14 +1102,14 @@ class reflectometer_session(generic_session):
     #----- Try to refine the scaling factorn and roughnesses -----
     #+++++++ create final input file and make a simulation +++++++
       # write data into files with sequence numbers in format ok for fit.f90    
-    data_lines=dataset.export(self.temp_dir+'fit_temp.res',False,' ') 
+    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res',False,' ') 
     self.fit_object.number_of_points=data_lines
     self.fit_object.set_fit_parameters(background=True)
-    ent_file=open(self.temp_dir+'fit_temp.ent', 'w')
+    ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
     ent_file.write(self.fit_object.get_ent_str()+'\n')
     ent_file.close()
     print "Simulate the measurement"
-    proc = self.call_fit_program(self.temp_dir+'fit_temp.ent', self.temp_dir+'fit_temp.res', self.temp_dir+'fit_temp',20)
+    proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',20)
     retcode = proc.communicate()
     #------- create final input file and make a simulation -------
 
@@ -1139,8 +1139,8 @@ class fit_parameter:
       class constructor
     '''
     # lookup the scattering length density table
-    from scattering_length_table import scattering_length_densities
-    self.scattering_length_densities=scattering_length_densities
+    from scattering_length_table import SCATTERING_LENGTH_DENSITIES
+    self.SCATTERING_LENGTH_DENSITIES=SCATTERING_LENGTH_DENSITIES
     self.layers=[]
     self.substrate=None
     self.fit_params=[]
@@ -1152,7 +1152,7 @@ class fit_parameter:
       in scattering_length_densities.py
     '''
     try: # if layer not in the table, return False
-      SL=self.scattering_length_densities[material]
+      SL=self.SCATTERING_LENGTH_DENSITIES[material]
       result=True
     except KeyError:
       SL=[1., 1.]
@@ -1181,7 +1181,7 @@ class fit_parameter:
       in scattering_length_densities.py
     '''
     try: # if layer not in the table, return False
-      SLs=[self.scattering_length_densities[layer] for layer in materials]
+      SLs=[self.SCATTERING_LENGTH_DENSITIES[layer] for layer in materials]
     except KeyError:
       return False
     layer_list=[]
@@ -1198,7 +1198,7 @@ class fit_parameter:
       in scattering_length_densities.py
     '''
     try: # if layer not in the table, return False
-      SL=self.scattering_length_densities[material]
+      SL=self.SCATTERING_LENGTH_DENSITIES[material]
       result=True
     except KeyError:
       material='Unknown'

@@ -7,12 +7,10 @@
 '''
 
 # Pleas do not make any changes here unless you know what you are doing.
-
 import os
 import sys
 import math
-from measurement_data_structure import *
-import globals
+from measurement_data_structure import MeasurementData
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -23,7 +21,7 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
-def read_data(input_file,columns_mapping,measurement_types,measurement_data=[]): 
+def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES,measurement_data=[]): 
   '''
     Read the datafile.
   '''
@@ -35,7 +33,7 @@ def read_data(input_file,columns_mapping,measurement_types,measurement_data=[]):
       if measurement_info=='NULL':
         break
       first=False
-      sequence=read_data_lines(input_file_lines,measurement_info,columns_mapping,measurement_types)
+      sequence=read_data_lines(input_file_lines,measurement_info,COLUMNS_MAPPING,MEASUREMENT_TYPES)
       if not sequence=='NULL':
         measurement_data.append(sequence)
     if first:
@@ -82,7 +80,7 @@ def check_type(data_1,data_2,type_i):
       return False
   return output
   
-def read_data_lines(input_file_lines,info,columns_mapping,measurement_types): 
+def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
   '''
     Read data points line by line.
   '''
@@ -92,7 +90,7 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types):
   # define which columns contain the relevant data
   for item in info[1]:
     count=count+1
-    for mapping in columns_mapping:
+    for mapping in COLUMNS_MAPPING:
       if item==mapping[0]:
         columns.append([count-2,mapping[1],mapping[2]])
   columns.sort(column_compare)
@@ -101,9 +99,7 @@ def read_data_lines(input_file_lines,info,columns_mapping,measurement_types):
   data_2=read_data_last_line(input_file_lines,columns)
   not_found=True
   if (data_1!='NULL')&(data_2!='NULL')&(data_1!='Comment')&(data_2!='Comment'):
-    if globals.debug:
-      globals.debug_file.write('reading: data for type calculation: data_1='+str(data_1)+'; data_2='+str(data_2)+'\n')
-    for type_i in measurement_types:
+    for type_i in MEASUREMENT_TYPES:
         if check_type(data_1,data_2,type_i)&not_found:
           columns.append([0,len(columns),['delta intensity','counts']])
           data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])

@@ -10,7 +10,6 @@
 
 import os
 import subprocess
-import globals
 import gnuplot_preferences
 
 __author__ = "Artur Glavic"
@@ -67,10 +66,10 @@ def gnuplot_plot(session,
                             postscript_export,
                             additional_info) 
   gplot=Gnuplot.Gnuplot() # if term is x11 the plot will not close
-  gnuplot_settings=gp.gnuplot_file_head+\
+  gnuplot_settings=gp.GNUPLOT_FILE_HEAD+\
   'set term '+terminal+'\n'+\
   'set output "'+output_file+'"\n'+\
-  'set encoding '+gp.encoding+'\n'+\
+  'set encoding '+gp.ENCODING+'\n'+\
   'set xlabel "'+gp.x_label+'"\n'+\
   'set ylabel "'+gp.y_label+'"\n'+\
   'set title "'+gp.plot_title+'"\n'
@@ -123,8 +122,8 @@ def gnuplot_plot(session,
     else:
       datalist=dataset.list()
     if (dataset.zdata>=0): # for 3d-Data we have to create a temporal File
-      dataset.export(globals.temp_dir+'tmp_data'+str(i)+'.out')
-      plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',
+      dataset.export(session.TEMP_DIR+'tmp_data'+str(i)+'.out')
+      plot=[Gnuplot.PlotItems.File(session.TEMP_DIR+'tmp_data'+str(i)+'.out',
                                    with_=str(plotting_param.replace('w ','',1)),
                                    title=names[datasets.index(dataset)],
                                    using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.zdata+1))]
@@ -139,8 +138,8 @@ def gnuplot_plot(session,
       #++++++++++++++++++++++++ add attached datasets to the plot +++++++++++++
       datalist=attachedset.list()
       if (attachedset.zdata>=0): # for 3d-Data we have to create a temporal File
-        attachedset.export(globals.temp_dir+'tmp_data'+str(i)+'-'+str(j)+'.out')
-        plot=[Gnuplot.PlotItems.File(globals.temp_dir+'tmp_data'+str(i)+'.out',
+        attachedset.export(session.TEMP_DIR+'tmp_data'+str(i)+'-'+str(j)+'.out')
+        plot=[Gnuplot.PlotItems.File(session.TEMP_DIR+'tmp_data'+str(i)+'.out',
                                      with_=str(plotting_param.replace('w ','',1)),
                                      title=attachedset.short_info,
                                      using=str(attachedset.xdata+1)+':'+str(attachedset.ydata+1)+':'+str(attachedset.zdata+1))]
@@ -175,7 +174,7 @@ def gnuplot_plot_script(session,
   for j, dataset in enumerate(datasets):
     for i, attachedset in enumerate(dataset.plot_together):
       file_numbers.append(str(j)+'-'+str(i))
-      attachedset.export(session.temp_dir+'tmp_data_'+str(j)+'-'+str(i)+'.out')
+      attachedset.export(session.TEMP_DIR+'tmp_data_'+str(j)+'-'+str(i)+'.out')
   sample_name=datasets[0].sample_name
   if output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
@@ -183,7 +182,7 @@ def gnuplot_plot_script(session,
   else:
     postscript_export=False
     terminal=gp.set_output_terminal_png
-  script_name=session.temp_dir+replace_ph(session, 
+  script_name=session.TEMP_DIR+replace_ph(session, 
                                           gp.gnuplot_file_name,
                                           datasets,
                                           file_name_prefix, 
@@ -196,7 +195,7 @@ def gnuplot_plot_script(session,
                                           additional_info)
   gnuplot_file_text=create_plot_script(session, 
                                        datasets,
-                                       session.temp_dir+'tmp_data_', 
+                                       session.TEMP_DIR+'tmp_data_', 
                                        file_name_postfix, 
                                        title,
                                        names,
@@ -208,7 +207,7 @@ def gnuplot_plot_script(session,
   write_file=open(script_name,'w')
   write_file.write( gnuplot_file_text+'\n' )
   write_file.close()
-  proc = subprocess.Popen([session.gnuplot_command, script_name], 
+  proc = subprocess.Popen([session.GNUPLOT_COMMAND, script_name], 
                       shell=False, 
                       stderr=subprocess.PIPE,
                       stdout=subprocess.PIPE, 
@@ -234,7 +233,7 @@ def replace_ph(session,
   withnr=number[1]
   gp=gnuplot_preferences
   string=string.\
-  replace('[script-path]',session.script_path).\
+  replace('[script-path]',session.SCRIPT_PATH).\
   replace('[width]',session.picture_width).\
   replace('[height]',session.picture_height).\
   replace('[name]',file_name_prefix).\
@@ -294,7 +293,7 @@ def create_plot_script(session,
   else:
     plotting_param=gp.plotting_parameters
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)
-  gnuplot_file_text=gp.gnuplot_file_head+\
+  gnuplot_file_text=gp.GNUPLOT_FILE_HEAD+\
                     'set term '+terminal+'\n'+\
                     'set output "'+output_file+'"\n'+\
                     'set xlabel "'+gp.x_label+'"\n'+\

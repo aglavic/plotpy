@@ -16,7 +16,7 @@ __status__ = "Production"
 # ['name',mol mass,mol dia(10^-6emu/mol)]
 #
 # Values from Kalzium elemental table and G.A.Bain and J.F.Berry J.Chem.Edu. Vol.85 No.4 (2008)
-element_dia=[\
+ELEMENT_DIA=[\
 # Anions
 ['O',15.9994,12]\
 ,['F',18.9984032,9.1]\

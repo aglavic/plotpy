@@ -16,7 +16,7 @@ __status__ = "Production"
 # {'name': [sl_density,delta/beta]}
 #
 # 
-scattering_length_densities={\
+SCATTERING_LENGTH_DENSITIES={\
     'GaAs': [14.5511,33.391],
     'Ag': [29.4355,11.058],
     'Fe': [22.4640,7.744],

@@ -6,7 +6,6 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
-import globals
 from sys import hexversion
 
 __author__ = "Artur Glavic"
@@ -56,8 +55,6 @@ class MeasurementData:
       If the values are not reinitialized we get problems
       with the creation of objects with the same variable name.
     '''
-    if globals.debug:
-      globals.debug_file.write('construct MeasurementData(self,'+ str(columns)+','+ str(const)+','+ str(x)+','+ str(y)+','+ str(yerror)+','+ str(zdata)+ ')\n')
     self.number_of_points=0 #counts number of stored data-points
     self.index=0
     self.info=''

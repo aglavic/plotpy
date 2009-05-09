@@ -19,8 +19,8 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
-# import generic_session, which is the parent class for the squid_session
-from plot_generic_data import generic_session
+# import GenericSession, which is the parent class for the squid_session
+from plot_generic_data import GenericSession
 # importing preferences and data readout
 import circle_read_data
 import circle_preferences
@@ -34,12 +34,12 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-class circle_session(generic_session):
+class CircleSession(GenericSession):
   '''
     Class to handle 4 circle data sessions
   '''
   #++++++++++++++ help text string +++++++++++++++++++++++++++
-  specific_help=\
+  SPECIFIC_HELP=\
 '''
 \t4 CIRCLE-Data treatment:
 \t-counts\t\tShow actual counts, not counts/s
@@ -48,18 +48,18 @@ class circle_session(generic_session):
 
   #++++++++++++++++++ local variables +++++++++++++++++
   show_counts=False
-  file_wildcards=(('4circle data','*.spec'), )  
+  FILE_WILDCARDS=(('4circle data','*.spec'), )  
   #------------------ local variables -----------------
 
   
   def __init__(self, arguments):
     '''
-      class constructor expands the generic_session constructor
+      class constructor expands the GenericSession constructor
     '''
-    self.columns_mapping=circle_preferences.columns_mapping
-    self.measurement_types=circle_preferences.measurement_types
-    self.transformations=circle_preferences.transformations
-    generic_session.__init__(self, arguments)
+    self.COLUMNS_MAPPING=circle_preferences.COLUMNS_MAPPING
+    self.MEASUREMENT_TYPES=circle_preferences.MEASUREMENT_TYPES
+    self.TRANSFORMATIONS=circle_preferences.TRANSFORMATIONS
+    GenericSession.__init__(self, arguments)
     # TODO: counts to cps
     
   
@@ -83,16 +83,16 @@ class circle_session(generic_session):
     '''
       function to read data files
     '''
-    return circle_read_data.read_data(file_name,self.columns_mapping,self.measurement_types)
+    return circle_read_data.read_data(file_name,self.COLUMNS_MAPPING,self.MEASUREMENT_TYPES)
 
 
 
   def add_file(self, filename, append=True):
     '''
       Add the data of a new file to the session.
-      In addition to generic_session short info is set.
+      In addition to GenericSession short info is set.
     '''
-    datasets=generic_session.add_file(self, filename, append)
+    datasets=GenericSession.add_file(self, filename, append)
     # faster lookup
     for dataset in datasets:
       dataset.logx=self.logx

@@ -20,8 +20,8 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
-# import generic_session, which is the parent class for the squid_session
-from plot_generic_data import generic_session
+# import GenericSession, which is the parent class for the SquidSession
+from plot_generic_data import GenericSession
 # importing preferences and data readout
 import SQUID_read_data
 import SQUID_preferences
@@ -35,12 +35,12 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-class squid_session(generic_session):
+class SquidSession(GenericSession):
   '''
     Class to handle squid data sessions
   '''
   #++++++++++++++ help text string +++++++++++++++++++++++++++
-  specific_help=\
+  SPECIFIC_HELP=\
 '''
 \tSQUID-Data treatment:
 \t-para [C] [off]\tInclude paramagnetic correction factor (C/(T-off)) [emu*K/Oe]
@@ -55,23 +55,23 @@ class squid_session(generic_session):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  file_wildcards=(('SQUID (.dat/.raw)','*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]'), ('All', '*'))
+  FILE_WILDCARDS=(('SQUID (.dat/.raw)','*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]'), ('All', '*'))
   # options:
   dia_mag_correct=0 # diamagnetic correction factor
   dia_calc=[False, '', 0.0]
   para=[0, 0] # paramagnetic correction factor and T-offset
-  options=generic_session.options+['dia', 'dia-calc', 'para']
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['dia', 'dia-calc', 'para']
   #------------------ local variables -----------------
 
   
   def __init__(self, arguments):
     '''
-      class constructor expands the generic_session constructor
+      class constructor expands the GenericSession constructor
     '''
-    self.columns_mapping=SQUID_preferences.columns_mapping
-    self.measurement_types=SQUID_preferences.measurement_types
-    self.transformations=SQUID_preferences.transformations
-    generic_session.__init__(self, arguments)
+    self.COLUMNS_MAPPING=SQUID_preferences.COLUMNS_MAPPING
+    self.MEASUREMENT_TYPES=SQUID_preferences.MEASUREMENT_TYPES
+    self.TRANSFORMATIONS=SQUID_preferences.TRANSFORMATIONS
+    GenericSession.__init__(self, arguments)
     
   
   def read_argument_add(self, argument, last_argument_option=[False, '']):
@@ -121,7 +121,7 @@ class squid_session(generic_session):
     '''
       function to read data files
     '''
-    return SQUID_read_data.read_data(file_name,self.columns_mapping,self.measurement_types)
+    return SQUID_read_data.read_data(file_name,self.COLUMNS_MAPPING,self.MEASUREMENT_TYPES)
   
   def create_menu(self):
     '''
@@ -155,10 +155,10 @@ class squid_session(generic_session):
   def add_file(self, filename, append=True):
     '''
       Add the data of a new file to the session.
-      In addition to generic_session dia and paramagnetic
+      In addition to GenericSession dia and paramagnetic
       corrections are performed here, too.
     '''
-    datasets=generic_session.add_file(self, filename, append)
+    datasets=GenericSession.add_file(self, filename, append)
     # faster lookup
     correct_dia=self.dia_mag_correct!=0
     correct_para=self.dia_mag_correct!=0
@@ -174,7 +174,7 @@ class squid_session(generic_session):
       else:
         dataset.para_corrected=False
       # name the dataset
-      constant_type=dataset.unit_trans_one(dataset.type(),SQUID_preferences.transformations_const)        
+      constant_type=dataset.unit_trans_one(dataset.type(),SQUID_preferences.TRANSFORMATIONS_CONST)        
       dataset.short_info='at %d ' % constant_type[0]+constant_type[1] # set short info as the value of the constant column
     return datasets
 
@@ -190,8 +190,8 @@ class squid_session(generic_session):
     # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
     field=1
     mag=3
-    for mapping in self.columns_mapping: 
-      # selection of the columns for H and M, only works with right columns_mapping settings in SQUID_preferences.py
+    for mapping in self.COLUMNS_MAPPING: 
+      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in SQUID_preferences.py
       if mapping[2][0]=='H':
         field=mapping[1]
       if mapping[2][0]=='M_rso':
@@ -206,8 +206,8 @@ class squid_session(generic_session):
     # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
     field=1
     mag=3
-    for mapping in self.columns_mapping: 
-      # selection of the columns for H and M, only works with right columns_mapping settings in SQUID_preferences.py
+    for mapping in self.COLUMNS_MAPPING: 
+      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in SQUID_preferences.py
       if mapping[2][0]=='H':
         field=mapping[1]
       if mapping[2][0]=='M_rso':
@@ -228,8 +228,8 @@ class squid_session(generic_session):
     field=1
     temp=2
     mag=3
-    for mapping in self.columns_mapping: 
-      # selection of the columns for H and M, only works with right columns_mapping settings in SQUID_preferences.py
+    for mapping in self.COLUMNS_MAPPING: 
+      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in SQUID_preferences.py
       if mapping[2][0]=='H':
         field=mapping[1]
       if mapping[2][0]=='M_rso':
@@ -247,8 +247,8 @@ class squid_session(generic_session):
     field=1
     temp=2
     mag=3
-    for mapping in self.columns_mapping: 
-      # selection of the columns for H and M, only works with right columns_mapping settings in SQUID_preferences.py
+    for mapping in self.COLUMNS_MAPPING: 
+      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in SQUID_preferences.py
       if mapping[2][0]=='H':
         field=mapping[1]
       if mapping[2][0]=='M_rso':
