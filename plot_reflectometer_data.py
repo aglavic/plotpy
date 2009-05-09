@@ -30,8 +30,8 @@ import time
 # import GenericSession, which is the parent class for the squid_session
 from plot_generic_data import GenericSession
 # importing preferences and data readout
-import reflectometer_read_data
-import reflectometer_preferences
+import read_data.reflectometer
+import config.reflectometer
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -65,7 +65,7 @@ class ReflectometerSession(GenericSession):
 \t-fit [layers] [thicknesses] [est._roughness]
 \t\t\t\tExport measurements for use with fit programm by Emmanuel Kentzinger and create .ent file for it.
 \t\t\t\tlayers is a list of layers with format L1-L2-L3-S or 5[L1_L2]-S, where L,S are the names
-\t\t\t\tof the compounds of the layers and substrate as provided in scattering_length_table.py
+\t\t\t\tof the compounds of the layers and substrate as provided in config.scattering_length_table.py
 \t\t\t\tthicknesses is a list of layer thicknesses with format LT1-LT2-LT3 or [LT1_LT2] in A
 \t\t\t\test._roughness is the estimated overall roughness to begin with
 \t-ref\t\tTry to refine the scaling factor, background and roughnesses.
@@ -95,8 +95,8 @@ class ReflectometerSession(GenericSession):
       class constructor expands the GenericSession constructor
     '''
     self.fit_object=fit_parameter() # create a new empty fit_parameter object
-    self.DATA_COLUMNS=reflectometer_preferences.DATA_COLUMNS # read data columns from preferences
-    self.TRANSFORMATIONS=reflectometer_preferences.TRANSFORMATIONS # read TRANSFORMATIONS from preferences
+    self.DATA_COLUMNS=config.reflectometer.DATA_COLUMNS # read data columns from preferences
+    self.TRANSFORMATIONS=config.reflectometer.TRANSFORMATIONS # read TRANSFORMATIONS from preferences
     GenericSession.__init__(self, arguments)
     
   
@@ -131,7 +131,7 @@ class ReflectometerSession(GenericSession):
     '''
       function to read data files
     '''
-    return reflectometer_read_data.read_data(file_name,self.DATA_COLUMNS)
+    return read_data.reflectometer.read_data(file_name,self.DATA_COLUMNS)
   
   def create_menu(self):
     '''
@@ -196,7 +196,7 @@ class ReflectometerSession(GenericSession):
       dataset.short_info=' started at Th='+str(round(th,4))+' 2Th='+str(round(twoth,4))+' Phi='+str(round(phi,4))
       if self.export_for_fit: # export fit files
         self.export_fit(dataset,  filename)
-        simu=reflectometer_read_data.read_simulation(self.TEMP_DIR+'fit_temp.sim')
+        simu=read_data.reflectometer.read_simulation(self.TEMP_DIR+'fit_temp.sim')
         simu.number='sim_'+dataset.number
         simu.short_info='simulation'
         simu.sample_name=dataset.sample_name
@@ -744,7 +744,7 @@ class ReflectometerSession(GenericSession):
       stderr_value = proc.communicate()[1]
     else:
       self.open_status_dialog(window)
-    simu=reflectometer_read_data.read_simulation(self.TEMP_DIR+'fit_temp.sim')
+    simu=read_data.reflectometer.read_simulation(self.TEMP_DIR+'fit_temp.sim')
     simu.number='sim_'+dataset.number
     simu.short_info='simulation'
     simu.sample_name=dataset.sample_name
@@ -767,7 +767,7 @@ class ReflectometerSession(GenericSession):
       
     def replot_present(session, window):
       dataset=window.measurement[window.index_mess]        
-      simu=reflectometer_read_data.read_simulation(self.TEMP_DIR+'fit_temp.sim')
+      simu=read_data.reflectometer.read_simulation(self.TEMP_DIR+'fit_temp.sim')
       simu.number='sim_'+dataset.number
       simu.short_info='simulation'
       simu.sample_name=dataset.sample_name
@@ -1139,7 +1139,7 @@ class fit_parameter:
       class constructor
     '''
     # lookup the scattering length density table
-    from scattering_length_table import SCATTERING_LENGTH_DENSITIES
+    from config.scattering_length_table import SCATTERING_LENGTH_DENSITIES
     self.SCATTERING_LENGTH_DENSITIES=SCATTERING_LENGTH_DENSITIES
     self.layers=[]
     self.substrate=None

@@ -22,8 +22,8 @@
 # import GenericSession, which is the parent class for the squid_session
 from plot_generic_data import GenericSession
 # importing preferences and data readout
-import circle_read_data
-import circle_preferences
+import read_data.circle
+import config.circle
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -56,9 +56,9 @@ class CircleSession(GenericSession):
     '''
       class constructor expands the GenericSession constructor
     '''
-    self.COLUMNS_MAPPING=circle_preferences.COLUMNS_MAPPING
-    self.MEASUREMENT_TYPES=circle_preferences.MEASUREMENT_TYPES
-    self.TRANSFORMATIONS=circle_preferences.TRANSFORMATIONS
+    self.COLUMNS_MAPPING=config.circle.COLUMNS_MAPPING
+    self.MEASUREMENT_TYPES=config.circle.MEASUREMENT_TYPES
+    self.TRANSFORMATIONS=config.circle.TRANSFORMATIONS
     GenericSession.__init__(self, arguments)
     # TODO: counts to cps
     
@@ -83,7 +83,7 @@ class CircleSession(GenericSession):
     '''
       function to read data files
     '''
-    return circle_read_data.read_data(file_name,self.COLUMNS_MAPPING,self.MEASUREMENT_TYPES)
+    return read_data.circle.read_data(file_name,self.COLUMNS_MAPPING,self.MEASUREMENT_TYPES)
 
 
 

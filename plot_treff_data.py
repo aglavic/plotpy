@@ -16,7 +16,7 @@
 # import GenericSession, which is the parent class for the squid_session
 from plot_generic_data import GenericSession
 # importing data readout
-import treff_read_data
+import read_data.treff
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -72,7 +72,7 @@ class TreffSession(GenericSession):
     '''
       Function to read data files.
     '''
-    return treff_read_data.read_data(file_name, self.SCRIPT_PATH)
+    return read_data.treff.read_data(file_name, self.SCRIPT_PATH)
 
 
   def create_menu(self):

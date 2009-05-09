@@ -10,6 +10,7 @@
 import os
 import math
 from measurement_data_structure import MeasurementData
+from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, PIXEL_WIDTH
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -19,15 +20,6 @@ __version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
-
-# globals
-DETECTOR_ROWS_MAP=[[j+i*256 for i in range(256)] for j in range(256)]
-PIXEL_WIDTH=0.014645
-LAMBDA_TREFF=4.8
-
-PI_4_OVER_LAMBDA=4*math.pi/LAMBDA_TREFF
-GRAD_TO_MRAD=math.pi/180*1000
-GRAD_TO_RAD=math.pi/180
 
 def read_data(file_name, script_path):
   '''
@@ -94,7 +86,7 @@ def read_data(file_name, script_path):
   data_xx_lines=filter(lambda line: line[columns['Polarization']]=='xx', data_lines)
   del(data_lines)
   # import calibration from file, need to get this as relative path
-  cali_file=script_path+'treff/KALIBR2.DAT'
+  cali_file=script_path+'config/treff_calibration.DAT'
   cali_open=open(cali_file, 'r')
   calibration=map(float, cali_open.readlines())
   cali_open.close()

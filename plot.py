@@ -13,14 +13,14 @@
 #                   measurement_data_structure.py - classes storing the measured data           #
 #                   measurement_data_plotting.py - plotting functions                           #
 #                   plot_SQUID_data.py - squid session class for mpms,ppms data                 #
-#                   SQUID_preferences.py - settings for the squid session                       #
-#                   SQUID_read_data.py - functions for data extraction                          #
+#                   config/squid.py - settings for the squid session                            #
+#                   read_data.squid.py - functions for data extraction                          #
 #                   plot_4circle_data.py - 4circle session class for spec data                  #
-#                   circle_preferences.py - settings for the 4circle session                    #
-#                   circle_read_data.py - functions for data extraction                         #
+#                   config/circle.py - settings for the 4circle session                         #
+#                   read_data.circle.py - functions for data extraction                         #
 #                   plot_reflectometer_data.py - reflectometer session class                    #
-#                   reflectometer_preferences.py - settings for the reflectometer session(+fit) #
-#                   reflectometer_read_data.py - functions for data extraction                  #
+#                   config/reflectometer.py - settings for the reflectometer session(+fit)      #
+#                   read_data.reflectometer.py - functions for data extraction                  #
 #                   gnuplot_preferences.py - settings for gnuplot output                        #
 #                   plotting_gui.py - plotting in graphical user interface (pygtk dependency!)  #
 #                                                                                               #
@@ -36,11 +36,7 @@ import plotting_gui
 # specific measurement classes
 # parent class
 from plot_generic_data import GenericSession
-# derived classes
-from plot_SQUID_data import SquidSession
-from plot_4circle_data import CircleSession
-from plot_reflectometer_data import ReflectometerSession
-from plot_treff_data import TreffSession
+
 #----------------------- importing modules --------------------------
 
 __author__ = "Artur Glavic"
@@ -61,10 +57,10 @@ __status__ = "Production"
   the session.
 '''
 known_measurement_types={
-                         'squid': SquidSession, 
-                         '4circle': CircleSession, 
-                         'refl': ReflectometerSession, 
-                         'treff': TreffSession, 
+                         'squid': ('plot_SQUID_data', 'SquidSession'), 
+                         '4circle': ('plot_4circle_data', 'CircleSession'), 
+                         'refl': ('plot_reflectometer_data', 'ReflectometerSession'), 
+                         'treff': ('plot_treff_data', 'TreffSession'), 
                          }
 
   
@@ -109,9 +105,14 @@ if (len(sys.argv) == 1):
   # if no input parameter given, print the short help string
   print GenericSession.SHORT_HELP
   exit()
-elif sys.argv[1] in known_measurement_types: 
+elif sys.argv[1] in known_measurement_types:
+  # import the measurement session needed
+  measurement_type=known_measurement_types[sys.argv[1]]
+  active_session_class = getattr(__import__(measurement_type[0], globals(), locals(), 
+                                      [measurement_type[1]], -1), measurement_type[1])
+
   # type is found in dictionary, using specific session
-  active_session=known_measurement_types[sys.argv[1]](sys.argv[2:])
+  active_session=active_session_class(sys.argv[2:])
 else:
   # type is not found, using generic session
   active_session=GenericSession(sys.argv[1:])

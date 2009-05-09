@@ -10,7 +10,7 @@
 
 import os
 import subprocess
-import gnuplot_preferences
+from config import gnuplot_preferences
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"

@@ -10,7 +10,7 @@
 import os
 import sys
 from measurement_data_structure import MeasurementData
-import SQUID_preferences
+import config.squid
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -115,7 +115,7 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
         data.append(data_1)
         data.append(data_2)
         data.plot_options=type_i[4]
-        data.filters=SQUID_preferences.filters
+        data.filters=config.squid.filters
         not_found=False
   else:
     return 'NULL'
@@ -154,7 +154,7 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
               not_found=False
               data.info=info[0]
               data.sample_name=info[1]
-              data.filters=SQUID_preferences.filters
+              data.filters=config.squid.filters
               data.append(next_data)
               data.append(next_data_2)
               data_is_type=data.is_type

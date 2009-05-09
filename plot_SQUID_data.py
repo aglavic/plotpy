@@ -14,7 +14,7 @@
 # -convert units to SI (or any selected)                                                        #
 # -remove diamagnetic and paramagnetic contribution                                             #
 #  (as constant and calculated from elements and mass)                                          #
-# -process raw data files (sequence splitting see SQUID_preferences.py)                         #
+# -process raw data files (sequence splitting see config.squid.py)                         #
 #                                                                                               #
 #################################################################################################
 
@@ -23,8 +23,8 @@
 # import GenericSession, which is the parent class for the SquidSession
 from plot_generic_data import GenericSession
 # importing preferences and data readout
-import SQUID_read_data
-import SQUID_preferences
+import read_data.squid
+import config.squid
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -68,9 +68,9 @@ class SquidSession(GenericSession):
     '''
       class constructor expands the GenericSession constructor
     '''
-    self.COLUMNS_MAPPING=SQUID_preferences.COLUMNS_MAPPING
-    self.MEASUREMENT_TYPES=SQUID_preferences.MEASUREMENT_TYPES
-    self.TRANSFORMATIONS=SQUID_preferences.TRANSFORMATIONS
+    self.COLUMNS_MAPPING=config.squid.COLUMNS_MAPPING
+    self.MEASUREMENT_TYPES=config.squid.MEASUREMENT_TYPES
+    self.TRANSFORMATIONS=config.squid.TRANSFORMATIONS
     GenericSession.__init__(self, arguments)
     
   
@@ -121,7 +121,7 @@ class SquidSession(GenericSession):
     '''
       function to read data files
     '''
-    return SQUID_read_data.read_data(file_name,self.COLUMNS_MAPPING,self.MEASUREMENT_TYPES)
+    return read_data.squid.read_data(file_name,self.COLUMNS_MAPPING,self.MEASUREMENT_TYPES)
   
   def create_menu(self):
     '''
@@ -174,7 +174,7 @@ class SquidSession(GenericSession):
       else:
         dataset.para_corrected=False
       # name the dataset
-      constant_type=dataset.unit_trans_one(dataset.type(),SQUID_preferences.TRANSFORMATIONS_CONST)        
+      constant_type=dataset.unit_trans_one(dataset.type(),config.squid.TRANSFORMATIONS_CONST)        
       dataset.short_info='at %d ' % constant_type[0]+constant_type[1] # set short info as the value of the constant column
     return datasets
 
@@ -191,7 +191,7 @@ class SquidSession(GenericSession):
     field=1
     mag=3
     for mapping in self.COLUMNS_MAPPING: 
-      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in SQUID_preferences.py
+      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in config.squid.py
       if mapping[2][0]=='H':
         field=mapping[1]
       if mapping[2][0]=='M_rso':
@@ -207,7 +207,7 @@ class SquidSession(GenericSession):
     field=1
     mag=3
     for mapping in self.COLUMNS_MAPPING: 
-      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in SQUID_preferences.py
+      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in config.squid.py
       if mapping[2][0]=='H':
         field=mapping[1]
       if mapping[2][0]=='M_rso':
@@ -229,7 +229,7 @@ class SquidSession(GenericSession):
     temp=2
     mag=3
     for mapping in self.COLUMNS_MAPPING: 
-      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in SQUID_preferences.py
+      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in config.squid.py
       if mapping[2][0]=='H':
         field=mapping[1]
       if mapping[2][0]=='M_rso':
@@ -248,7 +248,7 @@ class SquidSession(GenericSession):
     temp=2
     mag=3
     for mapping in self.COLUMNS_MAPPING: 
-      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in SQUID_preferences.py
+      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in config.squid.py
       if mapping[2][0]=='H':
         field=mapping[1]
       if mapping[2][0]=='M_rso':

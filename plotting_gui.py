@@ -37,8 +37,8 @@ import gtk
 # Module to save and load variables from/to config files
 from configobj import ConfigObj
 import measurement_data_plotting
-from gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
-import gnuplot_preferences
+from config.gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
+from config import gnuplot_preferences
 #----------------------- importing modules --------------------------
 
 __author__ = "Artur Glavic"

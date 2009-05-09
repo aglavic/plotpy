@@ -26,7 +26,7 @@ import subprocess
 from cPickle import load, dump
 from measurement_data_structure import MeasurementData
 import measurement_data_plotting
-from gnuplot_preferences import PRINT_COMMAND
+from config.gnuplot_preferences import PRINT_COMMAND
 
 # importing own modules
 
@@ -101,12 +101,12 @@ Options:
   LONG_HELP_END=\
 """
 The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you want to change them.
-Data columns and unit transformations are defined in SQUID_preferences.py.
+Data columns and unit transformations are defined in config.squid.py.
 """
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  file_data={} # dictionary for the data objects indexed by filename
+  file_data={} #: dictionary for the data objects indexed by filename
   active_file_data=None # pointer for the data of the current file
   active_file_name='' # the name of the current file
   index=0
