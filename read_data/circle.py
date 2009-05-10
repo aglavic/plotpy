@@ -95,8 +95,13 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
         columns.append([count-2,mapping[1],mapping[2]])
   columns.sort(column_compare)
   #read 2 lines to determine the type of the first sequence
-  data_1=read_data_line(input_file_lines.pop(0),columns)
-  data_2=read_data_last_line(input_file_lines,columns)
+  # if the scan was aborted this can lead to an IndexError
+  # so this scan is considered not present.
+  try:
+    data_1=read_data_line(input_file_lines.pop(0),columns)
+    data_2=read_data_last_line(input_file_lines,columns)
+  except IndexError:
+    return 'NULL'
   not_found=True
   if (data_1!='NULL')&(data_2!='NULL')&(data_1!='Comment')&(data_2!='Comment'):
     for type_i in MEASUREMENT_TYPES:
@@ -164,4 +169,7 @@ def read_data_last_line(input_file_lines,columns):
       return read_data_line(input_file_lines[i-2],columns)
     elif len(line.split())<2:
       return read_data_line(input_file_lines[i-2],columns)
-  return read_data_line(input_file_lines[-2],columns)
+  try:
+    return read_data_line(input_file_lines[-2],columns)
+  except IndexError:
+    raise IndexError

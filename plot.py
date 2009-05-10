@@ -14,13 +14,13 @@
 #                   measurement_data_plotting.py - plotting functions                           #
 #                   plot_SQUID_data.py - squid session class for mpms,ppms data                 #
 #                   config/squid.py - settings for the squid session                            #
-#                   read_data.squid.py - functions for data extraction                          #
+#                   read_data/squid.py - functions for data extraction                          #
 #                   plot_4circle_data.py - 4circle session class for spec data                  #
 #                   config/circle.py - settings for the 4circle session                         #
-#                   read_data.circle.py - functions for data extraction                         #
+#                   read_data/circle.py - functions for data extraction                         #
 #                   plot_reflectometer_data.py - reflectometer session class                    #
 #                   config/reflectometer.py - settings for the reflectometer session(+fit)      #
-#                   read_data.reflectometer.py - functions for data extraction                  #
+#                   read_data/reflectometer.py - functions for data extraction                  #
 #                   gnuplot_preferences.py - settings for gnuplot output                        #
 #                   plotting_gui.py - plotting in graphical user interface (pygtk dependency!)  #
 #                                                                                               #
@@ -57,10 +57,10 @@ __status__ = "Production"
   the session.
 '''
 known_measurement_types={
-                         'squid': ('plot_SQUID_data', 'SquidSession'), 
-                         '4circle': ('plot_4circle_data', 'CircleSession'), 
-                         'refl': ('plot_reflectometer_data', 'ReflectometerSession'), 
-                         'treff': ('plot_treff_data', 'TreffSession'), 
+                         'squid': ('plot_SQUID_data', 'SquidSession', ['dat', 'raw', 'DAT', 'RAW']), 
+                         '4circle': ('plot_4circle_data', 'CircleSession', ['spec']), 
+                         'refl': ('plot_reflectometer_data', 'ReflectometerSession', ['UXD', 'uxd']), 
+                         'treff': ('plot_treff_data', 'TreffSession', ['___']), 
                          }
 
   
@@ -69,13 +69,21 @@ class RedirectOutput:
     Class to redirect all print statements when useing the GUI.
   '''
   def __init__(self, plotting_session):
-    '''Class consturctor.'''
+    '''
+      Class consturctor.
+      
+      @param plotting_session A session object derived from GenericSession.
+    '''
     self.content = []
     self.plotting_session=plotting_session
     #self.gtk=gtk
 
   def write(self, string):
-    '''Add content.'''
+    '''
+      Add content.
+      
+      @param string Output string of stderr or stdout
+    '''
     string=string.replace('\b', '')
     self.content.append(string)
     while '\n' in self.content:
@@ -84,7 +92,9 @@ class RedirectOutput:
       self.plotting_session.statusbar.push(0, string.splitlines()[-1])
   
   def flush(self):
-    '''Show last content line in statusbar.'''
+    '''
+      Show last content line in statusbar.
+    '''
     if (len(self.content)>0):
       self.plotting_session.statusbar.push(0, self.content[-1])
       gtk.main_iteration(False)
@@ -114,9 +124,22 @@ elif sys.argv[1] in known_measurement_types:
   # type is found in dictionary, using specific session
   active_session=active_session_class(sys.argv[2:])
 else:
-  # type is not found, using generic session
-  active_session=GenericSession(sys.argv[1:])
-
+  found_sessiontype=False
+  suffixes=map(lambda arg: arg.split('.')[-1], sys.argv[1:])
+  for name, measurement_type in known_measurement_types.items():
+    if found_sessiontype:
+      break
+    for suffix in measurement_type[2]:
+      if suffix in suffixes:
+        active_session_class = getattr(__import__(measurement_type[0], globals(), locals(), 
+                                          [measurement_type[1]], -1), measurement_type[1])
+        print "Setting session type to " + name + '.'
+        active_session=active_session_class(sys.argv[1:])
+        found_sessiontype=True
+        break
+  if not found_sessiontype:
+    # type is not found, using generic session
+    active_session=GenericSession(sys.argv[1:])
 
 if active_session.use_gui: # start a new gui session
   import gtk

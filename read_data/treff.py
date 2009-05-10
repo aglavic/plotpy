@@ -86,7 +86,7 @@ def read_data(file_name, script_path):
   data_xx_lines=filter(lambda line: line[columns['Polarization']]=='xx', data_lines)
   del(data_lines)
   # import calibration from file, need to get this as relative path
-  cali_file=script_path+'config/treff_calibration.DAT'
+  cali_file=script_path+'config/treff_calibration.dat'
   cali_open=open(cali_file, 'r')
   calibration=map(float, cali_open.readlines())
   cali_open.close()

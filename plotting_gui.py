@@ -59,6 +59,12 @@ class ApplicationMainWindow(gtk.Window):
   def __init__(self, active_session, parent=None, script_suf='',preferences_file='',plugin_widget=None):
     '''
       Class constructor which builds the main window with it's menus, buttons and the plot area.
+      
+      @param active_session A session object derived from GenericSession.
+      @param parant Parent window.
+      @param script_suf Suffix for script file name.
+      @param preferences_file Other file for gnuplot_preferences.
+      @param plugin_widget Not used now.
     '''
     global errorbars
     gnuplot_preferences.set_output_terminal_png=gnuplot_preferences.set_output_terminal_png_GUI
@@ -562,6 +568,8 @@ class ApplicationMainWindow(gtk.Window):
   def add_file(self, action):
     '''
       Import one or more new datafiles of the same type.
+      
+      @return List of names that have been imported.
     '''
     file_names=[]
     #++++++++++++++++File selection dialog+++++++++++++++++++#
@@ -805,6 +813,9 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Reroute the plot options button and remove the textbox when dialog is closed.
       If this is not done, the textbox gets destroyed and we can't reopen the dialog.
+      
+      @param dialog The dialog widget that will be closed
+      @param sw The scrolledWindow to be unpluged before closing.
     '''
     dialog.hide()
     sw.remove(self.plot_options_view)
@@ -1047,6 +1058,8 @@ class ApplicationMainWindow(gtk.Window):
     ''' 
       Create all widgets for the filter selection of one filter in 
       change_data_filter dialog and place them in a table.
+      
+      @return Sequence of the created widgets.
     '''
     column=gtk.combo_box_new_text()
     column.append_text('None')
@@ -1505,6 +1518,8 @@ class ApplicationMainWindow(gtk.Window):
       Read the options that have been stored in a config file in an earlier session.
       The ConfigObj python module is used to save the settings in an .ini file
       as this is an easy way to store dictionaries.
+      
+      @return If the import was successful.
     '''
     # create the object with association to an inifile in the user folder
     # have to test if this works under windows
@@ -1549,6 +1564,8 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Read the window config parameters from the old own format.
       This will be removed, when everything is saved in the .ini file.
+      
+      @return If the window was successful.
     '''
     line=config_file.readline().rstrip('\n').lstrip('\t')
     while not line=='[/window]':
@@ -1663,7 +1680,9 @@ class ApplicationMainWindow(gtk.Window):
       Create XML text for the menu and toolbar creation. In addition the variable
       actions are stored in a list. (See __create_action_group function)
       The XML text is used for the UIManager to create the bars,for more 
-      information see the pygtk documentation for the UIManager
+      information see the pygtk documentation for the UIManager.
+      
+      @return XML string for all menus and toolbar.
     '''
     self.added_items=(( "xMenu", None,                             # name, stock id
         "x-axes", None,                    # label, accelerator
@@ -1828,6 +1847,8 @@ class ApplicationMainWindow(gtk.Window):
       Every entry creates a gtk.Action and the function returns a gtk.ActionGroup.
       When the action is triggered it calls to a function.
       For more information see the pygtk documentation for the UIManager and ActionGroups.
+      
+      @return ActionGroup for all menu entries.
     '''
     entries = (
       ( "FileMenu", None, "_File" ),               # name, stock id, label

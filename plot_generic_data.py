@@ -142,6 +142,8 @@ Data columns and unit transformations are defined in config.squid.py.
       Class constructor which is called with the command line arguments.
       Evaluates the command line arguments, creates a file list and
       starts the data readout procedure.
+      
+      @param arguments The command line arguments passed to the constructor.
     '''
     #++++++++++++++++ evaluate command line +++++++++++++++++++++++
     files=self.read_arguments(arguments) # get filenames and set options
@@ -214,6 +216,9 @@ Data columns and unit transformations are defined in config.squid.py.
     '''
       Function to evaluate the command line arguments.
       Returns a list of filenames.
+      
+      @param arguments The command line arguments to evaluate.
+      @return A list of file names to import.
     '''
     input_file_names=[]
     last_argument_option=[False,'']
@@ -283,6 +288,8 @@ Data columns and unit transformations are defined in config.squid.py.
     '''
       Dummi function for child classes, which makes it possible to
       add command line options for them.
+      
+      @return A Squence depending on the found parameters.
     '''
     # as function does not contain new options it returns false
     return (False, last_argument_option)
@@ -328,6 +335,8 @@ Data columns and unit transformations are defined in config.squid.py.
       Function for path name replacements. Only under windows,
       in linux this is just a dummi method returning the same
       string.
+      
+      @return The replaced string.
     '''
     return string
 
@@ -336,6 +345,8 @@ Data columns and unit transformations are defined in config.squid.py.
       Function which reads one datafile and returns a list
       of measurement_data_structure objects splitted into
       sequences. Every child class will overwrite this.
+      
+      @return A list of datasets that has been found.
     '''
     data_list=[]
     dataset=None
@@ -376,6 +387,8 @@ Data columns and unit transformations are defined in config.squid.py.
       file name perpose.
       This function also filteres the dataset for the values given
       by "-s from to" and "-i increment".
+      
+      @return The filtered list with the numbers set.
     '''
     filtered_datasets=[]
     for i, dataset in enumerate(datasets):
@@ -409,6 +422,8 @@ Data columns and unit transformations are defined in config.squid.py.
       Add the data of a new file to the session.
       Transformations are also done here, so childs
       will change this function.
+      
+      @return A list of datasets that have been found in the file.
     '''
     # for faster access the MeasurementData objects are saved via cPickle
     # when this file exists it is used to reload it.
@@ -484,12 +499,14 @@ Data columns and unit transformations are defined in config.squid.py.
       Plot everything selected from all files.
     '''
     for name in self:
-      print "Plotting '"+ name +"' sequences."
+      print "Plotting '" + name + "' sequences."
       self.plot_active()
   
   def plot(self, datasets, file_name_prefix, title, names):
     '''
       Plot one or a list of datasets.
+      
+      @return The stderr and stdout of gnuplot.
     '''
     # TODO: Use one plot function for GUI and script mode with less parameters.
     if len(datasets)>1:
