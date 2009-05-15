@@ -14,3 +14,18 @@ column_dimensions=(
                    (('KI', 'KF'), 'A^{-1}'), 
                    (('F1', 'F2'), 'ON-OFF'), 
                     )
+
+name_replacements=(
+                ('A3', 'omega'), 
+                ('A4', '2Theta'), 
+                ('CNTS', 'Intensity'), 
+                ('QH', 'h'), 
+                ('QK', 'k'), 
+                ('QL', 'l'), 
+                ('TT', 'Sample Temperature'), 
+                ('TRT', 'Controled Temperature'), 
+                ('KI', 'K_i'), 
+                ('KF', 'K_f'), 
+                ('F1', 'Flipper1'), 
+                ('F2', 'Flipper2'), 
+                )
