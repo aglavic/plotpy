@@ -34,7 +34,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -60,7 +60,7 @@ class GenericSession:
 Script to plot data of measurements using gnuplot.
 
 Usage: plot.py [type] [files] [options]
-\t\t type can be one of 'squid', '4circle', 'refl' or none
+\t\t type can be one of 'squid', '4circle', 'refl', 'treff' or none (than it tries to find the type itself)
 
 Options:
 \t--help\t\tPrint this information, start plot.py [type] --help for a type specific help
@@ -74,6 +74,7 @@ Options:
 \tInput/Output settings:
 \t-gs\t\tUse gnuplot in script mode, in the case Gnuplot.py is not working (slower)
 \t-rd\t\tRead file directly, do not use .mds file created in earlier runs.
+\t-no-mds\t\tDon't create .mds files. (.mds files are used for faster reaccessing)
 
 \tPlott settings:
 \t-e\t\tPlot with errorbars
@@ -112,7 +113,7 @@ Data columns and unit transformations are defined in config.squid.py.
   index=0
   FILE_WILDCARDS=(('all files', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
-  COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans','help']
+  COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans','help']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -135,6 +136,7 @@ Data columns and unit transformations are defined in config.squid.py.
   unit_transformation=True # make transformations as set in preferences file
   TRANSFORMATIONS=[] # a list of unit TRANSFORMATIONS, that will be performed on the data
   read_directly=False # don't use pickled file, read the data diretly
+  mds_create=True
   #------------------ local variables -----------------
 
   def __init__(self, arguments):
@@ -250,6 +252,8 @@ Data columns and unit transformations are defined in config.squid.py.
           self.gnuplot_script=True
         elif argument=='-rd':
           self.read_directly=True
+        elif argument=='-no-mds':
+          self.mds_create=False
         elif argument=='-o':
           self.do_output=True
         elif argument=='-ni':
@@ -436,7 +440,7 @@ Data columns and unit transformations are defined in config.squid.py.
     else:
       print "Trying to import '" + filename + "'."
       datasets=self.read_file(filename)
-      if datasets!=[] and datasets!=[]:
+      if datasets!=[] and self.mds_create:
         pickling=open(filename + '.mds', 'wb')
         dump(datasets, pickling, 2)
         pickling.close()

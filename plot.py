@@ -61,6 +61,7 @@ known_measurement_types={
                          '4circle': ('plot_4circle_data', 'CircleSession', ['spec']), 
                          'refl': ('plot_reflectometer_data', 'ReflectometerSession', ['UXD', 'uxd']), 
                          'treff': ('plot_treff_data', 'TreffSession', ['___']), 
+                         'in12': ('plot_in12_data', 'IN12Session', ['___']), 
                          }
 
   
@@ -110,19 +111,24 @@ class RedirectOutput:
 ############################################################################
 '''
 
+def import_session_from_name(arguments, measurement_type):
+  '''
+    Import a session object from a string.
+  '''
+  active_session_class = getattr(__import__(measurement_type[0], globals(), locals(), 
+                                      [measurement_type[1]], -1), measurement_type[1])
+  return active_session_class(arguments)
+
 # initialize session and read data files
+
 if (len(sys.argv) == 1):
   # if no input parameter given, print the short help string
   print GenericSession.SHORT_HELP
   exit()
 elif sys.argv[1] in known_measurement_types:
-  # import the measurement session needed
-  measurement_type=known_measurement_types[sys.argv[1]]
-  active_session_class = getattr(__import__(measurement_type[0], globals(), locals(), 
-                                      [measurement_type[1]], -1), measurement_type[1])
-
   # type is found in dictionary, using specific session
-  active_session=active_session_class(sys.argv[2:])
+  measurement_type=known_measurement_types[sys.argv[1]]
+  active_session=import_session_from_name(sys.argv[2:], measurement_type)
 else:
   found_sessiontype=False
   suffixes=map(lambda arg: arg.split('.')[-1], sys.argv[1:])
@@ -131,10 +137,8 @@ else:
       break
     for suffix in measurement_type[2]:
       if suffix in suffixes:
-        active_session_class = getattr(__import__(measurement_type[0], globals(), locals(), 
-                                          [measurement_type[1]], -1), measurement_type[1])
         print "Setting session type to " + name + '.'
-        active_session=active_session_class(sys.argv[1:])
+        active_session=import_session_from_name(sys.argv[1:], measurement_type)
         found_sessiontype=True
         break
   if not found_sessiontype:

@@ -16,7 +16,7 @@ __status__ = "Development"
 
 DETECTOR_ROWS_MAP=[[j+i*256 for i in range(256)] for j in range(256)]
 PIXEL_WIDTH=0.014645
-LAMBDA_TREFF=4.8
+LAMBDA_TREFF=4.75
 
 PI_4_OVER_LAMBDA=4*pi/LAMBDA_TREFF
 GRAD_TO_MRAD=pi/180*1000

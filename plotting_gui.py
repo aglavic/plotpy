@@ -1271,6 +1271,9 @@ class ApplicationMainWindow(gtk.Window):
     global errorbars
     self.active_session.picture_width='1600'
     self.active_session.picture_height='1200'
+    if action.get_name()=='MultiPlot':
+      self.active_multiplot=not self.active_multiplot
+      return self.replot()
     if action.get_name()=='SaveGPL':
       #++++++++++++++++File selection dialog+++++++++++++++++++#
       file_dialog=gtk.FileChooserDialog(title='Save Gnuplot and Datafiles...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
@@ -1397,25 +1400,6 @@ class ApplicationMainWindow(gtk.Window):
           self.statusbar.push(0,'Export multi-plot ' + multi_file_name + '... Done!')
         file_dialog.destroy()
         #----------------File selection dialog-------------------#
-    elif action.get_name()=='MultiPlot' or self.active_multiplot:
-      # stay in multiplot mode for settings
-      if action.get_name()=='MultiPlot':
-        self.active_multiplot=not self.active_multiplot
-      for plotlist in self.multiplot:
-        itemlist=[item[0] for item in plotlist]
-        if self.measurement[self.index_mess] in itemlist:
-          self.last_plot_text=self.plot(self.active_session, 
-                                        [item[0] for item in plotlist], 
-                                        plotlist[0][1], 
-                                        plotlist[0][0].short_info, 
-                                        [item[0].short_info for item in plotlist], 
-                                        errorbars,
-                                        self.active_session.TEMP_DIR+'plot_temp.png',
-                                        fit_lorentz=False,
-                                        add_preferences=self.preferences_file)   
-          self.label.set_width_chars(len(itemlist[0].short_info)+5)
-          self.label.set_text(itemlist[0].short_info)
-          self.set_image()
     else:
       new_name=output_file_name
       if action.get_name()=='ExportAs':
@@ -1622,8 +1606,8 @@ class ApplicationMainWindow(gtk.Window):
       Recreate the current plot and clear statusbar.
     '''
     global errorbars
-    self.active_session.picture_width=str(self.frame1.get_allocation().width-20)
-    self.active_session.picture_height=str(self.frame1.get_allocation().height-20)
+    self.active_session.picture_width=str(self.frame1.get_allocation().width-25)
+    self.active_session.picture_height=str(self.frame1.get_allocation().height-25)
     if self.active_multiplot:
       for plotlist in self.multiplot:
         itemlist=[item[0] for item in plotlist]

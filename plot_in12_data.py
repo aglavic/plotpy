@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 '''
-  class for treff data sessions
+  class for IN12 data sessions
 '''
 #################################################################################################
-#                      Script to plot TREFF-measurements with gnuplot                           #
+#                        Script to plot IN12-measurements with gnuplot                          #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
@@ -16,7 +16,7 @@
 # import GenericSession, which is the parent class for the squid_session
 from plot_generic_data import GenericSession
 # importing data readout
-import read_data.treff
+import read_data.in12
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -27,24 +27,25 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-class TreffSession(GenericSession):
+class IN12Session(GenericSession):
   '''
-    Class to handle treff data sessions
+    Class to handle in12 data sessions
   '''
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
 '''
-\tTREFF-Data treatment:
+\tIN12-Data treatment:
 '''
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('All','*'), ('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'))  
+  FILE_WILDCARDS=(('All','*'), ('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'))
+  mds_create=False
+
 #  TRANSFORMATIONS=[\
 #  ['','',1,0,'',''],\
 #  ]  
-  import_images=True
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img']  
+#  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+[]  
   #------------------ local variables -----------------
 
   
@@ -54,28 +55,28 @@ class TreffSession(GenericSession):
     '''
     GenericSession.__init__(self, arguments)
   
-  def read_argument_add(self, argument, last_argument_option=[False, '']):
-    '''
-      additional command line arguments for squid sessions
-    '''
-    found=True
-    if (argument[0]=='-') or last_argument_option[0]:
-      # Cases of arguments:
-      if last_argument_option[0]:
-        found=False
-      elif argument=='-no-img':
-        self.import_images=False
-        found=True
-      else:
-        found=False
-    return (found, last_argument_option)
+#  def read_argument_add(self, argument, last_argument_option=[False, '']):
+#    '''
+#      additional command line arguments for squid sessions
+#    '''
+#    found=True
+#    if (argument[0]=='-') or last_argument_option[0]:
+#      # Cases of arguments:
+#      if last_argument_option[0]:
+#        found=False
+#      elif argument=='-no-img':
+#        self.import_images=False
+#        found=True
+#      else:
+#        found=False
+#    return (found, last_argument_option)
 
 
   def read_file(self, file_name):
     '''
       Function to read data files.
     '''
-    return read_data.treff.read_data(file_name, self.SCRIPT_PATH, self.import_images)
+    return read_data.in12.read_data(file_name)
 
 
   def create_menu(self):
@@ -90,8 +91,8 @@ class TreffSession(GenericSession):
     #'''
     # Create actions for the menu
     actions=(
-            ( "TREFF", None,                             # name, stock id
-                "TREFF", None,                    # label, accelerator
+            ( "IN12", None,                             # name, stock id
+                "IN12", None,                    # label, accelerator
                 None,                                   # tooltip
                 None ),
              )

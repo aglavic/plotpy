@@ -21,7 +21,7 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-def read_data(file_name, script_path):
+def read_data(file_name, script_path, import_images):
   '''
     Read the data of a treff raw data file, integrate the corresponding .img files.
   '''
@@ -99,40 +99,44 @@ def read_data(file_name, script_path):
   scans=[]
   if len(data_uu_lines)>0:
     print "Evaluating up-up images."
-    data_uu, scan_uu=integrate_pictures(data_uu_lines, columns, const_information, path_name, calibration)
+    data_uu, scan_uu=integrate_pictures(data_uu_lines, columns, const_information, path_name, calibration, import_images)
     data_uu.short_info='++'
     maps.append(data_uu)
     scan_uu.short_info='++'
     scans.append(scan_uu)
   if len(data_dd_lines)>0:
     print "Evaluating down-down images."
-    data_dd, scan_dd=integrate_pictures(data_dd_lines, columns, const_information, path_name, calibration)
+    data_dd, scan_dd=integrate_pictures(data_dd_lines, columns, const_information, path_name, calibration, import_images)
     data_dd.short_info='--'
     maps.append(data_dd)
     scan_dd.short_info='--'
     scans.append(scan_dd)
   if len(data_ud_lines)>0:
     print "Evaluating up-down images."
-    data_ud, scan_ud=integrate_pictures(data_ud_lines, columns, const_information, path_name, calibration)
+    data_ud, scan_ud=integrate_pictures(data_ud_lines, columns, const_information, path_name, calibration, import_images)
     data_ud.short_info='+-'
     maps.append(data_ud)
     scan_ud.short_info='+-'
     scans.append(scan_ud)
   if len(data_du_lines)>0:
     print "Evaluating down-up images."
-    data_du, scan_du=integrate_pictures(data_du_lines, columns, const_information, path_name, calibration)
+    data_du, scan_du=integrate_pictures(data_du_lines, columns, const_information, path_name, calibration, import_images)
     data_du.short_info='-+'
     maps.append(data_du)
     scan_du.short_info='-+'
     scans.append(scan_du)
   if len(data_xx_lines)>0:
     print "Evaluating unpolarized images."
-    data_xx, scan_xx=integrate_pictures(data_xx_lines, columns, const_information, path_name, calibration)
+    data_xx, scan_xx=integrate_pictures(data_xx_lines, columns, const_information, path_name, calibration, import_images)
     data_uu.short_info='unpolarized'
     maps.append(data_xx)
     scan_xx.short_info='unpolarized'
     scans.append(scan_xx)
-  return maps + scans
+  if import_images:
+    output=maps + scans
+  else:
+    output= scans
+  return output
 
 def string_or_float(string_line):
   '''
@@ -147,13 +151,19 @@ def string_or_float(string_line):
   except ValueError:
     return False
 
-def integrate_pictures(data_lines, columns, const_information, data_path, calibration):
+def integrate_pictures(data_lines, columns, const_information, data_path, calibration, import_images):
   '''
     Integrate detector rows of the image files corresponding to one polarization direction.
     This function is tuned quite much for fast readout, so some parts are a bit tricky.
   '''
   sqrt=math.sqrt
   # create the data object
+  scan_data_object=MeasurementData([[columns['Scantype'], 'mrad'], 
+                               ['2DWindow', 'counts'], 
+                               ['DetectorTotal', 'counts'], 
+                               ['error','counts'], 
+                               ['errorTotal','counts']], 
+                              [], 0, 1, 3)
   data_object=MeasurementData([['\316\261_i', 'mrad'], 
                                ['\316\261_f', 'mrad'], 
                                ['q_x', '\303\205'], 
@@ -161,14 +171,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                ['Intensity', 'a.u.'], 
                                ['log_{10}(Intensity)', 'a.u.'], 
                                ['error','a.u.']], 
-                              [], 0, 1, 6, 4)
-  scan_data_object=MeasurementData([[columns['Scantype'], 'mrad'], 
-                               ['2DWindow', 'counts'], 
-                               ['DetectorTotal', 'counts'], 
-                               ['error','counts'], 
-                               ['errorTotal','counts']], 
-                              [], 0, 1, 3)
-  
+                              [], 0, 1, 6, 4)  
   # alpha_i is used as main column for the line splitteng used for pm3d
   data_object.scan_line_constant=0
   data_list=[]
@@ -181,6 +184,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                       line[columns['DetectorTotal']], 
                                       line[columns['2DWindow']], 
                                       line[columns['DetectorTotal']])))
+    if not import_images:
+      continue
     if os.path.exists(data_path + line[columns['Image']]):
       # unziped images
       img_file=open(data_path + line[columns['Image']], 'r')
@@ -207,10 +212,11 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     img_data=img_data.split('\n')
     # integrate the image
     data_list+=integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, PIXEL_WIDTH)
-  data_append=data_object.append
+  if import_images:  
+    data_append=data_object.append
+    # append the integrated data to the object
+    map(data_append, data_list)
   scan_data_append=scan_data_object.append
-  # append the integrated data to the object
-  map(data_append, data_list)
   # sqrt of intensities is error
   def sqrt_34(point):
     point[3]=sqrt(point[3])
