@@ -42,6 +42,8 @@ class FitFunction:
     '''
     if len(self.parameters)==len(initial_parameters):
       self.parameters=initial_parameters
+    self.refine_parameters=range(len(self.parameters))
+
 
   def residuals(self, params, y, x, yerror=None):
     '''
@@ -52,21 +54,27 @@ class FitFunction:
     '''
     # function is called len(x) times, this is just to speed up the lookup procedure
     function=self.fit_function
+    function_parameters=[]
+    for i in range(len(self.parameters)):
+      if i in self.refine_parameters:
+        function_parameters.append(params[self.refine_parameters.index(i)])
+      else:
+        function_parameters.append(self.parameters[i])
     if yerror==None: # is error list given?
       # if function is defined for arrays (e.g. numpy) use this functionality
       try:
-        err=y-function(params, x)
+        err=y-function(function_parameters, x)
       except TypeError:
         # x and y are lists and the function is only defined for one point.
-        err= map((lambda x_i: y[x.index(x_i)]-function(params, x_i)), x)
+        err= map((lambda x_i: y[x.index(x_i)]-function(function_parameters, x_i)), x)
       return err
     else:
       # if function is defined for arrays (e.g. numpy) use this functionality
       try:
-        err=(y-function(params, x))/yerror
+        err=(y-function(function_parameters, x))/yerror
       except TypeError:
         # x and y are lists and the function is only defined for one point.
-        err= map((lambda x_i: (y[x.index(x_i)]-function(params, x_i))/yerror[x.index(x_i)]), x)
+        err= map((lambda x_i: (y[x.index(x_i)]-function(function_parameters, x_i))/yerror[x.index(x_i)]), x)
       return err      
   
   def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
@@ -75,10 +83,21 @@ class FitFunction:
       the new parameters are stored.
       Returns the message string of leastsq.
     '''
-    new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, self.parameters, args=(dataset_y, dataset_x), full_output=1)
+    parameters=[self.parameters[i] for i in self.refine_parameters]
+    new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=(dataset_y, dataset_x), full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     if ier in [1, 2, 3, 4]:
-      self.set_parameters(new_params)
+      if len(parameters)==1:
+        new_function_parameters=list(self.parameters)
+        new_function_parameters[self.refine_parameters[0]]=new_params
+      else:
+        new_function_parameters=[]
+        for i in range(len(self.parameters)):
+          if i in self.refine_parameters:
+            new_function_parameters.append(new_params[self.refine_parameters.index(i)])
+          else:
+            new_function_parameters.append(self.parameters[i])      
+      self.set_parameters(new_function_parameters)
     return mesg
 
   def set_parameters(self, new_params):
@@ -88,6 +107,11 @@ class FitFunction:
     self.parameters_history=self.parameters
     self.parameters=list(new_params)
 
+  def toggle_refine_parameter(self, action, index):
+    if index in self.refine_parameters:
+      self.refine_parameters.remove(index)
+    else:
+      self.refine_parameters.append(index)
   
   def simulate(self, x, interpolate=5):
     '''
@@ -126,6 +150,7 @@ class FitSum(FitFunction):
     self.name=func1.name + ' + ' + func2.name
     self.parameters=func1.parameters + func2.parameters
     self.parameter_names=[name + '1' for name in func1.parameter_names] + [name + '2' for name in func2.parameter_names]
+    self.refine_parameters=func1.refine_parameters + [index + len(func1.parameters) for index in func2.refine_parameters]
     function_text=func1.fit_function_text
     for i in range(len(func1.parameters)):
       function_text=function_text.replace(func1.parameter_names[i], func1.parameter_names[i]+'1')
@@ -138,6 +163,7 @@ class FitSum(FitFunction):
         func1.fit_function(p[0:len(func1.parameters)], x) + \
         func2.fit_function(p[len(func1.parameters):], x)
     self.origin=(func1, func2)
+
   
   def set_parameters(self, new_params):
     '''
@@ -148,6 +174,13 @@ class FitSum(FitFunction):
     self.origin[0].set_parameters(self.parameters[:index])
     self.origin[1].set_parameters(self.parameters[index:])
 
+  def toggle_refine_parameter(self, action, index):
+    FitFunction.toggle_refine_parameter(self, action, index)
+    if index < len(self.origin[0].parameters):
+      self.origin[0].toggle_refine_parameter(action, index)
+    else:
+      self.origin[1].toggle_refine_parameter(action, index-len(self.origin[0].parameters))
+  
 #+++++++++++++++++++++++++++++++++ Define common functions for fits +++++++++++++++++++++++++++++++++
 
 class FitLinear(FitFunction):
@@ -166,10 +199,8 @@ class FitLinear(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    if len(self.parameters)==len(initial_parameters):
-      self.parameters=initial_parameters
-    else:
-      self.parameters=[1, 0]
+    self.parameters=[1, 0]
+    FitFunction.__init__(self, initial_parameters)
 
 
 class FitQuadratic(FitFunction):
@@ -188,10 +219,8 @@ class FitQuadratic(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    if len(self.parameters)==len(initial_parameters):
-      self.parameters=initial_parameters
-    else:
-      self.parameters=[1, 0, 0]
+    self.parameters=[1, 0, 0]
+    FitFunction.__init__(self, initial_parameters)
 
 class FitExponential(FitFunction):
   '''
@@ -209,10 +238,8 @@ class FitExponential(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    if len(self.parameters)==len(initial_parameters):
-      self.parameters=initial_parameters
-    else:
-      self.parameters=[1, 1, 0]
+    self.parameters=[1, 1, 0]
+    FitFunction.__init__(self, initial_parameters)
 
 class FitOneOverX(FitFunction):
   '''
@@ -230,10 +257,8 @@ class FitOneOverX(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    if len(self.parameters)==len(initial_parameters):
-      self.parameters=initial_parameters
-    else:
-      self.parameters=[1, 0, 0]
+    self.parameters=[1, 0, 0]
+    FitFunction.__init__(self, initial_parameters)
 
 class FitGaussian(FitFunction):
   '''
@@ -251,10 +276,8 @@ class FitGaussian(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    if len(self.parameters)==len(initial_parameters):
-      self.parameters=initial_parameters
-    else:
-      self.parameters=[1, 0, 1]
+    self.parameters=[1, 0, 1]
+    FitFunction.__init__(self, initial_parameters)
 
 class FitLorentzian(FitFunction):
   '''
@@ -272,10 +295,8 @@ class FitLorentzian(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    if len(self.parameters)==len(initial_parameters):
-      self.parameters=initial_parameters
-    else:
-      self.parameters=[1, 0, 1]
+    self.parameters=[1, 0, 1]
+    FitFunction.__init__(self, initial_parameters)
 
 class FitVoigt(FitFunction):
   '''
@@ -294,10 +315,8 @@ class FitVoigt(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    if len(self.parameters)==len(initial_parameters):
-      self.parameters=initial_parameters
-    else:
-      self.parameters=[1, 0, 1, 1]
+    self.parameters=[1, 0, 1, 1]
+    FitFunction.__init__(self, initial_parameters)
   
   def fit_function(self, p, x):
     '''
@@ -540,17 +559,21 @@ class FitSession:
       Create the widgets for one function and return a table of these.
       The entry widgets are returned in a list to be able to read them.
     '''
-    table=gtk.Table(len(function.parameters)*2+1, 1, False)
+    table=gtk.Table(len(function.parameters)*3+1, 1, False)
     entries=[]
     for i, parameter in enumerate(function.parameters):
       text=gtk.Label(function.parameter_names[i])
+      toggle=gtk.CheckButton()
+      toggle.set_active(i in function.refine_parameters)
+      toggle.connect('toggled', function.toggle_refine_parameter, i)
       entries.append(gtk.Entry())
       entries[i].set_width_chars(8)
       entries[i].set_text("%.6g" % parameter)
-      table.attach(text, i*2, i*2+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
-      table.attach(entries[i], i*2+1, i*2+2, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+      table.attach(toggle, i*3, i*3+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+      table.attach(text, i*3+1, i*3+2, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+      table.attach(entries[i], i*3+2, i*3+3, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
     del_button=gtk.Button(label='DEL')
-    table.attach(del_button, len(function.parameters)*2, len(function.parameters)*2+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+    table.attach(del_button, len(function.parameters)*3, len(function.parameters)*3+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
     del_button.connect('clicked', self.del_function_dialog, function, dialog, window)
     return table, entries
 
