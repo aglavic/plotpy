@@ -563,6 +563,8 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
     self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
     self.plot_page_entry.set_max_length(len(self.measurement[-1].number))
+    for window in self.open_windows:
+      window.destroy()    
     self.replot()
   
   def add_file(self, action):
@@ -1781,7 +1783,7 @@ class ApplicationMainWindow(gtk.Window):
       <separator name='static7'/>
       <menu action='Profiles'>
     '''
-    for name in self.profiles.items():
+    for name in sorted(self.profiles.items()):
       output+="<menuitem action='"+\
         name[0]+"' position='top'/>\n"
       self.added_items+=((name[0], None,name[0],None,None,self.load_profile),)
@@ -1792,7 +1794,7 @@ class ApplicationMainWindow(gtk.Window):
       <separator name='static9'/>
       <menu action='FilesMenu'>
       '''
-    for i, name in enumerate([object[0] for object in self.active_session.file_data.items()]):
+    for i, name in enumerate([object[0] for object in sorted(self.active_session.file_data.items())]):
       output+="<menuitem action='File-"+ str(i) +"'/>\n"
       self.added_items+=(("File-"+ str(i), None, name, None, None, self.change_active_file),)
     output+='''

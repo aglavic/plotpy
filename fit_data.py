@@ -35,6 +35,8 @@ class FitFunction:
   parameters_history=None
   fit_function=lambda self, p, x: 0.
   fit_function_text='f(x)'
+  x_from=None
+  x_to=None
   
   def __init__(self, initial_parameters):
     '''
@@ -84,7 +86,17 @@ class FitFunction:
       Returns the message string of leastsq.
     '''
     parameters=[self.parameters[i] for i in self.refine_parameters]
-    new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=(dataset_y, dataset_x), full_output=1)
+    # only refine inside the selected region
+    x=[]
+    y=[]
+    x_from=self.x_from
+    x_to=self.x_to
+    for i,x_i in enumerate(dataset_x):
+      if ((x_from is None) or (x_i >= x_from)) and\
+         ((x_to is None) or (x_i <= x_to)):
+        x.append(x_i)
+        y.append(dataset_y[i])
+    new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=(y, x), full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     if ier in [1, 2, 3, 4]:
       if len(parameters)==1:
@@ -559,7 +571,7 @@ class FitSession:
       Create the widgets for one function and return a table of these.
       The entry widgets are returned in a list to be able to read them.
     '''
-    table=gtk.Table(len(function.parameters)*3+1, 1, False)
+    table=gtk.Table(len(function.parameters)*3+3, 1, False)
     entries=[]
     for i, parameter in enumerate(function.parameters):
       text=gtk.Label(function.parameter_names[i])
@@ -575,6 +587,23 @@ class FitSession:
     del_button=gtk.Button(label='DEL')
     table.attach(del_button, len(function.parameters)*3, len(function.parameters)*3+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
     del_button.connect('clicked', self.del_function_dialog, function, dialog, window)
+    entries.append(gtk.Entry())
+    entries[len(function.parameters)].set_width_chars(8)
+    if function.x_from is not None:
+      entries[len(function.parameters)].set_text("%.6g" % function.x_from)
+    else:
+      entries[len(function.parameters)].set_text("{from}")      
+    table.attach(entries[len(function.parameters)], len(function.parameters)*3+1, len(function.parameters)*3+2, 0, 1, 
+                             gtk.EXPAND, gtk.EXPAND, 0, 0)
+    entries.append(gtk.Entry())
+    entries[len(function.parameters)+1].set_width_chars(8)
+    if function.x_to is not None:
+      entries[len(function.parameters)+1].set_text("%.6g" % function.x_to)
+    else:
+      entries[len(function.parameters)+1].set_text("{to}")
+    table.attach(entries[len(function.parameters)+1], len(function.parameters)*3+2, len(function.parameters)*3+3, 0, 1, 
+                             gtk.EXPAND, gtk.EXPAND, 0, 0)
+    
     return table, entries
 
   def add_function_dialog(self, action, name, dialog, window):
@@ -604,8 +633,16 @@ class FitSession:
     '''
     # TODO: Go back in history after fit.
     for i, function in enumerate(self.functions):
-      for j,  entry in enumerate(entries[i][:-1]):
+      for j,  entry in enumerate(entries[i][:-3]):
         function[0].parameters[j]=float(entry.get_text().replace(',', '.'))
+      try:
+        function[0].x_from=float(entries[i][-3].get_text())
+      except ValueError:
+        function[0].x_from=None
+      try:
+        function[0].x_to=float(entries[i][-2].get_text())
+      except ValueError:
+        function[0].x_to=None
       function[0].fit_function_text=entries[i][-1].get_text()
     self.fit()
     self.simulate()
