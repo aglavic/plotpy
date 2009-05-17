@@ -554,7 +554,7 @@ class ApplicationMainWindow(gtk.Window):
       Change the active datafile for plotted sequences.
     '''
     index=int(action.get_name().split('-')[-1])
-    object=self.active_session.file_data.items()[index]
+    object=sorted(self.active_session.file_data.items())[index]
     self.active_session.change_active(object)
     self.measurement=self.active_session.active_file_data
     self.input_file_name=object[0]

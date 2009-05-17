@@ -36,12 +36,8 @@ def read_data(file_name):
   if not valid:
     print 'Not a valid datafile, skipped.'
     return 'NULL'
-  time, user, title, command, variables, parameters=header
-  output = read_data_lines(data_lines, columns[1:])
-  output.sample_name=title.replace('\n', '')
-  scan_type=replace_names(columns[1])
-  output.short_info= scan_type + '-scan started at (%2g %2g %2g)' % (variables['h'], variables['k'], variables['l'])
-  return [ output ]
+  output = read_data_lines(data_lines, columns[1:], header)
+  return output
   
 def read_header(lines):
   '''
@@ -114,16 +110,19 @@ def get_first_data_line(lines):
     if not string_or_float(line.split()):
       return len(lines)-i
 
-def read_data_lines(lines, columns):
+def read_data_lines(lines, columns, header):
   '''
     Function to creat a MeasurementData object from the columns of the file.
   '''
+  time, user, title, command, variables, parameters=header
   md_columns=[(replace_names(column), get_dimensions(column)) for column in columns]
   md_columns.append(('error', 'counts'))
   y_column=columns.index('CNTS')
   error_column=len(columns)
-  data_object=MeasurementData(md_columns, 
-                              [], 0, y_column, error_column)
+  if columns[0]=='PAL':
+    x_column=1
+  else:
+    x_column=0
   split=str.split
   def process_line(line):
     spl=split(line)
@@ -131,8 +130,29 @@ def read_data_lines(lines, columns):
     float_list.append(sqrt(float_list[y_column]))
     return float_list
   processed_lines=map(process_line, lines)
-  map(data_object.append, processed_lines)
-  return data_object
+  # is this a polarized measurement
+  if x_column==1:
+    error_column-=1
+    y_column-=1
+    number_of_channels=max([line[0] for line in processed_lines])
+    data_objects=[MeasurementData(md_columns[1:], 
+                                [], 0, y_column, error_column)
+                  for i in range(number_of_channels)]
+    for i in range(number_of_channels):
+      lines_i=[line[1:] for line in processed_lines if line[0] == i + 1]
+      map(data_objects[i].append, lines_i)
+      data_objects[i].sample_name=title.replace('\n', '')
+      scan_type=replace_names(columns[x_column])
+      data_objects[i].short_info= scan_type + '-scan started at (%2g %2g %2g) with pol. %i' % (variables['h'], variables['k'], variables['l'], i)
+    return data_objects
+  else:
+    data_object=MeasurementData(md_columns, 
+                                [], 0, y_column, error_column)
+    map(data_object.append, processed_lines)
+    data_object.sample_name=title.replace('\n', '')
+    scan_type=replace_names(columns[x_column])
+    data_object.short_info= scan_type + '-scan started at (%2g %2g %2g)' % (variables['h'], variables['k'], variables['l'])
+    return [ data_object ]
   
 def get_dimensions(item):
   '''

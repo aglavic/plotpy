@@ -279,16 +279,16 @@ class FitGaussian(FitFunction):
   
   # define class variables.
   name="Gaussian"
-  parameters=[1, 0, 1]
-  parameter_names=['A', 'x_0', 'sigma']
-  fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2)
-  fit_function_text='A*exp(-0.5*(x-x_0)/sigma)'
+  parameters=[1, 0, 1, 0]
+  parameter_names=['A', 'x_0', 'sigma', 'C']
+  fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2) + p[3]
+  fit_function_text='A*exp(-0.5*(x-x_0)/sigma)+C'
 
   def __init__(self, initial_parameters):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1, 0, 1]
+    self.parameters=[1, 0, 1, 0]
     FitFunction.__init__(self, initial_parameters)
 
 class FitLorentzian(FitFunction):
@@ -298,16 +298,16 @@ class FitLorentzian(FitFunction):
   
   # define class variables.
   name="Lorentzian"
-  parameters=[1, 0, 1]
-  parameter_names=['I', 'x_0', 'gamma' ]
-  fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2)
-  fit_function_text='A/(1 + ((x-x_0)/gamma)^2)'
+  parameters=[1, 0, 1, 0]
+  parameter_names=['I', 'x_0', 'gamma', 'C']
+  fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2) + p[3]
+  fit_function_text='A/(1 + ((x-x_0)/gamma)^2)+C'
 
   def __init__(self, initial_parameters):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1, 0, 1]
+    self.parameters=[1, 0, 1, 0]
     FitFunction.__init__(self, initial_parameters)
 
 class FitVoigt(FitFunction):
@@ -317,9 +317,9 @@ class FitVoigt(FitFunction):
   
   # define class variables.
   name="Voigt"
-  parameters=[1, 0, 1, 1]
-  parameter_names=['I', 'x_0', 'gamma', 'sigma']
-  fit_function_text='I * Re(w(z))/Re(w(z_0)); w=(x-x_0)/sigma/sqrt(2)'
+  parameters=[1, 0, 1, 1, 0]
+  parameter_names=['I', 'x_0', 'gamma', 'sigma', 'C']
+  fit_function_text='I*Re(w(z))/Re(w(z_0))+C; w=(x-x_0)/sigma/sqrt(2)'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
 
@@ -327,7 +327,7 @@ class FitVoigt(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1, 0, 1, 1]
+    self.parameters=[1, 0, 1, 1, 0]
     FitFunction.__init__(self, initial_parameters)
   
   def fit_function(self, p, x):
@@ -340,7 +340,7 @@ class FitVoigt(FitFunction):
     p=numpy.float64(numpy.array(p))
     z=(x - p[1] + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
     z0=(0. + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
-    value=p[0] * wofz(z).real / wofz(z0).real
+    value=p[0] * wofz(z).real / wofz(z0).real + p[4]
     return value
 
 
@@ -570,10 +570,13 @@ class FitSession:
     '''
       Create the widgets for one function and return a table of these.
       The entry widgets are returned in a list to be able to read them.
+      
+      @return A table widget for this function line and a list of entry widgets.
     '''
     table=gtk.Table(len(function.parameters)*3+3, 1, False)
     entries=[]
     for i, parameter in enumerate(function.parameters):
+      # Test,Toggle and Entry for every parameter of the funciton
       text=gtk.Label(function.parameter_names[i])
       toggle=gtk.CheckButton()
       toggle.set_active(i in function.refine_parameters)
@@ -584,11 +587,13 @@ class FitSession:
       table.attach(toggle, i*3, i*3+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
       table.attach(text, i*3+1, i*3+2, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
       table.attach(entries[i], i*3+2, i*3+3, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+    # Button to delete the function
     del_button=gtk.Button(label='DEL')
     table.attach(del_button, len(function.parameters)*3, len(function.parameters)*3+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
     del_button.connect('clicked', self.del_function_dialog, function, dialog, window)
     entries.append(gtk.Entry())
     entries[len(function.parameters)].set_width_chars(8)
+    # entries for the x range this function is fitted in
     if function.x_from is not None:
       entries[len(function.parameters)].set_text("%.6g" % function.x_from)
     else:
@@ -603,7 +608,6 @@ class FitSession:
       entries[len(function.parameters)+1].set_text("{to}")
     table.attach(entries[len(function.parameters)+1], len(function.parameters)*3+2, len(function.parameters)*3+3, 0, 1, 
                              gtk.EXPAND, gtk.EXPAND, 0, 0)
-    
     return table, entries
 
   def add_function_dialog(self, action, name, dialog, window):
