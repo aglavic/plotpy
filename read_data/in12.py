@@ -113,8 +113,11 @@ def get_first_data_line(lines):
 def read_data_lines(lines, columns, header):
   '''
     Function to creat a MeasurementData object from the columns of the file.
+    If the measurement is done using a .pol file the polarizations are splitted
+    into seqences corresponding to the polarizations.
   '''
-  time, user, title, command, variables, parameters=header
+  title=header[2]
+  variables=header[4]
   md_columns=[(replace_names(column), get_dimensions(column)) for column in columns]
   md_columns.append(('error', 'counts'))
   y_column=columns.index('CNTS')
@@ -137,13 +140,14 @@ def read_data_lines(lines, columns, header):
     number_of_channels=max([line[0] for line in processed_lines])
     data_objects=[MeasurementData(md_columns[1:], 
                                 [], 0, y_column, error_column)
-                  for i in range(number_of_channels)]
+                  for i in range(int(number_of_channels))]
     for i in range(number_of_channels):
       lines_i=[line[1:] for line in processed_lines if line[0] == i + 1]
       map(data_objects[i].append, lines_i)
       data_objects[i].sample_name=title.replace('\n', '')
       scan_type=replace_names(columns[x_column])
       data_objects[i].short_info= scan_type + '-scan started at (%2g %2g %2g) with pol. %i' % (variables['h'], variables['k'], variables['l'], i)
+      data_objects[i].info=create_info(header)
     return data_objects
   else:
     data_object=MeasurementData(md_columns, 
@@ -171,6 +175,59 @@ def replace_names(item):
     if replacement[0] == item.strip():
       return replacement[1]
   return item
+  
+def create_info(header):
+  time, user, title, command, variables, parameters=header
+  info_text=['']
+  info_text.append('data taken from IN12 file')
+  info_text.append('User: %s' % user.strip())
+  info_text.append('Time: %s' % time.strip())
+  info_text.append('Title: %s' % title.strip())
+  info_text.append('')
+  info_text.append('Scaned with command: %s' % command)
+  add_1=''
+  add_2=''
+  info_text.append('Variables:')
+  for i, var in enumerate(sorted(variables.items())):
+    if var[1] is not None:
+      value='\t% -11g' % var[1]
+      add_2+=value
+    else:
+      add_2+='\tN/A     '
+    add_1+=('\t %-15s' % var[0].strip()[:15])[:len(value)]
+    if (i % 8) == 7:
+      info_text.append(add_1)
+      info_text.append(add_2)
+      add_1=''
+      add_2=''
+      info_text.append('')
+  if (i % 8) != 7:
+    info_text.append(add_1)
+    info_text.append(add_2)
+    info_text.append('')
+  info_text.append('')
+  add_1=''
+  add_2=''
+  info_text.append('Parameters:')
+  for i, par in enumerate(sorted(parameters.items())):
+    if par[1] is not None:
+      value='\t% -11g' % par[1]
+      add_2+=value
+    else:
+      add_2+='\tN/A     '
+    add_1+=('\t %-15s' % par[0].strip()[:15])[:len(value)]
+    if (i % 8) == 7:
+      info_text.append(add_1)
+      info_text.append(add_2)
+      add_1=''
+      add_2=''
+      info_text.append('')
+  if (i % 8) != 7:
+    info_text.append(add_1)
+    info_text.append(add_2)
+    info_text.append('')
+  info_text.append('')
+  return '\n'.join(info_text)
 
 if __name__ == '__main__':    #code to execute if called from command-line for testing
   import sys
