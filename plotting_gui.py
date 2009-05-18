@@ -1278,7 +1278,7 @@ class ApplicationMainWindow(gtk.Window):
       return self.replot()
     if action.get_name()=='SaveGPL':
       #++++++++++++++++File selection dialog+++++++++++++++++++#
-      file_dialog=gtk.FileChooserDialog(title='Save Gnuplot and Datafiles...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+      file_dialog=gtk.FileChooserDialog(title='Save Gnuplot(.gp) and Datafiles(.out)...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       if self.active_multiplot:
         file_dialog.set_current_name(self.active_session.active_file_name + '_multi_')
@@ -1286,9 +1286,8 @@ class ApplicationMainWindow(gtk.Window):
         file_dialog.set_current_name(self.active_session.active_file_name + '_')
       # create the filters in the file selection dialog
       filter = gtk.FileFilter()
-      filter.set_name("Gnuplot (.gp)/Output (.out)")
+      filter.set_name("Gnuplot (.gp)")
       filter.add_pattern("*.gp")
-      filter.add_pattern("*.out")
       file_dialog.add_filter(filter)
       filter = gtk.FileFilter()
       filter.set_name("All files")
@@ -1298,7 +1297,7 @@ class ApplicationMainWindow(gtk.Window):
       if response != gtk.RESPONSE_OK:
         file_dialog.destroy()
         return None
-      common_file_prefix=file_dialog.get_filename()
+      common_file_prefix=file_dialog.get_filename().rsplit('.gp', 1)[0]
       file_dialog.destroy()
       if self.active_multiplot:
         for plotlist in self.multiplot:
