@@ -110,7 +110,7 @@ class ApplicationMainWindow(gtk.Window):
     self.read_config_file()
     # Create the toplevel window
     gtk.Window.__init__(self)
-    # TODO: check if we can savely remove this check and connect destroy directly
+    # Normaly this is not important, but with it the Window could be implemented as subwindow later.
     try:
         self.set_screen(parent.get_screen())
     except AttributeError:
@@ -217,7 +217,7 @@ class ApplicationMainWindow(gtk.Window):
     align = gtk.Alignment(0.5, 0.5, 1, 1)
     align.add(self.frame1)
     # image object for the plots
-    # TODO: faster resizeing with scrollable window perhaps?
+    # TODO: Reconsider image resizing.
     self.image = gtk.Image()    
     self.image_shown=False # variable to decrease changes in picture size
     sw = gtk.ScrolledWindow()
@@ -278,7 +278,6 @@ class ApplicationMainWindow(gtk.Window):
     align_table.attach(self.y_range_label,5,7,0,1,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.y_range_in,7,9,0,1,gtk.FILL,gtk.FILL,0,0)
     # checkboxes for log x and log y
-    # TODO: toggle logx,y according to active setting
     self.logx=gtk.CheckButton(label='log x', use_underline=True)
     self.logy=gtk.CheckButton(label='log y', use_underline=True)
     self.logx.set_active(self.measurement[self.index_mess].logx)
@@ -1103,6 +1102,13 @@ class ApplicationMainWindow(gtk.Window):
     '''
       A dialog to fit the data with a set of functions.
     '''
+    if not self.active_session.ALLOW_FIT:
+      fit_dialog=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
+                                   message_format="You don't have the system requirenments for Fitting.\nNumpy and Scipy must be installed.")
+      #fit_dialog.set_markup()
+      fit_dialog.run()
+      fit_dialog.destroy()
+      return None
     dataset=self.measurement[self.index_mess]
     if (dataset.fit_object==None):
       from fit_data import FitSession
@@ -1710,6 +1716,7 @@ class ApplicationMainWindow(gtk.Window):
         None,                                   # tooltip
         self.change ),)
   # Menus allways present
+  # TODO: Add unit transformation to GUI.
     output='''<ui>
     <menubar name='MenuBar'>
       <menu action='FileMenu'>
@@ -1917,7 +1924,7 @@ class ApplicationMainWindow(gtk.Window):
         "Add/Remove all sequences to/from multi-plot list",                                    # tooltip
         self.add_multiplot),
       ( "FitData", None,                    # name, stock id
-        "Fit data...", None,                     # label, accelerator
+        "_Fit data...", "<control>F",                     # label, accelerator
         "Dialog for fitting of a function to the active dataset.",                                    # tooltip
         self.fit_dialog),
       ( "MultiPlot", gtk.STOCK_YES,                    # name, stock id

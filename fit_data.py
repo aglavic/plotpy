@@ -429,7 +429,7 @@ class FitSession:
 
   def simulate(self):
     '''
-      Create MeasurementData objects for every fitfunction.
+      Create MeasurementData objects for every FitFunction.
     '''
     self.result_data=[]
     dimensions=self.data.dimensions()
@@ -635,7 +635,6 @@ class FitSession:
     '''
       Trigger the fit, simulation and replot functions.
     '''
-    # TODO: Go back in history after fit.
     for i, function in enumerate(self.functions):
       for j,  entry in enumerate(entries[i][:-3]):
         function[0].parameters[j]=float(entry.get_text().replace(',', '.'))

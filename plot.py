@@ -35,7 +35,7 @@ import sys
 import plotting_gui
 # specific measurement classes
 # parent class
-from plot_generic_data import GenericSession
+from sessions.generic import GenericSession
 
 #----------------------- importing modules --------------------------
 
@@ -57,11 +57,11 @@ __status__ = "Production"
   the session.
 '''
 known_measurement_types={
-                         'squid': ('plot_SQUID_data', 'SquidSession', ['dat', 'raw', 'DAT', 'RAW']), 
-                         '4circle': ('plot_4circle_data', 'CircleSession', ['spec']), 
-                         'refl': ('plot_reflectometer_data', 'ReflectometerSession', ['UXD', 'uxd']), 
-                         'treff': ('plot_treff_data', 'TreffSession', ['___']), 
-                         'in12': ('plot_in12_data', 'IN12Session', ['___']), 
+                         'squid': ('squid', 'SquidSession', ['dat', 'raw', 'DAT', 'RAW']), 
+                         '4circle': ('circle', 'CircleSession', ['spec']), 
+                         'refl': ('reflectometer', 'ReflectometerSession', ['UXD', 'uxd']), 
+                         'treff': ('treff', 'TreffSession', ['___']), 
+                         'in12': ('in12', 'IN12Session', ['___']), 
                          }
 
   
@@ -115,47 +115,49 @@ def import_session_from_name(arguments, measurement_type):
   '''
     Import a session object from a string.
   '''
-  active_session_class = getattr(__import__(measurement_type[0], globals(), locals(), 
+  active_session_class = getattr(__import__('sessions.'+measurement_type[0], globals(), locals(), 
                                       [measurement_type[1]], -1), measurement_type[1])
   return active_session_class(arguments)
 
-# initialize session and read data files
+if __name__ == '__main__':    #code to execute if called from command-line for testing
 
-if (len(sys.argv) == 1):
-  # if no input parameter given, print the short help string
-  print GenericSession.SHORT_HELP
-  exit()
-elif sys.argv[1] in known_measurement_types:
-  # type is found in dictionary, using specific session
-  measurement_type=known_measurement_types[sys.argv[1]]
-  active_session=import_session_from_name(sys.argv[2:], measurement_type)
-else:
-  found_sessiontype=False
-  suffixes=map(lambda arg: arg.split('.')[-1], sys.argv[1:])
-  for name, measurement_type in known_measurement_types.items():
-    if found_sessiontype:
-      break
-    for suffix in measurement_type[2]:
-      if suffix in suffixes:
-        print "Setting session type to " + name + '.'
-        active_session=import_session_from_name(sys.argv[1:], measurement_type)
-        found_sessiontype=True
+  # initialize session and read data files
+
+  if (len(sys.argv) == 1):
+    # if no input parameter given, print the short help string
+    print GenericSession.SHORT_HELP
+    exit()
+  elif sys.argv[1] in known_measurement_types:
+    # type is found in dictionary, using specific session
+    measurement_type=known_measurement_types[sys.argv[1]]
+    active_session=import_session_from_name(sys.argv[2:], measurement_type)
+  else:
+    found_sessiontype=False
+    suffixes=map(lambda arg: arg.split('.')[-1], sys.argv[1:])
+    for name, measurement_type in known_measurement_types.items():
+      if found_sessiontype:
         break
-  if not found_sessiontype:
-    # type is not found, using generic session
-    active_session=GenericSession(sys.argv[1:])
+      for suffix in measurement_type[2]:
+        if suffix in suffixes:
+          print "Setting session type to " + name + '.'
+          active_session=import_session_from_name(sys.argv[1:], measurement_type)
+          found_sessiontype=True
+          break
+    if not found_sessiontype:
+      # type is not found, using generic session
+      active_session=GenericSession(sys.argv[1:])
 
-if active_session.use_gui: # start a new gui session
-  import gtk
-  plotting_session=plotting_gui.ApplicationMainWindow(active_session)
-  # redirect script output to session objects
-  active_session.stdout=RedirectOutput(plotting_session)
-  active_session.stderr=RedirectOutput(plotting_session)
-  sys.stdout=active_session.stdout
-  sys.stderr=active_session.stderr  
-  gtk.main() # start GTK engine
-else: # in command line mode, just plot the selected data.
-  active_session.plot_all()
+  if active_session.use_gui: # start a new gui session
+    import gtk
+    plotting_session=plotting_gui.ApplicationMainWindow(active_session)
+    # redirect script output to session objects
+    active_session.stdout=RedirectOutput(plotting_session)
+    active_session.stderr=RedirectOutput(plotting_session)
+    sys.stdout=active_session.stdout
+    sys.stderr=active_session.stderr  
+    gtk.main() # start GTK engine
+  else: # in command line mode, just plot the selected data.
+    active_session.plot_all()
 
-# delete temporal files and folder
-active_session.os_cleanup()
+  # delete temporal files and folder
+  active_session.os_cleanup()

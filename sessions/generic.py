@@ -212,7 +212,7 @@ Data columns and unit transformations are defined in config.squid.py.
       self.ALLOW_FIT=True
     except ImportError:
       print "Numpy and/or Scipy is not installed, fitting will not be possible."
-      self.ALLOW_FIT=Fals
+      self.ALLOW_FIT=False
 
   def read_arguments(self, arguments):
     '''
@@ -305,7 +305,7 @@ Data columns and unit transformations are defined in config.squid.py.
       OSX.
     '''
     self.OWN_PID=str(os.getpid())
-    SCRIPT_PATH=os.path.dirname(os.path.realpath(__file__))
+    SCRIPT_PATH=os.path.dirname(os.path.realpath(__file__).replace('sessions', ''))
     if (os.getenv("TEMP")==None):
     # Linux case
       self.OPERATING_SYSTEM='linux'
@@ -408,7 +408,6 @@ Data columns and unit transformations are defined in config.squid.py.
     '''
       Make unit transformations of a list of datasets.
     '''
-    # TODO: Add unit transformation to GUI.
     for dataset in datasets:
       dataset.unit_trans(self.TRANSFORMATIONS)
 

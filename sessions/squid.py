@@ -21,7 +21,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 # import GenericSession, which is the parent class for the SquidSession
-from plot_generic_data import GenericSession
+from generic import GenericSession
 # importing preferences and data readout
 import read_data.squid
 import config.squid

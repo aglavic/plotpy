@@ -3,6 +3,15 @@
   Configurations for the IN12 file import.
 '''
 
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.6"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Development"
+
 column_dimensions=(
                    (('A1', 'A2', 'A3', 'A4', 'A5', 'A6'), 'grad'), 
                    (('I1', 'I2', 'I3', 'I4', 'I5', 'I6'), 'A'), 

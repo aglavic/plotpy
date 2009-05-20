@@ -20,7 +20,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 # import GenericSession, which is the parent class for the squid_session
-from plot_generic_data import GenericSession
+from generic import GenericSession
 # importing preferences and data readout
 import read_data.circle
 import config.circle
@@ -86,14 +86,12 @@ class CircleSession(GenericSession):
     return read_data.circle.read_data(file_name,self.COLUMNS_MAPPING,self.MEASUREMENT_TYPES)
 
 
-
   def add_file(self, filename, append=True):
     '''
       Add the data of a new file to the session.
       In addition to GenericSession short info is set.
     '''
     datasets=GenericSession.add_file(self, filename, append)
-    # faster lookup
     for dataset in datasets:
       dataset.logx=self.logx
       dataset.logy=self.logy

@@ -14,7 +14,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 # import GenericSession, which is the parent class for the squid_session
-from plot_generic_data import GenericSession
+from generic import GenericSession
 # importing data readout
 import read_data.treff
 

@@ -3,6 +3,9 @@
  Variables for gnuplot options to be used by plot commands.
 '''
 
+from sys import prefix
+from os.path import join as join_path
+
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
@@ -50,9 +53,9 @@ def remove_from_name(name):
 ENCODING='iso_8859_1'
 # set the terminal options for the gnuplot output (postscript could need other labels)
 # used is determined by file name
-set_output_terminal_png='png enhanced size 1024,768 font "[script-path]fonts/Arial.ttf" 16' #transparent
+set_output_terminal_png='png enhanced size 1024,768 font "'+join_path(prefix, '[script-path]', 'config', 'fonts',  'Arial.ttf')+'" 16' #transparent
 set_output_terminal_ps='postscript landscape enhanced colour "Arial" 24 solid lw 2'
-set_output_terminal_png_GUI='png enhanced size [width],[height] font "[script-path]fonts/Arial.ttf" 16' #transparent
+set_output_terminal_png_GUI='png enhanced size [width],[height] font "'+join_path('[script-path]', 'config', 'fonts',  'Arial.ttf')+'" 16' #transparent
 
 # set output file name, the postfix has to be chosen consistant to the 'set term' statement
 output_file_name='[name]_[add_info][nr].png'

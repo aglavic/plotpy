@@ -21,11 +21,12 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
-def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES,measurement_data=[]): 
+def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
   '''
     Read the datafile.
   '''
   if os.path.exists(input_file):
+    measurement_data=[]
     input_file_lines=open(input_file,'r').readlines()
     first=True
     while len(input_file_lines)>0:

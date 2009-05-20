@@ -28,7 +28,7 @@ import subprocess
 import gtk
 import time
 # import GenericSession, which is the parent class for the squid_session
-from plot_generic_data import GenericSession
+from generic import GenericSession
 # importing preferences and data readout
 import read_data.reflectometer
 import config.reflectometer
@@ -49,8 +49,7 @@ FORTRAN_COMPILER='gfortran'
 # i686 / pentium4 / athlon / k8 / amdfam10 (athlon64) / nocona (p4-64bit)
 FORTRAN_COMPILER_OPTIONS='-O3'
 FORTRAN_COMPILER_MARCH='-march=nocona'#None
-FIT_PROGRAM_CODE_FILE='fit/fit.f90'
-FIT_PROGRAM_EXECUTIBLE='fit/fit.o'
+FIT_PROGRAM_CODE_FILE=os.path.join('config', 'fit', 'fit.f90')
 
 
 class ReflectometerSession(GenericSession):
@@ -933,10 +932,10 @@ class ReflectometerSession(GenericSession):
       code is replaced by the real number of layers. It does not wait for the 
       program to finish, it only startes the sub process, which is returned.
     '''
-    code_file=self.SCRIPT_PATH + FIT_PROGRAM_CODE_FILE
-    exe=self.SCRIPT_PATH + FIT_PROGRAM_EXECUTIBLE
+    code_file=os.path.join(self.SCRIPT_PATH, FIT_PROGRAM_CODE_FILE)
+    exe=os.path.join(os.path.expanduser('~') , 'fit.o')
     try:
-      code_tmp=open(code_file.split('.f90')[0] + '_tmp.f90', 'r').read()
+      code_tmp=open(os.path.join(os.path.expanduser('~'), 'fit_tmp.f90'), 'r').read()
     except IOError:
       code_tmp=' '
     # has the program been changed or does it not exist
@@ -948,11 +947,11 @@ class ReflectometerSession(GenericSession):
       code_tmp=code.replace('maxint=25', 'maxint='+str(self.fit_object.number_of_layers()+1))
       code_tmp=code_tmp.replace('.and.alamda.le.1.0d10', '.and.alamda.le.1.0d'+str(self.max_alambda))
       code_tmp=code_tmp.replace('.or.alamda.gt.1.0d10', '.or.alamda.gt.1.0d'+str(self.max_alambda))
-      tmp_file=open(code_file.split('.f90')[0] + '_tmp.f90', 'w')
+      tmp_file=open(os.path.join(os.path.expanduser('~'), 'fit_tmp.f90'), 'w')
       tmp_file.write(code_tmp)
       tmp_file.close()
       print 'Compiling fit program!'
-      call_params=[FORTRAN_COMPILER, code_file.split('.f90')[0] + '_tmp.f90', '-o', exe]
+      call_params=[FORTRAN_COMPILER, os.path.join(os.path.expanduser('~'), 'fit_tmp.f90'), '-o', exe]
       if  FORTRAN_COMPILER_OPTIONS!=None:
         call_params.append(FORTRAN_COMPILER_OPTIONS)
       if  FORTRAN_COMPILER_MARCH!=None:

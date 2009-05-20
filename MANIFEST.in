@@ -1,0 +1,4 @@
+recursive-include doc *.html
+include config/fit/fit.f90
+recursive-include config/fonts *.ttf
+recursive-include config *.dat squid_calibration
