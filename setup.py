@@ -19,8 +19,10 @@ __py_modules__=['plot', 'plotting_gui', 'measurement_data_structure', 'measureme
 __packages__=['config', 'read_data', 'sessions']
 
 if 'sdist' in argv:
-  versions_fit=True
   # Test if every file has the right version for distributing.
+  # This is only to remind the developer to check all files for every new version.
+  # If the versions do not match a beta is added to the version name of the distribution.
+  versions_fit=True
   for module in __py_modules__:
     mod=__import__(module, globals(), locals(), ['__version__'], -1)
     try:
@@ -44,8 +46,12 @@ if 'sdist' in argv:
           print "File %s/%s.py has no version number." % (package, module)
           versions_fit=False
   if not versions_fit:
-    answer=raw_input('Do you still want to distribute? (y/n): ')
-    if answer!='y':
+    answer=raw_input('Not all file versions match the distribution version.\nDo you still want to distribute as alpha/beta/normal/cancel? (a/b/y/any): ')
+    if answer=='a':
+      __version__=__version__ + 'alpha'
+    elif answer=='b':
+      __version__=__version__ + 'beta'
+    elif answer!='y':
       exit()
 
 __py_modules__.append('configobj')
@@ -86,9 +92,9 @@ if 'install' in argv:
     if answer!='y':
       exit()
 
-setup(name='Plot',
+setup(name='Plot-script',
       version=__version__,
-      description='Program to plot measured data with Gnuplot.',
+      description='Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities.',
       author=__author__,
       author_email=__email__,
       url='http://www.fz-juelich.de',

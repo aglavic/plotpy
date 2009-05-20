@@ -10,9 +10,10 @@ import numpy
 from scipy.optimize import leastsq
 from scipy.special import wofz
 from math import pi, sqrt
-from measurement_data_structure import MeasurementData
 # for dialog window import gtk
 import gtk
+# import own modules
+from measurement_data_structure import MeasurementData
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
