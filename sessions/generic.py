@@ -324,7 +324,10 @@ Data columns and unit transformations are defined in config.squid.py.
         return string.replace('\\','\\\\').replace('\\\\\n','\\\n')
       self.replace_systemdependent=replace_systemdependent
     self.TEMP_DIR=self.TEMP_DIR+'plottingscript-'+self.OWN_PID+os.sep
-    os.mkdir(self.TEMP_DIR) # create the temporal directory
+    try:
+      os.mkdir(self.TEMP_DIR) # create the temporal directory
+    except WindowsError:
+      pass
 
   def os_cleanup(self):
     '''

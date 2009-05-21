@@ -33,6 +33,7 @@
 import os
 import gobject
 import gtk
+from time import sleep
 # own modules
 # Module to save and load variables from/to config files
 from configobj import ConfigObj
@@ -1584,6 +1585,14 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Resize and show temporary gnuplot image.
     '''
+      # in windows we have to wait for the picture to be written to disk
+    if self.active_session.OPERATING_SYSTEM=='windows':
+      for i in range(20):
+        if os.path.exists(self.active_session.TEMP_DIR + 'plot_temp.png'):
+          sleep(0.1)
+          break
+        else:
+          sleep(0.2)
     # TODO: errorhandling
     self.image.set_from_file(self.active_session.TEMP_DIR + 'plot_temp.png')
     #self.image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file(\
@@ -1744,12 +1753,8 @@ class ApplicationMainWindow(gtk.Window):
         <separator name='static4'/>
         <menuitem action='FitData'/>
         <separator name='static5'/>
-        '''
-    if (self.active_session.ALLOW_FIT):
-      output+='''
         <menuitem action='FilterData'/>
-        '''
-    output+='''<separator name='static6'/>
+        <separator name='static6'/>
         <menuitem action='ShowPlotparams'/>
       </menu>
       <separator name='static6'/>'''
