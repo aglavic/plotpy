@@ -605,6 +605,8 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
     self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
     self.plot_page_entry.set_max_length(len(self.measurement[-1].number))
+    for window in self.open_windows:
+      window.destroy()    
     self.replot()
     self.rebuild_menus()
     # TODO: do we need to return the file name?
@@ -1124,9 +1126,12 @@ class ApplicationMainWindow(gtk.Window):
     # POLICY_AUTOMATIC will automatically decide whether you need
     # scrollbars.
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    sw.add_with_viewport(fit_session.get_dialog(self, fit_dialog)) # add fit dialog
+    align, buttons=fit_session.get_dialog(self, fit_dialog)
+    sw.add_with_viewport(align) # add fit dialog
     fit_dialog.vbox.add(sw)
-    response=fit_dialog.show_all()
+    for i, button in enumerate(buttons):
+      fit_dialog.add_action_widget(button, i)
+    fit_dialog.show_all()
     self.open_windows.append(fit_dialog)
 
   def show_add_info(self,action):

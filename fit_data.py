@@ -34,6 +34,7 @@ class FitFunction:
   parameters=[]
   parameter_names=[]
   parameters_history=None
+  parameters_covariance=None
   fit_function=lambda self, p, x: 0.
   fit_function_text='f(x)'
   x_from=None
@@ -90,6 +91,7 @@ class FitFunction:
     # only refine inside the selected region
     x=[]
     y=[]
+    dy=[]
     x_from=self.x_from
     x_to=self.x_to
     for i,x_i in enumerate(dataset_x):
@@ -97,7 +99,13 @@ class FitFunction:
          ((x_to is None) or (x_i <= x_to)):
         x.append(x_i)
         y.append(dataset_y[i])
-    new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=(y, x), full_output=1)
+        if not dataset_yerror is None:
+          dy.append(dataset_yerror[i])
+    if dataset_yerror is None:
+      fit_args=(y, x)
+    else:
+      fit_args=(y, x, dy)
+    new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=fit_args, full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     if ier in [1, 2, 3, 4]:
       if len(parameters)==1:
@@ -111,7 +119,15 @@ class FitFunction:
           else:
             new_function_parameters.append(self.parameters[i])      
       self.set_parameters(new_function_parameters)
-    return mesg
+    cov_out=[]
+    for i in range(len(self.parameters)):
+      cov_out.append([])
+      for j in range(len(self.parameters)):
+        if (i in self.refine_parameters) and (j in self.refine_parameters):
+          cov_out[i].append(cov_x[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
+        else:
+          cov_out[i].append(0.)
+    return mesg, cov_out
 
   def set_parameters(self, new_params):
     '''
@@ -372,6 +388,8 @@ class FitSession:
     '''
     self.functions=[] # a list of sequences (FitFunction, fit, plot) to be used
     self.data=dataset
+    self.show_covariance=False
+
 
   def add_function(self, function_name):
     '''
@@ -424,9 +442,14 @@ class FitSession:
       data_x=[d[0] for d in data]
       data_y=[d[1] for d in data]
       data_yerror=None
+    covariance_matices=[]
     for function in self.functions:
       if function[1]:
-        function[0].refine(data_x, data_y, data_yerror)
+        mesg, cov_out=function[0].refine(data_x, data_y, data_yerror)
+        covariance_matices.append(cov_out)
+      else:
+        covariance_matices.append([[None]])
+    return covariance_matices
 
   def simulate(self):
     '''
@@ -537,35 +560,40 @@ class FitSession:
     new_function=gtk.combo_box_new_text()
     add_button=gtk.Button(label='Add Function')
     map(new_function.append_text, self.get_functions())
-    align_table.attach(add_button,
-                # X direction #          # Y direction
-                0, 1,                      len(self.functions)*2+1, len(self.functions)*2+2,
-                gtk.EXPAND,     gtk.EXPAND,
-                0,                         0);
+#    align_table.attach(add_button,
+#                # X direction #          # Y direction
+#                0, 1,                      len(self.functions)*2+1, len(self.functions)*2+2,
+#                gtk.EXPAND,     gtk.EXPAND,
+#                0,                         0);
     sum_button=gtk.Button(label='Combine')
-    align_table.attach(sum_button,
-                # X direction #          # Y direction
-                1, 2,                       len(self.functions)*2+1, len(self.functions)*2+2,
-                gtk.EXPAND,     gtk.EXPAND,
-                0,                         0);
+#    align_table.attach(sum_button,
+#                # X direction #          # Y direction
+#                1, 2,                       len(self.functions)*2+1, len(self.functions)*2+2,
+#                gtk.EXPAND,     gtk.EXPAND,
+#                0,                         0);
     fit_button=gtk.Button(label='Fit and Replot')
-    align_table.attach(fit_button,
-                # X direction #          # Y direction
-                2, 4,                      len(self.functions)*2, len(self.functions)*2+2,
-                gtk.EXPAND,     gtk.EXPAND,
-                0,                         0);
-    align_table.attach(new_function,
-                # X direction #          # Y direction
-                0, 2,                      len(self.functions)*2, len(self.functions)*2+1,
-                gtk.EXPAND,     gtk.EXPAND,
-                0,                         0);
+#    align_table.attach(fit_button,
+#                # X direction #          # Y direction
+#                2, 4,                      len(self.functions)*2, len(self.functions)*2+2,
+#                gtk.EXPAND,     gtk.EXPAND,
+#                0,                         0);
+#    align_table.attach(new_function,
+#                # X direction #          # Y direction
+#                0, 2,                      len(self.functions)*2, len(self.functions)*2+1,
+#                gtk.EXPAND,     gtk.EXPAND,
+#                0,                         0);
     # connect the window signals to the handling methods
     add_button.connect('clicked', self.add_function_dialog, new_function, dialog, window)
     sum_button.connect('clicked', self.combine_dialog, dialog, window)
     fit_button.connect('clicked', self.fit_from_dialog, entries, dialog, window)
     align=gtk.Alignment(0.5, 0.5, 0, 0) # the table is centered in the dialog window
     align.add(align_table)
-    return align
+    def toggle_show_covariance(action, self):
+      self.show_covariance=not self.show_covariance
+    toggle_covariance=gtk.CheckButton(label='show errors')
+    toggle_covariance.set_active(self.show_covariance)
+    toggle_covariance.connect('toggled', toggle_show_covariance, self)
+    return align, [toggle_covariance, new_function, add_button, sum_button, fit_button]
   
   def function_line(self, function, dialog, window):
     '''
@@ -648,12 +676,23 @@ class FitSession:
       except ValueError:
         function[0].x_to=None
       function[0].fit_function_text=entries[i][-1].get_text()
-    self.fit()
+    covariance_matices=self.fit()
     self.simulate()
     size=dialog.get_size()
     position=dialog.get_position()
     dialog.destroy()
     window.replot()
+    if self.show_covariance:
+      text='Esitmated errors from covariance matrices:'
+      for i, function in enumerate(self.functions):
+        if function[1]:
+          text+='\n%s:\n' % function[0].name
+          for j, pj in enumerate(function[0].parameter_names):
+            text+='\n%s = %g +/- %g' % (pj, function[0].parameters[j], sqrt(covariance_matices[i][j][j]))
+      info_dialog=gtk.MessageDialog(parent=None, flags=0, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, message_format=text)
+      info_dialog.run()
+      
+      info_dialog.destroy()
     window.fit_dialog(None, size, position)
 
   def combine_dialog(self, action, dialog, window):
