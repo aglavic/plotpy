@@ -1690,23 +1690,23 @@ class ApplicationMainWindow(gtk.Window):
       @return XML string for all menus and toolbar.
     '''
     self.added_items=(( "xMenu", None,                             # name, stock id
-        "x-axes", None,                    # label, accelerator
+        "_x-axes", None,                    # label, accelerator
         "xMenu",                                   # tooltip
         None ),
     ( "yMenu", None,                             # name, stock id
-        "y-axes", None,                    # label, accelerator
+        "_y-axes", None,                    # label, accelerator
         "yMenu",                                   # tooltip
         None ),
     ( "zMenu", None,                             # name, stock id
-        "z-axes", None,                    # label, accelerator
+        "_z-axes", None,                    # label, accelerator
         "zMenu",                                   # tooltip
         None ),
     ( "dyMenu", None,                             # name, stock id
-        "y-error", None,                    # label, accelerator
+        "y-_error", None,                    # label, accelerator
         "dyMenu",                                   # tooltip
         None ),
     ( "Profiles", None,                             # name, stock id
-        "Profiles", None,                    # label, accelerator
+        "_Profiles", None,                    # label, accelerator
         "Load or save a plot profile",                                   # tooltip
         None ),
     ( "SaveProfile", None,                             # name, stock id
@@ -1802,7 +1802,7 @@ class ApplicationMainWindow(gtk.Window):
     for name in sorted(self.profiles.items()):
       output+="<menuitem action='"+\
         name[0]+"' position='top'/>\n"
-      self.added_items+=((name[0], None,name[0],None,None,self.load_profile),)
+      self.added_items+=((name[0], None,'_'+name[0],None,None,self.load_profile),)
     output+=''' <separator name='static8'/>
         <menuitem action='SaveProfile' position="bottom"/>
         <menuitem action='DeleteProfile' position="bottom"/>
@@ -1854,9 +1854,9 @@ class ApplicationMainWindow(gtk.Window):
     '''
     entries = (
       ( "FileMenu", None, "_File" ),               # name, stock id, label
-      ( "ActionMenu", None, "_Action" ),               # name, stock id, label
+      ( "ActionMenu", None, "A_ction" ),               # name, stock id, label
       ( "HelpMenu", None, "_Help" ),               # name, stock id, label
-      ( "ToolBar", None, "_Toolbar" ),               # name, stock id, label
+      ( "ToolBar", None, "Toolbar" ),               # name, stock id, label
       ( "OpenDatafile", gtk.STOCK_OPEN,                    # name, stock id
         "_Open File","<control>O",                      # label, accelerator
         "Open a new datafile",                       # tooltip
@@ -1870,7 +1870,7 @@ class ApplicationMainWindow(gtk.Window):
         "Export current Plot",                       # tooltip
         self.export_plot ),
       ( "ExportAs", gtk.STOCK_SAVE,                  # name, stock id
-        "Export As...", None,                       # label, accelerator
+        "E_xport As...", '<alt>E',                       # label, accelerator
         "Export Plot under other name",                          # tooltip
         self.export_plot ),
       ( "Print", gtk.STOCK_PRINT,                  # name, stock id
@@ -1918,7 +1918,7 @@ class ApplicationMainWindow(gtk.Window):
         "Apply current plot settings to all sequences",                                    # tooltip
         self.apply_to_all),
       ( "ExportAll", gtk.STOCK_EXECUTE,                    # name, stock id
-        "Exp. All", None,                     # label, accelerator
+        "Exp. _All", None,                     # label, accelerator
         "Export all sequences",                                    # tooltip
         self.export_plot),
       ( "ErrorBars", gtk.STOCK_ADD,                    # name, stock id
@@ -1926,7 +1926,7 @@ class ApplicationMainWindow(gtk.Window):
         "Toggle errorbars",                                    # tooltip
         self.toggle_error_bars),
       ( "AddMulti", gtk.STOCK_JUMP_TO,                    # name, stock id
-        "Add", None,                     # label, accelerator
+        "_Add", '<alt>a',                     # label, accelerator
         "Add/Remove plot to/from multi-plot list",                                    # tooltip
         self.add_multiplot),
       ( "AddAll", gtk.STOCK_JUMP_TO,                    # name, stock id
