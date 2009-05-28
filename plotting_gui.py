@@ -482,12 +482,6 @@ class ApplicationMainWindow(gtk.Window):
       self.index_mess=len(self.measurement)-1
     if self.index_mess<0:
       self.index_mess=0
-    # change label and plot other picture
-    self.show_add_info(None)
-    # set log checkbox according to active measurement
-    self.logx.set_active(self.measurement[self.index_mess].logx)
-    self.logy.set_active(self.measurement[self.index_mess].logy)
-    self.logz.set_active(self.measurement[self.index_mess].logz)
     # close all open dialogs
     for window in self.open_windows:
       window.destroy()
@@ -1057,7 +1051,7 @@ class ApplicationMainWindow(gtk.Window):
           float(filter_widgets[2].get_text()),\
           filter_widgets[3].get_active())\
           )
-      self.file_actions.activate_action('chang filter', new_filters)
+      self.file_actions.activate_action('change filter', new_filters)
       #data.filters=new_filters
     # close dialog and replot
     filter_dialog.destroy()
@@ -1237,112 +1231,27 @@ class ApplicationMainWindow(gtk.Window):
     cs_dialog.add_button('Cancel', 0)
     result=cs_dialog.run()
     if result==1:
-      try:
-        cs_object=self.create_cross_section(float(line_x.get_text()), 
-                                            float(line_x0.get_text()), 
-                                            float(line_y.get_text()), 
-                                            float(line_y0.get_text()), 
-                                            float(line_width.get_text()), 
-                                            int(binning.get_text())
-                                                  )
-        if cs_object is None:
-          cs_dialog.destroy()
-          message=gtk.MessageDialog(parent=self, 
-                                    flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
-                                    type=gtk.MESSAGE_INFO, 
-                                    buttons=gtk.BUTTONS_CLOSE, 
-                                    message_format='No point in selected area.')
-          message.run()
-          message.destroy()
-          return False
-        cs_object.number=data.number
-        cs_object.short_info='%s - Cross-Section through (%g,%g)+x*(%g,%g)' % (
-                                            data.short_info, 
-                                            float(line_x0.get_text()), 
-                                            float(line_y0.get_text()), 
-                                            float(line_x.get_text()), 
-                                            float(line_y.get_text()))
-        cs_object.sample_name=data.sample_name
-        cs_object.info=data.info
-        self.measurement.insert(self.index_mess+1, cs_object)
-        self.index_mess+=1
-        self.rebuild_menus()
-        self.replot()
-      except ValueError:
-        pass
+      gotit=self.file_actions.activate_action('cross-section', 
+                                        float(line_x.get_text()), 
+                                        float(line_x0.get_text()), 
+                                        float(line_y.get_text()), 
+                                        float(line_y0.get_text()), 
+                                        float(line_width.get_text()), 
+                                        int(binning.get_text())
+                                        )
     cs_dialog.destroy()
-    return True
-
-  def create_cross_section(self, x, x_0, y, y_0, w, binning):
-    '''
-      Create a cross-section of 3d-data along a arbitrary line.
-    '''
-    from math import sqrt
-    data=self.measurement[self.index_mess].list_err()
-    dims=self.measurement[self.index_mess].dimensions()
-    units=self.measurement[self.index_mess].units()
-    cols=(self.measurement[self.index_mess].xdata, 
-          self.measurement[self.index_mess].ydata, 
-          self.measurement[self.index_mess].zdata, 
-          self.measurement[self.index_mess].yerror)
-    new_cols=[(dims[col], units[col]) for col in cols]
-    # Einheitsvector of line
-    vec_e=(x/sqrt(x**2+y**2), y/sqrt(x**2+y**2))
-    # Vector normal to the line
-    vec_n=(vec_e[1], -1*vec_e[0])
-    # starting point of cross-section line
-    origin=(x_0, y_0)
-    first_dim=''
-    first_unit=''
-    if x!=0:
-      first_dim+='%g %s' % (x, new_cols[0][0])
-      if y==0:
-        first_unit=new_cols[0][1]
-    if x!=0 and y!=0:
-      if y>0:
-        first_dim+=' + '
-      if new_cols[0][1]==new_cols[1][1]:
-        first_unit=new_cols[0][1]
-      else:
-        first_unit="Unknown"
-    if y!=0:
-      first_dim+='%g %s' % (y, new_cols[1][0])
-      if x==0:
-        first_unit=new_cols[1][1]
-    new_cols=[(first_dim, first_unit)]+new_cols
-    output=MeasurementData(new_cols, 
-                           [], 
-                           0, 
-                           3, 
-                           4,
-                           )
-    def point_filter(point):
-      '''
-        Test if point lies in the region expressed by origin, vec_n and w (width).
-        
-        @return Boolean
-      '''
-      v1=(point[0]-origin[0], point[1]-origin[1])
-      dist=abs(v1[0]*vec_n[0] + v1[1]*vec_n[1])
-      return (dist<=w)
-    data2=filter(point_filter, data)
-    if len(data2)==0:
-      return None
-    len_vec=sqrt(x**2+y**2)
-    data3=[((vec_e[0]*dat[0]+vec_e[1]*dat[1])*len_vec, dat[0], dat[1], dat[2], dat[3]) for dat in data2]
-    data3.sort()
-    if binning > 1:
-      dat_tmp=[]
-      for i in range(len(data3)/binning):
-        dout=[]
-        din=data3[i*binning:(i+1)*binning]
-        for j in range(4):
-          dout.append(sum([d[j] for d in din])/binning)
-        dout.append(sqrt(sum([d[4]**2 for d in din]))/binning)
-        dat_tmp.append(dout)
-      data3=dat_tmp
-    map(output.append, data3)
-    return output
+    if not gotit:
+      message=gtk.MessageDialog(parent=self, 
+                                flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                                type=gtk.MESSAGE_INFO, 
+                                buttons=gtk.BUTTONS_CLOSE, 
+                                message_format='No point in selected area.')
+      message.run()
+      message.destroy()
+    else:
+      self.rebuild_menus()
+      self.replot()      
+    return gotit
 
   def fit_dialog(self,action, size=(600, 400), position=None):
     '''
@@ -1382,14 +1291,14 @@ class ApplicationMainWindow(gtk.Window):
       Show or hide advanced options widgets.
     '''
     if self.check_add.get_active():
-      if action==None: # only resize picture if the length of additional settings changed
-        if (self.logz.get_property('visible') & (self.measurement[self.index_mess].zdata<0))\
-        |((not self.logz.get_property('visible')) & (self.measurement[self.index_mess].zdata>=0)):
-          self.image.hide()
-          self.image_shown=False
-      else:
-        self.image.hide()
-        self.image_shown=False
+#      if action==None: # only resize picture if the length of additional settings changed
+#        if (self.logz.get_property('visible') & (self.measurement[self.index_mess].zdata<0))\
+#        |((not self.logz.get_property('visible')) & (self.measurement[self.index_mess].zdata>=0)):
+#          self.image.hide()
+#          self.image_shown=False
+#      else:
+#        self.image.hide()
+#        self.image_shown=False
       self.x_range_in.show()
       self.x_range_label.show()
       self.y_range_in.show()
@@ -1750,6 +1659,13 @@ class ApplicationMainWindow(gtk.Window):
       #   error_dialog.show()
       #elif response == gtk.PRINT_OPERATION_RESULT_APPLY:
       #    settings = operation.get_print_settings()
+  
+  def action_history(self, action):
+    message=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
+                                   message_format=str(self.file_actions.store()))
+    message.run()
+    message.destroy()
+
   #--------------------------Menu/Toolbar Events---------------------------------#
 
   #----------------------------------Event hanling---------------------------------------#
@@ -1873,6 +1789,12 @@ class ApplicationMainWindow(gtk.Window):
       Recreate the current plot and clear statusbar.
     '''
     global errorbars
+    # change label and plot other picture
+    self.show_add_info(None)
+    # set log checkbox according to active measurement
+    self.logx.set_active(self.measurement[self.index_mess].logx)
+    self.logy.set_active(self.measurement[self.index_mess].logy)
+    self.logz.set_active(self.measurement[self.index_mess].logz)    
     self.active_session.picture_width=str(self.frame1.get_allocation().width-25)
     self.active_session.picture_height=str(self.frame1.get_allocation().height-25)
     if self.active_multiplot:
@@ -2075,6 +1997,7 @@ class ApplicationMainWindow(gtk.Window):
       <separator name='static13'/>
       <menu action='HelpMenu'>
         <menuitem action='About'/>
+        <menuitem action='History'/>
       </menu>
     </menubar>
     <toolbar  name='ToolBar'>
@@ -2139,6 +2062,10 @@ class ApplicationMainWindow(gtk.Window):
         "About", None,                    # label, accelerator
         "About",                                   # tooltip
         self.activate_about ),
+      ( "History", None,                             # name, stock id
+        "Action History", None,                    # label, accelerator
+        "About",                                   # tooltip
+        self.action_history ),
       ( "First", gtk.STOCK_GOTO_FIRST,                    # name, stock id
         "First", "<control><shift>B",                     # label, accelerator
         "First Plot",                                    # tooltip
