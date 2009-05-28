@@ -689,7 +689,7 @@ class FitSession:
           text+='\n\n%s:' % function[0].name
           for j, pj in enumerate(function[0].parameter_names):
             text+='\n%s = %g +/- %g' % (pj, function[0].parameters[j], sqrt(covariance_matices[i][j][j]))
-      info_dialog=gtk.MessageDialog(parent=None, flags=0, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, message_format=text)
+      info_dialog=gtk.MessageDialog(parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, message_format=text)
       info_dialog.run()
       
       info_dialog.destroy()

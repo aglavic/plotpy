@@ -166,8 +166,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                               [], 0, 1, 3)
   data_object=MeasurementData([['\316\261_i', 'mrad'], 
                                ['\316\261_f', 'mrad'], 
-                               ['q_x', '\303\205'], 
-                               ['q_z', '\303\205'], 
+                               ['q_x', '\303\205^{-1}'], 
+                               ['q_z', '\303\205^{-1}'], 
                                ['Intensity', 'a.u.'], 
                                ['log_{10}(Intensity)', 'a.u.'], 
                                ['error','a.u.']], 
@@ -218,10 +218,11 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     map(data_append, data_list)
   scan_data_append=scan_data_object.append
   # sqrt of intensities is error
-  def sqrt_34(point):
+  def sqrt_34_gtm(point):
+    point[0]=GRAD_TO_MRAD*point[0]
     point[3]=sqrt(point[3])
     point[4]=sqrt(point[4])
-  map(sqrt_34, scan_data_list)
+  map(sqrt_34_gtm, scan_data_list)
   map(scan_data_append, scan_data_list)
   return data_object, scan_data_object
 

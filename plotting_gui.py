@@ -37,6 +37,7 @@ from time import sleep
 # own modules
 # Module to save and load variables from/to config files
 from configobj import ConfigObj
+from measurement_data_structure import MeasurementData
 import measurement_data_plotting
 from config.gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
 from config import gnuplot_preferences
@@ -1100,6 +1101,222 @@ class ApplicationMainWindow(gtk.Window):
                 gtk.EXPAND | gtk.FILL,     gtk.EXPAND | gtk.FILL,
                 0,                         0);
     return (column,from_data,to_data,include)
+  
+  def extract_cross_section(self, action):
+    '''
+      Open a dialog to select a cross-section through an 3D-dataset.
+      The user can select a line and width for the cross-section,
+      after this the data is extracted and appendet to the fileobject.
+    '''
+    data=self.measurement[self.index_mess]
+    dimension_names=[]
+    dims=data.dimensions()
+    dimension_names.append(dims[data.xdata])
+    dimension_names.append(dims[data.ydata])
+    del(dims)
+    cs_dialog=gtk.Dialog(title='Create a cross-section:')
+    table=gtk.Table(3,7,False)
+    label=gtk.Label()
+    label.set_markup('Direction:')
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      1, 3,
+                gtk.EXPAND | gtk.FILL,     gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup(dimension_names[0])
+    table.attach(label,
+                # X direction #          # Y direction
+                1, 2,                      1, 2,
+                0,                       gtk.FILL,
+                0,                         0);
+    line_x=gtk.Entry()
+    line_x.set_width_chars(6)
+    line_x.set_text('1')
+    table.attach(line_x,
+                # X direction #          # Y direction
+                2, 3,                      1, 2,
+                0,                       gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup(dimension_names[1])
+    table.attach(label,
+                # X direction #          # Y direction
+                1, 2,                      2, 3,
+                0,                       gtk.FILL,
+                0,                         0);
+    line_y=gtk.Entry()
+    line_y.set_width_chars(6)
+    line_y.set_text('0')
+    table.attach(line_y,
+                # X direction #          # Y direction
+                2, 3,                      2, 3,
+                0,                       gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup('Start Point:')
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      3, 5,
+                gtk.EXPAND | gtk.FILL,     gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup(dimension_names[0])
+    table.attach(label,
+                # X direction #          # Y direction
+                1, 2,                      3, 4,
+                0,                       gtk.FILL,
+                0,                         0);
+    line_x0=gtk.Entry()
+    line_x0.set_width_chars(6)
+    line_x0.set_text('0')
+    table.attach(line_x0,
+                # X direction #          # Y direction
+                2, 3,                      3, 4,
+                0,                       gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup(dimension_names[1])
+    table.attach(label,
+                # X direction #          # Y direction
+                1, 2,                      4, 5,
+                0,                       gtk.FILL,
+                0,                         0);
+    line_y0=gtk.Entry()
+    line_y0.set_width_chars(6)
+    line_y0.set_text('0')
+    table.attach(line_y0,
+                # X direction #          # Y direction
+                2, 3,                      4, 5,
+                0,                       gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup('Width:')
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      5, 6,
+                gtk.EXPAND | gtk.FILL,     gtk.FILL,
+                0,                         0);
+    line_width=gtk.Entry()
+    line_width.set_width_chars(6)
+    line_width.set_text('1')
+    table.attach(line_width,
+                # X direction #          # Y direction
+                1, 3,                      5, 6,
+                0,                       gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup('Binning:')
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      6, 7,
+                gtk.EXPAND | gtk.FILL,     gtk.FILL,
+                0,                         0);
+    binning=gtk.Entry()
+    binning.set_width_chars(4)
+    binning.set_text('1')
+    table.attach(binning,
+                # X direction #          # Y direction
+                1, 3,                      6, 7,
+                0,                       gtk.FILL,
+                0,                         0);
+    table.show_all()
+    cs_dialog.vbox.add(table)
+    cs_dialog.add_button('OK', 1)
+    cs_dialog.add_button('Cancel', 0)
+    result=cs_dialog.run()
+    if result==1:
+      try:
+        cs_object=self.create_cross_section(float(line_x.get_text()), 
+                                            float(line_x0.get_text()), 
+                                            float(line_y.get_text()), 
+                                            float(line_y0.get_text()), 
+                                            float(line_width.get_text()), 
+                                            int(binning.get_text())
+                                                  )
+        cs_object.number=data.number
+        cs_object.short_info='%s - Cross-Section through (%g,%g)+x*(%g,%g)' % (
+                                            data.short_info, 
+                                            float(line_x0.get_text()), 
+                                            float(line_y0.get_text()), 
+                                            float(line_x.get_text()), 
+                                            float(line_y.get_text()))
+        cs_object.sample_name=data.sample_name
+        cs_object.info=data.info
+        self.measurement.insert(self.index_mess+1, cs_object)
+        self.index_mess+=1
+        self.rebuild_menus()
+        self.replot()
+      except ValueError:
+        pass
+    cs_dialog.destroy()
+
+  def create_cross_section(self, x, x_0, y, y_0, w, binning):
+    '''
+      Create a cross-section of 3d-data along a arbitrary line.
+    '''
+    from math import sqrt
+    data=self.measurement[self.index_mess].list_err()
+    dims=self.measurement[self.index_mess].dimensions()
+    units=self.measurement[self.index_mess].units()
+    cols=(self.measurement[self.index_mess].xdata, 
+          self.measurement[self.index_mess].ydata, 
+          self.measurement[self.index_mess].zdata, 
+          self.measurement[self.index_mess].yerror)
+    new_cols=[(dims[col], units[col]) for col in cols]
+    # Einheitsvector of line
+    vec_e=(x/sqrt(x**2+y**2), y/sqrt(x**2+y**2))
+    # Vector normal to the line
+    vec_n=(vec_e[1], -1*vec_e[0])
+    # starting point of cross-section line
+    origin=(x_0, y_0)
+    first_dim=''
+    first_unit=''
+    if x!=0:
+      first_dim+='%g %s' % (vec_e[0], new_cols[0][0])
+      if y==0:
+        first_unit=new_cols[0][1]
+    if x!=0 and y!=0:
+      first_dim+=' + '
+      if new_cols[0][1]==new_cols[1][1]:
+        first_unit=new_cols[0][1]
+      else:
+        first_unit="Unknown"
+    if y!=0:
+      first_dim+='%g %s' % (vec_e[1], new_cols[1][0])
+      if x==0:
+        first_unit=new_cols[1][1]
+    new_cols=[(first_dim, first_unit)]+new_cols
+    output=MeasurementData(new_cols, 
+                           [], 
+                           0, 
+                           3, 
+                           4,
+                           )
+    def point_filter(point):
+      '''
+        Test if point lies in the region expressed by origin, vec_n and w (width).
+        
+        @return Boolean
+      '''
+      v1=(point[0]-origin[0], point[1]-origin[1])
+      dist=abs(v1[0]*vec_n[0] + v1[1]*vec_n[1])
+      return (dist<=w)
+    data2=filter(point_filter, data)
+    data3=[((vec_e[0]*dat[0]+vec_e[1]*dat[1]), dat[0], dat[1], dat[2], dat[3]) for dat in data2]
+    data3.sort()
+    if binning > 1:
+      dat_tmp=[]
+      for i in range(len(data3)/binning):
+        dout=[]
+        din=data3[i*binning:(i+1)*binning]
+        for j in range(4):
+          dout.append(sum([d[j] for d in din])/binning)
+        dout.append(sqrt(sum([d[4]**2 for d in din]))/binning)
+        dat_tmp.append(dout)
+      data3=dat_tmp
+    map(output.append, data3)
+    return output
 
   def fit_dialog(self,action, size=(600, 400), position=None):
     '''
@@ -1238,10 +1455,13 @@ class ApplicationMainWindow(gtk.Window):
           self.multiplot.remove(plotlist)
         break
       else:
-        if ((active_data.dimensions()==plotlist[0][0].dimensions())&\
-            (active_data.xdata==plotlist[0][0].xdata)&\
-            (active_data.ydata==plotlist[0][0].ydata)&\
-            (active_data.zdata==plotlist[0][0].zdata)):
+        xi=active_data.xdata
+        xj=plotlist[0][0].xdata
+        yi=active_data.ydata
+        yj=plotlist[0][0].ydata
+        if ((active_data.units()[xi]==plotlist[0][0].units()[xj]) and \
+            ((active_data.zdata==-1) or \
+            (active_data.units()[yi]==plotlist[0][0].units()[yj]))):
           plotlist.append((active_data, self.active_session.active_file_name))
           self.reset_statusbar()
           self.statusbar.push(0,'Plot ' + active_data.number + ' added.')
@@ -1758,41 +1978,45 @@ class ApplicationMainWindow(gtk.Window):
         <separator name='static4'/>
         <menuitem action='FitData'/>
         <separator name='static5'/>
-        <menuitem action='FilterData'/>
+        <menuitem action='FilterData'/>'''
+    if self.measurement[self.index_mess].zdata>=0:
+      output+='''
+        <menuitem action='CrossSection'/>'''
+    output+='''
         <separator name='static6'/>
         <menuitem action='ShowPlotparams'/>
       </menu>
       <separator name='static6'/>'''
     # Menus for column selection created depending on input measurement
-    output=output+'''
+    output+='''
       <menu action='xMenu'>
         <menuitem action='x-number'/>
       '''
     for dimension in self.measurement[self.index_mess].dimensions():
-      output=output+"<menuitem action='x-"+dimension+"'/>"
+      output+="<menuitem action='x-"+dimension+"'/>"
       self.added_items=self.added_items+(("x-"+dimension, None,dimension,None,None,self.change),)
-    output=output+'''
+    output+='''
       </menu>
       <menu action='yMenu'>
         <menuitem action='y-number'/>
       '''
     for dimension in self.measurement[self.index_mess].dimensions():
-      output=output+"<menuitem action='y-"+dimension+"'/>"
+      output+="<menuitem action='y-"+dimension+"'/>"
       self.added_items=self.added_items+(("y-"+dimension, None,dimension,None,None,self.change),)
     if self.measurement[self.index_mess].zdata>=0:
-      output=output+'''
+      output+='''
         </menu>
         <menu action='zMenu'>
         '''
       for dimension in self.measurement[self.index_mess].dimensions():
-        output=output+"<menuitem action='z-"+dimension+"'/>"
+        output+="<menuitem action='z-"+dimension+"'/>"
         self.added_items=self.added_items+(("z-"+dimension, None,dimension,None,None,self.change),)
-    output=output+'''
+    output+='''
       </menu>
       <menu action='dyMenu'>
       '''
     for dimension in self.measurement[self.index_mess].dimensions():
-      output=output+"<menuitem action='dy-"+dimension+"'/>"
+      output+="<menuitem action='dy-"+dimension+"'/>"
       self.added_items=self.added_items+(("dy-"+dimension, None,dimension,None,None,self.change),)
     # allways present stuff and toolbar
     output+='''     </menu>
@@ -1913,6 +2137,10 @@ class ApplicationMainWindow(gtk.Window):
         "Filter the data points", None,                     # label, accelerator
         None,                                    # tooltip
         self.change_data_filter),
+      ( "CrossSection", None,                    # name, stock id
+        "Cross-Section", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.extract_cross_section),
       ( "Apply", gtk.STOCK_CONVERT,                    # name, stock id
         "Apply", None,                     # label, accelerator
         "Apply current plot settings to all sequences",                                    # tooltip
