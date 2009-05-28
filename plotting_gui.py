@@ -1805,7 +1805,7 @@ class ApplicationMainWindow(gtk.Window):
       Read the window config parameters from the old own format.
       This will be removed, when everything is saved in the .ini file.
       
-      @return If the window was successful.
+      @return If the import was successful.
     '''
     line=config_file.readline().rstrip('\n').lstrip('\t')
     while not line=='[/window]':
