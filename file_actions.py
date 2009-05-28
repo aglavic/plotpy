@@ -21,9 +21,12 @@ class FileActions:
     '''
     self.history=[]
     self.window=window
+    # action functions that can be executed from activate_action,
+    # could in priciple be altered in runtime
     self.actions={
                   'change filter': self.change_data_filter, 
-                  'cross-section': self.cross_section
+                  'cross-section': self.cross_section, 
+                  'iterate_through_measurements': self.iterate_through_measurements
                   }
 
   def activate_action(self, action, *args):
@@ -89,6 +92,27 @@ class FileActions:
       self.window.index_mess+=1
     except ValueError:
       return False
+  
+  def iterate_through_measurements(self, action_name):
+    if action_name=='Prev':
+      self.window.index_mess=max(0,self.window.index_mess-1)
+      self.window.plot_page_entry.set_text(str(self.window.index_mess))
+    elif action_name=='First':
+      self.window.index_mess=0
+      self.window.plot_page_entry.set_text(str(self.window.index_mess))
+    elif action_name=='Last':
+      self.window.index_mess=len(self.window.measurement)-1
+      self.window.plot_page_entry.set_text(str(self.window.index_mess))
+    elif action_name=='Next':
+      self.window.index_mess=min(len(self.window.measurement)-1,self.window.index_mess+1)
+      self.window.plot_page_entry.set_text(str(self.window.index_mess))
+    else:
+      try:
+        if len(self.window.measurement)>int(self.window.plot_page_entry.get_text()):
+          self.window.index_mess=int(self.window.plot_page_entry.get_text())
+      except ValueError:
+        self.window.plot_page_entry.set_text(str(self.window.index_mess))        
+
 
   #----------- The performable actions --------------------
 

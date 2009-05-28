@@ -457,26 +457,9 @@ class ApplicationMainWindow(gtk.Window):
     ''' 
       Change the active plot with arrows in toolbar.
     '''
-    global errorbars
+    action_name=action.get_name()
     # change number for active plot put it in the plot page entry box at the bottom
-    if action.get_name()=='Prev':
-      self.index_mess=max(0,self.index_mess-1)
-      self.plot_page_entry.set_text(str(self.index_mess))
-    elif action.get_name()=='First':
-      self.index_mess=0
-      self.plot_page_entry.set_text(str(self.index_mess))
-    elif action.get_name()=='Last':
-      self.index_mess=len(self.measurement)-1
-      self.plot_page_entry.set_text(str(self.index_mess))
-    elif action.get_name()=='Next':
-      self.index_mess=min(len(self.measurement)-1,self.index_mess+1)
-      self.plot_page_entry.set_text(str(self.index_mess))
-    else:
-      try:
-        if len(self.measurement)>int(self.plot_page_entry.get_text()):
-          self.index_mess=int(self.plot_page_entry.get_text())
-      except ValueError:
-        self.plot_page_entry.set_text(str(self.index_mess))        
+    self.file_actions.activate_action('iterate_through_measurements', action_name)
     # check for valid number
     if self.index_mess>=len(self.measurement):
       self.index_mess=len(self.measurement)-1
@@ -1663,6 +1646,11 @@ class ApplicationMainWindow(gtk.Window):
       #    settings = operation.get_print_settings()
   
   def run_action_makro(self, action):
+    '''
+      Execute a list of actions as a makro.
+      The actions are given in a textfield, in the future
+      there will be makro recording and saving functions.
+    '''
     text=gtk.TextView()
     text.get_buffer().set_text('')
     text.show_all()
@@ -1685,12 +1673,19 @@ class ApplicationMainWindow(gtk.Window):
     message.destroy()
 
   def run_last_action_makro(self, action):
+    '''
+      Reexecute the last makro.
+    '''
     if not self.last_makro is None:
       self.file_actions.run_makro(self.last_makro)
       self.rebuild_menus()
       self.replot()
   
   def action_history(self, action):
+    '''
+      A list of all previous actions, that can be executed as makro actions.
+      Will be rewritten as log and makro recording functions.
+    '''
     text=gtk.TextView()
     text.get_buffer().set_text(str(self.file_actions.store()))
     text.show_all()
