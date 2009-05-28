@@ -17,6 +17,7 @@
 from generic import GenericSession
 # importing data readout
 import read_data.treff
+from config.treff import GRAD_TO_MRAD
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -40,9 +41,9 @@ class TreffSession(GenericSession):
 
   #++++++++++++++++++ local variables +++++++++++++++++
   FILE_WILDCARDS=(('All','*'), ('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'))  
-#  TRANSFORMATIONS=[\
-#  ['','',1,0,'',''],\
-#  ]  
+  TRANSFORMATIONS=[\
+                  ['mrad',1/GRAD_TO_MRAD,0,'\302\260'],\
+                  ]  
   import_images=True
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img']  
   #------------------ local variables -----------------

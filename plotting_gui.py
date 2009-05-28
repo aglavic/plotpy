@@ -41,6 +41,7 @@ from measurement_data_structure import MeasurementData
 import measurement_data_plotting
 from config.gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
 from config import gnuplot_preferences
+from file_actions import FileActions
 #----------------------- importing modules --------------------------
 
 __author__ = "Artur Glavic"
@@ -93,6 +94,7 @@ class ApplicationMainWindow(gtk.Window):
     self.plugin_widget=plugin_widget
     self.plot_options_window_open=False # is the dialog window for the plot options active?
     errorbars=False # show errorbars?
+    self.file_actions=FileActions(self)
     if active_session.gnuplot_script: # define the plotting function depending on script mode flag
       self.plot=self.splot
     else:
@@ -1055,7 +1057,8 @@ class ApplicationMainWindow(gtk.Window):
           float(filter_widgets[2].get_text()),\
           filter_widgets[3].get_active())\
           )
-      data.filters=new_filters
+      self.file_actions.activate_action('chang filter', new_filters)
+      #data.filters=new_filters
     # close dialog and replot
     filter_dialog.destroy()
     self.replot()
