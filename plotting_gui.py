@@ -257,7 +257,7 @@ class ApplicationMainWindow(gtk.Window):
     align_table.attach(page_label,0,1,0,1,gtk.FILL,gtk.FILL,0,0)
     self.plot_page_entry=gtk.Entry(max=len(self.measurement[-1].number))
     self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
-    self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
+    self.plot_page_entry.set_text('0')
     self.plot_page_entry.connect("activate",self.iterate_through_measurements)
     align_table.attach(self.plot_page_entry,1,2,0,1,gtk.FILL,gtk.FILL,0,0)
     # checkbox for more Settings
@@ -459,21 +459,22 @@ class ApplicationMainWindow(gtk.Window):
     # change number for active plot put it in the plot page entry box at the bottom
     if action.get_name()=='Prev':
       self.index_mess=max(0,self.index_mess-1)
-      self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
+      self.plot_page_entry.set_text(str(self.index_mess))
     elif action.get_name()=='First':
       self.index_mess=0
-      self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
+      self.plot_page_entry.set_text(str(self.index_mess))
     elif action.get_name()=='Last':
       self.index_mess=len(self.measurement)-1
-      self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
+      self.plot_page_entry.set_text(str(self.index_mess))
     elif action.get_name()=='Next':
       self.index_mess=min(len(self.measurement)-1,self.index_mess+1)
-      self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
+      self.plot_page_entry.set_text(str(self.index_mess))
     else:
-      for i,data in enumerate(self.measurement):
-        if int(data.number)<=int(self.plot_page_entry.get_text()):
-          self.index_mess=i
-      self.plot_page_entry.set_text(str(int(self.measurement[self.index_mess].number)))
+      try:
+        if len(self.measurement)>int(self.plot_page_entry.get_text()):
+          self.index_mess=int(self.plot_page_entry.get_text())
+      except ValueError:
+        self.plot_page_entry.set_text(str(self.index_mess))        
     # check for valid number
     if self.index_mess>=len(self.measurement):
       self.index_mess=len(self.measurement)-1
@@ -1221,6 +1222,13 @@ class ApplicationMainWindow(gtk.Window):
                 0,                       gtk.FILL,
                 0,                         0);
     table.show_all()
+    # Enty activation triggers calculation, too
+    line_x.connect('activate', lambda *ign: cs_dialog.response(1))
+    line_x0.connect('activate', lambda *ign: cs_dialog.response(1))
+    line_y.connect('activate', lambda *ign: cs_dialog.response(1))
+    line_y0.connect('activate', lambda *ign: cs_dialog.response(1))
+    line_width.connect('activate', lambda *ign: cs_dialog.response(1))
+    binning.connect('activate', lambda *ign: cs_dialog.response(1))
     cs_dialog.vbox.add(table)
     cs_dialog.add_button('OK', 1)
     cs_dialog.add_button('Cancel', 0)
@@ -1234,6 +1242,16 @@ class ApplicationMainWindow(gtk.Window):
                                             float(line_width.get_text()), 
                                             int(binning.get_text())
                                                   )
+        if cs_object is None:
+          cs_dialog.destroy()
+          message=gtk.MessageDialog(parent=self, 
+                                    flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                                    type=gtk.MESSAGE_INFO, 
+                                    buttons=gtk.BUTTONS_CLOSE, 
+                                    message_format='No point in selected area.')
+          message.run()
+          message.destroy()
+          return False
         cs_object.number=data.number
         cs_object.short_info='%s - Cross-Section through (%g,%g)+x*(%g,%g)' % (
                                             data.short_info, 
@@ -1250,6 +1268,7 @@ class ApplicationMainWindow(gtk.Window):
       except ValueError:
         pass
     cs_dialog.destroy()
+    return True
 
   def create_cross_section(self, x, x_0, y, y_0, w, binning):
     '''
@@ -1273,17 +1292,18 @@ class ApplicationMainWindow(gtk.Window):
     first_dim=''
     first_unit=''
     if x!=0:
-      first_dim+='%g %s' % (vec_e[0], new_cols[0][0])
+      first_dim+='%g %s' % (x, new_cols[0][0])
       if y==0:
         first_unit=new_cols[0][1]
     if x!=0 and y!=0:
-      first_dim+=' + '
+      if y>0:
+        first_dim+=' + '
       if new_cols[0][1]==new_cols[1][1]:
         first_unit=new_cols[0][1]
       else:
         first_unit="Unknown"
     if y!=0:
-      first_dim+='%g %s' % (vec_e[1], new_cols[1][0])
+      first_dim+='%g %s' % (y, new_cols[1][0])
       if x==0:
         first_unit=new_cols[1][1]
     new_cols=[(first_dim, first_unit)]+new_cols
@@ -1303,7 +1323,10 @@ class ApplicationMainWindow(gtk.Window):
       dist=abs(v1[0]*vec_n[0] + v1[1]*vec_n[1])
       return (dist<=w)
     data2=filter(point_filter, data)
-    data3=[((vec_e[0]*dat[0]+vec_e[1]*dat[1]), dat[0], dat[1], dat[2], dat[3]) for dat in data2]
+    if len(data2)==0:
+      return None
+    len_vec=sqrt(x**2+y**2)
+    data3=[((vec_e[0]*dat[0]+vec_e[1]*dat[1])*len_vec, dat[0], dat[1], dat[2], dat[3]) for dat in data2]
     data3.sort()
     if binning > 1:
       dat_tmp=[]
