@@ -41,7 +41,7 @@ from measurement_data_structure import MeasurementData
 import measurement_data_plotting
 from config.gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
 from config import gnuplot_preferences
-from file_actions import FileActions
+import file_actions
 #----------------------- importing modules --------------------------
 
 __author__ = "Artur Glavic"
@@ -94,7 +94,7 @@ class ApplicationMainWindow(gtk.Window):
     self.plugin_widget=plugin_widget
     self.plot_options_window_open=False # is the dialog window for the plot options active?
     errorbars=False # show errorbars?
-    self.file_actions=FileActions(self)
+    self.file_actions=file_actions.FileActions(self)
     if active_session.gnuplot_script: # define the plotting function depending on script mode flag
       self.plot=self.splot
     else:
@@ -1239,6 +1239,8 @@ class ApplicationMainWindow(gtk.Window):
                                         float(line_width.get_text()), 
                                         int(binning.get_text())
                                         )
+    else:
+      gotit=False
     cs_dialog.destroy()
     if not gotit:
       message=gtk.MessageDialog(parent=self, 
@@ -1660,9 +1662,43 @@ class ApplicationMainWindow(gtk.Window):
       #elif response == gtk.PRINT_OPERATION_RESULT_APPLY:
       #    settings = operation.get_print_settings()
   
+  def run_action_makro(self, action):
+    text=gtk.TextView()
+    text.get_buffer().set_text('')
+    text.show_all()
+    #message=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
+     #                              message_format=str(self.file_actions.store()))
+    message=gtk.Dialog(title='Action History')
+    message.vbox.add(text)
+    message.add_button('Execute Actions', 1)
+    message.add_button('Cancel', 0)
+    response=message.run()
+    if response==1:
+      makro=file_actions.MakroRepr()
+      buffer=text.get_buffer()
+      makro_text=buffer.get_text(buffer.get_start_iter(),buffer.get_end_iter())
+      makro.from_string(makro_text)
+      self.last_makro=makro
+      self.file_actions.run_makro(makro)
+      self.rebuild_menus()
+      self.replot()
+    message.destroy()
+
+  def run_last_action_makro(self, action):
+    if not self.last_makro is None:
+      self.file_actions.run_makro(self.last_makro)
+      self.rebuild_menus()
+      self.replot()
+  
   def action_history(self, action):
-    message=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
-                                   message_format=str(self.file_actions.store()))
+    text=gtk.TextView()
+    text.get_buffer().set_text(str(self.file_actions.store()))
+    text.show_all()
+    #message=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
+     #                              message_format=str(self.file_actions.store()))
+    message=gtk.Dialog(title='Action History')
+    message.vbox.add(text)
+    message.add_button('OK', 1)
     message.run()
     message.destroy()
 
@@ -1933,6 +1969,8 @@ class ApplicationMainWindow(gtk.Window):
     output+='''
         <separator name='static6'/>
         <menuitem action='ShowPlotparams'/>
+        <menuitem action='Makro'/>
+        <menuitem action='LastMakro'/>
       </menu>
       <separator name='static6'/>'''
     # Menus for column selection created depending on input measurement
@@ -2064,8 +2102,16 @@ class ApplicationMainWindow(gtk.Window):
         self.activate_about ),
       ( "History", None,                             # name, stock id
         "Action History", None,                    # label, accelerator
-        "About",                                   # tooltip
+        "History",                                   # tooltip
         self.action_history ),
+      ( "Makro", None,                             # name, stock id
+        "Run Makro...", None,                    # label, accelerator
+        "Run Makro",                                   # tooltip
+        self.run_action_makro ),
+      ( "LastMakro", None,                             # name, stock id
+        "Run Last Makro", "<control>M",                    # label, accelerator
+        "Run Last Makro",                                   # tooltip
+        self.run_last_action_makro ),
       ( "First", gtk.STOCK_GOTO_FIRST,                    # name, stock id
         "First", "<control><shift>B",                     # label, accelerator
         "First Plot",                                    # tooltip
