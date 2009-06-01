@@ -17,6 +17,8 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
+SPLIT_SENSITIVITY=0.999
+
 #++++++++++++++++++++++++++++++++++++++MeasurementData-Class+++++++++++++++++++++++++++++++++++++++++++++++++++++#
 class MeasurementData:
   '''
@@ -313,18 +315,22 @@ class MeasurementData:
     yd=self.ydata
     data=[point for point in self if (((xfrom is None) or (point[xd]>=xfrom)) and \
                                       ((xto is None) or (point[xd]<=xto)))]
+    max_x=max([abs(d[xd]) for d in data])
+    max_y=max([abs(d[xd]) for d in data])
     # convert Numbers to str
     if self.zdata>=0:
       if self.scan_line_constant >= 0:
         scan_line_constant=self.scan_line_constant
         if xd!=scan_line_constant:
           cmp_to=xd
+          sensitivity=SPLIT_SENSITIVITY*max_y
         else:
           cmp_to=yd
+          sensitivity=SPLIT_SENSITIVITY*max_x
         def compare_columns(point1, point2):
-          if point1[scan_line_constant]>point2[scan_line_constant]:
+          if point1[scan_line_constant]-sensitivity>point2[scan_line_constant]:
             return 1
-          if point1[scan_line_constant]<point2[scan_line_constant]:
+          if point1[scan_line_constant]<point2[scan_line_constant]-sensitivity:
             return -1
           return cmp(point1[cmp_to], point2[cmp_to])
         data.sort(compare_columns)
@@ -332,23 +338,25 @@ class MeasurementData:
       else:
         def compare_xy_columns(point1, point2):
           '''Compare two points by y- and x-column'''
-          if point1[xd]>point2[xd]:
+          if point1[xd]-sensitivity>point2[xd]:
             return 1
-          if point1[xd]<point2[xd]:
+          if point1[xd]<point2[xd]-sensitivity:
             return -1
           return cmp(point1[yd], point2[yd])
             
         def compare_yx_columns(point1, point2):
-          if point1[yd]>point2[yd]:
+          if point1[yd]-sensitivity>point2[yd]:
             return 1
-          if point1[yd]<point2[yd]:
+          if point1[yd]<point2[yd]-sensitivity:
             return -1
           return cmp(point1[xd], point2[xd])
         
 
         data_xysort=list(data)
         data_yxsort=data
+        sensitivity=SPLIT_SENSITIVITY*max_x
         data_xysort.sort(compare_xy_columns)
+        sensitivity=SPLIT_SENSITIVITY*max_y
         data_yxsort.sort(compare_yx_columns)
         # insert blanck lines between scans for 3d plot
         insert_indices_xy=[i for i in range(len(data)-1) if (data_xysort[i+1][yd]<data_xysort[i][yd])]
