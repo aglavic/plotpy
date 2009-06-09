@@ -116,7 +116,7 @@ def import_session_from_name(arguments, measurement_type):
     Import a session object from a string.
   '''
   active_session_class = getattr(__import__('sessions.'+measurement_type[0], globals(), locals(), 
-                                      [measurement_type[1]], -1), measurement_type[1])
+                                      [measurement_type[1]]), measurement_type[1])
   return active_session_class(arguments)
 
 if __name__ == '__main__':    #code to execute if called from command-line for testing

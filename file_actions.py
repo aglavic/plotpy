@@ -35,7 +35,8 @@ class FileActions:
     self.actions={
                   'change filter': self.change_data_filter, 
                   'cross-section': self.cross_section, 
-                  'iterate_through_measurements': self.iterate_through_measurements
+                  'iterate_through_measurements': self.iterate_through_measurements, 
+                  'create_fit_object':self.create_fit_object
                   }
 
   def activate_action(self, action, *args):
@@ -122,6 +123,10 @@ class FileActions:
       except ValueError:
         self.window.plot_page_entry.set_text(str(self.window.index_mess))        
 
+  def create_fit_object(self):
+    dataset=self.window.measurement[self.window.index_mess]
+    from fit_data import FitSession
+    dataset.fit_object=FitSession(dataset, self)
 
   #----------- The performable actions --------------------
 

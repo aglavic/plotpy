@@ -16,7 +16,7 @@ __email__ = "a.glavic@fz-juelich.de"
 
 __name__='Plot-script'
 __scripts__=['plot.py']
-__py_modules__=['plot', 'plotting_gui', 'measurement_data_structure', 'measurement_data_plotting', 'fit_data']
+__py_modules__=['plot', 'plotting_gui', 'measurement_data_structure', 'measurement_data_plotting', 'fit_data', 'file_actions']
 __packages__=['config', 'read_data', 'sessions']
 __package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 'fonts/*.ttf'], 
                     }

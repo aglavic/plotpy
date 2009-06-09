@@ -382,13 +382,20 @@ class FitSession:
                        FitLorentzian.name: FitLorentzian
                        }
   
-  def __init__(self,  dataset):
+  def __init__(self,  dataset, file_actions):
     '''
       Constructor creating pointer to the dataset.
     '''
     self.functions=[] # a list of sequences (FitFunction, fit, plot) to be used
     self.data=dataset
     self.show_covariance=False
+    # connect the functions to the file_actions object
+    file_actions.actions['add_function']=self.add_function
+    file_actions.actions['sum_up_functions']=self.sum
+    file_actions.actions['set_function_parameters']=self.set_function_parameters
+    file_actions.actions['fit_functions']=self.fit
+    file_actions.actions['simmulate_functions']=self.simulate
+    
 
 
   def add_function(self, function_name):
@@ -644,7 +651,8 @@ class FitSession:
       Add a function via dialog access.
       Standart parameters are used.
     '''
-    self.add_function(name.get_active_text())
+    window.file_actions.activate_action('add_function', name.get_active_text())
+    #self.add_function(name.get_active_text())
     size=dialog.get_size()
     position=dialog.get_position()
     dialog.destroy()
@@ -660,24 +668,32 @@ class FitSession:
     dialog.destroy()
     window.fit_dialog(None, size, position)
   
+  def set_function_parameters(self, func_index, values):
+    for j, value in enumerate(values[0:-3]):
+      self.functions[func_index][0].parameters[j]=value
+    self.functions[func_index][0].xfrom=values[-3]
+    self.functions[func_index][0].xto=values[-2]
+    self.functions[func_index][0].name=values[-1]
+  
   def fit_from_dialog(self, action, entries, dialog, window):
     '''
       Trigger the fit, simulation and replot functions.
     '''
+    def get_entry_values(entry, if_not=0):
+      try: 
+        return float(entry.get_text().replace(',', '.'))
+      except ValueError:
+        return if_not
     for i, function in enumerate(self.functions):
-      for j,  entry in enumerate(entries[i][:-3]):
-        function[0].parameters[j]=float(entry.get_text().replace(',', '.'))
-      try:
-        function[0].x_from=float(entries[i][-3].get_text())
-      except ValueError:
-        function[0].x_from=None
-      try:
-        function[0].x_to=float(entries[i][-2].get_text())
-      except ValueError:
-        function[0].x_to=None
-      function[0].fit_function_text=entries[i][-1].get_text()
-    covariance_matices=self.fit()
-    self.simulate()
+      values=[]
+      for entry in entries[i][:-3]:
+        values.append(get_entry_values(entry))
+      values.append(get_entry_values(entries[i][-3], if_not=None))
+      values.append(get_entry_values(entries[i][-2], if_not=None))
+      values.append(entries[i][-1].get_text())
+      window.file_actions.activate_action('set_function_parameters', i, values)
+    covariance_matices=window.file_actions.activate_action('fit_functions')
+    window.file_actions.activate_action('simmulate_functions')
     size=dialog.get_size()
     position=dialog.get_position()
     dialog.destroy()
@@ -720,7 +736,8 @@ class FitSession:
     selected=[int(function_1.get_active_text().split(':')[0]), int(function_2.get_active_text().split(':')[0])]
     if result in [2, 3]:
       if result==2:
-        self.sum(selected[0], selected[1])
+        window.file_actions.activate_action('sum_up_functions', selected[0], selected[1])
+        #self.sum(selected[0], selected[1])
         size=dialog.get_size()
         position=dialog.get_position()
         dialog.destroy()

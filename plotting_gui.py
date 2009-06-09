@@ -1237,7 +1237,7 @@ class ApplicationMainWindow(gtk.Window):
       self.rebuild_menus()
       self.replot()      
     return gotit
-
+  
   def fit_dialog(self,action, size=(600, 400), position=None):
     '''
       A dialog to fit the data with a set of functions.
@@ -1251,8 +1251,7 @@ class ApplicationMainWindow(gtk.Window):
       return None
     dataset=self.measurement[self.index_mess]
     if (dataset.fit_object==None):
-      from fit_data import FitSession
-      dataset.fit_object=FitSession(dataset)
+      self.file_actions.activate_action('create_fit_object')
     fit_session=dataset.fit_object
     fit_dialog=gtk.Dialog(title='Fit...')
     fit_dialog.set_default_size(size[0], size[1])
