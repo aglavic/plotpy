@@ -6,6 +6,15 @@
 from configobj import ConfigObj
 from measurement_data_structure import MeasurementData
 
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2009"
+__credits__ = [""]
+__license__ = "None"
+__version__ = "0.6a"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Development"
+
 class FileActions:
   '''
     A Class designed to preform simple operations on one dataset and
@@ -35,15 +44,14 @@ class FileActions:
       it can be shown in a log or reused in makros for other sequences.
     '''
     self.history.append((action, args))
-    self.actions[action](*args)
-    return True
+    return self.actions[action](*args)
   
   def reactivate_action(self, action):
     '''
       Run an action without storing it in the history.
       Used when running a makro.
     '''
-    self.actions[action[0]](*action[1])
+    return self.actions[action[0]](*action[1])
 
   def store(self, from_index=None, to_index=None):
     '''
@@ -90,6 +98,7 @@ class FileActions:
       cs_object.info=data.info
       self.window.measurement.insert(self.window.index_mess+1, cs_object)
       self.window.index_mess+=1
+      return True
     except ValueError:
       return False
   

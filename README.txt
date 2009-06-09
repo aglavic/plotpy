@@ -56,7 +56,28 @@ plotting-scripts:
 
   tar -xvvzf Plot-script-{VERSION}.tar.gz
 
-2- Run the installtion with python:
+  You now have to options, link the script to your bin-directory and run it from this folder or install it as python module:
+
+2a- Link the script using the install shell script:
+  In the folder type:
+    ./install
+  
+  this creates symbolic links for plot.py, plot_4circle_data, plot_reflectometer_data, 
+  plot_SQUID_data (scripts) and p4d,prd,pld (gui mode) in /usr/bin .
+  !! if you don't have administrator priviliges, use ./install {PATH} , with a directory {PATH}
+     inside one of your system path folders. (type "print $PATH" to find out where to look)
+
+  To remove the script is just as easy, go to the installation folder and type
+    ./uninstall
+  this will remove the symbolic links. If you installed to another path, use uninstall with
+  the same parameters as the install script earlier.
+
+  !!! If you have the previous version installed, you have !!!
+  !!! to uninstall it first, as the links have changed.    !!!
+  For full functionality you will need the gfortran compiler(fit.f90), gnuplot.py(speedup) and pygtk(GUI) packages.
+
+
+2b- Run the installtion with python:
 
   python setup.py install
   

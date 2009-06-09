@@ -48,7 +48,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -1222,18 +1222,18 @@ class ApplicationMainWindow(gtk.Window):
                                         float(line_width.get_text()), 
                                         int(binning.get_text())
                                         )
+      if not gotit:
+        message=gtk.MessageDialog(parent=self, 
+                                  flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                                  type=gtk.MESSAGE_INFO, 
+                                  buttons=gtk.BUTTONS_CLOSE, 
+                                  message_format='No point in selected area.')
+        message.run()
+        message.destroy()
     else:
       gotit=False
     cs_dialog.destroy()
-    if not gotit:
-      message=gtk.MessageDialog(parent=self, 
-                                flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
-                                type=gtk.MESSAGE_INFO, 
-                                buttons=gtk.BUTTONS_CLOSE, 
-                                message_format='No point in selected area.')
-      message.run()
-      message.destroy()
-    else:
+    if gotit:
       self.rebuild_menus()
       self.replot()      
     return gotit
@@ -1960,7 +1960,12 @@ class ApplicationMainWindow(gtk.Window):
         <menuitem action='FilterData'/>'''
     if self.measurement[self.index_mess].zdata>=0:
       output+='''
-        <menuitem action='CrossSection'/>'''
+        <placeholder name='CrossSection'>
+        <menuitem action='CrossSection'/>
+        </placeholder>'''
+    else:
+      output+='''
+        <placeholder name='CrossSection'/>'''
     output+='''
         <separator name='static6'/>
         <menuitem action='ShowPlotparams'/>
@@ -1974,7 +1979,7 @@ class ApplicationMainWindow(gtk.Window):
         <menuitem action='x-number'/>
       '''
     for dimension in self.measurement[self.index_mess].dimensions():
-      output+="<menuitem action='x-"+dimension+"'/>"
+      output+="        <menuitem action='x-"+dimension+"'/>\n"
       self.added_items=self.added_items+(("x-"+dimension, None,dimension,None,None,self.change),)
     output+='''
       </menu>
@@ -1982,22 +1987,27 @@ class ApplicationMainWindow(gtk.Window):
         <menuitem action='y-number'/>
       '''
     for dimension in self.measurement[self.index_mess].dimensions():
-      output+="<menuitem action='y-"+dimension+"'/>"
+      output+="        <menuitem action='y-"+dimension+"'/>\n"
       self.added_items=self.added_items+(("y-"+dimension, None,dimension,None,None,self.change),)
     if self.measurement[self.index_mess].zdata>=0:
       output+='''
         </menu>
+        <placeholder name='zMenu'>
         <menu action='zMenu'>
         '''
       for dimension in self.measurement[self.index_mess].dimensions():
-        output+="<menuitem action='z-"+dimension+"'/>"
+        output+="        <menuitem action='z-"+dimension+"'/>\n"
         self.added_items=self.added_items+(("z-"+dimension, None,dimension,None,None,self.change),)
+      output+="</menu></placeholder>\n"
+    else:
+      output+='''
+        </menu>      
+        <placeholder name='zMenu'/>'''
     output+='''
-      </menu>
       <menu action='dyMenu'>
       '''
     for dimension in self.measurement[self.index_mess].dimensions():
-      output+="<menuitem action='dy-"+dimension+"'/>"
+      output+="        <menuitem action='dy-"+dimension+"'/>\n"
       self.added_items=self.added_items+(("dy-"+dimension, None,dimension,None,None,self.change),)
     # allways present stuff and toolbar
     output+='''     </menu>
@@ -2005,7 +2015,7 @@ class ApplicationMainWindow(gtk.Window):
       <menu action='Profiles'>
     '''
     for name in sorted(self.profiles.items()):
-      output+="<menuitem action='"+\
+      output+="        <menuitem action='"+\
         name[0]+"' position='top'/>\n"
       self.added_items+=((name[0], None,'_'+name[0],None,None,self.load_profile),)
     output+=''' <separator name='static8'/>
@@ -2016,7 +2026,7 @@ class ApplicationMainWindow(gtk.Window):
       <menu action='FilesMenu'>
       '''
     for i, name in enumerate([object[0] for object in sorted(self.active_session.file_data.items())]):
-      output+="<menuitem action='File-"+ str(i) +"'/>\n"
+      output+="        <menuitem action='File-"+ str(i) +"'/>\n"
       self.added_items+=(("File-"+ str(i), None, name, None, None, self.change_active_file),)
     output+='''
       </menu>
