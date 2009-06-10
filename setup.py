@@ -49,7 +49,7 @@ if 'sdist' in sys.argv:
       mod=__import__(package + '.' + module[:-3], globals(), locals(), ['__version__'], -1)
       try:
         if mod.__version__!=__version__:
-          print "File %s/%s.py has version %s not equal to distribution version %s." % (package, module, mod.__version__, __version__)
+          print "File %s/%s has version %s not equal to distribution version %s." % (package, module, mod.__version__, __version__)
           versions_fit=False
       except AttributeError:
           print "File %s/%s.py has no version number." % (package, module)

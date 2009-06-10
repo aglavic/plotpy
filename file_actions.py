@@ -8,9 +8,9 @@ from measurement_data_structure import MeasurementData
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2009"
-__credits__ = [""]
+__credits__ = []
 __license__ = "None"
-__version__ = "0.6a"
+__version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
