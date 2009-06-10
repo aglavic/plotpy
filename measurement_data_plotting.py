@@ -296,6 +296,7 @@ def create_plot_script(session,
   gnuplot_file_text=gp.GNUPLOT_FILE_HEAD+\
                     'set term '+terminal+'\n'+\
                     'set output "'+output_file+'"\n'+\
+                    'set encoding '+gp.ENCODING+'\n'+\
                     'set xlabel "'+gp.x_label+'"\n'+\
                     'set ylabel "'+gp.y_label+'"\n'+\
                     'set title "'+gp.plot_title+'"\n'
