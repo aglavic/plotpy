@@ -1138,6 +1138,9 @@ class ApplicationMainWindow(gtk.Window):
     transformations_dialog.destroy()
 
   def get_new_transformation(self, transformations, dialog_table,  list):
+    '''
+      Create a entry field line for a unit transformation.
+    '''
     table=table=gtk.Table(10,1,False)
     entry_list=[]
     entry=gtk.Entry()
@@ -1251,9 +1254,15 @@ class ApplicationMainWindow(gtk.Window):
     button.connect('activate', self.remove_transformation, item, table, list)
   
   def remove_transformation(self, action, item, table, list):
+    '''
+      Nothing jet.
+    '''
     pass
   
   def create_transformations(self, items, units, dimensions):
+    '''
+      Read the transformation values from the entry widgets in 'items'.
+    '''
     transformations=[]
     for item in items:
       entries=map(lambda entry: entry.get_text(), item[1])
