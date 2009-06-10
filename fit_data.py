@@ -671,8 +671,8 @@ class FitSession:
   def set_function_parameters(self, func_index, values):
     for j, value in enumerate(values[0:-3]):
       self.functions[func_index][0].parameters[j]=value
-    self.functions[func_index][0].xfrom=values[-3]
-    self.functions[func_index][0].xto=values[-2]
+    self.functions[func_index][0].x_from=values[-3]
+    self.functions[func_index][0].x_to=values[-2]
     self.functions[func_index][0].name=values[-1]
   
   def fit_from_dialog(self, action, entries, dialog, window):

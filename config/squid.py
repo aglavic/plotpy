@@ -19,7 +19,7 @@ dia_mag_correct=0
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
 TRANSFORMATIONS=[\
 ['H','Oe',1e-4,0,'\316\274_0\302\267H','T'],\
-['emu',1e-3,0,'A\302\267m\262'],\
+['emu',1e-3,0,'A\302\267m\302\262'],\
 ['s',1./60,0,'min']\
 ]
 # Transformations for constants (see MEASUREMENT_TYPES)
