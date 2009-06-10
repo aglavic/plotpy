@@ -21,10 +21,10 @@ TRANSFORMATIONS_CONST=[]
 #  (every measurement file the positions have to start with 0 and have no holes in between
 # [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
 DATA_COLUMNS={\
-'THETA':['Theta','\\302\\260']\
-,'2THETA':['2 Theta','\\302\\260']\
-,'PHI':['Phi','\\302\\260']\
-,'COUPLED':['2 Theta','\\302\\260']\
+'THETA':['Theta','\302\260']\
+,'2THETA':['2 Theta','\302\260']\
+,'PHI':['Phi','\302\260']\
+,'COUPLED':['2 Theta','\302\260']\
 ,'COUNTS':['Intensity','counts']\
 ,'STEPTIME':['Time per Step','s']\
 ,'AUX1':['z','mm']

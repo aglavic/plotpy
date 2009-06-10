@@ -21,10 +21,10 @@ TRANSFORMATIONS_CONST=[]
 #  (every measurement file the positions have to start with 0 and have no holes in between
 # [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
 COLUMNS_MAPPING=[\
-['Two Theta',7,['2Theta','\\302\\260']]\
-,['Theta',7,['Theta','\\302\\260']]\
-,['Chi',7,['Chi','\\302\\260']]\
-,['Phi',7,['Phi','\\302\\260']]\
+['Two Theta',7,['2Theta','\302\260']]\
+,['Theta',7,['Theta','\302\260']]\
+,['Chi',7,['Chi','\302\260']]\
+,['Phi',7,['Phi','\302\260']]\
 ,['H',0,['h','']]\
 ,['K',1,['k','']]\
 ,['L',2,['l','']]\

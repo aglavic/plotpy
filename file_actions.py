@@ -38,6 +38,7 @@ class FileActions:
                   'iterate_through_measurements': self.iterate_through_measurements, 
                   'create_fit_object': self.create_fit_object, 
                   'change_color_pattern': self.change_color_pattern, 
+                  'unit_transformations': self.unit_transformations, 
                   }
 
   def activate_action(self, action, *args):
@@ -144,6 +145,9 @@ class FileActions:
     gnuplot_preferences.settings_3d="\n".join(options_list_3d) + "\n"
     gnuplot_preferences.settings_3dmap="\n".join(options_list_3dmap) + "\n"
     
+  def unit_transformations(self, transformations):
+    dataset=self.window.measurement[self.window.index_mess]
+    dataset.unit_trans(transformations)
 
   #----------- The performable actions --------------------
 

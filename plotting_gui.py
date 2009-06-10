@@ -1056,7 +1056,7 @@ class ApplicationMainWindow(gtk.Window):
     table.attach(column,
                 # X direction #          # Y direction
                 0, 1,                      row-1, row,
-                gtk.EXPAND | gtk.FILL,     gtk.EXPAND | gtk.FILL,
+                gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
     from_data=gtk.Entry()
     from_data.set_width_chars(8)
@@ -1064,7 +1064,7 @@ class ApplicationMainWindow(gtk.Window):
     table.attach(from_data,
                 # X direction #          # Y direction
                 1, 2,                      row-1, row,
-                gtk.EXPAND | gtk.FILL,     gtk.EXPAND | gtk.FILL,
+                gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
     to_data=gtk.Entry()
     to_data.set_width_chars(8)
@@ -1072,17 +1072,218 @@ class ApplicationMainWindow(gtk.Window):
     table.attach(to_data,
                 # X direction #          # Y direction
                 2, 3,                      row-1, row,
-                gtk.EXPAND | gtk.FILL,     gtk.EXPAND | gtk.FILL,
+                gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
     include=gtk.CheckButton(label='include region', use_underline=False)
     include.set_active(parameters[3])
     table.attach(include,
                 # X direction #          # Y direction
                 3, 4,                      row-1, row,
-                gtk.EXPAND | gtk.FILL,     gtk.EXPAND | gtk.FILL,
+                gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
     return (column,from_data,to_data,include)
   
+  def unit_transformation(self, action):
+    '''
+      Open a dialog to transform the units and dimensions of one dataset.
+      A set of common unit transformations is stored in config.transformations.
+    '''
+    from config.transformations import known_transformations
+    units=self.active_session.active_file_data[self.index_mess].units()
+    dimensions=self.active_session.active_file_data[self.index_mess].dimensions()
+    allowed_trans=[]
+    for trans in known_transformations:
+      # Only unit transformation
+      if len(trans) == 4:
+        if trans[0] in units:
+          allowed_trans.append(trans)
+        elif trans[3] in units:
+          allowed_trans.append([trans[3], 1./trans[1], -1*trans[2]/trans[1], trans[0]])
+      else:
+        if trans[0] in dimensions:
+          allowed_trans.append(trans)
+        elif trans[5] in dimensions:
+          allowed_trans.append([trans[4], trans[5], 1./trans[2], -1*trans[3]/trans[2], trans[0], trans[1]])
+
+    trans_box=gtk.combo_box_new_text()
+    trans_box.append_text('empty')
+    for trans in allowed_trans:
+      trans_box.append_text('%s -> %s' % (trans[0], trans[-1]))
+    transformations_dialog=gtk.Dialog(title='Transform Units/Dimensions:')
+    transformations_dialog.set_default_size(600,150)
+    transformations_dialog.add_action_widget(trans_box, 2)
+    transformations_dialog.add_button('Add transformation',2)
+    transformations_dialog.add_button('Apply changes',1)
+    transformations_dialog.add_button('Cancel',0)
+    table=gtk.Table(1,1,False)
+    transformations_dialog.vbox.add(table)
+    transformations_dialog.show_all()
+    result=transformations_dialog.run()
+    
+    transformations_list=[]
+    while(result==2):
+      index=trans_box.get_active()
+      if index>0:
+        trans=allowed_trans[index-1]
+      else:
+        trans=['', '', 1., 0, '', '']
+      self.get_new_transformation(trans, table, transformations_list)
+      trans_box.set_active(0)
+      result=transformations_dialog.run()
+    if result==1:
+      transformations=self.create_transformations(transformations_list, units, dimensions)
+      self.file_actions.activate_action('unit_transformations', transformations)
+      self.replot()
+      self.rebuild_menus()
+    transformations_dialog.destroy()
+
+  def get_new_transformation(self, transformations, dialog_table,  list):
+    table=table=gtk.Table(10,1,False)
+    entry_list=[]
+    entry=gtk.Entry()
+    entry.set_width_chars(8)
+    if len(transformations)>4:
+      entry.set_text(transformations[0])
+    entry_list.append(entry)
+    table.attach(entry,
+                # X direction #          # Y direction
+                0, 1,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+
+    entry=gtk.Entry()
+    entry.set_width_chars(8)
+    if len(transformations)>4:
+      entry.set_text(transformations[1])
+    else:
+      entry.set_text(transformations[0])
+    entry_list.append(entry)
+    table.attach(entry,
+                # X direction #          # Y direction
+                1, 2,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    
+    label=gtk.Label(' * ')
+    table.attach(label,
+                # X direction #          # Y direction
+                2, 3,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+
+    entry=gtk.Entry()
+    entry.set_width_chars(8)
+    if len(transformations)>4:
+      entry.set_text(str(transformations[2]))
+    else:
+      entry.set_text(str(transformations[1]))
+    entry_list.append(entry)
+    table.attach(entry,
+                # X direction #          # Y direction
+                3, 4,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+
+    label=gtk.Label(' + ')
+    table.attach(label,
+                # X direction #          # Y direction
+                4, 5,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+
+    entry=gtk.Entry()
+    entry.set_width_chars(8)
+    if len(transformations)>4:
+      entry.set_text(str(transformations[3]))
+    else:
+      entry.set_text(str(transformations[2]))
+    entry_list.append(entry)
+    table.attach(entry,
+                # X direction #          # Y direction
+                5, 6,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+
+    label=gtk.Label(' -> ')
+    table.attach(label,
+                # X direction #          # Y direction
+                6, 7,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+
+    entry=gtk.Entry()
+    entry.set_width_chars(8)
+    if len(transformations)>4:
+      entry.set_text(transformations[4])
+    else:
+      entry.set_text(transformations[3])
+    entry_list.append(entry)
+    table.attach(entry,
+                # X direction #          # Y direction
+                7, 8,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+
+    entry=gtk.Entry()
+    entry.set_width_chars(8)
+    if len(transformations)>4:
+      entry.set_text(transformations[5])
+    entry_list.append(entry)
+    table.attach(entry,
+                # X direction #          # Y direction
+                8, 9,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    item=(table, entry_list)
+    list.append(item)
+    button=gtk.Button('DEL')
+    table.attach(button,
+                # X direction #          # Y direction
+                9, 10,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    dialog_table.attach(table,
+                # X direction #          # Y direction
+                0, 1,                      len(list)-1, len(list),
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    table.show_all()
+    button.connect('activate', self.remove_transformation, item, table, list)
+  
+  def remove_transformation(self, action, item, table, list):
+    pass
+  
+  def create_transformations(self, items, units, dimensions):
+    transformations=[]
+    for item in items:
+      entries=map(lambda entry: entry.get_text(), item[1])
+      # only unit transformation
+      if entries[0]=='':
+        if not entries[1] in units:
+          continue
+        else:
+          try:
+            transformations.append((entries[1], 
+                                    float(entries[2]), 
+                                    float(entries[3]), 
+                                    entries[4]))
+          except ValueError:
+            continue
+      else:
+        if not ((entries[0] in dimensions) and (entries[1] in units)):
+          continue
+        else:
+          try:
+            transformations.append((entries[0], 
+                                    entries[1], 
+                                    float(entries[2]), 
+                                    float(entries[3]), 
+                                    entries[4], 
+                                    entries[5]))
+          except ValueError:
+            continue
+    return transformations
+
   def extract_cross_section(self, action):
     '''
       Open a dialog to select a cross-section through an 3D-dataset.
@@ -1980,7 +2181,8 @@ class ApplicationMainWindow(gtk.Window):
         <separator name='static4'/>
         <menuitem action='FitData'/>
         <separator name='static5'/>
-        <menuitem action='FilterData'/>'''
+        <menuitem action='FilterData'/>
+        <menuitem action='TransformData'/>'''
     if self.measurement[self.index_mess].zdata>=0:
       output+='''
         <placeholder name='z-actions'>
@@ -2087,7 +2289,7 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Create actions for menus and toolbar.
       Every entry creates a gtk.Action and the function returns a gtk.ActionGroup.
-      When the action is triggered it calls to a function.
+      When the action is triggered it calls a function.
       For more information see the pygtk documentation for the UIManager and ActionGroups.
       
       @return ActionGroup for all menu entries.
@@ -2165,6 +2367,10 @@ class ApplicationMainWindow(gtk.Window):
         "Filter the data points", None,                     # label, accelerator
         None,                                    # tooltip
         self.change_data_filter),
+      ( "TransformData", None,                    # name, stock id
+        "Transform the Units/Dimensions", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.unit_transformation),
       ( "CrossSection", None,                    # name, stock id
         "Cross-Section", None,                     # label, accelerator
         None,                                    # tooltip
