@@ -395,7 +395,7 @@ class FitSession:
     file_actions.actions['set_function_parameters']=self.set_function_parameters
     file_actions.actions['fit_functions']=self.fit
     file_actions.actions['simmulate_functions']=self.simulate
-    
+    self.file_actions=file_actions
 
 
   def add_function(self, function_name):
@@ -651,7 +651,7 @@ class FitSession:
       Add a function via dialog access.
       Standart parameters are used.
     '''
-    window.file_actions.activate_action('add_function', name.get_active_text())
+    self.file_actions.activate_action('add_function', name.get_active_text())
     #self.add_function(name.get_active_text())
     size=dialog.get_size()
     position=dialog.get_position()
@@ -691,9 +691,9 @@ class FitSession:
       values.append(get_entry_values(entries[i][-3], if_not=None))
       values.append(get_entry_values(entries[i][-2], if_not=None))
       values.append(entries[i][-1].get_text())
-      window.file_actions.activate_action('set_function_parameters', i, values)
-    covariance_matices=window.file_actions.activate_action('fit_functions')
-    window.file_actions.activate_action('simmulate_functions')
+      self.file_actions.activate_action('set_function_parameters', i, values)
+    covariance_matices=self.file_actions.activate_action('fit_functions')
+    self.file_actions.activate_action('simmulate_functions')
     size=dialog.get_size()
     position=dialog.get_position()
     dialog.destroy()
@@ -736,7 +736,7 @@ class FitSession:
     selected=[int(function_1.get_active_text().split(':')[0]), int(function_2.get_active_text().split(':')[0])]
     if result in [2, 3]:
       if result==2:
-        window.file_actions.activate_action('sum_up_functions', selected[0], selected[1])
+        self.file_actions.activate_action('sum_up_functions', selected[0], selected[1])
         #self.sum(selected[0], selected[1])
         size=dialog.get_size()
         position=dialog.get_position()

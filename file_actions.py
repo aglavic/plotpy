@@ -36,7 +36,8 @@ class FileActions:
                   'change filter': self.change_data_filter, 
                   'cross-section': self.cross_section, 
                   'iterate_through_measurements': self.iterate_through_measurements, 
-                  'create_fit_object':self.create_fit_object
+                  'create_fit_object': self.create_fit_object, 
+                  'change_color_pattern': self.change_color_pattern, 
                   }
 
   def activate_action(self, action, *args):
@@ -127,6 +128,22 @@ class FileActions:
     dataset=self.window.measurement[self.window.index_mess]
     from fit_data import FitSession
     dataset.fit_object=FitSession(dataset, self)
+  
+  def change_color_pattern(self, pattern):
+    import config.gnuplot_preferences as gnuplot_preferences
+    options_list_3d=gnuplot_preferences.settings_3d.splitlines()
+    options_list_3dmap=gnuplot_preferences.settings_3dmap.splitlines()
+    for line in reversed(options_list_3d):
+      if 'palette' in line:
+        options_list_3d.remove(line)
+    options_list_3d.append('set palette ' + pattern)
+    for line in reversed(options_list_3dmap):
+      if 'palette' in line:
+        options_list_3dmap.remove(line)
+    options_list_3dmap.append('set palette ' + pattern)
+    gnuplot_preferences.settings_3d="\n".join(options_list_3d) + "\n"
+    gnuplot_preferences.settings_3dmap="\n".join(options_list_3dmap) + "\n"
+    
 
   #----------- The performable actions --------------------
 

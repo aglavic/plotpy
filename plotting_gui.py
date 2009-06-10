@@ -1237,7 +1237,31 @@ class ApplicationMainWindow(gtk.Window):
       self.rebuild_menus()
       self.replot()      
     return gotit
-  
+
+  def change_color_pattern(self, action):
+    '''
+      Open a dialog to select a different color pattern.
+      The colorpatterns are defined in config.gnuplot_preferences.
+    '''
+    pattern_names=sorted(gnuplot_preferences.defined_color_patterns.keys())
+    cps_dialog=gtk.Dialog(title='Select new color pattern:')
+    pattern_box=gtk.combo_box_new_text()
+    # drop down menu for the pattern selection
+    for pattern in pattern_names:
+      pattern_box.append_text(pattern)
+    pattern_box.show_all()
+    cps_dialog.vbox.add(pattern_box)
+    cps_dialog.add_button('OK', 1)
+    cps_dialog.add_button('Cancel', 0)
+    result=cps_dialog.run()
+    if result==1:
+      self.file_actions.activate_action('change_color_pattern', 
+                                        gnuplot_preferences.defined_color_patterns[pattern_names[pattern_box.get_active()]])
+    cps_dialog.destroy()
+    self.replot()
+
+
+
   def fit_dialog(self,action, size=(600, 400), position=None):
     '''
       A dialog to fit the data with a set of functions.
@@ -1959,12 +1983,13 @@ class ApplicationMainWindow(gtk.Window):
         <menuitem action='FilterData'/>'''
     if self.measurement[self.index_mess].zdata>=0:
       output+='''
-        <placeholder name='CrossSection'>
+        <placeholder name='z-actions'>
         <menuitem action='CrossSection'/>
+        <menuitem action='SelectColor'/>
         </placeholder>'''
     else:
       output+='''
-        <placeholder name='CrossSection'/>'''
+        <placeholder name='z-actions'/>'''
     output+='''
         <separator name='static6'/>
         <menuitem action='ShowPlotparams'/>
@@ -2144,6 +2169,10 @@ class ApplicationMainWindow(gtk.Window):
         "Cross-Section", None,                     # label, accelerator
         None,                                    # tooltip
         self.extract_cross_section),
+      ( "SelectColor", None,                    # name, stock id
+        "Color Pattern...", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.change_color_pattern),
       ( "Apply", gtk.STOCK_CONVERT,                    # name, stock id
         "Apply", None,                     # label, accelerator
         "Apply current plot settings to all sequences",                                    # tooltip

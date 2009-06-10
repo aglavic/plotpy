@@ -72,7 +72,6 @@ plotting_parameters='w lines lw 2' # plotting x-y
 plotting_parameters_errorbars='w errorbars pt 5 ps 0.5 lw 2' # plotting with errorbars
 plotting_parameters_3d='w pm3d' # plotting 3d
 plotting_parameters_fit='w lines lw 3'
-# TODO: color selection
 settings_3d=\
 '''set style line 100 lt 6 lw 2
 set pm3d hidden3d 100
@@ -84,6 +83,17 @@ settings_3dmap=\
 set ticslevel 0.05
 set palette defined (0 "blue",50 "green", 80 "yellow",150 "red",200 "purple", 255 "black")
 '''
+defined_color_patterns={
+                        'Default': 'defined (0 "blue",50 "green", 80 "yellow",150 "red",200 "purple", 255 "black")', 
+                        'Black to Red': 'defined (0 "black",50 "purple", 80 "blue",150 "green",200 "yellow", 255 "red")', 
+                        'Grey Scale': 'gray', 
+                        'BGYR': 'defined (0 "blue",85 "green", 170 "yellow",255 "red")', 
+                        'Black to Yellow': 'defined (0 "black",85 "blue", 170 "red",255 "yellow")', 
+                        'Gnuplot std.': 'color', 
+                        'Rainbow': 'rgbformulae 22,13,-31', 
+                        'Hot': 'rgbformulae 21,22,23', 
+                        'Color, gray printable': 'rgbformulae 31,32,33', 
+                        }
 # title for a curve
 titles='[titles_add]'
 

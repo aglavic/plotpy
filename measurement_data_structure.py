@@ -17,7 +17,7 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
-SPLIT_SENSITIVITY=0.999
+SPLIT_SENSITIVITY=0.001
 
 #++++++++++++++++++++++++++++++++++++++MeasurementData-Class+++++++++++++++++++++++++++++++++++++++++++++++++++++#
 class MeasurementData:
@@ -313,20 +313,43 @@ class MeasurementData:
     '''
     xd=self.xdata
     yd=self.ydata
+    zd=self.zdata
     data=[point for point in self if (((xfrom is None) or (point[xd]>=xfrom)) and \
                                       ((xto is None) or (point[xd]<=xto)))]
-    max_x=max([abs(d[xd]) for d in data])
-    max_y=max([abs(d[xd]) for d in data])
     # convert Numbers to str
-    if self.zdata>=0:
+    if zd>=0:
+      if self.scan_line_constant<0:
+        max_dx=max([abs(data[i][xd]-data[i+1][xd]) for i in range(len(data)-1)])
+        max_dy=max([abs(data[i][yd]-data[i+1][yd]) for i in range(len(data)-1)])
+      else:
+        slc=self.scan_line_constant
+        max_dslc=max([abs(data[i][slc]-data[i+1][slc]) for i in range(len(data)-1)])
+      # for logarithmic data avoid holes because of low values
+      if self.logz:
+        absmin=None
+        for line in self.plot_options.splitlines():
+          if 'cbrange' in line:
+            try:
+              absmin=float(line.split('[')[1].split(':')[0])
+            except ValueError:
+              absmin=None
+        if not absmin > 0:
+          absmin=min(map(abs, self.data[zd].values))
+        if absmin==0:
+          absmin=1e-10
+        def zdata_to_absmin(point):
+          point[zd]=max(absmin, point[zd])
+          return point
+        map(zdata_to_absmin, data)
+      
+      # try to find the best way to split the data for Gnuplot
       if self.scan_line_constant >= 0:
         scan_line_constant=self.scan_line_constant
         if xd!=scan_line_constant:
           cmp_to=xd
-          sensitivity=SPLIT_SENSITIVITY*max_y
         else:
           cmp_to=yd
-          sensitivity=SPLIT_SENSITIVITY*max_x
+        sensitivity=SPLIT_SENSITIVITY*max_dslc
         def compare_columns(point1, point2):
           if point1[scan_line_constant]-sensitivity>point2[scan_line_constant]:
             return 1
@@ -351,12 +374,11 @@ class MeasurementData:
             return -1
           return cmp(point1[xd], point2[xd])
         
-
         data_xysort=list(data)
         data_yxsort=data
-        sensitivity=SPLIT_SENSITIVITY*max_x
+        sensitivity=SPLIT_SENSITIVITY*max_dx
         data_xysort.sort(compare_xy_columns)
-        sensitivity=SPLIT_SENSITIVITY*max_y
+        sensitivity=SPLIT_SENSITIVITY*max_dy
         data_yxsort.sort(compare_yx_columns)
         # insert blanck lines between scans for 3d plot
         insert_indices_xy=[i for i in range(len(data)-1) if (data_xysort[i+1][yd]<data_xysort[i][yd])]
