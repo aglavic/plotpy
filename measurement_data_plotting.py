@@ -352,8 +352,8 @@ def create_plot_script(session,
     else:
       i, j=(int(number.split('-')[0]), int(number.split('-')[1]))
       using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
-                          str(datasets[i].plot_together[j].ydata+1)+':'+\
-                          str(datasets[i].plot_together[j].yerror+1)
+                          str(datasets[i].plot_together[j].ydata+1)#+':'+\
+                          #str(datasets[i].plot_together[j].yerror+1)
       gnuplot_file_text=gnuplot_file_text+',\\\n"'+file_name_prefix+number+\
           '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
       gnuplot_file_text=replace_ph(session, 
