@@ -12,11 +12,29 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-first_detector_angle=0.0
-start_with_detector=4
-number_of_detectors=24
-detector_angular_increment=5.
+min_prefix_length=3
 
+FIRST_DETECTOR_ANGLE=0.0
+START_WITH_DETECTOR=4
+NUMBER_OF_DETECTORS=24
+DETECTOR_ANGULAR_INCREMENT=5.
+
+get_info= (\
+  # get detector bank position
+  ('DeteRota','detector_bank_2T'),\
+  # get sample rotation
+  ('Huber','omega'),\
+  # get polarizer positio
+  ('Translation','polarizer_trans'),\
+  # get flipper current
+  ('Flipper_precession','flipper'),\
+  # get temperature
+  ('T1','temperature'),\
+  # get counting time
+  ('Timer','time'),\
+  # get monitor counts
+  ('Monitor','monitor')
+  )
 
 column_dimensions=(
                     )

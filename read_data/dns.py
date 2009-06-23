@@ -7,6 +7,7 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 import os
+from math import sqrt
 from measurement_data_structure import MeasurementData
 from config.dns import *
 
@@ -23,212 +24,82 @@ def read_data(file_name):
   '''
     Read the data of a treff raw data file, integrate the corresponding .img files.
   '''
-  if not os.path.exists(file_name):
-    print 'File '+file_name+' does not exist.'
-    return 'NULL'
   file_handler=open(file_name, 'r')
-  lines=file_handler.readlines()
-  header_lines=lines[:get_first_data_line(lines)]
-  data_lines=lines[get_first_data_line(lines):]
-  file_handler.close()
-  valid,  header, columns= read_header(header_lines)
-  if not valid:
-    print 'Not a valid datafile, skipped.'
+  add_info={}
+  # read header to test if this is a dns data file
+  if (file_handler.readline().split()[0:3]==['#','DNS','Data']): 
+    file_handler.readline() # skip empty line
+    add_info['header']=read_header(file_handler) # read header information
+    add_info['lambda_n']=read_lambda(file_handler) # find wavelength
+    # get the information defined in define_get_info function
+    for info in get_info: 
+      add_info[info[1]]=read_info(file_handler,info[0]) 
+    while (file_handler.readline().find('DATA')==-1): # read until data line
+      continue
+    # dimensions are given at the line above the data
+    line=file_handler.readline().split()
+    detectors=min(float(line[1]),NUMBER_OF_DETECTORS)
+    time_channels=float(line[2])
+    # collect the data
+    data_array=read_detector_data(file_handler,detectors,time_channels)
+    #measurement_data=evaluate_data(data_array,add_info['detector_bank_2T'])
+    columns=[['Detector', '']]
+    error_columns=[]
+    for i in range(len(data_array[0][1])):
+      columns.append(['Channel_%i' % i, 'counts'])
+      error_columns.append(['Error_Ch_%i' % i, 'counts'])
+    columns+=error_columns
+    measurement_data=MeasurementData(columns, [],0,1,len(data_array[0][1])*2,zdata=-1)
+    for point in data_array:
+      measurement_data.append([point[0]]+point[1]+map(sqrt, point[1]))
+    measurement_data.dns_info=add_info
+    return measurement_data
+  else: # not dns data
+    print "Wrong file type! Doesn't contain dns header information."
     return 'NULL'
-  output = read_data_lines(data_lines, columns[1:], header)
+  
+
+def read_header(file_handler): # read file header information
+  file_handler.readline()
+  line=file_handler.readline()
+  output=''
+  while (not line[0:6]=='#-----'): # while header section is not over
+    output=output+line.lstrip('#')
+    line=file_handler.readline()
   return output
+    
+def read_lambda(file_handler): # read wavelength when after comment section
+  file_handler.readline()
+  return abs(float(file_handler.readline().split()[4]))*10
   
-def read_header(lines):
-  '''
-    Function to read IN12 file header information and check if the file is in the right format.
-  '''
-  try:
-    if  (lines.pop(6)!='VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV\n') or\
-        (lines.pop(3)!='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n') or\
-        (lines.pop(0)!='RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n'):
-      return False, [],  []
-  except IndexError:
-    return False, [],  []
-  lines.pop(0)
-  lines.pop(0)
-  lines.pop(0)
-  lines.pop(0)
-  columns=lines.pop(-1).split()
-  if not 'CNTS' in columns:
-    return False, [],  []
-  variables={}
-  parameters={}
-  user=''
-  time=''
-  command='unknown'
-  for line in lines:
-    item, value=line.split(':', 1)
-    if item=='PARAM':
-      for param in value.split(','):
-        split_param=param.split('=')
-        try:
-          parameters[replace_names(split_param[0])]=float(split_param[1])
-        except ValueError:
-          parameters[replace_names(split_param[0])]=None
-    elif item=='VARIA' or item=='POSQE':
-      for var in value.split(','):
-        var_param=var.split('=')
-        try:
-          variables[replace_names(var_param[0])]=float(var_param[1])
-        except ValueError:
-          variables[replace_names(var_param[0])]=None
-    elif item=='USER_':
-      user=value
-    elif item=='DATE_':
-      time=value
-    elif item=='COMND':
-      command=value
-    elif item=='TITLE':
-      title=value
-  return True, (time, user, title, command, variables, parameters), columns
-  
-def string_or_float(string_line):
-  '''
-    Short function to test if first column of a line is a float number or string.
-    Used to devide Header/Comment from Data lines.
-  '''
-  if len(string_line)==0:
-    return False
-  try:
-    float(string_line[0])
-    return True
-  except ValueError:
-    return False
+def read_info(file_handler,info_name): # read until specified line
+  line=file_handler.readline()
+  while (line.find(info_name)==-1):
+    line=file_handler.readline()
+  return float(line.split()[2])
 
-def get_first_data_line(lines):
-  '''
-    Short function to find the first line containing data.
-    Used to devide Header/Comment from Data lines.
-  '''
-  for i, line in enumerate(reversed(lines)):
-    if not string_or_float(line.split()):
-      return len(lines)-i
-
-def read_data_lines(lines, columns, header):
-  '''
-    Function to creat a MeasurementData object from the columns of the file.
-    If the measurement is done using a .pol file the polarizations are splitted
-    into seqences corresponding to the polarizations.
-  '''
-  title=header[2]
-  variables=header[4]
-  md_columns=[(replace_names(column), get_dimensions(column)) for column in columns]
-  md_columns.append(('error', 'counts'))
-  y_column=columns.index('CNTS')
-  error_column=len(columns)
-  if columns[0]=='PAL':
-    x_column=1
-  else:
-    x_column=0
-  split=str.split
-  def process_line(line):
-    spl=split(line)
-    float_list=map(float, spl)[1:]
-    float_list.append(sqrt(float_list[y_column]))
-    return float_list
-  processed_lines=map(process_line, lines)
-  # is this a polarized measurement
-  if x_column==1:
-    error_column-=1
-    y_column-=1
-    number_of_channels=max([line[0] for line in processed_lines])
-    data_objects=[MeasurementData(md_columns[1:], 
-                                [], 0, y_column, error_column)
-                  for i in range(int(number_of_channels))]
-    for i in range(number_of_channels):
-      lines_i=[line[1:] for line in processed_lines if line[0] == i + 1]
-      map(data_objects[i].append, lines_i)
-      data_objects[i].sample_name=title.replace('\n', '')
-      scan_type=replace_names(columns[x_column])
-      data_objects[i].short_info= scan_type + '-scan started at (%2g %2g %2g) with pol. %i' % (variables['h'], variables['k'], variables['l'], i)
-      data_objects[i].info=create_info(header)
-    return data_objects
-  else:
-    data_object=MeasurementData(md_columns, 
-                                [], 0, y_column, error_column)
-    map(data_object.append, processed_lines)
-    data_object.sample_name=title.replace('\n', '')
-    scan_type=replace_names(columns[x_column])
-    data_object.short_info= scan_type + '-scan started at (%2g %2g %2g)' % (variables['h'], variables['k'], variables['l'])
-    return [ data_object ]
-  
-def get_dimensions(item):
-  '''
-    Lookup the dimension of the values in the datafile.
-  '''
-  for seq in column_dimensions:
-    if item in seq[0]:
-      return seq[1]
-  return ''
-
-def replace_names(item):
-  '''
-    Replace variable names from datafile by custom names.
-  '''
-  for replacement in name_replacements:
-    if replacement[0] == item.strip():
-      return replacement[1]
-  return item
-  
-def create_info(header):
-  time, user, title, command, variables, parameters=header
-  info_text=['']
-  info_text.append('data taken from IN12 file')
-  info_text.append('User: %s' % user.strip())
-  info_text.append('Time: %s' % time.strip())
-  info_text.append('Title: %s' % title.strip())
-  info_text.append('')
-  info_text.append('Scaned with command: %s' % command)
-  add_1=''
-  add_2=''
-  info_text.append('Variables:')
-  for i, var in enumerate(sorted(variables.items())):
-    if var[1] is not None:
-      value='\t% -11g' % var[1]
-      add_2+=value
-    else:
-      add_2+='\tN/A     '
-    add_1+=('\t %-15s' % var[0].strip()[:15])[:len(value)]
-    if (i % 8) == 7:
-      info_text.append(add_1)
-      info_text.append(add_2)
-      add_1=''
-      add_2=''
-      info_text.append('')
-  if (i % 8) != 7:
-    info_text.append(add_1)
-    info_text.append(add_2)
-    info_text.append('')
-  info_text.append('')
-  add_1=''
-  add_2=''
-  info_text.append('Parameters:')
-  for i, par in enumerate(sorted(parameters.items())):
-    if par[1] is not None:
-      value='\t% -11g' % par[1]
-      add_2+=value
-    else:
-      add_2+='\tN/A     '
-    add_1+=('\t %-15s' % par[0].strip()[:15])[:len(value)]
-    if (i % 8) == 7:
-      info_text.append(add_1)
-      info_text.append(add_2)
-      add_1=''
-      add_2=''
-      info_text.append('')
-  if (i % 8) != 7:
-    info_text.append(add_1)
-    info_text.append(add_2)
-    info_text.append('')
-  info_text.append('')
-  return '\n'.join(info_text)
-
-if __name__ == '__main__':    #code to execute if called from command-line for testing
-  import sys
-  read_data(sys.argv[1])
-  
+# reads data and stores it in an array
+def read_detector_data(file_handler,detectors,time_channels): 
+  data=[]
+  data_point=[]
+  i=-1
+  j=0
+  line=file_handler.readline()
+  while(not line==''): # read until EOF
+    for value in line.split():
+      if (i==-1):
+        j=j+1
+      else:
+        if (i<time_channels):
+          data_point.append(float(value))
+      i=i+1
+    if(not i<time_channels):
+      # only save data form detectors after start_with
+      if (START_WITH_DETECTOR<=j): 
+        data.append([j-1,data_point])
+      data_point=[]
+      i=-1
+      if (j>=detectors):
+        break
+    line=file_handler.readline()
+  return data

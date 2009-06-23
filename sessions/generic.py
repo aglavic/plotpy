@@ -237,11 +237,11 @@ Data columns and unit transformations are defined in config.squid.py.
           elif last_argument_option[1]=='i':
             self.seq_inc=int(argument)
             last_argument_option=[False,'']
-          elif self.read_argument_add(argument,  last_argument_option)[0]:
-            last_argument_option=self.read_argument_add(argument,  last_argument_option)[1]
           else:
-            input_file_names.append(argument)
-            last_argument_option=[False,'']
+            found_add, last_argument_option=self.read_argument_add(argument,  last_argument_option)
+            if not found_add:
+              input_file_names.append(argument)
+              last_argument_option=[False,'']
         elif argument=='-a':
           self.single_picture=True
        # elif argument=='-l':
@@ -276,14 +276,14 @@ Data columns and unit transformations are defined in config.squid.py.
           self.unit_transformation=False
         elif argument=='--help':
           return None
-        # evaluate child arguments
-        elif self.read_argument_add(argument,  last_argument_option)[0]:
-          last_argument_option=self.read_argument_add(argument,  last_argument_option)[1]
         else:
-          if argument[1:len(argument)] in self.COMMANDLINE_OPTIONS:
-            last_argument_option=[True,argument[1:len(argument)]]
-          else:
-            print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
+          # evaluate child arguments
+          found_add, last_argument_option=self.read_argument_add(argument,  last_argument_option)
+          if not found_add:
+            if argument[1:len(argument)] in self.COMMANDLINE_OPTIONS:
+              last_argument_option=[True,argument[1:len(argument)]]
+            else:
+              print 'No such option: '+argument+'!\nTry "--help" for usage information!\n'
       else:
         input_file_names.append(argument)
     return input_file_names
