@@ -40,6 +40,7 @@ class MeasurementData:
   logz=False
   zdata=-1
   scan_line_constant=-1 # the column to sort the data for when using 3d plots.
+  scan_line=-1 # the column changed in one scan.
   const_data=[] # select, which data should not be varied in this maesurement and the accouracy
   info=''
   short_info=''
@@ -345,7 +346,9 @@ class MeasurementData:
       # try to find the best way to split the data for Gnuplot
       if self.scan_line_constant >= 0:
         scan_line_constant=self.scan_line_constant
-        if xd!=scan_line_constant:
+        if self.scan_line >= 0:
+          cmp_to=self.scan_line
+        elif xd!=scan_line_constant:
           cmp_to=xd
         else:
           cmp_to=yd

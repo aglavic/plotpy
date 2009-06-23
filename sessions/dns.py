@@ -14,6 +14,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 import os
+from math import pi, cos, sin, sqrt
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 from measurement_data_structure import MeasurementData
@@ -83,7 +84,8 @@ class DNSSession(GenericSession):
     self.os_path_stuff() # create temp folder according to OS
     self.try_import_externals()
     names.sort()
-    self.find_prefixes(names)
+    if len(names) > 0:
+      self.find_prefixes(names)
     self.prefixes.sort()
     for prefix in self.prefixes:
       self.read_files(prefix)
@@ -199,22 +201,30 @@ class DNSSession(GenericSession):
     def append_to_map(point):
       return [file_number, 
               omega-omega_offset, 
-              point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE+detector_bank_2T
-              ]+point[1:]
+              omega, 
+              point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE+detector_bank_2T, 
+              point[0]
+              ]+point[1:]+point[1:]+[0, 0]
     for i, scan in enumerate(scans):
       if i<increment:
-        columns=[['Filenumber', ''], ['Omega', '\302\260'], ['2Theta', '\302\260']]+\
-                  [[scan.dimensions()[j], scan.units()[j]] for j in range(1, len(scan.units()))]
-        self.file_data[prefix].append(DNSMeasurementData(columns, [], 1, 2, (len(scan.units())-1)/2+3, zdata=3))
+        columns=[['Filenumber', ''], ['Omega', '\302\260'], ['OmegaRAW', '\302\260'], 
+                 ['2Theta', '\302\260'], ['Detector', '']]+\
+                 [[scan.dimensions()[j], scan.units()[j]] for j in range(1, len(scan.units()))]+\
+                 [['I_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
+                 [['error_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
+                 [['q_x', '\303\205^{-1}'], ['q_y', '\303\205^{-1}']]
+        self.file_data[prefix].append(DNSMeasurementData(columns, [], 1, 3, (len(scan.units())-1)/2+5, zdata=5))
         self.file_data[prefix][i].number=str(i)
         self.file_data[prefix][i].dns_info=scan.dns_info
+        self.file_data[prefix][i].number_of_channels=(len(scan.units())-1)/2
       data=[point for point in scan]
       file_number=int(scan.number)
       detector_bank_2T=scan.dns_info['detector_bank_2T']
       omega=scan.dns_info['omega']
       map(self.file_data[prefix][i%increment].append, map(append_to_map, data))
-      pass
-      
+    for dnsmap in self.file_data[prefix]:
+      dnsmap.calculate_wavevectors()
+      dnsmap.make_corrections()
 
   def find_prefixes(self, names):
     '''
@@ -269,4 +279,58 @@ class DNSSession(GenericSession):
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
 
 class DNSMeasurementData(MeasurementData):
-  pass
+  dns_info={}
+  scan_line=4
+  scan_line_constant=1
+  number_of_channels=1
+  vanadium_file=None
+  background_file=None
+  
+  def calculate_wavevectors(self):
+    '''
+      Calculate the wavevectors from omega, 2Theta and lambda.
+    '''
+    qx_index=len(self.units())-2
+    qy_index=qx_index+1
+    lambda_n=self.dns_info['lambda_n']
+    two_pi_over_lambda=2*pi/lambda_n
+    grad_to_rad=pi/180.
+    
+    def angle_to_wavevector(point):
+      output=point
+      output[qx_index]=(cos(-point[1]*grad_to_rad)-\
+                cos(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
+                two_pi_over_lambda
+      output[qy_index]=(sin(-point[1]*grad_to_rad)-\
+                sin(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
+                two_pi_over_lambda
+      return output
+    
+    self.process_funcion(angle_to_wavevector)
+    self.xdata=qx_index
+    self.ydata=qy_index
+  
+  def make_corrections(self):
+    '''
+      Correct the data for background and Vanadium standart.
+      The rawdata is not changed only the I column.
+    '''
+    if not self.background_file is None:
+      self.process_funcion(self.correct_background)
+    if not self.vanadium_file is None:
+      self.process_funcion(self.correct_vanadium)
+  
+  def correct_background(self, point):
+    nc=self.number_of_channels
+    for bg_point in self.background_file:
+      if bg_point[0] ==  point[4]:
+        bg=point[1:]
+    for i in range(nc):
+      point[i+2*nc+5]=point[i+5]-bg[i]
+      point[i+3*nc+5]=sqrt(point[i+nc+5]**2 + bg[i+nc]**2)
+    return point
+  
+  def correct_vanadium(self, point):
+    return point
+  
+  
