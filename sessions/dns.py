@@ -15,6 +15,8 @@
 
 import os
 from math import pi, cos, sin, sqrt
+import gtk
+
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 from measurement_data_structure import MeasurementData
@@ -59,6 +61,8 @@ class DNSSession(GenericSession):
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[]
   mds_create=False
+  VANADIUM_FILE=None#config.dns.VANADIUM_FILE
+  BACKGROUND_FILE=None#"/home/glavic/Daten/DNS/TbMnO3-81958/ag340378tbmn.d_dat"
   #------------------ local variables -----------------
 
   
@@ -112,7 +116,7 @@ class DNSSession(GenericSession):
           self.file_options['default'][0]=float(argument)
           last_argument_option=[False,'']
         elif last_argument_option[1]=='vana':
-          self.vanadium_file=argument
+          self.VANADIUM_FILE=argument
           last_argument_option=[False,'']
         # explicit file setting:
         elif last_argument_option[1]=='files':
@@ -223,6 +227,10 @@ class DNSSession(GenericSession):
       omega=scan.dns_info['omega']
       map(self.file_data[prefix][i%increment].append, map(append_to_map, data))
     for dnsmap in self.file_data[prefix]:
+      if not self.BACKGROUND_FILE is None:
+        dnsmap.background_data=read_data.dns.read_data(self.BACKGROUND_FILE)
+      if not self.VANADIUM_FILE is None:
+        dnsmap.vanadium_data=read_data.dns.read_data(self.VANADIUM_FILE)
       dnsmap.calculate_wavevectors()
       dnsmap.make_corrections()
 
@@ -268,7 +276,7 @@ class DNSSession(GenericSession):
             ( "SetOmegaOffset", None,                             # name, stock id
                 "Omega Offset...", None,                    # label, accelerator
                 None,                                   # tooltip
-                None ),
+                self.change_omega_offset ),
             ( "SetIncrement", None,                             # name, stock id
                 "Change Increment", None,                    # label, accelerator
                 "Change Increment between files with same Polarization",                                   # tooltip
@@ -277,14 +285,41 @@ class DNSSession(GenericSession):
     return string,  actions
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
+  
+  #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
+  def change_omega_offset(self, action, window):
+    if not self.active_file_name in self.file_options:
+      return None
+    ooff_dialog=gtk.Dialog(title='Change omega offset:')
+    ooff_dialog.set_default_size(100,50)
+    ooff_dialog.add_button('OK', 1)
+    ooff_dialog.add_button('Apply', 2)
+    ooff_dialog.add_button('Cancle', 0)
+    input_filed=gtk.Entry()
+    input_filed.set_width_chars(4)
+    input_filed.set_text(str(self.file_options[self.active_file_name][0]))
+    input_filed.show()
+    ooff_dialog.vbox.add(input_filed)
+    result=ooff_dialog.run()
+    while result > 1:
+      ooff=float(input_filed.get_text())
+      self.active_file_data[window.index_mess].change_omega_offset(ooff)
+      window.replot()
+      result=ooff_dialog.run()
+    if result==1:
+      ooff=float(input_filed.get_text())
+      self.active_file_data[window.index_mess].change_omega_offset(ooff)
+      window.replot()
+    ooff_dialog.destroy()
+
 
 class DNSMeasurementData(MeasurementData):
   dns_info={}
   scan_line=4
   scan_line_constant=1
   number_of_channels=1
-  vanadium_file=None
-  background_file=None
+  vanadium_data=None
+  background_data=None
   
   def calculate_wavevectors(self):
     '''
@@ -310,27 +345,65 @@ class DNSMeasurementData(MeasurementData):
     self.xdata=qx_index
     self.ydata=qy_index
   
+  def change_omega_offset(self, omega_offset):
+    def calc_omega(point):
+      point[1]=point[2]-omega_offset
+      return point
+    self.process_funcion(calc_omega)
+    self.calculate_wavevectors()
+  
   def make_corrections(self):
     '''
       Correct the data for background and Vanadium standart.
       The rawdata is not changed only the I column.
     '''
-    if not self.background_file is None:
+    changed=False
+    if not self.background_data is None:
       self.process_funcion(self.correct_background)
-    if not self.vanadium_file is None:
+      changed=True
+    else:
+      self.process_funcion(self.copy_intensities)
+    if not self.vanadium_data is None:
       self.process_funcion(self.correct_vanadium)
+      changed=True
+    if changed:
+      self.zdata=self.number_of_channels*2+5
+      self.yerror=self.number_of_channels*3+5
+  
+  def copy_intensities(self, point):
+    nc=self.number_of_channels
+    for i in range(nc):
+      point[i+2*nc+5]=point[i+5]
+      point[i+3*nc+5]=point[i+nc+5]
+    return point
   
   def correct_background(self, point):
     nc=self.number_of_channels
-    for bg_point in self.background_file:
+    # find the background for the right detector
+    for bg_point in self.background_data:
       if bg_point[0] ==  point[4]:
-        bg=point[1:]
+        bg=bg_point[1:]
+        break
     for i in range(nc):
       point[i+2*nc+5]=point[i+5]-bg[i]
       point[i+3*nc+5]=sqrt(point[i+nc+5]**2 + bg[i+nc]**2)
     return point
   
   def correct_vanadium(self, point):
+    nc=self.number_of_channels
+    # find the background for the right detector
+    for vn_point in self.vanadium_data:
+      if vn_point[0] ==  point[4]:
+        vn=vn_point[1:]
+        break
+    for i in range(nc):
+      point[i+2*nc+5]/=vn[i]
+      point[i+3*nc+5]=self.error_propagation_quotient([point[i+2*nc+5], point[i+3*nc+5]],[vn[i], vn[i+nc]])
     return point
   
+  def error_propagation_quotient(self,xdata,ydata): 
+    '''
+      Calculate the propagated error for x/y.
+    '''
+    return sqrt((xdata[1]**2)/abs(ydata[0]) + abs(xdata[0])/(ydata[0]**2) * (ydata[1]**2))
   

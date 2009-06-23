@@ -18,6 +18,7 @@ FIRST_DETECTOR_ANGLE=0.0
 START_WITH_DETECTOR=4
 NUMBER_OF_DETECTORS=24
 DETECTOR_ANGULAR_INCREMENT=5.
+VANADIUM_FILE="/home/glavic/Daten/DNS/TbMnO3-81958/vana.d_dat"
 
 get_info= (\
   # get detector bank position
@@ -35,6 +36,8 @@ get_info= (\
   # get monitor counts
   ('Monitor','monitor')
   )
+
+SCALE_BY=('time', 's') #('monitor','monitor') # scale data by measureing 'time' or 'monitor' counts
 
 column_dimensions=(
                     )

@@ -46,12 +46,15 @@ def read_data(file_name):
     columns=[['Detector', '']]
     error_columns=[]
     for i in range(len(data_array[0][1])):
-      columns.append(['Channel_%i' % i, 'counts'])
-      error_columns.append(['Error_Ch_%i' % i, 'counts'])
+      columns.append(['Channel_%i' % i, 'counts/'+SCALE_BY[1]])
+      error_columns.append(['Error_Ch_%i' % i, 'counts/'+SCALE_BY[1]])
     columns+=error_columns
     measurement_data=MeasurementData(columns, [],0,1,len(data_array[0][1])*2,zdata=-1)
+    scaling=add_info[SCALE_BY[0]]
+    scale=lambda intensity: intensity/scaling
+    error_scale=lambda intensity: sqrt(intensity)/scaling
     for point in data_array:
-      measurement_data.append([point[0]]+point[1]+map(sqrt, point[1]))
+      measurement_data.append([point[0]]+map(scale, point[1])+map(error_scale, point[1]))
     measurement_data.dns_info=add_info
     return measurement_data
   else: # not dns data
