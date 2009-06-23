@@ -62,6 +62,7 @@ known_measurement_types={
                          'refl': ('reflectometer', 'ReflectometerSession', ['UXD', 'uxd']), 
                          'treff': ('treff', 'TreffSession', ['___']), 
                          'in12': ('in12', 'IN12Session', ['___']), 
+                         'dns': ('dns', 'DNSSession', ['d_dat']), 
                          }
 
   

@@ -275,6 +275,8 @@ def create_plot_script(session,
   '''
       function to create a script for the gnuplot program to read
   '''
+  # TODO: Check for all functionalities compared with no script mode.
+  # Ceck for unused code.
   gp=gnuplot_preferences # define global gnuplot_preferences modul as local gp 
   sample_name=datasets[0].sample_name
   file_numbers=[]
