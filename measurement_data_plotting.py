@@ -42,7 +42,7 @@ def gnuplot_plot(session,
   file_numbers=[]
   for j, dataset in enumerate(datasets):
     for i, attachedset in enumerate(dataset.plot_together):
-      file_numbers.append(str(j)+'-'+str(i))
+      file_numbers.append(dataset.number+'-'+str(i))
   if output_file.rsplit('.',1)[1]=='ps': # Determine which terminal to use depending on filename suffix
     postscript_export=True
     terminal=gp.set_output_terminal_ps
@@ -161,7 +161,8 @@ def gnuplot_plot_script(session,
                         file_name_postfix, 
                         title,
                         names,
-                        with_errorbars,output_file=gnuplot_preferences.output_file_name,
+                        with_errorbars,
+                        output_file=gnuplot_preferences.output_file_name,
                         additional_info='',
                         fit_lorentz=False,
                         add_preferences=''): 
@@ -173,8 +174,8 @@ def gnuplot_plot_script(session,
   file_numbers=[]
   for j, dataset in enumerate(datasets):
     for i, attachedset in enumerate(dataset.plot_together):
-      file_numbers.append(str(j)+'-'+str(i))
-      attachedset.export(session.TEMP_DIR+'tmp_data_'+str(j)+'-'+str(i)+'.out')
+      file_numbers.append(dataset.number+'-'+str(i))
+      attachedset.export(session.TEMP_DIR+'tmp_data_'+dataset.number+'-'+str(i)+'.out')
   sample_name=datasets[0].sample_name
   if output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
@@ -195,7 +196,7 @@ def gnuplot_plot_script(session,
                                           additional_info)
   gnuplot_file_text=create_plot_script(session, 
                                        datasets,
-                                       session.TEMP_DIR+'tmp_data_', 
+                                       file_name_prefix, 
                                        file_name_postfix, 
                                        title,
                                        names,
@@ -282,7 +283,7 @@ def create_plot_script(session,
   file_numbers=[]
   for j, dataset in enumerate(datasets):
     for i, attachedset in enumerate(dataset.plot_together):
-      file_numbers.append(str(j)+'-'+str(i))
+      file_numbers.append(dataset.number+'-'+str(i))
   if output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
@@ -314,7 +315,7 @@ def create_plot_script(session,
   splot_add=''
   if datasets[0].zdata>=0:
     plotting_param=gp.plotting_parameters_3d
-    gnuplot_file_text=gnuplot_file_text+'set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
+    gnuplot_file_text+='set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
         'set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
     if ((datasets[0].view_x%180)==0)&((datasets[0].view_z%90)==0):
       gnuplot_file_text+=gp.settings_3dmap
@@ -322,9 +323,8 @@ def create_plot_script(session,
       gnuplot_file_text+=gp.settings_3d
     splot_add='s'
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
-  gnuplot_file_text=gnuplot_file_text+\
-        '# now the plotting function\n'+splot_add+\
-        'plot "'+file_name_prefix+file_numbers[0]+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+  gnuplot_file_text+='# now the plotting function\n'+splot_add+\
+        'plot "'+session.TEMP_DIR+'tmp_data_'+file_numbers[0]+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
   gnuplot_file_text=replace_ph(session, 
                              gnuplot_file_text,
                              datasets,
@@ -338,7 +338,7 @@ def create_plot_script(session,
                              additional_info)
   for number in file_numbers[1:len(file_numbers)]:
     if number.split('-')[1]=='0':
-      gnuplot_file_text=gnuplot_file_text+',\\\n"'+file_name_prefix+number+\
+      gnuplot_file_text+=',\\\n"'+session.TEMP_DIR+'tmp_data_'+number+\
           '.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
       gnuplot_file_text=replace_ph(session, 
                                    gnuplot_file_text,
@@ -356,7 +356,7 @@ def create_plot_script(session,
       using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
                           str(datasets[i].plot_together[j].ydata+1)#+':'+\
                           #str(datasets[i].plot_together[j].yerror+1)
-      gnuplot_file_text=gnuplot_file_text+',\\\n"'+file_name_prefix+number+\
+      gnuplot_file_text+=',\\\n"'+session.TEMP_DIR+'tmp_data_'+number+\
           '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
       gnuplot_file_text=replace_ph(session, 
                                    gnuplot_file_text,

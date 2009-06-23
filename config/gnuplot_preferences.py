@@ -82,6 +82,7 @@ settings_3dmap=\
 '''set pm3d map interpolate 5,5
 set ticslevel 0.05
 set palette defined (0 "blue",50 "green", 80 "yellow",150 "red",200 "purple", 255 "black")
+set size square
 '''
 defined_color_patterns={
                         'Default': 'defined (0 "blue",50 "green", 80 "yellow",150 "red",200 "purple", 255 "black")', 

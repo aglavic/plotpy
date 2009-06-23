@@ -14,6 +14,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 import os
+import sys
 from math import pi, cos, sin, sqrt
 import gtk
 
@@ -174,7 +175,7 @@ class DNSSession(GenericSession):
     else:
       folder, fileprefix=file_split
     # create a list of all files starting with the fileprefix
-    file_list=[file for file in os.listdir(folder) if fileprefix == file[0:len(fileprefix)]]
+    file_list=[file for file in os.listdir(folder) if file.startswith(fileprefix) and file.endswith('.d_dat')]
     if len(file_list)==0:
       return None
     file_list.sort()
@@ -186,12 +187,14 @@ class DNSSession(GenericSession):
       postfix=file_list[0][postfix_index:]
     self.file_options[prefix]=[omega_offset, increment, num_range, postfix]
     self.file_data[prefix+'|raw_data']=[]
+    print "Reading files %s{num}%s with num from %i to %i." % (prefix, postfix, num_range[0], num_range[1])
     for file_name in file_list:
       active_number=int(file_name.rsplit(postfix)[0].split(prefix, 1)[1])
       if (active_number>=num_range[0]) and (active_number<=num_range[1] or num_range[1]==-1):
         dataset=read_data.dns.read_data(os.path.join(folder, file_name))
         dataset.number=str(active_number)
         self.file_data[prefix+'|raw_data'].append(dataset)
+    print "\tRead, creating map."
     self.create_maps(prefix)
     return None
   
@@ -227,12 +230,18 @@ class DNSSession(GenericSession):
       omega=scan.dns_info['omega']
       map(self.file_data[prefix][i%increment].append, map(append_to_map, data))
     for dnsmap in self.file_data[prefix]:
+      sys.stdout.write("\tMap %s created, perfoming datatreatment: " % dnsmap.number)
+      sys.stdout.flush()
       if not self.BACKGROUND_FILE is None:
         dnsmap.background_data=read_data.dns.read_data(self.BACKGROUND_FILE)
       if not self.VANADIUM_FILE is None:
         dnsmap.vanadium_data=read_data.dns.read_data(self.VANADIUM_FILE)
+      sys.stdout.write("calculate wavevectors, ")
+      sys.stdout.flush()
       dnsmap.calculate_wavevectors()
       dnsmap.make_corrections()
+      sys.stdout.write("\n")
+      sys.stdout.flush()
 
   def find_prefixes(self, names):
     '''
@@ -285,6 +294,18 @@ class DNSSession(GenericSession):
     return string,  actions
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
+  def plot_all(self):
+    '''
+      Plot everything selected from all files.
+      This overwrites the generic method to remove the
+      raw date from beeing ploted.
+    '''
+    for name in self:
+      if len(name.split("|raw_data", 1))==1:
+        print "Plotting '" + name + "' sequences."
+        self.plot_active()
+  
+  
   
   #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
   def change_omega_offset(self, action, window):
@@ -359,11 +380,15 @@ class DNSMeasurementData(MeasurementData):
     '''
     changed=False
     if not self.background_data is None:
+      sys.stdout.write("background substractoin, ")
+      sys.stdout.flush()
       self.process_funcion(self.correct_background)
       changed=True
     else:
       self.process_funcion(self.copy_intensities)
     if not self.vanadium_data is None:
+      sys.stdout.write("vanadium correction, ")
+      sys.stdout.flush()
       self.process_funcion(self.correct_vanadium)
       changed=True
     if changed:
