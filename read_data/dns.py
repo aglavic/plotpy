@@ -56,6 +56,9 @@ def read_data(file_name):
     for point in data_array:
       measurement_data.append([point[0]]+map(scale, point[1])+map(error_scale, point[1]))
     measurement_data.dns_info=add_info
+    measurement_data.info="\n".join(map(lambda item: item[0]+': '+str(item[1]),
+                                    sorted(add_info.items())))
+    measurement_data.sample_name=file_name
     return measurement_data
   else: # not dns data
     print "Wrong file type! Doesn't contain dns header information."

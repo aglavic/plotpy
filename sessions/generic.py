@@ -26,7 +26,7 @@ import subprocess
 from cPickle import load, dump
 from measurement_data_structure import MeasurementData
 import measurement_data_plotting
-from config.gnuplot_preferences import PRINT_COMMAND
+from config.gnuplot_preferences import PRINT_COMMAND, GNUPLOT_COMMAND
 
 # importing own modules
 
@@ -312,7 +312,7 @@ Data columns and unit transformations are defined in config.squid.py.
       self.TEMP_DIR="/tmp/"
       self.SCRIPT_PATH=SCRIPT_PATH + '/'
       # name of the gnuplot command under linux
-      self.GNUPLOT_COMMAND="gnuplot"
+      self.GNUPLOT_COMMAND=GNUPLOT_COMMAND
     else:
     # Windows case
       self.OPERATING_SYSTEM='windows'

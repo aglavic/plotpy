@@ -41,6 +41,8 @@ GNUPLOT_FILE_HEAD='#Gnuplot inputfile to plot the data of plot.py\n#[info]\n'
 gnuplot_file_name='gnuplot.tmp'
 # Linux printing command (works properly with .ps, problems with png with wrong size)
 PRINT_COMMAND="lpr -P IFF17c4 -J \'plot_SQUID_data.py output\'  "
+# Command for script mode to accress gnuplot
+GNUPLOT_COMMAND="gnuplot"
 
 def remove_from_name(name):
   '''

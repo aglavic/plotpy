@@ -536,6 +536,9 @@ class ApplicationMainWindow(gtk.Window):
     '''
     index=int(action.get_name().split('-')[-1])
     object=sorted(self.active_session.file_data.items())[index]
+    self.change_active_file_object(object)
+  
+  def change_active_file_object(self, object):
     self.active_session.change_active(object)
     self.measurement=self.active_session.active_file_data
     self.input_file_name=object[0]
@@ -1698,7 +1701,8 @@ class ApplicationMainWindow(gtk.Window):
                                           errorbars,
                                           common_file_prefix + '.png',
                                           fit_lorentz=False,
-                                          add_preferences=self.preferences_file)
+                                          add_preferences=self.preferences_file, 
+                                          output_file_prefix=common_file_prefix)
         file_numbers=[]
         for j, dataset in enumerate(itemlist):
           for i, attachedset in enumerate(dataset.plot_together):
@@ -1715,7 +1719,8 @@ class ApplicationMainWindow(gtk.Window):
                            errorbars, 
                            output_file=common_file_prefix + '.png',
                            fit_lorentz=False,
-                           add_preferences=self.preferences_file)
+                           add_preferences=self.preferences_file, 
+                           output_file_prefix=common_file_prefix)
         file_numbers=[]
         j=0
         dataset=self.measurement[self.index_mess]

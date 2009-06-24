@@ -45,9 +45,14 @@ class DNSSession(GenericSession):
 \t-inc\tinc\tThe default increment between files of the same polarization.
 \t-ooff\tooff\tOffset of omega angle for the sample to calculate the right q_x,q_y
 \t-vana\tfile\tUse different Vanadium file for evaluation.
+\t-samplt\tname\tSet the name of your sample to be used in every plot(can be changed in GUI).
 \t-files\tprefix ooff inc from to postfix
 \t\t\tExplicidly give the file name prefix, omega offset, increment, numbers and postfix
 \t\t\tfor the files to be used. Can be given multiple times for diefferent prefixes.
+
+\tShort info settings: 
+\t\t-time, -flipper, -monitor
+\t\t\tDon't use temperature for the short info but time, flipper or monitor value.'
 '''
   #------------------ help text strings ---------------
 
@@ -57,13 +62,15 @@ class DNSSession(GenericSession):
 #  TRANSFORMATIONS=[\
 #  ['','',1,0,'',''],\
 #  ]  
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'bg', 'vana', 'files'] 
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'bg', 'vana', 'files', 'sample', 'time', 'flipper', 'monitor'] 
   file_options={'default': [0, 1, [0, -1], ''],  # (omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[]
   mds_create=False
   VANADIUM_FILE=None#config.dns.VANADIUM_FILE
   BACKGROUND_FILE=None#"/home/glavic/Daten/DNS/TbMnO3-81958/ag340378tbmn.d_dat"
+  SHORT_INFO=('temperature', 'at T=', 'K')
+  SAMPLE_NAME=''
   #------------------ local variables -----------------
 
   
@@ -119,6 +126,10 @@ class DNSSession(GenericSession):
         elif last_argument_option[1]=='vana':
           self.VANADIUM_FILE=argument
           last_argument_option=[False,'']
+        # Set sample name:
+        elif last_argument_option[1]=='sample':
+          self.SAMPLE_NAME=argument
+          last_argument_option=[False,'']
         # explicit file setting:
         elif last_argument_option[1]=='files':
           self.file_options[argument]=[]
@@ -146,9 +157,12 @@ class DNSSession(GenericSession):
           last_argument_option=[False,'']
         else:
           found=False
-#      elif argument=='-no-img':
-#        self.import_images=False
-#        found=True
+      elif argument=='-time':
+        self.SHORT_INFO=('time', 'with t=', 's')
+      elif argument=='-monitor':
+        self.SHORT_INFO=('monitor', 'with monitor=', 'counts')
+      elif argument=='-flipper':
+        self.SHORT_INFO=('flipper', 'flipper at ', '')
       else:
         found=False
     return (found, last_argument_option)
@@ -156,7 +170,8 @@ class DNSSession(GenericSession):
 
   def read_files(self, prefix):
     '''
-      Function to read data files.
+      Function to read data files. 
+      The files are split by their prefixes.
     '''
     if prefix in self.file_options:
       omega_offset=self.file_options[prefix][0]
@@ -189,7 +204,7 @@ class DNSSession(GenericSession):
     self.file_data[prefix+'|raw_data']=[]
     print "Reading files %s{num}%s with num from %i to %i." % (prefix, postfix, num_range[0], num_range[1])
     for file_name in file_list:
-      active_number=int(file_name.rsplit(postfix)[0].split(prefix, 1)[1])
+      active_number=int(os.path.join(folder, file_name).rsplit(postfix)[0].split(prefix, 1)[1])
       if (active_number>=num_range[0]) and (active_number<=num_range[1] or num_range[1]==-1):
         dataset=read_data.dns.read_data(os.path.join(folder, file_name))
         dataset.number=str(active_number)
@@ -199,6 +214,10 @@ class DNSSession(GenericSession):
     return None
   
   def create_maps(self, prefix):
+    '''
+      Crates a 3d MeasurementData object which can be used to
+      plot color maps of the measurement.
+    '''
     scans=self.file_data[prefix+'|raw_data']
     self.file_data[prefix]=[]
     omega_offset=self.file_options[prefix][0]
@@ -209,7 +228,7 @@ class DNSSession(GenericSession):
       return [file_number, 
               omega-omega_offset, 
               omega, 
-              point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE+detector_bank_2T, 
+              point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE-detector_bank_2T, 
               point[0]
               ]+point[1:]+point[1:]+[0, 0]
     for i, scan in enumerate(scans):
@@ -221,9 +240,14 @@ class DNSSession(GenericSession):
                  [['error_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
                  [['q_x', '\303\205^{-1}'], ['q_y', '\303\205^{-1}']]
         self.file_data[prefix].append(DNSMeasurementData(columns, [], 1, 3, (len(scan.units())-1)/2+5, zdata=5))
-        self.file_data[prefix][i].number=str(i)
-        self.file_data[prefix][i].dns_info=scan.dns_info
-        self.file_data[prefix][i].number_of_channels=(len(scan.units())-1)/2
+        active_map=self.file_data[prefix][i]
+        active_map.number=str(i)
+        active_map.dns_info=scan.dns_info
+        active_map.number_of_channels=(len(scan.units())-1)/2
+        active_map.short_info=self.SHORT_INFO[1]+str(scan.dns_info[self.SHORT_INFO[0]])+self.SHORT_INFO[2]
+        active_map.sample_name=self.SAMPLE_NAME
+        active_map.info= "\n".join(map(lambda item: item[0]+': '+str(item[1]),
+                                    sorted(scan.dns_info.items())))
       data=[point for point in scan]
       file_number=int(scan.number)
       detector_bank_2T=scan.dns_info['detector_bank_2T']
@@ -256,6 +280,7 @@ class DNSSession(GenericSession):
         split_names[-1].append(name)
       else:
         split_names.append([name])
+        tmp_prefix=name[0:config.dns.min_prefix_length]
     for snames in split_names:
       prefix=snames[0]
       for name in snames:
@@ -289,7 +314,7 @@ class DNSSession(GenericSession):
             ( "SetIncrement", None,                             # name, stock id
                 "Change Increment", None,                    # label, accelerator
                 "Change Increment between files with same Polarization",                                   # tooltip
-                None ),
+                self.change_increment ),
              )
     return string,  actions
 
@@ -329,9 +354,31 @@ class DNSSession(GenericSession):
       result=ooff_dialog.run()
     if result==1:
       ooff=float(input_filed.get_text())
+      self.file_options[self.active_file_name][0]=ooff
       self.active_file_data[window.index_mess].change_omega_offset(ooff)
       window.replot()
     ooff_dialog.destroy()
+
+  def change_increment(self, action, window):
+    if not self.active_file_name in self.file_options:
+      return None
+    inc_dialog=gtk.Dialog(title='Change increment for same polarization:')
+    inc_dialog.set_default_size(100,50)
+    inc_dialog.add_button('OK', 1)
+    inc_dialog.add_button('Cancle', 0)
+    input_filed=gtk.Entry()
+    input_filed.set_width_chars(4)
+    input_filed.set_text(str(self.file_options[self.active_file_name][1]))
+    input_filed.show()
+    inc_dialog.vbox.add(input_filed)
+    result=inc_dialog.run()
+    if result==1:
+      inc=int(input_filed.get_text())
+      self.file_options[self.active_file_name][1]=inc
+      self.create_maps(self.active_file_name)
+      object=self.file_data[self.active_file_name]
+      window.change_active_file_object((self.active_file_name, object))
+    inc_dialog.destroy()
 
 
 class DNSMeasurementData(MeasurementData):

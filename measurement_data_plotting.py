@@ -272,12 +272,16 @@ def create_plot_script(session,
                        output_file=gnuplot_preferences.output_file_name,
                        additional_info='',
                        fit_lorentz=False,
-                       add_preferences=''):
+                       add_preferences='', 
+                       output_file_prefix=None
+                       ):
   '''
       function to create a script for the gnuplot program to read
   '''
   # TODO: Check for all functionalities compared with no script mode.
   # Ceck for unused code.
+  if output_file_prefix is None:
+    output_file_prefix=session.TEMP_DIR+'tmp_data_'
   gp=gnuplot_preferences # define global gnuplot_preferences modul as local gp 
   sample_name=datasets[0].sample_name
   file_numbers=[]
@@ -324,7 +328,7 @@ def create_plot_script(session,
     splot_add='s'
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
   gnuplot_file_text+='# now the plotting function\n'+splot_add+\
-        'plot "'+session.TEMP_DIR+'tmp_data_'+file_numbers[0]+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+        'plot "'+output_file_prefix+file_numbers[0]+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
   gnuplot_file_text=replace_ph(session, 
                              gnuplot_file_text,
                              datasets,
@@ -338,7 +342,7 @@ def create_plot_script(session,
                              additional_info)
   for number in file_numbers[1:len(file_numbers)]:
     if number.split('-')[1]=='0':
-      gnuplot_file_text+=',\\\n"'+session.TEMP_DIR+'tmp_data_'+number+\
+      gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
           '.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
       gnuplot_file_text=replace_ph(session, 
                                    gnuplot_file_text,
@@ -356,7 +360,7 @@ def create_plot_script(session,
       using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
                           str(datasets[i].plot_together[j].ydata+1)#+':'+\
                           #str(datasets[i].plot_together[j].yerror+1)
-      gnuplot_file_text+=',\\\n"'+session.TEMP_DIR+'tmp_data_'+number+\
+      gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
           '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
       gnuplot_file_text=replace_ph(session, 
                                    gnuplot_file_text,
