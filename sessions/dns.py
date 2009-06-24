@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-  class for DNS data sessions
+  class for DNS data sessions and derived MeasurementData object.
 '''
 #################################################################################################
 #                        Script to plot DNS-measurements with gnuplot                           #
@@ -13,9 +13,16 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
+# import external modules
 import os
 import sys
-from math import pi, cos, sin, sqrt
+# if possible use the numpy functions as they work with complete arrays
+try:
+  from numpy import pi, cos, sin, sqrt, array
+  use_numpy=True
+except InputError:
+  from math import pi, cos, sin, sqrt
+  use_numpy=False
 import gtk
 
 # import GenericSession, which is the parent class for the squid_session
@@ -44,6 +51,7 @@ class DNSSession(GenericSession):
 \tDNS-Data treatment:
 \t-inc\tinc\tThe default increment between files of the same polarization.
 \t-ooff\tooff\tOffset of omega angle for the sample to calculate the right q_x,q_y
+\t-bg\tbg\tFile to be substracted as background.
 \t-vana\tfile\tUse different Vanadium file for evaluation.
 \t-samplt\tname\tSet the name of your sample to be used in every plot(can be changed in GUI).
 \t-files\tprefix ooff inc from to postfix
@@ -71,6 +79,7 @@ class DNSSession(GenericSession):
   BACKGROUND_FILE=None#"/home/glavic/Daten/DNS/TbMnO3-81958/ag340378tbmn.d_dat"
   SHORT_INFO=('temperature', 'at T=', 'K')
   SAMPLE_NAME=''
+  ONLY_IMPORT_MULTIFILE=True
   #------------------ local variables -----------------
 
   
@@ -123,6 +132,9 @@ class DNSSession(GenericSession):
         elif last_argument_option[1]=='ooff':
           self.file_options['default'][0]=float(argument)
           last_argument_option=[False,'']
+        elif last_argument_option[1]=='bg':
+          self.BACKGROUND_FILE=argument
+          last_argument_option=[False,'']
         elif last_argument_option[1]=='vana':
           self.VANADIUM_FILE=argument
           last_argument_option=[False,'']
@@ -167,7 +179,26 @@ class DNSSession(GenericSession):
         found=False
     return (found, last_argument_option)
 
-
+  def add_file(self, filenames, append=True):
+    '''
+      In contrast to other sessions this is only called
+      from the gui to add new files.
+    '''
+    filenames.sort()
+    if len(filenames) > 1:
+      self.find_prefixes(filenames)
+    else:
+      return False
+    self.prefixes.sort()
+    new_prefixes=[pf for pf in self.prefixes if not pf in self.file_data]
+    if len(new_prefixes)>0:
+      for prefix in new_prefixes:
+        self.read_files(prefix)
+      self.change_active(name=new_prefixes[0])
+      return True
+    else:
+      return False
+  
   def read_files(self, prefix):
     '''
       Function to read data files. 
@@ -334,6 +365,10 @@ class DNSSession(GenericSession):
   
   #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
   def change_omega_offset(self, action, window):
+    '''
+      A dialog to change the omega offset of the active map.
+      If no map is active at the moment it does nothing.
+    '''
     if not self.active_file_name in self.file_options:
       return None
     ooff_dialog=gtk.Dialog(title='Change omega offset:')
@@ -341,11 +376,38 @@ class DNSSession(GenericSession):
     ooff_dialog.add_button('OK', 1)
     ooff_dialog.add_button('Apply', 2)
     ooff_dialog.add_button('Cancle', 0)
+    table=gtk.Table(3,1,False)
     input_filed=gtk.Entry()
     input_filed.set_width_chars(4)
     input_filed.set_text(str(self.file_options[self.active_file_name][0]))
-    input_filed.show()
-    ooff_dialog.vbox.add(input_filed)
+    input_filed.connect('activate', lambda *ignore: ooff_dialog.response(2))
+    table.attach(input_filed,
+                # X direction #          # Y direction
+                0, 1,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    up_button=gtk.Button("+")
+    down_button=gtk.Button("-")
+    table.attach(up_button,
+                # X direction #          # Y direction
+                1, 2,                      0, 1,
+                0,                         0,
+                0,                         0);
+    table.attach(down_button,
+                # X direction #          # Y direction
+                2, 3,                      0, 1,
+                0,                         0,
+                0,                         0);
+    def toggle_up(*ignore):
+      input_filed.set_text(str((int(input_filed.get_text())+10)%360))
+      ooff_dialog.response(2)
+    def toggle_down(*ignore):
+      input_filed.set_text(str((int(input_filed.get_text())-10)%360))
+      ooff_dialog.response(2)
+    up_button.connect('clicked', toggle_up)
+    down_button.connect('clicked', toggle_down)
+    ooff_dialog.vbox.add(table)
+    ooff_dialog.show_all()
     result=ooff_dialog.run()
     while result > 1:
       ooff=float(input_filed.get_text())
@@ -360,6 +422,10 @@ class DNSSession(GenericSession):
     ooff_dialog.destroy()
 
   def change_increment(self, action, window):
+    '''
+      Change the increments between files of the same polarization
+      chanel. New maps are created after this change.
+    '''
     if not self.active_file_name in self.file_options:
       return None
     inc_dialog=gtk.Dialog(title='Change increment for same polarization:')
@@ -370,6 +436,7 @@ class DNSSession(GenericSession):
     input_filed.set_width_chars(4)
     input_filed.set_text(str(self.file_options[self.active_file_name][1]))
     input_filed.show()
+    input_filed.connect('activate', lambda *ignore: inc_dialog.response(1))
     inc_dialog.vbox.add(input_filed)
     result=inc_dialog.run()
     if result==1:
@@ -382,8 +449,14 @@ class DNSSession(GenericSession):
 
 
 class DNSMeasurementData(MeasurementData):
+  '''
+    Class derived from MeasurementData to be more suitable for DNS measurements.
+    Datatreatment is done here and additional data treatment functions should
+    be put here, too.
+  '''
+  
   dns_info={}
-  scan_line=4
+  scan_line=3
   scan_line_constant=1
   number_of_channels=1
   vanadium_data=None
@@ -414,6 +487,9 @@ class DNSMeasurementData(MeasurementData):
     self.ydata=qy_index
   
   def change_omega_offset(self, omega_offset):
+    '''
+      Recalculate omega and q_x, q_y for a new offset value.
+    '''
     def calc_omega(point):
       point[1]=point[2]-omega_offset
       return point
@@ -443,35 +519,89 @@ class DNSMeasurementData(MeasurementData):
       self.yerror=self.number_of_channels*3+5
   
   def copy_intensities(self, point):
+    '''
+      Just compy the raw intensity measured to another column.
+    '''
     nc=self.number_of_channels
     for i in range(nc):
       point[i+2*nc+5]=point[i+5]
       point[i+3*nc+5]=point[i+nc+5]
     return point
   
-  def correct_background(self, point):
-    nc=self.number_of_channels
-    # find the background for the right detector
-    for bg_point in self.background_data:
-      if bg_point[0] ==  point[4]:
-        bg=bg_point[1:]
-        break
-    for i in range(nc):
-      point[i+2*nc+5]=point[i+5]-bg[i]
-      point[i+3*nc+5]=sqrt(point[i+nc+5]**2 + bg[i+nc]**2)
-    return point
-  
-  def correct_vanadium(self, point):
-    nc=self.number_of_channels
-    # find the background for the right detector
-    for vn_point in self.vanadium_data:
-      if vn_point[0] ==  point[4]:
-        vn=vn_point[1:]
-        break
-    for i in range(nc):
-      point[i+2*nc+5]/=vn[i]
-      point[i+3*nc+5]=self.error_propagation_quotient([point[i+2*nc+5], point[i+3*nc+5]],[vn[i], vn[i+nc]])
-    return point
+  if use_numpy:
+    #++++++++++++ calculations for use with arrays +++++++++++++++++
+    def correct_background(self, point):
+      '''
+        Subtract background from the intensity data and calculate new
+        error for these values.
+      '''
+      nc=self.number_of_channels
+      # find the background for the right detectors
+      # create a list of all columns in the background file
+      bg_lists=map(lambda column: column.values, self.background_data.data)
+      # search the indices for the detectors
+      bg_indices=map(lambda detector: bg_lists[0].index(detector), point[4])
+      # create a list of arrays with the corresponding intensities
+      bg=map(lambda column: array(map(lambda index: column[index], bg_indices)), bg_lists[1:])
+      for i in range(nc):
+        point[i+2*nc+5]=point[i+5]-bg[i]
+        point[i+3*nc+5]=sqrt(point[i+nc+5]**2 + bg[i+nc]**2)
+      return point
+    
+    def correct_vanadium(self, point):
+      '''
+        Devide the intensity by the counts measured with vanadium for the
+        same detector bank.
+      '''
+      nc=self.number_of_channels
+      # find the background for the right detector
+      # create a list of all columns in the background file
+      vn_lists=map(lambda column: column.values, self.vanadium_data.data)
+      # search the indices for the detectors
+      vn_indices=map(lambda detector: vn_lists[0].index(detector), point[4])
+      # create a list of arrays with the corresponding intensities
+      vn=array(map(lambda index: vn_lists[1][index], vn_indices))
+      errvn=array(map(lambda index: vn_lists[2][index], vn_indices))
+      for i in range(nc):
+        point[i+2*nc+5]/=vn
+        point[i+3*nc+5]=self.error_propagation_quotient([point[i+2*nc+5], point[i+3*nc+5]],[vn, errvn])
+      return point
+    #------------ calculations for use with arrays -----------------
+  else:
+    #+++++++++ calculations for use with single points +++++++++++++
+    def correct_background(self, point):
+      '''
+        Subtract background from the intensity data and calculate new
+        error for these values.
+      '''
+      nc=self.number_of_channels
+      # find the background for the right detector
+      for bg_point in self.background_data:
+        if bg_point[0] ==  point[4]:
+          bg=bg_point[1:]
+          break
+      for i in range(nc):
+        point[i+2*nc+5]=point[i+5]-bg[i]
+        point[i+3*nc+5]=sqrt(point[i+nc+5]**2 + bg[i+nc]**2)
+      return point
+    
+    def correct_vanadium(self, point):
+      '''
+        Devide the intensity by the counts measured with vanadium for the
+        same detector bank.
+      '''
+      nc=self.number_of_channels
+      # find the background for the right detector
+      for vn_point in self.vanadium_data:
+        if vn_point[0] ==  point[4]:
+          vn=vn_point[1]
+          errvn=vn_point[2]
+          break
+      for i in range(nc):
+        point[i+2*nc+5]/=vn
+        point[i+3*nc+5]=self.error_propagation_quotient([point[i+2*nc+5], point[i+3*nc+5]],[vn, errvn])
+      return point
+    #--------- calculations for use with single points -------------
   
   def error_propagation_quotient(self,xdata,ydata): 
     '''

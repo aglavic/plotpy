@@ -137,6 +137,7 @@ Data columns and unit transformations are defined in config.squid.py.
   TRANSFORMATIONS=[] # a list of unit TRANSFORMATIONS, that will be performed on the data
   read_directly=False # don't use pickled file, read the data diretly
   mds_create=True
+  ONLY_IMPORT_MULTIFILE=False
   #------------------ local variables -----------------
 
   def __init__(self, arguments):

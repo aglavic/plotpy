@@ -579,9 +579,12 @@ class ApplicationMainWindow(gtk.Window):
     file_dialog.destroy()
     #----------------File selection dialog-------------------#
     # try to import the selected files and append them to the active sesssion
-    for file_name in file_names:
-      self.active_session.add_file(file_name, append=True)
-      self.active_session.change_active(name=file_name)
+    if self.active_session.ONLY_IMPORT_MULTIFILE:
+      self.active_session.add_file(file_names, append=True)
+    else:
+      for file_name in file_names:
+        self.active_session.add_file(file_name, append=True)
+        self.active_session.change_active(name=file_name)
     # set the last imported file as active
     self.measurement=self.active_session.active_file_data
     self.input_file_name=self.active_session.active_file_name

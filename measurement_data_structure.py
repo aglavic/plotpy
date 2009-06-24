@@ -7,6 +7,10 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 from sys import hexversion
+try:
+  import numpy
+except ImportError:
+  numpy=None
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -80,6 +84,8 @@ class MeasurementData:
       self.const_data[-1][1].append(con[1])
     self.plot_together=[self] # list of datasets, which will be plotted together
     self.fit_object=None
+    if not numpy is None:
+      self.process_funcion=self.process_funcion_numpy
 
   def __iter__(self): # see next()
     '''
@@ -306,6 +312,24 @@ class MeasurementData:
     for i in range(self.number_of_points):
       point = self.get_data(i)
       self.set_data(function(point),i)
+    return self.last()
+
+  def process_funcion_numpy(self,function): 
+    '''
+      Processing a function on every data point.
+      When numpy is installed this is done via one proccess call 
+      for arrays. (This leads to a huge speedup)
+    '''
+    try:
+      arrays=[]
+      for column in self.data:
+        array=numpy.array(column.values)
+        arrays.append(array)
+      processed_arrays=function(arrays)
+      for i, array in enumerate(processed_arrays):
+        self.data[i].values=list(array)
+    except: # if the function does not work with arrays the conventional method is used.
+      MeasurementData.process_funcion(self, function)
     return self.last()
 
   def export(self,file_name,print_info=True,seperator=' ',xfrom=None,xto=None): 
