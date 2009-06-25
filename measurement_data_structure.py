@@ -84,8 +84,6 @@ class MeasurementData:
       self.const_data[-1][1].append(con[1])
     self.plot_together=[self] # list of datasets, which will be plotted together
     self.fit_object=None
-    if not numpy is None:
-      self.process_funcion=self.process_funcion_numpy
 
   def __iter__(self): # see next()
     '''
@@ -304,32 +302,44 @@ class MeasurementData:
             con[1].dim_unit_trans(unit)
     return [self.last()[col],self.units()[col]]
 
-  def process_funcion(self,function): 
-    '''
-      Processing a function on every data point.
-    '''
-    for i in range(self.number_of_points):
-      point = self.get_data(i)
-      self.set_data(function(point),i)
-    return self.last()
-  
-  def process_funcion_numpy(self,function): 
-    '''
-      Processing a function on every data point.
-      When numpy is installed this is done via one proccess call 
-      for arrays. (This leads to a huge speedup)
-    '''
-    try:
-      arrays=[]
-      for column in self.data:
-        array=numpy.array(column.values)
-        arrays.append(array)
-      processed_arrays=function(arrays)
-      for i, array in enumerate(processed_arrays):
-        self.data[i].values=list(array)
-    except: # if the function does not work with arrays the conventional method is used.
-      MeasurementData.process_funcion(self, function)
-    return self.last()
+  # When numpy is accessible use a faster array approach
+  if not numpy is None:
+    def process_funcion(self,function): 
+      '''
+        Processing a function on every data point.
+      '''
+      for i in range(self.number_of_points):
+        point = self.get_data(i)
+        self.set_data(function(point),i)
+      return self.last()
+
+  else:
+    def process_funcion_nonumpy(self,function): 
+      '''
+        Processing a function on every data point.
+      '''
+      for i in range(self.number_of_points):
+        point = self.get_data(i)
+        self.set_data(function(point),i)
+      return self.last()
+
+    def process_funcion(self,function): 
+      '''
+        Processing a function on every data point.
+        When numpy is installed this is done via one proccess call 
+        for arrays. (This leads to a huge speedup)
+      '''
+      try:
+        arrays=[]
+        for column in self.data:
+          array=numpy.array(column.values)
+          arrays.append(array)
+        processed_arrays=function(arrays)
+        for i, array in enumerate(processed_arrays):
+          self.data[i].values=list(array)
+      except: # if the function does not work with arrays the conventional method is used.
+        self.process_funcion_nonumpy(self, function)
+      return self.last()
 
   def sort(self, column=None):
     if column is None:

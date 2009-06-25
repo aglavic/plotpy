@@ -614,6 +614,34 @@ class DNSMeasurementData(MeasurementData):
         point[i+2*nc+5]/=vn
         point[i+3*nc+5]=self.error_propagation_quotient([point[i+2*nc+5], point[i+3*nc+5]],[vn, errvn])
       return point
+  
+    def __add__(self, other):
+      if len(self) != len(other):
+        return None
+      # create a new instance of the class
+      from copy import deepcopy
+      result=deepcopy(self)
+      nc=self.number_of_channels
+      for i in range(nc):
+        result.data[i+5].values=list(array(self.data[i+5].values)+array(other.data[i+5].values))
+        result.data[i+nc+5].values=list(sqrt(array(self.data[i+nc+5].values)**2+array(other.data[i+nc+5].values)**2))
+        result.data[i+2*nc+5].values=list(array(self.data[i+2*nc+5].values)+array(other.data[i+2*nc+5].values))
+        result.data[i+3*nc+5].values=list(sqrt(array(self.data[i+3*nc+5].values)**2+array(other.data[i+3*nc+5].values)**2))
+      return result
+    
+    def __sub__(self, other):
+      if len(self) != len(other):
+        return None
+      # create a new instance of the class
+      from copy import deepcopy
+      result=deepcopy(self)
+      nc=self.number_of_channels
+      for i in range(nc):
+        result.data[i+5].values=list(array(self.data[i+5].values)-array(other.data[i+5].values))
+        result.data[i+nc+5].values=list(sqrt(array(self.data[i+nc+5].values)**2+array(other.data[i+nc+5].values)**2))
+        result.data[i+2*nc+5].values=list(array(self.data[i+2*nc+5].values)-array(other.data[i+2*nc+5].values))
+        result.data[i+3*nc+5].values=list(sqrt(array(self.data[i+3*nc+5].values)**2+array(other.data[i+3*nc+5].values)**2))
+      return result
     #------------ calculations for use with arrays -----------------
   else:
     #+++++++++ calculations for use with single points +++++++++++++
@@ -649,6 +677,36 @@ class DNSMeasurementData(MeasurementData):
         point[i+2*nc+5]/=vn
         point[i+3*nc+5]=self.error_propagation_quotient([point[i+2*nc+5], point[i+3*nc+5]],[vn, errvn])
       return point
+
+    def __add__(self, other):
+      if len(self) != len(other):
+        return None
+      # create a new instance of the class
+      from copy import deepcopy
+      result=deepcopy(self)
+      nc=self.number_of_channels
+      for i in range(nc):
+        for j in range(len(self)):
+          result.data[i+5].values[j]=self.data[i+5].values[j]+other.data[i+5].values[j]
+          result.data[i+nc+5].values[j]=sqrt(self.data[i+nc+5].values[j]**2+other.data[i+nc+5].values[j]**2)
+          result.data[i+2*nc+5].values[j]=self.data[i+2*nc+5].values[j]+other.data[i+2*nc+5].values[j]
+          result.data[i+3*nc+5].values[j]=sqrt(self.data[i+3*nc+5].values[j]**2+other.data[i+3*nc+5].values[j]**2)
+      return result
+    
+    def __sub__(self, other):
+      if len(self) != len(other):
+        return None
+      # create a new instance of the class
+      from copy import deepcopy
+      result=deepcopy(self)
+      nc=self.number_of_channels
+      for i in range(nc):
+        for j in range(len(self)):
+          result.data[i+5].values[j]=self.data[i+5].values[j]-other.data[i+5].values[j]
+          result.data[i+nc+5].values[j]=sqrt(self.data[i+nc+5].values[j]**2+other.data[i+nc+5].values[j]**2)
+          result.data[i+2*nc+5].values[j]=self.data[i+2*nc+5].values[j]-other.data[i+2*nc+5].values[j]
+          result.data[i+3*nc+5].values[j]=sqrt(self.data[i+3*nc+5].values[j]**2+other.data[i+3*nc+5].values[j]**2)
+      return result
     #--------- calculations for use with single points -------------
   
   def error_propagation_quotient(self,xdata,ydata): 
