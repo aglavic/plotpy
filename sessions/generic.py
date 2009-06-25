@@ -34,7 +34,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.5.2"
+__version__ = "0.6a"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -57,7 +57,8 @@ class GenericSession:
   SPECIFIC_HELP='' # help text for child classes
   LONG_HELP=\
 """
-Script to plot data of measurements using gnuplot.
+Script to plot data of measurements using gnuplot by Artur Glavic.
+\t\tVersion: %s \t Contact: %s
 
 Usage: plot.py [type] [files] [options]
 \t\t type can be one of 'squid', '4circle', 'refl', 'treff' or none (than it tries to find the type itself)
@@ -85,7 +86,7 @@ Options:
 
 \tGeneral Data treatment:
 \t-no-trans\tdon't make a unit transformation
-"""
+""" % (__version__, __email__)
   # TODO: implement these settings
   '''    from cPickle import load, dump
 
@@ -102,7 +103,6 @@ Options:
   LONG_HELP_END=\
 """
 The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you want to change them.
-Data columns and unit transformations are defined in config.squid.py.
 """
   #------------------ help text strings ---------------
 

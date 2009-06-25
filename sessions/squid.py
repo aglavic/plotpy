@@ -45,6 +45,8 @@ class SquidSession(GenericSession):
 \tSQUID-Data treatment:
 \t-para [C] [off]\tInclude paramagnetic correction factor (C/(T-off)) [emu*K/Oe]
 \t-dia [Chi]\tInclude diamagnetic correction in [10^-9 emu/Oe]
+
+Data columns and unit transformations are defined in config.squid.py.
 '''
   # TODO: implement this.
   '''
