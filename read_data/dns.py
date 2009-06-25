@@ -32,7 +32,7 @@ def read_data(file_name):
     add_info['header']=read_header(file_handler) # read header information
     add_info['lambda_n']=read_lambda(file_handler) # find wavelength
     # get the information defined in define_get_info function
-    for info in get_info: 
+    for info in GET_INFO: 
       add_info[info[1]]=read_info(file_handler,info[0]) 
     while (file_handler.readline().find('DATA')==-1): # read until data line
       continue

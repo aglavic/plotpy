@@ -20,7 +20,7 @@ NUMBER_OF_DETECTORS=24
 DETECTOR_ANGULAR_INCREMENT=5.
 VANADIUM_FILE="/home/glavic/Daten/DNS/TbMnO3-81958/vana.d_dat"
 
-get_info= (\
+GET_INFO= (\
   # get detector bank position
   ('DeteRota','detector_bank_2T'),\
   # get sample rotation
@@ -29,11 +29,11 @@ get_info= (\
   ('Translation','polarizer_trans'),\
   # get flipper current
   ('Flipper_precession','flipper'),\
-  # get flipper current
+  # get helmholz current
   ('C_a','C_a'),\
-  # get flipper current
+  # get helmholz current
   ('C_b','C_b'),\
-  # get flipper current
+  # get helmholz current
   ('C_c','C_c'),\
   # get temperature
   ('T1','temperature'),\
@@ -45,8 +45,14 @@ get_info= (\
 
 SCALE_BY=('time', 's') #('monitor','monitor') # scale data by measureing 'time' or 'monitor' counts
 
-column_dimensions=(
-                    )
-
-name_replacements=(
-                )
+# This is a dictionary with predefined calculations on polarization channels.
+# Each item is a list of the containing polarizations and their part of the equation,
+# for each element this is ( {index of polarization chanel}, {sign}, {factor} ).
+# For example to calculate polarization1 + polarization2 - 2*polarization3 use:
+#  [ (1, '+', 1.) , (2, '+', 1.) , (3, '-' , 2.) ]
+#
+# Clearly this does only work if all polarizations have the same number 
+# of measured points and if the direction of measureing is right.
+SEPERATION_PRESETS={
+                    'test_preset' : [(0, '+', 1.), (1, '-', 0.0333)], 
+                    }

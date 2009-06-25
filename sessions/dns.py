@@ -25,7 +25,7 @@ except InputError:
   use_numpy=False
 import gtk
 
-# import GenericSession, which is the parent class for the squid_session
+# import GenericSeSEPERATION_PRESETSssion, which is the parent class for the squid_session
 from generic import GenericSession
 from measurement_data_structure import MeasurementData
 # importing data readout
@@ -324,9 +324,9 @@ class DNSSession(GenericSession):
       if self.POWDER_DATA:
         # for powder data show 1d plot 2Theta vs intensity
         dnsmap.sort(3)
+        dnsmap.ydata=dnsmap.zdata
         dnsmap.zdata=-1
         dnsmap.xdata=3
-        dnsmap.ydata=5
 
   def find_prefixes(self, names):
     '''
@@ -378,6 +378,8 @@ class DNSSession(GenericSession):
       <menu action='DNS'>
         <menuitem action='SetOmegaOffset' />
         <menuitem action='SetIncrement' />
+        <menuitem action='SeperateScattering' />
+        <menuitem action='SeperatePreset' />
       </menu>
     '''
     # Create actions for the menu
@@ -394,6 +396,14 @@ class DNSSession(GenericSession):
                 "Change Increment", None,                    # label, accelerator
                 "Change Increment between files with same Polarization",                                   # tooltip
                 self.change_increment ),
+            ( "SeperateScattering", None,                             # name, stock id
+                "Seperate Scattering", None,                    # label, accelerator
+                "Calculate seperated scattering parts from polarization directions.",                                   # tooltip
+                self.seperate_scattering ),
+            ( "SeperatePreset", None,                             # name, stock id
+                "Seperate from Preset", None,                    # label, accelerator
+                "Calculate seperated scattering parts from polarization directions from presets.",               # tooltip
+                self.seperate_scattering_preset ),
              )
     return string,  actions
 
@@ -494,6 +504,139 @@ class DNSSession(GenericSession):
       object=self.file_data[self.active_file_name]
       window.change_active_file_object((self.active_file_name, object))
     inc_dialog.destroy()
+  
+  def seperate_scattering_preset(self, action, window):
+    '''
+      A selection dialog to choose a preset for seperate_scattering.
+    '''
+    keys=sorted(config.dns.SEPERATION_PRESETS.keys())
+    preset_box=gtk.combo_box_new_text()
+    preset_box.append_text(keys[0])
+    for key in keys[1:]:
+      preset_box.append_text(key)
+    preset_dialog=gtk.Dialog(title='Add polarization:')
+    preset_dialog.set_default_size(100,50)
+    preset_dialog.add_button('OK', 1)
+    preset_dialog.add_button('Cancle', 0)
+    preset_dialog.vbox.add(preset_box)
+    preset_dialog.show_all()
+    result=preset_dialog.run()
+    key=keys[preset_box.get_active()]
+    preset_dialog.destroy()
+    if result==1:
+      self.seperate_scattering(action, window, config.dns.SEPERATION_PRESETS[key])
+  
+  def seperate_scattering(self, action, window, preset=None):
+    '''
+      Add or substract measured polarizations from each other
+      to calculate e.g. coherent magnetic scattering.
+    '''
+    if not self.active_file_name in self.file_options:
+      return None
+    # build a list of DNSMeasurementData objects in active_file_data for the polarizations
+    polarization_list=[object for object in self.active_file_data if "dns_info" in dir(object)]
+    combine_list=[]
+    def add_object():
+      add_dialog=gtk.Dialog(title='Add polarization:')
+      add_dialog.set_default_size(100,50)
+      add_dialog.add_button('OK', 1)
+      add_dialog.add_button('Cancle', 0)
+      align_table=gtk.Table(4,1,False)
+      label=gtk.Label('+/-')
+      align_table.attach(label, 0,1, 0, 1, 0,0, 0,0);
+      sign=gtk.CheckButton()
+      align_table.attach(sign, 1,2, 0, 1, 0,0, 0,0);
+      multiplier=gtk.Entry()
+      multiplier.set_text('1')
+      align_table.attach(multiplier, 2,3, 0, 1, 0,0, 0,0);
+      object_box=gtk.combo_box_new_text()
+      object_box.append_text('0-('+polarization_list[0].short_info+')')
+      for i, object in enumerate(polarization_list[1:]):
+        object_box.append_text(str(i+1)+'-('+object.short_info+')')
+      object_box.set_active(0)
+      align_table.attach(object_box, 3,4, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0)
+      add_dialog.vbox.add(align_table)
+      add_dialog.show_all()
+      result=add_dialog.run()
+      if result==1:
+        if sign.get_active():
+          sign='-'
+        else:
+          sign='+'
+        combine_list.append( (object_box.get_active(), sign, float(multiplier.get_text())) )
+        label=gtk.Label(sign+multiplier.get_text()+'*'+object_box.get_active_text())
+        label.show()
+        function_table.attach(label, len(combine_list)-1,len(combine_list), 0,1, 0,0, 0,0)
+      add_dialog.destroy()
+    combine_dialog=gtk.Dialog(title='Combination of polarizations:')
+    combine_dialog.set_default_size(100,50)
+    combine_dialog.add_button('Add', 2)
+    combine_dialog.add_button('OK', 1)
+    combine_dialog.add_button('Cancle', 0)
+    table=gtk.Table(3,1,False)
+    input_filed=gtk.Entry()
+    input_filed.set_width_chars(4)
+    input_filed.set_text('Result')
+    table.attach(input_filed,
+                # X direction #          # Y direction
+                0, 1,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    label=gtk.Label(" = ")
+    table.attach(label,
+                # X direction #          # Y direction
+                1, 2,                      0, 1,
+                0,                         0,
+                0,                         0);
+    function_table=gtk.Table(1,1,False)
+    table.attach(function_table,
+                # X direction #          # Y direction
+                2, 3,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    combine_dialog.vbox.add(table)
+    combine_dialog.show_all()
+    # if a preset is used create the right list and show the function
+    if preset is None:
+      add_object()
+    else:
+      combine_list=preset
+      for i, item in enumerate(combine_list):
+        try:
+          label=gtk.Label(item[1]+str(item[2])+'*'+str(i)+'-('+polarization_list[item[0]].short_info+')')
+          label.show()
+          function_table.attach(label, i,i+1, 0,1, 0,0, 0,0)        
+        except IndexError:
+          combine_dialog.destroy()
+          return None
+    result=combine_dialog.run()
+    while result>1:
+      add_object()
+      result=combine_dialog.run()
+    if result==1:
+      self.calculate_combination(combine_list, polarization_list, input_filed.get_text())
+    combine_dialog.destroy()
+  
+  def calculate_combination(self, combine_list, polarization_list, title):
+    '''
+      Calculate a combination of polarization directions as
+      set in the combine_list.
+    '''
+    result=combine_list[0][2]*polarization_list[combine_list[0][0]]
+    for object, sign, multiplier in combine_list[1:]:
+      if sign == '+':
+        result=result+multiplier*polarization_list[object]
+      else:
+        result=result-multiplier*polarization_list[object]
+      if result is None:
+        message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
+                                  message_format='You can only combine polarizations with the same number of measured points!')
+        message.run()
+        message.destroy()
+        return None
+    result.short_info=title
+    result.number=str(len(polarization_list))
+    self.active_file_data.append(result)
 
 
 class DNSMeasurementData(MeasurementData):
@@ -502,7 +645,7 @@ class DNSMeasurementData(MeasurementData):
     Datatreatment is done here and additional data treatment functions should
     be put here, too.
   '''
-  
+
   dns_info={}
   scan_line=3
   scan_line_constant=1
@@ -642,6 +785,20 @@ class DNSMeasurementData(MeasurementData):
         result.data[i+2*nc+5].values=list(array(self.data[i+2*nc+5].values)-array(other.data[i+2*nc+5].values))
         result.data[i+3*nc+5].values=list(sqrt(array(self.data[i+3*nc+5].values)**2+array(other.data[i+3*nc+5].values)**2))
       return result
+    
+    def __rmul__(self, other):
+      '''
+        Multiply the data by a constant factor.
+      '''
+      # create a new instance of the class
+      from copy import deepcopy
+      result=deepcopy(self)
+      if other==1:
+        return result
+      nc=self.number_of_channels
+      for i in range(4*nc):
+        result.data[i+5].values=list(array(self.data[i+5].values)*other)
+      return result      
     #------------ calculations for use with arrays -----------------
   else:
     #+++++++++ calculations for use with single points +++++++++++++
@@ -707,11 +864,26 @@ class DNSMeasurementData(MeasurementData):
           result.data[i+2*nc+5].values[j]=self.data[i+2*nc+5].values[j]-other.data[i+2*nc+5].values[j]
           result.data[i+3*nc+5].values[j]=sqrt(self.data[i+3*nc+5].values[j]**2+other.data[i+3*nc+5].values[j]**2)
       return result
+    
+    def __rmul__(self, other):
+      '''
+        Multiply the data by a constant factor.
+      '''
+      # create a new instance of the class
+      from copy import deepcopy
+      result=deepcopy(self)
+      if other==1:
+        return result
+      nc=self.number_of_channels
+      for i in range(4*nc):
+        for j in range(len(self)):
+          result.data[i+5].values[j]=self.data[i+5].values[j]*other
+      return result      
     #--------- calculations for use with single points -------------
   
   def error_propagation_quotient(self,xdata,ydata): 
     '''
       Calculate the propagated error for x/y.
     '''
-    return sqrt((xdata[1]**2)/abs(ydata[0]) + abs(xdata[0])/(ydata[0]**2) * (ydata[1]**2))
+    return sqrt(xdata[1]**2/ydata[0]**2 + xdata[0]**2/ydata[0]**4 * ydata[1]**2)
   

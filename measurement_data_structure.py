@@ -303,7 +303,7 @@ class MeasurementData:
     return [self.last()[col],self.units()[col]]
 
   # When numpy is accessible use a faster array approach
-  if not numpy is None:
+  if numpy is None:
     def process_funcion(self,function): 
       '''
         Processing a function on every data point.
