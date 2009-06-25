@@ -144,7 +144,6 @@ class MeasurementData:
     '''
     for value in self.data:
       value.values[count]=point[self.data.index(value)]
-    return self.get_data(count)
 
   def list(self): 
     '''
@@ -313,7 +312,7 @@ class MeasurementData:
       point = self.get_data(i)
       self.set_data(function(point),i)
     return self.last()
-
+  
   def process_funcion_numpy(self,function): 
     '''
       Processing a function on every data point.
@@ -331,6 +330,16 @@ class MeasurementData:
     except: # if the function does not work with arrays the conventional method is used.
       MeasurementData.process_funcion(self, function)
     return self.last()
+
+  def sort(self, column=None):
+    if column is None:
+      column=self.xdata
+    data_list=[point for point in self]    
+    def sort_by_column(point1, point2):
+      return cmp(point1[column], point2[column])
+    data_list.sort(sort_by_column)
+    for i, point in enumerate(data_list):
+      self.set_data(point, i)
 
   def export(self,file_name,print_info=True,seperator=' ',xfrom=None,xto=None): 
     '''

@@ -29,6 +29,12 @@ get_info= (\
   ('Translation','polarizer_trans'),\
   # get flipper current
   ('Flipper_precession','flipper'),\
+  # get flipper current
+  ('C_a','C_a'),\
+  # get flipper current
+  ('C_b','C_b'),\
+  # get flipper current
+  ('C_c','C_c'),\
   # get temperature
   ('T1','temperature'),\
   # get counting time
