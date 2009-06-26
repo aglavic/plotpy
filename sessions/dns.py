@@ -115,7 +115,7 @@ class DNSSession(GenericSession):
     self.os_path_stuff() # create temp folder according to OS
     self.try_import_externals()
     names.sort()
-    if len(names) > 0:
+    if len(names) > 1:
       self.find_prefixes(names)
     if not self.SPLIT is None:
       self.split_sequences(self.SPLIT)
@@ -344,7 +344,16 @@ class DNSSession(GenericSession):
       if not self.BACKGROUND_FILE is None:
         dnsmap.background_data=read_data.dns.read_data(self.BACKGROUND_FILE)
       if not self.VANADIUM_FILE is None:
-        dnsmap.vanadium_data=read_data.dns.read_data(self.VANADIUM_FILE)
+        vana_data=read_data.dns.read_data(self.VANADIUM_FILE, print_comments=False)
+        if vana_data!='NULL':
+          dnsmap.vanadium_data=vana_data
+        else:
+          # when the file is not raw data read vanadium_data from a 2th file
+          vana_data=GenericSession.read_file(self, self.VANADIUM_FILE)[0]
+          vana_data.sort(0)
+          # to make it possible to correct for this data, round the 2Theta value
+          dnsmap.vanadium_data=vana_data
+          dnsmap.vanadium_correct_by_detector=False
       sys.stdout.write("calculate wavevectors, ")
       sys.stdout.flush()
       dnsmap.calculate_wavevectors()
@@ -425,10 +434,10 @@ class DNSSession(GenericSession):
         def put_in_dict(name):
           file_dict[int(name.split(fileprefix, 1)[1].rsplit(options[4], 1)[0])] = name
         map(put_in_dict, file_list)
-        self.file_options[file_dict[new_options[0][3][0]]]=new_options[0]
+        self.file_options[folder+os.sep+file_dict[new_options[0][3][0]]]=new_options[0]
         for new_option in new_options[1:]:
-          self.prefixes.append(file_dict[new_option[3][0]])
-          self.file_options[file_dict[new_option[3][0]]]=new_option    
+          self.prefixes.append(folder+os.sep+file_dict[new_option[3][0]])
+          self.file_options[folder+os.sep+file_dict[new_option[3][0]]]=new_option    
 
   def create_menu(self):
     '''
@@ -720,6 +729,7 @@ class DNSMeasurementData(MeasurementData):
   scan_line_constant=1
   number_of_channels=1
   vanadium_data=None
+  vanadium_correct_by_detector=True
   background_data=None
   
   def calculate_wavevectors(self):
@@ -757,7 +767,7 @@ class DNSMeasurementData(MeasurementData):
   
   def make_corrections(self):
     '''
-      Correct the data for background and Vanadium standart.
+      Correct the data for background and Vanadium standard.
       The rawdata is not changed only the I column.
     '''
     changed=False
@@ -817,7 +827,10 @@ class DNSMeasurementData(MeasurementData):
       # create a list of all columns in the background file
       vn_lists=map(lambda column: column.values, self.vanadium_data.data)
       # search the indices for the detectors
-      vn_indices=map(lambda detector: vn_lists[0].index(detector), point[4])
+      if self.vanadium_correct_by_detector:
+        vn_indices=map(lambda detector: vn_lists[0].index(detector), point[4])
+      else:
+        vn_indices=map(lambda tth: vn_lists[0].index([item for item in vn_lists[0] if item<=tth][-1]), point[3])        
       # create a list of arrays with the corresponding intensities
       vn=array(map(lambda index: vn_lists[1][index], vn_indices))
       errvn=array(map(lambda index: vn_lists[2][index], vn_indices))

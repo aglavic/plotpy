@@ -338,7 +338,7 @@ class MeasurementData:
         for i, array in enumerate(processed_arrays):
           self.data[i].values=list(array)
       except: # if the function does not work with arrays the conventional method is used.
-        self.process_funcion_nonumpy(self, function)
+        self.process_funcion_nonumpy(function)
       return self.last()
 
   def sort(self, column=None):

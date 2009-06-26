@@ -378,17 +378,19 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
             print 'Unknown data type in file '+filename+'. Skipped!'
             return []
           dataset.info=filename+'-'+str(len(data_list)+1)
-        if  len(line.split())<2: # empty line is treated as sequence splitting
-          if dataset!=None:
-            data_list.append(dataset)
-          dataset=None
-          continue
         else:
+          if  len(line.split())<2: # empty line is treated as sequence splitting
+            if dataset!=None:
+              data_list.append(dataset)
+            dataset=None
+            continue
           try:
             dataset.append([float(number) for number in line.split()])
           except ValueError:
             print 'Unknown data type in file "' + filename + '". Skipped!'
             return []
+      if not dataset is None:
+        data_list.append(dataset)
       return data_list
     else:
       print 'File '+filename+' does not exist.'

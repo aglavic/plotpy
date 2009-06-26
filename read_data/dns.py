@@ -20,10 +20,14 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-def read_data(file_name):
+def read_data(file_name, print_comments=True):
   '''
     Read the data of a treff raw data file, integrate the corresponding .img files.
   '''
+  if not os.path.exists(file_name): # Test if the file exists
+    if print_comments:
+      print "File does not exist."
+    return 'NULL'
   file_handler=open(file_name, 'r')
   add_info={}
   # read header to test if this is a dns data file
@@ -61,7 +65,8 @@ def read_data(file_name):
     measurement_data.sample_name=file_name
     return measurement_data
   else: # not dns data
-    print "Wrong file type! Doesn't contain dns header information."
+    if print_comments:
+      print "Wrong file type! Doesn't contain dns header information."
     return 'NULL'
   
 
