@@ -25,7 +25,7 @@ except InputError:
   use_numpy=False
 import gtk
 
-# import GenericSeSEPERATION_PRESETSssion, which is the parent class for the squid_session
+# import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 from measurement_data_structure import MeasurementData
 # importing data readout
@@ -75,15 +75,15 @@ class DNSSession(GenericSession):
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'bg', 'vana', 'files', 'sample', 'time', 'flipper', 'monitor', 'powder', 'xyz', 'split'] 
   file_options={'default': ['', 0, 1, [0, -1], ''],  # (prefix, omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
-  prefixes=[]
-  mds_create=False
-  VANADIUM_FILE=None#config.dns.VANADIUM_FILE
-  BACKGROUND_FILE=None#"/home/glavic/Daten/DNS/TbMnO3-81958/ag340378tbmn.d_dat"
-  SHORT_INFO=[('temperature', lambda temp: 'at T='+str(temp), 'K')]
-  SAMPLE_NAME=''
-  POWDER_DATA=False
-  SPLIT=None
-  ONLY_IMPORT_MULTIFILE=True
+  prefixes=[] # A list of all filenames to be imported
+  mds_create=False # DNS data is not stored as .mds files as the import is fast
+  VANADIUM_FILE=None # File name of vanadium file to be used for the correction
+  BACKGROUND_FILE=None # File name of a background file to substract
+  SHORT_INFO=[('temperature', lambda temp: 'at T='+str(temp), 'K')] # For the plots this is used to creat the short info
+  SAMPLE_NAME='' # Name of the Sample for th data objects
+  POWDER_DATA=False # If powder data is to be evaluated this is True.
+  SPLIT=None # Integer number of files that belong to one measured sequence.
+  ONLY_IMPORT_MULTIFILE=True # This is for the GUI open dialog.
   #------------------ local variables -----------------
 
   
@@ -92,7 +92,7 @@ class DNSSession(GenericSession):
       Class constructor which is called with the command line arguments.
       Evaluates the command line arguments, creates a file list and
       starts the data readout procedure.
-      In contrast do most sessions this changes the generic constructor
+      In contrast to the most sessions this changes the generic constructor
       as the data is collected from a bunch of files corresponding to one measurement.
       
       @param arguments The command line arguments passed to the constructor.
@@ -115,18 +115,20 @@ class DNSSession(GenericSession):
       self.split_sequences(self.SPLIT)
     self.prefixes.sort()
     for prefix in self.prefixes:
+      # for every measured sequence read the datafiles and create a map/lineplot.
       self.read_files(prefix)
 
     if len(self.prefixes) == 0: # show help, if there is no valid file in the list
       print "No valid datafile found!"
       print self.SHORT_HELP
       exit()
+    # set the first measurement as active
     self.active_file_data=self.file_data[self.prefixes[0]]
     self.active_file_name=self.prefixes[0]
   
   def read_argument_add(self, argument, last_argument_option=[False, '']):
     '''
-      additional command line arguments for dns sessions
+      Additional command line arguments for dns sessions
     '''
     found=True
     if (argument[0]=='-') or last_argument_option[0]:
@@ -221,6 +223,7 @@ class DNSSession(GenericSession):
     '''
       In contrast to other sessions this is only called
       from the gui to add new files.
+      Works as if the filenames had been given via commandline.
     '''
     filenames.sort()
     if len(filenames) > 1:
@@ -239,33 +242,38 @@ class DNSSession(GenericSession):
   
   def read_files(self, file):
     '''
-      Function to read data files. 
+      Function to read data files for one measurement. 
       The files are split by their prefixes.
     '''
+    # read the options for this sequence of files
     prefix=self.file_options[file][0]
     omega_offset=self.file_options[file][1]
     increment=self.file_options[file][2]
     num_range=self.file_options[file][3]
     postfix=self.file_options[file][4]
+    # split folder and filename of prefix
     file_split=prefix.rsplit(os.sep, 1)
     if len(file_split)==1:
       folder='.'
       fileprefix=file_split[0]
     else:
       folder, fileprefix=file_split
-    # create a list of all files starting with the fileprefix
-    file_list=[lfile for lfile in os.listdir(folder) if lfile.startswith(fileprefix) and lfile.endswith('.d_dat')]
+    # create a list of all files starting with the fileprefix and ending with postfix
+    file_list=[lfile for lfile in os.listdir(folder) if lfile.startswith(fileprefix) and lfile.endswith(postfix)]
     if len(file_list)==0:
       return None
     file_list.sort()
+    # Read the raw data
     self.file_data[file+'|raw_data']=[]
     print "Reading files %s{num}%s with num from %i to %i." % (prefix, postfix, num_range[0], num_range[1])
     for file_name in file_list:
+      # get integer number of the file, catch errors form wrong file selection
       try:
         active_number=int(os.path.join(folder, file_name).rsplit(postfix)[0].split(prefix, 1)[1])
       except ValueError:
         continue
       if (active_number>=num_range[0]) and (active_number<=num_range[1] or num_range[1]==-1):
+        # read the datafile into a MeasurementData object.
         dataset=read_data.dns.read_data(os.path.join(folder, file_name))
         dataset.number=str(active_number)
         self.file_data[file+'|raw_data'].append(dataset)
@@ -275,17 +283,21 @@ class DNSSession(GenericSession):
   
   def create_maps(self, file):
     '''
-      Crates a 3d MeasurementData object which can be used to
-      plot color maps of the measurement.
+      Crates a MeasurementData object which can be used to
+      plot color maps or lineplots of the measurement.
       For Powder data it is only shown as 2Theta vs intensity.
+      For single crystal it is a map in q_x,q_y.
     '''
+    # select the raw data for this measurement
     scans=self.file_data[file+'|raw_data']
     self.file_data[file]=[]
+    # read the options for this sequence of files
     prefix=self.file_options[file][0]
     omega_offset=self.file_options[file][1]
     increment=self.file_options[file][2]
     num_range=self.file_options[file][3]
     postfix=self.file_options[file][4]
+    # Functoin used to append data to the object
     def append_to_map(point):
       return [file_number, 
               round(omega-omega_offset-detector_bank_2T, 1), 
@@ -293,8 +305,10 @@ class DNSSession(GenericSession):
               point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE-detector_bank_2T, 
               point[0]
               ]+point[1:]+point[1:]+[0, 0]
+    # go through every raw data object.
     for i, scan in enumerate(scans):
       if i<increment:
+        # Create the objects for every polarization chanel
         columns=[['Filenumber', ''], ['Omega', '\302\260'], ['OmegaRAW', '\302\260'], 
                  ['2Theta', '\302\260'], ['Detector', '']]+\
                  [[scan.dimensions()[j], scan.units()[j]] for j in range(1, len(scan.units()))]+\
@@ -302,6 +316,7 @@ class DNSSession(GenericSession):
                  [['error_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
                  [['q_x', '\303\205^{-1}'], ['q_y', '\303\205^{-1}']]
         self.file_data[file].append(DNSMeasurementData(columns, [], 1, 3, (len(scan.units())-1)/2+5, zdata=5))
+        # set some parameters for the object
         active_map=self.file_data[file][i]
         active_map.number=str(i)
         active_map.dns_info=scan.dns_info
@@ -310,11 +325,13 @@ class DNSSession(GenericSession):
         active_map.sample_name=self.SAMPLE_NAME
         active_map.info= "\n".join(map(lambda item: item[0]+': '+str(item[1]),
                                     sorted(scan.dns_info.items())))
+      # add the data
       data=[point for point in scan]
       file_number=int(scan.number)
       detector_bank_2T=scan.dns_info['detector_bank_2T']
       omega=scan.dns_info['omega']
       map(self.file_data[file][i%increment].append, map(append_to_map, data))
+    # perform calculations
     for dnsmap in self.file_data[file]:
       sys.stdout.write("\tMap %s created, perfoming datatreatment: " % dnsmap.number)
       sys.stdout.flush()
@@ -409,7 +426,7 @@ class DNSSession(GenericSession):
 
   def create_menu(self):
     '''
-      create a specifig menu for the DNS session
+      Create a specifig menu for the DNS session
     '''
     # Create XML for squid menu
     string='''
