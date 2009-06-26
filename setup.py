@@ -13,6 +13,10 @@ __license__ = "None"
 __version__ = "0.6"
 __email__ = "a.glavic@fz-juelich.de"
 
+# if python version < 2.5 set the sys.exit function as exit
+if hex(sys.hexversion)<'0x2050000':
+  exit=sys.exit
+
 
 __name__='Plot-script'
 __scripts__=['plot.py']

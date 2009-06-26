@@ -2463,12 +2463,15 @@ class PlotProfile:
   name='default'
   set_output_terminal_png=''
   set_output_terminal_ps=''
+  set_output_terminal_png_GUI=''
   x_label=''
   y_label=''
   z_label=''
   plotting_parameters=''
   plotting_parameters_errorbars=''
   plotting_parameters_3d=''
+  settings_3d=''
+  settings_3dmap=''
   additional_commands=''
 
   def __init__(self,name):
@@ -2486,6 +2489,7 @@ class PlotProfile:
         active_class.plot_options_buffer.get_start_iter(),\
         active_class.plot_options_buffer.get_end_iter())
     self.set_output_terminal_png=gnuplot_preferences.set_output_terminal_png
+    self.set_output_terminal_png_GUI=gnuplot_preferences.set_output_terminal_png_GUI
     self.set_output_terminal_ps=gnuplot_preferences.set_output_terminal_ps
     self.x_label=gnuplot_preferences.x_label
     self.y_label=gnuplot_preferences.y_label
@@ -2493,6 +2497,8 @@ class PlotProfile:
     self.plotting_parameters=gnuplot_preferences.plotting_parameters
     self.plotting_parameters_errorbars=gnuplot_preferences.plotting_parameters_errorbars
     self.plotting_parameters_3d=gnuplot_preferences.plotting_parameters_3d
+    self.settings_3d=gnuplot_preferences.settings_3d
+    self.settings_3dmap=gnuplot_preferences.settings_3dmap
 
   def load(self, active_class):
     '''
@@ -2502,12 +2508,15 @@ class PlotProfile:
     active_class.plot_options_buffer.set_text(self.additional_commands)
     gnuplot_preferences.set_output_terminal_png=self.set_output_terminal_png
     gnuplot_preferences.set_output_terminal_ps=self.set_output_terminal_ps
+    gnuplot_preferences.set_output_terminal_png_GUI=self.set_output_terminal_png_GUI    
     gnuplot_preferences.x_label=self.x_label
     gnuplot_preferences.y_label=self.y_label
     gnuplot_preferences.z_label=self.z_label
     gnuplot_preferences.plotting_parameters=self.plotting_parameters
     gnuplot_preferences.plotting_parameters_errorbars=self.plotting_parameters_errorbars
     gnuplot_preferences.plotting_parameters_3d=self.plotting_parameters_3d
+    gnuplot_preferences.settings_3d=self.settings_3d
+    gnuplot_preferences.settings_3dmap=self.settings_3dmap
     active_class.replot() # plot with new settings
 
   def prnt(self):
@@ -2526,6 +2535,7 @@ class PlotProfile:
     config_object[self.name]={}
     config=config_object[self.name]
     config['set_output_terminal_png']=self.set_output_terminal_png
+    config['set_output_terminal_png_GUI']=self.set_output_terminal_png_GUI
     config['set_output_terminal_ps']=self.set_output_terminal_ps
     config['x_label']=self.x_label
     config['y_label']=self.y_label
@@ -2534,6 +2544,8 @@ class PlotProfile:
     config['plotting_parameters_errorbars']=self.plotting_parameters_errorbars
     config['plotting_parameters_3d']=self.plotting_parameters_3d
     config['additional_commands']=self.additional_commands
+    config['settings_3d']=self.settings_3d
+    config['settings_3dmap']=self.settings_3dmap
 
   def read(self,config_object):
     '''
@@ -2541,6 +2553,7 @@ class PlotProfile:
     '''
     config=config_object[self.name]
     self.set_output_terminal_png=config['set_output_terminal_png']
+    self.set_output_terminal_png_GUI=config['set_output_terminal_png_GUI']
     self.set_output_terminal_ps=config['set_output_terminal_ps']
     self.x_label=config['x_label']
     self.y_label=config['y_label']
@@ -2548,6 +2561,9 @@ class PlotProfile:
     self.plotting_parameters=config['plotting_parameters']
     self.plotting_parameters_errorbars=config['plotting_parameters_errorbars']
     self.plotting_parameters_3d=config['plotting_parameters_3d']
+    self.additional_commands=config['additional_commands']
+    self.settings_3d=config['settings_3d']
+    self.settings_3dmap=config['settings_3dmap']
     self.additional_commands=config['additional_commands']
 
 

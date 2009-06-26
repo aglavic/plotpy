@@ -20,7 +20,7 @@ import sys
 try:
   from numpy import pi, cos, sin, sqrt, array
   use_numpy=True
-except InputError:
+except ImportError:
   from math import pi, cos, sin, sqrt
   use_numpy=False
 import gtk
@@ -40,6 +40,12 @@ __version__ = "0.6a"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
+
+
+# if python version < 2.5 set the sys.exit function as exit
+if hex(sys.hexversion)<'0x2050000':
+  exit=sys.exit
+
 
 class DNSSession(GenericSession):
   '''
@@ -725,7 +731,7 @@ class DNSMeasurementData(MeasurementData):
     lambda_n=self.dns_info['lambda_n']
     two_pi_over_lambda=2*pi/lambda_n
     grad_to_rad=pi/180.
-    
+    # calculation of the wavevector, also works with arrays
     def angle_to_wavevector(point):
       output=point
       output[qx_index]=(cos(-point[1]*grad_to_rad)-\
@@ -734,8 +740,7 @@ class DNSMeasurementData(MeasurementData):
       output[qy_index]=(sin(-point[1]*grad_to_rad)-\
                 sin(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
                 two_pi_over_lambda
-      return output
-    
+      return output    
     self.process_funcion(angle_to_wavevector)
     self.xdata=qx_index
     self.ydata=qy_index

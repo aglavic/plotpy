@@ -48,6 +48,10 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
+# if python version < 2.5 set the sys.exit function as exit
+if hex(sys.hexversion)<'0x2050000':
+  exit=sys.exit
+
 '''
   Dictionary for the known measurement types, to create a new measureing type
   it is only needed to create the seesion class and add it to this dictionary.
