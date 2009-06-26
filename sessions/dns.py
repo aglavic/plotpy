@@ -49,14 +49,15 @@ class DNSSession(GenericSession):
   SPECIFIC_HELP=\
 '''
 \tDNS-Data treatment:
-\t-inc\tinc\tThe default increment between files of the same polarization.
-\t-ooff\tooff\tOffset of omega angle for the sample to calculate the right q_x,q_y
-\t-bg\tbg\tFile to be substracted as background.
-\t-vana\tfile\tUse different Vanadium file for evaluation.
-\t-samplet\tname\tSet the name of your sample to be used in every plot(can be changed in GUI).
-\t-files\tprefix ooff inc from to postfix
+\t-inc [inc]\tThe default increment between files of the same polarization
+\t-split [s]\tSplit the files into measurements every s files
+\t-ooff [ooff]\tOffset of omega angle for the sample to calculate the right q_x,q_y
+\t-bg [bg]\tFile to be substracted as background
+\t-vana [file]\tUse different Vanadium file for evaluation
+\t-sample [name]\tSet the name of your sample to be used in every plot(can be changed in GUI)
+\t-files [prefix] [ooff] [inc] [from] [to] [postfix]
 \t\t\tExplicidly give the file name prefix, omega offset, increment, numbers and postfix
-\t\t\tfor the files to be used. Can be given multiple times for diefferent prefixes.
+\t\t\tfor the files to be used. Can be given multiple times for diefferent prefixes
 
 \tShort info settings: 
 \t\t-time, -flipper, -monitor
@@ -71,7 +72,7 @@ class DNSSession(GenericSession):
 #  TRANSFORMATIONS=[\
 #  ['','',1,0,'',''],\
 #  ]  
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'bg', 'vana', 'files', 'sample', 'time', 'flipper', 'monitor', 'powder', 'xyz'] 
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'bg', 'vana', 'files', 'sample', 'time', 'flipper', 'monitor', 'powder', 'xyz', 'split'] 
   file_options={'default': ['', 0, 1, [0, -1], ''],  # (prefix, omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[]
@@ -81,6 +82,7 @@ class DNSSession(GenericSession):
   SHORT_INFO=[('temperature', lambda temp: 'at T='+str(temp), 'K')]
   SAMPLE_NAME=''
   POWDER_DATA=False
+  SPLIT=None
   ONLY_IMPORT_MULTIFILE=True
   #------------------ local variables -----------------
 
@@ -109,6 +111,8 @@ class DNSSession(GenericSession):
     names.sort()
     if len(names) > 0:
       self.find_prefixes(names)
+    if not self.SPLIT is None:
+      self.split_sequences(self.SPLIT)
     self.prefixes.sort()
     for prefix in self.prefixes:
       self.read_files(prefix)
@@ -133,6 +137,9 @@ class DNSSession(GenericSession):
           last_argument_option=[False,'']
         elif last_argument_option[1]=='ooff':
           self.file_options['default'][1]=float(argument)
+          last_argument_option=[False,'']
+        elif last_argument_option[1]=='split':
+          self.SPLIT=float(argument)
           last_argument_option=[False,'']
         elif last_argument_option[1]=='bg':
           self.BACKGROUND_FILE=argument
@@ -281,8 +288,8 @@ class DNSSession(GenericSession):
     postfix=self.file_options[file][4]
     def append_to_map(point):
       return [file_number, 
-              omega-omega_offset-detector_bank_2T, 
-              omega-detector_bank_2T, 
+              round(omega-omega_offset-detector_bank_2T, 1), 
+              round(omega-detector_bank_2T, 1), 
               point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE-detector_bank_2T, 
               point[0]
               ]+point[1:]+point[1:]+[0, 0]
@@ -368,6 +375,37 @@ class DNSSession(GenericSession):
                                                            [int(item[1][1][i-1:]), 
                                                            int(item[1][2][i-1:])], 
                                                            item[1][3]]    
+  
+  def split_sequences(self, length):
+    '''
+      Split the file_options and prefixes at every 
+      [length] number.
+    '''
+    for file in self.prefixes:
+      options=self.file_options[file]
+      # Create a list of all files.
+      file_split=options[0].rsplit(os.sep, 1)
+      if len(file_split)==1:
+        folder='.'
+        fileprefix=file_split[0]
+      else:
+        folder, fileprefix=file_split
+      file_list=[lfile for lfile in os.listdir(folder) if lfile.startswith(fileprefix) and lfile.endswith(options[4])]
+      file_list.sort()
+      if options[3][1]==-1:
+        options[3][1]=int(file_list[-1].split(fileprefix, 1)[1].rsplit(options[4], 1)[0])
+      options[3][0]=max(int(file_list[0].split(fileprefix, 1)[1].rsplit(options[4], 1)[0])
+                        , options[3][0])
+      if options[3][1]-options[3][0]>length:
+        new_options=[options[0:3]+[ [int(options[3][0]+i*length), int(min(options[3][0]+(i+1)*length-1, options[3][1]))] ]+[options[4]] for i in range(int((options[3][1]-options[3][0])/length +1))]
+        file_dict={}
+        def put_in_dict(name):
+          file_dict[int(name.split(fileprefix, 1)[1].rsplit(options[4], 1)[0])] = name
+        map(put_in_dict, file_list)
+        self.file_options[file_dict[new_options[0][3][0]]]=new_options[0]
+        for new_option in new_options[1:]:
+          self.prefixes.append(file_dict[new_option[3][0]])
+          self.file_options[file_dict[new_option[3][0]]]=new_option    
 
   def create_menu(self):
     '''
