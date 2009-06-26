@@ -6,4 +6,11 @@ include install
 include prd
 include psd
 include p4d
+include plot_reflectometer_data
+include plot_4circle_data
+include plot_SQUID_data
+include dnsplot
+include pin12
 include uninstall
+
+include dnsplot_help.pdf

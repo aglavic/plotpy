@@ -484,6 +484,7 @@ class DNSSession(GenericSession):
     '''
     if not self.active_file_name in self.file_options:
       return None
+    #+++++ Create a dialog window for ooff input +++++
     ooff_dialog=gtk.Dialog(title='Change omega offset:')
     ooff_dialog.set_default_size(100,50)
     ooff_dialog.add_button('OK', 1)
@@ -521,13 +522,17 @@ class DNSSession(GenericSession):
     down_button.connect('clicked', toggle_down)
     ooff_dialog.vbox.add(table)
     ooff_dialog.show_all()
+    #----- Create a dialog window for ooff input -----
+    # wait for user response
     result=ooff_dialog.run()
     while result > 1:
+      # response is Apply
       ooff=float(input_filed.get_text())
       self.active_file_data[window.index_mess].change_omega_offset(ooff)
       window.replot()
       result=ooff_dialog.run()
     if result==1:
+      # response is OK
       ooff=float(input_filed.get_text())
       self.file_options[self.active_file_name][1]=ooff
       self.active_file_data[window.index_mess].change_omega_offset(ooff)
@@ -541,6 +546,7 @@ class DNSSession(GenericSession):
     '''
     if not self.active_file_name in self.file_options:
       return None
+    #+++++ Create a dialog window for increment input +++++
     inc_dialog=gtk.Dialog(title='Change increment for same polarization:')
     inc_dialog.set_default_size(100,50)
     inc_dialog.add_button('OK', 1)
@@ -551,8 +557,10 @@ class DNSSession(GenericSession):
     input_filed.show()
     input_filed.connect('activate', lambda *ignore: inc_dialog.response(1))
     inc_dialog.vbox.add(input_filed)
+    #----- Create a dialog window for increment input -----
     result=inc_dialog.run()
     if result==1:
+      # Answer is OK
       inc=int(input_filed.get_text())
       self.file_options[self.active_file_name][2]=inc
       self.create_maps(self.active_file_name)
