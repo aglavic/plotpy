@@ -70,7 +70,6 @@ class ApplicationMainWindow(gtk.Window):
       @param plugin_widget Not used now.
     '''
     global errorbars
-    gnuplot_preferences.set_output_terminal_png=gnuplot_preferences.set_output_terminal_png_GUI
     # TODO: remove global errorbars variable and put in session or m_d_structure
     #+++++++++++++++++ set class variables ++++++++++++++++++
     self.height=600 # window height
@@ -281,6 +280,15 @@ class ApplicationMainWindow(gtk.Window):
     align_table.attach(self.x_range_in,4,5,0,1,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.y_range_label,5,7,0,1,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.y_range_in,7,9,0,1,gtk.FILL,gtk.FILL,0,0)
+    # font size entry
+    self.font_size=gtk.Entry()
+    self.font_size.set_width_chars(3)
+    self.font_size.set_text(str(self.active_session.font_size))
+    self.font_size.connect("activate",self.change_range)
+    self.font_size_label=gtk.Label()
+    self.font_size_label.set_markup('font-size:')
+    align_table.attach(self.font_size,12,13,0,1,gtk.FILL,gtk.FILL,0,0)
+    align_table.attach(self.font_size_label,11,12,0,1,gtk.FILL,gtk.FILL,0,0)
     # checkboxes for log x and log y
     self.logx=gtk.CheckButton(label='log x', use_underline=True)
     self.logy=gtk.CheckButton(label='log y', use_underline=True)
@@ -294,7 +302,7 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_options_button=gtk.ToolButton(gtk.STOCK_EDIT)
     self.plot_options_button.set_tooltip(gtk.Tooltips(),'Add custom Gnuplot commands')
     self.plot_options_handler_id=self.plot_options_button.connect("clicked",self.open_plot_options_window)
-    align_table.attach(self.plot_options_button,11,12,0,2,gtk.FILL,gtk.FILL,0,0)
+    align_table.attach(self.plot_options_button,13,14,0,2,gtk.FILL,gtk.FILL,0,0)
     # z range and log z checkbox
     self.z_range_in=gtk.Entry()
     self.z_range_in.set_width_chars(6)
@@ -603,6 +611,14 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Change plotting range according to textinput.
     '''
+    # set the font size
+    try:
+      self.active_session.font_size=float(self.font_size.get_text())
+      self.replot()
+    except ValueError:
+      self.active_session.font_size=24.
+      self.font_size.set_text('24')
+      self.replot()
     # get selected ranges
     xin=self.x_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
     yin=self.y_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
@@ -1527,6 +1543,7 @@ class ApplicationMainWindow(gtk.Window):
       self.x_range_label.show()
       self.y_range_in.show()
       self.y_range_label.show()
+      self.font_size.show()
       self.check_add.set_label('')
       self.logx.show()
       self.logy.show()
@@ -1557,6 +1574,7 @@ class ApplicationMainWindow(gtk.Window):
       self.y_range_label.hide()
       self.z_range_in.hide()
       self.z_range_label.hide()
+      self.font_size.hide()
       self.logx.hide()
       self.logy.hide()
       self.plot_options_button.hide()
@@ -2463,7 +2481,6 @@ class PlotProfile:
   name='default'
   set_output_terminal_png=''
   set_output_terminal_ps=''
-  set_output_terminal_png_GUI=''
   x_label=''
   y_label=''
   z_label=''
@@ -2489,7 +2506,6 @@ class PlotProfile:
         active_class.plot_options_buffer.get_start_iter(),\
         active_class.plot_options_buffer.get_end_iter())
     self.set_output_terminal_png=gnuplot_preferences.set_output_terminal_png
-    self.set_output_terminal_png_GUI=gnuplot_preferences.set_output_terminal_png_GUI
     self.set_output_terminal_ps=gnuplot_preferences.set_output_terminal_ps
     self.x_label=gnuplot_preferences.x_label
     self.y_label=gnuplot_preferences.y_label
@@ -2508,7 +2524,6 @@ class PlotProfile:
     active_class.plot_options_buffer.set_text(self.additional_commands)
     gnuplot_preferences.set_output_terminal_png=self.set_output_terminal_png
     gnuplot_preferences.set_output_terminal_ps=self.set_output_terminal_ps
-    gnuplot_preferences.set_output_terminal_png_GUI=self.set_output_terminal_png_GUI    
     gnuplot_preferences.x_label=self.x_label
     gnuplot_preferences.y_label=self.y_label
     gnuplot_preferences.z_label=self.z_label
@@ -2535,7 +2550,6 @@ class PlotProfile:
     config_object[self.name]={}
     config=config_object[self.name]
     config['set_output_terminal_png']=self.set_output_terminal_png
-    config['set_output_terminal_png_GUI']=self.set_output_terminal_png_GUI
     config['set_output_terminal_ps']=self.set_output_terminal_ps
     config['x_label']=self.x_label
     config['y_label']=self.y_label
@@ -2553,7 +2567,6 @@ class PlotProfile:
     '''
     config=config_object[self.name]
     self.set_output_terminal_png=config['set_output_terminal_png']
-    self.set_output_terminal_png_GUI=config['set_output_terminal_png_GUI']
     self.set_output_terminal_ps=config['set_output_terminal_ps']
     self.x_label=config['x_label']
     self.y_label=config['y_label']

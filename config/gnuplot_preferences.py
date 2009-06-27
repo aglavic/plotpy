@@ -21,6 +21,8 @@ __status__ = "Production"
 # [name] - name of input file
 # [name-rmv] - name without suffix (replacement set in remove_from_name)
 # [sample] - sample name as described in input file
+# [script-path] - path of the python scripts root directory
+# [font-size] - selected font size / 1000 * height (for export 1200)
 # [nr] - number of sequence plotted
 # [info] - header information of input file
 # [add_info] - short string for special plot types as 'multi'
@@ -31,7 +33,7 @@ __status__ = "Production"
 # [y-dim] - dimension of y-dataset
 # [z-dim] - dimension of z-dataset
 # [title_add] - title addition set in function call
-# [titles_add] - titles addition set in function call for different plots
+# [titles_add] - titles addition set in function call for diff24erent plots
 # [const_unit] - first constant data unit
 # [const_dim] - first constant data dimension
 # [const_value] - first constant data value
@@ -54,10 +56,9 @@ def remove_from_name(name):
 # character encoding in gnuplot
 ENCODING='iso_8859_1'
 # set the terminal options for the gnuplot output (postscript could need other labels)
+set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[script-path]', 'config', 'fonts',  'Arial.ttf')+'" [font-size]' #transparent
 # used is determined by file name
-set_output_terminal_png='png enhanced size 1024,768 font "'+join_path(prefix, '[script-path]', 'config', 'fonts',  'Arial.ttf')+'" 16' #transparent
-set_output_terminal_ps='postscript landscape enhanced colour "Arial" 24 solid lw 2'
-set_output_terminal_png_GUI='png enhanced size [width],[height] font "'+join_path('[script-path]', 'config', 'fonts',  'Arial.ttf')+'" 16' #transparent
+set_output_terminal_ps='postscript landscape enhanced colour "Arial" [font-size] solid lw 2'
 
 # set output file name, the postfix has to be chosen consistant to the 'set term' statement
 output_file_name='[name]_[add_info][nr].png'

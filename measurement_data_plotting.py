@@ -237,6 +237,7 @@ def replace_ph(session,
   replace('[script-path]',session.SCRIPT_PATH).\
   replace('[width]',session.picture_width).\
   replace('[height]',session.picture_height).\
+  replace('[font-size]',str(int(session.font_size/1000.*int(session.picture_height)))).\
   replace('[name]',file_name_prefix).\
   replace('[name-rmv]',gp.remove_from_name(file_name_prefix)).\
   replace('[sample]',sample_name).\

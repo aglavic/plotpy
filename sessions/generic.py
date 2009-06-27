@@ -135,8 +135,9 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   logx=False # plot logarithmic in x direction
   logy=False # plot logarithmic in y direction
   logz=False # plot logarithmic in z direction
-  picture_width='800'
-  picture_height='600'
+  picture_width='1600'
+  picture_height='1200'
+  font_size=24.
   # TODO: command line file printing hast to be added.
   print_plot=False # send plots to printer
   unit_transformation=True # make transformations as set in preferences file
