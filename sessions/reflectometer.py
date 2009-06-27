@@ -190,7 +190,7 @@ class ReflectometerSession(GenericSession):
           phi=float(strip[1])
       if not self.show_counts:
         self.units=dataset.units()
-        dataset.process_funcion(self.counts_to_cps)
+        dataset.process_function(self.counts_to_cps)
         dataset.unit_trans([['counts',1,0,'counts/s']])
       dataset.short_info=' started at Th='+str(round(th,4))+' 2Th='+str(round(twoth,4))+' Phi='+str(round(phi,4))
       if self.export_for_fit: # export fit files

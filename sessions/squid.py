@@ -166,12 +166,12 @@ Data columns and unit transformations are defined in config.squid.py.
     correct_para=self.dia_mag_correct!=0
     for dataset in datasets:
       if correct_dia:
-        dataset.process_funcion(self.diamagnetic_correction)
+        dataset.process_function(self.diamagnetic_correction)
         dataset.dia_corrected=True
       else:
         dataset.dia_corrected=False
       if correct_para:
-        dataset.process_funcion(self.paramagnetic_correction)
+        dataset.process_function(self.paramagnetic_correction)
         dataset.para_corrected=True
       else:
         dataset.para_corrected=False
@@ -270,17 +270,17 @@ Data columns and unit transformations are defined in config.squid.py.
     for dataset in self.active_file_data:
       if name=='SquidDia':
         if dataset.dia_corrected:
-          dataset.process_funcion(self.diamagnetic_correction_undo)
+          dataset.process_function(self.diamagnetic_correction_undo)
           dataset.dia_corrected=False
         else:
-          dataset.process_funcion(self.diamagnetic_correction)
+          dataset.process_function(self.diamagnetic_correction)
           dataset.dia_corrected=True
       if name=='SquidPara':
         if dataset.para_corrected:
-          dataset.process_funcion(self.paramagnetic_correction_undo)
+          dataset.process_function(self.paramagnetic_correction_undo)
           dataset.para_corrected=False
         else:
-          dataset.process_funcion(self.paramagnetic_correction)
+          dataset.process_function(self.paramagnetic_correction)
           dataset.para_corrected=True
     window.replot()
   

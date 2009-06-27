@@ -304,7 +304,7 @@ class MeasurementData:
 
   # When numpy is accessible use a faster array approach
   if numpy is None:
-    def process_funcion(self,function): 
+    def process_function(self,function): 
       '''
         Processing a function on every data point.
       '''
@@ -314,7 +314,7 @@ class MeasurementData:
       return self.last()
 
   else:
-    def process_funcion_nonumpy(self,function): 
+    def process_function_nonumpy(self,function): 
       '''
         Processing a function on every data point.
       '''
@@ -323,7 +323,7 @@ class MeasurementData:
         self.set_data(function(point),i)
       return self.last()
 
-    def process_funcion(self,function): 
+    def process_function(self,function): 
       '''
         Processing a function on every data point.
         When numpy is installed this is done via one proccess call 
@@ -338,7 +338,7 @@ class MeasurementData:
         for i, array in enumerate(processed_arrays):
           self.data[i].values=list(array)
       except: # if the function does not work with arrays the conventional method is used.
-        self.process_funcion_nonumpy(function)
+        self.process_function_nonumpy(function)
       return self.last()
 
   def sort(self, column=None):

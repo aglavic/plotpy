@@ -111,7 +111,7 @@ class CircleSession(GenericSession):
         dataset.short_info=dataset.xdim()+' scan at '+hkl[0] +','+ hkl[1]+ ','+hkl[2]
       if not self.show_counts:
         self.units=dataset.units()
-        dataset.process_funcion(self.counts_to_cps)
+        dataset.process_function(self.counts_to_cps)
         dataset.unit_trans([['counts',1,0,'counts/s']])
     return datasets
 

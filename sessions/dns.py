@@ -800,7 +800,7 @@ class DNSMeasurementData(MeasurementData):
                 sin(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
                 two_pi_over_lambda
       return output    
-    self.process_funcion(angle_to_wavevector)
+    self.process_function(angle_to_wavevector)
     self.xdata=qx_index
     self.ydata=qy_index
   
@@ -811,7 +811,7 @@ class DNSMeasurementData(MeasurementData):
     def calc_omega(point):
       point[1]=point[2]-omega_offset
       return point
-    self.process_funcion(calc_omega)
+    self.process_function(calc_omega)
     self.calculate_wavevectors()
   
   def make_corrections(self):
@@ -823,14 +823,14 @@ class DNSMeasurementData(MeasurementData):
     if not self.background_data is None:
       sys.stdout.write("background substractoin, ")
       sys.stdout.flush()
-      self.process_funcion(self.correct_background)
+      self.process_function(self.correct_background)
       changed=True
     else:
-      self.process_funcion(self.copy_intensities)
+      self.process_function(self.copy_intensities)
     if not self.vanadium_data is None:
       sys.stdout.write("vanadium correction, ")
       sys.stdout.flush()
-      self.process_funcion(self.correct_vanadium)
+      self.process_function(self.correct_vanadium)
       changed=True
     if changed:
       self.zdata=self.number_of_channels*2+5
@@ -1010,7 +1010,7 @@ class DNSMeasurementData(MeasurementData):
           result.data[i+5].values[j]=self.data[i+5].values[j]*other
       return result      
     #--------- calculations for use with single points -------------
-  
+
   def error_propagation_quotient(self,xdata,ydata): 
     '''
       Calculate the propagated error for x/y.
