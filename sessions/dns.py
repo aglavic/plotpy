@@ -159,26 +159,44 @@ class DNSSession(GenericSession):
         elif last_argument_option[1]=='sample':
           self.SAMPLE_NAME=argument
           last_argument_option=[False,'']
-        # explicit file setting:
+        #+++++++++++++++ explicit file setting +++++++++++++++++++++++++++
+        # Enty checking is quite extensive as there are many options which could
+        # be given worng by the user.
         elif last_argument_option[1]=='files':
           new_options=[]
           new_options.append(argument)
           last_argument_option=[True,'files_1', new_options]
         # omega offset
         elif last_argument_option[1]=='files_1':
-          last_argument_option[2].append(float(argument))
+          try:
+            last_argument_option[2].append(float(argument))
+          except ValueError:
+            print "Check your Syntax! Omega offset has to be a number, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]" % argument
+            exit()
           last_argument_option=[True,'files_2', last_argument_option[2]]
         # increment
         elif last_argument_option[1]=='files_2':
-          last_argument_option[2].append(int(argument))
+          try:
+            last_argument_option[2].append(int(argument))
+          except ValueError:
+            print "Check your Syntax! Increment has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]" % argument
+            exit()            
           last_argument_option=[True,'files_3', last_argument_option[2]]
         # from
         elif last_argument_option[1]=='files_3':
-          last_argument_option[2].append([int(argument)])
+          try:
+            last_argument_option[2].append([int(argument)])
+          except ValueError:
+            print "Check your Syntax! From has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]" % argument
+            exit()            
           last_argument_option=[True,'files_4', last_argument_option[2]]
         # to
         elif last_argument_option[1]=='files_4':
-          last_argument_option[2][3].append(int(argument))
+          try:
+            last_argument_option[2][3].append(int(argument))
+          except ValueError:
+            print "Check your Syntax! To has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]" % argument
+            exit()            
           last_argument_option=[True,'files_5', last_argument_option[2]]
         # postfix
         elif last_argument_option[1]=='files_5':
@@ -191,12 +209,24 @@ class DNSSession(GenericSession):
             directory='.'
             file_prefix=split[0]
           file_postfix=str(last_argument_option[2][3][0])+last_argument_option[2][4]
-          first_file=sorted([file for file in os.listdir(directory) if file.startswith(file_prefix) and file.endswith(file_postfix)])[0]
-          self.prefixes.append(first_file)
-          self.file_options[first_file]=last_argument_option[2]
+          try:
+            first_file=sorted([file for file in os.listdir(directory) \
+                               if file.startswith(file_prefix) and file.endswith(file_postfix)])[0]
+          except IndexError:
+            erg=last_argument_option[2]
+            print """No file found for the -files options:
+            Pefix='%s'
+            Omega offset='%g'
+            Increment='%i'
+            From,To='%i','%i'
+            Postfix='%s' """ % (erg[0], erg[1], erg[2], erg[3][0], erg[3][1], erg[4])
+            exit()
+          self.prefixes.append(directory+os.sep+first_file)
+          self.file_options[directory+os.sep+first_file]=last_argument_option[2]
           last_argument_option=[False,'']
         else:
           found=False
+        #--------------- explicit file setting ---------------------------
       elif argument=='-time':
         self.SHORT_INFO=[('time', lambda time: 'with t='+str(time), 's')]
       elif argument=='-powder':
@@ -400,8 +430,15 @@ class DNSSession(GenericSession):
       i=0
       while item[1][1][:i]==item[1][2][:i]:
         i+=1
-      self.prefixes.append(item[1][0]+item[1][1]+item[1][3])
-      self.file_options[item[1][0]+item[1][1]+item[1][3]]=[item[1][0]+item[1][1][:i-1], 
+        if i>len(item[1][1]):
+          print "Sorry, could not get prefixes right, try -files option."
+          exit()
+      if len(item[1][0].rsplit(os.sep, 1))==1:
+        add_folder='./'
+      else:
+        add_folder=''
+      self.prefixes.append(add_folder+item[1][0]+item[1][1]+item[1][3])
+      self.file_options[add_folder+item[1][0]+item[1][1]+item[1][3]]=[item[1][0]+item[1][1][:i-1], 
                                                            self.file_options['default'][1], 
                                                            self.file_options['default'][2], 
                                                            [int(item[1][1][i-1:]), 
@@ -450,6 +487,8 @@ class DNSSession(GenericSession):
         <menuitem action='SetIncrement' />
         <menuitem action='SeperateScattering' />
         <menuitem action='SeperatePreset' />
+        <separator name='dns1' />
+        <menuitem action='ReloadActive' />
       </menu>
     '''
     # Create actions for the menu
@@ -474,6 +513,10 @@ class DNSSession(GenericSession):
                 "Seperate from Preset", None,                    # label, accelerator
                 "Calculate seperated scattering parts from polarization directions from presets.",               # tooltip
                 self.seperate_scattering_preset ),
+            ( "ReloadActive", None,                             # name, stock id
+                "Reload Active Measurement", 'F5',                    # label, accelerator
+                None,               # tooltip
+                self.reload_active_measurement ),
              )
     return string,  actions
 
@@ -716,6 +759,12 @@ class DNSSession(GenericSession):
     result.number=str(len(polarization_list))
     self.active_file_data.append(result)
 
+  def reload_active_measurement(self, action, window):
+    '''
+      Reload the measurement active in the GUI.
+    '''
+    self.read_files(self.active_file_name.rsplit('|raw_data')[0])
+    window.change_active_file_object((self.active_file_name, self.file_data[self.active_file_name]))
 
 class DNSMeasurementData(MeasurementData):
   '''
