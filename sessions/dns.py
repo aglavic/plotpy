@@ -528,9 +528,9 @@ class DNSSession(GenericSession):
       raw date from beeing ploted.
     '''
     for name in self:
-      if len(name.split("|raw_data", 1))==1:
+      if not name.endswith("|raw_data"):
         print "Plotting '" + name + "' sequences."
-        self.plot_active()
+        print self.plot_active()
   
   
   

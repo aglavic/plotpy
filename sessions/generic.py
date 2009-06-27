@@ -23,6 +23,7 @@
 import os
 import sys
 import math
+from time import sleep
 import subprocess
 from cPickle import load, dump
 from measurement_data_structure import MeasurementData
@@ -502,11 +503,14 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
       Plots the active datasets.
     '''
+    output=''
     if not self.single_picture:
       for dataset in self.active_file_data:
-        self.plot(dataset.plot_together, self.active_file_name, dataset.short_info, ['' for i in range(len(dataset.plot_together))])
+        output+=self.plot(dataset.plot_together, self.active_file_name, dataset.short_info, ['' for i in range(len(dataset.plot_together))])
+        sleep(0.0001) # Can get into troubles without waiting.
+      return output
     else:
-      self.plot(self.active_file_data, self.active_file_name, '', [dataset.short_info for dataset in self.active_file_data])
+      return self.plot(self.active_file_data, self.active_file_name, '', [dataset.short_info for dataset in self.active_file_data])
 
   def plot_all(self):
     '''

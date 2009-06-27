@@ -2041,7 +2041,7 @@ class ApplicationMainWindow(gtk.Window):
     #                                        gtk.gdk.INTERP_BILINEAR))
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
-            with_errorbars, output_file='', fit_lorentz=False, add_preferences=''):
+            with_errorbars, output_file=gnuplot_preferences.output_file_name, fit_lorentz=False, add_preferences=''):
     '''
       Plot via script file instead of using python gnuplot pipeing.
     '''

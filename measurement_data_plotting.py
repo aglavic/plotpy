@@ -42,7 +42,7 @@ def gnuplot_plot(session,
   file_numbers=[]
   for j, dataset in enumerate(datasets):
     for i, attachedset in enumerate(dataset.plot_together):
-      file_numbers.append(dataset.number+'-'+str(i))
+      file_numbers.append(str(j)+'-'+str(i))
   if output_file.rsplit('.',1)[1]=='ps': # Determine which terminal to use depending on filename suffix
     postscript_export=True
     terminal=gp.set_output_terminal_ps
@@ -65,7 +65,7 @@ def gnuplot_plot(session,
                             (0, 0, 0),
                             postscript_export,
                             additional_info) 
-  gplot=Gnuplot.Gnuplot() # if term is x11 the plot will not close
+  gplot=Gnuplot.Gnuplot()
   gnuplot_settings=gp.GNUPLOT_FILE_HEAD+\
   'set term '+terminal+'\n'+\
   'set output "'+output_file+'"\n'+\
@@ -174,8 +174,8 @@ def gnuplot_plot_script(session,
   file_numbers=[]
   for j, dataset in enumerate(datasets):
     for i, attachedset in enumerate(dataset.plot_together):
-      file_numbers.append(dataset.number+'-'+str(i))
-      attachedset.export(session.TEMP_DIR+'tmp_data_'+dataset.number+'-'+str(i)+'.out')
+      file_numbers.append(str(j)+'-'+str(i))
+      attachedset.export(session.TEMP_DIR+'tmp_data_'+str(j)+'-'+str(i)+'.out')
   sample_name=datasets[0].sample_name
   if output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
@@ -240,7 +240,7 @@ def replace_ph(session,
   replace('[name]',file_name_prefix).\
   replace('[name-rmv]',gp.remove_from_name(file_name_prefix)).\
   replace('[sample]',sample_name).\
-  replace('[nr]',file_numbers[number[2]]).\
+  replace('[nr]',datasets[datanr].number).\
   replace('[add_info]',additional_info).\
   replace('[info]',datasets[datanr].plot_together[withnr].info.replace('\n','\n#')).\
   replace('[x-unit]',datasets[datanr].plot_together[withnr].xunit()).\
@@ -287,7 +287,7 @@ def create_plot_script(session,
   file_numbers=[]
   for j, dataset in enumerate(datasets):
     for i, attachedset in enumerate(dataset.plot_together):
-      file_numbers.append(dataset.number+'-'+str(i))
+      file_numbers.append(str(j)+'-'+str(i))
   if output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
@@ -340,7 +340,7 @@ def create_plot_script(session,
                              (0, 0, 0),
                              postscript_export,
                              additional_info)
-  for number in file_numbers[1:len(file_numbers)]:
+  for number in file_numbers[1:]:
     if number.split('-')[1]=='0':
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
           '.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
@@ -370,7 +370,7 @@ def create_plot_script(session,
                                    title,
                                    names,
                                    sample_name,
-                                   (int(number.split('-')[0]), int(number.split('-')[1]), file_numbers.index(number)),
+                                   (int(number.split('-')[0]), int(number.split('-')[0]), file_numbers.index(number)),
                                    postscript_export,
                                    additional_info)
   return gnuplot_file_text
