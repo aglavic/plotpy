@@ -384,6 +384,11 @@ class DNSSession(GenericSession):
           # to make it possible to correct for this data, round the 2Theta value
           dnsmap.vanadium_data=vana_data
           dnsmap.vanadium_correct_by_detector=False
+        # normalize vanadium data to stay at about counts/s
+        max_p=max(vana_data, key=lambda p: p[1])[1]
+        min_p=min(vana_data, key=lambda p: p[1])[1]
+        cen_p=(max_p-min_p)/2.+min_p
+        vana_data.process_function(lambda point: [point[0], point[1]/cen_p, point[2]/cen_p])
       sys.stdout.write("calculate wavevectors, ")
       sys.stdout.flush()
       dnsmap.calculate_wavevectors()

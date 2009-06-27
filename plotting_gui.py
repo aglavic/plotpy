@@ -2484,6 +2484,7 @@ class PlotProfile:
   x_label=''
   y_label=''
   z_label=''
+  font_size=26.
   plotting_parameters=''
   plotting_parameters_errorbars=''
   plotting_parameters_3d=''
@@ -2515,6 +2516,7 @@ class PlotProfile:
     self.plotting_parameters_3d=gnuplot_preferences.plotting_parameters_3d
     self.settings_3d=gnuplot_preferences.settings_3d
     self.settings_3dmap=gnuplot_preferences.settings_3dmap
+    self.font_size=active_class.active_session.font_size
 
   def load(self, active_class):
     '''
@@ -2532,6 +2534,8 @@ class PlotProfile:
     gnuplot_preferences.plotting_parameters_3d=self.plotting_parameters_3d
     gnuplot_preferences.settings_3d=self.settings_3d
     gnuplot_preferences.settings_3dmap=self.settings_3dmap
+    active_class.active_session.font_size=self.font_size
+    active_class.font_size.set_text(str(self.font_size))
     active_class.replot() # plot with new settings
 
   def prnt(self):
@@ -2560,6 +2564,7 @@ class PlotProfile:
     config['additional_commands']=self.additional_commands
     config['settings_3d']=self.settings_3d
     config['settings_3dmap']=self.settings_3dmap
+    config['font_size']=self.font_size
 
   def read(self,config_object):
     '''
@@ -2578,6 +2583,7 @@ class PlotProfile:
     self.settings_3d=config['settings_3d']
     self.settings_3dmap=config['settings_3dmap']
     self.additional_commands=config['additional_commands']
+    self.font_size=float(config['font_size'])
 
 
 

@@ -124,8 +124,7 @@ def import_session_from_name(arguments, measurement_type):
                                       [measurement_type[1]]), measurement_type[1])
   return active_session_class(arguments)
 
-if __name__ == '__main__':    #code to execute if called from command-line for testing
-
+if __name__ == '__main__':    #code to execute if called from command-line
   # initialize session and read data files
 
   if (len(sys.argv) == 1):
