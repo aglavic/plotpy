@@ -22,16 +22,33 @@ supported by the script feel free to contact me.
 ----- 1 - changes since version 0.5 -------
 - added support for treff data and image files
 - added support for in12 data files
+- added support for DNS single crystal and powder data with additional functionality:
+  - transform to q-space, with variable omega-offset
+  - correct for vanadium and background file
+  - split file sequences by number of polarizations
+  - transform to reciprocal lattice units with given d-spacing
+  - Linear combination from different measurements
 - changed module structure introducing config, read_data and sessions packages
 - added fitting dialog
-- platform independent python setup
-- save gnuplot and datafile which creates the same image as present in GUI
-- major speed enhacement for plottin and data import, slow import formats (as squid raw
+- optional platform independent python setup
+- save gnuplot and datafile which creates the same image as present in GUI for later change
+- major speed enhacement for plotting and data import, slow import formats (as squid raw
    and treff image files) are stored as binary objects after readout
 - included fonts for linux distributions missing it
-- history for reflectometer fit
+- history for reflectometer fit parameters
 - code cleanup and consistancy
 - multiplot from different files (stil needs imporvement)
+- automatic session detection from file postfix
+- color selection for 3d plots (can be personalized in config/gnuplot_preferences.py)
+- create arbitrary cross-sections through 3d-plots bin the data as standard and gaussian weighted mean
+- transform units and dimensions with some predefined units (e.g. ° to mrad)
+- plot profiles now include all 3d-plot settings, too
+- better window resize using scrolled window and gnuplot with different export sizes and not scaling
+- font size option in GUI
+- first stages of macro framework to make it easier to repeat common tasks on differen measurments,
+  at the moment not intuitive and only implemented for some of the tasks (e.g. fit and cross-section)
+  see Help-> Action History to find tasks used in the active session
+
 
 
 ----- 1.1 - changes from version 0.4 to 0.5 -------
@@ -188,9 +205,12 @@ The next releases will hopefully come in about 2 month cycles.
 At the moment I have these plans for the future releases:
 
   v0.7) - setting up proper printing dialog
-        - color selection for 3d plots
         - more error handling
         - save more settings in the config file, savable window profiles
+        - open the gui without any file
+        - combine data from different files together
+        - plot more then one column of a sequence in one plot
+        - increase command line functionality
 
   v0.8) - include powder diffractometer format and interface to fullprof
         - complete mpms and ppms functionalities for all measurements

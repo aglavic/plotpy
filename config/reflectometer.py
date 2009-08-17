@@ -3,6 +3,9 @@
   Some general settings for the reflectometer plotting script 'plot_reflectometer_data.py' 
 '''
 
+# import modules
+import os
+
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
@@ -33,3 +36,14 @@ DATA_COLUMNS={\
 
 # how to call the fit-script
 FIT_SCRIPT_COMMAND='fit-script'
+
+# compiler settings for fortran
+FORTRAN_COMPILER='gfortran'
+# compiler optimization options as can be found in the manual,
+# add your cpu flag here to increase performance of the fit
+# stdandard cpu flags are:
+# i686 / pentium4 / athlon / k8 / amdfam10 (athlon64) / nocona (p4-64bit)
+FORTRAN_COMPILER_OPTIONS='-O3'
+FORTRAN_COMPILER_MARCH='-march=nocona' #None
+FIT_PROGRAM_CODE_FILE=os.path.join('config', 'fit', 'fit.f90')
+

@@ -454,9 +454,12 @@ class ApplicationMainWindow(gtk.Window):
       Show the about dialog.
     '''
     dialog = gtk.AboutDialog()
-    dialog.set_name("Plotting GUI")
-    dialog.set_copyright("\302\251 Copyright Artur Glavic\n a.glavic@fz-juelich.de")
-    dialog.set_website("http://www.fz-juelich.de/iff")
+    dialog.set_program_name("Plotting GUI")
+    dialog.set_version("v%s" % __version__)
+    dialog.set_authors(["Artur Glavic"])
+    dialog.set_copyright("\302\251 Copyright 2008-2009 Artur Glavic\n a.glavic@fz-juelich.de")
+    dialog.set_website("http://www.fz-juelich.de/iff/Glavic_A/")
+    dialog.set_website_label('Webseite @ fz-juelich.de')
     ## Close dialog on user response
     dialog.connect ("response", lambda d, r: d.destroy())
     dialog.show()
@@ -1122,9 +1125,9 @@ class ApplicationMainWindow(gtk.Window):
         elif trans[3] in units:
           allowed_trans.append([trans[3], 1./trans[1], -1*trans[2]/trans[1], trans[0]])
       else:
-        if trans[0] in dimensions:
+        if (trans[0] in dimensions) and (trans[1] in units):
           allowed_trans.append(trans)
-        elif trans[5] in dimensions:
+        elif (trans[4] in dimensions) and (trans[5] in units):
           allowed_trans.append([trans[4], trans[5], 1./trans[2], -1*trans[3]/trans[2], trans[0], trans[1]])
 
     trans_box=gtk.combo_box_new_text()
@@ -1433,6 +1436,20 @@ class ApplicationMainWindow(gtk.Window):
                 1, 3,                      6, 7,
                 0,                       gtk.FILL,
                 0,                         0);
+    weight=gtk.CheckButton(label='Gauss weighting, Sigma:', use_underline=True)
+    table.attach(weight,
+                # X direction #          # Y direction
+                0, 2,                      7, 8,
+                0,                       gtk.FILL,
+                0,                         0);
+    sigma=gtk.Entry()
+    sigma.set_width_chars(4)
+    sigma.set_text('1e10')
+    table.attach(sigma,
+                # X direction #          # Y direction
+                2, 3,                      7, 8,
+                0,                       gtk.FILL,
+                0,                         0);
     table.show_all()
     # Enty activation triggers calculation, too
     line_x.connect('activate', lambda *ign: cs_dialog.response(1))
@@ -1441,6 +1458,7 @@ class ApplicationMainWindow(gtk.Window):
     line_y0.connect('activate', lambda *ign: cs_dialog.response(1))
     line_width.connect('activate', lambda *ign: cs_dialog.response(1))
     binning.connect('activate', lambda *ign: cs_dialog.response(1))
+    sigma.connect('activate', lambda *ign: cs_dialog.response(1))
     cs_dialog.vbox.add(table)
     cs_dialog.add_button('OK', 1)
     cs_dialog.add_button('Cancel', 0)
@@ -1452,7 +1470,9 @@ class ApplicationMainWindow(gtk.Window):
                                         float(line_y.get_text()), 
                                         float(line_y0.get_text()), 
                                         float(line_width.get_text()), 
-                                        int(binning.get_text())
+                                        int(binning.get_text()), 
+                                        weight.get_active(), 
+                                        float(sigma.get_text())
                                         )
       if not gotit:
         message=gtk.MessageDialog(parent=self, 
@@ -1915,7 +1935,7 @@ class ApplicationMainWindow(gtk.Window):
     text.show_all()
     #message=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
      #                              message_format=str(self.file_actions.store()))
-    message=gtk.Dialog(title='Action History')
+    message=gtk.Dialog(title='Run Makro...')
     message.vbox.add(text)
     message.add_button('Execute Actions', 1)
     message.add_button('Cancel', 0)
@@ -1951,7 +1971,15 @@ class ApplicationMainWindow(gtk.Window):
     #message=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
      #                              message_format=str(self.file_actions.store()))
     message=gtk.Dialog(title='Action History')
-    message.vbox.add(text)
+    sw = gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add_with_viewport(text) # add fit dialog
+    sw.show_all()
+    message.vbox.add(sw)
+    message.set_default_size(400, 500)
     message.add_button('OK', 1)
     message.run()
     message.destroy()

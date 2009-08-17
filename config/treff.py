@@ -21,3 +21,15 @@ LAMBDA_TREFF=4.75
 PI_4_OVER_LAMBDA=4*pi/LAMBDA_TREFF
 GRAD_TO_MRAD=pi/180*1000
 GRAD_TO_RAD=pi/180
+
+PROGRAM_FILES=['fit_pnr_mult_newcons.f90', 'levenberg_rough_newcons.f90', 
+'param_mult.f90', 'polref_sp_rough_noncoll.f90', 'read_mrad_sim_rough.f90', 
+'refconv_illu.f90', 'calchi.f90']
+# compiler settings for fortran
+FORTRAN_COMPILER='gfortran'
+# compiler optimization options as can be found in the manual,
+# add your cpu flag here to increase performance of the fit
+# stdandard cpu flags are:
+# i686 / pentium4 / athlon / k8 / amdfam10 (athlon64) / nocona (p4-64bit)
+FORTRAN_COMPILER_OPTIONS='-O3'
+FORTRAN_COMPILER_MARCH='-march=nocona' #None

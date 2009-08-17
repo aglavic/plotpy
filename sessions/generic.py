@@ -29,6 +29,7 @@ from cPickle import load, dump
 from measurement_data_structure import MeasurementData
 import measurement_data_plotting
 from config.gnuplot_preferences import PRINT_COMMAND, GNUPLOT_COMMAND
+import config.transformations
 
 # importing own modules
 
@@ -119,7 +120,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   index=0
   FILE_WILDCARDS=(('all files', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
-  COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans','help']
+  COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans','-help', '-debug']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -145,6 +146,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   read_directly=False # don't use pickled file, read the data diretly
   mds_create=True
   ONLY_IMPORT_MULTIFILE=False
+  DEBUG=False
   #------------------ local variables -----------------
 
   def __init__(self, arguments):
@@ -168,6 +170,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     self.try_import_externals()
     files.sort()
     remove=[]
+    config.transformations.known_transformations+=self.TRANSFORMATIONS
     #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
     for filename in files:
       if self.add_file(filename)==[]:
@@ -284,6 +287,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
           self.unit_transformation=False
         elif argument=='--help':
           return None
+        elif argument=='--debug':
+          self.DEBUG=True
         else:
           # evaluate child arguments
           found_add, last_argument_option=self.read_argument_add(argument,  last_argument_option)

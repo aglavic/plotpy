@@ -18,12 +18,12 @@ if [ $INSTALL = /usr/bin ]
     sudo rm $INSTALL/dnsplot
     sudo rm $INSTALL/plot.py
   else rm $INSTALL/plot_SQUID_data
-    ln rm $INSTALL/plot_4circle_data
-    ln rm $INSTALL/plot_reflectometer_data
-    ln rm $INSTALL/psd
-    ln rm $INSTALL/p4d
-    ln rm $INSTALL/prd
-    ln rm $INSTALL/pin12
-    ln rm $INSTALL/dnsplot
-    ln rm $INSTALL/plot.py
+    rm $INSTALL/plot_4circle_data
+    rm $INSTALL/plot_reflectometer_data
+    rm $INSTALL/psd
+    rm $INSTALL/p4d
+    rm $INSTALL/prd
+    rm $INSTALL/pin12
+    rm $INSTALL/dnsplot
+    rm $INSTALL/plot.py
 fi

@@ -351,15 +351,21 @@ class MeasurementData:
     for i, point in enumerate(data_list):
       self.set_data(point, i)
 
-  def export(self,file_name,print_info=True,seperator=' ',xfrom=None,xto=None): 
+  def export(self,file_name,print_info=True,seperator=' ',xfrom=None,xto=None, only_fitted_columns=False): 
     '''
       Write data in text file seperated by 'seperator'.
     '''
     xd=self.xdata
     yd=self.ydata
     zd=self.zdata
+    ed=self.yerror
     data=[point for point in self if (((xfrom is None) or (point[xd]>=xfrom)) and \
                                       ((xto is None) or (point[xd]<=xto)))]
+    if only_fitted_columns:
+      if zd>=0:
+        data=map(lambda point: (point[xd], point[yd], point[zd], point[ed]), data)
+      else:
+        data=map(lambda point: (point[xd], point[yd], point[ed]), data)        
     # convert Numbers to str
     if zd>=0:
       if self.scan_line_constant<0:
@@ -558,7 +564,7 @@ class PysicalProperty:
       Transform dimension and unit to another. Variable transfere is of type
       [from_dim,from_unit,b,a,to_dim,to_unit].
     '''
-    if (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right 'from_dim' and 'from_unit'
+    if len(transfere)>0 and (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right 'from_dim' and 'from_unit'
       new_values=[]
       for value in self.values:
         new_values.append(value*transfere[2]+transfere[3])

@@ -29,3 +29,14 @@ SCATTERING_LENGTH_DENSITIES={\
     'LaCoO3': [16.794,7.775],
     'YAlO3': [13.4114,30.8]
 }
+
+#
+# {'name': [Nb', Nb'', Np]}
+#
+# 
+NEUTRON_SCATTERING_LENGTH_DENSITIES={\
+    'Au': [2.17, 0.0075, 0.],
+    'Fe': [4.70, 0.000698, 5.12],
+    'Ag': [2.4, 0.00760, 0.],
+}
+

@@ -154,11 +154,12 @@ if __name__ == '__main__':    #code to execute if called from command-line
   if active_session.use_gui: # start a new gui session
     import gtk
     plotting_session=plotting_gui.ApplicationMainWindow(active_session)
-    # redirect script output to session objects
-    active_session.stdout=RedirectOutput(plotting_session)
-    active_session.stderr=RedirectOutput(plotting_session)
-    sys.stdout=active_session.stdout
-    sys.stderr=active_session.stderr  
+    if not active_session.DEBUG:
+      # redirect script output to session objects
+      active_session.stdout=RedirectOutput(plotting_session)
+      active_session.stderr=RedirectOutput(plotting_session)
+      sys.stdout=active_session.stdout
+      sys.stderr=active_session.stderr  
     gtk.main() # start GTK engine
   else: # in command line mode, just plot the selected data.
     active_session.plot_all()

@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.6a"
+__version__ = "0.6a2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -166,12 +166,14 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                               [], 0, 1, 3)
   data_object=MeasurementData([['\316\261_i', 'mrad'], 
                                ['\316\261_f', 'mrad'], 
+                               ['\316\261_i+\316\261_f', 'mrad'], 
+                               ['\316\261_i-\316\261_f', 'mrad'], 
                                ['q_x', '\303\205^{-1}'], 
                                ['q_z', '\303\205^{-1}'], 
                                ['Intensity', 'a.u.'], 
                                ['log_{10}(Intensity)', 'a.u.'], 
                                ['error','a.u.']], 
-                              [], 0, 1, 6, 4)  
+                              [], 0, 1, 8, 6)  
   # alpha_i is used as main column for the line splitteng used for pm3d
   data_object.scan_line_constant=0
   data_list=[]
@@ -220,8 +222,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
   # sqrt of intensities is error
   def sqrt_34_gtm(point):
     point[0]=GRAD_TO_MRAD*point[0]
-    point[3]=sqrt(point[3])
-    point[4]=sqrt(point[4])
+    point[3]=max(sqrt(point[3]), 1)
+    point[4]=max(sqrt(point[4]), 1)
   map(sqrt_34_gtm, scan_data_list)
   map(scan_data_append, scan_data_list)
   return data_object, scan_data_object
@@ -234,6 +236,7 @@ def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibr
   sqrt=math.sqrt
   log10=math.log10
   sin=math.sin
+  cos=math.cos
   data_list=[]
   # for faster function lookup
   append_to_list=data_list.append
@@ -254,17 +257,33 @@ def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibr
       logintensity = log10(intensity)
     else:
       logintensity = -10.0
-    error = sqrt(img_integral) / monitor * calibration[i]
+    error = max(sqrt(img_integral), 1) / monitor * calibration[i]
     # convert to mrad and create point list.
     append_to_list((GRAD_TO_MRAD * alphai, 
                     GRAD_TO_MRAD * alphaf, 
-                    PI_4_OVER_LAMBDA*sin(GRAD_TO_RAD * (alphai - alphaf) / 2), 
-                    PI_4_OVER_LAMBDA*sin(GRAD_TO_RAD * (alphai + alphaf) / 2), 
+                    GRAD_TO_MRAD * (alphai + alphaf), 
+                    GRAD_TO_MRAD * (alphai - alphaf), 
+                    PI_4_OVER_LAMBDA/2.*(cos(GRAD_TO_RAD * alphaf) - cos(GRAD_TO_RAD * alphai)), 
+                    PI_4_OVER_LAMBDA/2.*(sin(GRAD_TO_RAD * alphai) + sin(GRAD_TO_RAD * alphaf)), 
                     intensity, 
                     logintensity, 
                     error))
   return data_list
 
+def read_simulation(file_name):
+  '''
+    Read a fit.f90 output file as MeasurementData object.
+  '''
+  sim_file=open(file_name,'r')
+  sim_lines=sim_file.readlines()
+  sim_file.close()
+  data=MeasurementData([['Theta','mrad'],['Intensity','counts/s'],['Unknown','counts/s'],['Unknown2','counts/s']],[],0,1,2)
+  data.info='Simulation'
+  for line in sim_lines:
+    if len(line.split())>1:
+      point=map(float,line.split())
+      data.append(point)
+  return data
 
 if __name__ == '__main__':    #code to execute if called from command-line for testing
   import sys

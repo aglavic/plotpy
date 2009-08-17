@@ -75,10 +75,9 @@ class DNSSession(GenericSession):
   #++++++++++++++++++ local variables +++++++++++++++++
   FILE_WILDCARDS=(('All','*'), ('DNS (.d_dat)', '*.d_dat'))
 
-#  TRANSFORMATIONS=[\
-#  ['','',1,0,'',''],\
-#  ]  
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'bg', 'vana', 'files', 'sample', 'time', 'flipper', 'monitor', 'powder', 'xyz', 'split'] 
+  TRANSFORMATIONS=[\
+  ]  
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'bg', 'vana', 'files', 'sample', 'time', 'flipper', 'monitor', 'powder', 'xyz', 'split', 'dx', 'dy', 'nx', 'ny'] 
   file_options={'default': ['', 0, 1, [0, -1], ''],  # (prefix, omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[] # A list of all filenames to be imported
@@ -90,6 +89,12 @@ class DNSSession(GenericSession):
   POWDER_DATA=False # If powder data is to be evaluated this is True.
   SPLIT=None # Integer number of files that belong to one measured sequence.
   ONLY_IMPORT_MULTIFILE=True # This is for the GUI open dialog.
+  # to transform to reciprocal latice units the d_spacing is needed.
+  D_SPACING_X=1.
+  D_SPACING_Y=1.
+  D_NAME_X='d_x'
+  D_NAME_Y='d_y'
+  TRANSFORM_Q=False
   #------------------ local variables -----------------
 
   
@@ -115,10 +120,13 @@ class DNSSession(GenericSession):
     self.os_path_stuff() # create temp folder according to OS
     self.try_import_externals()
     names.sort()
+    self.set_transformations()
+    config.transformations.known_transformations+=self.TRANSFORMATIONS
     if len(names) > 1:
       self.find_prefixes(names)
     if not self.SPLIT is None:
       self.split_sequences(self.SPLIT)
+    #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
     self.prefixes.sort()
     for prefix in self.prefixes:
       # for every measured sequence read the datafiles and create a map/lineplot.
@@ -151,6 +159,22 @@ class DNSSession(GenericSession):
           last_argument_option=[False,'']
         elif last_argument_option[1]=='bg':
           self.BACKGROUND_FILE=argument
+          last_argument_option=[False,'']
+        elif last_argument_option[1]=='dx':
+          self.D_SPACING_X=float(argument)
+          self.TRANSFORM_Q=True
+          last_argument_option=[False,'']
+        elif last_argument_option[1]=='dy':
+          self.D_SPACING_Y=float(argument)
+          self.TRANSFORM_Q=True
+          last_argument_option=[False,'']
+        elif last_argument_option[1]=='nx':
+          self.D_NAME_X=argument
+          self.TRANSFORM_Q=True
+          last_argument_option=[False,'']
+        elif last_argument_option[1]=='ny':
+          self.D_NAME_Y=argument
+          self.TRANSFORM_Q=True
           last_argument_option=[False,'']
         elif last_argument_option[1]=='vana':
           self.VANADIUM_FILE=argument
@@ -385,8 +409,8 @@ class DNSSession(GenericSession):
           dnsmap.vanadium_data=vana_data
           dnsmap.vanadium_correct_by_detector=False
         # normalize vanadium data to stay at about counts/s
-        max_p=max(vana_data, key=lambda p: p[1])[1]
-        min_p=min(vana_data, key=lambda p: p[1])[1]
+        max_p=max(vana_data.data[1].values)
+        min_p=min(vana_data.data[1].values)
         cen_p=(max_p-min_p)/2.+min_p
         vana_data.process_function(lambda point: [point[0], point[1]/cen_p, point[2]/cen_p])
       sys.stdout.write("calculate wavevectors, ")
@@ -395,6 +419,8 @@ class DNSSession(GenericSession):
       dnsmap.make_corrections()
       sys.stdout.write("\n")
       sys.stdout.flush()
+      if self.TRANSFORM_Q:
+        dnsmap.unit_trans(self.TRANSFORMATIONS)
       if self.POWDER_DATA:
         # for powder data show 1d plot 2Theta vs intensity
         dnsmap.sort(3)
@@ -490,6 +516,7 @@ class DNSSession(GenericSession):
       <menu action='DNS'>
         <menuitem action='SetOmegaOffset' />
         <menuitem action='SetIncrement' />
+        <menuitem action='SetDSpacing' />
         <menuitem action='SeperateScattering' />
         <menuitem action='SeperatePreset' />
         <separator name='dns1' />
@@ -506,6 +533,10 @@ class DNSSession(GenericSession):
                 "Omega Offset...", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.change_omega_offset ),
+            ( "SetDSpacing", None,                             # name, stock id
+                "d-spacing...", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.change_d_spacing ),
             ( "SetIncrement", None,                             # name, stock id
                 "Change Increment", None,                    # label, accelerator
                 "Change Increment between files with same Polarization",                                   # tooltip
@@ -537,6 +568,17 @@ class DNSSession(GenericSession):
         print "Plotting '" + name + "' sequences."
         print self.plot_active()
   
+  def set_transformations(self):
+    '''
+      Set the transformation options from q_x to dx*,dy* 
+      from the dx,dy values given on command line.
+    '''
+    d_star_x=2.*pi/self.D_SPACING_X
+    d_star_y=2.*pi/self.D_SPACING_Y
+    self.TRANSFORMATIONS=[\
+      ['q_x','\303\205^{-1}',1./d_star_x,0,self.D_NAME_X,'r.l.u.'],\
+      ['q_y','\303\205^{-1}',1/d_star_y,0,self.D_NAME_Y,'r.l.u.'],\
+                          ]
   
   
   #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
@@ -592,6 +634,8 @@ class DNSSession(GenericSession):
       # response is Apply
       ooff=float(input_filed.get_text())
       self.active_file_data[window.index_mess].change_omega_offset(ooff)
+      if self.TRANSFORM_Q:
+        self.active_file_data[window.index_mess].unit_trans(self.TRANSFORMATIONS)
       window.replot()
       result=ooff_dialog.run()
     if result==1:
@@ -601,6 +645,94 @@ class DNSSession(GenericSession):
       self.active_file_data[window.index_mess].change_omega_offset(ooff)
       window.replot()
     ooff_dialog.destroy()
+
+  def change_d_spacing(self, action, window):
+    '''
+      A dialog to change the d-spacing of the plots.
+    '''
+    #+++++ Create a dialog window for ooff input +++++
+    ds_dialog=gtk.Dialog(title='Set d-spacing for x and y directions:')
+    ds_dialog.set_default_size(100,100)
+    ds_dialog.add_button('OK', 1)
+    ds_dialog.add_button('Apply', 2)
+    ds_dialog.add_button('Cancle', 0)
+    table=gtk.Table(3,3,False)
+    label=gtk.Label()
+    label.set_text('Direction')
+    table.attach(label, 0,1, 0,1,  gtk.EXPAND|gtk.FILL,0, 0,0);
+    label=gtk.Label()
+    label.set_text('label')
+    table.attach(label, 1,2, 0,1,  gtk.EXPAND|gtk.FILL,0, 0,0);
+    label=gtk.Label()
+    label.set_text('d-spacing')
+    table.attach(label, 2,3, 0,1,  gtk.EXPAND|gtk.FILL,0, 0,0);
+    label=gtk.Label()
+    label.set_text('x')
+    table.attach(label, 0,1, 1,2,  gtk.EXPAND|gtk.FILL,0, 0,0);
+    label=gtk.Label()
+    label.set_text('y')
+    table.attach(label, 0,1, 2,3,  gtk.EXPAND|gtk.FILL,0, 0,0);
+    input_filed_nx=gtk.Entry()
+    input_filed_nx.set_width_chars(4)
+    input_filed_nx.set_text(self.D_NAME_X)
+    input_filed_nx.connect('activate', lambda *ignore: ooff_dialog.response(2))
+    table.attach(input_filed_nx,
+                # X direction #          # Y direction
+                1, 2,                      1, 2,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    input_filed_ny=gtk.Entry()
+    input_filed_ny.set_width_chars(4)
+    input_filed_ny.set_text(self.D_NAME_Y)
+    input_filed_ny.connect('activate', lambda *ignore: ooff_dialog.response(2))
+    table.attach(input_filed_ny,
+                # X direction #          # Y direction
+                1, 2,                      2, 3,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    input_filed_dx=gtk.Entry()
+    input_filed_dx.set_width_chars(4)
+    input_filed_dx.set_text(str(self.D_SPACING_X))
+    input_filed_dx.connect('activate', lambda *ignore: ooff_dialog.response(2))
+    table.attach(input_filed_dx,
+                # X direction #          # Y direction
+                2, 3,                      1, 2,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    input_filed_dy=gtk.Entry()
+    input_filed_dy.set_width_chars(4)
+    input_filed_dy.set_text(str(self.D_SPACING_Y))
+    input_filed_dy.connect('activate', lambda *ignore: ooff_dialog.response(2))
+    table.attach(input_filed_dy,
+                # X direction #          # Y direction
+                2, 3,                      2, 3,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+
+    ds_dialog.vbox.add(table)
+    ds_dialog.show_all()
+    #----- Create a dialog window for ooff input -----
+    # wait for user response
+    result=ds_dialog.run()
+    while result > 0:
+      try:
+        # response is Apply
+        self.D_NAME_X=input_filed_nx.get_text()
+        self.D_NAME_Y=input_filed_ny.get_text()
+        self.D_SPACING_X=float(input_filed_dx.get_text())
+        self.D_SPACING_Y=float(input_filed_dy.get_text())
+        self.set_transformations()
+        self.active_file_data[window.index_mess].calculate_wavevectors()
+        self.active_file_data[window.index_mess].unit_trans(self.TRANSFORMATIONS)
+        window.replot()
+        if result==1:
+          break
+        result=ds_dialog.run()
+      except ValueError:
+        result=ds_dialog.run()
+        if result==1:
+          break
+    ds_dialog.destroy()
 
   def change_increment(self, action, window):
     '''
@@ -660,7 +792,9 @@ class DNSSession(GenericSession):
     if not self.active_file_name in self.file_options:
       return None
     # build a list of DNSMeasurementData objects in active_file_data for the polarizations
-    polarization_list=[object for object in self.active_file_data if "dns_info" in dir(object)]
+    polarization_list=[(object, self.active_file_name) for object in self.active_file_data if "dns_info" in dir(object)]
+    for name, file_data_tmp in sorted(self.file_data.items()):
+      polarization_list+=[(object, name) for object in file_data_tmp if (("dns_info" in dir(object)) and not (('|raw_data' in name)or (self.active_file_name is name)))]
     combine_list=[]
     def add_object():
       add_dialog=gtk.Dialog(title='Add polarization:')
@@ -676,9 +810,9 @@ class DNSSession(GenericSession):
       multiplier.set_text('1')
       align_table.attach(multiplier, 2,3, 0, 1, 0,0, 0,0);
       object_box=gtk.combo_box_new_text()
-      object_box.append_text('0-('+polarization_list[0].short_info+')')
+      object_box.append_text('0-('+polarization_list[0][0].short_info+')')
       for i, object in enumerate(polarization_list[1:]):
-        object_box.append_text(str(i+1)+'-('+object.short_info+')')
+        object_box.append_text(str(i+1)+'-('+object[0].short_info+','+object[1]+')')
       object_box.set_active(0)
       align_table.attach(object_box, 3,4, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0)
       add_dialog.vbox.add(align_table)
@@ -729,7 +863,7 @@ class DNSSession(GenericSession):
       combine_list=preset
       for i, item in enumerate(combine_list):
         try:
-          label=gtk.Label(item[1]+str(item[2])+'*'+str(i)+'-('+polarization_list[item[0]].short_info+')')
+          label=gtk.Label(item[1]+str(item[2])+'*'+str(i)+'-('+polarization_list[item[0]][0].short_info+')')
           label.show()
           function_table.attach(label, i,i+1, 0,1, 0,0, 0,0)        
         except IndexError:
@@ -748,12 +882,12 @@ class DNSSession(GenericSession):
       Calculate a combination of polarization directions as
       set in the combine_list.
     '''
-    result=combine_list[0][2]*polarization_list[combine_list[0][0]]
+    result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
     for object, sign, multiplier in combine_list[1:]:
       if sign == '+':
-        result=result+multiplier*polarization_list[object]
+        result=result+multiplier*polarization_list[object][0]
       else:
-        result=result-multiplier*polarization_list[object]
+        result=result-multiplier*polarization_list[object][0]
       if result is None:
         message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
                                   message_format='You can only combine polarizations with the same number of measured points!')
@@ -806,6 +940,10 @@ class DNSMeasurementData(MeasurementData):
                 two_pi_over_lambda
       return output    
     self.process_function(angle_to_wavevector)
+    self.data[qx_index].unit='\303\205^{-1}'
+    self.data[qy_index].unit='\303\205^{-1}'
+    self.data[qx_index].dimension='q_x'
+    self.data[qy_index].dimension='q_y'
     self.xdata=qx_index
     self.ydata=qy_index
   

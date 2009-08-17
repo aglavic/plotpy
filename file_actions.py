@@ -84,14 +84,14 @@ class FileActions:
     '''
     self.window.measurement[self.window.index_mess].filters=filters
 
-  def cross_section(self, x, x_0, y, y_0, w, binning):
+  def cross_section(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10):
     '''
       Create a slice through a dataset using the create_cross_section function.
       This funcion is called as the action.
     '''
     data=self.window.measurement[self.window.index_mess]
     try:
-      cs_object=self.create_cross_section(x, x_0, y, y_0, w, binning)
+      cs_object=self.create_cross_section(x, x_0, y, y_0, w, binning, gauss_weighting, sigma_gauss)
       if cs_object is None:
         return False
       cs_object.number=data.number
@@ -154,11 +154,12 @@ class FileActions:
 
   #++++++++ Functions not directly called as actions ++++++
   
-  def create_cross_section(self, x, x_0, y, y_0, w, binning):
+  def create_cross_section(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10):
     '''
-      Create a cross-section of 3d-data along an arbitrary line.
+      Create a cross-section of 3d-data along an arbitrary line. It is possible to
+      bin the extracted data and to weight the binning with a gaussian.
     '''
-    from math import sqrt
+    from math import sqrt, exp
     data=self.window.measurement[self.window.index_mess].list_err()
     dims=self.window.measurement[self.window.index_mess].dimensions()
     units=self.window.measurement[self.window.index_mess].units()
@@ -190,7 +191,7 @@ class FileActions:
       first_dim+='%g %s' % (y, new_cols[1][0])
       if x==0:
         first_unit=new_cols[1][1]
-    new_cols=[(first_dim, first_unit)]+new_cols
+    new_cols=[(first_dim, first_unit)]+new_cols+[('distance', first_unit)]
     output=MeasurementData(new_cols, 
                            [], 
                            0, 
@@ -205,21 +206,39 @@ class FileActions:
       '''
       v1=(point[0]-origin[0], point[1]-origin[1])
       dist=abs(v1[0]*vec_n[0] + v1[1]*vec_n[1])
-      return (dist<=w)
+      if dist<=w:
+        distance.append(w)
+        return True
+      else:
+        return False
+    distance=[]
     data2=filter(point_filter, data)
     if len(data2)==0:
       return None
     len_vec=sqrt(x**2+y**2)
-    data3=[((vec_e[0]*dat[0]+vec_e[1]*dat[1])*len_vec, dat[0], dat[1], dat[2], dat[3]) for dat in data2]
+    data3=[((vec_e[0]*dat[0]+vec_e[1]*dat[1])*len_vec, dat[0], dat[1], dat[2], dat[3], (vec_n[0]*dat[0]+vec_n[1]*dat[1])) for dat in data2]
     data3.sort()
     if binning > 1:
       dat_tmp=[]
+      if gauss_weighting:
+        def gauss_sum(data_list):
+          output=0.
+          for i, dat in enumerate(data_list):
+            output+=dat*exp(-din[i][5]**2/(2*sigma_gauss**2))
+          return output
       for i in range(len(data3)/binning):
         dout=[]
         din=data3[i*binning:(i+1)*binning]
-        for j in range(4):
-          dout.append(sum([d[j] for d in din])/binning)
-        dout.append(sqrt(sum([d[4]**2 for d in din]))/binning)
+        if gauss_weighting:
+          for j in range(4):
+            g_sum=gauss_sum([1 for d in din])
+            dout.append(gauss_sum([d[j] for d in din])/g_sum)
+          dout.append(sqrt(gauss_sum([d[4]**2 for d in din])/g_sum))
+          dout.append(g_sum/binning)          
+        else:
+          for j in range(5):
+            dout.append(sum([d[j] for d in din])/binning)
+          dout.append(sqrt(sum([d[4]**2 for d in din]))/binning)
         dat_tmp.append(dout)
       data3=dat_tmp
     map(output.append, data3)
