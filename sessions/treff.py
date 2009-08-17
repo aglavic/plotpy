@@ -110,6 +110,7 @@ class TreffSession(GenericSession):
       <menu action='TreffMenu'>
         <menuitem action='TreffFit'/>
         <menuitem action='TreffSelectPol'/>
+        <menuitem action='TreffExportFit'/>
         <menuitem action='TreffSpecRef'/>
       </menu>
     '''
@@ -131,6 +132,10 @@ class TreffSession(GenericSession):
                 "Select polarization channels...", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.select_fittable_sequences), 
+            ( "TreffExportFit", None,                             # name, stock id
+                "Export Fit...", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.export_fit_dialog), 
              )
     return string,  actions
 
@@ -324,7 +329,8 @@ class TreffSession(GenericSession):
                         set_list[object_box_3.get_active()], 
                         set_list[object_box_4.get_active()]]
       for object in self.fit_datasets:
-        object.logy=True
+        if object:
+          object.logy=True
       selection_dialog.destroy()
       return True
     else:
@@ -839,29 +845,9 @@ class TreffSession(GenericSession):
       function invoked when apply button is pressed
       fits with the new parameters
     '''
-    data_lines=[]
-    names=['uu', 'dd', 'ud', 'du']
-    output_names=['pp', 'mm', 'pm', 'mp']
-    # convert x values from grad to mrad and 2Theta to Theta
-    for i, dataset in enumerate(self.fit_datasets):
-      # if the channel dataset is None use 0 points.
-      if dataset:
-        dataset.unit_trans([['\302\260', math.pi/180.*1000., 0, 'mrad'], 
-                            ['rad', 1000., 0, 'mrad']])    
-        dataset.unit_trans([['2Theta', 'mrad', 0.5, 0, 'Theta', 'mrad']])    
-        data_lines.append(dataset.export(self.TEMP_DIR+'fit_temp_'+names[i]+'.res', 
-                                         False, ' ', 
-                                         xfrom=self.x_from, xto=self.x_to, 
-                                         only_fitted_columns=True))
-      else:
-        data_lines.append(0)
-    self.fit_object.number_of_points=data_lines
-    self.fit_object.input_file_names=[self.TEMP_DIR+'fit_temp_'+names[i]+'.res' for i in range(4)]
-    self.fit_object.set_fit_constrains()
-    # create the .ent file
-    ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
-    ent_file.write(self.fit_object.get_ent_str()+'\n')
-    ent_file.close()
+    names=config.treff.REF_FILE_ENDINGS
+    output_names=config.treff.FIT_OUTPUT_FILES
+    self.export_data_and_entfile(self.TEMP_DIR, 'fit_temp.ent')
     #open a background process for the fit function
     reflectometer_fit.functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent')
     if self.fit_object.fit!=1: # if this is not a fit just wait till finished
@@ -871,29 +857,29 @@ class TreffSession(GenericSession):
     first=True
     for i, dataset in enumerate(self.fit_datasets):
       if dataset:
-        simu=read_data.treff.read_simulation(self.TEMP_DIR + 'simulation_'+output_names[i])
+        simu=read_data.treff.read_simulation(self.TEMP_DIR + output_names[i])
         simu.number='sim_'+dataset.number
         simu.short_info='simulation '+names[i]
         simu.sample_name=dataset.sample_name
         dataset.plot_together=[dataset, simu]
         if first:
           dataset.plot_options+='''
-  set style line 2 lc 1
-  set style line 3 lc 2
-  set style line 4 lc 2
-  set style line 5 lc 3
-  set style line 6 lc 3
-  set style line 7 lc 4
-  set style line 8 lc 4
-  set style increment user
-  '''
+          set style line 2 lc 1
+          set style line 3 lc 2
+          set style line 4 lc 2
+          set style line 5 lc 3
+          set style line 6 lc 3
+          set style line 7 lc 4
+          set style line 8 lc 4
+          set style increment user
+          '''
           first=False
         else:
           dataset.plot_options+='''
-  set style line 1 lc %i
-  set style line 2 lc %i
-  set style increment user
-  ''' % (i+1, i+1)
+          set style line 1 lc %i
+          set style line 2 lc %i
+          set style increment user
+          ''' % (i+1, i+1)
     window.multiplot=[[(dataset, dataset.short_info) for dataset in self.fit_datasets if dataset]]
     window.multi_list.set_markup(' Multiplot List: \n' + '\n'.join(map(lambda item: item[1], window.multiplot[0])))
     if not window.index_mess in [self.active_file_data.index(item[0]) for item in window.multiplot[0]]:
@@ -901,15 +887,43 @@ class TreffSession(GenericSession):
     if move_channels:
       window.active_multiplot=True
       for i, dataset in enumerate(reversed([item for item in self.fit_datasets if item])):
-        dataset.data[dataset.ydata].values=map(lambda number: number*10.**(i*2), dataset.data[dataset.ydata].values)
+        dataset.data[dataset.ydata].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.ydata].values)
         dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
-          map(lambda number: number*10.**(i*2), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
+          map(lambda number: number*10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
     window.replot()
     if move_channels:
        for i, dataset in enumerate(reversed([item for item in self.fit_datasets if item])):
-         dataset.data[dataset.ydata].values=map(lambda number: number/10.**(i*2), dataset.data[dataset.ydata].values)
+         dataset.data[dataset.ydata].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.ydata].values)
          dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
-            map(lambda number: number/10.**(i*2), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
+            map(lambda number: number/10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
+
+  def export_data_and_entfile(self, folder, file_name, datafile_prefix='fit_temp_'):
+    '''
+      Export measured data for fit program and the corresponding .ent file.
+    '''
+    names=config.treff.REF_FILE_ENDINGS
+    output_names=config.treff.FIT_OUTPUT_FILES
+    # convert x values from grad to mrad and 2Theta to Theta
+    data_lines=[]
+    for i, dataset in enumerate(self.fit_datasets):
+      # if the channel dataset is None use 0 points.
+      if dataset:
+        dataset.unit_trans([['\302\260', math.pi/180.*1000., 0, 'mrad'], 
+                            ['rad', 1000., 0, 'mrad']])    
+        dataset.unit_trans([['2Theta', 'mrad', 0.5, 0, 'Theta', 'mrad']])    
+        data_lines.append(dataset.export(os.path.join(folder, datafile_prefix+names[i]+'.ref'), 
+                                         False, ' ', 
+                                         xfrom=self.x_from, xto=self.x_to, 
+                                         only_fitted_columns=True))
+      else:
+        data_lines.append(0)
+    self.fit_object.number_of_points=data_lines
+    self.fit_object.input_file_names=[os.path.join(folder, datafile_prefix+names[i]+'.ref') for i in range(4)]
+    self.fit_object.set_fit_constrains()
+    # create the .ent file
+    ent_file=open(os.path.join(folder, file_name), 'w')
+    ent_file.write(self.fit_object.get_ent_str()+'\n')
+    ent_file.close()
 
   def show_result_window(self, dialog, window, new_fit, sorted_errors):
     # NOT RIGHT
@@ -1006,6 +1020,36 @@ class TreffSession(GenericSession):
     self.result_window_response(response, dialog, window, new_fit)
     results.destroy()
 
+  def export_fit_dialog(self, action, window):
+    '''
+      file selection dialog for parameter export to .ent file
+    '''
+    #++++++++++++++++File selection dialog+++++++++++++++++++#
+    file_dialog=gtk.FileChooserDialog(title='Export to...', action=gtk.FILE_CHOOSER_ACTION_SAVE, 
+                                      buttons=(gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, 
+                                               gtk.RESPONSE_CANCEL))
+    file_dialog.set_default_response(gtk.RESPONSE_OK)
+    file_dialog.set_current_name(self.active_file_name+'.ent')
+    filter = gtk.FileFilter()
+    filter.set_name('Entry file')
+    filter.add_pattern('*.ent')
+    file_dialog.add_filter(filter)
+    filter = gtk.FileFilter()
+    filter.set_name('All')
+    filter.add_pattern('*.*')
+    file_dialog.add_filter(filter)
+    response = file_dialog.run()
+    if response == gtk.RESPONSE_OK:
+      file_name=file_dialog.get_filename()
+    elif response == gtk.RESPONSE_CANCEL:
+      file_dialog.destroy()
+      return False
+    file_dialog.destroy()
+    #----------------File selection dialog-------------------#
+    file_prefix=file_name.rsplit('.ent', 1)[0]
+    self.export_data_and_entfile(os.path.dirname(file_prefix), os.path.basename(file_prefix)+'.ent', datafile_prefix=os.path.basename(file_prefix))
+    return True
+  
   #----------------------- GUI functions -----------------------
 
   def call_fit_program(self, file_ent):

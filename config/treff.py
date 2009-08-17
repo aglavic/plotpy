@@ -25,6 +25,9 @@ GRAD_TO_RAD=pi/180
 PROGRAM_FILES=['fit_pnr_mult_newcons.f90', 'levenberg_rough_newcons.f90', 
 'param_mult.f90', 'polref_sp_rough_noncoll.f90', 'read_mrad_sim_rough.f90', 
 'refconv_illu.f90', 'calchi.f90']
+REF_FILE_ENDINGS=['uu', 'dd', 'ud', 'du']
+FIT_OUTPUT_FILES=['simulation_pp', 'simulation_mm', 'simulation_pm', 'simulation_mp']
+
 # compiler settings for fortran
 FORTRAN_COMPILER='gfortran'
 # compiler optimization options as can be found in the manual,
