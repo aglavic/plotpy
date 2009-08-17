@@ -59,6 +59,7 @@ class TreffSession(GenericSession):
                   ]  
   import_images=True
   fit_object=None # used for storing the fit parameters
+  fit_datasets=[None, None, None, None] # a list of datasets used for fit [++,--,+-,-+]
   fit_object_history=[]
   fit_object_future=[]
   x_from=5 # fit only x regions between x_from and x_to
@@ -108,6 +109,7 @@ class TreffSession(GenericSession):
     string='''
       <menu action='TreffMenu'>
         <menuitem action='TreffFit'/>
+        <menuitem action='TreffSelectPol'/>
         <menuitem action='TreffSpecRef'/>
       </menu>
     '''
@@ -125,6 +127,10 @@ class TreffSession(GenericSession):
                 "Extract specular reflectivity...", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.extract_specular_reflectivity), 
+            ( "TreffSelectPol", None,                             # name, stock id
+                "Select polarization channels...", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.select_fittable_sequences), 
              )
     return string,  actions
 
@@ -248,10 +254,92 @@ class TreffSession(GenericSession):
 
   #+++++++++++++++++++++++ GUI functions +++++++++++++++++++++++
 
+  def select_fittable_sequences(self, action, window):
+    '''
+      A dialog to select the sequences for the 4 polarization chanels.
+      Not selected items will be ignored during fit process.
+    '''
+    align_table=gtk.Table(2, 4, False)
+    selection_dialog=gtk.Dialog(title="Select polarization channels...")
+    object_box_1=gtk.combo_box_new_text()
+    object_box_1.append_text('None')
+    object_box_2=gtk.combo_box_new_text()
+    object_box_2.append_text('None')
+    object_box_3=gtk.combo_box_new_text()
+    object_box_3.append_text('None')
+    object_box_4=gtk.combo_box_new_text()
+    object_box_4.append_text('None')
+    for i, object in enumerate(self.active_file_data):
+      object_box_1.append_text(str(i)+'-('+object.short_info+')')
+      object_box_2.append_text(str(i)+'-('+object.short_info+')')
+      object_box_3.append_text(str(i)+'-('+object.short_info+')')
+      object_box_4.append_text(str(i)+'-('+object.short_info+')')
+    text_filed=gtk.Label()
+    text_filed.set_markup('Up-Up-Channel: ')      
+    align_table.attach(text_filed, 0, 1,  0, 1, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(object_box_1, 1, 2,  0, 1, gtk.FILL, gtk.FILL, 0, 3)
+    text_filed=gtk.Label()
+    text_filed.set_markup('Down-Down-Channel: ')      
+    align_table.attach(text_filed, 0, 1,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(object_box_2, 1, 2,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
+    text_filed=gtk.Label()
+    text_filed.set_markup('Up-Down-Channel: ')      
+    align_table.attach(text_filed, 0, 1,  2, 3, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(object_box_3, 1, 2,  2, 3, gtk.FILL, gtk.FILL, 0, 3)
+    text_filed=gtk.Label()
+    text_filed.set_markup('Down-Up-Channel: ')      
+    align_table.attach(text_filed, 0, 1,  3, 4, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(object_box_4, 1, 2,  3, 4, gtk.FILL, gtk.FILL, 0, 3)
+    if any(self.fit_datasets):
+      indices=[]
+      for item in self.fit_datasets:
+        if item:
+          indices.append(self.active_file_data.index(item)+1)
+        else:
+          indices.append(0)
+      object_box_1.set_active(indices[0])
+      object_box_2.set_active(indices[1])
+      object_box_3.set_active(indices[2])
+      object_box_4.set_active(indices[3])
+    else:
+      if len(self.active_file_data)==8:
+        object_box_1.set_active(5)
+        object_box_2.set_active(6)
+        object_box_3.set_active(7)
+        object_box_4.set_active(8)
+      else:
+        object_box_1.set_active(0)
+        object_box_2.set_active(0)
+        object_box_3.set_active(0)
+        object_box_4.set_active(0)
+    selection_dialog.add_button('OK', 1)
+    selection_dialog.add_button('Cancel', 0)
+    selection_dialog.vbox.add(align_table)
+    selection_dialog.set_default_size(200, 60)
+    selection_dialog.show_all()
+    if selection_dialog.run() == 1:
+      set_list=[None] + self.active_file_data
+      self.fit_datasets=[set_list[object_box_1.get_active()], 
+                        set_list[object_box_2.get_active()], 
+                        set_list[object_box_3.get_active()], 
+                        set_list[object_box_4.get_active()]]
+      for object in self.fit_datasets:
+        object.logy=True
+      selection_dialog.destroy()
+      return True
+    else:
+      selection_dialog.destroy()
+      return False
+
+
   def fit_window(self, action, window, position=None, size=[580, 550]):
     '''
       create a dialog window for the fit options
     '''
+    # if no dataset is selected open the selection dialog
+    if not any(self.fit_datasets):
+      if not self.select_fittable_sequences(action, window):
+        return False
     if self.fit_object.layers==[]:
       self.fit_object.append_layer('Unknown', 10., 5.)
       self.fit_object.append_substrate('Unknown', 5.)
@@ -751,15 +839,24 @@ class TreffSession(GenericSession):
       function invoked when apply button is pressed
       fits with the new parameters
     '''
-    #TODO: selection for the datasets
-    dataset=window.measurement[window.index_mess]
-    # convert x values from grad to mrad
-    dataset.unit_trans([['2Theta', 'mrad', 0.5, 0, 'Theta', 'mrad'], 
-                         ['\302\260', math.pi/180.*1000., 0, 'mrad']])    
-    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, ' ', xfrom=self.x_from, xto=self.x_to, only_fitted_columns=True)
-    self.fit_object.number_of_points=[data_lines, 0, 0, 0]
-    self.fit_object.input_file_names=[self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp.res', 
-                                      self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp.res']
+    data_lines=[]
+    names=['uu', 'dd', 'ud', 'du']
+    output_names=['pp', 'mm', 'pm', 'mp']
+    # convert x values from grad to mrad and 2Theta to Theta
+    for i, dataset in enumerate(self.fit_datasets):
+      # if the channel dataset is None use 0 points.
+      if dataset:
+        dataset.unit_trans([['\302\260', math.pi/180.*1000., 0, 'mrad'], 
+                            ['rad', 1000., 0, 'mrad']])    
+        dataset.unit_trans([['2Theta', 'mrad', 0.5, 0, 'Theta', 'mrad']])    
+        data_lines.append(dataset.export(self.TEMP_DIR+'fit_temp_'+names[i]+'.res', 
+                                         False, ' ', 
+                                         xfrom=self.x_from, xto=self.x_to, 
+                                         only_fitted_columns=True))
+      else:
+        data_lines.append(0)
+    self.fit_object.number_of_points=data_lines
+    self.fit_object.input_file_names=[self.TEMP_DIR+'fit_temp_'+names[i]+'.res' for i in range(4)]
     self.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
@@ -771,11 +868,36 @@ class TreffSession(GenericSession):
       stderr_value = reflectometer_fit.functions.proc.communicate()[1]
     else:
       self.open_status_dialog(window)
-    simu=read_data.treff.read_simulation(self.TEMP_DIR + 'simulation_pp')
-    simu.number='sim_'+dataset.number
-    simu.short_info='simulation ++'
-    simu.sample_name=dataset.sample_name
-    dataset.plot_together=[dataset, simu]
+    first=True
+    for i, dataset in enumerate(self.fit_datasets):
+      if dataset:
+        simu=read_data.treff.read_simulation(self.TEMP_DIR + 'simulation_'+output_names[i])
+        simu.number='sim_'+dataset.number
+        simu.short_info='simulation '+names[i]
+        simu.sample_name=dataset.sample_name
+        dataset.plot_together=[dataset, simu]
+        if first:
+          dataset.plot_options+='''
+  set style line 2 lc 1
+  set style line 3 lc 2
+  set style line 4 lc 2
+  set style line 5 lc 3
+  set style line 6 lc 3
+  set style line 7 lc 4
+  set style line 8 lc 4
+  set style increment user
+  '''
+          first=False
+        else:
+          dataset.plot_options+='''
+  set style line 1 lc %i
+  set style line 2 lc %i
+  set style increment user
+  ''' % (i+1, i+1)
+    window.multiplot=[[(dataset, dataset.short_info) for dataset in self.fit_datasets if dataset]]
+    window.multi_list.set_markup(' Multiplot List: \n' + '\n'.join(map(lambda item: item[1], window.multiplot[0])))
+    if not window.index_mess in [self.active_file_data.index(item[0]) for item in window.multiplot[0]]:
+      window.index_mess=self.active_file_data.index(window.multiplot[0][0][0])
     window.replot()
 
   def show_result_window(self, dialog, window, new_fit, sorted_errors):
@@ -1256,7 +1378,7 @@ class TreffLayerParam(LayerParam):
   scatter_density_Nb2=0.
   scatter_density_Np=0.
   theta=90.
-  phi=0.
+  phi=90.
   
   def __init__(self, name='NoName', parameters_list=None):
     '''

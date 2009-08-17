@@ -100,28 +100,28 @@ def read_data(file_name, script_path, import_images):
   if len(data_uu_lines)>0:
     print "Evaluating up-up images."
     data_uu, scan_uu=integrate_pictures(data_uu_lines, columns, const_information, path_name, calibration, import_images)
-    data_uu.short_info='++'
+    data_uu.short_info='++ map'
     maps.append(data_uu)
     scan_uu.short_info='++'
     scans.append(scan_uu)
   if len(data_dd_lines)>0:
     print "Evaluating down-down images."
     data_dd, scan_dd=integrate_pictures(data_dd_lines, columns, const_information, path_name, calibration, import_images)
-    data_dd.short_info='--'
+    data_dd.short_info='-- map'
     maps.append(data_dd)
     scan_dd.short_info='--'
     scans.append(scan_dd)
   if len(data_ud_lines)>0:
     print "Evaluating up-down images."
     data_ud, scan_ud=integrate_pictures(data_ud_lines, columns, const_information, path_name, calibration, import_images)
-    data_ud.short_info='+-'
+    data_ud.short_info='+- map'
     maps.append(data_ud)
     scan_ud.short_info='+-'
     scans.append(scan_ud)
   if len(data_du_lines)>0:
     print "Evaluating down-up images."
     data_du, scan_du=integrate_pictures(data_du_lines, columns, const_information, path_name, calibration, import_images)
-    data_du.short_info='-+'
+    data_du.short_info='-+ map'
     maps.append(data_du)
     scan_du.short_info='-+'
     scans.append(scan_du)
