@@ -531,7 +531,7 @@ class PysicalProperty:
       self.index=0
       raise StopIteration
     self.index=self.index+1
-    return self.values[index]
+    return self.values[self.index-1]
 
   def __len__(self): 
     '''

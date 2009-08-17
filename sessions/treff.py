@@ -834,7 +834,7 @@ class TreffSession(GenericSession):
       self.fit_object.layers.append(multilayer)
       self.rebuild_dialog(dialog, window)
 
-  def dialog_fit(self, action, window):
+  def dialog_fit(self, action, window, move_channels=True):
     '''
       function invoked when apply button is pressed
       fits with the new parameters
@@ -898,7 +898,18 @@ class TreffSession(GenericSession):
     window.multi_list.set_markup(' Multiplot List: \n' + '\n'.join(map(lambda item: item[1], window.multiplot[0])))
     if not window.index_mess in [self.active_file_data.index(item[0]) for item in window.multiplot[0]]:
       window.index_mess=self.active_file_data.index(window.multiplot[0][0][0])
+    if move_channels:
+      window.active_multiplot=True
+      for i, dataset in enumerate(reversed([item for item in self.fit_datasets if item])):
+        dataset.data[dataset.ydata].values=map(lambda number: number*10.**(i*2), dataset.data[dataset.ydata].values)
+        dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
+          map(lambda number: number*10.**(i*2), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
     window.replot()
+    if move_channels:
+       for i, dataset in enumerate(reversed([item for item in self.fit_datasets if item])):
+         dataset.data[dataset.ydata].values=map(lambda number: number/10.**(i*2), dataset.data[dataset.ydata].values)
+         dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
+            map(lambda number: number/10.**(i*2), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
 
   def show_result_window(self, dialog, window, new_fit, sorted_errors):
     # NOT RIGHT
