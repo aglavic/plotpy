@@ -1001,6 +1001,18 @@ class TreffSession(GenericSession):
     if old_fit.background!=new_fit.background:
       text_string+='Background:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
         (old_fit.background, new_fit.background, sorted_errors['background'])
+    if old_fit.polarization_parameters[0]!=new_fit.polarization_parameters[0]:
+      text_string+='Polarizer efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+        (old_fit.polarization_parameters[0], new_fit.polarization_parameters[0], sorted_errors['polarization_parameters'])
+    if old_fit.polarization_parameters[1]!=new_fit.polarization_parameters[1]:
+      text_string+='Analyzer efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+        (old_fit.polarization_parameters[1], new_fit.polarization_parameters[1], sorted_errors['analyzer_efficiancy'])
+    if old_fit.polarization_parameters[2]!=new_fit.polarization_parameters[2]:
+      text_string+='1st Flipper efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+        (old_fit.polarization_parameters[2], new_fit.polarization_parameters[2], sorted_errors['flipper0_efficiancy'])
+    if old_fit.polarization_parameters[3]!=new_fit.polarization_parameters[3]:
+      text_string+='2nd Flipper efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+        (old_fit.polarization_parameters[3], new_fit.polarization_parameters[3], sorted_errors['flipper1_efficiancy'])
     text_string+='\n\nDo you want to use these new parameters?'
     text=gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview. 
@@ -1378,7 +1390,6 @@ class TreffFitParameters(FitParameters):
     self.fit_params=fit_params
     
   def get_parameters(self, parameters):
-    # NOT RIGHT
     '''
       set layer parameters from existing fit
     '''
@@ -1403,9 +1414,20 @@ class TreffFitParameters(FitParameters):
     if para_index in self.fit_params:
       self.background=parameters[para_index]
     para_index+=1
+    if para_index in self.fit_params:
+      self.polarization_parameters[0]=parameters[para_index]
+    para_index+=1
+    if para_index in self.fit_params:
+      self.polarization_parameters[1]=parameters[para_index]
+    para_index+=1
+    if para_index in self.fit_params:
+      self.polarization_parameters[2]=parameters[para_index]
+    para_index+=1
+    if para_index in self.fit_params:
+      self.polarization_parameters[3]=parameters[para_index]
+    para_index+=1
   
   def get_errors(self, errors):
-    # NOT RIGHT
     '''
       convert errors dictionary from parameter indices to layer indices
     '''
@@ -1430,6 +1452,18 @@ class TreffFitParameters(FitParameters):
     para_index+=1
     if para_index in self.fit_params:
       errors_out['background']=errors[para_index]
+    para_index+=1
+    if para_index in self.fit_params:
+      errors_out['polarizer_efficiancy']=errors[para_index]
+    para_index+=1
+    if para_index in self.fit_params:
+      errors_out['analyzer_efficiancy']=errors[para_index]
+    para_index+=1
+    if para_index in self.fit_params:
+      errors_out['flipper0_efficiancy']=errors[para_index]
+    para_index+=1
+    if para_index in self.fit_params:
+      errors_out['flipper1_efficiancy']=errors[para_index]
     para_index+=1
     return errors_out
   
