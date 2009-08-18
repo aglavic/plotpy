@@ -75,6 +75,7 @@ class TreffSession(GenericSession):
       class constructor expands the GenericSession constructor
     '''
     self.fit_object=TreffFitParameters() # create a new empty TreffFitParameters object
+    self.RESULT_FILE=config.treff.RESULT_FILE
     GenericSession.__init__(self, arguments)
   
   def read_argument_add(self, argument, last_argument_option=[False, '']):
@@ -113,7 +114,6 @@ class TreffSession(GenericSession):
         <menuitem action='TreffImportFit'/>
         <menuitem action='TreffExportFit'/>
         <menuitem action='TreffSpecRef'/>
-        <menuitem action='TreffTest'/>
       </menu>
     '''
     # Create actions for the menu
@@ -142,10 +142,6 @@ class TreffSession(GenericSession):
                 "Import Fit...", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.import_fit_dialog), 
-            ( "TreffTest", None,                             # name, stock id
-                "Test...", None,                    # label, accelerator
-                None,                                   # tooltip
-                self.user_constraint_dialog), 
              )
     return string,  actions
 
@@ -598,6 +594,7 @@ class TreffSession(GenericSession):
   #----------------- Adding input fields -----------------
     dialog.vbox.add(sw) # add table to dialog box
     dialog.set_default_size(size[0],size[1])
+    dialog.add_button('Custom Constraints',7) # button custom constrain has handler_id 7
     dialog.add_button('New Layer',3) # button new layer has handler_id 3
     dialog.add_button('New Multilayer',4) # button new multilayer has handler_id 4
     dialog.add_button('Fit/Simulate and Replot',5) # button replot has handler_id 5
@@ -832,6 +829,9 @@ class TreffSession(GenericSession):
         self.max_iter=50
       if fit_list[1]['actually'] and response==5:
         self.fit_object.fit=1
+      if response==7:
+        self.user_constraint_dialog(dialog, window)
+        return None
       self.dialog_fit(action, window)
       # read fit parameters from file and create new object, if process is killed ignore
       if fit_list[1]['actually'] and response==5 and self.fit_object.fit==1: 
@@ -1486,12 +1486,12 @@ class TreffFitParameters(FitParameters):
         fit_cons+=new_con
       else:
         con_index+=7
+    fit_cons+=self.user_constraints
     self.constrains=[]
     # remove constrains not importent for the fitted parameters
     for constrain in fit_cons:
       if constrain[0] in self.fit_params:
         self.constrains.append(constrain)
-        #self.constrains+=self.user_constraints
 
   def copy(self):
     '''

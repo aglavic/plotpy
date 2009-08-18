@@ -46,4 +46,4 @@ FORTRAN_COMPILER='gfortran'
 FORTRAN_COMPILER_OPTIONS='-O3'
 FORTRAN_COMPILER_MARCH='-march=nocona' #None
 FIT_PROGRAM_CODE_FILE=os.path.join('config', 'fit', 'fit.f90')
-
+RESULT_FILE='fit_temp.ref'

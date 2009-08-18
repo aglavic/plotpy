@@ -89,6 +89,7 @@ class ReflectometerSession(GenericSession):
       class constructor expands the GenericSession constructor
     '''
     self.fit_object=RefFitParameters() # create a new empty RefFitParameters object
+    self.RESULT_FILE=config.reflectometer.RESULT_FILE
     self.DATA_COLUMNS=config.reflectometer.DATA_COLUMNS # read data columns from preferences
     self.TRANSFORMATIONS=config.reflectometer.TRANSFORMATIONS # read TRANSFORMATIONS from preferences
     GenericSession.__init__(self, arguments)
@@ -224,18 +225,20 @@ class ReflectometerSession(GenericSession):
   #++++ functions for fitting with fortran program by E. Kentzinger ++++
   
   from reflectometer_fit.functions import \
-  dialog_activate, \
-  result_window_response, \
-  fit_history, \
-  rebuild_dialog, \
-  delete_layer, \
-  up_layer, \
-  move_layer_up_in_list, \
-  delete_multilayer, \
-  open_status_dialog, \
-  toggle_fit_option, \
-  toggle_fit_bool_option, \
-  read_fit_file
+      dialog_activate, \
+      result_window_response, \
+      fit_history, \
+      rebuild_dialog, \
+      delete_layer, \
+      up_layer, \
+      move_layer_up_in_list, \
+      delete_multilayer, \
+      open_status_dialog, \
+      toggle_fit_option, \
+      toggle_fit_bool_option, \
+      read_fit_file, \
+      user_constraint_dialog, \
+      user_constraint_response
   
 
   #+++++++++++++++++++++++ GUI functions +++++++++++++++++++++++
@@ -380,6 +383,7 @@ class ReflectometerSession(GenericSession):
   #----------------- Adding input fields -----------------
     dialog.vbox.add(sw) # add table to dialog box
     dialog.set_default_size(size[0],size[1])
+    dialog.add_button('Custom Constraints',7) # button custom constrain has handler_id 7
     dialog.add_button('New Layer',3) # button new layer has handler_id 3
     dialog.add_button('New Multilayer',4) # button new multilayer has handler_id 4
     dialog.add_button('Fit/Simulate and Replot',5) # button replot has handler_id 5
@@ -558,6 +562,9 @@ class ReflectometerSession(GenericSession):
         self.max_iter=50
       if fit_list[1]['actually'] and response==5:
         self.fit_object.fit=1
+      if response==7:
+        self.user_constraint_dialog(dialog, window)
+        return None
       self.dialog_fit(action, window)
       # read fit parameters from file and create new object, if process is killed ignore
       if fit_list[1]['actually'] and response==5 and self.fit_object.fit==1: 
@@ -733,7 +740,7 @@ class ReflectometerSession(GenericSession):
     response = file_dialog.run()
     if response == gtk.RESPONSE_OK:
       file_name=file_dialog.get_filename()
-    elif response == gtk.RESPONSE_CANCEL:
+    else:
       file_dialog.destroy()
       return False
     file_dialog.destroy()
@@ -1167,6 +1174,7 @@ class RefFitParameters(FitParameters):
         fit_cons+=new_con
       else:
         con_index+=4
+    fit_cons+=self.user_constraints
     self.constrains=[]
     # remove constrains not importent for the fitted parameters
     for constrain in fit_cons:
