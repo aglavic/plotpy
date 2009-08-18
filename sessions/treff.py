@@ -31,7 +31,7 @@ import config.treff
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
-__credits__ = ["Ulrich Ruecker"]
+__credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger"]
 __license__ = "None"
 __version__ = "0.6a2"
 __maintainer__ = "Artur Glavic"
@@ -110,6 +110,7 @@ class TreffSession(GenericSession):
       <menu action='TreffMenu'>
         <menuitem action='TreffFit'/>
         <menuitem action='TreffSelectPol'/>
+        <menuitem action='TreffImportFit'/>
         <menuitem action='TreffExportFit'/>
         <menuitem action='TreffSpecRef'/>
       </menu>
@@ -136,6 +137,10 @@ class TreffSession(GenericSession):
                 "Export Fit...", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.export_fit_dialog), 
+            ( "TreffImportFit", None,                             # name, stock id
+                "Import Fit...", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.import_fit_dialog), 
              )
     return string,  actions
 
@@ -338,7 +343,7 @@ class TreffSession(GenericSession):
       return False
 
 
-  def fit_window(self, action, window, position=None, size=[580, 550]):
+  def fit_window(self, action, window, position=None, size=[650, 600]):
     '''
       create a dialog window for the fit options
     '''
@@ -897,7 +902,7 @@ class TreffSession(GenericSession):
          dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
             map(lambda number: number/10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
 
-  def export_data_and_entfile(self, folder, file_name, datafile_prefix='fit_temp_'):
+  def export_data_and_entfile(self, folder, file_name, datafile_prefix='fit_temp_', use_multilayer=False):
     '''
       Export measured data for fit program and the corresponding .ent file.
     '''
@@ -922,7 +927,7 @@ class TreffSession(GenericSession):
     self.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(os.path.join(folder, file_name), 'w')
-    ent_file.write(self.fit_object.get_ent_str()+'\n')
+    ent_file.write(self.fit_object.get_ent_str(use_multilayer=use_multilayer)+'\n')
     ent_file.close()
 
   def show_result_window(self, dialog, window, new_fit, sorted_errors):
@@ -1038,6 +1043,9 @@ class TreffSession(GenericSession):
     filter.set_name('All')
     filter.add_pattern('*.*')
     file_dialog.add_filter(filter)
+    use_multilayer=gtk.CheckButton(label='Combine 1st multiplot (don\'t export every single layer)', use_underline=True)
+    use_multilayer.show()
+    file_dialog.vbox.pack_end(use_multilayer, expand=False)
     response = file_dialog.run()
     if response == gtk.RESPONSE_OK:
       file_name=file_dialog.get_filename()
@@ -1047,7 +1055,43 @@ class TreffSession(GenericSession):
     file_dialog.destroy()
     #----------------File selection dialog-------------------#
     file_prefix=file_name.rsplit('.ent', 1)[0]
-    self.export_data_and_entfile(os.path.dirname(file_prefix), os.path.basename(file_prefix)+'.ent', datafile_prefix=os.path.basename(file_prefix))
+    self.export_data_and_entfile(os.path.dirname(file_prefix), 
+                                 os.path.basename(file_prefix)+'.ent', 
+                                 datafile_prefix=os.path.basename(file_prefix), 
+                                 use_multilayer=use_multilayer.get_active())
+    return True
+  
+  def import_fit_dialog(self, action, window):
+    '''
+      file selection dialog for parameter import from .ent file
+    '''
+    #++++++++++++++++File selection dialog+++++++++++++++++++#
+    file_dialog=gtk.FileChooserDialog(title='Open new entfile...', 
+                                      action=gtk.FILE_CHOOSER_ACTION_OPEN, 
+                                      buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+    file_dialog.set_default_response(gtk.RESPONSE_OK)
+    filter = gtk.FileFilter()
+    filter.set_name('Entry file')
+    filter.add_pattern('*.ent')
+    file_dialog.add_filter(filter)
+    filter = gtk.FileFilter()
+    filter.set_name('All')
+    filter.add_pattern('*.*')
+    file_dialog.add_filter(filter)
+    response = file_dialog.run()
+    if response == gtk.RESPONSE_OK:
+      file_name=file_dialog.get_filename()
+    elif response == gtk.RESPONSE_CANCEL:
+      file_dialog.destroy()
+      return False
+    file_dialog.destroy()
+    #----------------File selection dialog-------------------#
+    self.fit_object=TreffFitParameters()
+    self.fit_object.read_params_from_file(file_name)
+    if not any(self.fit_datasets):
+      if not self.select_fittable_sequences(action, window):
+        return False
+    self.dialog_fit(action, window)
     return True
   
   #----------------------- GUI functions -----------------------
@@ -1169,7 +1213,7 @@ class TreffFitParameters(FitParameters):
     self.substrate=layer
     return result
 
-  def get_ent_str(self):
+  def get_ent_str(self, use_multilayer=False):
     '''
       create a .ent file for fit.f90 script from given parameters
       fit parameters have to be set in advance, see set_fit_parameters/set_fit_constrains
@@ -1188,17 +1232,21 @@ class TreffFitParameters(FitParameters):
     ent_string+=str(self.wavelength[0]) + '\twavelength of the neutrons (Angstrom)\n'
     ent_string+=str(self.wavelength[1]) + '\twidth of the wavelength (Angstrom)\n'
     
-    ent_string+='#+++++  Begin of layer parameters +++++\n'    
-    ent_string+='0\tnumber of layers on top of the (unused) multilayer\n'
-    ent_string+='# blank\n'
-    ent_string+='0\tnumber of layers in the unicell of the multilayer\n'
-    ent_string+='# blank\n'
-    ent_string+='0\tnumber of repititions of those unicells in the multilayer\n'
-    ent_string+='# blank\n'
-    
-    ent_string+=str(self.number_of_layers()) + '\tnumber of layers below the (unused) multilayer\n'
-    ent_string_layer, layer_index, para_index = self.__get_ent_str_layers__()
-    ent_string+=ent_string_layer
+    ent_string+='#+++++  Begin of layer parameters +++++\n'
+    if use_multilayer and any(map(lambda item: item.multilayer, self.layers)):
+      string, layer_index, para_index=self.__get_ent_str_with_multilayer__()
+      ent_string+=string
+    else:      
+      ent_string+='0\tnumber of layers on top of the (unused) multilayer\n'
+      ent_string+='# blank\n'
+      ent_string+='0\tnumber of layers in the unicell of the multilayer\n'
+      ent_string+='# blank\n'
+      ent_string+='0\tnumber of repititions of those unicells in the multilayer\n'
+      ent_string+='# blank\n'
+      
+      ent_string+=str(self.number_of_layers()) + '\tnumber of layers below the (unused) multilayer\n'
+      ent_string_layer, layer_index, para_index = self.__get_ent_str_layers__()
+      ent_string+=ent_string_layer
     
     # more global parameters
     ent_string+=str(round(self.scaling_factor, 4)) + '\tscaling factor \t\t\t\tparameter ' + str(para_index) + '\n'
@@ -1243,6 +1291,51 @@ class TreffFitParameters(FitParameters):
     ent_string+=str(self.ntest) + '\tntest, the number of times chi could not be improved before fit stops\n'
     return ent_string
 
+  def __get_ent_str_with_multilayer__(self):
+    '''
+      Create string for layer part of .ent file for the fit script from given parameters.
+      This function uses the multilayer functionality of pnr_multi.
+    '''
+    layer_list=[]
+    for layer in self.layers:
+      if layer.multilayer:
+        layer_top=layer_list
+        layer_list=[]
+        multilayer=layer
+      else:
+        layer_list.append(layer)
+    layer_bottom=layer_list
+    
+    # layers and parameters are numbered started with 1
+    layer_index=1
+    para_index=1
+    ent_string=''
+    ent_string+='%i\tnumber of layers on top of the (unused) multilayer\n' % len(layer_top)
+    ent_string+='#### Begin of layers above, first layer '
+    # add text for every top_layer
+    for layer in layer_top:
+      string,  layer_index, para_index=layer.get_ent_text(layer_index, para_index)
+      ent_string+=string
+    ent_string+='## End of layers above\n'
+    ent_string+='%i\tnumber of layers in the unicell of the multilayer\n' % len(multilayer.layers)
+    ent_string+='#### Begin of layers in multilayer '
+    for layer in multilayer.layers:
+      string,  layer_index, para_index=layer.get_ent_text(layer_index, para_index)
+      ent_string+=string
+    ent_string+='## End of layers in multilayer\n'
+    ent_string+='%i\tnumber of repititions of those unicells in the multilayer\n' % multilayer.repititions
+    ent_string+='\n'
+    ent_string+='%i\tnumber of layers below the (unused) multilayer\n' % len(layer_bottom)
+    ent_string+='#### Begin of layers below, first layer '
+    # add text for every top_layer
+    for layer in layer_bottom:
+      string,  layer_index, para_index=layer.get_ent_text(layer_index, para_index)
+      ent_string+=string    
+    # substrate data
+    string,  layer_index, para_index=self.substrate.get_ent_text(layer_index, para_index-1)
+    ent_string+='\n'.join([string.splitlines()[0]]+string.splitlines()[2:]) + '\n' # cut the thickness line
+    ent_string+='### End of layers.\n'
+    return ent_string, layer_index, para_index
   
   def set_fit_parameters(self, layer_params={}, substrate_params=[], background=False, 
                          polarizer_efficiancy=False, analyzer_efficiancy=False, 
@@ -1341,7 +1434,6 @@ class TreffFitParameters(FitParameters):
     return errors_out
   
   def set_fit_constrains(self):
-    # NOT RIGHT
     '''
       set fit constrains depending on (multi)layers
       layer_params is a dictionary with the layer number as index
@@ -1353,7 +1445,7 @@ class TreffFitParameters(FitParameters):
         new_con, con_index=layer.get_fit_cons(con_index)
         fit_cons+=new_con
       else:
-        con_index+=4
+        con_index+=7
     self.constrains=[]
     # remove constrains not importent for the fitted parameters
     for constrain in fit_cons:
@@ -1378,51 +1470,78 @@ class TreffFitParameters(FitParameters):
     return new_fit
 
   def read_params_from_file(self, file):
-    # NOT RIGHT
     '''
       read data from .ent file
     '''
     lines=open(file, 'r').readlines()
     lines.reverse()
-    self.radiation[0]=float(lines.pop().split()[0])
+    # Geometry parameters
+    self.slits[0]=float(lines.pop().split()[0])
+    self.slits[1]=float(lines.pop().split()[0])
+    self.sample_length=float(lines.pop().split()[0])
+    self.distances[0]=float(lines.pop().split()[0])
+    self.distances[1]=float(lines.pop().split()[0])
+    # skip file names
+    for i in range(10):
+      lines.pop()
+    self.wavelength[0]=float(lines.pop().split()[0])
+    self.wavelength[1]=float(lines.pop().split()[0])
     lines.pop()
-    lines.pop()
-    number_of_layers=int(lines.pop().split()[0])
-    # read layer data
+    # read top layers data
+    number_of_layers_top=int(lines.pop().split()[0])
     self.layers=[]
-    for i in range(number_of_layers-1):
-      comment=lines.pop()
-      if comment[0]=='#' and len(comment.split(':'))>=2: # if created by this programm, get name
-        name=comment.split(':', 1)[1].strip('\n').lstrip()
-      else:
-        name='NoName'
-      parameters=[]
-      parameters.append(float(lines.pop().split()[0]))
-      parameters.append(float(lines.pop().split()[0]))
-      parameters.append(float(lines.pop().split()[0]))
-      parameters.append(float(lines.pop().split()[0]))
-      layer=TreffLayerParam(name=name, parameters_list=parameters)
+    for i in range(number_of_layers_top):
+      layer = self.read_layer_params_from_file(lines)
+      self.layers.append(layer)
+    # read multi layers data
+    comment=lines.pop()
+    if comment[0]=='#' and len(comment.split(':'))>=2: # if created by this programm, get name
+      multi_name=comment.split(':', 1)[1].strip('\n').lstrip()
+    else:
+      multi_name='NoName'
+    number_of_layers_multi=int(lines.pop().split()[0])
+    layers_in_multi=[]
+    for i in range(number_of_layers_multi):
+      layer = self.read_layer_params_from_file(lines)
+      layers_in_multi.append(layer)
+    lines.pop()
+    repititions_of_multi=int(lines.pop().split()[0])
+    self.layers.append(TreffMultilayerParam(repititions=repititions_of_multi, 
+                                            name=multi_name, 
+                                            layer_list=layers_in_multi))
+    lines.pop()
+    # read bottom layers data
+    number_of_layers_bottom=int(lines.pop().split()[0])
+    for i in range(number_of_layers_bottom):
+      layer = self.read_layer_params_from_file(lines)
       self.layers.append(layer)
     # read substrate data
+    self.substrate=self.read_layer_params_from_file(lines, substrate=True)
+    # read last parameters
+    lines.pop()
+    self.scaling_factor=float(lines.pop().split()[0])
+    self.background=float(lines.pop().split()[0])
+    lines.pop()
+    self.polarization_parameters[0]=float(lines.pop().split()[0])
+    self.polarization_parameters[1]=float(lines.pop().split()[0])
+    self.polarization_parameters[2]=float(lines.pop().split()[0])
+    self.polarization_parameters[3]=float(lines.pop().split()[0])
+    self.combine_layers(TreffMultilayerParam)
+
+  def read_layer_params_from_file(self, lines, substrate=False):
     comment=lines.pop()
     if comment[0]=='#' and len(comment.split(':'))>=2: # if created by this programm, get name
       name=comment.split(':', 1)[1].strip('\n').lstrip()
     else:
       name='NoName'
     parameters=[]
-    parameters.append(0)
-    parameters.append(float(lines.pop().split()[0]))
-    parameters.append(float(lines.pop().split()[0]))
-    parameters.append(float(lines.pop().split()[0]))
-    self.substrate=TreffLayerParam(name=name, parameters_list=parameters)
-    # read last parameters
-    lines.pop()
-    self.background=float(lines.pop().split()[0])
-    self.resolution=float(lines.pop().split()[0])
-    self.scaling_factor=float(lines.pop().split()[0])
-    lines.pop()
-    self.theta_max=float(lines.pop().split()[0])
-    self.combine_layers(TreffMultilayerParam)
+    for i in range(7):
+      if i==0 and substrate:
+        parameters.append(0.)
+      else:
+        parameters.append(float(lines.pop().split()[0]))
+    layer=TreffLayerParam(name=name, parameters_list=parameters)
+    return layer
 
 class TreffLayerParam(LayerParam):
   '''
@@ -1523,7 +1642,7 @@ class TreffLayerParam(LayerParam):
     para_index+=1
     text+=str(self.scatter_density_Nb) + '\treal part Nb\', - (A**-2)*1e6\t\tparameter ' + str(para_index) + '\n'
     para_index+=1
-    text+=str(self.scatter_density_Nb2) + ' imagenary part Nb\'\' of nuclear and\tparameter ' + str(para_index) + '\n'
+    text+=str(self.scatter_density_Nb2) + ' imaginary part Nb\'\' of nuclear and\tparameter ' + str(para_index) + '\n'
     para_index+=1
     text+=str(self.scatter_density_Np) + '\tmagnetic scat. len. dens. Np \t\tparameter ' + str(para_index) + '\n'
     para_index+=1
