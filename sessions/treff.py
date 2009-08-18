@@ -931,7 +931,6 @@ class TreffSession(GenericSession):
     ent_file.close()
 
   def show_result_window(self, dialog, window, new_fit, sorted_errors):
-    # NOT RIGHT
     '''
       show the result of a fit and ask to retrieve the result
     '''
