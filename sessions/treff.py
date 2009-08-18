@@ -113,6 +113,7 @@ class TreffSession(GenericSession):
         <menuitem action='TreffImportFit'/>
         <menuitem action='TreffExportFit'/>
         <menuitem action='TreffSpecRef'/>
+        <menuitem action='TreffTest'/>
       </menu>
     '''
     # Create actions for the menu
@@ -141,6 +142,10 @@ class TreffSession(GenericSession):
                 "Import Fit...", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.import_fit_dialog), 
+            ( "TreffTest", None,                             # name, stock id
+                "Test...", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.user_constraint_dialog), 
              )
     return string,  actions
 
@@ -248,18 +253,20 @@ class TreffSession(GenericSession):
   #++++ functions for fitting with fortran program by E. Kentzinger ++++
   
   from reflectometer_fit.functions import \
-  dialog_activate, \
-  result_window_response, \
-  fit_history, \
-  rebuild_dialog, \
-  delete_layer, \
-  up_layer, \
-  move_layer_up_in_list, \
-  delete_multilayer, \
-  open_status_dialog, \
-  toggle_fit_option, \
-  toggle_fit_bool_option, \
-  read_fit_file
+      dialog_activate, \
+      result_window_response, \
+      fit_history, \
+      rebuild_dialog, \
+      delete_layer, \
+      up_layer, \
+      move_layer_up_in_list, \
+      delete_multilayer, \
+      open_status_dialog, \
+      toggle_fit_option, \
+      toggle_fit_bool_option, \
+      read_fit_file, \
+      user_constraint_dialog, \
+      user_constraint_response
   
 
   #+++++++++++++++++++++++ GUI functions +++++++++++++++++++++++
@@ -1276,7 +1283,7 @@ class TreffFitParameters(FitParameters):
     
     # create constrains as needed for pnr_multi ( degrees of freedom etc. )
     fit_parameters=list(self.fit_params)
-    constrains_list=list(self.constrains)
+    constrains_list=map(list, self.constrains)
     constrain_to_list=[]
     for constrain in constrains_list:
       constrain.sort()
@@ -1484,6 +1491,7 @@ class TreffFitParameters(FitParameters):
     for constrain in fit_cons:
       if constrain[0] in self.fit_params:
         self.constrains.append(constrain)
+        #self.constrains+=self.user_constraints
 
   def copy(self):
     '''
