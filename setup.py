@@ -21,8 +21,8 @@ if hex(sys.hexversion)<'0x2050000':
 __name__='Plot-script'
 __scripts__=['plot.py']
 __py_modules__=['plot', 'plotting_gui', 'measurement_data_structure', 'measurement_data_plotting', 'fit_data', 'file_actions']
-__packages__=['config', 'read_data', 'sessions']
-__package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 'fonts/*.ttf'], 
+__packages__=['config', 'read_data', 'sessions', 'sessions.reflectometer_fit']
+__package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 'fit/pnr_multi/*.f90', 'fonts/*.ttf'], 
                     }
 __url__='http://www.fz-juelich.de'
 __requires__=['pygtk', 'gobject', 'numpy', 'scipy']
@@ -47,7 +47,7 @@ if 'sdist' in sys.argv:
         versions_fit=False
   # test modules in packages
   for package in __packages__:
-    modules=filter(lambda file: file[-3:]=='.py',os.listdir(package))
+    modules=filter(lambda file: file[-3:]=='.py',os.listdir(package.replace(".", "/")))
     modules.remove('__init__.py')
     for module in modules:
       mod=__import__(package + '.' + module[:-3], globals(), locals(), ['__version__'], -1)

@@ -9,7 +9,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a"
+__version__ = "0.6a2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -36,4 +36,4 @@ FORTRAN_COMPILER='gfortran'
 # stdandard cpu flags are:
 # i686 / pentium4 / athlon / k8 / amdfam10 (athlon64) / nocona (p4-64bit)
 FORTRAN_COMPILER_OPTIONS='-O3'
-FORTRAN_COMPILER_MARCH='-march=nocona' #None
+FORTRAN_COMPILER_MARCH=None #'-march=nocona'
