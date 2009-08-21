@@ -33,7 +33,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger"]
 __license__ = "None"
-__version__ = "0.6a2"
+__version__ = "0.6a3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -900,12 +900,14 @@ class TreffSession(GenericSession):
       window.active_multiplot=True
       for i, dataset in enumerate(reversed([item for item in self.fit_datasets if item])):
         dataset.data[dataset.ydata].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.ydata].values)
+        dataset.data[dataset.yerror].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.yerror].values)
         dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
           map(lambda number: number*10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
     window.replot()
     if move_channels:
        for i, dataset in enumerate(reversed([item for item in self.fit_datasets if item])):
          dataset.data[dataset.ydata].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.ydata].values)
+         dataset.data[dataset.yerror].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.yerror].values)
          dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
             map(lambda number: number/10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
 
@@ -1009,7 +1011,7 @@ class TreffSession(GenericSession):
         (old_fit.background, new_fit.background, sorted_errors['background'])
     if old_fit.polarization_parameters[0]!=new_fit.polarization_parameters[0]:
       text_string+='Polarizer efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
-        (old_fit.polarization_parameters[0], new_fit.polarization_parameters[0], sorted_errors['polarization_parameters'])
+        (old_fit.polarization_parameters[0], new_fit.polarization_parameters[0], sorted_errors['polarizer_efficiancy'])
     if old_fit.polarization_parameters[1]!=new_fit.polarization_parameters[1]:
       text_string+='Analyzer efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
         (old_fit.polarization_parameters[1], new_fit.polarization_parameters[1], sorted_errors['analyzer_efficiancy'])
@@ -1178,7 +1180,7 @@ class TreffFitParameters(FitParameters):
   distances=[2270.0, 450.0] # distance between sample and first,last slit.
   polarization_parameters=[0.973, 0.951, 1.0, 1.0] # polarizer-/analyzer efficiency/first-/second flipper efficiency
   alambda_first=0.0001 # alambda parameter for first fit step
-  ntest=2 # number of times chi has to be not improvable before the fit stops
+  ntest=1 # number of times chi has to be not improvable before the fit stops
   PARAMETER_LENGTH=7
   from config.scattering_length_table import NEUTRON_SCATTERING_LENGTH_DENSITIES
   
@@ -1492,6 +1494,22 @@ class TreffFitParameters(FitParameters):
     for constrain in fit_cons:
       if constrain[0] in self.fit_params:
         self.constrains.append(constrain)
+    # combine constraints which overlap
+    fit_cons=self.constrains
+    remove=[]
+    for constrain in fit_cons:
+      if constrain in remove:
+        continue
+      for constrain_2 in [cons for cons in fit_cons if not cons is constrain]:
+        if any(map(lambda con: con in constrain, constrain_2)) and not constrain_2 in remove:
+          cmb=constrain+constrain_2
+          cmb=dict.fromkeys(cmb).keys()
+          cmb.sort()
+          self.constrains.append(cmb)
+          remove.append(constrain)
+          remove.append(constrain_2)
+    for rmv in remove:
+      self.constrains.remove(rmv)
 
   def copy(self):
     '''
