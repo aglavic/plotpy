@@ -1559,15 +1559,19 @@ class TreffFitParameters(FitParameters):
     else:
       multi_name='NoName'
     number_of_layers_multi=int(lines.pop().split()[0])
-    layers_in_multi=[]
-    for i in range(number_of_layers_multi):
-      layer = self.read_layer_params_from_file(lines)
-      layers_in_multi.append(layer)
-    lines.pop()
-    repititions_of_multi=int(lines.pop().split()[0])
-    self.layers.append(TreffMultilayerParam(repititions=repititions_of_multi, 
-                                            name=multi_name, 
-                                            layer_list=layers_in_multi))
+    if number_of_layers_multi>0:
+      layers_in_multi=[]
+      for i in range(number_of_layers_multi):
+        layer = self.read_layer_params_from_file(lines)
+        layers_in_multi.append(layer)
+      lines.pop()
+      repititions_of_multi=int(lines.pop().split()[0])
+      self.layers.append(TreffMultilayerParam(repititions=repititions_of_multi, 
+                                              name=multi_name, 
+                                              layer_list=layers_in_multi))
+    else:
+      lines.pop()
+      lines.pop()
     lines.pop()
     # read bottom layers data
     number_of_layers_bottom=int(lines.pop().split()[0])
