@@ -84,7 +84,7 @@ class FileActions:
     '''
     self.window.measurement[self.window.index_mess].filters=filters
 
-  def cross_section(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10):
+  def cross_section(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10, at_end=False):
     '''
       Create a slice through a dataset using the create_cross_section function.
       This funcion is called as the action.
@@ -99,8 +99,12 @@ class FileActions:
                            data.short_info, x_0, y_0, x,y) 
       cs_object.sample_name=data.sample_name
       cs_object.info=data.info
-      self.window.measurement.insert(self.window.index_mess+1, cs_object)
-      self.window.index_mess+=1
+      if at_end:
+        self.window.measurement.append(cs_object)
+        self.window.index_mess=len(self.window.measurement)-1
+      else:
+        self.window.measurement.insert(self.window.index_mess+1, cs_object)
+        self.window.index_mess+=1
       return True
     except ValueError:
       return False

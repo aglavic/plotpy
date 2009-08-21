@@ -224,7 +224,8 @@ class TreffSession(GenericSession):
                                         float(line_width.get_text()), 
                                         int(binning.get_text()), 
                                         weight.get_active(), 
-                                        float(sigma.get_text())
+                                        float(sigma.get_text()), 
+                                        True
                                         )
       if not gotit:
         message=gtk.MessageDialog(parent=self, 
