@@ -51,7 +51,7 @@ class TreffSession(GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('All','*'), ('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'))  
+  FILE_WILDCARDS=(('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'), ('All','*'))  
   TRANSFORMATIONS=[\
                   ['mrad',1/config.treff.GRAD_TO_MRAD,0,'\302\260'],
                   ['detector', 'mrad', 1., 0, '2Theta', 'mrad'], 
@@ -1182,7 +1182,7 @@ class TreffFitParameters(FitParameters):
   distances=[2270.0, 450.0] # distance between sample and first,last slit.
   polarization_parameters=[0.973, 0.951, 1.0, 1.0] # polarizer-/analyzer efficiency/first-/second flipper efficiency
   alambda_first=0.0001 # alambda parameter for first fit step
-  ntest=1 # number of times chi has to be not improvable before the fit stops
+  ntest=1 # number of times chi has to be not improvable before the fit stops (I think)
   PARAMETER_LENGTH=7
   from config.scattering_length_table import NEUTRON_SCATTERING_LENGTH_DENSITIES
   
