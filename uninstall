@@ -16,6 +16,7 @@ if [ $INSTALL = /usr/bin ]
     sudo rm $INSTALL/prd
     sudo rm $INSTALL/pin12
     sudo rm $INSTALL/dnsplot
+    sudo rm $INSTALL/treffplot
     sudo rm $INSTALL/plot.py
   else rm $INSTALL/plot_SQUID_data
     rm $INSTALL/plot_4circle_data
@@ -25,5 +26,6 @@ if [ $INSTALL = /usr/bin ]
     rm $INSTALL/prd
     rm $INSTALL/pin12
     rm $INSTALL/dnsplot
+    rm $INSTALL/treffplot
     rm $INSTALL/plot.py
 fi

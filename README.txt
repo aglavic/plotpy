@@ -1,5 +1,5 @@
-      Release Notes for the plotting script collection Version 0.6
-             Please report bugs to a.glavic@fz-juelich.de
+      Release Notes for the plotting script collection Version 0.6a3
+             Please report bugs and feature requests to http://atzes.homeip.net/plotwiki/tiki-forums.php
 
 
 Content:
@@ -14,13 +14,17 @@ Content:
 5   - goles for later releases
 
 ----------- 0 - introduction --------------
-This is the third release of scripts for plotting mpms/ppms, 4Circle, reflectometer, treff and in12 data,
+This is the third release of scripts for plotting mpms/ppms, 4Circle, reflectometer, treff and in12 data.
 For a description of the features see chapter 3. 
 If you would like some new features, found any bugs or would like to have additional file-types
-supported by the script feel free to contact me.
+supported by the script feel free to go to the Wiki http://atzes.homeip.net/plotwiki/ . Any contribution
+to the Wiki content is also welcome.
 
 ----- 1 - changes since version 0.5 -------
 - added support for treff data and image files
+  - create intensity maps from the detector data
+  - extract specular reflectivity from those maps
+  - fit the specular reflectivity with the pnr_multi.f90 program from E. Kentzinger
 - added support for in12 data files
 - added support for DNS single crystal and powder data with additional functionality:
   - transform to q-space, with variable omega-offset
@@ -30,11 +34,11 @@ supported by the script feel free to contact me.
   - Linear combination from different measurements
 - changed module structure introducing config, read_data and sessions packages
 - added fitting dialog
-- optional platform independent python setup
+- optional platform independent python setup (not yet stable)
 - save gnuplot and datafile which creates the same image as present in GUI for later change
 - major speed enhacement for plotting and data import, slow import formats (as squid raw
    and treff image files) are stored as binary objects after readout
-- included fonts for linux distributions missing it
+- included fonts for linux distributions missing it (there is a problem with gnuplot with to long folder names)
 - history for reflectometer fit parameters
 - code cleanup and consistancy
 - multiplot from different files (stil needs imporvement)
@@ -73,7 +77,7 @@ plotting-scripts:
 
   tar -xvvzf Plot-script-{VERSION}.tar.gz
 
-  You now have to options, link the script to your bin-directory and run it from this folder or install it as python module:
+  You now have to options, link the script to your bin-directory and run it from this folder or install it as python module(not recommanded at the moment):
 
 2a- Link the script using the install shell script:
   In the folder type:
@@ -103,8 +107,7 @@ plotting-scripts:
   !! if you don't have administrator priviliges, use ./install {PATH} , with a directory {PATH}
      inside one of your system path folders. (type "print $PATH" to find out where to look)
 
-!!! If you have the previous version installed, you have !!!
-!!! to uninstall it first, as the links have changed.    !!!
+!!! If you have the previous version installed, you have to uninstall it first, as the links have changed.  !!!
 
 For full functionality you will need the gfortran compiler(fit.f90), gnuplot.py(speedup), numpy, scipy and pygtk(GUI) packages.
 
@@ -164,7 +167,7 @@ Plot-script-0.6.tar.gz (.zip) contains:
   
   configobj.py                                           - class for storing of variables in .ini files, from external source
 
-  config/fit/fit.f90                                        - actual program
+  config/fit/                                                  - fortran programs for reflectivity simulations
 
 
 
@@ -201,8 +204,13 @@ GUI:
   - Change and show all gnuplot parameters and store it as profile
 
 ------- 5 - goals for later releases -------
-The next releases will hopefully come in about 2 month cycles. 
+The next releases will hopefully come in about 2-3 month cycles. 
 At the moment I have these plans for the future releases:
+
+  v0.6 stable) 
+        - a lot of bugfixing
+        - improve comments
+        - testing, testing, testing
 
   v0.7) - setting up proper printing dialog
         - more error handling
