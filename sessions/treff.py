@@ -46,6 +46,7 @@ class TreffSession(GenericSession):
   SPECIFIC_HELP=\
 '''
 \tTREFF-Data treatment:
+\t-no-img\tOnly import the detector window data, not the 2d-maps.
 '''
   #------------------ help text strings ---------------
 

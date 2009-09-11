@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.6a2"
+__version__ = "0.6a3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -165,8 +165,10 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                ['error','counts'], 
                                ['errorTotal','counts'], 
                                ['Intensity','counts/Monitor'], 
-                               ['Intensity(time)', 'counts/s']], 
-                              [], 0, 5, 3)
+                               ['error(monitor)','counts/Monitor'], 
+                               ['Intensity(time)', 'counts/s'], 
+                               ['error(time)','counts/s']], 
+                              [], 0, 5, 6)
   data_object=MeasurementData([['\316\261_i', 'mrad'], 
                                ['\316\261_f', 'mrad'], 
                                ['\316\261_i+\316\261_f', 'mrad'], 
@@ -190,6 +192,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                       line[columns['2DWindow']], 
                                       line[columns['DetectorTotal']],
                                       line[columns['Monitor']], 
+                                      line[columns['Monitor']], 
+                                      line[columns['Time']], 
                                       line[columns['Time']])))
     if not import_images:
       continue
@@ -230,7 +234,9 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     point[3]=max(sqrt(point[3]), 1)
     point[4]=max(sqrt(point[4]), 1)
     point[5]=point[1]/point[5]
-    point[6]=point[1]/point[6]
+    point[6]=point[3]/point[6]
+    point[7]=point[1]/point[7]
+    point[8]=point[3]/point[8]
   map(sqrt_34_gtm, scan_data_list)
   map(scan_data_append, scan_data_list)
   return data_object, scan_data_object
@@ -284,7 +290,7 @@ def read_simulation(file_name):
   sim_file=open(file_name,'r')
   sim_lines=sim_file.readlines()
   sim_file.close()
-  data=MeasurementData([['Theta','mrad'],['Intensity','counts/s'],['Unknown','counts/s'],['Unknown2','counts/s']],[],0,1,2)
+  data=MeasurementData([['Theta','mrad'],['Intensity','a.u.'],['Unknown','counts/s'],['Unknown2','counts/s']],[],0,1,2)
   data.info='Simulation'
   for line in sim_lines:
     if len(line.split())>1:
