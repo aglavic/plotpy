@@ -13,7 +13,7 @@ __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
 #
-# ['name',mol mass,mol dia(10^-6emu/mol)]
+# ['name',mol mass,mol dia(10^-6emu/Oe/mol)]
 #
 # Values from Kalzium elemental table and G.A.Bain and J.F.Berry J.Chem.Edu. Vol.85 No.4 (2008)
 ELEMENT_DIA=[\

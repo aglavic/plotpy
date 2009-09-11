@@ -339,7 +339,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     self.TEMP_DIR=self.TEMP_DIR+'plottingscript-'+self.OWN_PID+os.sep
     try:
       os.mkdir(self.TEMP_DIR) # create the temporal directory
-    except WindowsError:
+    except OSError:
       pass
 
   def os_cleanup(self):

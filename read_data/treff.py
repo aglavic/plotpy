@@ -51,6 +51,7 @@ def read_data(file_name, script_path, import_images):
            'Monitor': columns_line.index('Monitor'), 
            '2DWindow': columns_line.index('2DWind.'), 
            'DetectorTotal': columns_line.index('2DTotal'), 
+           'Time': columns_line.index('Time'), 
            'omega': -1, 
            'detector': -1
            }
@@ -162,8 +163,10 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                ['2DWindow', 'counts'], 
                                ['DetectorTotal', 'counts'], 
                                ['error','counts'], 
-                               ['errorTotal','counts']], 
-                              [], 0, 1, 3)
+                               ['errorTotal','counts'], 
+                               ['Intensity','counts/Monitor'], 
+                               ['Intensity(time)', 'counts/s']], 
+                              [], 0, 5, 3)
   data_object=MeasurementData([['\316\261_i', 'mrad'], 
                                ['\316\261_f', 'mrad'], 
                                ['\316\261_i+\316\261_f', 'mrad'], 
@@ -185,7 +188,9 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                       line[columns['2DWindow']], 
                                       line[columns['DetectorTotal']], 
                                       line[columns['2DWindow']], 
-                                      line[columns['DetectorTotal']])))
+                                      line[columns['DetectorTotal']],
+                                      line[columns['Monitor']], 
+                                      line[columns['Time']])))
     if not import_images:
       continue
     if os.path.exists(data_path + line[columns['Image']]):
@@ -224,6 +229,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     point[0]=GRAD_TO_MRAD*point[0]
     point[3]=max(sqrt(point[3]), 1)
     point[4]=max(sqrt(point[4]), 1)
+    point[5]=point[1]/point[5]
+    point[6]=point[1]/point[6]
   map(sqrt_34_gtm, scan_data_list)
   map(scan_data_append, scan_data_list)
   return data_object, scan_data_object

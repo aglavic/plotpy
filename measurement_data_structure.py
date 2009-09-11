@@ -287,20 +287,26 @@ class MeasurementData:
 
   def unit_trans_one(self,col,unit_list): 
     '''
-      Change units of one column according to a given list of translations.
+      Change units of one column according to a given list of translations and
+      return this column.
     '''
+    from copy import deepcopy
+    data=deepcopy(self.data[col])
+    unit_used=''
     for unit in unit_list:
       if len(unit)==4:
-        self.data[col].unit_trans(unit)
+        transformed=data.unit_trans(unit)
       else:
-        self.data[col].dim_unit_trans(unit)
-    for con in self.const_data:
-      if con[0]==col:
-        if len(unit)==4:
-            con[1].unit_trans(unit)
-        else:
-            con[1].dim_unit_trans(unit)
-    return [self.last()[col],self.units()[col]]
+        transformed=data.dim_unit_trans(unit)
+      if transformed:
+        unit_used=unit[-1]
+#    for con in self.const_data:
+#      if con[0]==col:
+#        if len(unit)==4:
+#            con[1].unit_trans(unit)
+#        else:
+#            con[1].dim_unit_trans(unit)
+    return data.values[-1], unit_used
 
   # When numpy is accessible use a faster array approach
   if numpy is None:
@@ -555,9 +561,9 @@ class PysicalProperty:
         new_values.append(value*transfere[1]+transfere[2])
       self.values=new_values
       self.unit=transfere[3]
-      return [self.values[-1],self.unit]
+      return True
     else:
-      return [self.values[-1],self.unit]
+      return False
 
   def dim_unit_trans(self,transfere): 
     '''
