@@ -82,7 +82,7 @@ class DNSSession(GenericSession):
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[] # A list of all filenames to be imported
   mds_create=False # DNS data is not stored as .mds files as the import is fast
-  VANADIUM_FILE=None # File name of vanadium file to be used for the correction
+  VANADIUM_FILE=config.dns.VANADIUM_FILE # File name of vanadium file to be used for the correction
   BACKGROUND_FILE=None # File name of a background file to substract
   SHORT_INFO=[('temperature', lambda temp: 'at T='+str(temp), 'K')] # For the plots this is used to creat the short info
   SAMPLE_NAME='' # Name of the Sample for th data objects

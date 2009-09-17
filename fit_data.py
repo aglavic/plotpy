@@ -360,6 +360,31 @@ class FitVoigt(FitFunction):
     value=p[0] * wofz(z).real / wofz(z0).real + p[4]
     return value
 
+class FitSQUIDSignal(FitFunction):
+  '''
+    Fit a gaussian function.
+  '''
+  prefactor=numpy.sqrt(2.*numpy.pi)
+  squid_coil_distance=1.
+  
+  # define class variables.
+  name="SQUID RAW-data"
+  parameters=[1., 3., 1., 0., 0.]
+  parameter_names=['Moment', 'x_0', 'sigma', 'off', 'incr']
+  fit_function=lambda self, p, x: p[4] * numpy.array(x) - p[0]/(p[2]*self.prefactor) * ( \
+                                          numpy.exp(-0.5*((numpy.array(x) - p[1] + self.squid_coil_distance)/p[2])**2)\
+                                          + numpy.exp(-0.5*((numpy.array(x) - p[1] - self.squid_coil_distance)/p[2])**2)\
+                                          - 2.* numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2) \
+                                          )+ p[3]
+  fit_function_text='M=Moment ; pos=x_0 ; s = sigma'
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1., 3., 1., 0., 0.]
+    FitFunction.__init__(self, initial_parameters)
+
 
 #--------------------------------- Define common functions for fits ---------------------------------
 
@@ -379,7 +404,8 @@ class FitSession:
                        FitGaussian.name: FitGaussian, 
                        FitVoigt.name: FitVoigt, 
                        FitOneOverX.name: FitOneOverX, 
-                       FitLorentzian.name: FitLorentzian
+                       FitLorentzian.name: FitLorentzian, 
+                       FitSQUIDSignal.name: FitSQUIDSignal
                        }
   
   def __init__(self,  dataset, file_actions):

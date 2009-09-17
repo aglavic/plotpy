@@ -51,10 +51,15 @@ COLUMNS_MAPPING=[\
 ,['Start Temperature (K)',2,['T','K']]\
 ,['Position (cm)',3,['pos','cm']]\
 ,['Long Voltage',4,['V_{long}','V']]\
-,['Long Reg Fit',5,['Fit','V']]\
-,['End Temperature (K)',6,['T_{End}','V']]\
-,["M'' (emu)",7,["M2_{ac}",'emu']]\
-,["Frequency (Hz)",7,["Frequency",'Hz']]\
+,['Long Regression Fit',5,['V_{Fit}','V']]\
+,['Long Average Voltage', 6, ['V_{avrg}', 'V']]\
+,['End Temperature (K)',7,['T_{End}','V']]\
+,["M'' (emu)",8,["M2_{ac}",'emu']]\
+,["Frequency (Hz)",8,["Frequency",'Hz']]\
+,['Long Detrended Voltage',8,['V_{det}','V']]\
+,['Long Demeaned Voltage', 9, ['V_{dem}', 'V']]\
+,['Long Scaled Response',10,['V_{SC-long}','V']]\
+,['Long Avg. Scaled Response', 11, ['V_{SC-avrg}', 'V']]\
 ]
 # Measurement types where some parameters are fix and x,y and yerror columns are set.
 # [ 'list of constant parameters [ column , max_div ]' , x-col, y-col, div_y-col , plot options]
