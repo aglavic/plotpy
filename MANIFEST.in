@@ -11,6 +11,7 @@ include plot_reflectometer_data
 include plot_4circle_data
 include plot_SQUID_data
 include dnsplot
+include treffplot
 include pin12
 include uninstall
 

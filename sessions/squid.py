@@ -14,7 +14,7 @@
 # -convert units to SI (or any selected)                                                        #
 # -remove diamagnetic and paramagnetic contribution                                             #
 #  (as constant and calculated from elements and mass)                                          #
-# -process raw data files (sequence splitting see config.squid.py)                         #
+# -process raw data files (sequence splitting see config.squid.py)                              #
 #                                                                                               #
 #################################################################################################
 

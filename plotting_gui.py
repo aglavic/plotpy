@@ -48,7 +48,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a3"
+__version__ = "0.6b"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -114,10 +114,7 @@ class ApplicationMainWindow(gtk.Window):
     # Create the toplevel window
     gtk.Window.__init__(self)
     # Normaly this is not important, but with it the Window could be implemented as subwindow later.
-    try:
-        self.set_screen(parent.get_screen())
-    except AttributeError:
-        self.connect('destroy', lambda *w: self.main_quit())
+    self.connect('destroy', lambda *w: self.main_quit())
     # Set the title of the window, will be changed when the active plot changes
     self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
     # Set the main windwo size to default or the last settings saved in config file

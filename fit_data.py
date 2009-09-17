@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a3"
+__version__ = "0.6b"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -123,7 +123,7 @@ class FitFunction:
     for i in range(len(self.parameters)):
       cov_out.append([])
       for j in range(len(self.parameters)):
-        if (i in self.refine_parameters) and (j in self.refine_parameters):
+        if (cov_x is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
           cov_out[i].append(cov_x[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
         else:
           cov_out[i].append(0.)
@@ -673,7 +673,7 @@ class FitSession:
       self.functions[func_index][0].parameters[j]=value
     self.functions[func_index][0].x_from=values[-3]
     self.functions[func_index][0].x_to=values[-2]
-    self.functions[func_index][0].name=values[-1]
+    self.functions[func_index][0].fit_function_text=values[-1]
   
   def fit_from_dialog(self, action, entries, dialog, window):
     '''
