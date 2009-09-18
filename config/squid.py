@@ -17,7 +17,7 @@ dia_mag_correct=0
 
 # Options for the squid raw data fit function
 squid_coil_distance=1.5 # distance of squid coils from center in cm
-squid_factor=0.00056783755 # scalation factor to calculate the mag. moment
+squid_factor=0.00057486103 # scalation factor to calculate the mag. moment
 
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
 TRANSFORMATIONS=[\

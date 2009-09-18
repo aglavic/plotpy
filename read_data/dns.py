@@ -35,7 +35,7 @@ def read_data(file_name, print_comments=True):
     file_handler.readline() # skip empty line
     add_info['header']=read_header(file_handler) # read header information
     add_info['lambda_n']=read_lambda(file_handler) # find wavelength
-    # get the information defined in define_get_info function
+    # get the information defined in config.dns.GET_INFO function
     for info in GET_INFO: 
       add_info[info[1]]=read_info(file_handler,info[0]) 
     while (file_handler.readline().find('DATA')==-1): # read until data line

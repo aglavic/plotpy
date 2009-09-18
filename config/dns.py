@@ -19,6 +19,9 @@ START_WITH_DETECTOR=4
 NUMBER_OF_DETECTORS=24
 DETECTOR_ANGULAR_INCREMENT=5.
 VANADIUM_FILE=None
+SETUP_DIRECTORY='/home/glavic/Daten/DNS/setup/rc21'
+NICR_FILE_WILDCARD=('dn', 'nicr.d_dat') # nicr files start, end string
+NICR_BACKGROUND_WILDCARD=('dn', 'leer.d_dat') # background file start, end string
 
 GET_INFO= (\
   # get detector bank position
@@ -29,12 +32,16 @@ GET_INFO= (\
   ('Translation','polarizer_trans'),\
   # get flipper current
   ('Flipper_precession','flipper'),\
+  # get flipper current
+  ('Flipper_z_compensation','flipper_compensation'),\
   # get helmholz current
   ('C_a','C_a'),\
   # get helmholz current
   ('C_b','C_b'),\
   # get helmholz current
   ('C_c','C_c'),\
+  # get helmholz current
+  ('C_z','C_z'),\
   # get temperature
   ('T1','temperature'),\
   # get counting time

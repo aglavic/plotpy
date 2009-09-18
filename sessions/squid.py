@@ -135,6 +135,7 @@ Data columns and unit transformations are defined in config.squid.py.
       <menu action='SquidMenu'>
         <menuitem action='SquidDia'/>
         <menuitem action='SquidPara'/>
+        <menuitem action='SquidExtractRaw'/>
       </menu>
     '''
     # Create actions for the menu, functions are invoked with the window as
@@ -152,6 +153,10 @@ Data columns and unit transformations are defined in config.squid.py.
                 "Paramagnetic Correction", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.toggle_correction ),
+            ( "SquidExtractRaw", None,                             # name, stock id
+                "Extract magnetic moment", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.calc_moment_from_rawdata ),
              )
     return string,  actions
   
@@ -346,8 +351,6 @@ Data columns and unit transformations are defined in config.squid.py.
     '''
       do or undo dia-/paramagnetic correction
     '''
-    self.calc_moment_from_rawdata()
-    return False
     name=action.get_name()
     for dataset in self.active_file_data:
       units=dataset.units()
@@ -380,7 +383,7 @@ Data columns and unit transformations are defined in config.squid.py.
         self.para[0]*=1e3
     window.replot()
   
-  def calc_moment_from_rawdata(self, start_point=None, end_point=None):
+  def calc_moment_from_rawdata(self, action, window, start_point=None, end_point=None):
     '''
       Try to fit the SQUID signal to retrieve the magnetic moment of a sample,
       in the future this will be extendet to use different sample shape functions.
@@ -420,7 +423,7 @@ Data columns and unit transformations are defined in config.squid.py.
         print "Extracting datapoint No: %i" %i
       data.ydata=v_index
       data.dydata=v_index
-      fit_object=FitSession(data)
+      fit_object=FitSession(data, window.file_actions)
       data.fit_object=fit_object
       fit_object.add_function('SQUID RAW-data')
       fit_object.fit()

@@ -580,6 +580,113 @@ class DNSSession(GenericSession):
       ['q_y','\303\205^{-1}',1/d_star_y,0,self.D_NAME_Y,'r.l.u.'],\
                           ]
   
+  def correct_flipping_ratio(self):
+    '''
+      This function uses NiCr standard measurements to correct for the finite
+      flipping-ration by searching a selfconsistent solution for the measured
+      data.
+      First the NiCr measurements get imported, then it searches for a NiCr file
+      with the right fields for the measured data.
+      Second the flipping ratio of the NiCr file without background is calculated.
+      At last the selfconsistent solution is calculated.
+    '''
+    directory=config.dns.SETUP_DIRECTORY
+    file_list=sorted(os.listdir(directory))
+    nicr_files=filter(lambda name: name.startswith(config.dns.NICR_FILE_WILDCARD[0]), 
+                      filter(lambda name: name.endswith(config.dns.NICR_FILE_WILDCARD[1]), 
+                             file_list))
+    bg_files=filter(lambda name: name.startswith(config.dns.NICR_BACKGROUND_WILDCARD[0]), 
+                      filter(lambda name: name.endswith(config.dns.NICR_BACKGROUND_WILDCARD[1]), 
+                             file_list))
+    # dictionaries with the helmholz parameters are used to store the data
+    nicr_data={}
+    bg_data={}
+    for file_name in nicr_files:
+      dataset=read_data.dns.read_data(os.path.join(directory, file_name))
+      flip=round(float(dataset.dns_info['flipper']), 2)
+      flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+      c_a=round(float(dataset.dns_info['C_a']), 2)
+      c_b=round(float(dataset.dns_info['C_b']), 2)
+      c_c=round(float(dataset.dns_info['C_c']), 2)
+      c_z=round(float(dataset.dns_info['C_z']), 2)
+      nicr_data[(flip, flip_cmp, c_a, c_b, c_c, c_z)]=dataset
+    for file_name in bg_files:
+      dataset=read_data.dns.read_data(os.path.join(directory, file_name))
+      flip=round(float(dataset.dns_info['flipper']), 2)
+      flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+      c_a=round(float(dataset.dns_info['C_a']), 2)
+      c_b=round(float(dataset.dns_info['C_b']), 2)
+      c_c=round(float(dataset.dns_info['C_c']), 2)
+      c_z=round(float(dataset.dns_info['C_z']), 2)
+      bg_data[(flip, flip_cmp, c_a, c_b, c_c, c_z)]=dataset
+    # correct the background
+    bg_corrected_data={}
+    if use_numpy:
+      def subtract_background(point):
+        bg=background_data.data
+        point[1]-=array(bg[1].values)
+        point[2]=sqrt(point[2]**2+array(bg[2].values)**2)
+        return point
+    else:
+      def subtract_background(point):
+        index=background_data.data[0].values.index(point[0])
+        bg=background_data.get_data(index)
+        point[1]-=bg[1]
+        point[2]=sqrt(point[2]**2+bg[2]**2)
+        return point      
+    for key, data in nicr_data.items():
+      if key in bg_data:
+        background_data=bg_data[key]
+        data.process_function(subtract_background)
+        bg_corrected_data[key]=data
+    # search for appropiate standard measurements
+    data_nicr={}
+    for dataset in self.active_file_data:
+      flip=round(float(dataset.dns_info['flipper']), 2)
+      flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+      c_a=round(float(dataset.dns_info['C_a']), 2)
+      c_b=round(float(dataset.dns_info['C_b']), 2)
+      c_c=round(float(dataset.dns_info['C_c']), 2)
+      c_z=round(float(dataset.dns_info['C_z']), 2)
+      key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
+      if key in bg_corrected_data:
+        print "Found"
+        if not key[2:] in data_nicr:
+          data_nicr[key[2:]]=[(key[0:2]==(0., 0.), bg_corrected_data[key], dataset)]
+        elif len(data_nicr[key[2:]])==1:
+          data_nicr[key[2:]].append((key[0:2]==(0., 0.), bg_corrected_data[key], dataset))
+          # put spin-flip channels first
+          data_nicr[key[2:]].sort()
+          data_nicr[key[2:]].reverse()
+        else:
+          print "To many chanels for %s, skipping." % key
+      else:
+        print "Not Found"
+    # calculate flipping-ration from nicr data
+    if use_numpy:
+      def calc_flipping_ratio(point):
+        pp=item[1][1].data
+        point[1]/=array(pp[1].values)
+        point[2]*=0.
+        return point
+    else:
+      def calc_flipping_ratio(point):
+        index=item[1][1].data[0].values.index(point[0])
+        pp=item[1][1].get_data(index)
+        point[1]-=pp[1]
+        point[2]=0.
+        return point      
+    data_flippingratio={}
+    for key, item in data_nicr.items():
+      if len(item)==1:
+        print "Lonely channel found, skipping"
+        continue
+      else:
+        flipping_ratio=item[0][1]
+        flipping_ratio.process_function(calc_flipping_ratio)
+        data_flippingratio[key]=(flipping_ratio, item[0][2], item[1][2])
+    return data_flippingratio
+    
   
   #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
   def change_omega_offset(self, action, window):
