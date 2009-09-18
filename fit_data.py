@@ -365,8 +365,7 @@ class FitSQUIDSignal(FitFunction):
     Fit a gaussian function.
   '''
   prefactor=numpy.sqrt(2.*numpy.pi)
-  squid_coil_distance=1.5
-  squid_factor=0.00056783755
+  from config.squid import squid_coil_distance, squid_factor
   
   # define class variables.
   name="SQUID RAW-data"
@@ -409,20 +408,21 @@ class FitSession:
                        FitSQUIDSignal.name: FitSQUIDSignal
                        }
   
-  def __init__(self,  dataset, file_actions):
+  def __init__(self,  dataset, file_actions=None):
     '''
       Constructor creating pointer to the dataset.
     '''
     self.functions=[] # a list of sequences (FitFunction, fit, plot) to be used
     self.data=dataset
     self.show_covariance=False
-    # connect the functions to the file_actions object
-    file_actions.actions['add_function']=self.add_function
-    file_actions.actions['sum_up_functions']=self.sum
-    file_actions.actions['set_function_parameters']=self.set_function_parameters
-    file_actions.actions['fit_functions']=self.fit
-    file_actions.actions['simmulate_functions']=self.simulate
-    self.file_actions=file_actions
+    if file_actions:
+      # connect the functions to the file_actions object
+      file_actions.actions['add_function']=self.add_function
+      file_actions.actions['sum_up_functions']=self.sum
+      file_actions.actions['set_function_parameters']=self.set_function_parameters
+      file_actions.actions['fit_functions']=self.fit
+      file_actions.actions['simmulate_functions']=self.simulate
+      self.file_actions=file_actions
 
 
   def add_function(self, function_name):

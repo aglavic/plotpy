@@ -94,6 +94,10 @@ class RedirectOutput:
       self.content.remove('\n')
     if (len(string.splitlines())>0) and string.splitlines()[-1]!='':
       self.plotting_session.statusbar.push(0, string.splitlines()[-1])
+    if (len(self.content)>0):
+      self.plotting_session.statusbar.push(0, self.content[-1])
+    while gtk.events_pending():
+      gtk.main_iteration(False)
   
   def flush(self):
     '''
@@ -101,7 +105,8 @@ class RedirectOutput:
     '''
     if (len(self.content)>0):
       self.plotting_session.statusbar.push(0, self.content[-1])
-      gtk.main_iteration(False)
+      while gtk.events_pending():
+        gtk.main_iteration(False)
 
 
 

@@ -31,7 +31,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a3"
+__version__ = "0.6a4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -346,6 +346,8 @@ Data columns and unit transformations are defined in config.squid.py.
     '''
       do or undo dia-/paramagnetic correction
     '''
+    self.calc_moment_from_rawdata()
+    return False
     name=action.get_name()
     for dataset in self.active_file_data:
       units=dataset.units()
@@ -378,3 +380,51 @@ Data columns and unit transformations are defined in config.squid.py.
         self.para[0]*=1e3
     window.replot()
   
+  def calc_moment_from_rawdata(self, start_point=None, end_point=None):
+    '''
+      Try to fit the SQUID signal to retrieve the magnetic moment of a sample,
+      in the future this will be extendet to use different sample shape functions.
+    '''
+    # check if this is a squid raw data file
+    dims=self.active_file_data[0].dimensions()
+    units=self.active_file_data[0].units()
+    if not 'V_{SC-long}' in dims or\
+        not ('H' in dims or '\xce\xbc_0\xc2\xb7H' in dims) or\
+        not 'T' in dims or\
+        not self.ALLOW_FIT:
+      return False
+    from fit_data import FitSession
+    try:
+      field_index=dims.index('\xce\xbc_0\xc2\xb7H')
+    except ValueError:
+      field_index=dims.index('H')
+    field_unit=units[field_index]
+    temp_index=dims.index('T')
+    temp_unit=units[temp_index]
+    v_index=dims.index('V_{SC-long}')
+    from measurement_data_structure import MeasurementData      
+    # select a data subset
+    raw_data=self.active_file_data[start_point:end_point]
+    # create object for extracted data
+    extracted_data=MeasurementData([['Point', 'No.'], 
+                                    [dims[field_index], field_unit], 
+                                    ['T', temp_unit], 
+                                    ['M_{fit}', 'emu'], 
+                                    ['dM_{fit}', 'emu'], 
+                                    ['Sample Pos._{fit}', 'cm'], 
+                                    ['sigma_{fit}', 'cm'], 
+                                    ],[],2,3,4)
+    extracted_data.short_info='Magnetization data extracted via fitting'
+    for i, data in enumerate(raw_data):
+      if i%50 == 0:
+        print "Extracting datapoint No: %i" %i
+      data.ydata=v_index
+      data.dydata=v_index
+      fit_object=FitSession(data)
+      data.fit_object=fit_object
+      fit_object.add_function('SQUID RAW-data')
+      fit_object.fit()
+      fit_object.simulate()
+      fit_data=fit_object.functions[0][0].parameters
+      extracted_data.append((i, data.get_data(0)[field_index], data.get_data(0)[temp_index], fit_data[0], fit_data[0], fit_data[1], fit_data[2]))
+      self.active_file_data.append(extracted_data)
