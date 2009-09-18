@@ -46,6 +46,59 @@ __status__ = "Development"
 if hex(sys.hexversion)<'0x2050000':
   exit=sys.exit
 
+# functions for evaluation of polarized neutron measurements
+def correct_flipping_ration(flipping_ratio, pp_data, pm_data):
+  '''
+    Calculate the selfconsistent solution of the spin-flip/non spin-flip
+    scattering with respect to a measured flipping ratio for given measured data.
+  '''
+  # as the function can be used for numbers and arrays
+  # use deepcopy to create new values
+  from copy import deepcopy as cp
+  # define constants
+  scattering_propability=0.1
+  ITERATIONS=100
+  MULTIPLE_SCATTERING_DEAPTH=10
+  
+  # normalize the data
+  p_norm=pp_data/(pp_data+pm_data)
+  m_norm=pm_data/(pm_data+pm_data)
+  
+  # use the data as starting value
+  nsf_scattering=cp(p_norm)
+  sf_scattering=1-nsf_scattering
+  
+  # calculate polarization from flipping-ratio
+  polarization=flipping_ratio/(1+flipping_ratio)
+  
+  # n-times multiple scattering is represented by a list of length n
+  p_multiple_scattering=[polarization]
+  m_multiple_scattering=[1.-polarization]
+  
+  for iter in range(ITERATIONS):
+    # calculate the multiple scattered part part of the intensity
+    for i in range(MULTIPLE_SCATTERING_DEAPTH):
+      p_multiple_scattering.append(
+                                   p_multiple_scattering[i]*nsf_scattering +\
+                                   m_multiple_scattering[i]*sf_scattering
+                                   )
+      m_multiple_scattering.append(
+                                   m_multiple_scattering[i]*nsf_scattering +\
+                                   p_multiple_scattering[i]*sf_scattering
+                                   )
+    # calculate the intensity measured for the complete scattering
+    up_intensity=p_multiple_scattering[1] * (1.-scattering_propability)
+    down_intensity=m_multiple_scattering[1] * (1.-scattering_propability)
+    for i in range(1, MULTIPLE_SCATTERING_DEAPTH):
+      up_intensity+=p_multiple_scattering[i+1] * (1.-scattering_propability) * (scattering_propability**i)
+      down_intensity+=m_multiple_scattering[i+1] * (1.-scattering_propability) * (scattering_propability**i)
+    
+    nsf_scattering+=p_norm-up_intensity
+    sf_scattering=1.-nsf_scattering
+    
+    p_multiple_scattering=[polarization]
+    m_multiple_scattering=[1.-polarization]
+  return nsf_scattering
 
 class DNSSession(GenericSession):
   '''
@@ -580,15 +633,9 @@ class DNSSession(GenericSession):
       ['q_y','\303\205^{-1}',1/d_star_y,0,self.D_NAME_Y,'r.l.u.'],\
                           ]
   
-  def correct_flipping_ratio(self):
+  def read_nicr_files(self):
     '''
-      This function uses NiCr standard measurements to correct for the finite
-      flipping-ration by searching a selfconsistent solution for the measured
-      data.
-      First the NiCr measurements get imported, then it searches for a NiCr file
-      with the right fields for the measured data.
-      Second the flipping ratio of the NiCr file without background is calculated.
-      At last the selfconsistent solution is calculated.
+      Read all NiCr files in the chosen directory and correct the backgound.
     '''
     directory=config.dns.SETUP_DIRECTORY
     file_list=sorted(os.listdir(directory))
@@ -639,6 +686,20 @@ class DNSSession(GenericSession):
         background_data=bg_data[key]
         data.process_function(subtract_background)
         bg_corrected_data[key]=data
+    self.bg_corrected_nicr_data=bg_corrected_data
+  
+  def correct_flipping_ratio(self):
+    '''
+      This function uses NiCr standard measurements to correct for the finite
+      flipping-ration by searching a selfconsistent solution for the measured
+      data.
+      First the NiCr measurements get imported, then it searches for a NiCr file
+      with the right fields for the measured data.
+      Second the flipping ratio of the NiCr file without background is calculated.
+      At last the selfconsistent solution is calculated.
+    '''
+    self.read_nicr_files()
+    bg_corrected_data=self.bg_corrected_nicr_data
     # search for appropiate standard measurements
     data_nicr={}
     for dataset in self.active_file_data:
@@ -685,8 +746,11 @@ class DNSSession(GenericSession):
         flipping_ratio=item[0][1]
         flipping_ratio.process_function(calc_flipping_ratio)
         data_flippingratio[key]=(flipping_ratio, item[0][2], item[1][2])
+    for item in data_flippingratio.values():
+      pass
     return data_flippingratio
-    
+  
+  
   
   #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
   def change_omega_offset(self, action, window):
