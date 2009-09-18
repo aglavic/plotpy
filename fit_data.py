@@ -365,13 +365,14 @@ class FitSQUIDSignal(FitFunction):
     Fit a gaussian function.
   '''
   prefactor=numpy.sqrt(2.*numpy.pi)
-  squid_coil_distance=1.
+  squid_coil_distance=1.5
+  squid_factor=0.00056783755
   
   # define class variables.
   name="SQUID RAW-data"
   parameters=[1., 3., 1., 0., 0.]
   parameter_names=['Moment', 'x_0', 'sigma', 'off', 'incr']
-  fit_function=lambda self, p, x: p[4] * numpy.array(x) - p[0]/(p[2]*self.prefactor) * ( \
+  fit_function=lambda self, p, x: p[4] * numpy.array(x) - p[0]/(p[2]*self.squid_factor*self.prefactor) * ( \
                                           numpy.exp(-0.5*((numpy.array(x) - p[1] + self.squid_coil_distance)/p[2])**2)\
                                           + numpy.exp(-0.5*((numpy.array(x) - p[1] - self.squid_coil_distance)/p[2])**2)\
                                           - 2.* numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2) \

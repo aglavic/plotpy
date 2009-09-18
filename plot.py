@@ -31,8 +31,6 @@
 import sys
 
 # own modules
-# GUI module
-import plotting_gui
 # specific measurement classes
 # parent class
 from sessions.generic import GenericSession
@@ -43,7 +41,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a3"
+__version__ = "0.6b"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -152,6 +150,8 @@ if __name__ == '__main__':    #code to execute if called from command-line
       active_session=GenericSession(sys.argv[1:])
 
   if active_session.use_gui: # start a new gui session
+    # GUI module
+    import plotting_gui
     import gtk
     plotting_session=plotting_gui.ApplicationMainWindow(active_session)
     if not active_session.DEBUG:
