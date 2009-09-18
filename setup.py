@@ -10,7 +10,7 @@ from distutils.core import setup
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __license__ = "None"
-__version__ = "0.6b"
+__version__ = "0.6a4"
 __email__ = "a.glavic@fz-juelich.de"
 
 # if python version < 2.5 set the sys.exit function as exit

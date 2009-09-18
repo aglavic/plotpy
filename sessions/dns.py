@@ -36,7 +36,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Werner Schweika"]
 __license__ = "None"
-__version__ = "0.6a3"
+__version__ = "0.6a4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -882,7 +882,10 @@ class DNSSession(GenericSession):
       Calculate a combination of polarization directions as
       set in the combine_list.
     '''
-    result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
+    if combine_list[0][1] == '+':
+      result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
+    else:
+      result=-1.*combine_list[0][2]*polarization_list[combine_list[0][0]][0]
     for object, sign, multiplier in combine_list[1:]:
       if sign == '+':
         result=result+multiplier*polarization_list[object][0]
