@@ -47,22 +47,34 @@ if hex(sys.hexversion)<'0x2050000':
   exit=sys.exit
 
 # functions for evaluation of polarized neutron measurements
-def correct_flipping_ration(flipping_ratio, pp_data, pm_data):
+def correct_flipping_ratio(flipping_ratio, pp_data, pm_data, 
+                           scattering_propability=0.1, convergence_criteria=None):
   '''
     Calculate the selfconsistent solution of the spin-flip/non spin-flip
     scattering with respect to a measured flipping ratio for given measured data.
+    As most variables are scaled to sum up as 1. be sure to use floating point numbers
+    or arrays of floating point numers.
   '''
   # as the function can be used for numbers and arrays
   # use deepcopy to create new values
   from copy import deepcopy as cp
   # define constants
-  scattering_propability=0.1
   ITERATIONS=100
   MULTIPLE_SCATTERING_DEAPTH=10
+  # just calculate the power of scattering propability times transmission once
+  POW_OF_SCAT_PROP=[(1.-scattering_propability) * scattering_propability**i \
+                    for i in range(MULTIPLE_SCATTERING_DEAPTH)]  
+  # function for the test of the convergence
+  if convergence_criteria is None:
+    def test(difference):
+      return difference<1e-14
+  else:
+    test=convergence_criteria
   
   # normalize the data
-  p_norm=pp_data/(pp_data+pm_data)
-  m_norm=pm_data/(pm_data+pm_data)
+  total=(pp_data+pm_data)
+  p_norm=pp_data/total
+  m_norm=pm_data/total
   
   # use the data as starting value
   nsf_scattering=cp(p_norm)
@@ -87,18 +99,26 @@ def correct_flipping_ration(flipping_ratio, pp_data, pm_data):
                                    p_multiple_scattering[i]*sf_scattering
                                    )
     # calculate the intensity measured for the complete scattering
-    up_intensity=p_multiple_scattering[1] * (1.-scattering_propability)
-    down_intensity=m_multiple_scattering[1] * (1.-scattering_propability)
+    up_intensity=p_multiple_scattering[1] * POW_OF_SCAT_PROP[0]
+    down_intensity=m_multiple_scattering[1] * POW_OF_SCAT_PROP[0]
     for i in range(1, MULTIPLE_SCATTERING_DEAPTH):
-      up_intensity+=p_multiple_scattering[i+1] * (1.-scattering_propability) * (scattering_propability**i)
-      down_intensity+=m_multiple_scattering[i+1] * (1.-scattering_propability) * (scattering_propability**i)
+      up_intensity+=p_multiple_scattering[i+1] * POW_OF_SCAT_PROP[i]
+      down_intensity+=m_multiple_scattering[i+1] * POW_OF_SCAT_PROP[i]
     
-    nsf_scattering+=p_norm-up_intensity
+    # calculate difference of measured and simulated scattering
+    diff=p_norm-up_intensity    
+    nsf_scattering+=diff
     sf_scattering=1.-nsf_scattering
     
+    # test if the solution converged
+    if test(diff):
+      # scale the output by total measured intensity
+      return nsf_scattering*total, sf_scattering*total, True, nsf_scattering, sf_scattering
     p_multiple_scattering=[polarization]
     m_multiple_scattering=[1.-polarization]
-  return nsf_scattering
+  # scale the output by total measured intensity
+  return nsf_scattering*total, sf_scattering*total, True, nsf_scattering, sf_scattering
+
 
 class DNSSession(GenericSession):
   '''
@@ -111,9 +131,13 @@ class DNSSession(GenericSession):
 \t-inc [inc]\tThe default increment between files of the same polarization
 \t-split [s]\tSplit the files into measurements every s files
 \t-ooff [ooff]\tOffset of omega angle for the sample to calculate the right q_x,q_y
+
+\t-powder\t\tEvaluate as powder data
 \t-bg [bg]\tFile to be substracted as background
+\t-fr [scp]\t\tTry to make automatic flipping-ratio correction with the scatteringpropability scp
 \t-vana [file]\tUse different Vanadium file for evaluation
 \t-sample [name]\tSet the name of your sample to be used in every plot(can be changed in GUI)
+
 \t-files [prefix] [ooff] [inc] [from] [to] [postfix]
 \t\t\tExplicidly give the file name prefix, omega offset, increment, numbers and postfix
 \t\t\tfor the files to be used. Can be given multiple times for diefferent prefixes
@@ -130,13 +154,15 @@ class DNSSession(GenericSession):
 
   TRANSFORMATIONS=[\
   ]  
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'bg', 'vana', 'files', 'sample', 'time', 'flipper', 'monitor', 'powder', 'xyz', 'split', 'dx', 'dy', 'nx', 'ny'] 
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'bg', 'fr', 'vana', 'files', 'sample', 'time', 'flipper', 'monitor', 'powder', 'xyz', 'split', 'dx', 'dy', 'nx', 'ny'] 
   file_options={'default': ['', 0, 1, [0, -1], ''],  # (prefix, omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[] # A list of all filenames to be imported
   mds_create=False # DNS data is not stored as .mds files as the import is fast
   VANADIUM_FILE=config.dns.VANADIUM_FILE # File name of vanadium file to be used for the correction
   BACKGROUND_FILE=None # File name of a background file to substract
+  CORRECT_FLIPPING=False # try automatic flipping-rato correction
+  SCATTERING_PROPABILITY=0.1 # scattering_propability used for automatic flipping-ratio correction
   SHORT_INFO=[('temperature', lambda temp: 'at T='+str(temp), 'K')] # For the plots this is used to creat the short info
   SAMPLE_NAME='' # Name of the Sample for th data objects
   POWDER_DATA=False # If powder data is to be evaluated this is True.
@@ -171,6 +197,7 @@ class DNSSession(GenericSession):
       exit()
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     self.os_path_stuff() # create temp folder according to OS
+    self.read_nicr_files() # read NiCr files for flipping-ratio correction
     self.try_import_externals()
     names.sort()
     self.set_transformations()
@@ -212,6 +239,10 @@ class DNSSession(GenericSession):
           last_argument_option=[False,'']
         elif last_argument_option[1]=='bg':
           self.BACKGROUND_FILE=argument
+          last_argument_option=[False,'']
+        elif last_argument_option[1]=='fr':
+          self.CORRECT_FLIPPING=True
+          self.SCATTERING_PROPABILITY=float(argument)
           last_argument_option=[False,'']
         elif last_argument_option[1]=='dx':
           self.D_SPACING_X=float(argument)
@@ -445,12 +476,16 @@ class DNSSession(GenericSession):
       omega=scan.dns_info['omega']
       map(self.file_data[file][i%increment].append, map(append_to_map, data))
     # perform calculations
-    for dnsmap in self.file_data[file]:
+    self.active_file_data=self.file_data[file]
+    if self.CORRECT_FLIPPING:
+      # assign flipping chanels to nicr-data
+      self.correct_flipping_ratio(self.SCATTERING_PROPABILITY)
+    for dnsmap in self.active_file_data:
       sys.stdout.write("\tMap %s created, perfoming datatreatment: " % dnsmap.number)
       sys.stdout.flush()
-      if not self.BACKGROUND_FILE is None:
+      if self.BACKGROUND_FILE:
         dnsmap.background_data=read_data.dns.read_data(self.BACKGROUND_FILE)
-      if not self.VANADIUM_FILE is None:
+      if self.VANADIUM_FILE:
         vana_data=read_data.dns.read_data(self.VANADIUM_FILE, print_comments=False)
         if vana_data!='NULL':
           dnsmap.vanadium_data=vana_data
@@ -570,6 +605,7 @@ class DNSSession(GenericSession):
         <menuitem action='SetOmegaOffset' />
         <menuitem action='SetIncrement' />
         <menuitem action='SetDSpacing' />
+        <menuitem action='CorrectFlipping' />
         <menuitem action='SeperateScattering' />
         <menuitem action='SeperatePreset' />
         <separator name='dns1' />
@@ -594,6 +630,10 @@ class DNSSession(GenericSession):
                 "Change Increment", None,                    # label, accelerator
                 "Change Increment between files with same Polarization",                                   # tooltip
                 self.change_increment ),
+            ( "CorrectFlipping", None,                             # name, stock id
+                "Correct for flipping-ratio", None,                    # label, accelerator
+                "Correct scattering for the finite flipping-ratio.",                                   # tooltip
+                self.correct_flipping_dialog ),
             ( "SeperateScattering", None,                             # name, stock id
                 "Seperate Scattering", None,                    # label, accelerator
                 "Calculate seperated scattering parts from polarization directions.",                                   # tooltip
@@ -688,17 +728,16 @@ class DNSSession(GenericSession):
         bg_corrected_data[key]=data
     self.bg_corrected_nicr_data=bg_corrected_data
   
-  def correct_flipping_ratio(self):
+  def correct_flipping_ratio(self, scattering_propability=0.1):
     '''
       This function uses NiCr standard measurements to correct for the finite
-      flipping-ration by searching a selfconsistent solution for the measured
+      flipping-ratio by searching a selfconsistent solution for the measured
       data.
       First the NiCr measurements get imported, then it searches for a NiCr file
       with the right fields for the measured data.
       Second the flipping ratio of the NiCr file without background is calculated.
       At last the selfconsistent solution is calculated.
     '''
-    self.read_nicr_files()
     bg_corrected_data=self.bg_corrected_nicr_data
     # search for appropiate standard measurements
     data_nicr={}
@@ -711,7 +750,6 @@ class DNSSession(GenericSession):
       c_z=round(float(dataset.dns_info['C_z']), 2)
       key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
       if key in bg_corrected_data:
-        print "Found"
         if not key[2:] in data_nicr:
           data_nicr[key[2:]]=[(key[0:2]==(0., 0.), bg_corrected_data[key], dataset)]
         elif len(data_nicr[key[2:]])==1:
@@ -747,12 +785,47 @@ class DNSSession(GenericSession):
         flipping_ratio.process_function(calc_flipping_ratio)
         data_flippingratio[key]=(flipping_ratio, item[0][2], item[1][2])
     for item in data_flippingratio.values():
-      pass
+      # assign nicr to the chanels
+      item[1].flipping_correction=(True, item[0], item[2])
+      item[2].flipping_correction=(False, item[0], item[1])
+      nicr_x=item[0].data[0].values
+      nicr_y=item[0].data[1].values
+      pp_data_x=item[1].data[4].values
+      pp_data=item[1].data[5].values
+      pm_data=item[2].data[5].values
+      nicr_data=[nicr_y[nicr_x.index(detector)] for detector in pp_data_x]
+      if use_numpy:
+        nicr_data=array(nicr_data)
+        pp_data=array(pp_data)
+        pm_data=array(pm_data)
+        def test(difference):
+          return all(difference<1e-14)
+        p_data, m_data, converged, p_ratio, m_ratio = correct_flipping_ratio(nicr_data, pp_data, pm_data, 
+                                                                             scattering_propability, test)
+      else:
+        p_data=[]
+        m_data=[]
+        converged=True
+        for i in range(len(pp_data)):
+          p, m, conv , pr, mr= correct_flipping_ratio(nicr_data[i], pp_data[i], pm_data[i], scattering_propability)
+          p_data.append(p)
+          m_data.append(m)
+          converged=converged and conv
+      print "Convergence stat: %s" % converged
+      item[1].data[5].values=list(p_data)
+      item[2].data[5].values=list(m_data)
+      item[1].data[7].values=list(p_ratio)
+      item[2].data[7].values=list(m_ratio)            
     return data_flippingratio
   
   
   
   #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
+  def correct_flipping_dialog(self, action, window):
+    scattering_propability=0.1
+    self.correct_flipping_ratio(scattering_propability)
+    window.replot()
+  
   def change_omega_offset(self, action, window):
     '''
       A dialog to change the omega offset of the active map.
@@ -1093,6 +1166,9 @@ class DNSMeasurementData(MeasurementData):
   vanadium_data=None
   vanadium_correct_by_detector=True
   background_data=None
+  # if a flipping correction is made this is a list of
+  # [SF-Chanel?, nicr-data, other_DNSMeasurement]
+  flipping_correction=None 
   
   def calculate_wavevectors(self):
     '''
@@ -1144,6 +1220,11 @@ class DNSMeasurementData(MeasurementData):
       changed=True
     else:
       self.process_function(self.copy_intensities)
+    if self.flipping_correction:
+      sys.stdout.write("flipping-ratio correction, ")
+      sys.stdout.flush()
+      
+      changed=True
     if not self.vanadium_data is None:
       sys.stdout.write("vanadium correction, ")
       sys.stdout.flush()
