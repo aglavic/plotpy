@@ -21,7 +21,8 @@ DETECTOR_ANGULAR_INCREMENT=5.
 VANADIUM_FILE=None
 SETUP_DIRECTORY='/home/glavic/Daten/DNS/setup/rc21'
 NICR_FILE_WILDCARD=('dn', 'nicr.d_dat') # nicr files start, end string
-NICR_BACKGROUND_WILDCARD=('dn', 'leer.d_dat') # background file start, end string
+BACKGROUND_WILDCARD=('dn', 'leer.d_dat') # background file start, end string
+VANADIUM_WILDCARD=('dn', 'vana.d_dat') # background file start, end string
 
 GET_INFO= (\
   # get detector bank position
@@ -61,5 +62,7 @@ SCALE_BY=('time', 's') #('monitor','monitor') # scale data by measureing 'time' 
 # Clearly this does only work if all polarizations have the same number 
 # of measured points and if the direction of measureing is right.
 SEPERATION_PRESETS={
-                    'test_preset' : [(0, '+', 1.), (1, '-', 0.0333)], 
+                    'para' : [(0, '+', 2.), (2, '+', 2.), (4, '-', 4.)],
+                    'spin incoherent' : [(4, '+', 4.5), (0, '-', 1.5), (2, '-', 1.5)],
+                    'nuclear coherent' : [(5, '+', 1.), (6, '-', 0.5), (7, '-', 0.3333333)],
                     }

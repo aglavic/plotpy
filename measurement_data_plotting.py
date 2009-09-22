@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a3"
+__version__ = "0.6a4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -286,9 +286,13 @@ def create_plot_script(session,
   gp=gnuplot_preferences # define global gnuplot_preferences modul as local gp 
   sample_name=datasets[0].sample_name
   file_numbers=[]
+  inserted=0
   for j, dataset in enumerate(datasets):
     for i, attachedset in enumerate(dataset.plot_together):
       file_numbers.append(str(j)+'-'+str(i))
+      if i>0:
+        names.insert(j+inserted+1, attachedset.short_info)
+        inserted+=1
   if output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
@@ -371,7 +375,7 @@ def create_plot_script(session,
                                    title,
                                    names,
                                    sample_name,
-                                   (int(number.split('-')[0]), int(number.split('-')[0]), file_numbers.index(number)),
+                                   (i, j, file_numbers.index(number)),
                                    postscript_export,
                                    additional_info)
   return gnuplot_file_text

@@ -133,8 +133,10 @@ class DNSSession(GenericSession):
 \t-ooff [ooff]\tOffset of omega angle for the sample to calculate the right q_x,q_y
 
 \t-powder\t\tEvaluate as powder data
+\t-b\t\tSelect background file from system directory (normally from this reactor cycle)
 \t-bg [bg]\tFile to be substracted as background
 \t-fr [scp]\t\tTry to make automatic flipping-ratio correction with the scatteringpropability scp
+\t-v\t\tSelect vanadium file from system directory (normally from this reactor cycle)
 \t-vana [file]\tUse different Vanadium file for evaluation
 \t-sample [name]\tSet the name of your sample to be used in every plot(can be changed in GUI)
 
@@ -154,13 +156,18 @@ class DNSSession(GenericSession):
 
   TRANSFORMATIONS=[\
   ]  
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'bg', 'fr', 'vana', 'files', 'sample', 'time', 'flipper', 'monitor', 'powder', 'xyz', 'split', 'dx', 'dy', 'nx', 'ny'] 
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'b', 'bg', 'fr', 'v', 'vana', 'files', 'sample', 'time', 'flipper', 'monitor', 'powder', 'xyz', 'split', 'dx', 'dy', 'nx', 'ny'] 
   file_options={'default': ['', 0, 1, [0, -1], ''],  # (prefix, omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[] # A list of all filenames to be imported
   mds_create=False # DNS data is not stored as .mds files as the import is fast
   VANADIUM_FILE=config.dns.VANADIUM_FILE # File name of vanadium file to be used for the correction
   BACKGROUND_FILE=None # File name of a background file to substract
+  bg_corrected_nicr_data={} # dictionary of background corrected NiCr data
+  system_bg={} # dictionary of background data from the system directory
+  system_vana={} # dictionary of vanadium data from the system directory
+  AUTO_BACKGROUND=False # try to select a background data from system_bg
+  AUTO_VANADIUM=False # try to select a background data from system_bg
   CORRECT_FLIPPING=False # try automatic flipping-rato correction
   SCATTERING_PROPABILITY=0.1 # scattering_propability used for automatic flipping-ratio correction
   SHORT_INFO=[('temperature', lambda temp: 'at T='+str(temp), 'K')] # For the plots this is used to creat the short info
@@ -174,6 +181,7 @@ class DNSSession(GenericSession):
   D_NAME_X='d_x'
   D_NAME_Y='d_y'
   TRANSFORM_Q=False
+  XYZ_POL=False
   #------------------ local variables -----------------
 
   
@@ -335,6 +343,10 @@ class DNSSession(GenericSession):
         else:
           found=False
         #--------------- explicit file setting ---------------------------
+      elif argument=='-b':
+        self.AUTO_BACKGROUND=True
+      elif argument=='-v':
+        self.AUTO_VANADIUM=True
       elif argument=='-time':
         self.SHORT_INFO=[('time', lambda time: 'with t='+str(time), 's')]
       elif argument=='-powder':
@@ -349,16 +361,15 @@ class DNSSession(GenericSession):
             return "non spin-flip"
         self.SHORT_INFO=[('flipper', flipper_on, '')]
       elif argument=='-xyz':
+        self.XYZ_POL=True
         self.file_options['default'][2]=6
         def flipper_on(current):
           if current > 0.1:
-            return "flipper on"
+            return "spin-flip"
           else:
-            return "flipper off"
-        self.SHORT_INFO=[('flipper', flipper_on, ''), 
-                         ('C_a', lambda I: 'C_a='+str(I), 'A'), 
-                         ('C_b', lambda I: 'C_b='+str(I), 'A'), 
-                         ('C_c', lambda I: 'C_c='+str(I), 'A')]
+            return "non spin-flip"
+        self.SHORT_INFO=[('pol_channel', lambda P: str(P)+'-', ''), 
+                          ('flipper', flipper_on, '')]
       else:
         found=False
     return (found, last_argument_option)
@@ -452,6 +463,9 @@ class DNSSession(GenericSession):
     # go through every raw data object.
     for i, scan in enumerate(scans):
       if i<increment:
+        if self.XYZ_POL:
+          channels=['x', 'x', 'y', 'y', 'z', 'z']
+          scan.dns_info['pol_channel']=channels[i]
         # Create the objects for every polarization chanel
         columns=[['Filenumber', ''], ['Omega', '\302\260'], ['OmegaRAW', '\302\260'], 
                  ['2Theta', '\302\260'], ['Detector', '']]+\
@@ -483,6 +497,10 @@ class DNSSession(GenericSession):
     for dnsmap in self.active_file_data:
       sys.stdout.write("\tMap %s created, perfoming datatreatment: " % dnsmap.number)
       sys.stdout.flush()
+      if self.AUTO_BACKGROUND:
+        self.find_background_data(dnsmap)
+      if self.AUTO_VANADIUM:
+        self.find_vanadium_data(dnsmap)
       if self.BACKGROUND_FILE:
         dnsmap.background_data=read_data.dns.read_data(self.BACKGROUND_FILE)
       if self.VANADIUM_FILE:
@@ -515,6 +533,58 @@ class DNSSession(GenericSession):
         dnsmap.ydata=dnsmap.zdata
         dnsmap.zdata=-1
         dnsmap.xdata=3
+    # Seperate scattering for powder data x,y,z polarization analysis
+    if self.XYZ_POL and self.POWDER_DATA:
+      af=self.active_file_data
+      # para= 2 * (SF_x + SF_y - 2 * SF_z)
+      para=2.*(af[0]+af[2]-2.*af[4])
+      para.short_info='para'
+      para.number='0'
+      # sp_inc= 1.5 * (3 * SF_z - SF_x - SF_y)
+      sp_inc=1.5*(3.*af[4]-af[0]-af[2])
+      sp_inc.short_info='sp inc'
+      sp_inc.number='0'
+      # nu_coh= NSF_z - 0.5 * para - 1/3 * sp_inc
+      nu_coh=af[5]-0.5*para-1./3.*sp_inc
+      nu_coh.short_info='nu coh'
+      nu_coh.number='0'
+      self.active_file_data.insert(0, sp_inc)
+      self.active_file_data.insert(0, para)
+      self.active_file_data.insert(0, nu_coh)
+
+  def find_background_data(self, dataset):
+    '''
+      Try to find a background data data with the right currents for this dataset.
+    '''
+    # get the currents
+    flip=round(float(dataset.dns_info['flipper']), 2)
+    flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+    c_a=round(float(dataset.dns_info['C_a']), 2)
+    c_b=round(float(dataset.dns_info['C_b']), 2)
+    c_c=round(float(dataset.dns_info['C_c']), 2)
+    c_z=round(float(dataset.dns_info['C_z']), 2)
+    # create a key for the currents and search for it in the
+    # background dictionary
+    key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
+    if key in self.system_bg: 
+      dataset.background_data=self.system_bg[key]
+
+  def find_vanadium_data(self, dataset):
+    '''
+      Try to find a background data data with the right currents for this dataset.
+    '''
+    # get the currents
+    flip=round(float(dataset.dns_info['flipper']), 2)
+    flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+    c_a=round(float(dataset.dns_info['C_a']), 2)
+    c_b=round(float(dataset.dns_info['C_b']), 2)
+    c_c=round(float(dataset.dns_info['C_c']), 2)
+    c_z=round(float(dataset.dns_info['C_z']), 2)
+    # create a key for the currents and search for it in the
+    # background dictionary
+    key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
+    if key in self.system_vana: 
+      dataset.vanadium_data=self.system_bg[key]
 
   def find_prefixes(self, names):
     '''
@@ -679,15 +749,19 @@ class DNSSession(GenericSession):
     '''
     directory=config.dns.SETUP_DIRECTORY
     file_list=sorted(os.listdir(directory))
-    nicr_files=filter(lambda name: name.startswith(config.dns.NICR_FILE_WILDCARD[0]), 
+    nicr_files=sorted(filter(lambda name: name.startswith(config.dns.NICR_FILE_WILDCARD[0]), 
                       filter(lambda name: name.endswith(config.dns.NICR_FILE_WILDCARD[1]), 
-                             file_list))
-    bg_files=filter(lambda name: name.startswith(config.dns.NICR_BACKGROUND_WILDCARD[0]), 
-                      filter(lambda name: name.endswith(config.dns.NICR_BACKGROUND_WILDCARD[1]), 
-                             file_list))
+                             file_list)))
+    bg_files=sorted(filter(lambda name: name.startswith(config.dns.BACKGROUND_WILDCARD[0]), 
+                      filter(lambda name: name.endswith(config.dns.BACKGROUND_WILDCARD[1]), 
+                             file_list)))
+    vana_files=sorted(filter(lambda name: name.startswith(config.dns.VANADIUM_WILDCARD[0]), 
+                      filter(lambda name: name.endswith(config.dns.VANADIUM_WILDCARD[1]), 
+                             file_list)))
     # dictionaries with the helmholz parameters are used to store the data
     nicr_data={}
     bg_data={}
+    vana_data={}
     for file_name in nicr_files:
       dataset=read_data.dns.read_data(os.path.join(directory, file_name))
       flip=round(float(dataset.dns_info['flipper']), 2)
@@ -706,6 +780,17 @@ class DNSSession(GenericSession):
       c_c=round(float(dataset.dns_info['C_c']), 2)
       c_z=round(float(dataset.dns_info['C_z']), 2)
       bg_data[(flip, flip_cmp, c_a, c_b, c_c, c_z)]=dataset
+    self.system_bg=bg_data
+    for file_name in vana_files:
+      dataset=read_data.dns.read_data(os.path.join(directory, file_name))
+      flip=round(float(dataset.dns_info['flipper']), 2)
+      flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+      c_a=round(float(dataset.dns_info['C_a']), 2)
+      c_b=round(float(dataset.dns_info['C_b']), 2)
+      c_c=round(float(dataset.dns_info['C_c']), 2)
+      c_z=round(float(dataset.dns_info['C_z']), 2)
+      vana_data[(flip, flip_cmp, c_a, c_b, c_c, c_z)]=dataset
+    self.system_vana=vana_data
     # correct the background
     bg_corrected_data={}
     if use_numpy:
@@ -730,30 +815,30 @@ class DNSSession(GenericSession):
   
   def correct_flipping_ratio(self, scattering_propability=0.1):
     '''
-      This function uses NiCr standard measurements to correct for the finite
-      flipping-ratio by searching a selfconsistent solution for the measured
-      data.
-      First the NiCr measurements get imported, then it searches for a NiCr file
-      with the right fields for the measured data.
-      Second the flipping ratio of the NiCr file without background is calculated.
-      At last the selfconsistent solution is calculated.
+      This function assigns the right NiCr measurements to the data sequences.
+      The flipper and Helmolz currents are used to identify the right data.process_function
+      
+      @return If files could be found with the right settings.
     '''
-    bg_corrected_data=self.bg_corrected_nicr_data
     # search for appropiate standard measurements
     data_nicr={}
     for dataset in self.active_file_data:
+      # get the currents
       flip=round(float(dataset.dns_info['flipper']), 2)
       flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
       c_a=round(float(dataset.dns_info['C_a']), 2)
       c_b=round(float(dataset.dns_info['C_b']), 2)
       c_c=round(float(dataset.dns_info['C_c']), 2)
       c_z=round(float(dataset.dns_info['C_z']), 2)
+      # create a key for the currents and search for it in the
+      # background corrected nicr data dictionary
       key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
-      if key in bg_corrected_data:
+      if key in self.bg_corrected_nicr_data:
+        # there have to be two flipper channels
         if not key[2:] in data_nicr:
-          data_nicr[key[2:]]=[(key[0:2]==(0., 0.), bg_corrected_data[key], dataset)]
+          data_nicr[key[2:]]=[(key[0:2]==(0., 0.), self.bg_corrected_nicr_data[key], dataset)]
         elif len(data_nicr[key[2:]])==1:
-          data_nicr[key[2:]].append((key[0:2]==(0., 0.), bg_corrected_data[key], dataset))
+          data_nicr[key[2:]].append((key[0:2]==(0., 0.), self.bg_corrected_nicr_data[key], dataset))
           # put spin-flip channels first
           data_nicr[key[2:]].sort()
           data_nicr[key[2:]].reverse()
@@ -1223,7 +1308,10 @@ class DNSMeasurementData(MeasurementData):
     if self.flipping_correction:
       sys.stdout.write("flipping-ratio correction, ")
       sys.stdout.flush()
-      
+      if self.flipping_correction[0]:
+        self.data[7].dimension='I_0^+'
+      else:
+        self.data[7].dimension='I_0^-'
       changed=True
     if not self.vanadium_data is None:
       sys.stdout.write("vanadium correction, ")
