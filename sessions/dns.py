@@ -164,7 +164,7 @@ class DNSSession(GenericSession):
   BACKGROUND_FILE=None # File name of a background file to substract
   bg_corrected_nicr_data={} # dictionary of background corrected NiCr data
   system_bg={} # dictionary of background data from the system directory
-  system_vana={} # dictionary of vanadium data from the system directory
+  system_vana=None # sum of all vanadium files in setup directory
   AUTO_BACKGROUND=False # try to select a background data from system_bg
   AUTO_VANADIUM=False # try to select a background data from system_bg
   CORRECT_FLIPPING=False # try automatic flipping-rato correction
@@ -592,21 +592,7 @@ class DNSSession(GenericSession):
       dataset.background_data=self.system_bg[key]
 
   def find_vanadium_data(self, dataset):
-    '''
-      Try to find a background data data with the right currents for this dataset.
-    '''
-    # get the currents
-    flip=round(float(dataset.dns_info['flipper']), 2)
-    flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
-    c_a=round(float(dataset.dns_info['C_a']), 2)
-    c_b=round(float(dataset.dns_info['C_b']), 2)
-    c_c=round(float(dataset.dns_info['C_c']), 2)
-    c_z=round(float(dataset.dns_info['C_z']), 2)
-    # create a key for the currents and search for it in the
-    # background dictionary
-    key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
-    if key in self.system_vana: 
-      dataset.vanadium_data=self.system_vana[key]
+    dataset.vanadium_data=self.system_vana
 
   def find_prefixes(self, names):
     '''
@@ -785,7 +771,7 @@ class DNSSession(GenericSession):
     # dictionaries with the helmholz parameters are used to store the data
     nicr_data={}
     bg_data={}
-    vana_data={}
+    vana_data=None
     for file_name in nicr_files:
       dataset=read_data.dns.read_data(os.path.join(directory, file_name))
       detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
@@ -808,14 +794,13 @@ class DNSSession(GenericSession):
       bg_data[(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)]=dataset
     self.system_bg=bg_data
     for file_name in vana_files:
-      dataset=read_data.dns.read_data(os.path.join(directory, file_name))
-      flip=round(float(dataset.dns_info['flipper']), 2)
-      flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
-      c_a=round(float(dataset.dns_info['C_a']), 2)
-      c_b=round(float(dataset.dns_info['C_b']), 2)
-      c_c=round(float(dataset.dns_info['C_c']), 2)
-      c_z=round(float(dataset.dns_info['C_z']), 2)
-      vana_data[(flip, flip_cmp, c_a, c_b, c_c, c_z)]=dataset
+      if vana_data:
+        dataset=read_data.dns.read_data(os.path.join(directory, file_name))
+        for i, data in enumerate(dataset):
+          vana_data.data[1].values[i]+=data[1]
+          vana_data.data[2].values[i]=sqrt((vana_data.data[2].values[i]**2+data[2]**2)/2.)
+      else:
+        vana_data=read_data.dns.read_data(os.path.join(directory, file_name))
     self.system_vana=vana_data
     # correct the background
     bg_corrected_data={}
