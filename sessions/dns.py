@@ -499,6 +499,15 @@ class DNSSession(GenericSession):
     for dnsmap in self.active_file_data:
       sys.stdout.write("\tMap %s created, perfoming datatreatment: " % dnsmap.number)
       sys.stdout.flush()
+      if self.POWDER_DATA:
+        new=dnsmap.prepare_powder_data()
+        self.active_file_data[self.active_file_data.index(dnsmap)]=new
+        if dnsmap.flipping_correction:
+          # reassign new data for other spin-flip channel
+          fc=dnsmap.flipping_correction
+          fc[2].flipping_correction=(not fc[0], fc[1], new)
+          new.flipping_correction=(fc[0], fc[1], fc[2])
+          dnsmap=new
       if self.AUTO_BACKGROUND:
         self.find_background_data(dnsmap)
       if self.AUTO_VANADIUM:
@@ -524,14 +533,6 @@ class DNSSession(GenericSession):
       sys.stdout.write("calculate wavevectors, ")
       sys.stdout.flush()
       dnsmap.calculate_wavevectors()
-      if self.POWDER_DATA:
-        new=dnsmap.prepare_powder_data()
-        self.active_file_data[self.active_file_data.index(dnsmap)]=new
-        if new.flipping_correction:
-          # reassign new data for other spin-flip channel
-          fc=new.flipping_correction
-          fc[2].flipping_correction=(not fc[0], dnsmap.flipping_correction[1], new)
-          dnsmap=new
       dnsmap.make_corrections()
       sys.stdout.write("\n")
       sys.stdout.flush()
