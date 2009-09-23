@@ -170,7 +170,7 @@ class DNSSession(GenericSession):
   CORRECT_FLIPPING=False # try automatic flipping-rato correction
   SCATTERING_PROPABILITY=0.1 # scattering_propability used for automatic flipping-ratio correction
   SHORT_INFO=[('temperature', lambda temp: 'at T='+str(temp), 'K')] # For the plots this is used to creat the short info
-  SAMPLE_NAME='' # Name of the Sample for th data objects
+  SAMPLE_NAME='' # Name of the Sample for the data objects
   POWDER_DATA=False # If powder data is to be evaluated this is True.
   SPLIT=None # Integer number of files that belong to one measured sequence.
   ONLY_IMPORT_MULTIFILE=True # This is for the GUI open dialog.
@@ -204,7 +204,7 @@ class DNSSession(GenericSession):
       exit()
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     self.os_path_stuff() # create temp folder according to OS
-    self.read_nicr_files() # read NiCr files for flipping-ratio correction
+    self.read_vana_bg_nicr_files() # read NiCr files for flipping-ratio correction
     self.try_import_externals()
     names.sort()
     self.set_transformations()
@@ -763,12 +763,15 @@ class DNSSession(GenericSession):
       ['q_y','\303\205^{-1}',1/d_star_y,0,self.D_NAME_Y,'r.l.u.'],\
                           ]
   
-  def read_nicr_files(self):
+  def read_vana_bg_nicr_files(self):
     '''
       Read all NiCr files in the chosen directory and correct the backgound.
     '''
     directory=config.dns.SETUP_DIRECTORY
-    file_list=sorted(os.listdir(directory))
+    try:
+      file_list=sorted(os.listdir(directory))
+    except OSError:
+      file_list=[]
     nicr_files=sorted(filter(lambda name: name.startswith(config.dns.NICR_FILE_WILDCARD[0]), 
                       filter(lambda name: name.endswith(config.dns.NICR_FILE_WILDCARD[1]), 
                              file_list)))
