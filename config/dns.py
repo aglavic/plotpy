@@ -20,9 +20,9 @@ NUMBER_OF_DETECTORS=24
 DETECTOR_ANGULAR_INCREMENT=5.
 VANADIUM_FILE=None
 SETUP_DIRECTORY='/home/glavic/Daten/DNS/setup/rc21'
-NICR_FILE_WILDCARD=('dn', 'nicr.d_dat') # nicr files start, end string
-BACKGROUND_WILDCARD=('dn', 'leer.d_dat') # background file start, end string
-VANADIUM_WILDCARD=('dn', 'vana.d_dat') # background file start, end string
+NICR_FILE_WILDCARD=('', 'nicr.d_dat') # nicr files start, end string
+BACKGROUND_WILDCARD=('', 'leer.d_dat') # background file start, end string
+VANADIUM_WILDCARD=('', 'vana.d_dat') # background file start, end string
 
 GET_INFO= (\
   # get detector bank position
