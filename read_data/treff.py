@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.6a3"
+__version__ = "0.6a4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -129,7 +129,7 @@ def read_data(file_name, script_path, import_images):
   if len(data_xx_lines)>0:
     print "Evaluating unpolarized images."
     data_xx, scan_xx=integrate_pictures(data_xx_lines, columns, const_information, path_name, calibration, import_images)
-    data_uu.short_info='unpolarized'
+    data_xx.short_info='unpolarized'
     maps.append(data_xx)
     scan_xx.short_info='unpolarized'
     scans.append(scan_xx)
