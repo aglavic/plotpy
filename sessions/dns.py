@@ -138,6 +138,8 @@ class DNSSession(GenericSession):
 \t-vana [file]\tUse different Vanadium file for evaluation
 \t-system [folder]\tSet an other system folder for background,vanadium and NiCr files
 \t-setup [name]\tSet the name of your sample to be used in every plot(can be changed in GUI)
+\t-cz [zipfile]\tGet instrumental background, vanadium and NiCr files from .zip file and use it.
+\t\t\tThe files need to be in root directory inside the zip-file.
 
 \t-files [prefix] [ooff] [inc] [from] [to] [postfix]
 \t\t\tExplicidly give the file name prefix, omega offset, increment, numbers and postfix
@@ -155,7 +157,7 @@ class DNSSession(GenericSession):
 
   TRANSFORMATIONS=[\
   ]  
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'b', 'bg', 'fr', 'v', 'vana', 'files', 'sample', 'setup', 'time', 'flipper', 'monitor', 'powder', 'xyz', 'split', 'dx', 'dy', 'nx', 'ny'] 
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'b', 'bg', 'fr', 'v', 'vana', 'files', 'sample', 'setup', 'cz', 'time', 'flipper', 'monitor', 'powder', 'xyz', 'split', 'dx', 'dy', 'nx', 'ny'] 
   file_options={'default': ['', 0, 1, [0, -1], ''],  # (prefix, omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[] # A list of all filenames to be imported
@@ -166,7 +168,8 @@ class DNSSession(GenericSession):
   system_bg={} # dictionary of background data from the system directory
   system_vana=None # sum of all vanadium files in setup directory
   AUTO_BACKGROUND=False # try to select a background data from system_bg
-  AUTO_VANADIUM=False # try to select a background data from system_bg
+  AUTO_VANADIUM=False # try to use all vanadium files in setup directory
+  CORRECTION_ZIP=None
   CORRECT_FLIPPING=False # try automatic flipping-rato correction
   SCATTERING_PROPABILITY=0.1 # scattering_propability used for automatic flipping-ratio correction
   SHORT_INFO=[('temperature', lambda temp: 'at T='+str(temp), 'K')] # For the plots this is used to creat the short info
@@ -250,6 +253,9 @@ class DNSSession(GenericSession):
         elif last_argument_option[1]=='fr':
           self.CORRECT_FLIPPING=True
           self.SCATTERING_PROPABILITY=float(argument)
+          last_argument_option=[False,'']
+        elif last_argument_option[1]=='cz':
+          self.CORRECTION_ZIP=argument
           last_argument_option=[False,'']
         elif last_argument_option[1]=='dx':
           self.D_SPACING_X=float(argument)
@@ -752,9 +758,25 @@ class DNSSession(GenericSession):
   
   def read_vana_bg_nicr_files(self):
     '''
-      Read all NiCr files in the chosen directory and correct the backgound.
+      Read all NiCr, background and vanadium files in the chosen directory and correct the backgound.
     '''
     directory=config.dns.SETUP_DIRECTORY
+    if self.CORRECTION_ZIP:
+      import zipfile
+      try:
+        zf=zipfile.ZipFile(self.CORRECTION_ZIP, 'r')
+        directory=os.path.join(self.TEMP_DIR, 'setup')
+        os.mkdir(directory)
+        print "Extracting ziped setup data."
+        for ziped_file in zf.filelist:
+          name=os.path.split(ziped_file.filename)[1]
+          file=open(os.path.join(directory, name), 'w')
+          file.write(zf.read(ziped_file.filename))
+          file.close()
+        self.AUTO_BACKGROUND=True
+        self.AUTO_VANADIUM=True
+      except IOError:
+        print "No zip file %s." % self.CORRECTION_ZIP
     try:
       file_list=sorted(os.listdir(directory))
     except OSError:
@@ -774,6 +796,7 @@ class DNSSession(GenericSession):
     vana_data=None
     for file_name in nicr_files:
       dataset=read_data.dns.read_data(os.path.join(directory, file_name))
+      dataset.name=file_name
       detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
       flip=round(float(dataset.dns_info['flipper']), 2)
       flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
@@ -784,6 +807,7 @@ class DNSSession(GenericSession):
       nicr_data[(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)]=dataset
     for file_name in bg_files:
       dataset=read_data.dns.read_data(os.path.join(directory, file_name))
+      dataset.name=file_name
       detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
       flip=round(float(dataset.dns_info['flipper']), 2)
       flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
@@ -793,15 +817,6 @@ class DNSSession(GenericSession):
       c_z=round(float(dataset.dns_info['C_z']), 2)
       bg_data[(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)]=dataset
     self.system_bg=bg_data
-    for file_name in vana_files:
-      if vana_data:
-        dataset=read_data.dns.read_data(os.path.join(directory, file_name))
-        for i, data in enumerate(dataset):
-          vana_data.data[1].values[i]+=data[1]
-          vana_data.data[2].values[i]=sqrt((vana_data.data[2].values[i]**2+data[2]**2)/2.)
-      else:
-        vana_data=read_data.dns.read_data(os.path.join(directory, file_name))
-    self.system_vana=vana_data
     # correct the background
     bg_corrected_data={}
     if use_numpy:
@@ -821,8 +836,49 @@ class DNSSession(GenericSession):
       if key in bg_data:
         background_data=bg_data[key]
         data.process_function(subtract_background)
+        data.name+='-'+background_data.name
         bg_corrected_data[key]=data
     self.bg_corrected_nicr_data=bg_corrected_data
+    for file_name in vana_files:
+      if vana_data:
+        dataset=read_data.dns.read_data(os.path.join(directory, file_name))
+        detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
+        flip=round(float(dataset.dns_info['flipper']), 2)
+        flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+        c_a=round(float(dataset.dns_info['C_a']), 2)
+        c_b=round(float(dataset.dns_info['C_b']), 2)
+        c_c=round(float(dataset.dns_info['C_c']), 2)
+        c_z=round(float(dataset.dns_info['C_z']), 2)
+        key=(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)
+        if key in bg_data:
+          # subtract backgound from vanadium if suitable is found.
+          background_data=bg_data[key]
+          dataset.process_function(subtract_background)
+        for i, data in enumerate(dataset):
+          vana_data.data[1].values[i]+=data[1]
+          vana_data.data[2].values[i]=sqrt((vana_data.data[2].values[i]**2+data[2]**2)/2.)
+        vana_data.name+='+'+file_name
+      else:
+        vana_data=read_data.dns.read_data(os.path.join(directory, file_name))
+        vana_data.name=file_name
+        detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
+        flip=round(float(dataset.dns_info['flipper']), 2)
+        flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+        c_a=round(float(dataset.dns_info['C_a']), 2)
+        c_b=round(float(dataset.dns_info['C_b']), 2)
+        c_c=round(float(dataset.dns_info['C_c']), 2)
+        c_z=round(float(dataset.dns_info['C_z']), 2)
+        key=(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)
+        if key in bg_data:
+          # subtract backgound from vanadium if suitable is found.
+          background_data=bg_data[key]
+          vana_data.process_function(subtract_background)
+    self.system_vana=vana_data
+    if directory==os.path.join(self.TEMP_DIR, 'setup'):
+      # remove files
+      for file_name in os.listdir(directory):
+        os.remove(os.path.join(directory, file_name))
+      os.rmdir(directory)      
   
   def correct_flipping_ratio(self, scattering_propability=0.1):
     '''
