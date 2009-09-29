@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a3"
+__version__ = "0.6a4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -43,6 +43,7 @@ class MeasurementData:
   logy=False
   logz=False
   zdata=-1
+  crop_zdata=True
   scan_line_constant=-1 # the column to sort the data for when using 3d plots.
   scan_line=-1 # the column changed in one scan.
   const_data=[] # select, which data should not be varied in this maesurement and the accouracy
@@ -381,22 +382,34 @@ class MeasurementData:
         slc=self.scan_line_constant
         max_dslc=max([abs(data[i][slc]-data[i+1][slc]) for i in range(len(data)-1)])
       # for logarithmic data avoid holes because of low values
-      if self.logz:
+      if self.crop_zdata:
         absmin=None
+        absmax=None
         for line in self.plot_options.splitlines():
           if 'cbrange' in line:
             try:
               absmin=float(line.split('[')[1].split(':')[0])
             except ValueError:
               absmin=None
-        if not absmin > 0:
-          absmin=min(map(abs, self.data[zd].values))
-        if absmin==0:
-          absmin=1e-10
-        def zdata_to_absmin(point):
-          point[zd]=max(absmin, point[zd])
-          return point
-        map(zdata_to_absmin, data)
+            try: 
+              absmax=float(line.split(':')[1].split(']')[0])
+              print absmax
+            except ValueError:
+              absmax=None
+        if self.logz:
+          if not absmin > 0:
+            absmin=min(map(abs, self.data[zd].values))
+          if absmin==0:
+            absmin=1e-10
+        if absmax:
+          def zdata_to_absminmax(point):
+            point[zd]=min(absmax, max(absmin, point[zd]))
+            return point
+        else:
+          def zdata_to_absminmax(point):
+            point[zd]=max(absmin, point[zd])
+            return point
+        map(zdata_to_absminmax, data)
       
       # try to find the best way to split the data for Gnuplot
       if self.scan_line_constant >= 0:
