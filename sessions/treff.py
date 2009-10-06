@@ -614,6 +614,11 @@ class TreffSession(GenericSession):
     window.open_windows.append(dialog)
     dialog.connect("destroy", lambda *w: window.open_windows.remove(dialog))
 
+  last_action_scrolled=False
+
+  def stop_scroll_emission(self, SL_selector, action):
+    SL_selector.stop_emission('scroll-event')
+
   def create_layer_options(self, layer, layer_index, layer_params, dialog, window, substrate=False):
     '''
       Create dialog inputs for every layer.
@@ -698,6 +703,8 @@ class TreffSession(GenericSession):
         SL_selector.append_text(SL[0])
         if layer.scatter_density_Nb==SL[1][0] and layer.scatter_density_Nb2==SL[1][1] and layer.scatter_density_Np==SL[1][2]:
           SL_selector.set_active(i+1)
+      SL_selector.allowed=False
+      SL_selector.connect('scroll-event', self.stop_scroll_emission)
       SL_selector.connect('changed', self.change_scattering_length, \
                           SL_selector, layer,scatter_density_Nb, scatter_density_Nb2, scatter_density_Np, \
                           layer_title, layer_index, substrate)
@@ -1100,6 +1107,12 @@ class TreffSession(GenericSession):
     filter.set_name('All')
     filter.add_pattern('*.*')
     file_dialog.add_filter(filter)
+    # Add a check box for importing x-ray .ent files.
+    x_ray_import=gtk.CheckButton('Convert from x-ray .ent File')
+    align=gtk.Alignment(xalign=1.0, yalign=0.0, xscale=0.0, yscale=0.0)
+    align.add(x_ray_import)
+    align.show_all()
+    file_dialog.vbox.pack_end(align, expand=False, fill=True, padding=0)
     response = file_dialog.run()
     if response == gtk.RESPONSE_OK:
       file_name=file_dialog.get_filename()
@@ -1109,7 +1122,10 @@ class TreffSession(GenericSession):
     file_dialog.destroy()
     #----------------File selection dialog-------------------#
     self.fit_object=TreffFitParameters()
-    self.fit_object.read_params_from_file(file_name)
+    if x_ray_import.get_active():
+      self.fit_object.read_params_from_X_file(file_name)
+    else:
+      self.fit_object.read_params_from_file(file_name)
     if not any(self.fit_datasets):
       if not self.select_fittable_sequences(action, window):
         return False
@@ -1704,9 +1720,6 @@ class TreffFitParameters(FitParameters):
     self.polarization_parameters[1]=0.951
     self.polarization_parameters[2]=1.0
     self.polarization_parameters[3]=1.0
-  
-    ### Combine does not work proberly!!!
-    ## self.combine_layers(sessions.treff.TreffMultilayerParam)
 
 class TreffLayerParam(LayerParam):
   '''

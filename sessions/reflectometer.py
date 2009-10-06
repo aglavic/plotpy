@@ -397,6 +397,9 @@ class ReflectometerSession(GenericSession):
     window.open_windows.append(dialog)
     dialog.connect("destroy", lambda *w: window.open_windows.remove(dialog))
 
+  def stop_scroll_emission(self, SL_selector, action):
+    SL_selector.stop_emission('scroll-event')
+
   def create_layer_options(self, layer, layer_index, layer_params, dialog, window, substrate=False):
     '''
       Create dialog inputs for every layer.
@@ -466,6 +469,7 @@ class ReflectometerSession(GenericSession):
         SL_selector.append_text(SL[0])
         if layer.delta==SL[1][0] and layer.d_over_b==SL[1][1]:
           SL_selector.set_active(i+1)
+      SL_selector.connect('scroll-event', self.stop_scroll_emission)
       SL_selector.connect('changed', self.change_scattering_length, \
                           SL_selector, layer, delta, d_over_b, \
                           layer_title, layer_index, substrate)
