@@ -1,4 +1,4 @@
-      Release Notes for the plotting script collection Version 0.6a3
+      Release Notes for the plotting script collection Version 0.6a4
              Please report bugs and feature requests to http://atzes.homeip.net/plotwiki/tiki-forums.php
 
 
@@ -25,10 +25,12 @@ to the Wiki content is also welcome.
   - create intensity maps from the detector data
   - extract specular reflectivity from those maps
   - fit the specular reflectivity with the pnr_multi.f90 program from E. Kentzinger
+  - import structure information for fit from x-ray .ent file
 - added support for in12 data files
 - added support for DNS single crystal and powder data with additional functionality:
   - transform to q-space, with variable omega-offset
   - correct for vanadium and background file
+  - correct for flipping ratio
   - split file sequences by number of polarizations
   - transform to reciprocal lattice units with given d-spacing
   - Linear combination from different measurements
@@ -45,7 +47,7 @@ to the Wiki content is also welcome.
 - automatic session detection from file postfix
 - color selection for 3d plots (can be personalized in config/gnuplot_preferences.py)
 - create arbitrary cross-sections through 3d-plots bin the data as standard and gaussian weighted mean
-- transform units and dimensions with some predefined units (e.g. ° to mrad)
+- transform units and dimensions with some predefined units (e.g. 째 to mrad)
 - plot profiles now include all 3d-plot settings, too
 - better window resize using scrolled window and gnuplot with different export sizes and not scaling
 - font size option in GUI

@@ -31,9 +31,9 @@ import config.treff
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
-__credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger"]
+__credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.6a3"
+__version__ = "0.6a4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
