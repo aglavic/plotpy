@@ -1608,6 +1608,106 @@ class TreffFitParameters(FitParameters):
     layer=TreffLayerParam(name=name, parameters_list=parameters)
     return layer
 
+  def read_params_from_X_file(self,name):
+    '''
+      Convert Parameters from x-ray .ent file to neutrons and import it
+      for usage with this fit.
+    '''
+    import sessions.reflectometer
+
+    ### reading X-ray data
+    x_ray_fitdata=sessions.reflectometer.RefFitParameters()
+    x_ray_fitdata.read_params_from_file(name)
+
+    ### instument settings
+    self.slits[0]=4.
+    self.slits[1]=2.
+    self.sample_length=10.
+    self.distances[0]=2270.
+    self.distances[1]=450.
+    self.wavelength[0]=4.73
+    self.wavelength[1]=0.03
+    self.layers=[]
+  
+    ### null multilayer above
+    #layers_in_multi=[]
+    #repititions_of_multi = 0
+    #self.layers.append(sessions.treff.TreffMultilayerParam(0, name="NoName", layer_list=layers_in_multi))
+    
+    def get_layer_parameter(layer):
+        name=layer.name
+        parameters=[]
+        parameters.append(layer.thickness)
+        if name in self.NEUTRON_SCATTERING_LENGTH_DENSITIES:
+          parameters.append(self.NEUTRON_SCATTERING_LENGTH_DENSITIES[name][0])
+          parameters.append(self.NEUTRON_SCATTERING_LENGTH_DENSITIES[name][1])
+          parameters.append(self.NEUTRON_SCATTERING_LENGTH_DENSITIES[name][2])
+        else:
+          parameters.append(1)
+          parameters.append(1)
+          parameters.append(1)
+        parameters.append(90)
+        parameters.append(90)
+        parameters.append(layer.roughness)
+        return TreffLayerParam(name, parameters_list=parameters)
+    
+    for i, layer in enumerate(x_ray_fitdata.layers):
+      ### multilayer
+      if layer.multilayer:
+        multilayer=TreffMultilayerParam(layer.repititions, layer.name, )
+        for sub_layer in layer.layers:
+          multilayer.layers.append(get_layer_parameter(sub_layer))
+        self.layers.append(multilayer)
+#          for k in range(len(x_ray_fitdata.layers[1].layers)):
+#            name=x_ray_fitdata.layers[i].layers[k].name
+#            parameters=[]
+#            parameters.append(x_ray_fitdata.layers[i].layers[k].thickness)
+#            if name in self.NEUTRON_SCATTERING_LENGTH_DENSITIES:
+#              parameters.append(self.NEUTRON_SCATTERING_LENGTH_DENSITIES[name][0])
+#              parameters.append(self.NEUTRON_SCATTERING_LENGTH_DENSITIES[name][1])
+#              parameters.append(self.NEUTRON_SCATTERING_LENGTH_DENSITIES[name][2])
+#            else:
+#              parameters.append(1)
+#              parameters.append(1)
+#              parameters.append(1)
+#            parameters.append(90)
+#            parameters.append(90)
+#            parameters.append(x_ray_fitdata.layers[i].layers[k].roughness)
+#            layer=sessions.treff.TreffLayerParam(name, parameters_list=parameters)
+#            self.layers.append(layer)
+      else:
+        ### single layer
+        self.layers.append(get_layer_parameter(layer))
+  
+    ### substrate
+    name=x_ray_fitdata.substrate.name
+    parameters=[]
+    parameters.append(0)
+    if name in self.NEUTRON_SCATTERING_LENGTH_DENSITIES:
+      parameters.append(self.NEUTRON_SCATTERING_LENGTH_DENSITIES[name][0])
+      parameters.append(self.NEUTRON_SCATTERING_LENGTH_DENSITIES[name][1])
+      parameters.append(self.NEUTRON_SCATTERING_LENGTH_DENSITIES[name][2])
+    else:
+      parameters.append(1)
+      parameters.append(1)
+      parameters.append(1)
+    parameters.append(90)
+    parameters.append(90)
+    parameters.append(x_ray_fitdata.substrate.roughness)
+    self.substrate=TreffLayerParam(name=x_ray_fitdata.substrate.name, parameters_list=parameters)
+  
+   
+    ### global parameters
+    self.scaling_factor=0.4
+    self.background=2
+    self.polarization_parameters[0]=0.973
+    self.polarization_parameters[1]=0.951
+    self.polarization_parameters[2]=1.0
+    self.polarization_parameters[3]=1.0
+  
+    ### Combine does not work proberly!!!
+    ## self.combine_layers(sessions.treff.TreffMultilayerParam)
+
 class TreffLayerParam(LayerParam):
   '''
     class for one layer data
