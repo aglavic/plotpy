@@ -10,7 +10,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a3"
+__version__ = "0.6a4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -168,7 +168,7 @@ class FitParameters:
         continue
       ml=[candidate]
       for j,  candidate2 in enumerate(candidates[i+1:]):
-        if min(candidate) < max(candidate2):
+        if min(candidate2) < max(candidate):
           ml.append(candidate2)
       ml_list.append(ml)
     multilayer_list=[]
