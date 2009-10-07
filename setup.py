@@ -6,30 +6,52 @@
 
 import sys, os
 from distutils.core import setup
-
-__author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2009"
-__license__ = "None"
-__version__ = "0.6a4"
-__email__ = "a.glavic@fz-juelich.de"
+import subprocess
 
 # if python version < 2.5 set the sys.exit function as exit
 if hex(sys.hexversion)<'0x2050000':
   exit=sys.exit
 
-
 __name__='Plot-script'
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2009"
+__license__ = "None"
+__version__ = "0.6b1"
+__email__ = "a.glavic@fz-juelich.de"
+__author_email__ = __email__
+__url__ = "http://atzes.homeip.net/plotwiki"
+__description__='''Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.'''
+
 __scripts__=['plot.py']
 __py_modules__=['plot', 'plotting_gui', 'measurement_data_structure', 'measurement_data_plotting', 'fit_data', 'file_actions']
 __packages__=['config', 'read_data', 'sessions', 'sessions.reflectometer_fit']
 __package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 'fit/pnr_multi/*.f90', 'fonts/*.ttf'], 
                     }
-__url__='http://www.fz-juelich.de'
 __requires__=['pygtk', 'gobject', 'numpy', 'scipy']
-__description__='''Program to plot measured data with Gnuplot. 
-Provides a GUI interface, fitting and some other useful functionalities.
 
-Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12 and can be widened with plugins.'''
+script_files=['scripts/prd', 'scripts/psd', 'scripts/p4d', 'scripts/dnsplot', 'scripts/treffplot', 'scripts/pin12', 'scripts/plot_SQUID_data', 'scripts/plot_4circle_data', 'scripts/plot_reflectometer_data']
+# creat windows batches for the script_files
+win_batches=[script+'.bat' for script in script_files]
+for script in script_files:
+  line=open(script, 'r').readlines()[1]
+  open(script+'.bat', 'w').write(line.replace('$', '%'))
+__scripts__+=script_files+win_batches
+
+# creat windows batches for the script_files
+
+if ('install' in sys.argv) and (not 'win' in sys.platform) and len(sys.argv)==2:
+  for lp in os.path.expandvars('$PATH').split(':'):
+    for file in script_files:
+      if os.path.exists(os.path.join(lp, file)) or\
+        os.path.islink(os.path.join(lp, file)):
+        if raw_input("%s exists, remove it first (Y/N)? " % os.path.join(lp, file)).lower() == 'y':
+          os.remove(os.path.join(lp, file))
+        else:
+          continue
+
+if 'install' not in sys.argv:
+  if os.path.exists('MANIFEST'):
+    os.remove('MANIFEST')
 
 if 'sdist' in sys.argv:
   # Test if every file has the right version for distributing.
@@ -74,7 +96,6 @@ if 'install' in sys.argv:
   dependencies_ok=True
   print "Testing all dependencies."
   # call linux and windows gnuplot command with --help option to test if it can be called.
-  import subprocess
   try:
     subprocess.Popen(['gnuplot','--help'], shell=False,stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
     gnuplot=True
@@ -119,10 +140,54 @@ setup(name=__name__,
       requires=__requires__, #does not do anything
      )
 
+# If binary distribution has been created rename it and create .deb package, too.
+if ('bdist' in sys.argv):
+  print "Moving distribution files..."
+  os.chdir('archiv')
+  os.rename(__name__+'-'+__version__+'-1.noarch.rpm', __name__+'-'+__version__+'.rpm')
+  os.remove(__name__+'-'+__version__+'-1.src.rpm')
+  os.rename(__name__+'-'+__version__+'.linux-x86_64.exe', __name__+'-'+__version__+'.exe')
+  print "Creating debian folder..."
+  subprocess.Popen(['fakeroot', 'alien', '-k', '-g', __name__+'-'+__version__+'.rpm'], shell=False, 
+                   stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  os.chdir(__name__+'-'+__version__)
+  deb_con=open('debian/control', 'w')
+  deb_con.write(open('../../deb_control', 'r').read())
+  deb_con.close()
+  print "Packaging for debian..."
+  subprocess.Popen(['dpkg-buildpackage', '-i', '-I', '-rfakeroot'], shell=False, 
+                   stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  os.chdir('..')
+  os.rename((__name__+'_'+__version__).lower()+'-1_all.deb', __name__+'-'+__version__+'.deb')
+  print "Removing debian folder..."
+  os.popen('rm '+__name__+'-'+__version__+' -r')
+  os.popen('rm '+(__name__+'_'+__version__).lower()+'-1*')
+  os.popen('rm '+(__name__+'_'+__version__).lower()+'.orig.tar.gz')
+
 # In windows the scriptpath is not in the path by default
-if ('install' in sys.argv) and ('win' in sys.platform):
-  win_script_path=sys.prefix.lower() + '\\scripts'
-  win_path=os.path.expandvars('$PATH').lower().split(';')
-  if not win_script_path in win_path:
-    print "Could not verify path!\nPlease be sure that '" + sys.prefix + "\scripts' is in your path."
-  
+if ('install' in sys.argv) and len(sys.argv)==2:
+  if ('win' in sys.platform):
+    # Windows installation
+    win_script_path=sys.prefix.lower() + '\\scripts'
+    win_path=os.path.expandvars('$PATH').lower().split(';')
+    if not win_script_path in win_path:
+      print "Could not verify path!\nPlease be sure that '" + sys.prefix + "\scripts' is in your path."
+  else:
+    # Linux/OS-X installation
+    py_sub_path=None
+    for path_name in sys.path:
+      if path_name != os.path.abspath(os.path.curdir) and \
+          path_name != '' and \
+          path_name !='.' and \
+          os.path.exists(os.path.join(path_name, 'config', 'fit')):
+        if py_sub_path:
+          print "Second directory possible: %s , Skipping it!" % path_name
+        py_sub_path=path_name
+    try:
+      # Make fit pathes writable for users to compile the fortran programs
+      print "Setting mode 777 for %s/config/fit" % py_sub_path
+      os.chmod(os.path.join(py_sub_path, 'config', 'fit'), 777)
+      print "Setting mode 777 for %s/config/fit/pnr_multi" % py_sub_path
+      os.chmod(os.path.join(py_sub_path, 'config', 'fit', 'pnr_multi'), 777)
+    except OSError:
+      pass
