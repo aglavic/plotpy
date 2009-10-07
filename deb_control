@@ -1,0 +1,14 @@
+Source: plot-script
+Section: scientific
+Priority: extra
+Maintainer: Artur Glavic <a.glavic@fz-juelich.de>
+XS-Python-Version: >=2.4
+Standards-Version: 3.8.1
+
+Package: plot-script
+Architecture: all
+Homepage: http://atzes.homeip.net/plotwiki
+XB-Python-Version: >=2.4
+Depends: python (>=2.4), gnuplot (>=4.2), python-numpy (>=1.0), python-scipy (>=0.7),python-gtk2 (>=2.0), python-gobject (>=2.0), gcc
+Description: Program to plot measured data with Gnuplot. 
+  Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.

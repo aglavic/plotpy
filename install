@@ -4,7 +4,7 @@
 # with a directory in the system path
 
 
-DIR=$( pwd )
+DIR=$( pwd )/scripts
 INSTALL=${1:-/usr/bin}
 
 if [ $INSTALL = /usr/bin ]
