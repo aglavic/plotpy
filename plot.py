@@ -41,7 +41,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -72,6 +72,7 @@ class RedirectOutput:
   '''
     Class to redirect all print statements when useing the GUI.
   '''
+  
   def __init__(self, plotting_session):
     '''
       Class consturctor.
@@ -80,13 +81,12 @@ class RedirectOutput:
     '''
     self.content = []
     self.plotting_session=plotting_session
-    #self.gtk=gtk
 
   def write(self, string):
     '''
       Add content.
       
-      @param string Output string of stderr or stdout
+      @param string Output string of stdout
     '''
     string=string.replace('\b', '')
     self.content.append(string)
@@ -108,7 +108,51 @@ class RedirectOutput:
       while gtk.events_pending():
         gtk.main_iteration(False)
 
-
+class RedirectError(RedirectOutput):
+  '''
+    Class to redirect all error messages when useing the GUI.
+  '''
+  
+  def __init__(self, plotting_session):
+    RedirectOutput.__init__(self, plotting_session)
+    self.messagebox=gtk.MessageDialog(parent=None, flags=0, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK_CANCEL, message_format='Errorbox')
+    self.messagebox.connect('response', self.response)
+    self.messagebox.set_title('Unecpected Error!')
+  
+  def write(self, string):
+    '''
+      Add content.
+      
+      @param string Output string of stderr
+    '''
+    string=string.replace('\b', '')
+    self.content.append(string)
+    while '\n' in self.content:
+      self.content.remove('\n')
+    self.messagebox.set_markup('An unexpected error has occured:\n'+'\n'.join(self.content)+\
+                              '\n\nDo you want to create a debug logfile?')
+    self.messagebox.show_all()
+  
+  def response(self, dialog, response_id):
+    '''
+      Hide the dialog on response and export debug information if response was OK.
+    '''
+    self.messagebox.hide()
+    import time
+    from cPickle import dumps
+    if response_id==-5:
+      debug_log=open('debug.log', 'w')
+      debug_log.write('# This is a debug log file created by plot.py\n# The following error(s) have occured at %s.\n' % time.strftime('%D %T', time.localtime()))
+      debug_log.write('# The script has been started with the options:\n %s \n' % ' ; '.join(sys.argv))
+      debug_log.write('\n# Error Messages: \n\n')
+      debug_log.write('\n'.join(self.content))
+      debug_log.write('\n\n#-----------------------------start of pickled datasets-----------------------\n')
+      debug_log.write(dumps(self.plotting_session.active_session.active_file_data))
+      debug_log.write('\n#-----------------------------end of pickled datasets-----------------------\n')
+      debug_log.close()
+      msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log has been created.\n\nPlease upload it to the bugreport forum at\n\nhttp://atzes.homeip.net/plotwiki\n\nwith some additional information.\nFor larger files, please use zip or gzip first.")
+      msg.run()
+      msg.destroy()
 
 '''
 ############################################################################
@@ -162,7 +206,7 @@ if __name__ == '__main__':    #code to execute if called from command-line
     if not active_session.DEBUG:
       # redirect script output to session objects
       active_session.stdout=RedirectOutput(plotting_session)
-      active_session.stderr=RedirectOutput(plotting_session)
+      active_session.stderr=RedirectError(plotting_session)
       sys.stdout=active_session.stdout
       sys.stderr=active_session.stderr  
     gtk.main() # start GTK engine
