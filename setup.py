@@ -16,7 +16,7 @@ __name__='Plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __license__ = "None"
-__version__ = "0.6b1"
+__version__ = "0.6a4"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://atzes.homeip.net/plotwiki"
@@ -25,7 +25,7 @@ __description__='''Program to plot measured data with Gnuplot. Provides a GUI in
 __scripts__=['plot.py']
 __py_modules__=['plot', 'plotting_gui', 'measurement_data_structure', 'measurement_data_plotting', 'fit_data', 'file_actions']
 __packages__=['config', 'read_data', 'sessions', 'sessions.reflectometer_fit']
-__package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 'fit/pnr_multi/*.f90', 'fonts/*.ttf'], 
+__package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 'fit/pnr_multi/????*.f90', 'fonts/*.ttf'], 
                     }
 __requires__=['pygtk', 'gobject', 'numpy', 'scipy']
 
