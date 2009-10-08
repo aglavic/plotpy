@@ -826,9 +826,9 @@ class ReflectometerSession(GenericSession):
     '''
     code_file=os.path.join(self.SCRIPT_PATH, config.reflectometer.FIT_PROGRAM_CODE_FILE)
     if not exe:
-      exe=os.path.join(self.SCRIPT_PATH, 'config', 'fit', 'fit.o')
+      exe=os.path.join(self.TEMP_DIR, 'fit.o')
     try:
-      code_tmp=open(os.path.join(self.SCRIPT_PATH, 'config', 'fit', 'fit_tmp.f90'), 'r').read()
+      code_tmp=open(os.path.join(self.TEMP_DIR, 'fit_tmp.f90'), 'r').read()
     except IOError:
       code_tmp=' '
     # has the program been changed or does it not exist
@@ -840,11 +840,11 @@ class ReflectometerSession(GenericSession):
       code_tmp=code.replace('maxint=25', 'maxint='+str(self.fit_object.number_of_layers()+1))
       code_tmp=code_tmp.replace('.and.alamda.le.1.0d10', '.and.alamda.le.1.0d'+str(self.max_alambda))
       code_tmp=code_tmp.replace('.or.alamda.gt.1.0d10', '.or.alamda.gt.1.0d'+str(self.max_alambda))
-      tmp_file=open(os.path.join(self.SCRIPT_PATH, 'config', 'fit', 'fit_tmp.f90'), 'w')
+      tmp_file=open(os.path.join(self.TEMP_DIR, 'fit_tmp.f90'), 'w')
       tmp_file.write(code_tmp)
       tmp_file.close()
       print 'Compiling fit program!'
-      call_params=[config.reflectometer.FORTRAN_COMPILER, os.path.join(self.SCRIPT_PATH, 'config', 'fit', 'fit_tmp.f90'), '-o', exe]
+      call_params=[config.reflectometer.FORTRAN_COMPILER, os.path.join(self.TEMP_DIR, 'fit_tmp.f90'), '-o', exe]
       if  config.reflectometer.FORTRAN_COMPILER_OPTIONS!=None:
         call_params.append(config.reflectometer.FORTRAN_COMPILER_OPTIONS)
       if  config.reflectometer.FORTRAN_COMPILER_MARCH!=None:

@@ -1141,8 +1141,8 @@ class TreffSession(GenericSession):
       program to finish, it only startes the sub process, which is returned.
     '''
     code_path=os.path.join(self.SCRIPT_PATH, 'config', 'fit', 'pnr_multi')
-    code_file=os.path.join(code_path, 'pnr.f90')
-    exe=os.path.join(code_path, 'pnr.o')
+    code_file=os.path.join(self.TEMP_DIR, 'pnr.f90')
+    exe=os.path.join(self.TEMP_DIR, 'pnr.o')
     subcode_files=map(lambda name: os.path.join(code_path, name), config.treff.PROGRAM_FILES)
     # has the program been changed or does it not exist
     if (not os.path.exists(exe)) or \

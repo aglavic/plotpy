@@ -25,7 +25,7 @@ __description__='''Program to plot measured data with Gnuplot. Provides a GUI in
 __scripts__=['plot.py']
 __py_modules__=['plot', 'plotting_gui', 'measurement_data_structure', 'measurement_data_plotting', 'fit_data', 'file_actions']
 __packages__=['config', 'read_data', 'sessions', 'sessions.reflectometer_fit']
-__package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 'fit/pnr_multi/????*.f90', 'fonts/*.ttf'], 
+__package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 'fit/pnr_multi/*.f90', 'fonts/*.ttf'], 
                     }
 __requires__=['pygtk', 'gobject', 'numpy', 'scipy']
 
@@ -163,31 +163,17 @@ if ('bdist' in sys.argv):
   os.popen('rm '+__name__+'-'+__version__+' -r')
   os.popen('rm '+(__name__+'_'+__version__).lower()+'-1*')
   os.popen('rm '+(__name__+'_'+__version__).lower()+'.orig.tar.gz')
+  print "Removing build folder..."
+  os.chdir('..')
+  os.popen('rm build -r')
 
-# In windows the scriptpath is not in the path by default
 if ('install' in sys.argv) and len(sys.argv)==2:
   if ('win' in sys.platform):
-    # Windows installation
-    win_script_path=sys.prefix.lower() + '\\scripts'
+    # In windows the scriptpath is not in the path by default
+    win_script_path=os.path.join(sys.prefix.lower(), 'scripts')
     win_path=os.path.expandvars('$PATH').lower().split(';')
     if not win_script_path in win_path:
-      print "Could not verify path!\nPlease be sure that '" + sys.prefix + "\scripts' is in your path."
+      print "Could not verify path!\nPlease be sure that '" + win_script_path + "' is in your path."
   else:
     # Linux/OS-X installation
-    py_sub_path=None
-    for path_name in sys.path:
-      if path_name != os.path.abspath(os.path.curdir) and \
-          path_name != '' and \
-          path_name !='.' and \
-          os.path.exists(os.path.join(path_name, 'config', 'fit')):
-        if py_sub_path:
-          print "Second directory possible: %s , Skipping it!" % path_name
-        py_sub_path=path_name
-    try:
-      # Make fit pathes writable for users to compile the fortran programs
-      print "Setting mode 777 for %s/config/fit" % py_sub_path
-      os.chmod(os.path.join(py_sub_path, 'config', 'fit'), 16895)
-      print "Setting mode 777 for %s/config/fit/pnr_multi" % py_sub_path
-      os.chmod(os.path.join(py_sub_path, 'config', 'fit', 'pnr_multi'), 16895)
-    except OSError:
-      pass
+    pass
