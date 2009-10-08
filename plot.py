@@ -29,6 +29,7 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 # python modules
 import sys
+##---add_python_path_here---## # Place holder to add installation directory to python path for non superusers.
 
 # own modules
 # specific measurement classes
