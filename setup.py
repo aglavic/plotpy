@@ -186,8 +186,8 @@ if ('install' in sys.argv) and len(sys.argv)==2:
     try:
       # Make fit pathes writable for users to compile the fortran programs
       print "Setting mode 777 for %s/config/fit" % py_sub_path
-      os.chmod(os.path.join(py_sub_path, 'config', 'fit'), 777)
+      os.chmod(os.path.join(py_sub_path, 'config', 'fit'), 16895)
       print "Setting mode 777 for %s/config/fit/pnr_multi" % py_sub_path
-      os.chmod(os.path.join(py_sub_path, 'config', 'fit', 'pnr_multi'), 777)
+      os.chmod(os.path.join(py_sub_path, 'config', 'fit', 'pnr_multi'), 16895)
     except OSError:
       pass
