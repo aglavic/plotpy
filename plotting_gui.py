@@ -675,7 +675,6 @@ class ApplicationMainWindow(gtk.Window):
       Open a dialog window to insert additional gnuplot commands.
       After opening the button is rerouted.
     '''
-    raise IOError ('bla', 'Blub')
     #+++++++++++++++++ Adding input fields in table +++++++++++++++++
     dialog=gtk.Dialog(title='Custom Gnuplot settings')
     table=gtk.Table(6,13,False)

@@ -37,7 +37,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -157,14 +157,18 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       
       @param arguments The command line arguments passed to the constructor.
     '''
-    #++++++++++++++++ evaluate command line +++++++++++++++++++++++
-    files=self.read_arguments(arguments) # get filenames and set options
-    if files==None: # read_arguments returns none, if help option is set
-      print self.LONG_HELP + self.SPECIFIC_HELP + self.LONG_HELP_END
-      exit()
-    elif len(files) < 1: # show help, if there is no file in the list
-      print self.SHORT_HELP
-      exit()
+    # The object can be initialized without data by using None as arguments.
+    if type(arguments) is list:
+      #++++++++++++++++ evaluate command line +++++++++++++++++++++++
+      files=self.read_arguments(arguments) # get filenames and set options
+      if files==None: # read_arguments returns none, if help option is set
+        print self.LONG_HELP + self.SPECIFIC_HELP + self.LONG_HELP_END
+        exit()
+      elif len(files) < 1: # show help, if there is no file in the list
+        print self.SHORT_HELP
+        exit()
+    else:
+      files=[]
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     self.os_path_stuff() # create temp folder according to OS
     self.try_import_externals()
@@ -178,13 +182,14 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         remove.append(filename)
     for rem in remove:
       files.remove(rem)
-
-    if len(files) == 0: # show help, if there is no valid file in the list
-      print "No valid datafile found!"
-      print self.SHORT_HELP
-      exit()
-    self.active_file_data=self.file_data[files[0]]
-    self.active_file_name=files[0]
+    
+    if type(arguments) is list:
+      if len(files) == 0: # show help, if there is no valid file in the list
+        print "No valid datafile found!"
+        print self.SHORT_HELP
+        exit()
+      self.active_file_data=self.file_data[files[0]]
+      self.active_file_name=files[0]
 
   #---------------- class consturction over ---------------------
 
