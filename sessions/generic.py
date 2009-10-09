@@ -28,7 +28,7 @@ import subprocess
 from cPickle import load, dump
 from measurement_data_structure import MeasurementData
 import measurement_data_plotting
-from config.gnuplot_preferences import PRINT_COMMAND, GNUPLOT_COMMAND
+import config.gnuplot_preferences
 import config.transformations
 
 # importing own modules
@@ -324,15 +324,25 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
     self.OWN_PID=str(os.getpid())
     SCRIPT_PATH=os.path.dirname(os.path.realpath(__file__).replace('sessions', ''))
-    if (os.getenv("TEMP")==None):
-    # Linux case
+    config.gnuplot_preferences.FONT_PATH=config.gnuplot_preferences.FONT_PATH.replace('[script-path]', SCRIPT_PATH)
+    if not 'win' in sys.platform:
+      # Linux and osx case
       self.OPERATING_SYSTEM='linux'
       self.TEMP_DIR="/tmp/"
       self.SCRIPT_PATH=SCRIPT_PATH + '/'
       # name of the gnuplot command under linux
-      self.GNUPLOT_COMMAND=GNUPLOT_COMMAND
+      self.GNUPLOT_COMMAND=config.gnuplot_preferences.GNUPLOT_COMMAND
+      # gnuplot term png can't handle font path longer than 64 letters
+      if len(config.gnuplot_preferences.FONT_PATH)>64:
+        # linking font path to tmp folder
+        try:
+          os.symlink(config.gnuplot_preferences.FONT_PATH, os.path.join(self.TEMP_DIR, 'plot_fonts'))
+        except OSError:
+          pass
+        config.gnuplot_preferences.FONT_PATH=os.path.join(self.TEMP_DIR, 'plot_fonts')
+        self.temp_fonts=True
     else:
-    # Windows case
+      # Windows case
       self.OPERATING_SYSTEM='windows'
       self.TEMP_DIR=os.getenv("TEMP")+'\\'
       self.SCRIPT_PATH=SCRIPT_PATH + '\\'
@@ -354,6 +364,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     for file_name in os.listdir(self.TEMP_DIR):
       os.remove(self.TEMP_DIR+file_name)
     os.rmdir(self.TEMP_DIR)
+    if self.temp_fonts:
+      os.remove(config.gnuplot_preferences.FONT_PATH)
 
   def replace_systemdependent(self, string):
     '''

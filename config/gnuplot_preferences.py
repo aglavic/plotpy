@@ -10,7 +10,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -45,6 +45,9 @@ gnuplot_file_name='gnuplot.tmp'
 PRINT_COMMAND="lpr -P IFF17c4 -J \'plot_SQUID_data.py output\'  "
 # Command for script mode to accress gnuplot
 GNUPLOT_COMMAND="gnuplot"
+# font path for export
+FONT_PATH='/home/glavic/Daten/TREFF/Elisabeth/anpassung/7er/final/bilder/fonttest'
+#join_path('[script-path]', 'config', 'fonts')
 
 def remove_from_name(name):
   '''
@@ -56,7 +59,7 @@ def remove_from_name(name):
 # character encoding in gnuplot
 ENCODING='iso_8859_1'
 # set the terminal options for the gnuplot output (postscript could need other labels)
-set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[script-path]', 'config', 'fonts',  'Arial.ttf')+'" [font-size]' #transparent
+set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[font-path]',  'Arial.ttf')+'" [font-size]' #transparent
 # used is determined by file name
 set_output_terminal_ps='postscript landscape enhanced colour "Arial" [font-size] solid lw 2'
 
