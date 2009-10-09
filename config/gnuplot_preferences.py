@@ -46,8 +46,7 @@ PRINT_COMMAND="lpr -P IFF17c4 -J \'plot_SQUID_data.py output\'  "
 # Command for script mode to accress gnuplot
 GNUPLOT_COMMAND="gnuplot"
 # font path for export
-FONT_PATH='/home/glavic/Daten/TREFF/Elisabeth/anpassung/7er/final/bilder/fonttest'
-#join_path('[script-path]', 'config', 'fonts')
+FONT_PATH=join_path('[script-path]', 'config', 'fonts')
 
 def remove_from_name(name):
   '''
