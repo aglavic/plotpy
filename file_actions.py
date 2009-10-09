@@ -10,7 +10,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -31,7 +31,7 @@ class FileActions:
     self.history=[]
     self.window=window
     # action functions that can be executed from activate_action,
-    # could in priciple be altered in runtime
+    # can be altered in runtime by the specific sessions
     self.actions={
                   'change filter': self.change_data_filter, 
                   'cross-section': self.cross_section, 
@@ -45,7 +45,13 @@ class FileActions:
     '''
       Every action performed by this class is stored so
       it can be shown in a log or reused in makros for other sequences.
+      
+      @param action The function to be called
+      @param *args The arguments of that function
+      
+      @return Return values of the called function
     '''
+    # Store the function name and parameters 
     self.history.append((action, args))
     return self.actions[action](*args)
   
@@ -53,12 +59,18 @@ class FileActions:
     '''
       Run an action without storing it in the history.
       Used when running a makro.
+      
+      @param action Function and parameters to use.
+      
+      @return Return values of the funciton
     '''
     return self.actions[action[0]](*action[1])
 
   def store(self, from_index=None, to_index=None):
     '''
-      Store a subset of the history actions as a makro.
+      Store a subset of the history actions as a MakroRepr object.
+      
+      @return The MakroRepr object
     '''
     conf=ConfigObj(unrepr=True)
     for i, action in enumerate(self.history[from_index:to_index]):
@@ -88,6 +100,8 @@ class FileActions:
     '''
       Create a slice through a dataset using the create_cross_section function.
       This funcion is called as the action.
+      
+      @return If the extraction has been sucessful
     '''
     data=self.window.measurement[self.window.index_mess]
     try:
@@ -110,6 +124,9 @@ class FileActions:
       return False
   
   def iterate_through_measurements(self, action_name):
+    '''
+      Change the active plotted sequence.
+    '''
     if action_name=='Prev':
       self.window.index_mess=max(0,self.window.index_mess-1)
       self.window.plot_page_entry.set_text(str(self.window.index_mess))
@@ -130,11 +147,20 @@ class FileActions:
         self.window.plot_page_entry.set_text(str(self.window.index_mess))        
 
   def create_fit_object(self):
+    '''
+      Creates an FitSession object for data fitting and
+      binds it to the active dataset.
+    '''
     dataset=self.window.measurement[self.window.index_mess]
     from fit_data import FitSession
     dataset.fit_object=FitSession(dataset, self)
   
   def change_color_pattern(self, pattern):
+    '''
+      Change the color palette used in pm3d plots.
+      
+      @pattern pattern The string used for the palette in gnuplot
+    '''
     import config.gnuplot_preferences as gnuplot_preferences
     options_list_3d=gnuplot_preferences.settings_3d.splitlines()
     options_list_3dmap=gnuplot_preferences.settings_3dmap.splitlines()
@@ -150,6 +176,11 @@ class FileActions:
     gnuplot_preferences.settings_3dmap="\n".join(options_list_3dmap) + "\n"
     
   def unit_transformations(self, transformations):
+    '''
+      Make a unit transformation with the active dataset.
+      
+      @transformations A sequence of the transformation settings
+    '''
     dataset=self.window.measurement[self.window.index_mess]
     dataset.unit_trans(transformations)
 

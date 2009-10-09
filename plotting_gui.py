@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 '''
-  class for GTK GUI
+  Module for GTK GUI from plot.py program. 
+  All general GUI functions are defined here.
 '''
 #################################################################################################
 #                  Script for graphical user interface to plot measurement data                 #
@@ -48,26 +49,26 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
 #+++++++++++++++++++++++++ ApplicationMainWindow Class ++++++++++++++++++++++++++++++++++#
+# TODO: Move some functions to other modules to have a smaller file
 class ApplicationMainWindow(gtk.Window):
   '''
+    Main window of the GUI.
     Everything the GUI does is in this Class.
   '''
   #+++++++++++++++++++++++++++++++Window Constructor+++++++++++++++++++++++++++++++++++++#
-  def __init__(self, active_session, parent=None, script_suf='',preferences_file='',plugin_widget=None):
+  def __init__(self, active_session, parent=None, script_suf=''):
     '''
       Class constructor which builds the main window with it's menus, buttons and the plot area.
       
       @param active_session A session object derived from GenericSession.
       @param parant Parent window.
       @param script_suf Suffix for script file name.
-      @param preferences_file Other file for gnuplot_preferences.
-      @param plugin_widget Not used now.
     '''
     global errorbars
     # TODO: remove global errorbars variable and put in session or m_d_structure
@@ -87,10 +88,6 @@ class ApplicationMainWindow(gtk.Window):
     self.y_range='set autoscale y'
     self.z_range='set autoscale z\nset autoscale cb'
     self.active_multiplot=False
-    # TODO: remove preferences file (also from m_d_plotting
-    self.preferences_file=preferences_file
-    # TODO: remove or reactivate plugin_widget
-    self.plugin_widget=plugin_widget
     self.plot_options_window_open=False # is the dialog window for the plot options active?
     errorbars=False # show errorbars?
     self.file_actions=file_actions.FileActions(self)
@@ -162,16 +159,6 @@ class ApplicationMainWindow(gtk.Window):
         gtk.EXPAND | gtk.FILL,  0,
         0,                      0)
     #---------- Menu and toolbar creation ----------
-
-    # custom widget on the right, can be used to include specific settings
-    if not self.plugin_widget==None:
-      align=gtk.Alignment(0, 0.05, 1, 0)
-      align.add(self.plugin_widget)
-      table.attach(align,
-          # X direction #       # Y direction
-          2, 3,                   3, 4,
-          gtk.FILL,  gtk.EXPAND | gtk.FILL,
-          0,                      0)
 
     #++++++++++ create image region and image for the plot ++++++++++
     # plot title label entries
@@ -485,7 +472,9 @@ class ApplicationMainWindow(gtk.Window):
 
   def change(self,action):
     '''
-      Change different plot settings triggered by different events.    
+      Change different plot settings triggered by different events.
+      
+      @param action The action that triggered the event
     '''
     # change the plotted columns
     if action.get_name()=='x-number':
@@ -547,6 +536,11 @@ class ApplicationMainWindow(gtk.Window):
     self.change_active_file_object(object)
   
   def change_active_file_object(self, object):
+    '''
+      Change the active file object from which the plotted sequences are extracted.
+      
+      @param object A list of MeasurementData objects from one file
+    '''
     self.active_session.change_active(object)
     self.measurement=self.active_session.active_file_data
     self.input_file_name=object[0]
@@ -675,6 +669,7 @@ class ApplicationMainWindow(gtk.Window):
       Open a dialog window to insert additional gnuplot commands.
       After opening the button is rerouted.
     '''
+    # TODO: Add gnuplot help functions and character selector
     #+++++++++++++++++ Adding input fields in table +++++++++++++++++
     dialog=gtk.Dialog(title='Custom Gnuplot settings')
     table=gtk.Table(6,13,False)
@@ -926,12 +921,16 @@ class ApplicationMainWindow(gtk.Window):
     self.rebuild_menus()
 
   def set_delete_name(self,action):
+    '''
+      Set self.delete_name from entry object.
+    '''
     self.delete_name=action.get_label()
 
   def show_last_plot_params(self,action):
     '''
       Show a text window with the text, that would be used for gnuplot to
-      plot the current measurement.
+      plot the current measurement. Last gnuplot errors are shown below,
+      if there have been any.
     '''    
     global errorbars
     if self.active_multiplot:
@@ -947,8 +946,7 @@ class ApplicationMainWindow(gtk.Window):
                                         [item[0].short_info for item in plotlist], 
                                         errorbars,
                                         self.active_session.TEMP_DIR+'plot_temp.png',
-                                        fit_lorentz=False,
-                                        add_preferences=self.preferences_file)   
+                                        fit_lorentz=False)   
     else:
       plot_text=measurement_data_plotting.create_plot_script(
                          self.active_session, 
@@ -959,8 +957,7 @@ class ApplicationMainWindow(gtk.Window):
                          [object.short_info for object in self.measurement[self.index_mess].plot_together],
                          errorbars, 
                          output_file=self.active_session.TEMP_DIR+'plot_temp.png',
-                         fit_lorentz=False,
-                         add_preferences=self.preferences_file)
+                         fit_lorentz=False)
     # create a dialog to show the plot text for the active data
     param_dialog=gtk.Dialog(title='Last plot parameters:')
     param_dialog.set_default_size(600,400)
@@ -1110,6 +1107,7 @@ class ApplicationMainWindow(gtk.Window):
       Open a dialog to transform the units and dimensions of one dataset.
       A set of common unit transformations is stored in config.transformations.
     '''
+    # TODO: More convinient entries.
     from config.transformations import known_transformations
     units=self.active_session.active_file_data[self.index_mess].units()
     dimensions=self.active_session.active_file_data[self.index_mess].dimensions()
@@ -1320,6 +1318,8 @@ class ApplicationMainWindow(gtk.Window):
       Open a dialog to select a cross-section through an 3D-dataset.
       The user can select a line and width for the cross-section,
       after this the data is extracted and appendet to the fileobject.
+      
+      @return If the extraction was successful
     '''
     data=self.measurement[self.index_mess]
     dimension_names=[]
@@ -1514,6 +1514,9 @@ class ApplicationMainWindow(gtk.Window):
   def fit_dialog(self,action, size=(600, 400), position=None):
     '''
       A dialog to fit the data with a set of functions.
+      
+      @param size Window size (x,y)
+      @param position Window position (x,y)
     '''
     if not self.active_session.ALLOW_FIT:
       fit_dialog=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
@@ -1547,6 +1550,7 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Show or hide advanced options widgets.
     '''
+    # TODO: Do we realy need this?
     if self.check_add.get_active():
 #      if action==None: # only resize picture if the length of additional settings changed
 #        if (self.logz.get_property('visible') & (self.measurement[self.index_mess].zdata<0))\
@@ -1609,6 +1613,7 @@ class ApplicationMainWindow(gtk.Window):
       Apply changed plotsettings to all plots. This includes x,y,z-ranges,
       logarithmic plotting and the custom plot settings.
     '''
+    # TODO: Check if all options are included here
     for dataset in self.measurement:
       dataset.xdata=self.measurement[self.index_mess].xdata
       dataset.ydata=self.measurement[self.index_mess].ydata
@@ -1626,6 +1631,7 @@ class ApplicationMainWindow(gtk.Window):
       Add or remove the active dataset from multiplot list, 
       which is a list of plotnumbers of the same Type.
     '''
+    # TODO: Review the multiplot stuff!
     if (action.get_name()=='AddAll')&(len(self.measurement)<40): # dont autoadd more than 40
       for i in range(len(self.measurement)):
         self.do_add_multiplot(i)
@@ -1693,8 +1699,9 @@ class ApplicationMainWindow(gtk.Window):
 
   def export_plot(self,action): 
     '''
-      Function for every export action. Export is made as .png or .ps depending
-      on the selected file name.
+      Function for every export action. 
+      Export is made as .png or .ps depending on the selected file name.
+      Save is made as gnuplot file and output files.
     '''
     global errorbars
     self.active_session.picture_width='1600'
@@ -1738,8 +1745,7 @@ class ApplicationMainWindow(gtk.Window):
                                           [item[0].short_info for item in plotlist], 
                                           errorbars,
                                           common_file_prefix + '.png',
-                                          fit_lorentz=False,
-                                          add_preferences=self.preferences_file, 
+                                          fit_lorentz=False, 
                                           output_file_prefix=common_file_prefix)
         file_numbers=[]
         for j, dataset in enumerate(itemlist):
@@ -1756,8 +1762,7 @@ class ApplicationMainWindow(gtk.Window):
                            [object.short_info for object in self.measurement[self.index_mess].plot_together],
                            errorbars, 
                            output_file=common_file_prefix + '.png',
-                           fit_lorentz=False,
-                           add_preferences=self.preferences_file, 
+                           fit_lorentz=False, 
                            output_file_prefix=common_file_prefix)
         file_numbers=[]
         j=0
@@ -1776,8 +1781,7 @@ class ApplicationMainWindow(gtk.Window):
                                       dataset.short_info,
                                       [object.short_info for object in dataset.plot_together],
                                       errorbars,
-                                      fit_lorentz=False,
-                                      add_preferences=self.preferences_file)
+                                      fit_lorentz=False)
         self.reset_statusbar()
         self.statusbar.push(0,'Export plot number '+dataset.number+'... Done!')
     elif action.get_name()=='MultiPlotExport':
@@ -1807,8 +1811,7 @@ class ApplicationMainWindow(gtk.Window):
                                       [item[0].short_info for item in plotlist], 
                                       errorbars,
                                       self.active_session.TEMP_DIR+'plot_temp.png',
-                                      fit_lorentz=False,
-                                      add_preferences=self.preferences_file)     
+                                      fit_lorentz=False)     
         self.label.set_width_chars(len('Multiplot title')+5)
         self.label.set_text('Multiplot title')
         self.set_image()
@@ -1822,8 +1825,7 @@ class ApplicationMainWindow(gtk.Window):
                                         [item[0].short_info for item in plotlist], 
                                         errorbars,
                                         multi_file_name,
-                                        fit_lorentz=False,
-                                        add_preferences=self.preferences_file)
+                                        fit_lorentz=False)
           # give user information in Statusbar
           self.reset_statusbar()
           self.statusbar.push(0,'Export multi-plot ' + multi_file_name + '... Done!')
@@ -1864,8 +1866,7 @@ class ApplicationMainWindow(gtk.Window):
                                     [object.short_info for object in self.measurement[self.index_mess].plot_together],
                                     errorbars,
                                     new_name,
-                                    fit_lorentz=False,
-                                    add_preferences=self.preferences_file)
+                                    fit_lorentz=False)
       self.reset_statusbar()
       self.statusbar.push(0,'Export plot number '+self.measurement[self.index_mess].number+'... Done!')
 
@@ -1883,8 +1884,7 @@ class ApplicationMainWindow(gtk.Window):
                                     [object.short_info for object in self.measurement[self.index_mess].plot_together],
                                     errorbars, 
                                     output_file=self.active_session.TEMP_DIR+'plot_temp.ps',
-                                    fit_lorentz=False,
-                                    add_preferences=self.preferences_file)
+                                    fit_lorentz=False)
       self.reset_statusbar()
       self.statusbar.push(0,'Printed with: '+PRINT_COMMAND)
       os.popen2(PRINT_COMMAND+self.active_session.TEMP_DIR+'plot_temp.ps')
@@ -1899,8 +1899,7 @@ class ApplicationMainWindow(gtk.Window):
                                       [object.short_info for object in self.measurement[self.index_mess].plot_together],
                                       errorbars, 
                                       output_file=self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps',
-                                      fit_lorentz=False,
-                                      add_preferences=self.preferences_file)
+                                      fit_lorentz=False)
         print_string=print_string+self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps '
       self.reset_statusbar()
       self.statusbar.push(0,'Printed with: '+PRINT_COMMAND)
@@ -2065,9 +2064,10 @@ class ApplicationMainWindow(gtk.Window):
 
   def set_image(self):
     '''
-      Resize and show temporary gnuplot image.
+      Show the image created by gnuplot.
     '''
-      # in windows we have to wait for the picture to be written to disk
+    # in windows we have to wait for the picture to be written to disk
+    # TODO: review this, as sometimes it's not working in Windows.
     if self.active_session.OPERATING_SYSTEM=='windows':
       for i in range(20):
         if os.path.exists(self.active_session.TEMP_DIR + 'plot_temp.png'):
@@ -2084,9 +2084,11 @@ class ApplicationMainWindow(gtk.Window):
     #                                        gtk.gdk.INTERP_BILINEAR))
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
-            with_errorbars, output_file=gnuplot_preferences.output_file_name, fit_lorentz=False, add_preferences=''):
+            with_errorbars, output_file=gnuplot_preferences.output_file_name, fit_lorentz=False):
     '''
       Plot via script file instead of using python gnuplot pipeing.
+      
+      @return Gnuplot error messages, which have been reported
     '''
     return measurement_data_plotting.gnuplot_plot_script(session, 
                                                          datasets,
@@ -2096,8 +2098,7 @@ class ApplicationMainWindow(gtk.Window):
                                                          names,
                                                          with_errorbars,
                                                          output_file,
-                                                         fit_lorentz=False,
-                                                         add_preferences=self.preferences_file)
+                                                         fit_lorentz=False)
 
   def replot(self, action=None): 
     '''
@@ -2123,8 +2124,7 @@ class ApplicationMainWindow(gtk.Window):
                                         [item[0].short_info for item in plotlist], 
                                         errorbars,
                                         self.active_session.TEMP_DIR+'plot_temp.png',
-                                        fit_lorentz=False,
-                                        add_preferences=self.preferences_file)   
+                                        fit_lorentz=False)   
           self.label.set_width_chars(len(itemlist[0].short_info)+5)
           self.label.set_text(itemlist[0].short_info)
     else:
@@ -2139,8 +2139,7 @@ class ApplicationMainWindow(gtk.Window):
                                   [object.short_info for object in self.measurement[self.index_mess].plot_together],
                                   errorbars, 
                                   output_file=self.active_session.TEMP_DIR+'plot_temp.png',
-                                  fit_lorentz=False,
-                                  add_preferences=self.preferences_file)
+                                  fit_lorentz=False)
     if self.last_plot_text!='':
       self.statusbar.push(0, 'Gnuplot error!')
       self.show_last_plot_params(None)
@@ -2154,7 +2153,7 @@ class ApplicationMainWindow(gtk.Window):
 
   def reset_statusbar(self): 
     '''
-      Clear statusbar.
+      Clear the statusbar.
     '''
     self.statusbar.pop(0)
     self.statusbar.push(0,'')

@@ -29,10 +29,9 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 # python modules
 import sys
-##---add_python_path_here---## # Place holder to add installation directory to python path for non superusers.
+##---add_python_path_here---## # Place holder to add installation directory to python path for non superuser installation.
 
 # own modules
-# specific measurement classes
 # parent class
 from sessions.generic import GenericSession
 
@@ -71,7 +70,7 @@ known_measurement_types={
   
 class RedirectOutput:
   '''
-    Class to redirect all print statements when useing the GUI.
+    Class to redirect all print statements to the statusbar when useing the GUI.
   '''
   
   def __init__(self, plotting_session):
@@ -111,10 +110,15 @@ class RedirectOutput:
 
 class RedirectError(RedirectOutput):
   '''
-    Class to redirect all error messages when useing the GUI.
+    Class to redirect all error messages to a message dialog when useing the GUI.
+    The message dialog has an option to export a bugreport, which includes the active
+    measurement to help debugging.
   '''
   
   def __init__(self, plotting_session):
+    '''
+      Class constructor, as in RedirectOutput and creates the message dialog.
+    '''
     RedirectOutput.__init__(self, plotting_session)
     self.messagebox=gtk.MessageDialog(parent=None, flags=0, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK_CANCEL, message_format='Errorbox')
     self.messagebox.connect('response', self.response)
@@ -122,7 +126,7 @@ class RedirectError(RedirectOutput):
   
   def write(self, string):
     '''
-      Add content.
+      Add content and show the dialog.
       
       @param string Output string of stderr
     '''
@@ -137,6 +141,9 @@ class RedirectError(RedirectOutput):
   def response(self, dialog, response_id):
     '''
       Hide the dialog on response and export debug information if response was OK.
+      
+      @param dialog The message dialog
+      @param response_id The dialog response ID
     '''
     self.messagebox.hide()
     import time
@@ -166,7 +173,13 @@ class RedirectError(RedirectOutput):
 
 def import_session_from_name(arguments, measurement_type):
   '''
-    Import a session object from a string.
+    Import a session object from a string. 
+    In this way we don't need to import all sessions in advance.
+    
+    @param arguments The command line arguments to pass to the object
+    @param measurement_type The names of the module and object to import
+    
+    @return The class instance for the measurement type
   '''
   active_session_class = getattr(__import__('sessions.'+measurement_type[0], globals(), locals(), 
                                       [measurement_type[1]]), measurement_type[1])
@@ -174,7 +187,6 @@ def import_session_from_name(arguments, measurement_type):
 
 if __name__ == '__main__':    #code to execute if called from command-line
   # initialize session and read data files
-
   if (len(sys.argv) == 1):
     # if no input parameter given, print the short help string
     print GenericSession.SHORT_HELP
@@ -214,5 +226,5 @@ if __name__ == '__main__':    #code to execute if called from command-line
   else: # in command line mode, just plot the selected data.
     active_session.plot_all()
 
-  # delete temporal files and folder
+  # delete temporal files and folders after the program ended
   active_session.os_cleanup()

@@ -19,10 +19,10 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
-__status__ = "Development"
+__status__ = "Production"
 
 class FitFunction:
   '''
@@ -55,6 +55,13 @@ class FitFunction:
       For normal functions this is just the difference between y and simulation(x) but
       can be overwritten e.g. to increase speed or fit to log(x).
       If the dataset has yerror values they are used as weight.
+      
+      @param params Parameters for the function in this iteration
+      @param y List of y values measured
+      @param x List of x values for the measured points
+      @param yerror List of error values for the y values or None if the fit is not weighted
+      
+      @return Residuals (meaning the value to be minimized) of the fit function and the measured data
     '''
     # function is called len(x) times, this is just to speed up the lookup procedure
     function=self.fit_function
@@ -85,7 +92,12 @@ class FitFunction:
     '''
       Do the least square refinement to the given dataset. If the fit converges
       the new parameters are stored.
-      Returns the message string of leastsq.
+      
+      @param dataset_x list of x values from the dataset
+      @param dataset_y list of y values from the dataset
+      @param dataset_yerror list of errors from the dataset or None for no weighting
+      
+      @return The message string of leastsq and the covariance matrix
     '''
     parameters=[self.parameters[i] for i in self.refine_parameters]
     # only refine inside the selected region
@@ -132,11 +144,16 @@ class FitFunction:
   def set_parameters(self, new_params):
     '''
       Set new parameters and store old ones in history.
+      
+      @param new_params List of new parameters
     '''
     self.parameters_history=self.parameters
     self.parameters=list(new_params)
 
   def toggle_refine_parameter(self, action, index):
+    '''
+      Add or remove a parameter index to the list of refined parameters for the fit.
+    '''
     if index in self.refine_parameters:
       self.refine_parameters.remove(index)
     else:
@@ -144,7 +161,13 @@ class FitFunction:
   
   def simulate(self, x, interpolate=5):
     '''
-      Return simulated y-values for a list of giver x-values.
+      Calculate the function for the active parameters for x values and some values
+      in between.
+      
+      @param x List of x values to calculate the function for
+      @param interpolate Number of points to interpolate in between the x values
+    
+      @return simulated y-values for a list of giver x-values.
     '''
     xint=[]
     for i, xi in enumerate(x[:-1]):
@@ -158,6 +181,10 @@ class FitFunction:
     return xint, y
   
   def history_back(self, action, dialog, window):
+    '''
+      Set old parameters from the history of parameters and
+      set the active parameters as history.
+    '''
     active_params=self.parameters
     self.parameters=self.parameters_history
     self.parameters_history=active_params
@@ -175,6 +202,8 @@ class FitSum(FitFunction):
   def __init__(self, func1,  func2):
     '''
       Construct a sum of two functions to use for fit.
+      
+      @param funci the functions to add together
     '''
     self.name=func1.name + ' + ' + func2.name
     self.parameters=func1.parameters + func2.parameters
@@ -204,6 +233,9 @@ class FitSum(FitFunction):
     self.origin[1].set_parameters(self.parameters[index:])
 
   def toggle_refine_parameter(self, action, index):
+    '''
+      Change the refined parameters in the origin functions.
+    '''
     FitFunction.toggle_refine_parameter(self, action, index)
     if index < len(self.origin[0].parameters):
       self.origin[0].toggle_refine_parameter(action, index)
@@ -362,7 +394,7 @@ class FitVoigt(FitFunction):
 
 class FitSQUIDSignal(FitFunction):
   '''
-    Fit a gaussian function.
+    Fit three gaussians to SQUID raw data to calculate magnetic moments.
   '''
   prefactor=numpy.sqrt(2.*numpy.pi)
   from config.squid import squid_coil_distance, squid_factor
@@ -411,6 +443,9 @@ class FitSession:
   def __init__(self,  dataset, file_actions=None):
     '''
       Constructor creating pointer to the dataset.
+      
+      @param dataset A MeasurementData object
+      @param file_actions FileActions object to use      
     '''
     self.functions=[] # a list of sequences (FitFunction, fit, plot) to be used
     self.data=dataset
@@ -464,6 +499,8 @@ class FitSession:
   def fit(self):
     '''
       Fit all funcions in the list where the fit parameter is set to True.
+      
+      @return The covariance matrices of the fits or [[None]]
     '''
     if (self.data.yerror>=0) and (self.data.yerror!=self.data.ydata)\
         and (self.data.yerror!=self.data.xdata):
