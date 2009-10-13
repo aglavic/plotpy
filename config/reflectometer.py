@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-  Some general settings for the reflectometer plotting script 'plot_reflectometer_data.py' 
+  Some general settings for the reflectometer sessions
 '''
 
 # import modules
@@ -10,7 +10,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"

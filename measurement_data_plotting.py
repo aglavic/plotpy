@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -29,12 +29,22 @@ def gnuplot_plot(session,
                  with_errorbars,
                  output_file=gnuplot_preferences.output_file_name,
                  additional_info='',
-                 fit_lorentz=False,
-                 add_preferences=''):
+                 fit_lorentz=False):
   '''
     Plotting with direct piping of the data to gnuplot, should work much faster
     Gnuplot.py must by installed and properly working.
-    files are stored in temporary folder set in gnuplot_preferences
+    Files are stored in temporary folder set in gnuplot_preferences.
+    
+    @param session The session object to use
+    @param file_name_prefix Prefix of the used data and gnuplot files
+    @param title The title of the plot
+    @param names The names of the plotted functions
+    @param with_errorbars Use errorbars layout when plotting
+    @param output_file File name for the output picture_height
+    @param additional_info Additional info string for the title
+    @param fit_lorentz Is a fit included in this measurement?
+    
+    @return Gnuplot error message or empty string
   '''
   gp=gnuplot_preferences # short form for gnuplot_preferences
   import Gnuplot
@@ -164,11 +174,21 @@ def gnuplot_plot_script(session,
                         with_errorbars,
                         output_file=gnuplot_preferences.output_file_name,
                         additional_info='',
-                        fit_lorentz=False,
-                        add_preferences=''): 
+                        fit_lorentz=False): 
   '''
-      Function to plot with an additional data and gnuplot file and calling to the gnuplot program.
-      Files are stored in temporary folder set in gnuplot_preferences.
+    Function to plot with an additional data and gnuplot file and calling to the gnuplot program.
+    Files are stored in temporary folder set in gnuplot_preferences.
+    
+    @param session The session object to use
+    @param file_name_prefix Prefix of the used data and gnuplot files
+    @param title The title of the plot
+    @param names The names of the plotted functions
+    @param with_errorbars Use errorbars layout when plotting
+    @param output_file File name for the output picture_height
+    @param additional_info Additional info string for the title
+    @param fit_lorentz Is a fit included in this measurement?
+    
+    @return Gnuplot error message or empty string
   '''
   gp=gnuplot_preferences # short form for gnuplot_preferences
   file_numbers=[]
@@ -203,8 +223,7 @@ def gnuplot_plot_script(session,
                                        with_errorbars,
                                        output_file,
                                        additional_info,
-                                       fit_lorentz,
-                                       add_preferences)
+                                       fit_lorentz)
   write_file=open(script_name,'w')
   write_file.write( gnuplot_file_text+'\n' )
   write_file.close()
@@ -229,6 +248,8 @@ def replace_ph(session,
                additional_info=''):
   '''
     Replace place holders in a string.
+    
+    @return The altered string
   '''
   datanr=number[0]
   withnr=number[1]
@@ -272,12 +293,13 @@ def create_plot_script(session,
                        with_errorbars,
                        output_file=gnuplot_preferences.output_file_name,
                        additional_info='',
-                       fit_lorentz=False,
-                       add_preferences='', 
+                       fit_lorentz=False, 
                        output_file_prefix=None
                        ):
   '''
-      function to create a script for the gnuplot program to read
+      Create a script for the gnuplot program.
+      
+      @return The text of the script
   '''
   # TODO: Check for all functionalities compared with no script mode.
   # Ceck for unused code.

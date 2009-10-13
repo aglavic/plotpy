@@ -36,7 +36,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Werner Schweika"]
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -536,9 +536,10 @@ class DNSSession(GenericSession):
         min_p=min(vana_data.data[1].values)
         cen_p=(max_p-min_p)/2.+min_p
         vana_data.process_function(lambda point: [point[0], point[1]/cen_p, point[2]/cen_p])
-      sys.stdout.write("calculate wavevectors, ")
-      sys.stdout.flush()
-      dnsmap.calculate_wavevectors()
+      if not self.POWDER_DATA:
+        sys.stdout.write("calculate wavevectors, ")
+        sys.stdout.flush()
+        dnsmap.calculate_wavevectors()
       dnsmap.make_corrections()
       sys.stdout.write("\n")
       sys.stdout.flush()
@@ -917,7 +918,7 @@ class DNSSession(GenericSession):
           data_nicr[key[3:]].sort()
           data_nicr[key[3:]].reverse()
         else:
-          print "To many chanels for %s, skipping." % key
+          print "To many chanels for %s, skipping." % str(key)
       else:
         print "NiCr for detector: %g; currents:%i,%i,%i,%i not Found!" %( key[0], key[3], key[4], key[5], key[6] )
     # calculate flipping-ration from nicr data
@@ -933,14 +934,15 @@ class DNSSession(GenericSession):
         pp=item[1][1].get_data(index)
         point[1]/=pp[1]
         point[2]=0.
-        return point      
+        return point     
+    from copy import deepcopy
     data_flippingratio={}
     for key, item in data_nicr.items():
       if len(item)==1:
         print "Lonely channel found, skipping"
         continue
       else:
-        flipping_ratio=item[0][1]
+        flipping_ratio=deepcopy(item[0][1])
         flipping_ratio.process_function(calc_flipping_ratio)
         data_flippingratio[key]=(flipping_ratio, item[0][2], item[1][2])
     for item in data_flippingratio.values():

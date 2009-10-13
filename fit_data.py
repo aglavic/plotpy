@@ -557,7 +557,12 @@ class FitSession:
   #+++++++++++++++++++++++++ methods for GUI dialog ++++++++++++++++++++
   def get_dialog(self, window, dialog):
     '''
-      Return a dialog widget for the interaction with this class.
+      Create a aligned table widget for the interaction with this class.
+      
+      @param window The parent Window for the dialog
+      @param dialog The dialog the table will be appendet to
+      
+      @return A widget object for the Dialog and a list of action widgets inside the table
     '''
     def set_function_param(action, function, index):
       '''
@@ -631,28 +636,8 @@ class FitSession:
     new_function=gtk.combo_box_new_text()
     add_button=gtk.Button(label='Add Function')
     map(new_function.append_text, self.get_functions())
-#    align_table.attach(add_button,
-#                # X direction #          # Y direction
-#                0, 1,                      len(self.functions)*2+1, len(self.functions)*2+2,
-#                gtk.EXPAND,     gtk.EXPAND,
-#                0,                         0);
     sum_button=gtk.Button(label='Combine')
-#    align_table.attach(sum_button,
-#                # X direction #          # Y direction
-#                1, 2,                       len(self.functions)*2+1, len(self.functions)*2+2,
-#                gtk.EXPAND,     gtk.EXPAND,
-#                0,                         0);
     fit_button=gtk.Button(label='Fit and Replot')
-#    align_table.attach(fit_button,
-#                # X direction #          # Y direction
-#                2, 4,                      len(self.functions)*2, len(self.functions)*2+2,
-#                gtk.EXPAND,     gtk.EXPAND,
-#                0,                         0);
-#    align_table.attach(new_function,
-#                # X direction #          # Y direction
-#                0, 2,                      len(self.functions)*2, len(self.functions)*2+1,
-#                gtk.EXPAND,     gtk.EXPAND,
-#                0,                         0);
     # connect the window signals to the handling methods
     add_button.connect('clicked', self.add_function_dialog, new_function, dialog, window)
     sum_button.connect('clicked', self.combine_dialog, dialog, window)
@@ -668,8 +653,12 @@ class FitSession:
   
   def function_line(self, function, dialog, window):
     '''
-      Create the widgets for one function and return a table of these.
+      Create the widgets for one function and return a table of those.
       The entry widgets are returned in a list to be able to read them.
+      
+      @param function The FitFunction object for this line
+      @param dialog The dialog widget this line will be added to
+      @param window The parent window for the dialog
       
       @return A table widget for this function line and a list of entry widgets.
     '''
@@ -714,6 +703,10 @@ class FitSession:
     '''
       Add a function via dialog access.
       Standart parameters are used.
+      
+      @param name Entry for the name of the function to be added
+      @param dialog Dialog to recreate with the new function
+      @param window Paranet window for the dialog
     '''
     self.file_actions.activate_action('add_function', name.get_active_text())
     #self.add_function(name.get_active_text())
@@ -725,6 +718,10 @@ class FitSession:
   def del_function_dialog(self, action, function, dialog, window):
     '''
       Delete a function via dialog access.
+      
+      @param name Entry for the name of the function to be added
+      @param dialog Dialog to recreate with the new function
+      @param window Paranet window for the dialog
     '''
     self.del_function(function)
     size=dialog.get_size()
@@ -733,6 +730,12 @@ class FitSession:
     window.fit_dialog(None, size, position)
   
   def set_function_parameters(self, func_index, values):
+    '''
+      Set the parameters of one functio object in the list.
+    
+      @param func_index List index of the function to be altered
+      @param values List of values for the parameters to be set
+    '''
     for j, value in enumerate(values[0:-3]):
       self.functions[func_index][0].parameters[j]=value
     self.functions[func_index][0].x_from=values[-3]
@@ -742,13 +745,22 @@ class FitSession:
   def fit_from_dialog(self, action, entries, dialog, window):
     '''
       Trigger the fit, simulation and replot functions.
+      
+      @param entries Entry widgets from the dialog to get the function parameters from
+      @param dialog Fit dialog widget
+      @param window Parent window of the dialog.destroy
     '''
     def get_entry_values(entry, if_not=0):
+      '''
+        Help function to evaluate the entry boxes. Skippes entries with no numbers
+        and converts ',' to '.'.
+      '''
       try: 
         return float(entry.get_text().replace(',', '.'))
       except ValueError:
         return if_not
     for i, function in enumerate(self.functions):
+      # Set all function parameters according to the entries
       values=[]
       for entry in entries[i][:-3]:
         values.append(get_entry_values(entry))
@@ -758,26 +770,29 @@ class FitSession:
       self.file_actions.activate_action('set_function_parameters', i, values)
     covariance_matices=self.file_actions.activate_action('fit_functions')
     self.file_actions.activate_action('simmulate_functions')
+    # save the geometry of the fit dialog and replot the data+fit
     size=dialog.get_size()
     position=dialog.get_position()
     dialog.destroy()
     window.replot()
     if self.show_covariance:
+      # Show the estimated errors of the fit parameters
       text='Esitmated errors from covariance matrices:'
       for i, function in enumerate(self.functions):
         if function[1]:
           text+='\n\n%s:' % function[0].name
           for j, pj in enumerate(function[0].parameter_names):
             text+='\n%s = %g +/- %g' % (pj, function[0].parameters[j], sqrt(covariance_matices[i][j][j]))
-      info_dialog=gtk.MessageDialog(parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, message_format=text)
+      info_dialog=gtk.MessageDialog(parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                                    type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, message_format=text)
       info_dialog.run()
-      
       info_dialog.destroy()
+    # recreate the fit dialog with the new parameters 
     window.fit_dialog(None, size, position)
 
   def combine_dialog(self, action, dialog, window):
     '''
-      A dialog window to combine two fit functions.
+      A dialog window to combine two fit functions e.g. sum them up.
     '''
     # TODO: Make a(b) working.
     if len(self.functions)<2:
@@ -793,7 +808,7 @@ class FitSession:
     combine_dialog.vbox.add(function_1)
     combine_dialog.vbox.add(function_2)
     combine_dialog.add_button('Add: a + b',2)
-    combine_dialog.add_button('Add: a(b)',3)
+    #combine_dialog.add_button('Add: a(b)',3)
     combine_dialog.add_button('Cancel',1)
     combine_dialog.show_all()
     result=combine_dialog.run()
@@ -801,7 +816,6 @@ class FitSession:
     if result in [2, 3]:
       if result==2:
         self.file_actions.activate_action('sum_up_functions', selected[0], selected[1])
-        #self.sum(selected[0], selected[1])
         size=dialog.get_size()
         position=dialog.get_position()
         dialog.destroy()

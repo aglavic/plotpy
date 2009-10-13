@@ -33,7 +33,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -920,7 +920,8 @@ class TreffSession(GenericSession):
          dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
             map(lambda number: number/10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
 
-  def export_data_and_entfile(self, folder, file_name, datafile_prefix='fit_temp_', use_multilayer=False):
+  def export_data_and_entfile(self, folder, file_name, datafile_prefix='fit_temp_', 
+                              use_multilayer=False, use_roughness_gradient=True):
     '''
       Export measured data for fit program and the corresponding .ent file.
     '''
@@ -945,7 +946,7 @@ class TreffSession(GenericSession):
     self.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(os.path.join(folder, file_name), 'w')
-    ent_file.write(self.fit_object.get_ent_str(use_multilayer=use_multilayer)+'\n')
+    ent_file.write(self.fit_object.get_ent_str(use_multilayer=use_multilayer, use_roughness_gradient=use_roughness_gradient)+'\n')
     ent_file.close()
 
   def show_result_window(self, dialog, window, new_fit, sorted_errors):
@@ -1087,7 +1088,7 @@ class TreffSession(GenericSession):
     self.export_data_and_entfile(os.path.dirname(file_prefix), 
                                  os.path.basename(file_prefix)+'.ent', 
                                  datafile_prefix=os.path.basename(file_prefix), 
-                                 use_multilayer=use_multilayer.get_active())
+                                 use_multilayer=use_multilayer.get_active(), use_roughness_gradient=False)
     return True
   
   def import_fit_dialog(self, action, window):
@@ -1251,7 +1252,7 @@ class TreffFitParameters(FitParameters):
     self.substrate=layer
     return result
 
-  def get_ent_str(self, use_multilayer=False):
+  def get_ent_str(self, use_multilayer=False, use_roughness_gradient=True):
     '''
       create a .ent file for fit.f90 script from given parameters
       fit parameters have to be set in advance, see set_fit_parameters/set_fit_constrains
@@ -1283,7 +1284,7 @@ class TreffFitParameters(FitParameters):
       ent_string+='# blank\n'
       
       ent_string+=str(self.number_of_layers()) + '\tnumber of layers below the (unused) multilayer\n'
-      ent_string_layer, layer_index, para_index = self.__get_ent_str_layers__()
+      ent_string_layer, layer_index, para_index = self.__get_ent_str_layers__(use_roughness_gradient)
       ent_string+=ent_string_layer
     
     # more global parameters
@@ -1810,12 +1811,14 @@ class TreffLayerParam(LayerParam):
     else:
       LayerParam.set_param(self, index, 6, value)
   
-  def get_ent_text(self, layer_index, para_index, add_roughness=0.):
+  def get_ent_text(self, layer_index, para_index, add_roughness=0., use_roughness_gradient=True):
     '''
       Function to get the text lines for the .ent file.
       Returns the text string and the parameter index increased
       by the number of parameters for the layer.
     '''
+    if not use_roughness_gradient:
+      add_roughness=0.
     text=LayerParam.__get_ent_text_start__(self, layer_index, para_index)
     para_index+=1
     text+=str(self.scatter_density_Nb) + '\treal part Nb\', - (A**-2)*1e6\t\tparameter ' + str(para_index) + '\n'

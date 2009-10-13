@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -24,6 +24,12 @@ __status__ = "Development"
 def read_data(file_name, script_path, import_images):
   '''
     Read the data of a treff raw data file, integrate the corresponding .img files.
+    
+    @param file_name Name of the file to import
+    @param script_path Path of the plot scripts to get the treff calibration file
+    @param import_images Boolian to select if only the datafile should be imported or the 2d-detector images, too
+    
+    @return List of MeasurementData objects for the 2d maps and scans splitted by polarization channels
   '''
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
@@ -156,6 +162,15 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
   '''
     Integrate detector rows of the image files corresponding to one polarization direction.
     This function is tuned quite much for fast readout, so some parts are a bit tricky.
+    
+    @param data_lines List of lines from the inputfile which are already split by columns
+    @param columns Dictionary for the interesting columns
+    @param const_information Dictionary of values which are constat for the whole scan e.g. mag. field
+    @param data_path Path to the image files which should be integrated
+    @param calibration Calibration data for the 2d detector as List of integers
+    @param import_images Boolian to select if only the datafile should be imported or the 2d-detector images, too
+    
+    @return MeasurementData objects for the map and the scan for this polarization channel
   '''
   sqrt=math.sqrt
   # create the data object
@@ -241,10 +256,20 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
   map(scan_data_append, scan_data_list)
   return data_object, scan_data_object
 
-def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, pixelbreite):
+def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibration, pixel_width):
   '''
     Map detector columns to alphai, alphaf and intensities.
     Quite optimized, too.
+    
+    @param img_data List of intensities from the detector
+    @param line The corresponding data line from the original input file (contains e.g. Monitor counts)
+    @param columns Dictionary for the interesting columns
+    @param alphai Incident angle of the reflectometer
+    @param alphaf_center Angle from the detector arm to the sample
+    @param calibration Calibration data for the 2d detector as List of integers
+    @param pixel_width Width of one pixel on the 2d detector
+
+    @return List of 256 detector columns with corresponding angle values and errors
   '''
   sqrt=math.sqrt
   log10=math.log10
@@ -264,7 +289,7 @@ def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibr
     # convet strings into integer
     int_data=map(int, parts[i])
     img_integral=sum(int_data)
-    alphaf = alphaf_center + pixelbreite * (130.8 - i)
+    alphaf = alphaf_center + pixel_width * (130.8 - i)
     intensity = img_integral / monitor * calibration[i]
     if intensity > 0:
       logintensity = log10(intensity)
@@ -285,7 +310,9 @@ def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibr
 
 def read_simulation(file_name):
   '''
-    Read a fit.f90 output file as MeasurementData object.
+    Read a pnr_multi output file as MeasurementData object.
+    
+    @return One MeasurementData object
   '''
   sim_file=open(file_name,'r')
   sim_lines=sim_file.readlines()

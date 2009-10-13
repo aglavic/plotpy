@@ -15,14 +15,18 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
 def read_data(file_name):
   '''
-    Read the data of a treff raw data file, integrate the corresponding .img files.
+    Read the data of a in12 data file.
+    
+    @param file_name The name of the file to import
+    
+    @return MeasurementData object with the file data
   '''
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
@@ -42,7 +46,10 @@ def read_data(file_name):
 def read_header(lines):
   '''
     Function to read IN12 file header information and check if the file is in the right format.
+    
+    @return If right format, sequence with some information and the data columns present in the file.
   '''
+  # test for correct format with these lines:
   try:
     if  (lines.pop(6)!='VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV\n') or\
         (lines.pop(3)!='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n') or\
@@ -50,6 +57,7 @@ def read_header(lines):
       return False, [],  []
   except IndexError:
     return False, [],  []
+  # pop lines without information
   lines.pop(0)
   lines.pop(0)
   lines.pop(0)
@@ -113,8 +121,14 @@ def get_first_data_line(lines):
 def read_data_lines(lines, columns, header):
   '''
     Function to creat a MeasurementData object from the columns of the file.
-    If the measurement is done using a .pol file the polarizations are splitted
+    If the measurement is done using a .pol file the data points are splitted
     into seqences corresponding to the polarizations.
+    
+    @param lines List of lines in input file
+    @param coluns List of data columns in that file
+    @param header The header information to use for e.g. the plot title
+    
+    @return List of MeasurementData objects with the read data
   '''
   title=header[2]
   variables=header[4]
@@ -161,6 +175,9 @@ def read_data_lines(lines, columns, header):
 def get_dimensions(item):
   '''
     Lookup the dimension of the values in the datafile.
+    Uses the mapping defined in config.in12.column_dimensions.
+    
+    @return String for the dimension
   '''
   for seq in column_dimensions:
     if item in seq[0]:
@@ -177,6 +194,11 @@ def replace_names(item):
   return item
   
 def create_info(header):
+  '''
+    Use the header list to create an information string which is easier readable.
+    
+    @return The information string
+  '''
   time, user, title, command, variables, parameters=header
   info_text=['']
   info_text.append('data taken from IN12 file')

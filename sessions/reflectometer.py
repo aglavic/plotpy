@@ -40,7 +40,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -786,7 +786,7 @@ class ReflectometerSession(GenericSession):
     self.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(file_prefix+'.ent', 'w')
-    ent_file.write(self.fit_object.get_ent_str()+'\n')
+    ent_file.write(self.fit_object.get_ent_str(use_roughness_gradient=False)+'\n')
     ent_file.close()
     self.call_fit_program(file_prefix+'.ent', file_prefix+'.res', file_prefix, 50, exe=file_prefix+'.o')
     script_file=open(file_prefix+'_run.sh', 'w')
@@ -1048,7 +1048,7 @@ class RefFitParameters(FitParameters):
     self.substrate=layer
     return result
 
-  def get_ent_str(self):
+  def get_ent_str(self, use_roughness_gradient=True):
     '''
       create a .ent file for fit.f90 script from given parameters
       fit parameters have to be set in advance, see set_fit_parameters/set_fit_constrains
@@ -1056,7 +1056,7 @@ class RefFitParameters(FitParameters):
     ent_string=str(self.radiation[0]) + '\tscattering radiaion energy (' + self.radiation[1] + ')\n'
     ent_string+=str(self.number_of_points) + '\tnumber of datapoints\n\n'
     ent_string+=str(self.number_of_layers() + 1) + '\tnumber of interfaces (number of layers + 1)\n'
-    ent_string_layer, layer_index, para_index = self.__get_ent_str_layers__()
+    ent_string_layer, layer_index, para_index = self.__get_ent_str_layers__(use_roughness_gradient)
     ent_string+=ent_string_layer
     # more global parameters
     ent_string+=str(round(self.background, 4)) + '\tbackground\t\t\t\tparametar ' + str(para_index) + '\n'
@@ -1314,12 +1314,14 @@ class RefLayerParam(LayerParam):
     else:
       LayerParam.set_param(self, index, 3, value)
   
-  def get_ent_text(self, layer_index, para_index, add_roughness=0.):
+  def get_ent_text(self, layer_index, para_index, add_roughness=0., use_roughness_gradient=True):
     '''
       Function to get the text lines for the .ent file.
       Returns the text string and the parameter index increased
       by the number of parameters for the layer.
     '''
+    if not use_roughness_gradient:
+      add_roughness=0.
     text=LayerParam.__get_ent_text_start__(self, layer_index, para_index)
     para_index+=1
     text+=str(self.delta) + '\tdelta *1e6\t\t\t\tparameter ' + str(para_index) + '\n'

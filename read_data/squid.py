@@ -16,14 +16,20 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
 def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
   '''
-    Read the ppms/mpms datafile.  
+    Read the ppms/mpms datafile.
+    
+    @param input_file Name of the file to read
+    @param COLUMNS_MAPPING A list of column names with the associated column in the MeasurementData object
+    @param MEASUREMENT_TYPES List of measurements with at least one constant data column (e.g. T=const)
+    
+    @return List of MeasurementData objects for all measured sequences of 'NULL'
   '''
   if os.path.exists(input_file):
     input_file_lines=open(input_file,'r').readlines()
@@ -43,6 +49,8 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
 def get_columns(input_file): 
   '''
     Just return the columns present in the file.
+    
+    @return List of measured columns or 'NULL'
   '''
   if os.path.exists(input_file):
     input_file_handler=open(input_file,'r')
@@ -65,6 +73,8 @@ def get_columns(input_file):
 def read_header(input_file_lines): 
   '''
     Read header of the datafile.
+    
+    @return Measurement information and Name of the sample
   '''
   output=['','']
   for i in range(len(input_file_lines)):
@@ -92,6 +102,8 @@ def check_type(data_1,data_2,type_i):
 def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
   '''
     Read data points line by line.
+    
+    @return List of MeasurementData objects
   '''
   output=[] #initialise data array containing data objects
   line=input_file_lines.pop(0).split(',')
@@ -174,7 +186,9 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
 
 def read_data_line(input_file_line, columns): 
   '''
-    Read one line of data and output the data as a list.
+    Read one line of data and output the data as a list of floats.
+    
+    @return List of floats or 'NULL'
   '''
   line=input_file_line.split(',')
   values=[]

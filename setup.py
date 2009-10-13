@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
-  Script used for setup and installation perpose. 
-  If all works the right way this should test the system environment for all dependencies.
+  Script used for setup and installation purpose. 
+  If all works the right way this should test the system environment for all dependencies and create source and binary distributions.
 '''
 
 import sys, os
@@ -37,26 +37,26 @@ for script in script_files:
   open(script+'.bat', 'w').write(line.replace('$', '%'))
 __scripts__+=script_files+win_batches
 
-# creat windows batches for the script_files
-
-if ('install' in sys.argv) and (not 'win' in sys.platform) and len(sys.argv)==2:
-  for lp in os.path.expandvars('$PATH').split(':'):
-    for file in script_files:
-      if os.path.exists(os.path.join(lp, file)) or\
-        os.path.islink(os.path.join(lp, file)):
-        if raw_input("%s exists, remove it first (Y/N)? " % os.path.join(lp, file)).lower() == 'y':
-          os.remove(os.path.join(lp, file))
-        else:
-          continue
-
+#if ('install' in sys.argv) and (not 'win' in sys.platform) and len(sys.argv)==2:
+#  # For installation, test if the scripts are already installed.
+#  for lp in os.path.expandvars('$PATH').split(':'):
+#    for file in script_files:
+#      if os.path.exists(os.path.join(lp, file)) or\
+#        os.path.islink(os.path.join(lp, file)):
+#        if raw_input("%s exists, remove it first (Y/N)? " % os.path.join(lp, file)).lower() == 'y':
+#          os.remove(os.path.join(lp, file))
+#        else:
+#          continue
+#
 if 'install' not in sys.argv:
+  # Remove MANIFEST befor distributing to be sure no file is missed
   if os.path.exists('MANIFEST'):
     os.remove('MANIFEST')
 
 if 'sdist' in sys.argv:
   # Test if every file has the right version for distributing.
-  # This is only to remind the developer to check all files for every new version.
-  # If the versions do not match a beta is added to the version name of the distribution.
+  # This is only to remind the developer to check all files before every new version.
+  # If the versions do not match a alpha/beta can be added to the version name of the distribution.
   versions_fit=True
   for module in __py_modules__:
     mod=__import__(module, globals(), locals(), ['__version__'], -1)
@@ -126,7 +126,7 @@ if 'install' in sys.argv:
     if answer!='y':
       exit()
 
-
+# Run the setup command with the selected parameters
 setup(name=__name__,
       version=__version__,
       description=__description__,
@@ -178,6 +178,9 @@ if ('install' in sys.argv) and len(sys.argv)==2:
     # Linux/OS-X installation
     pass
 
+# If not installing to python default path change a line in the script to add the program location
+# to pythons module search path when executing.
+# TODO: Try to make this work with all setup parameters not only --install-scripts + --prefix
 if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
   print "Adding module directory to python path in plot.py script."
   script=open(os.path.join(sys.argv[sys.argv.index('--install-scripts')+1], 'plot.py'), 'r')

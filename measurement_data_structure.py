@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -33,17 +33,18 @@ class MeasurementData:
   '''
   number_of_points=0 #count number of stored data-points
   index=0
-# every data value is a pysical property
+  # every data value is a pysical property
   data=[]
-# for plotting the measurement select x and y data
+  # for plotting the measurement select x and y data
   xdata=0
   ydata=0
   yerror=0
+  zdata=-1
+  # Logarithmic scale plotting
   logx=False
   logy=False
   logz=False
-  zdata=-1
-  crop_zdata=True
+  crop_zdata=True # Crop the z-range values to the selected plot range
   scan_line_constant=-1 # the column to sort the data for when using 3d plots.
   scan_line=-1 # the column changed in one scan.
   const_data=[] # select, which data should not be varied in this maesurement and the accouracy
@@ -52,6 +53,7 @@ class MeasurementData:
   number=''
   sample_name=''
   plot_options=''
+  # view angle for the 3d plot
   view_x=60
   view_z=30
   filters=[] # a list of filters to be applied when returning the data, the format is:
@@ -62,6 +64,13 @@ class MeasurementData:
       Constructor for the class.
       If the values are not reinitialized we get problems
       with the creation of objects with the same variable name.
+      
+      @param columns List of columns [(Unit, Dim), ...] in this object
+      @param const List of constant colums for a sequence
+      @param x Index of x column
+      @param y Index of y column
+      @param yerror Index of error column
+      @param zdata Index of z column or -1 for None
     '''
     self.number_of_points=0 #counts number of stored data-points
     self.index=0
@@ -97,6 +106,7 @@ class MeasurementData:
     filters=self.filters
     number_points=len(data[0])
     while data_pointer<number_points:
+      # Iterate through the datapoints
       filtered=False
       for data_filter in filters:
         # if the datapoint is not included (filter[3]=True) or excluded skip it
@@ -109,6 +119,7 @@ class MeasurementData:
       data_pointer+=1
       if filtered:
         continue
+      # return the next datapoint
       yield [value.values[(data_pointer-1)] for value in data]
  
   def __len__(self): 
@@ -120,6 +131,10 @@ class MeasurementData:
   def append(self, point):
     '''
       Add a point to this sequence.
+      
+      @param point List of entries by columns
+      
+      @return The added point or 'NULL' if an error has occured
     '''
     data=self.data # speedup data_lookup
     append_fast=list.append
@@ -133,20 +148,23 @@ class MeasurementData:
 
   def get_data(self,count): 
     '''
-      Get datapoint at position count.
+      Get datapoint at index count.
+      
+      @return List of values at this index
     '''
     return [value.values[count] for value in self.data]
 
   def set_data(self,point,count): 
     '''
-      Set datapoint at position count.
+      Set data point at position count.
     '''
     for value in self.data:
       value.values[count]=point[self.data.index(value)]
 
   def list(self): 
     '''
-      Get x-y list of all data.
+      Get x-y-(z) list of all data points.
+      If x or y columns are negative the index is returned instead
     '''
     xd=self.xdata
     yd=self.ydata
@@ -164,6 +182,7 @@ class MeasurementData:
   def list_err(self): 
     '''
       Get x-y-dy list of all data.
+      If x or y columns are negative the index is returned instead
     '''
     xd=self.xdata
     yd=self.ydata
@@ -271,6 +290,8 @@ class MeasurementData:
   def unit_trans(self,unit_list): 
     '''
       Change units of all columns according to a given list of translations.
+      
+      @return List of new dimensions and units
     '''
     for unit in unit_list:
       for value in self.data:
@@ -290,6 +311,8 @@ class MeasurementData:
     '''
       Change units of one column according to a given list of translations and
       return this column.
+      
+      @return The changed column and the applied translation
     '''
     from copy import deepcopy
     data=deepcopy(self.data[col])
@@ -314,6 +337,10 @@ class MeasurementData:
     def process_function(self,function): 
       '''
         Processing a function on every data point.
+        
+        @param function Python function to execute on each point
+        
+        @return Last point after function execution
       '''
       for i in range(self.number_of_points):
         point = self.get_data(i)
@@ -324,6 +351,10 @@ class MeasurementData:
     def process_function_nonumpy(self,function): 
       '''
         Processing a function on every data point.
+        
+        @param function Python function to execute on each point
+        
+        @return Last point after function execution
       '''
       for i in range(self.number_of_points):
         point = self.get_data(i)
@@ -335,6 +366,10 @@ class MeasurementData:
         Processing a function on every data point.
         When numpy is installed this is done via one proccess call 
         for arrays. (This leads to a huge speedup)
+        
+        @param function Python function to execute on each point
+        
+        @return Last point after function execution
       '''
       try:
         arrays=[]
@@ -349,6 +384,9 @@ class MeasurementData:
       return self.last()
 
   def sort(self, column=None):
+    '''
+      Sort the datapoints for one column.
+    '''
     if column is None:
       column=self.xdata
     data_list=[point for point in self]    
@@ -360,7 +398,16 @@ class MeasurementData:
 
   def export(self,file_name,print_info=True,seperator=' ',xfrom=None,xto=None, only_fitted_columns=False): 
     '''
-      Write data in text file seperated by 'seperator'.
+      Write data in text file.
+      
+      @param file_name Name of the export file
+      @param print_info Put a header ontop of the data
+      @param seperator Seperator characters to be used between columns
+      @param xfrom Start value of x for the export
+      @param xto End value of x for the export
+      @param only_fitted_columns Only export columns used for fitting.
+      
+      @return The number of data lines exported
     '''
     xd=self.xdata
     yd=self.ydata

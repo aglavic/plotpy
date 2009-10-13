@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 '''
- Some general settings for the SQUID plotting script 'plot_SQUID_data.py'
+ Some general settings for the SQUID sessions
 '''
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"

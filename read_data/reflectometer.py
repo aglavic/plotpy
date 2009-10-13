@@ -15,7 +15,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -23,7 +23,12 @@ __status__ = "Production"
 
 def read_data(input_file,DATA_COLUMNS): 
   '''
-    Read the datafile.  
+    Read the datafile.
+    
+    @param input_file Name of the file to import
+    @param DATA_COLUMNS List of columns to be importedd
+    
+    @return List of MeasurementData objects with the file data
   '''
   measurement_data=[]
   if os.path.exists(input_file):
@@ -47,6 +52,10 @@ def read_data(input_file,DATA_COLUMNS):
 def read_header(input_file_lines): 
   '''
     Read header of datafile.
+    
+    @param input_file_lines List of lines from the input file
+    
+    @return Header information 
   '''
   output=''
   for i in range(len(input_file_lines)):
@@ -61,6 +70,8 @@ def read_header(input_file_lines):
 def read_data_lines(input_file_lines,info,DATA_COLUMNS): 
   '''
     Read data points line by line.
+    
+    @return One MeasurementData object for a scan sequence
   '''
   global sample_name
   output=[] #initialise data array containing data objects
@@ -90,7 +101,7 @@ def read_data_lines(input_file_lines,info,DATA_COLUMNS):
 
 def read_data_line(input_file_line): 
   '''
-    Read one line and output data as list.
+    Read one line and output data as list of floats.
   '''
   if input_file_line[0]==';':
     return 'NULL'
@@ -103,6 +114,8 @@ def read_data_line(input_file_line):
 def read_simulation(file_name):
   '''
     Read a fit.f90 output file as MeasurementData object.
+    
+    @return MeasurementData with the fitted dataset
   '''
   sim_file=open(file_name,'r')
   sim_lines=sim_file.readlines()

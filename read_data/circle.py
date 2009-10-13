@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -24,6 +24,9 @@ __status__ = "Production"
 def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
   '''
     Read the datafile.
+    
+    @param COLUMNS_MAPPING List of predefined columns
+    @param MEASUREMENT_TYPES List of predefined settings for the measured columns
   '''
   if os.path.exists(input_file):
     measurement_data=[]
@@ -48,6 +51,10 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
 def read_header(input_file_lines): 
   '''
     Read header of datafile and return the columns present.
+    
+    @param input_file_lines List of lines read from the input file
+    
+    @return List of header information and data column names or 'NULL' if not the right format
   '''
   output=''
   for i in range(len(input_file_lines)):
@@ -69,6 +76,8 @@ def check_type(data_1,data_2,type_i):
   '''
     Compare the data of two lines to check 
     if they belong to the same sequence. 
+    
+    @return If the data fits to the sequence
   '''
   output=True
   for ty in type_i[0]:
@@ -84,6 +93,13 @@ def check_type(data_1,data_2,type_i):
 def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
   '''
     Read data points line by line.
+    
+    @param input_file_lines List of lines from the input file
+    @param info Header information of that file
+    @param COLUMNS_MAPPING List of predefined columns
+    @param MEASUREMENT_TYPES List of predefined settings for the measured columns
+    
+    @return MeasurementData object with the read points or 'NULL' if error
   '''
   output=[] #initialise data array containing data objects
   count=1
@@ -140,6 +156,10 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
 def read_data_line(input_file_line,columns): 
   '''
     Read one line and output data as list.
+    
+    @param input_file_line Line to read data from
+    
+    @return List of floating point numbers of 'NULL' if error
   '''
   if input_file_line[0]=='#':
     if input_file_line[1]=='C':

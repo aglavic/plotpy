@@ -15,14 +15,16 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
 def read_data(file_name, print_comments=True):
   '''
-    Read the data of a treff raw data file, integrate the corresponding .img files.
+    Read the data of a dns data file.
+    
+    @return MeasurementData object with the data from file_name
   '''
   if not os.path.exists(file_name): # Test if the file exists
     if print_comments:
@@ -70,7 +72,12 @@ def read_data(file_name, print_comments=True):
     return 'NULL'
   
 
-def read_header(file_handler): # read file header information
+def read_header(file_handler): 
+  ''' 
+    Read file header information.
+    
+    @return Header string without # characters
+  '''
   file_handler.readline()
   line=file_handler.readline()
   output=''
@@ -79,18 +86,35 @@ def read_header(file_handler): # read file header information
     line=file_handler.readline()
   return output
     
-def read_lambda(file_handler): # read wavelength when after comment section
+def read_lambda(file_handler): 
+  ''' 
+    Read wavelength when after comment section.
+    
+    @return Float of wavelength
+  '''
   file_handler.readline()
   return abs(float(file_handler.readline().split()[4]))*10
   
-def read_info(file_handler,info_name): # read until specified line
+def read_info(file_handler,info_name): 
+  ''' 
+    Read until specified line.
+    
+    @param info_name String of the parameter to search for
+  '''
   line=file_handler.readline()
   while (line.find(info_name)==-1):
     line=file_handler.readline()
   return float(line.split()[2])
 
-# reads data and stores it in an array
 def read_detector_data(file_handler,detectors,time_channels): 
+  '''
+    Reads data and stores it in an array.
+    
+    @param detectors Number of detectors installed
+    @param time_channels number of channels to read from
+    
+    @return List of data points
+  '''
   data=[]
   data_point=[]
   i=-1

@@ -10,10 +10,10 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6a4"
+__version__ = "0.6b1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
-__status__ = "Development"
+__status__ = "Production"
 
 
 class FitParameters:
@@ -72,7 +72,7 @@ class FitParameters:
         if str(layer) in map(str, multilayer.layers):
           multilayer.layers.remove(layer)
   
-  def __get_ent_str_layers__(self):
+  def __get_ent_str_layers__(self, use_roughness_gradient=True):
     '''
       Create string for layer part of .ent file for the fit script from given parameters.
       The function has to be used in get_ent_str from derived class.
@@ -83,7 +83,7 @@ class FitParameters:
     para_index=1
     # add text for every (multi)layer
     for layer in self.layers:
-      string,  layer_index, para_index=layer.get_ent_text(layer_index, para_index)
+      string,  layer_index, para_index=layer.get_ent_text(layer_index, para_index, use_roughness_gradient=use_roughness_gradient)
       ent_string+=string
     # substrate data
     string,  layer_index, para_index=self.substrate.get_ent_text(layer_index, para_index-1)
@@ -333,17 +333,21 @@ class MultilayerParam:
     except ValueError:
       None
   
-  def get_ent_text(self, layer_index, para_index):
+  def get_ent_text(self, layer_index, para_index,  use_roughness_gradient=True):
     '''
       Function to get the text lines for the .ent file.
       Returns the text string and the parameter index increased
       by the number of parameters for the layers.
     '''
-    text='# Begin of multilay ' + self.name
-    for i in range(self.repititions): # repead all layers
+    text='# Begin of multilay ' + self.name + ' RoughnessGradient=' + str(self.roughness_gradient)
+    if self.repititions>1:
+      for i in range(self.repititions): # repead all layers
+        for layer in self.layers: # add text for every layer
+          string, layer_index, para_index = layer.get_ent_text(layer_index, 
+                                                               para_index, 
+                                                               add_roughness=float(self.repititions-i-1)/(self.repititions-1)* self.roughness_gradient, use_roughness_gradient=use_roughness_gradient)
+          text+=string
+    else:
       for layer in self.layers: # add text for every layer
-        string, layer_index, para_index = layer.get_ent_text(layer_index, 
-                                                             para_index, 
-                                                             add_roughness=float(self.repititions-i-1)/(self.repititions-1)* self.roughness_gradient)
-        text+=string
+        string, layer_index, para_index = layer.get_ent_text(layer_index, para_index, use_roughness_gradient=use_roughness_gradient)
     return text,  layer_index,  para_index
