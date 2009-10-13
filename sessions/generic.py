@@ -333,8 +333,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       self.SCRIPT_PATH=SCRIPT_PATH + '/'
       # name of the gnuplot command under linux
       self.GNUPLOT_COMMAND=config.gnuplot_preferences.GNUPLOT_COMMAND
-      # gnuplot term png can't handle font path longer than 64 letters
-      if len(config.gnuplot_preferences.FONT_PATH)>64:
+      # gnuplot term png can't handle font path longer than 64 letters, leaving 14 letters for font file name.
+      if len(config.gnuplot_preferences.FONT_PATH)>50:
         # linking font path to tmp folder
         try:
           os.symlink(config.gnuplot_preferences.FONT_PATH, os.path.join(self.TEMP_DIR, 'plot_fonts'))

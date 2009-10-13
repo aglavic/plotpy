@@ -159,7 +159,7 @@ class FileActions:
     '''
       Change the color palette used in pm3d plots.
       
-      @pattern pattern The string used for the palette in gnuplot
+      @param pattern pattern The string used for the palette in gnuplot
     '''
     import config.gnuplot_preferences as gnuplot_preferences
     options_list_3d=gnuplot_preferences.settings_3d.splitlines()
@@ -179,7 +179,7 @@ class FileActions:
     '''
       Make a unit transformation with the active dataset.
       
-      @transformations A sequence of the transformation settings
+      @param transformations A sequence of the transformation settings
     '''
     dataset=self.window.measurement[self.window.index_mess]
     dataset.unit_trans(transformations)

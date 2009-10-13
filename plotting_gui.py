@@ -1541,8 +1541,10 @@ class ApplicationMainWindow(gtk.Window):
     align, buttons=fit_session.get_dialog(self, fit_dialog)
     sw.add_with_viewport(align) # add fit dialog
     fit_dialog.vbox.add(sw)
+    actions_table=gtk.Table(len(buttons),1,False)
     for i, button in enumerate(buttons):
-      fit_dialog.add_action_widget(button, i)
+      actions_table.attach(button, i, i+1, 0, 1, gtk.FILL, gtk.FILL, 0, 0);
+    fit_dialog.vbox.pack_end(actions_table, expand=False, fill=True, padding=0)
     fit_dialog.show_all()
     self.open_windows.append(fit_dialog)
 
@@ -2067,14 +2069,15 @@ class ApplicationMainWindow(gtk.Window):
       Show the image created by gnuplot.
     '''
     # in windows we have to wait for the picture to be written to disk
-    # TODO: review this, as sometimes it's not working in Windows.
     if self.active_session.OPERATING_SYSTEM=='windows':
-      for i in range(20):
+      sleep(0.1)
+      for i in range(100):
         if os.path.exists(self.active_session.TEMP_DIR + 'plot_temp.png'):
+          if os.path.getsize(self.active_session.TEMP_DIR + 'plot_temp.png') > 1000:
+            break
           sleep(0.1)
-          break
         else:
-          sleep(0.2)
+          sleep(0.1)
     # TODO: errorhandling
     self.image.set_from_file(self.active_session.TEMP_DIR + 'plot_temp.png')
     #self.image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file(\

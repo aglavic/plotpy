@@ -1553,6 +1553,9 @@ class TreffFitParameters(FitParameters):
     '''
     lines=open(file, 'r').readlines()
     lines.reverse()
+    for i, line in enumerate(lines):
+      if line[0]!='#':
+        lines[i]=line.replace('d', 'e') # replace power of ten in fortran 'd' by float 'e'
     # Geometry parameters
     self.slits[0]=float(lines.pop().split()[0])
     self.slits[1]=float(lines.pop().split()[0])

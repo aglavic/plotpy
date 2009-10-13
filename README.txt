@@ -1,4 +1,4 @@
-      Release Notes for the plotting script collection Version 0.6a4
+      Release Notes for the plotting script collection Version 0.6b1
              Please report bugs and feature requests to http://atzes.homeip.net/plotwiki/tiki-forums.php
 
 
@@ -79,7 +79,7 @@ plotting-scripts:
 
   tar -xvvzf Plot-script-{VERSION}.tar.gz
 
-  You now have to options, link the script to your bin-directory and run it from this folder or install it as python module(not recommanded at the moment):
+  You now have two options, link the script to your bin-directory and run it from this folder or install it as python module(recomanded):
 
 2a- Link the script using the install shell script:
   In the folder type:
@@ -104,10 +104,10 @@ plotting-scripts:
 
   python setup.py install
   
-  this creates symbolic links for plot.py, plot_4circle_data, plot_reflectometer_data, 
-  plot_SQUID_data (scripts) and p4d,prd,pld (gui mode) in /usr/bin .
-  !! if you don't have administrator priviliges, use ./install {PATH} , with a directory {PATH}
-     inside one of your system path folders. (type "print $PATH" to find out where to look)
+  this creates scripts to run the program from
+  ! if you don't have administrator priviliges, use 
+      python setup.py install --prefix {Inst.Dir} --install-scripts {folder in your path}
+      inside one of your system path folders. (type "print $PATH" to find out where to look)
 
 !!! If you have the previous version installed, you have to uninstall it first, as the links have changed.  !!!
 
@@ -119,7 +119,7 @@ Installation in Windows is not that easy, first of all because gnuplot is not as
    The installation of pygtk is quite extensive, but not so complicated. If you want to
    use my installation batch go to b).
 
-a)I am trying to make it easy with a step by step procedure:
+I am trying to make it easy with a step by step procedure:
 
 - get the needed installers for python, gnuplot and pygtk:
     - gnuplot win32 version can be found at http://www.gnuplot.info/download.html
@@ -146,10 +146,6 @@ a)I am trying to make it easy with a step by step procedure:
 
   python setup.py install
 
-b) Everything described above is also done by my installation batch file I provide together with all
-   packages need. You can download it from http://atzes.homeip.net/plotting .
-   Start the self extractor and extract all files to a temporal directory. Start install.bat, this should
-   install all the packages.
 
 Now you should be ready to use the scripts with and without GUI-mode under windows. 
   Building an exe file with py2exe resulted in major problems with pygtk so I won't provide it in the near future.
