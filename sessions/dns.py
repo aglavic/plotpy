@@ -54,6 +54,14 @@ def correct_flipping_ratio(flipping_ratio, pp_data, pm_data,
     scattering with respect to a measured flipping ratio for given measured data.
     As most variables are scaled to sum up as 1. be sure to use floating point numbers
     or arrays of floating point numers.
+    
+    @param flipping_ratio The flipping ratio for the solution
+    @param pp_data non spin-flip data measured
+    @param pm_data spin-flip data measured
+    @param scattering_propability Propapility for a neutron to get scattered from the sample
+    @param convergence_criteria Function to test for convergence
+    
+    @return non splin-flip, spin-flip data and if the algorithm converged
   '''
   # as the function can be used for numbers and arrays
   # use deepcopy to create new values
@@ -81,13 +89,13 @@ def correct_flipping_ratio(flipping_ratio, pp_data, pm_data,
   sf_scattering=1.-nsf_scattering
   
   # calculate polarization from flipping-ratio
-  polarization=flipping_ratio/(1+flipping_ratio)
+  polarization=flipping_ratio/(1.+flipping_ratio)
   
   for iter in range(ITERATIONS):
     # n-times multiple scattering is represented by a list of length n
     p_multiple_scattering=[polarization]
     m_multiple_scattering=[1.-polarization]
-    # calculate the multiple scattered part part of the intensity
+    # calculate the multiple scattered part of the intensity
     for i in range(MULTIPLE_SCATTERING_DEAPTH):
       p_multiple_scattering.append(
                                    p_multiple_scattering[i]*nsf_scattering +\
@@ -112,10 +120,10 @@ def correct_flipping_ratio(flipping_ratio, pp_data, pm_data,
     # test if the solution converged
     if test(abs(diff)):
       # scale the output by total measured intensity
-      return nsf_scattering*total, sf_scattering*total, True, nsf_scattering, sf_scattering
+      return nsf_scattering*total, sf_scattering*total, True
 
   # scale the output by total measured intensity
-  return nsf_scattering*total, sf_scattering*total, False, nsf_scattering, sf_scattering
+  return nsf_scattering*total, sf_scattering*total, False
 
 
 class DNSSession(GenericSession):
@@ -407,6 +415,8 @@ class DNSSession(GenericSession):
     '''
       Function to read data files for one measurement. 
       The files are split by their prefixes.
+      
+      @param file Sequence with the options for the file import
     '''
     # read the options for this sequence of files
     prefix=self.file_options[file][0]
@@ -449,7 +459,9 @@ class DNSSession(GenericSession):
       Crates a MeasurementData object which can be used to
       plot color maps or lineplots of the measurement.
       For Powder data it is only shown as 2Theta vs intensity.
-      For single crystal it is a map in q_x,q_y.
+      For single crystal it is a map in q_x,q_y. (Or hkl)
+      
+      @param file Sequence with the options for the file import
     '''
     # select the raw data for this measurement
     scans=self.file_data[file+'|raw_data']
@@ -576,7 +588,10 @@ class DNSSession(GenericSession):
 
   def find_background_data(self, dataset):
     '''
-      Try to find a background data data with the right currents for this dataset.
+      Try to find a background data with the right flipper and helmholz currents for this dataset.
+      The background data is connected to dataset.background_data.
+      
+      @param dataset a DNSMeasurementData object
     '''
     detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
     # get the currents
@@ -599,16 +614,26 @@ class DNSSession(GenericSession):
       dataset.background_data=self.system_bg[key]
 
   def find_vanadium_data(self, dataset):
+    '''
+      Set vanadium data for this dataset.
+      The vanadium data is connected to dataset.vanadium_data.
+      
+      @param dataset A DNSMeasurementData object
+    '''
     dataset.vanadium_data=self.system_vana
 
   def find_prefixes(self, names):
     '''
       Try to find prefixes from a list of filenames.
       config.dns.min_prefix_length is used to split different
-      sets of files.
+      sets of files. The prefix is stored in self.prefixes and the
+      numbers in self.file_options.
+      
+      @param names A list of file names to process
     '''
     names.sort()
     def split_prefix_postfix(name):
+      '''Split a file name for a string prefix,postfix and a number in the middle.'''
       pre_index=max(0, name.rfind(os.sep))
       post_index=len(name)
       while not name[pre_index].isdigit():
@@ -620,6 +645,7 @@ class DNSSession(GenericSession):
       postfix=name[post_index:]
       return (prefix, number, postfix)
     names_pre_post=map(split_prefix_postfix, names)
+    # find number ranges which belong together and store them in a dictionary with prefix as index
     found_prefixes={}
     for prefix, number, postfix in names_pre_post:
       if prefix in found_prefixes:
@@ -884,7 +910,9 @@ class DNSSession(GenericSession):
   def correct_flipping_ratio(self, scattering_propability=0.1):
     '''
       This function assigns the right NiCr measurements to the data sequences.
-      The flipper and Helmolz currents are used to identify the right data.process_function
+      The flipper and Helmolz currents are used to identify the right data.
+      
+      @param scattering_propability Propapility of a neutron to get scattered inside the sample (=1-Transmission)
       
       @return If files could be found with the right settings.
     '''
@@ -954,8 +982,13 @@ class DNSSession(GenericSession):
   
   #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
   def correct_flipping_dialog(self, action, window):
+    '''
+      In future this will set up a dialog to change the flipping ratio correction
+    '''
     scattering_propability=0.1
     self.correct_flipping_ratio(scattering_propability)
+    for dataset in self.active_file_data:
+      dataset.make_corrections()
     window.replot()
   
   def change_omega_offset(self, action, window):
@@ -1024,7 +1057,7 @@ class DNSSession(GenericSession):
 
   def change_d_spacing(self, action, window):
     '''
-      A dialog to change the d-spacing of the plots.
+      A dialog to change the d-spacing of the plots to calculate reciprocal lattice units.
     '''
     #+++++ Create a dialog window for ooff input +++++
     ds_dialog=gtk.Dialog(title='Set d-spacing for x and y directions:')
@@ -1051,7 +1084,7 @@ class DNSSession(GenericSession):
     input_filed_nx=gtk.Entry()
     input_filed_nx.set_width_chars(4)
     input_filed_nx.set_text(self.D_NAME_X)
-    input_filed_nx.connect('activate', lambda *ignore: ooff_dialog.response(2))
+    input_filed_nx.connect('activate', lambda *ignore: ds_dialog.response(2))
     table.attach(input_filed_nx,
                 # X direction #          # Y direction
                 1, 2,                      1, 2,
@@ -1060,7 +1093,7 @@ class DNSSession(GenericSession):
     input_filed_ny=gtk.Entry()
     input_filed_ny.set_width_chars(4)
     input_filed_ny.set_text(self.D_NAME_Y)
-    input_filed_ny.connect('activate', lambda *ignore: ooff_dialog.response(2))
+    input_filed_ny.connect('activate', lambda *ignore: ds_dialog.response(2))
     table.attach(input_filed_ny,
                 # X direction #          # Y direction
                 1, 2,                      2, 3,
@@ -1069,7 +1102,7 @@ class DNSSession(GenericSession):
     input_filed_dx=gtk.Entry()
     input_filed_dx.set_width_chars(4)
     input_filed_dx.set_text(str(self.D_SPACING_X))
-    input_filed_dx.connect('activate', lambda *ignore: ooff_dialog.response(2))
+    input_filed_dx.connect('activate', lambda *ignore: ds_dialog.response(2))
     table.attach(input_filed_dx,
                 # X direction #          # Y direction
                 2, 3,                      1, 2,
@@ -1078,7 +1111,7 @@ class DNSSession(GenericSession):
     input_filed_dy=gtk.Entry()
     input_filed_dy.set_width_chars(4)
     input_filed_dy.set_text(str(self.D_SPACING_Y))
-    input_filed_dy.connect('activate', lambda *ignore: ooff_dialog.response(2))
+    input_filed_dy.connect('activate', lambda *ignore: ds_dialog.response(2))
     table.attach(input_filed_dy,
                 # X direction #          # Y direction
                 2, 3,                      2, 3,
@@ -1132,11 +1165,14 @@ class DNSSession(GenericSession):
     result=inc_dialog.run()
     if result==1:
       # Answer is OK
-      inc=int(input_filed.get_text())
-      self.file_options[self.active_file_name][2]=inc
-      self.create_maps(self.active_file_name)
-      object=self.file_data[self.active_file_name]
-      window.change_active_file_object((self.active_file_name, object))
+      try:
+        inc=int(input_filed.get_text())
+        self.file_options[self.active_file_name][2]=inc
+        self.create_maps(self.active_file_name)
+        object=self.file_data[self.active_file_name]
+        window.change_active_file_object((self.active_file_name, object))
+      except ValueError:
+        pass
     inc_dialog.destroy()
   
   def seperate_scattering_preset(self, action, window):
@@ -1165,6 +1201,7 @@ class DNSSession(GenericSession):
       Add or substract measured polarizations from each other
       to calculate e.g. coherent magnetic scattering.
     '''
+    # TODO: Review the dialog layout.
     if not self.active_file_name in self.file_options:
       return None
     # build a list of DNSMeasurementData objects in active_file_data for the polarizations
@@ -1173,6 +1210,7 @@ class DNSSession(GenericSession):
       polarization_list+=[(object, name) for object in file_data_tmp if (("dns_info" in dir(object)) and not (('|raw_data' in name)or (self.active_file_name is name)))]
     combine_list=[]
     def add_object():
+      '''Subdialog to add one chanel to the separation.'''
       add_dialog=gtk.Dialog(title='Add polarization:')
       add_dialog.set_default_size(100,50)
       add_dialog.add_button('OK', 1)
@@ -1257,6 +1295,10 @@ class DNSSession(GenericSession):
     '''
       Calculate a combination of polarization directions as
       set in the combine_list.
+      
+      @param combine_layers List of how the chanels should be combined
+      @param polarization_list The chanels which will be combined
+      @param title Name of the new created chanel
     '''
     if combine_list[0][1] == '+':
       result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
@@ -1449,34 +1491,45 @@ class DNSMeasurementData(MeasurementData):
       other.yerror=other.number_of_channels*3+5
   
   def make_flipping_correction(self, item, scattering_propability):
-    yindex=self.number_of_channels*2+5
-    nicr_x=item[0].data[0].values
-    nicr_y=item[0].data[1].values
-    pp_data_x=item[2].data[4].values
-    pp_data=item[2].data[yindex].values
-    pm_data=item[1].data[yindex].values
-    nicr_data=[nicr_y[nicr_x.index(detector)] for detector in pp_data_x]
-    if use_numpy:
-      nicr_data=array(nicr_data)
-      pp_data=array(pp_data)
-      pm_data=array(pm_data)
-      def test(difference):
-        return all(difference<1e-10)
-      p_data, m_data, converged, p_ratio, m_ratio = correct_flipping_ratio(nicr_data, pp_data, pm_data, 
-                                                                           scattering_propability, test)
-    else:
-      p_data=[]
-      m_data=[]
-      converged=True
-      for i in range(len(pp_data)):
-        p, m, conv , pr, mr= correct_flipping_ratio(nicr_data[i], pp_data[i], pm_data[i], scattering_propability)
-        p_data.append(p)
-        m_data.append(m)
+    '''
+      Calculate the flipping ratio correction for all intensity chanels.
+      
+      @param item Sequence of NiCr-data, self and other DNSMeasurementData object
+      @param scattering_propability Propability of a neutron to scatter in the sample
+      
+      @return If all corrections converged
+    '''
+    nc=self.number_of_channels
+    converged=True
+    for i in range(nc):
+      yindex=i+nc*2+5
+      nicr_x=item[0].data[0].values
+      nicr_y=item[0].data[1].values
+      pp_data_x=item[2].data[4].values
+      pp_data=item[2].data[yindex].values
+      pm_data=item[1].data[yindex].values
+      nicr_data=[nicr_y[nicr_x.index(detector)] for detector in pp_data_x]
+      if use_numpy:
+        nicr_data=array(nicr_data)
+        pp_data=array(pp_data)
+        pm_data=array(pm_data)
+        def test(difference):
+          return all(difference<1e-10)
+        p_data, m_data, conv = correct_flipping_ratio(nicr_data, pp_data, pm_data, 
+                                                                             scattering_propability, test)
         converged=converged and conv
-    sys.stdout.write("%s, " % converged)
-    sys.stdout.flush()
-    item[2].data[yindex].values=list(p_data)
-    item[1].data[yindex].values=list(m_data) 
+      else:
+        p_data=[]
+        m_data=[]
+        for i in range(len(pp_data)):
+          p, m, conv = correct_flipping_ratio(nicr_data[i], pp_data[i], pm_data[i], scattering_propability)
+          p_data.append(p)
+          m_data.append(m)
+          converged=converged and conv
+      sys.stdout.write("%s, " % converged)
+      sys.stdout.flush()
+      item[2].data[yindex].values=list(p_data)
+      item[1].data[yindex].values=list(m_data) 
     return converged
   
   def copy_intensities(self, point):
@@ -1495,6 +1548,10 @@ class DNSMeasurementData(MeasurementData):
       '''
         Subtract background from the intensity data and calculate new
         error for these values.
+        
+        @param point List of arrays for all columns
+        
+        @return Changed list of arrays
       '''
       nc=self.number_of_channels
       # find the background for the right detectors
@@ -1513,6 +1570,10 @@ class DNSMeasurementData(MeasurementData):
       '''
         Devide the intensity by the counts measured with vanadium for the
         same detector bank.
+        
+        @param point List of arrays for all columns
+        
+        @return Changed list of arrays
       '''
       nc=self.number_of_channels
       # find the background for the right detector
@@ -1532,6 +1593,9 @@ class DNSMeasurementData(MeasurementData):
       return point
   
     def __add__(self, other):
+      '''
+        Defines how two objects of this class should be add with '+'.
+      '''
       if len(self) != len(other):
         return None
       # create a new instance of the class
@@ -1546,6 +1610,9 @@ class DNSMeasurementData(MeasurementData):
       return result
     
     def __sub__(self, other):
+      '''
+        Defines how two objects of this class should be subtracted with '-'.
+      '''
       if len(self) != len(other):
         return None
       # create a new instance of the class
@@ -1579,6 +1646,10 @@ class DNSMeasurementData(MeasurementData):
       '''
         Subtract background from the intensity data and calculate new
         error for these values.
+        
+        @param point A list of column entries
+        
+        @return Altered list of column entries
       '''
       nc=self.number_of_channels
       # find the background for the right detector
@@ -1595,6 +1666,10 @@ class DNSMeasurementData(MeasurementData):
       '''
         Devide the intensity by the counts measured with vanadium for the
         same detector bank.
+        
+        @param point A list of column entries
+        
+        @return Altered list of column entries
       '''
       nc=self.number_of_channels
       # find the background for the right detector
@@ -1609,6 +1684,9 @@ class DNSMeasurementData(MeasurementData):
       return point
 
     def __add__(self, other):
+      '''
+        Defines how two objects of this class should be add with '+'.
+      '''
       if len(self) != len(other):
         return None
       # create a new instance of the class
@@ -1624,6 +1702,9 @@ class DNSMeasurementData(MeasurementData):
       return result
     
     def __sub__(self, other):
+      '''
+        Defines how two objects of this class should be subtracted with '-'.
+      '''
       if len(self) != len(other):
         return None
       # create a new instance of the class

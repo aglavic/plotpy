@@ -593,7 +593,7 @@ class TreffSession(GenericSession):
     # scrollbars.
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
     sw.add_with_viewport(table) # add textbuffer view widget
-  #----------------- Adding input fields -----------------
+    #----------------- Adding input fields -----------------
     dialog.vbox.add(sw) # add table to dialog box
     dialog.set_default_size(size[0],size[1])
     dialog.add_button('Custom Constraints',7) # button custom constrain has handler_id 7
@@ -614,9 +614,8 @@ class TreffSession(GenericSession):
     window.open_windows.append(dialog)
     dialog.connect("destroy", lambda *w: window.open_windows.remove(dialog))
 
-  last_action_scrolled=False
-
   def stop_scroll_emission(self, SL_selector, action):
+    '''Stop scrolling event when ontop of seleciton dialog.'''
     SL_selector.stop_emission('scroll-event')
 
   def create_layer_options(self, layer, layer_index, layer_params, dialog, window, substrate=False):
@@ -804,7 +803,7 @@ class TreffSession(GenericSession):
   
   def dialog_response(self, action, response, dialog, window, parameters_list, fit_list):
     '''
-      handle fit dialog response
+      Handle fit dialog response.
     '''
     if response>=5:
       try:
@@ -864,7 +863,7 @@ class TreffSession(GenericSession):
   def dialog_fit(self, action, window, move_channels=True):
     '''
       function invoked when apply button is pressed
-      fits with the new parameters
+      at fit dialog. Fits with the new parameters.
     '''
     names=config.treff.REF_FILE_ENDINGS
     output_names=config.treff.FIT_OUTPUT_FILES
@@ -1177,6 +1176,9 @@ class TreffSession(GenericSession):
     self.rebuild_dialog(dialog, window)
 
   def replot_present(self, session, window):
+    '''
+      Replot the simulated and measured data.
+    '''
     dataset=window.measurement[window.index_mess]        
     simu=read_data.treff.read_simulation(self.TEMP_DIR+'simulation_pp')
     simu.number='sim_'+dataset.number
