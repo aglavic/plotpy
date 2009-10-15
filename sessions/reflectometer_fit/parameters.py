@@ -348,6 +348,8 @@ class MultilayerParam:
                                                                add_roughness=float(self.repititions-i-1)/(self.repititions-1)* self.roughness_gradient, use_roughness_gradient=use_roughness_gradient)
           text+=string
     else:
-      for layer in self.layers: # add text for every layer
-        string, layer_index, para_index = layer.get_ent_text(layer_index, para_index, use_roughness_gradient=use_roughness_gradient)
+      for i in range(self.repititions): # repead all layers
+        for layer in self.layers: # add text for every layer
+          string, layer_index, para_index = layer.get_ent_text(layer_index, para_index, use_roughness_gradient=use_roughness_gradient)
+          text+=string
     return text,  layer_index,  para_index
