@@ -34,7 +34,7 @@
 import os
 import gobject
 import gtk
-from time import sleep
+from time import sleep, time
 # own modules
 # Module to save and load variables from/to config files
 from configobj import ConfigObj
@@ -49,10 +49,12 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b1"
+__version__ = "0.6b2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
+
+DOWNLOAD_PAGE_URL='http://atzes.homeip.net/plotwiki/tiki-index.php?page=Download+Area'
 
 #+++++++++++++++++++++++++ ApplicationMainWindow Class ++++++++++++++++++++++++++++++++++#
 # TODO: Move some functions to other modules to have a smaller file
@@ -73,8 +75,6 @@ class ApplicationMainWindow(gtk.Window):
     global errorbars
     # TODO: remove global errorbars variable and put in session or m_d_structure
     #+++++++++++++++++ set class variables ++++++++++++++++++
-    self.height=600 # window height
-    self.width=700  # window width
     self.heightf=100 # picture frame height
     self.widthf=100 # pricture frame width
     self.set_file_type=output_file_name.rsplit('.',1)[1] # export file type
@@ -106,16 +106,14 @@ class ApplicationMainWindow(gtk.Window):
     #----------------- set class variables ------------------
 
 
-    # Reading config file
-    self.read_config_file()
     # Create the toplevel window
     gtk.Window.__init__(self)
+    # Reading config file
+    self.read_config_file()
     # Normaly this is not important, but with it the Window could be implemented as subwindow later.
     self.connect('destroy', lambda *w: self.main_quit())
     # Set the title of the window, will be changed when the active plot changes
     self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
-    # Set the main windwo size to default or the last settings saved in config file
-    self.set_default_size(self.width, self.height)
 
     #+++++++Build widgets in table structure++++++++
     table = gtk.Table(3, 6, False) # the main table
@@ -352,13 +350,16 @@ class ApplicationMainWindow(gtk.Window):
     self.view_up.hide()
     self.view_down.hide()
     self.view_right.hide()
-    #self.connect("configure-event", self.update_size)
-    #self.frame1.connect("size-allocate", self.update_frame_size)
+
     self.connect("event-after", self.update_picture)
+    self.connect("event-after", self.update_size)
 
     self.replot()
     self.check_add.set_active(True)
     self.check_add.toggled()
+    self.geometry= (self.get_position(), self.get_size())
+
+    self.check_for_updates()
 
   #-------------------------------Window Constructor-------------------------------------#
 
@@ -369,38 +370,19 @@ class ApplicationMainWindow(gtk.Window):
     '''
       If resize event is triggered the window size variables are changed.
     '''
-    # TODO: review resize handling of the image
-    if (not ((self.width==event.width)&(self.height==event.height))):
-      self.image.hide()
-      self.image_shown=False
-      self.width=event.width
-      self.height=event.height
-
-  def update_frame_size(self, widget, event): 
-    '''
-      If resize event is triggered the window size variables are changed.
-      Not in use, will be removed after review.
-    '''
-    self.heightf=event.height
-    self.widthf=event.width
+    if event.type==gtk.gdk.CONFIGURE:
+      geometry= (self.get_position(), self.get_size())
+      if geometry!=self.geometry:
+        self.geometry=geometry
+        self.widthf=self.frame1.get_allocation().width
+        self.heightf=self.frame1.get_allocation().height
 
   def update_picture(self, widget, event):
     '''
-      The first event after starting to resize triggers rescaling the picture and showing it. 
-      Is only executed, if this event is not a resize event. 
-      So the picture is hidden while reesizing and reshown after.
+      After releasing the mouse the picture gets replot.
     '''
-    if not ((event.type == gtk.gdk.EXPOSE)|(event.type == gtk.gdk.CONFIGURE)|(event.type == gtk.gdk.PROPERTY_NOTIFY)|(event.type==gtk.gdk.WINDOW_STATE)):
-      if (not self.image_shown):
-        self.widthf=self.frame1.get_allocation().width
-        self.heightf=self.frame1.get_allocation().height
-        self.set_image()
-        self.image.show()
-        self.image_shown=True
-        def new_update_picture(widget, event):
-          None
-        self.update_picture=new_update_picture
-
+    if event.type==gtk.gdk.FOCUS_CHANGE and self.active_plot_geometry!=(self.widthf, self.heightf):
+      self.replot()
 
   #----------------------------Interrupt Events----------------------------------#
 
@@ -410,24 +392,20 @@ class ApplicationMainWindow(gtk.Window):
       When window is closed save the settings in home folder.
       All open dialogs are closed before exit.
     '''
-    # TODO: put window setting in ConfigObject
-    # Own config structure
     try:
       os.mkdir(os.path.expanduser('~')+'/.plotting_gui')
     except OSError:
-      print ''
-    config_file=open(os.path.expanduser('~')+'/.plotting_gui/plotting_gui.config','w')
-    config_file.write('[ploting_gui_config]\n\t[window]'+\
-    '\n\t\t[width]\n\t\t'+str(self.width)+\
-    '\n\t\t[/width]\n\t\t[height]\n\t\t'+str(self.height)+'\n\t\t[/height]'+\
-    '\n\t[/window]\n')
-    config_file.write('[/plotting_gui_config]\n')
-    config_file.close()
-    # ConfigObject config structure for profiles
+      pass
+    # ConfigObj config structure for profiles
     self.config_object['profiles']={}
     for name, profile in self.profiles.items():
       profile.write(self.config_object['profiles'])
     del self.config_object['profiles']['default']
+    # ConfigObj Window parameters
+    self.config_object['Window']={
+                                  'size': self.geometry[1], 
+                                  'position': self.geometry[0], 
+                                  }
     self.config_object.write()
     for window in self.open_windows:
       window.destroy()
@@ -1998,7 +1976,13 @@ class ApplicationMainWindow(gtk.Window):
     '''
     # create the object with association to an inifile in the user folder
     # have to test if this works under windows
-    self.config_object=ConfigObj(os.path.expanduser('~')+'/.plotting_gui/config.ini')
+    try:
+      self.config_object=ConfigObj(os.path.expanduser('~')+'/.plotting_gui/config.ini', unrepr=True)
+    except:
+      # If the file is corrupted or with old format (without unrepr) rename it and create a new one
+      print 'Corrupted .ini file, renaming it to config.bak.'
+      os.rename(os.path.expanduser('~')+'/.plotting_gui/config.ini', os.path.expanduser('~')+'/.plotting_gui/config.bak')
+      self.config_object=ConfigObj(os.path.expanduser('~')+'/.plotting_gui/config.ini', unrepr=True)
     self.config_object.indent_type='\t'
     # If the inifile exists import the profiles but override default profile.
     try:
@@ -2013,53 +1997,78 @@ class ApplicationMainWindow(gtk.Window):
       self.profiles={'default': PlotProfile('default')}
       self.profiles['default'].save(self)
     
-    # Open the other config file which uses it's own format
-    # TODO: Put all configurations in one file.
-    try:
-      config_file=open(os.path.expanduser('~')+'/.plotting_gui/plotting_gui.config','r')
-    except IOError:
-      return False
-    # functions for different parts of config file
-    config_parts={\
-      '[window]' : lambda config_file : self.read_window_config(config_file),\
-      '[/plotting_gui_config]' : lambda config_file : self.config_file_end(config_file),\
-    }
-    if config_file.readline()=='[ploting_gui_config]\n': # is this a valid config file?
-      while config_file:
-        line=config_file.readline().rstrip('\n').lstrip('\t')
-        if line in config_parts:
-          if not config_parts[line](config_file):
-            break
-      return True
-    else:
-      print 'Configuration file corrupted.'
-      return False
-
-  def read_window_config(self,config_file):
-    '''
-      Read the window config parameters from the old own format.
-      This will be removed, when everything is saved in the .ini file.
-      
-      @return If the import was successful.
-    '''
-    line=config_file.readline().rstrip('\n').lstrip('\t')
-    while not line=='[/window]':
-      if line=='[height]':
-        self.height=int(config_file.readline().rstrip('\n').lstrip('\t'))
-        if not config_file.readline().rstrip('\n').lstrip('\t')=='[/height]':
-          print 'Configuration file corrupted.'
-          return False
-      if line=='[width]':
-        self.width=int(config_file.readline().rstrip('\n').lstrip('\t'))
-        if not config_file.readline().rstrip('\n').lstrip('\t')=='[/width]':
-          print 'Configuration file corrupted.'
-          return False
-      line=config_file.readline().rstrip('\n').lstrip('\t')
+    self.read_window_config()
     return True
 
-  def config_file_end(self,config_file):
-    return False
+  def read_window_config(self):
+    '''
+      Read the window config parameters from the ConfigObj.
+    '''
+    if 'Window' in self.config_object:
+      x, y=self.config_object['Window']['position']
+      width, height=self.config_object['Window']['size']
+      # Set the main windwo size to default or the last settings saved in config file
+      self.set_default_size(width, height)
+      self.move(x, y)
+    else:
+      self.set_default_size(700, 600)
 
+  def check_for_update_now(self):
+    '''
+      Read the wiki download area page to see, if there is a new version available.
+      
+      @return Newer version number or None
+    '''
+    import urllib
+    # Open the wikipage
+    try:
+      download_page=urllib.urlopen(DOWNLOAD_PAGE_URL)
+    except IOError:
+      return None
+    lines=download_page.readlines()
+    if self.config_object['Update']['CheckBeta']:
+      lines=filter(lambda line: 'Latest' in line and 'Version' in line, lines)
+    else:
+      lines=filter(lambda line: 'Latest stable Version' in line, lines)
+    version=max(map(lambda line: line.split('Version')[-1].split(':')[0].strip(), lines))
+    if version>__version__:
+      return version
+    else:
+      return None
+
+  def check_for_updates(self):
+    '''
+      Function to check for upates if this was selected and to show a dialog,
+      if an updat is possible.
+    '''
+    if not 'Update' in self.config_object:
+      dia=gtk.MessageDialog(parent=self, type=gtk.MESSAGE_QUESTION, 
+                            message_format='You are starting the GUI the first time, do you want to search for updates automatically?')
+      dia.add_button('Yes, only Stable', 1)
+      dia.add_button('Yes, all Versions', 2)
+      dia.add_button('No', 0)
+      result=dia.run()
+      if result>0:
+        cb=(result==2)
+        c=True
+      else:
+        c, cb=False, False
+      self.config_object['Update']={
+                                    'Check': c, 
+                                    'NextCheck': None, 
+                                    'CheckBeta': cb, 
+                                    }
+      dia.destroy()
+    if self.config_object['Update']['Check'] and time()>self.config_object['Update']['NextCheck']:
+      print "Checking for new Version."
+      self.config_object['Update']['NextCheck']=time()+24.*60.*60
+      new_version=self.check_for_update_now()
+      if new_version:
+        dia= gtk.MessageDialog(parent=self, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
+                               message_format="There is a new version (%s) at %s ." % (new_version, DOWNLOAD_PAGE_URL))
+        dia.run()
+        dia.destroy()
+  
   #---------------------------Functions for initializing etc-----------------------------#
 
   #++++++++++++++Functions for displaying graphs plotting and status infos+++++++++++++++#
@@ -2150,6 +2159,7 @@ class ApplicationMainWindow(gtk.Window):
       self.set_image()
       self.reset_statusbar()
       self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
+      self.active_plot_geometry=(self.widthf, self.heightf)
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
 
 

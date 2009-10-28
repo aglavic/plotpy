@@ -10,7 +10,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b1"
+__version__ = "0.6b2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -180,7 +180,8 @@ class FitParameters:
       for ml_i in ml:
         add_ml+=ml_i
       add_ml.sort()
-      multilayer_list.append((add_ml, number_of_layers, number_of_repititions))
+      if add_ml==range(add_ml[0],add_ml[-1]+1):
+        multilayer_list.append((add_ml, number_of_layers, number_of_repititions))
     # now we have lists of layers which are inside a multilayer and 
     # the number of layers in those multilayer,
     # we only have to create the multilayers and delete them
