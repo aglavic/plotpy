@@ -77,8 +77,8 @@ subroutine param(a)
 
   do m=1,nlay+1
     bx(m)=dcos(phi(m))*dsin(theta(m))
-    by(m)=dsin(phi(m))
-    bz(m)=dcos(phi(m))*dcos(theta(m))
+    by(m)=dsin(phi(m))*dsin(theta(m))
+    bz(m)=dcos(theta(m))
   enddo
 
   cal=dabs(a(ma+1))
