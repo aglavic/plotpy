@@ -108,14 +108,14 @@ function polref_sp_rough(q)
     if(sigma(m+1).ne.0.d0) then
       bmbmp1=bx_rough(m)*bx_rough(m+1)+by_rough(m)*by_rough(m+1)+bz_rough(m)*bz_rough(m+1)
       if((sc_pr(m+1).eq.0.d0).or.(sc_pr(m).eq.0.d0.and.sc_pr(m+1).gt.0.d0).or.(bmbmp1.eq.1.d0)) then
-	damp_plus=cdexp(-2.d0*sigma(m+1)**2*p_rough_plus(m)*p_rough_plus(m+1))
-	damp_minus=cdexp(-2.d0*sigma(m+1)**2*p_rough_minus(m)*p_rough_minus(m+1))
-	goto 20
+        damp_plus=cdexp(-2.d0*sigma(m+1)**2*p_rough_plus(m)*p_rough_plus(m+1))
+        damp_minus=cdexp(-2.d0*sigma(m+1)**2*p_rough_minus(m)*p_rough_minus(m+1))
+        goto 20
       endif
       if((sc_pr(m).eq.0.d0.and.sc_pr(m+1).lt.0.d0).or.bmbmp1.eq.-1.d0) then
-	damp_plus=cdexp(-2.d0*sigma(m+1)**2*p_rough_plus(m)*p_rough_minus(m+1))
-	damp_minus=cdexp(-2.d0*sigma(m+1)**2*p_rough_minus(m)*p_rough_plus(m+1))
-	goto 20
+        damp_plus=cdexp(-2.d0*sigma(m+1)**2*p_rough_plus(m)*p_rough_minus(m+1))
+        damp_minus=cdexp(-2.d0*sigma(m+1)**2*p_rough_minus(m)*p_rough_plus(m+1))
+        goto 20
       endif
       stop 'Something is not under control here...'
       20         damp(1,1,m)=0.5d0*((1.d0+bz_rough(m))*damp_plus+(1.d0-bz_rough(m))*damp_minus)
@@ -148,8 +148,8 @@ function polref_sp_rough(q)
 
   return
 end
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine cal_x(m,x)
   implicit real*8 (a-h,o-z)
   parameter(maxlay=250)
@@ -178,11 +178,11 @@ subroutine cal_x(m,x)
   do i=1,2
     do j=1,2
       if (i.eq.j) then
-	temp_p(i,j)=1.d0+temp(i,j)
-	temp_m(i,j)=1.d0-temp(i,j)
+        temp_p(i,j)=1.d0+temp(i,j)
+        temp_m(i,j)=1.d0-temp(i,j)
       else
-	temp_p(i,j)=temp(i,j)
-	temp_m(i,j)=-temp(i,j)
+        temp_p(i,j)=temp(i,j)
+        temp_m(i,j)=-temp(i,j)
       endif
     enddo
   enddo
@@ -217,8 +217,8 @@ subroutine cal_x(m,x)
 
   return
 end
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine cal_reflectivity(r,polref)
   implicit real*8 (a-h,o-z)
   complex*16 r(2,2),rhof(2,2),rhoi(2,2),transr(2,2),temp(2,2)
