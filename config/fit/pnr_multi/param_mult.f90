@@ -1,6 +1,6 @@
 subroutine param(a)
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter(maxlay=250,map=7*maxlay+12)
   real*8 a(map)
   real*8 d(maxlay),nbr(maxlay+1),nbi(maxlay+1),np(maxlay+1)
   real*8 theta(maxlay+1),phi(maxlay+1)

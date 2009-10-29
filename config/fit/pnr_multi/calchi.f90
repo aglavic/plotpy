@@ -1,6 +1,6 @@
 subroutine calchi(x,y,sig,ndata,chisq,valfitsq)
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter(ndatap=2000,max_hr=5000,pdq=0.02d0)
   dimension x(ndatap),y(ndatap),sig(ndatap)
   dimension ymod(ndatap)
   complex*16 ci

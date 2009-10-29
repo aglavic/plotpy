@@ -1,10 +1,20 @@
+module lay_parameters
+  !     Module to define the constant patrameters:
+  !     maxlay: The maximum number of layers to be simulated
+  !     map:    The maximum number of parameters, which depends on the layer number
+  !     ndatap: Number of datapoints for the arrays
+  !     max_hr: ?
+  !     pdq:    ?
+  parameter (maxlay=250,map=7*maxlay+12,ndatap=2000,max_hr=5000,np_conv=500,pdq=0.02d0)
+end
+
 program fit_pnr_mult
   !    Fit of the polarized neutron reflectivity with polarization analyzis
   !    Data from TREFF
   !    Super-Parratt formalism
   !    Written by Emmanuel Kentzinger with changes from Artur Glavic
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter(maxlay=250,map=7*maxlay+12,ndatap=2000)
   real*8 lamda
   complex*16 ci
   real*8 x(ndatap),y(ndatap),sig(ndatap)
@@ -28,7 +38,7 @@ program fit_pnr_mult
   common/data/ndata_pp,ndata_mm,ndata_pm,ndata_mp
   common/entryfiles/fpp,fmm,fpm,fmp
   common/layers/ntop,nincell,ncell,nbelow
-
+  
   !! Read the .ent file name from command_line
   call getarg(1,ent_file)
   

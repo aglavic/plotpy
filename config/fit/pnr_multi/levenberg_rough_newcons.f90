@@ -1,6 +1,6 @@
 subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter (maxlay=250,map=7*maxlay+12,ndatap=2000)
   real*8 x(ndatap),y(ndatap),sig(ndatap),a(map)
   integer*4 lista(map)
   real*8 covar(map,map)
@@ -14,13 +14,13 @@ subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
     do 12 j=1,ma
       ihit=0
       do 11 k=1,mfit
-	if(lista(k).eq.j)ihit=ihit+1
+        if(lista(k).eq.j)ihit=ihit+1
       11          continue
       if (ihit.eq.0) then
-	lista(kk)=j
-	kk=kk+1
+        lista(kk)=j
+        kk=kk+1
       else if (ihit.gt.1) then
-	read(*,*); write(8,*) 'mrqmin : improper permutation in lista'
+        read(*,*); write(8,*) 'mrqmin : improper permutation in lista'
       endif
     12       continue
     if (kk.ne.(ma+1)) read(*,*); write(8,*) 'mrqmin : improper permutation in lista'
@@ -40,7 +40,7 @@ subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
     13    continue
     do 15 j=1,mfit
       do 14 k=1,mfit
-	covar(j,k)=alpha(j,k)
+        covar(j,k)=alpha(j,k)
       14       continue
       covar(j,j)=alpha(j,j)*(1.d0+alamda)
       oneda(j,1)=beta(j)
@@ -49,7 +49,7 @@ subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
       call gaussj(covar,mfit,oneda,1)
       write(8,*) 'end of first gaussj in mrqmin'
       do j=1,mfit
-	da(j)=oneda(j,1)
+        da(j)=oneda(j,1)
       enddo
     endif
     if(alamda.eq.0.d0) then
@@ -57,7 +57,7 @@ subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
       call mrqcof(x,y,sig,ndata,atry,ma,lista,mfit,covar,da,chisq,alamda)
       write(8,*) 'end of mrqcof in mrqmin for alamda=0'
       do j=1,mfit
-	oneda(j,1)=da(j)
+        oneda(j,1)=da(j)
       enddo
       call gaussj(covar,mfit,oneda,1)
       write(8,*) 'end of second gaussj in mrqmin'
@@ -79,22 +79,22 @@ subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
     np=0
     do i=1,ntop
       do j=1,7
-	np=np+1
-	write(8,*) np,' ',atry(np)
+        np=np+1
+        write(8,*) np,' ',atry(np)
       enddo
       write(8,*)
     enddo
     do i=1,nincell
       do j=1,7
-	np=np+1
-	write(8,*) np,' ',atry(np)
+        np=np+1
+        write(8,*) np,' ',atry(np)
       enddo
       write(8,*)
     enddo
     do i=1,nbelow
       do j=1,7
-	np=np+1
-	write(8,*) np,' ',atry(np)
+        np=np+1
+        write(8,*) np,' ',atry(np)
       enddo
       write(8,*)
     enddo
@@ -119,11 +119,11 @@ subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
       alamda=0.1d0*alamda
       ochisq=chisq
       do 18 j=1,mfit
-	do 17 k=1,mfit
-	  alpha(j,k)=covar(j,k)
-	17        continue
-	beta(j)=da(j)
-	a(lista(j))=atry(lista(j))
+        do 17 k=1,mfit
+          alpha(j,k)=covar(j,k)
+        17        continue
+        beta(j)=da(j)
+        a(lista(j))=atry(lista(j))
       18      continue
     else
       alamda=10.d0*alamda
@@ -135,8 +135,8 @@ subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine covsrt(covar,ma,lista,mfit)
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter (maxlay=250,map=7*maxlay+12)
   real*8 covar(map,map)
   integer*4 lista(map)
   do 12 j=1,ma-1
@@ -147,9 +147,9 @@ subroutine covsrt(covar,ma,lista,mfit)
   do 14 i=1,mfit-1
     do 13 j=i+1,mfit
       if(lista(j).gt.lista(i)) then
-	covar(lista(j),lista(i))=covar(i,j)
+        covar(lista(j),lista(i))=covar(i,j)
       else
-	covar(lista(i),lista(j))=covar(i,j)
+        covar(lista(i),lista(j))=covar(i,j)
       endif
     13      continue
   14    continue
@@ -172,8 +172,8 @@ end
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine gaussj(a,n,b,m)
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter (maxlay=250,map=7*maxlay+12)
   real*8 a(map,map),b(map,1)
   integer*4 ipiv(map),indxr(map),indxc(map)
   do 11 j=1,n
@@ -183,30 +183,30 @@ subroutine gaussj(a,n,b,m)
     big=0.d0
     do 13 j=1,n
       if(ipiv(j).ne.1)then
-	do 12 k=1,n
-	  if (ipiv(k).eq.0) then
-	    if (dabs(a(j,k)).ge.big)then
-	      big=dabs(a(j,k))
-	      irow=j
-	      icol=k
-	    endif
-	  else if (ipiv(k).gt.1) then
-	    read(*,*); write(8,*) 'gaussj : singular matrix'
-	  endif
-	12          continue
+        do 12 k=1,n
+          if (ipiv(k).eq.0) then
+            if (dabs(a(j,k)).ge.big)then
+              big=dabs(a(j,k))
+              irow=j
+              icol=k
+            endif
+          else if (ipiv(k).gt.1) then
+            read(*,*); write(8,*) 'gaussj : singular matrix'
+          endif
+        12          continue
       endif
     13      continue
     ipiv(icol)=ipiv(icol)+1
     if (irow.ne.icol) then
       do 14 l=1,n
-	dum=a(irow,l)
-	a(irow,l)=a(icol,l)
-	a(icol,l)=dum
+        dum=a(irow,l)
+        a(irow,l)=a(icol,l)
+        a(icol,l)=dum
       14        continue
       do 15 l=1,m
-	dum=b(irow,l)
-	b(irow,l)=b(icol,l)
-	b(icol,l)=dum
+        dum=b(irow,l)
+        b(irow,l)=b(icol,l)
+        b(icol,l)=dum
       15        continue
     endif
     indxr(i)=irow
@@ -222,23 +222,23 @@ subroutine gaussj(a,n,b,m)
     17      continue
     do 21 ll=1,n
       if(ll.ne.icol)then
-	dum=a(ll,icol)
-	a(ll,icol)=0.d0
-	do 18 l=1,n
-	  a(ll,l)=a(ll,l)-a(icol,l)*dum
-	18          continue
-	do 19 l=1,m
-	  b(ll,l)=b(ll,l)-b(icol,l)*dum
-	19          continue
+        dum=a(ll,icol)
+        a(ll,icol)=0.d0
+        do 18 l=1,n
+          a(ll,l)=a(ll,l)-a(icol,l)*dum
+        18          continue
+        do 19 l=1,m
+          b(ll,l)=b(ll,l)-b(icol,l)*dum
+        19          continue
       endif
     21      continue
   22    continue
   do 24 l=n,1,-1
     if(indxr(l).ne.indxc(l))then
       do 23 k=1,n
-	dum=a(k,indxr(l))
-	a(k,indxr(l))=a(k,indxc(l))
-	a(k,indxc(l))=dum
+        dum=a(k,indxr(l))
+        a(k,indxr(l))=a(k,indxc(l))
+        a(k,indxc(l))=dum
       23        continue
     endif
   24    continue
@@ -248,8 +248,8 @@ subroutine gaussj(a,n,b,m)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
   !     new version for the constraints 
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter(maxlay=250,map=7*maxlay+12,ndatap=2000,max_hr=5000,pdq=0.02d0)
   real*8 x(ndatap),y(ndatap),sig(ndatap),a(map),alpha(map,map),beta(map)
   integer*4 lista(map)
   real*8 dyda(map,ndatap),yplus(map,ndatap),da(map)
@@ -293,13 +293,13 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
     do m=1,nlay+1
       sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
       if (sc_pr(m).ne.0.d0) then
-	bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
       else
-	bx_rough(m)=0.d0
-	by_rough(m)=0.d0
-	bz_rough(m)=0.d0
+        bx_rough(m)=0.d0
+        by_rough(m)=0.d0
+        bz_rough(m)=0.d0
       endif
     enddo
     q_max=4.d0*pi/lamda*dsin(x(ndata_pp))+pdq
@@ -324,13 +324,13 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
     do m=1,nlay+1
       sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
       if (sc_pr(m).ne.0.d0) then
-	bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
       else
-	bx_rough(m)=0.d0
-	by_rough(m)=0.d0
-	bz_rough(m)=0.d0
+        bx_rough(m)=0.d0
+        by_rough(m)=0.d0
+        bz_rough(m)=0.d0
       endif
     enddo
     q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mm))+pdq
@@ -355,13 +355,13 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
     do m=1,nlay+1
       sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
       if (sc_pr(m).ne.0.d0) then
-	bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
       else
-	bx_rough(m)=0.d0
-	by_rough(m)=0.d0
-	bz_rough(m)=0.d0
+        bx_rough(m)=0.d0
+        by_rough(m)=0.d0
+        bz_rough(m)=0.d0
       endif
     enddo
     q_max=4.d0*pi/lamda*dsin(x(nn+ndata_pm))+pdq
@@ -386,13 +386,13 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
     do m=1,nlay+1
       sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
       if (sc_pr(m).ne.0.d0) then
-	bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
       else
-	bx_rough(m)=0.d0
-	by_rough(m)=0.d0
-	bz_rough(m)=0.d0
+        bx_rough(m)=0.d0
+        by_rough(m)=0.d0
+        bz_rough(m)=0.d0
       endif
     enddo
     q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mp))+pdq
@@ -412,16 +412,16 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       da(j)=a(lista(j))*1.d-2
       a(lista(j))=a(lista(j))+da(j)
       do k=1,icons
-	if (lista(j).eq.i_para_ref(k)) then
-	  if (itype_of_cons(k).eq.1) then
-	    do kk=1,n_para_eq_iref(k)
-	      a(nr_para_eq_iref(k,kk))=a(lista(j))
-	    enddo
-	  endif
-	  if (itype_of_cons(k).eq.2) then
-	    a(i_para_sum(k))=a(i_para_sum(k))-da(j)
-	  endif
-	endif
+        if (lista(j).eq.i_para_ref(k)) then
+          if (itype_of_cons(k).eq.1) then
+            do kk=1,n_para_eq_iref(k)
+              a(nr_para_eq_iref(k,kk))=a(lista(j))
+            enddo
+          endif
+          if (itype_of_cons(k).eq.2) then
+            a(i_para_sum(k))=a(i_para_sum(k))-da(j)
+          endif
+        endif
       enddo
       call param(a)
       !      ++
@@ -434,44 +434,44 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       by_rough(m)=0.d0
       bz_rough(m)=0.d0
       do m=1,nlay+1
-	sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-	if (sc_pr(m).ne.0.d0) then
-	  bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	else
-	  bx_rough(m)=0.d0
-	  by_rough(m)=0.d0
-	  bz_rough(m)=0.d0
-	endif
+        sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+        if (sc_pr(m).ne.0.d0) then
+          bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        else
+          bx_rough(m)=0.d0
+          by_rough(m)=0.d0
+          bz_rough(m)=0.d0
+        endif
       enddo
       q_max=4.d0*pi/lamda*dsin(x(ndata_pp))+pdq
       do i=1,max_hr
-	q_hr(i)=q_max*i/dfloat(max_hr)
-	ref_hr(i)=polref_sp_rough(q_hr(i))
+        q_hr(i)=q_max*i/dfloat(max_hr)
+        ref_hr(i)=polref_sp_rough(q_hr(i))
       enddo
       do i=1,ndata_pp
-	yplus(lista(j),i)=refconv(x(i))
-	yplus(lista(j),i)=dlog(yplus(lista(j),i))/dlog(10.d0)
-	dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
+        yplus(lista(j),i)=refconv(x(i))
+        yplus(lista(j),i)=dlog(yplus(lista(j),i))/dlog(10.d0)
+        dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
       enddo
       do k=1,icons
-	if (lista(j).eq.i_para_ref(k)) then
-	  if (itype_of_cons(k).eq.1) then
-	    do kk=1,n_para_eq_iref(k)
-	      do i=1,ndata_pp
-		dyda(lista(mmfit+kk),i)=dyda(lista(j),i)
-		yplus(lista(mmfit+kk),i)=yplus(lista(j),i)
-	      enddo
-	    enddo
-	  endif
-	  if (itype_of_cons(k).eq.2) then
-	    do i=1,ndata_pp
-	      dyda(lista(mmfit+1),i)=-dyda(lista(j),i)
-	      yplus(lista(mmfit+1),i)=yplus(lista(j),i)
-	    enddo
-	  endif
-	endif
+        if (lista(j).eq.i_para_ref(k)) then
+          if (itype_of_cons(k).eq.1) then
+            do kk=1,n_para_eq_iref(k)
+              do i=1,ndata_pp
+                dyda(lista(mmfit+kk),i)=dyda(lista(j),i)
+                yplus(lista(mmfit+kk),i)=yplus(lista(j),i)
+              enddo
+            enddo
+          endif
+          if (itype_of_cons(k).eq.2) then
+            do i=1,ndata_pp
+              dyda(lista(mmfit+1),i)=-dyda(lista(j),i)
+              yplus(lista(mmfit+1),i)=yplus(lista(j),i)
+            enddo
+          endif
+        endif
       enddo
       nn=ndata_pp
       !      --
@@ -484,44 +484,44 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       by_rough(m)=0.d0
       bz_rough(m)=0.d0
       do m=1,nlay+1
-	sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-	if (sc_pr(m).ne.0.d0) then
-	  bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	else
-	  bx_rough(m)=0.d0
-	  by_rough(m)=0.d0
-	  bz_rough(m)=0.d0
-	endif
+        sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+        if (sc_pr(m).ne.0.d0) then
+          bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        else
+          bx_rough(m)=0.d0
+          by_rough(m)=0.d0
+          bz_rough(m)=0.d0
+        endif
       enddo
       q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mm))+pdq
       do i=1,max_hr
-	q_hr(i)=q_max*i/dfloat(max_hr)
-	ref_hr(i)=polref_sp_rough(q_hr(i))
+        q_hr(i)=q_max*i/dfloat(max_hr)
+        ref_hr(i)=polref_sp_rough(q_hr(i))
       enddo
       do i=nn+1,nn+ndata_mm
-	yplus(lista(j),i)=refconv(x(i))
-	yplus(lista(j),i)=dlog(yplus(lista(j),i))/dlog(10.d0)
-	dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
+        yplus(lista(j),i)=refconv(x(i))
+        yplus(lista(j),i)=dlog(yplus(lista(j),i))/dlog(10.d0)
+        dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
       enddo
       do k=1,icons
-	if (lista(j).eq.i_para_ref(k)) then
-	  if (itype_of_cons(k).eq.1) then
-	    do kk=1,n_para_eq_iref(k)
-	      do i=nn+1,nn+ndata_mm
-		dyda(lista(mmfit+kk),i)=dyda(lista(j),i)
-		yplus(lista(mmfit+kk),i)=yplus(lista(j),i)
-	      enddo
-	    enddo
-	  endif
-	  if (itype_of_cons(k).eq.2) then
-	    do i=nn+1,nn+ndata_mm
-	      dyda(lista(mmfit+1),i)=-dyda(lista(j),i)
-	      yplus(lista(mmfit+1),i)=yplus(lista(j),i)
-	    enddo
-	  endif
-	endif
+        if (lista(j).eq.i_para_ref(k)) then
+          if (itype_of_cons(k).eq.1) then
+            do kk=1,n_para_eq_iref(k)
+              do i=nn+1,nn+ndata_mm
+                dyda(lista(mmfit+kk),i)=dyda(lista(j),i)
+                yplus(lista(mmfit+kk),i)=yplus(lista(j),i)
+              enddo
+            enddo
+          endif
+          if (itype_of_cons(k).eq.2) then
+            do i=nn+1,nn+ndata_mm
+              dyda(lista(mmfit+1),i)=-dyda(lista(j),i)
+              yplus(lista(mmfit+1),i)=yplus(lista(j),i)
+            enddo
+          endif
+        endif
       enddo            
       nn=nn+ndata_mm
       !      +-
@@ -534,44 +534,44 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       by_rough(m)=0.d0
       bz_rough(m)=0.d0
       do m=1,nlay+1
-	sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-	if (sc_pr(m).ne.0.d0) then
-	  bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	else
-	  bx_rough(m)=0.d0
-	  by_rough(m)=0.d0
-	  bz_rough(m)=0.d0
-	endif
+        sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+        if (sc_pr(m).ne.0.d0) then
+          bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        else
+          bx_rough(m)=0.d0
+          by_rough(m)=0.d0
+          bz_rough(m)=0.d0
+        endif
       enddo
       q_max=4.d0*pi/lamda*dsin(x(nn+ndata_pm))+pdq
       do i=1,max_hr
-	q_hr(i)=q_max*i/dfloat(max_hr)
-	ref_hr(i)=polref_sp_rough(q_hr(i))
+        q_hr(i)=q_max*i/dfloat(max_hr)
+        ref_hr(i)=polref_sp_rough(q_hr(i))
       enddo
       do i=nn+1,nn+ndata_pm
-	yplus(lista(j),i)=refconv(x(i))
-	yplus(lista(j),i)=dlog(yplus(lista(j),i))/dlog(10.d0)
-	dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
+        yplus(lista(j),i)=refconv(x(i))
+        yplus(lista(j),i)=dlog(yplus(lista(j),i))/dlog(10.d0)
+        dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
       enddo
       do k=1,icons
-	if (lista(j).eq.i_para_ref(k)) then
-	  if (itype_of_cons(k).eq.1) then
-	    do kk=1,n_para_eq_iref(k)
-	      do i=nn+1,nn+ndata_pm
-		dyda(lista(mmfit+kk),i)=dyda(lista(j),i)
-		yplus(lista(mmfit+kk),i)=yplus(lista(j),i)
-	      enddo
-	    enddo
-	  endif
-	  if (itype_of_cons(k).eq.2) then
-	    do i=nn+1,nn+ndata_pm
-	      dyda(lista(mmfit+1),i)=-dyda(lista(j),i)
-	      yplus(lista(mmfit+1),i)=yplus(lista(j),i)
-	    enddo
-	  endif
-	endif
+        if (lista(j).eq.i_para_ref(k)) then
+          if (itype_of_cons(k).eq.1) then
+            do kk=1,n_para_eq_iref(k)
+              do i=nn+1,nn+ndata_pm
+                dyda(lista(mmfit+kk),i)=dyda(lista(j),i)
+                yplus(lista(mmfit+kk),i)=yplus(lista(j),i)
+              enddo
+            enddo
+          endif
+          if (itype_of_cons(k).eq.2) then
+            do i=nn+1,nn+ndata_pm
+              dyda(lista(mmfit+1),i)=-dyda(lista(j),i)
+              yplus(lista(mmfit+1),i)=yplus(lista(j),i)
+            enddo
+          endif
+        endif
       enddo            
       nn=nn+ndata_pm
       !      -+
@@ -584,64 +584,64 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       by_rough(m)=0.d0
       bz_rough(m)=0.d0
       do m=1,nlay+1
-	sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-	if (sc_pr(m).ne.0.d0) then
-	  bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	else
-	  bx_rough(m)=0.d0
-	  by_rough(m)=0.d0
-	  bz_rough(m)=0.d0
-	endif
+        sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+        if (sc_pr(m).ne.0.d0) then
+          bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        else
+          bx_rough(m)=0.d0
+          by_rough(m)=0.d0
+          bz_rough(m)=0.d0
+        endif
       enddo
       q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mp))+pdq
       do i=1,max_hr
-	q_hr(i)=q_max*i/dfloat(max_hr)
-	ref_hr(i)=polref_sp_rough(q_hr(i))
+        q_hr(i)=q_max*i/dfloat(max_hr)
+        ref_hr(i)=polref_sp_rough(q_hr(i))
       enddo
       do i=nn+1,nn+ndata_mp
-	yplus(lista(j),i)=refconv(x(i))
-	yplus(lista(j),i)=dlog(yplus(lista(j),i))/dlog(10.d0)
-	dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
+        yplus(lista(j),i)=refconv(x(i))
+        yplus(lista(j),i)=dlog(yplus(lista(j),i))/dlog(10.d0)
+        dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
       enddo
       do k=1,icons
-	if (lista(j).eq.i_para_ref(k)) then
-	  if (itype_of_cons(k).eq.1) then
-	    do kk=1,n_para_eq_iref(k)
-	      do i=nn+1,nn+ndata_mp
-		dyda(lista(mmfit+kk),i)=dyda(lista(j),i)
-		yplus(lista(mmfit+kk),i)=yplus(lista(j),i)
-	      enddo
-	    enddo
-	    mmfit=mmfit+n_para_eq_iref(k)
-	  endif
-	  if (itype_of_cons(k).eq.2) then
-	    do i=nn+1,nn+ndata_mp
-	      dyda(lista(mmfit+1),i)=-dyda(lista(j),i)
-	      yplus(lista(mmfit+1),i)=yplus(lista(j),i)
-	    enddo
-	      mmfit=mmfit+1
-	  endif
-	endif
+        if (lista(j).eq.i_para_ref(k)) then
+          if (itype_of_cons(k).eq.1) then
+            do kk=1,n_para_eq_iref(k)
+              do i=nn+1,nn+ndata_mp
+                dyda(lista(mmfit+kk),i)=dyda(lista(j),i)
+                yplus(lista(mmfit+kk),i)=yplus(lista(j),i)
+              enddo
+            enddo
+            mmfit=mmfit+n_para_eq_iref(k)
+          endif
+          if (itype_of_cons(k).eq.2) then
+            do i=nn+1,nn+ndata_mp
+              dyda(lista(mmfit+1),i)=-dyda(lista(j),i)
+              yplus(lista(mmfit+1),i)=yplus(lista(j),i)
+            enddo
+              mmfit=mmfit+1
+          endif
+        endif
       enddo            
       a(lista(j))=a(lista(j))-da(j)
       write(8,*) 'parameter:',lista(j),' ; dyda s calculated in mrqcof'
       do k=1,icons
-	if (lista(j).eq.i_para_ref(k)) then
-	  if (itype_of_cons(k).eq.1) then
-	    do kk=1,n_para_eq_iref(k)
-	      a(nr_para_eq_iref(k,kk))=a(lista(j))
-	    enddo
-	    write(8,*) 'parameters:',lista(j),(nr_para_eq_iref(k,kk),kk=1,n_para_eq_iref(k)), &
-	    &     ': dyda s calculated in mrqcof'
-	  endif
-	  if (itype_of_cons(k).eq.2) then
-	    a(i_para_sum(k))=a(i_para_sum(k))+da(j)
-	    write(8,*) 'parameters:',lista(j),i_para_sum(k), &
-	    &      ' ; dyda s calculated in mrqcof'
-	  endif
-	endif
+        if (lista(j).eq.i_para_ref(k)) then
+          if (itype_of_cons(k).eq.1) then
+            do kk=1,n_para_eq_iref(k)
+              a(nr_para_eq_iref(k,kk))=a(lista(j))
+            enddo
+            write(8,*) 'parameters:',lista(j),(nr_para_eq_iref(k,kk),kk=1,n_para_eq_iref(k)), &
+            &     ': dyda s calculated in mrqcof'
+          endif
+          if (itype_of_cons(k).eq.2) then
+            a(i_para_sum(k))=a(i_para_sum(k))+da(j)
+            write(8,*) 'parameters:',lista(j),i_para_sum(k), &
+            &      ' ; dyda s calculated in mrqcof'
+          endif
+        endif
       enddo
     13       continue
     if(mmfit.ne.mfit) then
@@ -667,25 +667,25 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       by_rough(m)=0.d0
       bz_rough(m)=0.d0
       do m=1,nlay+1
-	sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-	if (sc_pr(m).ne.0.d0) then
-	  bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	else
-	  bx_rough(m)=0.d0
-	  by_rough(m)=0.d0
-	  bz_rough(m)=0.d0
-	endif
+        sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+        if (sc_pr(m).ne.0.d0) then
+          bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        else
+          bx_rough(m)=0.d0
+          by_rough(m)=0.d0
+          bz_rough(m)=0.d0
+        endif
       enddo
       q_max=4.d0*pi/lamda*dsin(x(ndata_pp))+pdq
       do i=1,max_hr
-	q_hr(i)=q_max*i/dfloat(max_hr)
-	ref_hr(i)=polref_sp_rough(q_hr(i))
+        q_hr(i)=q_max*i/dfloat(max_hr)
+        ref_hr(i)=polref_sp_rough(q_hr(i))
       enddo
       do i=1,ndata_pp
-	yplus(lista(j),i)=refconv(x(i))
-	dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
+        yplus(lista(j),i)=refconv(x(i))
+        dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
       enddo
       nn=ndata_pp
       !      --
@@ -698,25 +698,25 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       by_rough(m)=0.d0
       bz_rough(m)=0.d0
       do m=1,nlay+1
-	sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-	if (sc_pr(m).ne.0.d0) then
-	  bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	else
-	  bx_rough(m)=0.d0
-	  by_rough(m)=0.d0
-	  bz_rough(m)=0.d0
-	endif
+        sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+        if (sc_pr(m).ne.0.d0) then
+          bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        else
+          bx_rough(m)=0.d0
+          by_rough(m)=0.d0
+          bz_rough(m)=0.d0
+        endif
       enddo
       q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mm))+pdq
       do i=1,max_hr
-	q_hr(i)=q_max*i/dfloat(max_hr)
-	ref_hr(i)=polref_sp_rough(q_hr(i))
+        q_hr(i)=q_max*i/dfloat(max_hr)
+        ref_hr(i)=polref_sp_rough(q_hr(i))
       enddo
       do i=nn+1,nn+ndata_mm
-	yplus(lista(j),i)=refconv(x(i))
-	dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
+        yplus(lista(j),i)=refconv(x(i))
+        dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
       enddo
       nn=nn+ndata_mm
       !      +-
@@ -729,25 +729,25 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       by_rough(m)=0.d0
       bz_rough(m)=0.d0
       do m=1,nlay+1
-	sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-	if (sc_pr(m).ne.0.d0) then
-	  bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	else
-	  bx_rough(m)=0.d0
-	  by_rough(m)=0.d0
-	  bz_rough(m)=0.d0
-	endif
+        sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+        if (sc_pr(m).ne.0.d0) then
+          bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        else
+          bx_rough(m)=0.d0
+          by_rough(m)=0.d0
+          bz_rough(m)=0.d0
+        endif
       enddo
       q_max=4.d0*pi/lamda*dsin(x(nn+ndata_pm))+pdq
       do i=1,max_hr
-	q_hr(i)=q_max*i/dfloat(max_hr)
-	ref_hr(i)=polref_sp_rough(q_hr(i))
+        q_hr(i)=q_max*i/dfloat(max_hr)
+        ref_hr(i)=polref_sp_rough(q_hr(i))
       enddo
       do i=nn+1,nn+ndata_pm
-	yplus(lista(j),i)=refconv(x(i))
-	dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
+        yplus(lista(j),i)=refconv(x(i))
+        dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
       enddo
       nn=nn+ndata_pm
       !      -+
@@ -760,25 +760,25 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       by_rough(m)=0.d0
       bz_rough(m)=0.d0
       do m=1,nlay+1
-	sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-	if (sc_pr(m).ne.0.d0) then
-	  bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	  bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-	else
-	  bx_rough(m)=0.d0
-	  by_rough(m)=0.d0
-	  bz_rough(m)=0.d0
-	endif
+        sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+        if (sc_pr(m).ne.0.d0) then
+          bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+          bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        else
+          bx_rough(m)=0.d0
+          by_rough(m)=0.d0
+          bz_rough(m)=0.d0
+        endif
       enddo
       q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mp))+pdq
       do i=1,max_hr
-	q_hr(i)=q_max*i/dfloat(max_hr)
-	ref_hr(i)=polref_sp_rough(q_hr(i))
+        q_hr(i)=q_max*i/dfloat(max_hr)
+        ref_hr(i)=polref_sp_rough(q_hr(i))
       enddo
       do i=nn+1,nn+ndata_mp
-	yplus(lista(j),i)=refconv(x(i))
-	dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
+        yplus(lista(j),i)=refconv(x(i))
+        dyda(lista(j),i)=(yplus(lista(j),i)-ymod(i))/da(j)
       enddo
       a(lista(j))=a(lista(j))-da(j)
       write(8,*) 'lista(j) =',lista(j),' ; dyda s calculated in mrqcof'
@@ -790,11 +790,11 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       sig2i=1.d0
       dy=dlog(y(i))/dlog(10.d0)-ymod(i)
       do 15 j=1,mfit
-	wt=dyda(lista(j),i)*sig2i
-	do 16 k=1,j
-	  alpha(j,k)=alpha(j,k)+wt*dyda(lista(k),i)
-	16          continue
-	beta(j)=beta(j)+dy*wt
+        wt=dyda(lista(j),i)*sig2i
+        do 16 k=1,j
+          alpha(j,k)=alpha(j,k)+wt*dyda(lista(k),i)
+        16          continue
+        beta(j)=beta(j)+dy*wt
       15        continue
       chisq=chisq+dy*dy*sig2i
     14      continue
@@ -803,11 +803,11 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       sig2i=1.d0/(sig(i)*sig(i))
       dy=y(i)-ymod(i)
       do 24 j=1,mfit
-	wt=dyda(lista(j),i)*sig2i
-	do 25 k=1,j
-	  alpha(j,k)=alpha(j,k)+wt*dyda(lista(k),i)
-	25          continue
-	beta(j)=beta(j)+dy*wt
+        wt=dyda(lista(j),i)*sig2i
+        do 25 k=1,j
+          alpha(j,k)=alpha(j,k)+wt*dyda(lista(k),i)
+        25          continue
+        beta(j)=beta(j)+dy*wt
       24        continue
       chisq=chisq+dy*dy*sig2i
     23      continue

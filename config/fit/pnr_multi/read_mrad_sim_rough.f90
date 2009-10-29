@@ -1,6 +1,6 @@
 subroutine read_data(x,y,sig,ndata)
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter (ndatap=2000)
   real*8 x(ndatap),y(ndatap),sig(ndatap)
   character*128 fpp,fmm,fpm,fmp
   complex*16 ci
@@ -66,8 +66,8 @@ end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine make_sim(x,ndata)
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter (maxlay=250,ndatap=2000,max_hr=5000,np_conv=500,pdq=0.02d0)
   real*8 x(ndatap)
   complex*16 ci
   real*8 lamda

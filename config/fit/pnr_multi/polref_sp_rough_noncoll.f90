@@ -5,8 +5,8 @@
 !    along the vector of incident polarization poli, with a sign given by
 !    the scalar product poli*bm.
 function polref_sp_rough(q)
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter(maxlay=250)
   complex*16 ci
   real*8 d(maxlay),nbr(maxlay+1),nbi(maxlay+1),np(maxlay+1)
   real*8 bx(maxlay+1),by(maxlay+1),bz(maxlay+1)
@@ -148,11 +148,11 @@ function polref_sp_rough(q)
 
   return
 end
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine cal_x(m,x)
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter(maxlay=250)
   complex*16 p(2,2,0:maxlay+1),inv_p(2,2,0:maxlay+1),ei_phi(2,2,0:maxlay)
   complex*16 x(2,2,0:maxlay+1)
   complex*16 pmp1(2,2),inv_pm(2,2),ei_phim(2,2),xmp1(2,2),xm(2,2)
@@ -217,8 +217,8 @@ subroutine cal_x(m,x)
 
   return
 end
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine cal_reflectivity(r,polref)
   implicit real*8 (a-h,o-z)
   complex*16 r(2,2),rhof(2,2),rhoi(2,2),transr(2,2),temp(2,2)

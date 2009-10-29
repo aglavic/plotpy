@@ -1,6 +1,6 @@
 function refconv(theta)
+  use lay_parameters
   implicit real*8 (a-h,o-z)
-  parameter(max_hr=5000)
   complex*16 ci
   real*8 lamda,illu
   integer*4 delta_n
