@@ -17,7 +17,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b1"
+__version__ = "0.6b2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -124,7 +124,7 @@ def open_status_dialog(self, window):
     
   replot_present=self.replot_present
     
-  status=gtk.Dialog(title='Fit status after 0 seconds')
+  status=gtk.Dialog(title='Fit status after 0 s')
   text_view=gtk.TextView()
   # Retrieving a reference to a textbuffer from a textview. 
   buffer = text_view.get_buffer()
@@ -142,39 +142,50 @@ def open_status_dialog(self, window):
   status.connect("response", status_response, self, window)
   status.show_all()
   status.set_modal(True)
-  sec=0.2
   start=time.time()
+  time_get=time.time
   main_iteration=gtk.main_iteration
+  events_pending=gtk.events_pending
   file_name=self.TEMP_DIR+self.RESULT_FILE
-  i=0
   # while the process is running ceep reading the .ref output file
   try:
     file=open(file_name, 'r')
+    text='Empty .ref file.'
   except:
     file=None
     text='Empty .ref file.'
+  old_text=text
   while proc.poll()==None:
-    if i%10==0: # every 10th loop the file is read
-      if file==None:
-        try:
-          file=open(file_name, 'r')
-        except:
-          file=None
-          text='Empty .ref file.'
-      else:
-        file.seek(0)
-        text=file.read()
-        if text=='':
-          text='Empty .ref file.'
-      status.set_title('Fit status after ' + str(round(time.time()-start, 1)) + ' seconds')
-      if buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())!=text:
-        buffer.set_text(text)
-        text_view.scroll_to_iter(buffer.get_end_iter(), 0)
-      sec+=0.2
+    try:
+      line=open(self.TEMP_DIR+'status').read()
+      iteration=int(line.split('-')[0].split(':')[1])
+      chi=float(line.split('-')[1].split(':')[1])
+    except:
+      iteration=1
+      chi=0
+    if file==None:
+      try:
+        file=open(file_name, 'r')
+      except:
+        file=None
+        text='Empty .ref file.'
+    else:
+      file.seek(0)
+      text=file.read()
+      if text=='':
+        text='Empty .ref file.'
+    s_text='Status after ' + str(round(time_get()-start, 1)) + ' s: iteration %i, chi %.6g' % (iteration, chi)
+    status.set_title(s_text)
+    if old_text!=text:
+      buffer.set_text(text)
+      text_view.scroll_to_iter(buffer.get_end_iter(), 0)
+      old_text=text
+    while events_pending():
       main_iteration(False)
-    else: # the other loops just go to the GTK main loop to paint the dialog
+    text_view.scroll_to_iter(buffer.get_end_iter(), 0)
+    while events_pending():
       main_iteration(False)
-    i+=1
+    time.sleep(0.1)
   try:
     file.close()
   except AttributeError:

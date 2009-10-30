@@ -5,7 +5,11 @@ module lay_parameters
   !     ndatap: Number of datapoints for the arrays
   !     max_hr: ?
   !     pdq:    ?
-  parameter (maxlay=250,map=7*maxlay+12,ndatap=2000,max_hr=5000,np_conv=500,pdq=0.02d0)
+  parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=5000,np_conv=500,pdq=0.02d0)
+  !     To get ideas of speed measure the runtime and times inside of some functions
+  real*4       total_time(2), polref_sp_rough_time(0:3), tmp_time(0:3)
+   
+  save
 end
 
 program fit_pnr_mult
@@ -23,7 +27,8 @@ program fit_pnr_mult
   real*8 covar(map,map),alpha(map,map)
   integer*4 pp(ndatap),m_pp(ndatap),mm(ndatap),m_mm(ndatap),pm(ndatap),m_pm(ndatap),mp(ndatap),m_mp(ndatap)
   character*128 fpp,fmm,fpm,fmp
-  character*128 ent_file
+  character*128 ent_file, max_iter_string
+  integer*4     maximum_iterations
   common/pici/pi,ci
   common/wave/lamda,dlamda
   common/nlayer/nlay
@@ -38,9 +43,22 @@ program fit_pnr_mult
   common/data/ndata_pp,ndata_mm,ndata_pm,ndata_mp
   common/entryfiles/fpp,fmm,fpm,fmp
   common/layers/ntop,nincell,ncell,nbelow
+
+  tmp_time=dtime(total_time)
+  polref_sp_rough_time(0)=0.
+  polref_sp_rough_time(1)=0.
+  polref_sp_rough_time(2)=0.
+  polref_sp_rough_time(3)=0.
   
-  !! Read the .ent file name from command_line
+  !! Read the .ent file name from command line
   call getarg(1,ent_file)
+  !! Read maximum iterations from command line
+  call getarg(2,max_iter_string)
+    if(max_iter_string.eq.'') then
+        maximum_iterations=50
+    else
+        read(max_iter_string,*) maximum_iterations
+    endif
   
   pi=dacos(-1.d0)
   ci=dcmplx(0.d0,1.d0)
@@ -328,7 +346,15 @@ program fit_pnr_mult
   write(8,*)
   write(8,*)
   itest=0
-  do 10 iter=2,100
+  
+  open(82,file='status')
+  write(82,*) 'iteration: ',iter,' - chi: ',chi
+  close(82)
+  
+  do 10 iter=2,maximum_iterations
+    open(82,file='status')
+    write(82,*) 'iteration: ',iter,' - chi: ',chi
+    close(82)
     do i=1,10
       write(8,*) '############################################################'
     enddo
@@ -400,7 +426,7 @@ program fit_pnr_mult
     endif
     if (itest.eq.ntest) goto 88
   10   continue
-  88   if (iter.le.100) then
+  88   if (iter.le.maximum_iterations) then
     alamda=0.d0
     write(8,*) 'itest=',itest,' alamda=',alamda
     call mrqmin (x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
@@ -456,7 +482,10 @@ program fit_pnr_mult
   100  format(10x,i3,x,f15.5,a5,f13.5)
   write(8,*)
   write(8,*) 'results generated with program "fit_pnr_mult_newcons.f90"'   
-  77   close(8)
+  77 write(8,*) 'Total elipsed time:', dtime(total_time)
+  write(8,*) 'Time inside of polref_sp_rough function:', polref_sp_rough_time
+  close(8)
+  write(*,*) dtime(total_time)
 end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -41,7 +41,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b1"
+__version__ = "0.6b2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -107,6 +107,9 @@ class RedirectOutput:
       self.plotting_session.statusbar.push(0, self.content[-1])
       while gtk.events_pending():
         gtk.main_iteration(False)
+  
+  def fileno(self):
+    return 1
 
 class RedirectError(RedirectOutput):
   '''

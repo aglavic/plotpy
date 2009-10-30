@@ -33,7 +33,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.6b1"
+__version__ = "0.6b2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -66,6 +66,7 @@ class TreffSession(GenericSession):
   x_from=5 # fit only x regions between x_from and x_to
   x_to=''
   max_iter=50 # maximal iterations in fit
+  max_hr=5000 # Parameter in fit_pnr_multi
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img']  
   #------------------ local variables -----------------
@@ -575,6 +576,16 @@ class TreffSession(GenericSession):
     # activating the input will apply the settings, too
     ntest.connect('activate', self.dialog_activate, dialog)
     align_table.attach(ntest, 1, 2, 7, 8, 0, gtk.FILL, 0, 0)   
+    
+    text_filed=gtk.Label()
+    text_filed.set_markup('max_hr')
+    align_table.attach(text_filed, 0, 1, 8, 9, gtk.FILL, gtk.FILL, 0, 0)
+    max_hr=gtk.Entry()
+    max_hr.set_width_chars(4)
+    max_hr.set_text(str(self.max_hr))
+    # activating the input will apply the settings, too
+    ntest.connect('activate', self.dialog_activate, dialog)
+    align_table.attach(max_hr, 1, 2, 8, 9, 0, gtk.FILL, 0, 0)   
     if self.fit_object_history!=[]:
       history_back=gtk.Button(label='Undo (%i)' % len(self.fit_object_history), use_underline=True)
       history_back.connect('clicked', self.fit_history, True, dialog, window)
@@ -605,7 +616,7 @@ class TreffSession(GenericSession):
                    [first_slit, second_slit], 
                    scaling_factor, 
                    [polarizer_efficiancy, analyzer_efficiancy, flipper0_efficiancy, flipper1_efficiancy], 
-                   alambda_first, ntest, x_from, x_to],
+                   alambda_first, ntest, x_from, x_to, max_hr],
                    [layer_params, fit_params, max_iter])
     # befor the widget gets destroyed the textbuffer view widget is removed
     #dialog.connect("destroy",self.close_plot_options_window,sw) 
@@ -698,7 +709,7 @@ class TreffSession(GenericSession):
       SL_selector=gtk.combo_box_new_text()
       SL_selector.append_text('SL')
       SL_selector.set_active(0)
-      for i, SL in enumerate(self.fit_object.NEUTRON_SCATTERING_LENGTH_DENSITIES.items()):
+      for i, SL in enumerate(sorted(self.fit_object.NEUTRON_SCATTERING_LENGTH_DENSITIES.items())):
         SL_selector.append_text(SL[0])
         if layer.scatter_density_Nb==SL[1][0] and layer.scatter_density_Nb2==SL[1][1] and layer.scatter_density_Np==SL[1][2]:
           SL_selector.set_active(i+1)
@@ -817,6 +828,15 @@ class TreffSession(GenericSession):
       except ValueError:
         None
       try:
+        max_hr_new=int(parameters_list[9].get_text())
+        if max_hr_new!=self.max_hr:
+          self.max_hr=max_hr_new
+          new_max_hr=True
+        else:
+          new_max_hr=False
+      except ValueError:
+        new_max_hr=False
+      try:
         self.x_from=float(parameters_list[7].get_text())
       except ValueError:
         self.x_from=None
@@ -840,7 +860,7 @@ class TreffSession(GenericSession):
       if response==7:
         self.user_constraint_dialog(dialog, window)
         return None
-      self.dialog_fit(action, window)
+      self.dialog_fit(action, window, new_max_hr=new_max_hr)
       # read fit parameters from file and create new object, if process is killed ignore
       if fit_list[1]['actually'] and response==5 and self.fit_object.fit==1: 
         parameters, errors=self.read_fit_file(self.TEMP_DIR+'result', self.fit_object)
@@ -860,7 +880,7 @@ class TreffSession(GenericSession):
       self.fit_object.layers.append(multilayer)
       self.rebuild_dialog(dialog, window)
 
-  def dialog_fit(self, action, window, move_channels=True):
+  def dialog_fit(self, action, window, move_channels=True, new_max_hr=False):
     '''
       function invoked when apply button is pressed
       at fit dialog. Fits with the new parameters.
@@ -869,9 +889,11 @@ class TreffSession(GenericSession):
     output_names=config.treff.FIT_OUTPUT_FILES
     self.export_data_and_entfile(self.TEMP_DIR, 'fit_temp.ent')
     #open a background process for the fit function
-    reflectometer_fit.functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent')
+    reflectometer_fit.functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', new_max_hr)
+    print "PNR program started."
     if self.fit_object.fit!=1: # if this is not a fit just wait till finished
-      stderr_value = reflectometer_fit.functions.proc.communicate()[1]
+      exec_time, stderr_value = reflectometer_fit.functions.proc.communicate()
+      print "PNR program finished in %.2g seconds." % float(exec_time.splitlines()[-1])
     else:
       self.open_status_dialog(window)
     first=True
@@ -1134,7 +1156,7 @@ class TreffSession(GenericSession):
   
   #----------------------- GUI functions -----------------------
 
-  def call_fit_program(self, file_ent):
+  def call_fit_program(self, file_ent, force_compile=False):
     '''
       This function calls the fit_pnr program and if it is not compiled with 
       those settings, will compile it. It does not wait for the 
@@ -1145,11 +1167,15 @@ class TreffSession(GenericSession):
     exe=os.path.join(self.TEMP_DIR, 'pnr.o')
     subcode_files=map(lambda name: os.path.join(code_path, name), config.treff.PROGRAM_FILES)
     # has the program been changed or does it not exist
-    if (not os.path.exists(exe)) or \
+    if force_compile or (not os.path.exists(exe)) or \
       any(map(lambda name: (os.stat(name)[8]-os.stat(exe)[8]) > 0, subcode_files)):
       code=''
       for subcode_file in subcode_files:
         code+=open(subcode_file, 'r').read()
+      code=code.replace("parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=5000,np_conv=500,pdq=0.02d0)", 
+                   "parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=%i,np_conv=500,pdq=0.02d0)" % \
+                   self.max_hr
+                   )
       open(code_file, 'w').write(code)
       print 'Compiling fit program!'
       call_params=[config.treff.FORTRAN_COMPILER, code_file, '-o', exe]
@@ -1159,7 +1185,7 @@ class TreffSession(GenericSession):
         call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
       subprocess.call(call_params)
       print 'Compiled'
-    process = subprocess.Popen([exe, file_ent], 
+    process = subprocess.Popen([exe, file_ent, str(self.max_iter)], 
                         shell=False, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 

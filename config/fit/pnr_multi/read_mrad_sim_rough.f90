@@ -88,159 +88,167 @@ subroutine make_sim(x,ndata)
   open(10,file='simulation')
   open(11,file='simulation_q')
   !      ++
-  open(9,file='simulation_pp')
-  poli(2)=pol1
-  polf(2)=pol2
-  poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
-  poli_norm=dsqrt(poli2)
-  m=0
-  bx_rough(m)=0.d0
-  by_rough(m)=0.d0
-  bz_rough(m)=0.d0
-  do m=1,nlay+1
-    sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-    if (sc_pr(m).ne.0.d0) then
-      bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-      by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-      bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-    else
-      bx_rough(m)=0.d0
-      by_rough(m)=0.d0
-      bz_rough(m)=0.d0
-    endif
-  enddo
-  q_max=4.d0*pi/lamda*dsin(x(ndata_pp))+pdq
-  do i=1,max_hr
-    q_hr(i)=q_max*i/dfloat(max_hr)
-    ref_hr(i)=polref_sp_rough(q_hr(i))
-  enddo
-  do i=1,np_conv
-    xx=x(ndata_pp)*i/dfloat(np_conv)
-    y=refconv(xx)
-    write(9,200) xx*1000.d0,y,q,sigmaq
-    write(10,200) xx*1000.d0,y,q,sigmaq
-    write(11,200) q,y,xx*1000.d0,sigmaq
-  enddo
-  nn=ndata_pp
-  close(9)
+  if (ndata_pp.gt.0) then
+    open(9,file='simulation_pp')
+    poli(2)=pol1
+    polf(2)=pol2
+    poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
+    poli_norm=dsqrt(poli2)
+    m=0
+    bx_rough(m)=0.d0
+    by_rough(m)=0.d0
+    bz_rough(m)=0.d0
+    do m=1,nlay+1
+      sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+      if (sc_pr(m).ne.0.d0) then
+        bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+      else
+        bx_rough(m)=0.d0
+        by_rough(m)=0.d0
+        bz_rough(m)=0.d0
+      endif
+    enddo
+    q_max=4.d0*pi/lamda*dsin(x(ndata_pp))+pdq
+    do i=1, max_hr
+      q_hr(i)=q_max*i/dfloat(max_hr)
+      ref_hr(i)=polref_sp_rough(q_hr(i))
+    enddo
+    do i=1,np_conv
+      xx=x(ndata_pp)*i/dfloat(np_conv)
+      y=refconv(xx)
+      write(9,200) xx*1000.d0,y,q,sigmaq
+      write(10,200) xx*1000.d0,y,q,sigmaq
+      write(11,200) q,y,xx*1000.d0,sigmaq
+    enddo
+    nn=ndata_pp
+    close(9)
+  endif
   write(10,100) '&'
   write(11,100) '&'
   100  format(a1)
 
   !      --
-  open(9,file='simulation_mm')
-  poli(2)=-pol1*fl1
-  polf(2)=-pol2*fl2
-  poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
-  poli_norm=dsqrt(poli2)
-  m=0
-  bx_rough(m)=0.d0
-  by_rough(m)=0.d0
-  bz_rough(m)=0.d0
-  do m=1,nlay+1
-    sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-    if (sc_pr(m).ne.0.d0) then
-      bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-      by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-      bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-    else
-      bx_rough(m)=0.d0
-      by_rough(m)=0.d0
-      bz_rough(m)=0.d0
-    endif
-  enddo
-  q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mm))+pdq
-  do i=1,max_hr
-    q_hr(i)=q_max*i/dfloat(max_hr)
-    ref_hr(i)=polref_sp_rough(q_hr(i))
-  enddo
-  do i=1,np_conv
-    xx=x(nn+ndata_mm)*i/dfloat(np_conv)
-    y=refconv(xx)
-    write(9,200) xx*1000.d0,y,q,sigmaq
-    write(10,200) xx*1000.d0,y,q,sigmaq
-    write(11,200) q,y,xx*1000.d0,sigmaq
-  enddo
-  nn=nn+ndata_mm
-  close(9)
+  if (ndata_mm.gt.0) then
+    open(9,file='simulation_mm')
+    poli(2)=-pol1*fl1
+    polf(2)=-pol2*fl2
+    poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
+    poli_norm=dsqrt(poli2)
+    m=0
+    bx_rough(m)=0.d0
+    by_rough(m)=0.d0
+    bz_rough(m)=0.d0
+    do m=1,nlay+1
+      sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+      if (sc_pr(m).ne.0.d0) then
+        bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+      else
+        bx_rough(m)=0.d0
+        by_rough(m)=0.d0
+        bz_rough(m)=0.d0
+      endif
+    enddo
+    q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mm))+pdq
+    do i=1,max_hr
+      q_hr(i)=q_max*i/dfloat(max_hr)
+      ref_hr(i)=polref_sp_rough(q_hr(i))
+    enddo
+    do i=1,np_conv
+      xx=x(nn+ndata_mm)*i/dfloat(np_conv)
+      y=refconv(xx)
+      write(9,200) xx*1000.d0,y,q,sigmaq
+      write(10,200) xx*1000.d0,y,q,sigmaq
+      write(11,200) q,y,xx*1000.d0,sigmaq
+    enddo
+    nn=nn+ndata_mm
+    close(9)
+  endif
   write(10,100) '&'
   write(11,100) '&'
 
   !      +-
-  open(9,file='simulation_pm')
-  poli(2)=pol1
-  polf(2)=-pol2*fl2
-  poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
-  poli_norm=dsqrt(poli2)
-  m=0
-  bx_rough(m)=0.d0
-  by_rough(m)=0.d0
-  bz_rough(m)=0.d0
-  do m=1,nlay+1
-    sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-    if (sc_pr(m).ne.0.d0) then
-      bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-      by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-      bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-    else
-      bx_rough(m)=0.d0
-      by_rough(m)=0.d0
-      bz_rough(m)=0.d0
-    endif
-  enddo
-  q_max=4.d0*pi/lamda*dsin(x(nn+ndata_pm))+pdq
-  do i=1,max_hr
-    q_hr(i)=q_max*i/dfloat(max_hr)
-    ref_hr(i)=polref_sp_rough(q_hr(i))
-  enddo
-  do i=1,np_conv
-    xx=x(nn+ndata_pm)*i/dfloat(np_conv)
-    y=refconv(xx)
-    write(9,200) xx*1000.d0,y,q,sigmaq
-    write(10,200) xx*1000.d0,y,q,sigmaq
-    write(11,200) q,y,xx*1000.d0,sigmaq
-  enddo
-  nn=nn+ndata_pm
-  close(9)
+  if (ndata_pm.gt.0) then
+    open(9,file='simulation_pm')
+    poli(2)=pol1
+    polf(2)=-pol2*fl2
+    poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
+    poli_norm=dsqrt(poli2)
+    m=0
+    bx_rough(m)=0.d0
+    by_rough(m)=0.d0
+    bz_rough(m)=0.d0
+    do m=1,nlay+1
+      sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+      if (sc_pr(m).ne.0.d0) then
+        bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+      else
+        bx_rough(m)=0.d0
+        by_rough(m)=0.d0
+        bz_rough(m)=0.d0
+      endif
+    enddo
+    q_max=4.d0*pi/lamda*dsin(x(nn+ndata_pm))+pdq
+    do i=1,max_hr
+      q_hr(i)=q_max*i/dfloat(max_hr)
+      ref_hr(i)=polref_sp_rough(q_hr(i))
+    enddo
+    do i=1,np_conv
+      xx=x(nn+ndata_pm)*i/dfloat(np_conv)
+      y=refconv(xx)
+      write(9,200) xx*1000.d0,y,q,sigmaq
+      write(10,200) xx*1000.d0,y,q,sigmaq
+      write(11,200) q,y,xx*1000.d0,sigmaq
+    enddo
+    nn=nn+ndata_pm
+    close(9)
+  endif
   write(10,100) '&'
   write(11,100) '&'
 
   !      -+
-  open(9,file='simulation_mp')
-  poli(2)=-pol1*fl1
-  polf(2)=pol2
-  poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
-  poli_norm=dsqrt(poli2)
-  m=0
-  bx_rough(m)=0.d0
-  by_rough(m)=0.d0
-  bz_rough(m)=0.d0
-  do m=1,nlay+1
-    sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
-    if (sc_pr(m).ne.0.d0) then
-      bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-      by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-      bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
-    else
-      bx_rough(m)=0.d0
-      by_rough(m)=0.d0
-      bz_rough(m)=0.d0
-    endif
-  enddo
-  q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mp))+pdq
-  do i=1,max_hr
-    q_hr(i)=q_max*i/dfloat(max_hr)
-    ref_hr(i)=polref_sp_rough(q_hr(i))
-  enddo
-  do i=1,np_conv
-    xx=x(nn+ndata_mp)*i/dfloat(np_conv)
-    y=refconv(xx)
-    write(9,200) xx*1000.d0,y,q,sigmaq
-    write(10,200) xx*1000.d0,y,q,sigmaq
-    write(11,200) q,y,xx*1000.d0,sigmaq
-  enddo
-  nn=nn+ndata_mp
-  close(9)
+  if (ndata_pm.gt.0) then
+    open(9,file='simulation_mp')
+    poli(2)=-pol1*fl1
+    polf(2)=pol2
+    poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
+    poli_norm=dsqrt(poli2)
+    m=0
+    bx_rough(m)=0.d0
+    by_rough(m)=0.d0
+    bz_rough(m)=0.d0
+    do m=1,nlay+1
+      sc_pr(m)=(poli(1)*bx(m)+poli(2)*by(m)+poli(3)*bz(m))/poli_norm
+      if (sc_pr(m).ne.0.d0) then
+        bx_rough(m)=poli(1)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        by_rough(m)=poli(2)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+        bz_rough(m)=poli(3)/poli_norm*sc_pr(m)/dabs(sc_pr(m))
+      else
+        bx_rough(m)=0.d0
+        by_rough(m)=0.d0
+        bz_rough(m)=0.d0
+      endif
+    enddo
+    q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mp))+pdq
+    do i=1,max_hr
+      q_hr(i)=q_max*i/dfloat(max_hr)
+      ref_hr(i)=polref_sp_rough(q_hr(i))
+    enddo
+    do i=1,np_conv
+      xx=x(nn+ndata_mp)*i/dfloat(np_conv)
+      y=refconv(xx)
+      write(9,200) xx*1000.d0,y,q,sigmaq
+      write(10,200) xx*1000.d0,y,q,sigmaq
+      write(11,200) q,y,xx*1000.d0,sigmaq
+    enddo
+    nn=nn+ndata_mp
+    close(9)
+  endif
   write(10,100) '&'
   write(11,100) '&'
 

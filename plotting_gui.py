@@ -2157,7 +2157,6 @@ class ApplicationMainWindow(gtk.Window):
       self.show_last_plot_params(None)
     else:
       self.set_image()
-      self.reset_statusbar()
       self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
       self.active_plot_geometry=(self.widthf, self.heightf)
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
