@@ -28,8 +28,6 @@ function polref_sp_rough(q)
   common/rough/sigma(maxlay+1)
   common/damp_rough/damp
   
-  tmp_time(0)=dtime(total_time)
-
   p0=q/2.d0
   p(1,1,0)=dcmplx(p0,0.d0)
   p(2,2,0)=dcmplx(p0,0.d0)
@@ -46,9 +44,7 @@ function polref_sp_rough(q)
   p_rough_plus(0)=p0
   p_rough_minus(0)=p0
   p02=p0*p0
-  
-  tmp_time(1)=dtime(total_time)
-  
+    
   do m=1,nlay
     pnucl2=4.d0*pi*dcmplx(nbr(m),-nbi(m))
     pmag2=4.d0*pi*np(m)
@@ -72,8 +68,6 @@ function polref_sp_rough(q)
     p_rough_plus(m)=cdsqrt(p02-pnucl2-pmag2_rough)
     p_rough_minus(m)=cdsqrt(p02-pnucl2+pmag2_rough)
   enddo
-
-  polref_sp_rough_time(1)=polref_sp_rough_time(1)+dtime(total_time)-tmp_time(1)
   
   m=nlay+1
   pnucl2=4.d0*pi*dcmplx(nbr(m),-nbi(m))
@@ -113,8 +107,6 @@ function polref_sp_rough(q)
     damp(2,1,m)=dcmplx(0.d0,0.d0)
   endif
   
-  tmp_time(2)=dtime(total_time)
-  
   do m=1,nlay
     if(sigma(m+1).ne.0.d0) then
       bmbmp1=bx_rough(m)*bx_rough(m+1)+by_rough(m)*by_rough(m+1)+bz_rough(m)*bz_rough(m+1)
@@ -140,9 +132,6 @@ function polref_sp_rough(q)
       damp(2,1,m)=dcmplx(0.d0,0.d0)
     endif
   enddo
-
-  polref_sp_rough_time(2)=polref_sp_rough_time(2)+dtime(total_time)-tmp_time(2)  
-
   
   x(1,1,nlay+1)=0.d0
   x(2,2,nlay+1)=0.d0
@@ -162,8 +151,6 @@ function polref_sp_rough(q)
   
   call cal_reflectivity(r,polref_sp_rough)
   
-  polref_sp_rough_time(0)=polref_sp_rough_time(0)+dtime(total_time)-tmp_time(0)
-
   return
 end
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -181,8 +168,6 @@ subroutine cal_x(m,x)
   complex*16 rough_damp(2,2)
   common/calx/p,inv_p,ei_phi
   common/damp_rough/damp
-
-  tmp_time(3)=dtime(total_time)
 
   do i=1,2
     do j=1,2
@@ -236,8 +221,6 @@ subroutine cal_x(m,x)
     enddo
   enddo
   
-  polref_sp_rough_time(3)=polref_sp_rough_time(3)+dtime(total_time)-tmp_time(3)
-
   return
 end
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

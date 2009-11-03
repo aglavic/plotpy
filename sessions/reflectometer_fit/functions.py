@@ -178,11 +178,9 @@ def open_status_dialog(self, window):
     status.set_title(s_text)
     if old_text!=text:
       buffer.set_text(text)
-      text_view.scroll_to_iter(buffer.get_end_iter(), 0)
       old_text=text
     while events_pending():
       main_iteration(False)
-    text_view.scroll_to_iter(buffer.get_end_iter(), 0)
     while events_pending():
       main_iteration(False)
     time.sleep(0.1)

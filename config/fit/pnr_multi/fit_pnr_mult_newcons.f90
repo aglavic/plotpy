@@ -7,7 +7,7 @@ module lay_parameters
   !     pdq:    ?
   parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=5000,np_conv=500,pdq=0.02d0)
   !     To get ideas of speed measure the runtime and times inside of some functions
-  real*4       total_time(2), polref_sp_rough_time(0:3), tmp_time(0:3)
+  real*4       total_time(2), tmp_time
    
   save
 end
@@ -45,10 +45,6 @@ program fit_pnr_mult
   common/layers/ntop,nincell,ncell,nbelow
 
   tmp_time=dtime(total_time)
-  polref_sp_rough_time(0)=0.
-  polref_sp_rough_time(1)=0.
-  polref_sp_rough_time(2)=0.
-  polref_sp_rough_time(3)=0.
   
   !! Read the .ent file name from command line
   call getarg(1,ent_file)
@@ -482,9 +478,7 @@ program fit_pnr_mult
   100  format(10x,i3,x,f15.5,a5,f13.5)
   write(8,*)
   write(8,*) 'results generated with program "fit_pnr_mult_newcons.f90"'   
-  77 write(8,*) 'Total elipsed time:', dtime(total_time)
-  write(8,*) 'Time inside of polref_sp_rough function:', polref_sp_rough_time
-  close(8)
+  77 close(8)
   write(*,*) dtime(total_time)
 end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -855,6 +855,7 @@ class ReflectometerSession(GenericSession):
                         shell=False, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
+                        cwd=self.TEMP_DIR, 
                         )
     return process
     

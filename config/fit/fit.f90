@@ -2,6 +2,7 @@ program fit_logspecrefgauss
     implicit real*8 (a-h,o-z)
     parameter(maxint=25,map=4*maxint+3,ndatap=10000)
     real*8 lambda
+    real*4 total_time(2), tmp_time
     integer maximum_iter
     character*128 data_file,ent_file,res_output_file,sim_output_file,maximum_iterations
     dimension x(ndatap),y(ndatap),sig(ndatap),xxx(ndatap)
@@ -14,6 +15,8 @@ program fit_logspecrefgauss
     common/cal/theta_max,width,rnorm
     common/file/res_output_file
 
+    tmp_time=dtime(total_time)
+    
     !! to avoid new compiling for every file, commandline options from
     call getarg(1,ent_file)
     call getarg(2,data_file)
@@ -156,6 +159,9 @@ program fit_logspecrefgauss
     write(8,*)
     itest=0
     do 10 iter=1,maximum_iter !maximum iterations, standart 1000
+        open(82,file='status')
+        write(82,*) 'iteration: ',iter,' - chi: ',chi
+        close(82)
         write(8,*) '############################################################'
         write(8,*)
         write(8,*)
@@ -275,6 +281,7 @@ program fit_logspecrefgauss
         write(9,*) xx,' ',yy
     enddo
     close(9)
+    write(*,*) dtime(total_time)
 end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
