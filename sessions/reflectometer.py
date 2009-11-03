@@ -694,8 +694,10 @@ class ReflectometerSession(GenericSession):
     ent_file.close()
     #open a background process for the fit function
     reflectometer_fit.functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',self.max_iter)
+    print "fit.f90 program started."
     if self.fit_object.fit!=1: # if this is not a fit just wait till finished
-      stderr_value = reflectometer_fit.functions.proc.communicate()[1]
+      exec_time, stderr_value = reflectometer_fit.functions.proc.communicate()
+      print "fit.f90 program finished in %.2g seconds." % float(exec_time.splitlines()[-1])
     else:
       self.open_status_dialog(window)
     simu=read_data.reflectometer.read_simulation(self.TEMP_DIR+'fit_temp.sim')
