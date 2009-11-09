@@ -5,15 +5,12 @@
 '''
 
 import sys, os
+exit=sys.exit
 from distutils.core import setup
 import subprocess
 
 if "py2exe" in sys.argv:
   import py2exe
-
-# if python version < 2.5 set the sys.exit function as exit
-if hex(sys.hexversion)<'0x2050000':
-  exit=sys.exit
 
 __name__='Plot-script'
 __author__ = "Artur Glavic"
@@ -144,7 +141,6 @@ setup(name=__name__,
       packages=__packages__, 
       package_data=__package_data__,
       requires=__requires__, #does not do anything
-      windows = [ "plot.py" ],
       console = [ "plot.py" , "py2exe_imports.py"],
       options = __options__, 
      )
@@ -208,6 +204,8 @@ if "py2exe" in sys.argv:
     os.mkdir('archiv\\etc')
     os.mkdir('archiv\\share')
     os.mkdir('archiv\\lib')
+    os.mkdir('archiv\\gnuplot')
+    os.mkdir('archiv\\gfortran')
   except:
     pass
   handle=os.popen('xcopy c:\\gtk\\etc archiv\\etc /y /e')
@@ -215,5 +213,9 @@ if "py2exe" in sys.argv:
   handle=os.popen('xcopy c:\\gtk\\share archiv\\share /y /e')
   print handle.read()
   handle=os.popen('xcopy c:\\gtk\\lib archiv\\lib /y /e')
+  print handle.read()
+  handle=os.popen('xcopy c:\\gnuplot archiv\\gnuplot /y /e')
+  print handle.read()
+  handle=os.popen('xcopy "C:\Program Files\gfortran" archiv\\gfortran /y /e')
   print handle.read()
   

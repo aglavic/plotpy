@@ -29,6 +29,7 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 # python modules
 import sys
+exit=sys.exit
 ##---add_python_path_here---## # Place holder to add installation directory to python path for non superuser installation.
 
 # own modules
@@ -41,14 +42,11 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b2"
+__version__ = "0.6b3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
-# if python version < 2.5 set the sys.exit function as exit
-if hex(sys.hexversion)<'0x2050000':
-  exit=sys.exit
 
 '''
   Dictionary for the known measurement types, to create a new measureing type

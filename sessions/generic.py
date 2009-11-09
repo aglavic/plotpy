@@ -22,6 +22,7 @@
 # importing python modules
 import os
 import sys
+exit=sys.exit
 import math
 from time import sleep
 import subprocess

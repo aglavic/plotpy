@@ -9,6 +9,8 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 import os
+import sys
+exit=sys.exit
 import subprocess
 from config import gnuplot_preferences
 

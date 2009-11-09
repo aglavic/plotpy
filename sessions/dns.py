@@ -16,6 +16,7 @@
 # import external modules
 import os
 import sys
+exit=sys.exit
 # if possible use the numpy functions as they work with complete arrays
 try:
   from numpy import pi, cos, sin, sqrt, array
@@ -36,15 +37,10 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Werner Schweika"]
 __license__ = "None"
-__version__ = "0.6b2"
+__version__ = "0.6b3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
-
-
-# if python version < 2.5 set the sys.exit function as exit
-if hex(sys.hexversion)<'0x2050000':
-  exit=sys.exit
 
 # functions for evaluation of polarized neutron measurements
 def correct_flipping_ratio(flipping_ratio, pp_data, pm_data, 
