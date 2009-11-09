@@ -37,7 +37,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b2"
+__version__ = "0.6b3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -348,7 +348,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       self.TEMP_DIR=os.getenv("TEMP")+'\\'
       self.SCRIPT_PATH=SCRIPT_PATH + '\\'
       # name of the gnuplot command under windows
-      self.GNUPLOT_COMMAND="pgnuplot"
+      self.GNUPLOT_COMMAND="wgnuplot"
       self.gnuplot_scripts=True
       def replace_systemdependent( string): # replace backthlash by double backthlash for gnuplot under windows
         return string.replace('\\','\\\\').replace('\\\\\n','\\\n')

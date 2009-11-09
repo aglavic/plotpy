@@ -8,6 +8,9 @@ import sys, os
 from distutils.core import setup
 import subprocess
 
+if "py2exe" in sys.argv:
+  import py2exe
+
 # if python version < 2.5 set the sys.exit function as exit
 if hex(sys.hexversion)<'0x2050000':
   exit=sys.exit
@@ -16,18 +19,21 @@ __name__='Plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __license__ = "None"
-__version__ = "0.6b2"
+__version__ = "0.6b3"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://atzes.homeip.net/plotwiki"
 __description__='''Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.'''
 
 __scripts__=['plot.py']
-__py_modules__=['plot', 'plotting_gui', 'measurement_data_structure', 'measurement_data_plotting', 'fit_data', 'file_actions']
+__py_modules__=['plot', 'plotting_gui', 'measurement_data_structure', 'measurement_data_plotting', 'fit_data', 'file_actions', 'py2exe_imports']
 __packages__=['config', 'read_data', 'sessions', 'sessions.reflectometer_fit']
 __package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 'fit/pnr_multi/*.f90', 'fonts/*.ttf'], 
                     }
 __requires__=['pygtk', 'gobject', 'numpy', 'scipy']
+
+__options__={ "py2exe": {"includes": "numpy,scipy,gtk,pango,cairo,pangocairo,atk,gobject",
+                             }}
 
 script_files=['scripts/prd', 'scripts/psd', 'scripts/p4d', 'scripts/dnsplot', 'scripts/treffplot', 'scripts/pin12', 'scripts/plot_SQUID_data', 'scripts/plot_4circle_data', 'scripts/plot_reflectometer_data']
 # creat windows batches for the script_files
@@ -138,6 +144,9 @@ setup(name=__name__,
       packages=__packages__, 
       package_data=__package_data__,
       requires=__requires__, #does not do anything
+      windows = [ "plot.py" ],
+      console = [ "plot.py" , "py2exe_imports.py"],
+      options = __options__, 
      )
 
 # If binary distribution has been created rename it and create .deb package, too.
@@ -190,4 +199,21 @@ if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
   script=open(os.path.join(sys.argv[sys.argv.index('--install-scripts')+1], 'plot.py'), 'w')
   script.write(text)
   script.close()
+  
+# py2exe specific stuff to make it work:
+# py2exe specific stuff to make it work:
+if "py2exe" in sys.argv:
+  print "\n*** Copying gtk stuff ***"
+  try:
+    os.mkdir('archiv\\etc')
+    os.mkdir('archiv\\share')
+    os.mkdir('archiv\\lib')
+  except:
+    pass
+  handle=os.popen('xcopy c:\\gtk\\etc archiv\\etc /y /e')
+  print handle.read()
+  handle=os.popen('xcopy c:\\gtk\\share archiv\\share /y /e')
+  print handle.read()
+  handle=os.popen('xcopy c:\\gtk\\lib archiv\\lib /y /e')
+  print handle.read()
   

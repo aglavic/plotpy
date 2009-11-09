@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b2"
+__version__ = "0.6b3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -227,12 +227,19 @@ def gnuplot_plot_script(session,
   write_file=open(script_name,'w')
   write_file.write( gnuplot_file_text+'\n' )
   write_file.close()
-  proc = subprocess.Popen([session.GNUPLOT_COMMAND, script_name], 
-                      shell=False, 
-                      stderr=subprocess.PIPE,
-                      stdout=subprocess.PIPE, 
-                      )
-  output = proc.communicate()
+  try:
+    proc = subprocess.Popen([session.GNUPLOT_COMMAND, script_name], 
+                        shell=False, 
+                        stderr=subprocess.PIPE,
+                        stdout=subprocess.PIPE, 
+                        stdin=subprocess.PIPE, 
+                        )
+    proc.stdin.close()
+    output = proc.communicate()
+  except:
+    print "\n!Problem communicating with Gnuplot, please check your system settings!"
+    print "Gnuplot command used: %s\n" % session.GNUPLOT_COMMAND
+    exit()
   return output[0]+output[1] # return the standard error output
 
 def replace_ph(session, 
