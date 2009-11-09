@@ -205,7 +205,7 @@ if "py2exe" in sys.argv:
     os.mkdir('archiv\\share')
     os.mkdir('archiv\\lib')
     os.mkdir('archiv\\gnuplot')
-    os.mkdir('archiv\\gfortran')
+    os.mkdir('archiv\\config')
     handle=os.popen('xcopy c:\\gtk\\etc archiv\\etc /y /e')
     print handle.read()
     handle=os.popen('xcopy c:\\gtk\\share archiv\\share /y /e')
@@ -214,7 +214,7 @@ if "py2exe" in sys.argv:
     print handle.read()
     handle=os.popen('xcopy c:\\gnuplot archiv\\gnuplot /y /e')
     print handle.read()
-    handle=os.popen('xcopy "C:\Program Files\gfortran" archiv\\gfortran /y /e')
+    handle=os.popen('xcopy "config" archiv\\config /y /e')
     print handle.read()
   except:
     pass
