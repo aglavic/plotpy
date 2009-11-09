@@ -5,9 +5,9 @@
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
-__credits__ = ["Esther Pfuhl"]
+__credits__ = ["Esther Pfuhl", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.6b2"
+__version__ = "0.6b3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
