@@ -33,6 +33,7 @@ import config.gnuplot_preferences
 import config.transformations
 
 # importing own modules
+import plot
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -325,7 +326,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       OSX.
     '''
     self.OWN_PID=str(os.getpid())
-    SCRIPT_PATH=os.path.dirname(os.path.realpath(__file__).replace('sessions', ''))
+    SCRIPT_PATH=os.path.dirname(os.path.realpath(plot.__file__).replace('sessions', ''))
     config.gnuplot_preferences.FONT_PATH=config.gnuplot_preferences.FONT_PATH.replace('[script-path]', SCRIPT_PATH)
     if not 'win' in sys.platform:
       # Linux and osx case
