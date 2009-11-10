@@ -90,7 +90,7 @@ subroutine make_sim(x,ndata)
   !      ++
   if (ndata_pp.gt.0) then
     open(9,file='simulation_pp')
-    poli(2)=pol1
+    poli(2)=pol1*fl1
     polf(2)=pol2
     poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
     poli_norm=dsqrt(poli2)
@@ -132,7 +132,7 @@ subroutine make_sim(x,ndata)
   !      --
   if (ndata_mm.gt.0) then
     open(9,file='simulation_mm')
-    poli(2)=-pol1*fl1
+    poli(2)=-pol1
     polf(2)=-pol2*fl2
     poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
     poli_norm=dsqrt(poli2)
@@ -173,7 +173,7 @@ subroutine make_sim(x,ndata)
   !      +-
   if (ndata_pm.gt.0) then
     open(9,file='simulation_pm')
-    poli(2)=pol1
+    poli(2)=pol1*fl1
     polf(2)=-pol2*fl2
     poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
     poli_norm=dsqrt(poli2)
@@ -214,7 +214,7 @@ subroutine make_sim(x,ndata)
   !      -+
   if (ndata_pm.gt.0) then
     open(9,file='simulation_mp')
-    poli(2)=-pol1*fl1
+    poli(2)=-pol1
     polf(2)=pol2
     poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
     poli_norm=dsqrt(poli2)

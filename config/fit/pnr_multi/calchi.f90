@@ -13,7 +13,7 @@ subroutine calchi(x,y,sig,ndata,chisq,valfitsq)
   common/wave/lamda,dlamda
 
   !      ++
-  poli(2)=pol1
+  poli(2)=pol1*fl1
   polf(2)=pol2
   q_max=4.d0*pi/lamda*dsin(x(ndata_pp))+pdq
   do i=1,max_hr
@@ -26,7 +26,7 @@ subroutine calchi(x,y,sig,ndata,chisq,valfitsq)
   nn=ndata_pp
 
   !      --
-  poli(2)=-pol1*fl1
+  poli(2)=-pol1
   polf(2)=-pol2*fl2
   q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mm))+pdq
   do i=1,max_hr
@@ -39,7 +39,7 @@ subroutine calchi(x,y,sig,ndata,chisq,valfitsq)
   nn=nn+ndata_mm
 
   !      +-
-  poli(2)=pol1
+  poli(2)=pol1*fl1
   polf(2)=-pol2*fl2
   q_max=4.d0*pi/lamda*dsin(x(nn+ndata_pm))+pdq
   do i=1,max_hr
@@ -52,7 +52,7 @@ subroutine calchi(x,y,sig,ndata,chisq,valfitsq)
   nn=nn+ndata_pm
 
   !      -+
-  poli(2)=-pol1*fl1
+  poli(2)=-pol1
   polf(2)=pol2
   q_max=4.d0*pi/lamda*dsin(x(nn+ndata_mp))+pdq
   do i=1,max_hr

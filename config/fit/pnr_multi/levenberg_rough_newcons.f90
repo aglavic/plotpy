@@ -282,7 +282,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
   if(alamda.ne.0.d0) then
     call param(a)
     !      ++
-    poli(2)=pol1
+    poli(2)=pol1*f1
     polf(2)=pol2
     poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
     poli_norm=dsqrt(poli2)
@@ -313,7 +313,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
     enddo
     nn=ndata_pp
     !      --
-    poli(2)=-pol1*fl1
+    poli(2)=-pol1
     polf(2)=-pol2*fl2
     poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
     poli_norm=dsqrt(poli2)
@@ -344,7 +344,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
     enddo
     nn=nn+ndata_mm
     !      +-
-    poli(2)=pol1
+    poli(2)=pol1*fl1
     polf(2)=-pol2*fl2
     poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
     poli_norm=dsqrt(poli2)
@@ -375,7 +375,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
     enddo
     nn=nn+ndata_pm
     !      -+
-    poli(2)=-pol1*fl1
+    poli(2)=-pol1
     polf(2)=pol2
     poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
     poli_norm=dsqrt(poli2)
@@ -425,7 +425,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       enddo
       call param(a)
       !      ++
-      poli(2)=pol1
+      poli(2)=pol1*fl1
       polf(2)=pol2
       poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
       poli_norm=dsqrt(poli2)
@@ -475,7 +475,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       enddo
       nn=ndata_pp
       !      --
-      poli(2)=-pol1*fl1
+      poli(2)=-pol1
       polf(2)=-pol2*fl2
       poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
       poli_norm=dsqrt(poli2)
@@ -525,7 +525,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       enddo            
       nn=nn+ndata_mm
       !      +-
-      poli(2)=pol1
+      poli(2)=pol1*fl1
       polf(2)=-pol2*fl2
       poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
       poli_norm=dsqrt(poli2)
@@ -575,7 +575,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       enddo            
       nn=nn+ndata_pm
       !      -+
-      poli(2)=-pol1*fl1
+      poli(2)=-pol1
       polf(2)=pol2
       poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
       poli_norm=dsqrt(poli2)
@@ -658,7 +658,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       a(lista(j))=a(lista(j))+da(j)
       call param(a)
       !      ++
-      poli(2)=pol1
+      poli(2)=pol1*fl1
       polf(2)=pol2
       poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
       poli_norm=dsqrt(poli2)
@@ -689,7 +689,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       enddo
       nn=ndata_pp
       !      --
-      poli(2)=-pol1*fl1
+      poli(2)=-pol1
       polf(2)=-pol2*fl2
       poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
       poli_norm=dsqrt(poli2)
@@ -720,7 +720,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       enddo
       nn=nn+ndata_mm
       !      +-
-      poli(2)=pol1
+      poli(2)=pol1*fl1
       polf(2)=-pol2*fl2
       poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
       poli_norm=dsqrt(poli2)
@@ -751,7 +751,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
       enddo
       nn=nn+ndata_pm
       !      -+
-      poli(2)=-pol1*fl1
+      poli(2)=-pol1
       polf(2)=pol2
       poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
       poli_norm=dsqrt(poli2)
