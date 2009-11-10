@@ -6,22 +6,50 @@
 '''
 
 # as the configuration files could be in a folder without user write access,
-# we test if it is possible to write to the configuration path and otherwise
-# copy the files to out home directory and relink the module.
+# we test if it is possible to write to the configuration folder and otherwise
+# copy the files to our home directory and relink the module. This makes
+# user specific config files possible as well.
 import os
 
-if not os.access('config', os.W_OK):
+if not os.access(__path__[0], os.W_OK):
   config_path=os.path.expanduser('~/.plotting_gui')
-  user_path=os.path.join(config_path, 'config')
   if not os.path.exists(config_path):
     os.mkdir(config_path)
+  user_path=os.path.join(config_path, 'config')
   if not os.path.exists(user_path):
     os.mkdir(user_path)
-    # copy all files to the users directory
-    files=filter(lambda file: file.endswith('.py'), os.listdir(__path__[0]))
-    for file in files:
-      from_name=os.path.join(__path__[0], file)
-      to_name=os.path.join(user_path, file)
-      open(to_name, 'wb').write(open(from_name, 'rb').read())
+    try:
+      # copy all files to the users directory
+      files=filter(lambda file: file.endswith('.py'), os.listdir(__path__[0]))
+      for file in files:
+        from_name=os.path.join(__path__[0], file)
+        to_name=os.path.join(user_path, file)
+        open(to_name, 'wb').write(open(from_name, 'rb').read())
+    except:
+      # if the files are not present or accessable, use the variables to create them
+      def typecheck():
+        pass
+      subpackage_items= [
+                         'circle', 
+                         'diamagnetism_table', 
+                         'dns', 
+                         'gnuplot_preferences', 
+                         'in12',
+                         'reflectometer', 
+                         'scattering_length_table', 
+                         'squid', 
+                         'transformations', 
+                         'treff', 
+                         ]
+      for package in subpackage_items:
+        active_config=__import__('config.'+package, fromlist=[package])
+        export_file=open(os.path.join(user_path, package + '.py'), 'w')
+        variables=filter(lambda item: '__' not in item, dir(active_config))
+        for name in variables:
+          if type(getattr(active_config, name)) is type(typecheck) or \
+            type(getattr(active_config, name)) is type(os):
+            continue
+          export_file.write('%s = %s\n' % (name, getattr(active_config, name).__repr__()))
+        export_file.close()
   # reassociate this module to use the user files
   __path__=[user_path]

@@ -273,7 +273,6 @@ def replace_ph(session,
   replace('[height]',session.picture_height).\
   replace('[font-size]',str(int(session.font_size/1000.*int(session.picture_height)))).\
   replace('[name]',file_name_prefix).\
-  replace('[name-rmv]',gp.remove_from_name(file_name_prefix)).\
   replace('[sample]',sample_name).\
   replace('[nr]',datasets[datanr].number).\
   replace('[add_info]',additional_info).\
@@ -292,8 +291,8 @@ def replace_ph(session,
 # translations for postscript export (special characters other than in png export)
 # should be enlongated with other characters
   if postscript_export: # see gnuplot_preferences.py for this function
-    string=gnuplot_preferences.postscript_replace(string)
-  string=gp.further_replacement(string)
+    string=postscript_replace(string)
+  string=further_replacement(string)
   string=session.replace_systemdependent(string)
   return string 
  
@@ -414,3 +413,18 @@ def create_plot_script(session,
                                    postscript_export,
                                    additional_info)
   return gnuplot_file_text
+
+def postscript_replace(string):
+  '''
+    Replace special characters when using Postscript export instead of png.
+  '''
+  # TODO: Add common characters for replacement.
+  return string.replace('\\316\\274','{/Symbol m}').\
+  replace('\\302\\267','\\267').\
+  replace('\\302\\260','\\260')
+
+def further_replacement(string):
+  '''
+    String replacements done last, for example when an Item has empty unit replace [] with nothing.
+  '''
+  return string.replace('[]','')

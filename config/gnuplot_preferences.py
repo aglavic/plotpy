@@ -19,7 +19,6 @@ __status__ = "Production"
 # place holders:
 #
 # [name] - name of input file
-# [name-rmv] - name without suffix (replacement set in remove_from_name)
 # [sample] - sample name as described in input file
 # [script-path] - path of the python scripts root directory
 # [font-size] - selected font size / 1000 * height (for export 1200)
@@ -47,13 +46,6 @@ PRINT_COMMAND="lpr -P IFF17c4 -J \'plot_SQUID_data.py output\'  "
 GNUPLOT_COMMAND="gnuplot"
 # font path for export
 FONT_PATH=join_path('[script-path]', 'config', 'fonts')
-
-def remove_from_name(name):
-  '''
-    Set suffix replacement.
-  '''
-  output=name.replace('.dat','').replace('.raw','')
-  return output
 
 # character encoding in gnuplot
 ENCODING='iso_8859_1'
@@ -102,18 +94,3 @@ defined_color_patterns={
                         }
 # title for a curve
 titles='[titles_add]'
-
-def postscript_replace(string):
-  '''
-    Replace special characters when using Postscript export instead of png.
-  '''
-  # TODO: Add common characters for replacement.
-  return string.replace('\\316\\274','{/Symbol m}').\
-  replace('\\302\\267','\\267').\
-  replace('\\302\\260','\\260')
-
-def further_replacement(string):
-  '''
-    String replacements done last, for example when an Item has empty unit replace [] with nothing.
-  '''
-  return string.replace('[]','')
