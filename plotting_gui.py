@@ -425,6 +425,16 @@ class ApplicationMainWindow(gtk.Window):
     ## Close dialog on user response
     dialog.connect ("response", lambda d, r: d.destroy())
     dialog.show()
+  
+  def show_config_path(self, action):
+    '''
+      Show a dialog with the path to the config files.
+    '''
+    import config
+    dialog = gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
+                                  message_format='The configuration files can be found at: \n%s' % config.__path__[0])
+    dialog.run()
+    dialog.destroy()
       
   def iterate_through_measurements(self, action):
     ''' 
@@ -2336,6 +2346,7 @@ class ApplicationMainWindow(gtk.Window):
     output+='''
       <separator name='static13'/>
       <menu action='HelpMenu'>
+        <menuitem action='ShowConfigPath'/>
         <menuitem action='About'/>
         <menuitem action='History'/>
       </menu>
@@ -2402,6 +2413,10 @@ class ApplicationMainWindow(gtk.Window):
         "About", None,                    # label, accelerator
         "About",                                   # tooltip
         self.activate_about ),
+      ( "ShowConfigPath", None,                             # name, stock id
+        "Show Config Path...", None,                    # label, accelerator
+        "Show Configfile Path",                                   # tooltip
+        self.show_config_path ),
       ( "History", None,                             # name, stock id
         "Action History", None,                    # label, accelerator
         "History",                                   # tooltip
