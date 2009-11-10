@@ -318,11 +318,14 @@ def read_fit_file(self, file_name, fit_object):
     split=line.split()
     if len(split)>1:
       if split[0] in parameters:
-        result[int(split[0])]=float(split[1])
+        try:
+          result[int(split[0])]=float(split[1])
+        except ValueError:
+          pass
         try:
           errors[int(split[0])]=float(split[3])
         except ValueError:
-          None
+          pass
         except IndexError:
           errors[int(split[0])]=0.
     if len(parameters)==len(result):

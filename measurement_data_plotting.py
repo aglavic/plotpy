@@ -236,12 +236,16 @@ def gnuplot_plot_script(session,
                         stdout=subprocess.PIPE, 
                         stdin=subprocess.PIPE, 
                         )
-    proc.stdin.close()
     output = proc.communicate()
   except:
     print "\n!Problem communicating with Gnuplot, please check your system settings!"
     print "Gnuplot command used: %s\n" % session.GNUPLOT_COMMAND
     exit()
+  try:
+    # on older version of python this doesn't work
+    proc.stdin.close()
+  except:
+    pass
   return output[0]+output[1] # return the standard error output
 
 def replace_ph(session, 
