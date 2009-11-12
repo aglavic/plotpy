@@ -285,7 +285,7 @@ class TreffSession(GenericSession):
                                                       line_width, 1, gauss_weighting=False, 
                                                       sigma_gauss=1., bin_distance=binning)
     # Create a new object for the stored data
-    new_cols=[('Two Theta', specular.units()[0]), 
+    new_cols=[('2Theta', specular.units()[0]), 
               ('Specular Intensity', 'a.u.'), 
               ("True Specular Intensity", 'a.u.'), 
               ('Specular Error', 'a.u.'), 
