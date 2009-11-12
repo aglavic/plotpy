@@ -246,8 +246,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
   # sqrt of intensities is error
   def sqrt_34_gtm(point):
     point[0]=GRAD_TO_MRAD*point[0]
-    point[3]=max(sqrt(point[3]), 1)
-    point[4]=max(sqrt(point[4]), 1)
+    point[3]=sqrt(point[3])
+    point[4]=sqrt(point[4])
     point[5]=point[1]/point[5]
     point[6]=point[3]/point[6]
     point[7]=point[1]/point[7]
@@ -295,7 +295,7 @@ def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibr
       logintensity = log10(intensity)
     else:
       logintensity = -10.0
-    error = max(sqrt(img_integral), 1) / monitor * calibration[i]
+    error = sqrt(img_integral) / monitor * calibration[i]
     # convert to mrad and create point list.
     append_to_list((GRAD_TO_MRAD * alphai, 
                     GRAD_TO_MRAD * alphaf, 

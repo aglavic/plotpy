@@ -320,15 +320,15 @@ class TreffSession(GenericSession):
         if x in off_spec1_xes:
           index=off_spec1_xes.index(x)
           yo.append(-off_spec1.data[3].values[index])
-          dy2.append(off_spec1.data[4].values[index]**2)
+          dy2.append(off_spec1.data[4].values[index])
         if x in off_spec2_xes:
           index=off_spec2_xes.index(x)
           yo.append(-off_spec2.data[3].values[index])
-          dy2.append(off_spec2.data[4].values[index]**2)
+          dy2.append(off_spec2.data[4].values[index])
         y=sum(yo)/len(yo)+point[3]
         if y<=0:
           continue
-        dy=math.sqrt(sum(dy2)/len(dy2)+point[4]**2)
+        dy=math.sqrt((sum(dy2)/len(dy2))**2+point[4]**2)
         true_specular.append([
                               x, 
                               point[3], 

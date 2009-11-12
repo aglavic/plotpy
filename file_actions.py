@@ -10,7 +10,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b3"
+__version__ = "0.6b4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -295,12 +295,13 @@ class FileActions:
         g_sum=gauss_sum([1 for d in din])
         for j in range(4):
           dout.append(gauss_sum([d[j] for d in din])/g_sum)
-        dout.append(sqrt(gauss_sum([d[4]**2 for d in din])/g_sum))
+        dout.append(sqrt(gauss_sum([d[4]**2 for d in din]))/g_sum)
         dout.append(g_sum/len(din))          
       else:
-        for j in range(5):
+        for j in range(4):
           dout.append(sum([d[j] for d in din])/len(din))
         dout.append(sqrt(sum([d[4]**2 for d in din]))/len(din))
+        dout.append(sum([d[5] for d in din])/len(din))
       dat_tmp.append(dout)
     data3=dat_tmp
     map(output.append, data3)
