@@ -40,6 +40,9 @@ class FileActions:
                   'change_color_pattern': self.change_color_pattern, 
                   'unit_transformations': self.unit_transformations, 
                   }
+    # add session specific functions
+    for key, item in window.active_session.file_actions_addon.items():
+      self.actions[key]=lambda *args: item(self, *args)
 
   def activate_action(self, action, *args):
     '''
@@ -96,16 +99,22 @@ class FileActions:
     '''
     self.window.measurement[self.window.index_mess].filters=filters
 
-  def cross_section(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10, at_end=False):
+  def cross_section(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10, at_end=False, bin_distance=None):
     '''
       Create a slice through a dataset using the create_cross_section function.
       This funcion is called as the action.
+      
+      @param binning Number of points to take a mean value of
+      @param gauss_weighting If mean value of points is calculated the points are weighted by the distance to the crossection line
+      @param sigma_gauss Sigma value of the gauss function used for weighting the points
+      @param at_end Put the created picture at the end of the plot list, not after the picture it was created from
+      @param bin_distance Use a specific distance window for binning, not a fix number of points
       
       @return If the extraction has been sucessful
     '''
     data=self.window.measurement[self.window.index_mess]
     try:
-      cs_object=self.create_cross_section(x, x_0, y, y_0, w, binning, gauss_weighting, sigma_gauss)
+      cs_object=self.create_cross_section(x, x_0, y, y_0, w, binning, gauss_weighting, sigma_gauss, bin_distance)
       if cs_object is None:
         return False
       cs_object.number=data.number
@@ -189,7 +198,7 @@ class FileActions:
 
   #++++++++ Functions not directly called as actions ++++++
   
-  def create_cross_section(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10):
+  def create_cross_section(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10, bin_distance=None):
     '''
       Create a cross-section of 3d-data along an arbitrary line. It is possible to
       bin the extracted data and to weight the binning with a gaussian.
@@ -242,40 +251,58 @@ class FileActions:
       v1=(point[0]-origin[0], point[1]-origin[1])
       dist=abs(v1[0]*vec_n[0] + v1[1]*vec_n[1])
       if dist<=w:
-        distance.append(w)
         return True
       else:
         return False
-    distance=[]
+    # remove all points not inside the scanned region
     data2=filter(point_filter, data)
     if len(data2)==0:
       return None
     len_vec=sqrt(x**2+y**2)
-    data3=[((vec_e[0]*dat[0]+vec_e[1]*dat[1])*len_vec, dat[0], dat[1], dat[2], dat[3], (vec_n[0]*dat[0]+vec_n[1]*dat[1])) for dat in data2]
+    data3=[[(vec_e[0]*dat[0]+vec_e[1]*dat[1])*len_vec, dat[0], dat[1], dat[2], dat[3], (vec_n[0]*dat[0]+vec_n[1]*dat[1])] for dat in data2]
     data3.sort()
-    if binning > 1:
-      dat_tmp=[]
-      if gauss_weighting:
-        def gauss_sum(data_list):
-          output=0.
-          for i, dat in enumerate(data_list):
-            output+=dat*exp(-din[i][5]**2/(2*sigma_gauss**2))
-          return output
-      for i in range(len(data3)/binning):
-        dout=[]
-        din=data3[i*binning:(i+1)*binning]
-        if gauss_weighting:
-          for j in range(4):
-            g_sum=gauss_sum([1 for d in din])
-            dout.append(gauss_sum([d[j] for d in din])/g_sum)
-          dout.append(sqrt(gauss_sum([d[4]**2 for d in din])/g_sum))
-          dout.append(g_sum/binning)          
+    # Start to bin the datapoints
+    dat_tmp=[]
+    if gauss_weighting:
+      def gauss_sum(data_list):
+        output=0.
+        for i, dat in enumerate(data_list):
+          output+=dat*exp(-din[i][5]**2/(2*sigma_gauss**2))
+        return output
+    if bin_distance:
+      bin_dist_position=int(data3[0][0]/bin_distance)
+      din=[]
+    for i, point in enumerate(data3):
+      if bin_distance:
+        if point[0]<=bin_distance*(bin_dist_position+0.5):
+          din.append([bin_dist_position*bin_distance]+point[1:])
         else:
-          for j in range(5):
-            dout.append(sum([d[j] for d in din])/binning)
-          dout.append(sqrt(sum([d[4]**2 for d in din]))/binning)
-        dat_tmp.append(dout)
-      data3=dat_tmp
+          while point[0]>bin_distance*(bin_dist_position+0.5):
+            bin_dist_position+=1
+          din=[[bin_dist_position*bin_distance]+point[1:]]
+        if (i+1)==len(data3) or data3[i+1][0]<=bin_distance*(bin_dist_position+0.5):
+          continue
+      else:
+        if i%binning==0:
+          din=[point]
+        else:
+          din.append(point)
+        if (i+1)%binning!=0:
+          continue
+      # Create the mean value of the collected points
+      dout=[]
+      if gauss_weighting:
+        g_sum=gauss_sum([1 for d in din])
+        for j in range(4):
+          dout.append(gauss_sum([d[j] for d in din])/g_sum)
+        dout.append(sqrt(gauss_sum([d[4]**2 for d in din])/g_sum))
+        dout.append(g_sum/len(din))          
+      else:
+        for j in range(5):
+          dout.append(sum([d[j] for d in din])/len(din))
+        dout.append(sqrt(sum([d[4]**2 for d in din]))/len(din))
+      dat_tmp.append(dout)
+    data3=dat_tmp
     map(output.append, data3)
     return output
 

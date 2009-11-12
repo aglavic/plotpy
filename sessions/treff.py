@@ -25,6 +25,7 @@ from generic import GenericSession
 # import parameter class for fits
 from reflectometer_fit.parameters import FitParameters, LayerParam, MultilayerParam
 import reflectometer_fit.functions
+from measurement_data_structure import MeasurementData
 # importing data readout
 import read_data.treff
 import config.treff
@@ -33,7 +34,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.6b3"
+__version__ = "0.6b4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -79,6 +80,7 @@ class TreffSession(GenericSession):
     self.fit_object=TreffFitParameters() # create a new empty TreffFitParameters object
     self.RESULT_FILE=config.treff.RESULT_FILE
     GenericSession.__init__(self, arguments)
+    self.file_actions_addon['extract_specular_reflectivity']=self.do_extract_specular_reflectivity
   
   def read_argument_add(self, argument, last_argument_option=[False, '']):
     '''
@@ -156,11 +158,6 @@ class TreffSession(GenericSession):
       after this the data is extracted and appendet to the fileobject.
     '''
     data=window.measurement[window.index_mess]
-    dimension_names=[]
-    dims=data.dimensions()
-    dimension_names.append(dims[data.xdata])
-    dimension_names.append(dims[data.ydata])
-    del(dims)
     cs_dialog=gtk.Dialog(title='Create a cross-section:')
     table=gtk.Table(3,7,False)
     label=gtk.Label()
@@ -172,14 +169,14 @@ class TreffSession(GenericSession):
                 0,                         0);
     line_width=gtk.Entry()
     line_width.set_width_chars(6)
-    line_width.set_text('0.1')
+    line_width.set_text('0.08')
     table.attach(line_width,
                 # X direction #          # Y direction
                 1, 3,                      5, 6,
                 0,                       gtk.FILL,
                 0,                         0);
     label=gtk.Label()
-    label.set_markup('Binning:')
+    label.set_markup('Stepwidth:')
     table.attach(label,
                 # X direction #          # Y direction
                 0, 1,                      6, 7,
@@ -187,7 +184,7 @@ class TreffSession(GenericSession):
                 0,                         0);
     binning=gtk.Entry()
     binning.set_width_chars(4)
-    binning.set_text('10')
+    binning.set_text('0.08')
     table.attach(binning,
                 # X direction #          # Y direction
                 1, 3,                      6, 7,
@@ -208,6 +205,13 @@ class TreffSession(GenericSession):
                 2, 3,                      7, 8,
                 0,                       gtk.FILL,
                 0,                         0);
+    ext_all=gtk.CheckButton(label='Extract for all maps', use_underline=True)
+    ext_all.set_active(True)
+    table.attach(ext_all,
+                # X direction #          # Y direction
+                0, 3,                      8, 9,
+                0,                       gtk.FILL,
+                0,                         0);
     table.show_all()
     # Enty activation triggers calculation, too
     line_width.connect('activate', lambda *ign: cs_dialog.response(1))
@@ -218,36 +222,131 @@ class TreffSession(GenericSession):
     cs_dialog.add_button('Cancel', 0)
     result=cs_dialog.run()
     if result==1:
-      gotit=window.file_actions.activate_action('cross-section', 
-                                        1.0, 
-                                        0.0, 
-                                        1.0, 
-                                        0.0, 
-                                        float(line_width.get_text()), 
-                                        int(binning.get_text()), 
-                                        weight.get_active(), 
-                                        float(sigma.get_text()), 
-                                        True
-                                        )
+      # If not canceled the data is extracted
+      if not ext_all.get_active():
+        if data.zdata==-1:
+          cs_dialog.destroy()
+          return False
+        else:
+          extract_indices=[self.active_file_data.index(data)]
+      else:
+        extract_indices=[]
+        for i, data in enumerate(self.active_file_data):
+          if data.zdata>=0:
+            extract_indices.append(i)
+      try:
+        args=('extract_specular_reflectivity',
+              float(line_width.get_text()), 
+              weight.get_active(), 
+              float(sigma.get_text()), 
+              float(binning.get_text())
+              )
+      except ValueError:
+        gotit=False
+      gotit=True
+      for i in extract_indices:
+        window.index_mess=i
+        gotit=gotit and window.file_actions.activate_action(*args)        
       if not gotit:
         message=gtk.MessageDialog(parent=self, 
                                   flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
                                   type=gtk.MESSAGE_INFO, 
                                   buttons=gtk.BUTTONS_CLOSE, 
-                                  message_format='No point in selected area.')
+                                  message_format='Wrong parameter type.')
         message.run()
         message.destroy()
     else:
       gotit=False
     cs_dialog.destroy()
     if gotit:
-      window.file_actions.activate_action('unit_transformations', 
-                                          [['1 \316\261_i + 1 \316\261_f', '\302\260', math.pi/180.*1000, 0, '2Theta', 'mrad'], 
-                                          ['1 \316\261_i + 1 \316\261_f', 'mrad', 1., 0, '2Theta', 'mrad'], 
-                                          ['1 \316\261_i + 1 \316\261_f', 'rad', 1., 0, '2Theta', 'rad']])
       window.rebuild_menus()
       window.replot()      
     return gotit
+  
+  def do_extract_specular_reflectivity(self, file_actions, line_width, weighting, sigma, binning):
+    '''
+      Function to extract the true specular reflectivity from an intensity map. It is appended to the
+      file_actions dictionary to make it useable in a makro.
+      The specular and two off-specular lines next to it are extracted and the off-specular ones
+      are subtracted from the specular to account for the roughness scattering in the specular line.
+      The distance of the two off-specular cuts is 2 times the line width of the specular line, this
+      way we are quite close to the specular line without counting anything twice.
+      
+      @return At the moment True, should be if the extraction was successfull.
+    '''
+    # Extract the two lines
+    specular=file_actions.create_cross_section(1.0, 0.0, 1.0, 0.0, 
+                                                      line_width, 1, gauss_weighting=weighting, 
+                                                      sigma_gauss=sigma, bin_distance=binning)
+    off_spec1=file_actions.create_cross_section(1.0, 1.4142*line_width, 1.0, -1.4142*line_width, 
+                                                      line_width, 1, gauss_weighting=False, 
+                                                      sigma_gauss=1., bin_distance=binning)
+    off_spec2=file_actions.create_cross_section(1.0, -1.4142*line_width, 1.0, 1.4142*line_width, 
+                                                      line_width, 1, gauss_weighting=False, 
+                                                      sigma_gauss=1., bin_distance=binning)
+    # Create a new object for the stored data
+    new_cols=[('Two Theta', specular.units()[0]), 
+              ('Specular Intensity', 'a.u.'), 
+              ("True Specular Intensity", 'a.u.'), 
+              ('Specular Error', 'a.u.'), 
+              ('True Specular Error', 'a.u.'), 
+              ('Off-Specular Intensity', 'a.u.'), 
+              ]
+    true_specular=MeasurementData(new_cols, 
+                           [], 
+                           0, 
+                           2, 
+                           4,
+                           )
+    off_spec1_xes=map(lambda angle:round(angle, 4), off_spec1.data[0].values)
+    off_spec2_xes=map(lambda angle:round(angle, 4), off_spec2.data[0].values)
+    # Go through all points and try to subtract the off-specular part,
+    # if no off-specular point is present at the specific angle the specular intensity ist taken
+    for point in specular:
+      x=round(point[0], 4)
+      if x not in off_spec1_xes and\
+         x not in off_spec2_xes:
+        true_specular.append([
+                              x, 
+                              point[3], 
+                              point[3], 
+                              point[4], 
+                              point[4], 
+                              0.
+                              ])
+      else:
+        yo=[]
+        dy2=[]
+        if x in off_spec1_xes:
+          index=off_spec1_xes.index(x)
+          yo.append(-off_spec1.data[3].values[index])
+          dy2.append(off_spec1.data[4].values[index]**2)
+        if x in off_spec2_xes:
+          index=off_spec2_xes.index(x)
+          yo.append(-off_spec2.data[3].values[index])
+          dy2.append(off_spec2.data[4].values[index]**2)
+        y=sum(yo)/len(yo)+point[3]
+        if y<=0:
+          continue
+        dy=math.sqrt(sum(dy2)/len(dy2)+point[4]**2)
+        true_specular.append([
+                              x, 
+                              point[3], 
+                              y, 
+                              point[4], 
+                              dy, 
+                              -sum(yo)/len(yo)
+                              ])
+    # add the object to the active_file_data list
+    active_data=self.active_file_data[file_actions.window.index_mess]
+    true_specular.number=str(len(self.active_file_data)-1)
+    true_specular.short_info='%s - Specular cut' % active_data.short_info
+    true_specular.sample_name=active_data.sample_name
+    true_specular.info=active_data.info
+    true_specular.logy=True
+    self.active_file_data.append(true_specular)
+    file_actions.window.index_mess=len(self.active_file_data)-1
+    return True
 
   #++++ functions for fitting with fortran program by E. Kentzinger ++++
   

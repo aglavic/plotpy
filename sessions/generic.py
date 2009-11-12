@@ -149,6 +149,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   ONLY_IMPORT_MULTIFILE=False
   DEBUG=False
   temp_fonts=False
+  file_actions_addon={}
   #------------------ local variables -----------------
 
   def __init__(self, arguments):

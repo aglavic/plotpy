@@ -1435,6 +1435,21 @@ class ApplicationMainWindow(gtk.Window):
                 2, 3,                      7, 8,
                 0,                       gtk.FILL,
                 0,                         0);
+    label=gtk.Label()
+    label.set_markup('Stepsize:\n(overwrites Binning)')
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      8, 9,
+                gtk.EXPAND | gtk.FILL,     gtk.FILL,
+                0,                         0);
+    bin_distance=gtk.Entry()
+    bin_distance.set_width_chars(4)
+    bin_distance.set_text('None')
+    table.attach(bin_distance,
+                # X direction #          # Y direction
+                1, 3,                      8, 9,
+                0,                       gtk.FILL,
+                0,                         0);
     table.show_all()
     # Enty activation triggers calculation, too
     line_x.connect('activate', lambda *ign: cs_dialog.response(1))
@@ -1443,12 +1458,17 @@ class ApplicationMainWindow(gtk.Window):
     line_y0.connect('activate', lambda *ign: cs_dialog.response(1))
     line_width.connect('activate', lambda *ign: cs_dialog.response(1))
     binning.connect('activate', lambda *ign: cs_dialog.response(1))
+    bin_distance.connect('activate', lambda *ign: cs_dialog.response(1))
     sigma.connect('activate', lambda *ign: cs_dialog.response(1))
     cs_dialog.vbox.add(table)
     cs_dialog.add_button('OK', 1)
     cs_dialog.add_button('Cancel', 0)
     result=cs_dialog.run()
     if result==1:
+      try:
+        bd=float(bin_distance.get_text())
+      except ValueError:
+        bd=None
       gotit=self.file_actions.activate_action('cross-section', 
                                         float(line_x.get_text()), 
                                         float(line_x0.get_text()), 
@@ -1457,7 +1477,9 @@ class ApplicationMainWindow(gtk.Window):
                                         float(line_width.get_text()), 
                                         int(binning.get_text()), 
                                         weight.get_active(), 
-                                        float(sigma.get_text())
+                                        float(sigma.get_text()), 
+                                        False, 
+                                        bd
                                         )
       if not gotit:
         message=gtk.MessageDialog(parent=self, 
@@ -2517,7 +2539,7 @@ class ApplicationMainWindow(gtk.Window):
     try:
         self.toolbar_ui_id = self.UIManager.add_ui_from_string(ui_info)
     except gobject.GError, msg:
-        print "building menus failed: %s" % ms
+        print "building menus failed: %s" % msg
 
     
   #---------------------Functions responsible for menus and toolbar----------------------#
