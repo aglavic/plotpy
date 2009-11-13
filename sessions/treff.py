@@ -159,6 +159,7 @@ class TreffSession(GenericSession):
     '''
     data=window.measurement[window.index_mess]
     cs_dialog=gtk.Dialog(title='Create a cross-section:')
+    cs_dialog.set_default_size(300, 150)
     table=gtk.Table(3,7,False)
     label=gtk.Label()
     label.set_markup('Width:')
@@ -194,7 +195,7 @@ class TreffSession(GenericSession):
     weight.set_active(True)
     table.attach(weight,
                 # X direction #          # Y direction
-                0, 2,                      7, 8,
+                0, 1,                      7, 8,
                 0,                       gtk.FILL,
                 0,                         0);
     sigma=gtk.Entry()
@@ -202,19 +203,45 @@ class TreffSession(GenericSession):
     sigma.set_text('0.04')
     table.attach(sigma,
                 # X direction #          # Y direction
-                2, 3,                      7, 8,
+                1, 3,                      7, 8,
                 0,                       gtk.FILL,
                 0,                         0);
     ext_all=gtk.CheckButton(label='Extract for all maps', use_underline=True)
     ext_all.set_active(True)
     table.attach(ext_all,
                 # X direction #          # Y direction
-                0, 3,                      8, 9,
+                0, 1,                      8, 9,
+                0,                       gtk.FILL,
+                0,                         0);
+                
+    label=gtk.Label()
+    label.set_markup('0-position offset:')
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      9, 10,
+                gtk.EXPAND | gtk.FILL,     gtk.FILL,
+                0,                         0);
+    offset_x=gtk.Entry()
+    offset_x.set_width_chars(4)
+    offset_x.set_text('0.0')
+    table.attach(offset_x,
+                # X direction #          # Y direction
+                1, 2,                      9, 10,
+                0,                       gtk.FILL,
+                0,                         0);
+    offset_y=gtk.Entry()
+    offset_y.set_width_chars(4)
+    offset_y.set_text('0.0')
+    table.attach(offset_y,
+                # X direction #          # Y direction
+                2, 3,                      9, 10,
                 0,                       gtk.FILL,
                 0,                         0);
     table.show_all()
     # Enty activation triggers calculation, too
     line_width.connect('activate', lambda *ign: cs_dialog.response(1))
+    offset_x.connect('activate', lambda *ign: cs_dialog.response(1))
+    offset_y.connect('activate', lambda *ign: cs_dialog.response(1))
     binning.connect('activate', lambda *ign: cs_dialog.response(1))
     sigma.connect('activate', lambda *ign: cs_dialog.response(1))
     cs_dialog.vbox.add(table)
@@ -239,7 +266,8 @@ class TreffSession(GenericSession):
               float(line_width.get_text()), 
               weight.get_active(), 
               float(sigma.get_text()), 
-              float(binning.get_text())
+              float(binning.get_text()), 
+              (float(offset_x.get_text()), float(offset_y.get_text()))
               )
       except ValueError:
         gotit=False
@@ -263,7 +291,7 @@ class TreffSession(GenericSession):
       window.replot()      
     return gotit
   
-  def do_extract_specular_reflectivity(self, file_actions, line_width, weighting, sigma, binning):
+  def do_extract_specular_reflectivity(self, file_actions, line_width, weighting, sigma, binning, center_position_offset=(0., 0.)):
     '''
       Function to extract the true specular reflectivity from an intensity map. It is appended to the
       file_actions dictionary to make it useable in a makro.
@@ -275,15 +303,17 @@ class TreffSession(GenericSession):
       @return At the moment True, should be if the extraction was successfull.
     '''
     # Extract the two lines
-    specular=file_actions.create_cross_section(1.0, 0.0, 1.0, 0.0, 
+    specular=file_actions.create_cross_section(1.0, center_position_offset[0], 1.0, center_position_offset[1], 
                                                       line_width, 1, gauss_weighting=weighting, 
                                                       sigma_gauss=sigma, bin_distance=binning)
-    off_spec1=file_actions.create_cross_section(1.0, 1.4142*line_width, 1.0, -1.4142*line_width, 
-                                                      line_width, 1, gauss_weighting=False, 
-                                                      sigma_gauss=1., bin_distance=binning)
-    off_spec2=file_actions.create_cross_section(1.0, -1.4142*line_width, 1.0, 1.4142*line_width, 
-                                                      line_width, 1, gauss_weighting=False, 
-                                                      sigma_gauss=1., bin_distance=binning)
+    off_spec1=file_actions.create_cross_section(1.0, 1.4142*line_width+center_position_offset[0], 
+                                                1.0, -1.4142*line_width+center_position_offset[1], 
+                                                line_width, 1, gauss_weighting=False, 
+                                                sigma_gauss=1., bin_distance=binning)
+    off_spec2=file_actions.create_cross_section(1.0, -1.4142*line_width+center_position_offset[0], 
+                                                1.0, 1.4142*line_width+center_position_offset[1], 
+                                                line_width, 1, gauss_weighting=False, 
+                                                sigma_gauss=1., bin_distance=binning)
     # Create a new object for the stored data
     new_cols=[('2Theta', specular.units()[0]), 
               ('Specular Intensity', 'a.u.'), 
