@@ -309,7 +309,6 @@ class FileActions:
 
   #-------- Functions not directly called as actions ------
 
-
 class MakroRepr:
   '''
     FileObject implementation to store makros in string representation.

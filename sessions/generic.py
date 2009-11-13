@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b3"
+__version__ = "0.6b4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -331,6 +331,9 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       # py2exe puts all modules into a zipfile, so we get the own folder from sys.argv
       from plot import __file__ as plot_file
       SCRIPT_PATH=SCRIPT_PATH.split('library.zip')[0]
+    if os.path.isfile(SCRIPT_PATH):
+      # for cxFreeze remove the script name from the path
+      SCRIPT_PATH=os.path.split(SCRIPT_PATH)[0]
     config.gnuplot_preferences.FONT_PATH=config.gnuplot_preferences.FONT_PATH.replace('[script-path]', SCRIPT_PATH)
     if not 'win' in sys.platform:
       # Linux and osx case
@@ -343,10 +346,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       if len(config.gnuplot_preferences.FONT_PATH)>50:
         # linking font path to tmp folder
         try:
-          os.symlink(config.gnuplot_preferences.FONT_PATH, os.path.join(self.TEMP_DIR, 'plot_fonts'))
+          os.symlink(config.gnuplot_preferences.FONT_PATH, os.path.join(self.TEMP_DIR, 'plot_fonts'+self.OWN_PID))
         except OSError:
           pass
-        config.gnuplot_preferences.FONT_PATH=os.path.join(self.TEMP_DIR, 'plot_fonts')
+        config.gnuplot_preferences.FONT_PATH=os.path.join(self.TEMP_DIR, 'plot_fonts'+self.OWN_PID)
         self.temp_fonts=True
     else:
       # Windows case
