@@ -186,37 +186,50 @@ def import_session_from_name(arguments, measurement_type):
                                       [measurement_type[1]]), measurement_type[1])
   return active_session_class(arguments)
 
-if __name__ == '__main__':    #code to execute if called from command-line
-  # initialize session and read data files
-  if (len(sys.argv) == 1):
+
+def initialize(arguments):  
+  ''' 
+    initialize session and read data files 
+  '''
+  if (len(arguments) == 0):
     # if no input parameter given, print the short help string
     print GenericSession.SHORT_HELP
     exit()
-  elif sys.argv[1] in known_measurement_types:
+  elif arguments[0] in known_measurement_types:
     # type is found in dictionary, using specific session
-    measurement_type=known_measurement_types[sys.argv[1]]
-    active_session=import_session_from_name(sys.argv[2:], measurement_type)
+    measurement_type=known_measurement_types[arguments[0]]
+    active_session=import_session_from_name(arguments[1:], measurement_type)
   else:
     found_sessiontype=False
-    suffixes=map(lambda arg: arg.split('.')[-1], sys.argv[1:])
+    suffixes=map(lambda arg: arg.split('.')[-1], arguments)
     for name, measurement_type in known_measurement_types.items():
       if found_sessiontype:
         break
       for suffix in measurement_type[2]:
         if suffix in suffixes:
           print "Setting session type to " + name + '.'
-          active_session=import_session_from_name(sys.argv[1:], measurement_type)
+          active_session=import_session_from_name(arguments, measurement_type)
           found_sessiontype=True
           break
     if not found_sessiontype:
       # type is not found, using generic session
-      active_session=GenericSession(sys.argv[1:])
+      active_session=GenericSession(arguments)
+  return active_session
 
+def initialize_gui(session):
+  '''
+    initialize the gui window and import the needed modules
+  '''
+  global gtk, plotting_gui
+  # GUI module
+  import plotting_gui
+  import gtk
+  return plotting_gui.ApplicationMainWindow(session)
+
+if __name__ == '__main__':    #code to execute if called from command-line
+  active_session=initialize(sys.argv[1:])  
   if active_session.use_gui: # start a new gui session
-    # GUI module
-    import plotting_gui
-    import gtk
-    plotting_session=plotting_gui.ApplicationMainWindow(active_session)
+    plotting_session=initialize_gui(active_session)
     if not active_session.DEBUG:
       # redirect script output to session objects
       active_session.stdout=RedirectOutput(plotting_session)
@@ -229,3 +242,36 @@ if __name__ == '__main__':    #code to execute if called from command-line
 
   # delete temporal files and folders after the program ended
   active_session.os_cleanup()
+
+def test_mpl(arguments):
+  '''
+    Testing the matplotlib plotting stuff
+  '''
+  active_session=initialize(arguments)  
+  plotting_session=initialize_gui(active_session)
+  import gtk
+  from matplotlib.figure import Figure
+  from numpy import arange, sin, pi
+  from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
+  from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
+
+  vbox = gtk.VBox()
+  plotting_session.frame1.remove(plotting_session.frame1.child)
+  plotting_session.frame1.add(vbox)
+
+  fig = Figure(figsize=(5,4), dpi=100)
+  ax = fig.add_subplot(111)
+  t = arange(0.0,3.0,0.01)
+  s = sin(2*pi*t)
+
+  ax.plot(t,s)
+
+
+  canvas = FigureCanvas(fig)  # a gtk.DrawingArea
+  vbox.pack_start(canvas)
+  toolbar = NavigationToolbar(canvas, plotting_session)
+  vbox.pack_start(toolbar, False, False)
+
+
+  vbox.show_all()
+  return plotting_session, (vbox, fig, ax, canvas, toolbar)

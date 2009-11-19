@@ -30,6 +30,10 @@ import gtk
 from generic import GenericSession
 from measurement_data_structure import MeasurementData
 # importing data readout
+if 'dns.py' in os.listdir('.'):
+  # if a configfile is inside the directory use this instead of the standard one.
+  import config
+  config.__path__=[os.path.abspath('.')]
 import read_data.dns
 import config.dns
 
@@ -37,7 +41,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Werner Schweika"]
 __license__ = "None"
-__version__ = "0.6b3"
+__version__ = "0.6b4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -140,8 +144,8 @@ class DNSSession(GenericSession):
 \t-fr [scp]\t\tTry to make automatic flipping-ratio correction with the scatteringpropability scp
 \t-v\t\tSelect vanadium file from system directory (normally from this reactor cycle)
 \t-vana [file]\tUse different Vanadium file for evaluation
-\t-system [folder]\tSet an other system folder for background,vanadium and NiCr files
-\t-setup [name]\tSet the name of your sample to be used in every plot(can be changed in GUI)
+\t-setup [folder]\tSet an other system folder for background,vanadium and NiCr files
+\t-sample [name]\tSet the name of your sample to be used in every plot(can be changed in GUI)
 \t-cz [zipfile]\tGet instrumental background, vanadium and NiCr files from .zip file and use it.
 \t\t\tThe files need to be in root directory inside the zip-file.
 
@@ -521,13 +525,14 @@ class DNSSession(GenericSession):
           fc=dnsmap.flipping_correction
           fc[2].flipping_correction=(not fc[0], fc[1], new)
           new.flipping_correction=(fc[0], fc[1], fc[2])
-          dnsmap=new
+        dnsmap=new
       if self.AUTO_BACKGROUND:
         self.find_background_data(dnsmap)
       if self.AUTO_VANADIUM:
         self.find_vanadium_data(dnsmap)
       if self.BACKGROUND_FILE:
         dnsmap.background_data=read_data.dns.read_data(self.BACKGROUND_FILE)
+        dnsmap.background_data.name=BACKGROUND_FILE
       if self.VANADIUM_FILE:
         vana_data=read_data.dns.read_data(self.VANADIUM_FILE, print_comments=False)
         if vana_data!='NULL':
@@ -1212,9 +1217,10 @@ class DNSSession(GenericSession):
       add_dialog.add_button('OK', 1)
       add_dialog.add_button('Cancle', 0)
       align_table=gtk.Table(4,1,False)
-      label=gtk.Label('+/-')
+      label=gtk.Label('sign: ')
       align_table.attach(label, 0,1, 0, 1, 0,0, 0,0);
-      sign=gtk.CheckButton()
+      sign=gtk.Entry()
+      sign.set_text('+')
       align_table.attach(sign, 1,2, 0, 1, 0,0, 0,0);
       multiplier=gtk.Entry()
       multiplier.set_text('1')
@@ -1229,17 +1235,17 @@ class DNSSession(GenericSession):
       add_dialog.show_all()
       result=add_dialog.run()
       if result==1:
-        if sign.get_active():
-          sign='-'
+        if sign.get_text() in ['+','-', '*', '/']:
+          sign=sign.get_text()
         else:
           sign='+'
         combine_list.append( (object_box.get_active(), sign, float(multiplier.get_text())) )
-        label=gtk.Label(sign+multiplier.get_text()+'*'+object_box.get_active_text())
+        label=gtk.Label(sign+multiplier.get_text()+'*{'+object_box.get_active_text()+'}')
         label.show()
-        function_table.attach(label, len(combine_list)-1,len(combine_list), 0,1, 0,0, 0,0)
+        function_table.attach(label, 0,1, len(combine_list)-1,len(combine_list), 0,0, 0,0)
       add_dialog.destroy()
     combine_dialog=gtk.Dialog(title='Combination of polarizations:')
-    combine_dialog.set_default_size(100,50)
+    combine_dialog.set_default_size(150,50)
     combine_dialog.add_button('Add', 2)
     combine_dialog.add_button('OK', 1)
     combine_dialog.add_button('Cancle', 0)
@@ -1273,9 +1279,9 @@ class DNSSession(GenericSession):
       combine_list=preset
       for i, item in enumerate(combine_list):
         try:
-          label=gtk.Label(item[1]+str(item[2])+'*'+str(i)+'-('+polarization_list[item[0]][0].short_info+')')
+          label=gtk.Label(item[1]+str(item[2])+'*{'+str(i)+'-('+polarization_list[item[0]][0].short_info+')}')
           label.show()
-          function_table.attach(label, i,i+1, 0,1, 0,0, 0,0)        
+          function_table.attach(label, 0,1, i,i+1, 0,0, 0,0)        
         except IndexError:
           combine_dialog.destroy()
           return None
@@ -1296,13 +1302,17 @@ class DNSSession(GenericSession):
       @param polarization_list The chanels which will be combined
       @param title Name of the new created chanel
     '''
-    if combine_list[0][1] == '+':
+    if combine_list[0][1] != '-':
       result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
     else:
       result=-1.*combine_list[0][2]*polarization_list[combine_list[0][0]][0]
     for object, sign, multiplier in combine_list[1:]:
       if sign == '+':
         result=result+multiplier*polarization_list[object][0]
+      elif sign == '*':
+        result=result*(multiplier*polarization_list[object][0])
+      elif sign == '/':
+        result=result/(multiplier*polarization_list[object][0])
       else:
         result=result-multiplier*polarization_list[object][0]
       if result is None:
@@ -1423,7 +1433,7 @@ class DNSMeasurementData(MeasurementData):
         return None
     changed=False
     if not self.background_data is None:
-      sys.stdout.write("background substractoin, ")
+      sys.stdout.write("background subtraction %s, " % self.background_data.name)
       sys.stdout.flush()
       self.process_function(self.correct_background)
       changed=True
@@ -1621,6 +1631,46 @@ class DNSMeasurementData(MeasurementData):
         result.data[i+2*nc+5].values=list(array(self.data[i+2*nc+5].values)-array(other.data[i+2*nc+5].values))
         result.data[i+3*nc+5].values=list(sqrt(array(self.data[i+3*nc+5].values)**2+array(other.data[i+3*nc+5].values)**2))
       return result
+    
+    def __mul__(self, other):
+      '''
+        Multiply the data by data of a different dataset.
+      '''
+      if len(self) != len(other):
+        return None
+      # create a new instance of the class
+      from copy import deepcopy
+      result=deepcopy(self)
+      nc=self.number_of_channels
+      for i in range(nc):
+        result.data[i+5].values=list(array(self.data[i+5].values)*array(other.data[i+5].values))
+        result.data[i+nc+5].values=list(sqrt((array(self.data[i+nc+5].values)*array(other.data[i+5].values))**2 \
+                                          + (array(other.data[i+nc+5].values)*array(self.data[i+5].values))**2))
+        result.data[i+2*nc+5].values=list(array(self.data[i+2*nc+5].values)*array(other.data[i+2*nc+5].values))
+        result.data[i+3*nc+5].values=list(sqrt((array(self.data[i+3*nc+5].values)*array(other.data[i+2*nc+5].values))**2\
+                                             +(array(other.data[i+3*nc+5].values)*array(self.data[i+2*nc+5].values))**2))
+      return result      
+    
+    def __div__(self, other):
+      '''
+        Divide the data by data of a different dataset.
+      '''
+      if len(self) != len(other):
+        return None
+      # create a new instance of the class
+      from copy import deepcopy
+      result=deepcopy(self)
+      nc=self.number_of_channels
+      for i in range(nc):
+        result.data[i+5].values=list(array(self.data[i+5].values)/array(other.data[i+5].values))
+        result.data[i+nc+5].values=list(sqrt((array(self.data[i+nc+5].values)/array(other.data[i+5].values))**2 \
+                                          + (array(other.data[i+nc+5].values)*array(self.data[i+5].values)\
+                                                                            /array(other.data[i+5].values)**2)**2))
+        result.data[i+2*nc+5].values=list(array(self.data[i+2*nc+5].values)/array(other.data[i+2*nc+5].values))
+        result.data[i+3*nc+5].values=list(sqrt((array(self.data[i+3*nc+5].values)/array(other.data[i+2*nc+5].values))**2\
+                                             +(array(other.data[i+3*nc+5].values)*array(self.data[i+2*nc+5].values)\
+                                                                                /array(other.data[i+2*nc+5].values)**2)**2))
+      return result      
     
     def __rmul__(self, other):
       '''

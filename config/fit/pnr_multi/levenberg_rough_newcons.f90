@@ -282,7 +282,7 @@ subroutine mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,alamda)
   if(alamda.ne.0.d0) then
     call param(a)
     !      ++
-    poli(2)=pol1*f1
+    poli(2)=pol1*fl1
     polf(2)=pol2
     poli2=poli(1)*poli(1)+poli(2)*poli(2)+poli(3)*poli(3)
     poli_norm=dsqrt(poli2)
