@@ -165,7 +165,9 @@ class DNSSession(GenericSession):
 
   TRANSFORMATIONS=[\
   ]  
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'b', 'bg', 'fr', 'v', 'vana', 'files', 'sample', 'setup', 'cz', 'time', 'flipper', 'monitor', 'powder', 'xyz', 'split', 'dx', 'dy', 'nx', 'ny'] 
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'b', 'bg', 'fr', 'v', 'vana', 'files', 
+                                                          'sample', 'setup', 'cz', 'time', 'flipper', 'monitor', 
+                                                          'powder', 'xyz', 'sep-nonmag', 'split', 'dx', 'dy', 'nx', 'ny'] 
   file_options={'default': ['', 0, 1, [0, -1], ''],  # (prefix, omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[] # A list of all filenames to be imported
@@ -192,6 +194,7 @@ class DNSSession(GenericSession):
   D_NAME_Y='d_y'
   TRANSFORM_Q=False
   XYZ_POL=False
+  SEPARATE_NONMAG=False
   #------------------ local variables -----------------
 
   
@@ -386,6 +389,8 @@ class DNSSession(GenericSession):
             return "non spin-flip"
         self.SHORT_INFO=[('pol_channel', lambda P: str(P)+'-', ''), 
                           ('flipper', flipper_on, '')]
+      elif argument=='-sep-nonmag':
+        self.SEPARATE_NONMAG=True
       else:
         found=False
     return (found, last_argument_option)
@@ -549,10 +554,9 @@ class DNSSession(GenericSession):
         min_p=min(vana_data.data[1].values)
         cen_p=(max_p-min_p)/2.+min_p
         vana_data.process_function(lambda point: [point[0], point[1]/cen_p, point[2]/cen_p])
-      if not self.POWDER_DATA:
-        sys.stdout.write("calculate wavevectors, ")
-        sys.stdout.flush()
-        dnsmap.calculate_wavevectors()
+      sys.stdout.write("calculate wavevectors, ")
+      sys.stdout.flush()
+      dnsmap.calculate_wavevectors()
       dnsmap.make_corrections()
       sys.stdout.write("\n")
       sys.stdout.flush()
@@ -560,32 +564,61 @@ class DNSSession(GenericSession):
         dnsmap.unit_trans(self.TRANSFORMATIONS)
     # Seperate scattering for powder data x,y,z polarization analysis
     if self.XYZ_POL and self.POWDER_DATA and self.CORRECT_FLIPPING:
-      af=self.active_file_data
-      # para_1= 2 * (SF_x + SF_y - 2 * SF_z)
-      para_1=2.*(af[0]+af[2]-2.*af[4])
-      para_1.short_info='para_1'
-      para_1.number='0'
-      # para_2= -2 * (NSF_x + NSF_y - 2 * NSF_z)
-      para_2=-2.*(af[1]+af[3]-2.*af[5])
-      para_2.short_info='para_2'
-      para_2.number='0'
-      # para= <para_1,para_2>
-      para=0.5 * para_1 + 0.5 * para_2
-      para.short_info='paramagnetic'
-      para.number='0'
-      # sp_inc= 1.5 * (3 * SF_z - SF_x - SF_y)
-      sp_inc=1.5*(3.*af[4]-af[0]-af[2])
-      sp_inc.short_info='spin incoherent'
-      sp_inc.number='0'
-      # nu_coh= NSF_z - 0.5 * para - 1/3 * sp_inc
-      nu_coh=af[5]-0.5*para-1./3.*sp_inc
-      nu_coh.short_info='nuclear coherent'
-      nu_coh.number='0'
-      self.active_file_data.insert(0, sp_inc)
-#      self.active_file_data.insert(0, para_1)
-#      self.active_file_data.insert(0, para_2)
-      self.active_file_data.insert(0, para)
-      self.active_file_data.insert(0, nu_coh)
+      self.separate_scattering_xyz(self.active_file_data)
+    if self.SEPARATE_NONMAG:
+      self.separate_scattering_nonmag(self.active_file_data)
+
+  def separate_scattering_xyz(self, af):
+    '''
+      Saparate the scattering parts of powderdata with
+      xyz polarization analysis.
+    '''
+    # para_1= 2 * (SF_x + SF_y - 2 * SF_z)
+    para_1=2.*(af[0]+af[2]-2.*af[4])
+    para_1.short_info='para_1'
+    para_1.number='0'
+    # para_2= -2 * (NSF_x + NSF_y - 2 * NSF_z)
+    para_2=-2.*(af[1]+af[3]-2.*af[5])
+    para_2.short_info='para_2'
+    para_2.number='0'
+    # para= <para_1,para_2>
+    para=0.5 * para_1 + 0.5 * para_2
+    para.short_info='paramagnetic'
+    para.number='0'
+    # sp_inc= 1.5 * (3 * SF_z - SF_x - SF_y)
+    sp_inc=1.5*(3.*af[4]-af[0]-af[2])
+    sp_inc.short_info='spin incoherent'
+    sp_inc.number='0'
+    # nu_coh= NSF_z - 0.5 * para - 1/3 * sp_inc
+    nu_coh=af[5]-0.5*para-1./3.*sp_inc
+    nu_coh.short_info='nuclear coherent'
+    nu_coh.number='0'
+    af.insert(0, sp_inc)
+#      af.insert(0, para_1)
+#      af.insert(0, para_2)
+    af.insert(0, para)
+    af.insert(0, nu_coh)
+
+  def separate_scattering_nonmag(self, af):
+    '''
+      Separate the scattering parts of sf-, nfs-scattering
+      for nonmagnetic samples.
+    '''
+    # para= <para_1,para_2>
+    coherent=af[1] - 0.5 * af[0]
+    coherent.short_info='coherent scattering'
+    coherent.number='3'
+    # sp_inc= 1.5 * (3 * SF_z - SF_x - SF_y)
+    sp_inc= 1.5 * af[0]
+    sp_inc.short_info='spin incoherent'
+    sp_inc.number='4'
+    # nu_coh= NSF_z - 0.5 * para - 1/3 * sp_inc
+    separated=coherent / sp_inc
+    separated.short_info='Separated'
+    separated.number='0'
+    af.insert(2, coherent)
+    af.insert(3, sp_inc)
+    af.insert(0, separated)    
 
   def find_background_data(self, dataset):
     '''
@@ -716,6 +749,7 @@ class DNSSession(GenericSession):
       <menu action='DNS'>
         <menuitem action='SetOmegaOffset' />
         <menuitem action='SetIncrement' />
+        <menuitem action='SetMultipleScattering' />
         <menuitem action='SetDSpacing' />
         <menuitem action='SeperateScattering' />
         <menuitem action='SeperatePreset' />
@@ -741,6 +775,10 @@ class DNSSession(GenericSession):
                 "Change Increment", None,                    # label, accelerator
                 "Change Increment between files with same Polarization",                                   # tooltip
                 self.change_increment ),
+            ( "SetMultipleScattering", None,                             # name, stock id
+                "Change Multiple Scattering Propability", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.change_multiple_scattering_propability ),
             ( "CorrectFlipping", None,                             # name, stock id
                 "Correct for flipping-ratio", None,                    # label, accelerator
                 "Correct scattering for the finite flipping-ratio.",                                   # tooltip
@@ -1176,6 +1214,44 @@ class DNSSession(GenericSession):
         pass
     inc_dialog.destroy()
   
+  def change_multiple_scattering_propability(self, action, window):
+    '''
+      Change the value for multiple scattering propability and 
+      reacalculate the corrected dataset.
+    '''
+    if not self.active_file_name in self.file_options:
+      return None
+    #+++++ Create a dialog window for increment input +++++
+    inc_dialog=gtk.Dialog(title='Change scattering propability for the flipping-ratio correction:')
+    inc_dialog.set_default_size(100,50)
+    inc_dialog.add_button('OK', 1)
+    inc_dialog.add_button('Apply', 2)
+    inc_dialog.add_button('Cancle', 0)
+    input_filed=gtk.Entry()
+    input_filed.set_width_chars(4)
+    input_filed.set_text(str(self.SCATTERING_PROPABILITY))
+    input_filed.show()
+    input_filed.connect('activate', lambda *ignore: inc_dialog.response(1))
+    inc_dialog.vbox.add(input_filed)
+    #----- Create a dialog window for increment input -----
+    result=inc_dialog.run()
+    while result>0:
+      # Answer is OK or Apply
+      try:
+        new_sp=float(input_filed.get_text())
+        self.SCATTERING_PROPABILITY=new_sp
+        self.create_maps(self.active_file_name)
+        object=self.file_data[self.active_file_name]
+        window.change_active_file_object((self.active_file_name, object))
+      except ValueError:
+        pass
+      if result==1:
+        # leave the dialog on OK
+        break
+      else:
+        result=inc_dialog.run()
+    inc_dialog.destroy()
+  
   def seperate_scattering_preset(self, action, window):
     '''
       A selection dialog to choose a preset for seperate_scattering.
@@ -1386,28 +1462,50 @@ class DNSMeasurementData(MeasurementData):
     '''
       Calculate the wavevectors from omega, 2Theta and lambda.
     '''
-    qx_index=len(self.units())-2
-    qy_index=qx_index+1
-    lambda_n=self.dns_info['lambda_n']
-    two_pi_over_lambda=2*pi/lambda_n
-    grad_to_rad=pi/180.
-    # calculation of the wavevector, also works with arrays
-    def angle_to_wavevector(point):
-      output=point
-      output[qx_index]=(cos(-point[1]*grad_to_rad)-\
-                cos(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
-                two_pi_over_lambda
-      output[qy_index]=(sin(-point[1]*grad_to_rad)-\
-                sin(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
-                two_pi_over_lambda
-      return output    
-    self.process_function(angle_to_wavevector)
-    self.data[qx_index].unit='\303\205^{-1}'
-    self.data[qy_index].unit='\303\205^{-1}'
-    self.data[qx_index].dimension='q_x'
-    self.data[qy_index].dimension='q_y'
-    self.xdata=qx_index
-    self.ydata=qy_index
+    if self.zdata>0:
+      qx_index=len(self.units())-2
+      qy_index=qx_index+1
+      lambda_n=self.dns_info['lambda_n']
+      two_pi_over_lambda=2*pi/lambda_n
+      grad_to_rad=pi/180.
+      # calculation of the wavevector, also works with arrays
+      def angle_to_wavevector(point):
+        output=point
+        output[qx_index]=(cos(-point[1]*grad_to_rad)-\
+                  cos(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
+                  two_pi_over_lambda
+        output[qy_index]=(sin(-point[1]*grad_to_rad)-\
+                  sin(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
+                  two_pi_over_lambda
+        return output    
+      self.process_function(angle_to_wavevector)
+      self.data[qx_index].unit='\303\205^{-1}'
+      self.data[qy_index].unit='\303\205^{-1}'
+      self.data[qx_index].dimension='q_x'
+      self.data[qy_index].dimension='q_y'
+      self.xdata=qx_index
+      self.ydata=qy_index
+    else:
+      # Powderdata
+      q_index=len(self.units())-2
+      qx_index=q_index+1
+      lambda_n=self.dns_info['lambda_n']
+      two_pi_over_lambda=2*pi/lambda_n
+      grad_to_rad=pi/180.
+      # calculation of the wavevector, also works with arrays
+      def angle_to_wavevector(point):
+        output=point
+        output[qx_index]=(cos(-point[1]*grad_to_rad)-\
+                  cos(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
+                  two_pi_over_lambda
+        output[q_index]=sin(0.5*point[3]*grad_to_rad)*2.*two_pi_over_lambda
+        return output    
+      self.process_function(angle_to_wavevector)
+      self.data[q_index].unit='\303\205^{-1}'
+      self.data[qx_index].unit='\303\205^{-1}'
+      self.data[q_index].dimension='q'
+      self.data[qx_index].dimension='q_x'
+      self.xdata=q_index
   
   def change_omega_offset(self, omega_offset):
     '''
