@@ -17,7 +17,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b3"
+__version__ = "0.6b4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -331,4 +331,3 @@ def read_fit_file(self, file_name, fit_object):
     if len(parameters)==len(result):
         return result, errors
   return None
-

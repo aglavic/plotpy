@@ -7,7 +7,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Esther Pfuhl", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.6b3"
+__version__ = "0.6b4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -72,4 +72,3 @@ NEUTRON_SCATTERING_LENGTH_DENSITIES={
     'Pb':[3.1, 1.53e-5, 0.],
     'Al2O3':[5.7, 2.81e-5, 0.],
 }
-

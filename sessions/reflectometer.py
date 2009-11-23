@@ -40,7 +40,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b3"
+__version__ = "0.6b4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -1369,4 +1369,3 @@ class RefMultilayerParam(MultilayerParam):
       for i in range(constrain_params): # iterate through parameters
         list.append([param_index + i + j * 4 + k * layers * 4 for k in range(self.repititions)])
     return list, param_index + len(self)
-
