@@ -712,6 +712,9 @@ class TreffSession(GenericSession):
     max_hr=gtk.Entry()
     max_hr.set_width_chars(4)
     max_hr.set_text(str(self.max_hr))
+    show_all_button=gtk.CheckButton(label='simulate all channels', use_underline=True)
+    show_all_button.set_active(self.fit_object.simulate_all_channels)
+    align_table.attach(show_all_button, 2, 4, 8, 9, gtk.FILL, gtk.FILL, 0, 0)
     # activating the input will apply the settings, too
     ntest.connect('activate', self.dialog_activate, dialog)
     align_table.attach(max_hr, 1, 2, 8, 9, 0, gtk.FILL, 0, 0)   
@@ -745,7 +748,7 @@ class TreffSession(GenericSession):
                    [first_slit, second_slit], 
                    scaling_factor, 
                    [polarizer_efficiancy, analyzer_efficiancy, flipper0_efficiancy, flipper1_efficiancy], 
-                   alambda_first, ntest, x_from, x_to, max_hr],
+                   alambda_first, ntest, x_from, x_to, max_hr, show_all_button],
                    [layer_params, fit_params, max_iter])
     # befor the widget gets destroyed the textbuffer view widget is removed
     #dialog.connect("destroy",self.close_plot_options_window,sw) 
@@ -965,6 +968,7 @@ class TreffSession(GenericSession):
           new_max_hr=False
       except ValueError:
         new_max_hr=False
+      self.fit_object.simulate_all_channels=parameters_list[10].get_active()
       try:
         self.x_from=float(parameters_list[7].get_text())
       except ValueError:
@@ -1020,12 +1024,13 @@ class TreffSession(GenericSession):
     #open a background process for the fit function
     reflectometer_fit.functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', new_max_hr)
     print "PNR program started."
-    if self.fit_object.fit!=1: # if this is not a fit just wait till finished
+    if self.fit_object.fit!=1 and any(self.fit_datasets): # if this is not a fit just wait till finished
       exec_time, stderr_value = reflectometer_fit.functions.proc.communicate()
       print "PNR program finished in %.2g seconds." % float(exec_time.splitlines()[-1])
     else:
       self.open_status_dialog(window)
     first=True
+    free_sims=[]
     for i, dataset in enumerate(self.fit_datasets):
       if dataset:
         simu=read_data.treff.read_simulation(self.TEMP_DIR + output_names[i])
@@ -1051,17 +1056,56 @@ class TreffSession(GenericSession):
           set style line 2 lc %i
           set style increment user
           ''' % (i+1, i+1)
+      elif self.fit_object.simulate_all_channels:
+        simu=read_data.treff.read_simulation(self.TEMP_DIR + output_names[i])
+        simu.number='%i' % i
+        simu.short_info='simulation '+names[i]
+        simu.plot_options+='''
+          set style line 1 lc %i
+          set style increment user
+          ''' % (i+1)
+        simu.logy=True
+        free_sims.append(simu)
     window.multiplot=[[(dataset, dataset.short_info) for dataset in self.fit_datasets if dataset]]
     window.multi_list.set_markup(' Multiplot List: \n' + '\n'.join(map(lambda item: item[1], window.multiplot[0])))
     if not window.index_mess in [self.active_file_data.index(item[0]) for item in window.multiplot[0]]:
-      window.index_mess=self.active_file_data.index(window.multiplot[0][0][0])
+      try:
+        window.index_mess=self.active_file_data.index(window.multiplot[0][0][0])
+      except:
+        self.file_data['Simulations']=free_sims
+        self.active_file_data=self.file_data['Simulations']
+        self.active_file_name='Simulations'
+        window.index_mess=0
+        window.measurement=self.active_file_data
+        window.input_file_name='Simulations'
+        free_sims[0].plot_options+='''
+          set style line 2 lc 1
+          set style line 3 lc 2
+          set style line 4 lc 2
+          set style line 5 lc 3
+          set style line 6 lc 3
+          set style line 7 lc 4
+          set style line 8 lc 4
+          set style increment user
+          '''
+    for sim in free_sims:
+      window.multiplot[0].append((sim, sim.short_info))
+      window.multiplot[0].append((sim, sim.short_info))
+    free_sims.reverse()
     if move_channels:
       window.active_multiplot=True
-      for i, dataset in enumerate(reversed([item for item in self.fit_datasets if item])):
-        dataset.data[dataset.ydata].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.ydata].values)
-        dataset.data[dataset.yerror].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.yerror].values)
-        dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
-          map(lambda number: number*10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
+      j=0
+      for i, dataset in enumerate(reversed(self.fit_datasets)):
+        if dataset:
+          dataset.data[dataset.ydata].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.ydata].values)
+          dataset.data[dataset.yerror].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.yerror].values)
+          dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
+            map(lambda number: number*10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
+        elif len(free_sims)>j:
+          sim=free_sims[j]
+          j+=1
+          sim.data[sim.ydata].values=map(lambda number: number*10.**(i*1), sim.data[sim.ydata].values)
+          sim.data[sim.yerror].values=map(lambda number: number*10.**(i*1), sim.data[sim.yerror].values)
     window.replot()
     if move_channels:
        for i, dataset in enumerate(reversed([item for item in self.fit_datasets if item])):
@@ -1089,8 +1133,13 @@ class TreffSession(GenericSession):
                                          False, ' ', 
                                          xfrom=self.x_from, xto=self.x_to, 
                                          only_fitted_columns=True))
-      else:
+      elif not self.fit_object.simulate_all_channels and not i==0:
         data_lines.append(0)
+      else:
+        ref_file=open(os.path.join(folder, datafile_prefix+names[i]+'.ref'), 'w')
+        ref_file.write('1 1 1\n150 1 1\n')
+        ref_file.close()
+        data_lines.append(2)
     self.fit_object.number_of_points=data_lines
     self.fit_object.input_file_names=[os.path.join(folder, datafile_prefix+names[i]+'.ref') for i in range(4)]
     self.fit_object.set_fit_constrains()
@@ -1302,7 +1351,7 @@ class TreffSession(GenericSession):
       for subcode_file in subcode_files:
         code+=open(subcode_file, 'r').read()
       code=code.replace("parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=5000,np_conv=500,pdq=0.02d0)", 
-                   "parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=%i,np_conv=500,pdq=0.02d0)" % \
+                        "parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=%i,np_conv=500,pdq=0.02d0)" % \
                    self.max_hr
                    )
       open(code_file, 'w').write(code)
@@ -1358,6 +1407,7 @@ class TreffFitParameters(FitParameters):
   alambda_first=0.0001 # alambda parameter for first fit step
   ntest=1 # number of times chi has to be not improvable before the fit stops (I think)
   PARAMETER_LENGTH=7
+  simulate_all_channels=False
   from config.scattering_length_table import NEUTRON_SCATTERING_LENGTH_DENSITIES
   
   def append_layer(self, material, thickness, roughness):

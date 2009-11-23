@@ -212,7 +212,7 @@ subroutine make_sim(x,ndata)
   write(11,100) '&'
 
   !      -+
-  if (ndata_pm.gt.0) then
+  if (ndata_mp.gt.0) then
     open(9,file='simulation_mp')
     poli(2)=-pol1
     polf(2)=pol2
