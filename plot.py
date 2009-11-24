@@ -30,6 +30,7 @@
 # python modules
 import sys
 exit=sys.exit
+from glob import glob
 ##---add_python_path_here---## # Place holder to add installation directory to python path for non superuser installation.
 
 # own modules
@@ -182,6 +183,14 @@ def import_session_from_name(arguments, measurement_type):
     
     @return The class instance for the measurement type
   '''
+  # Check for wildcards in input
+  new_args=[]
+  for item in arguments:
+    if '*' in item or '?' in item:
+      new_args+=glob(item)
+    else:
+      new_args.append(item)
+  arguments=new_args
   active_session_class = getattr(__import__('sessions.'+measurement_type[0], globals(), locals(), 
                                       [measurement_type[1]]), measurement_type[1])
   return active_session_class(arguments)
