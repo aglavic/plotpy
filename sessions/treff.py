@@ -34,7 +34,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.6b4"
+__version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -69,7 +69,8 @@ class TreffSession(GenericSession):
   max_iter=50 # maximal iterations in fit
   max_hr=5000 # Parameter in fit_pnr_multi
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img']  
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img'] 
+  replot=None 
   #------------------ local variables -----------------
 
   
@@ -156,6 +157,8 @@ class TreffSession(GenericSession):
       Open a dialog for the extraction of the specular line from a 3d image.
       The user can select the width for the cross-section,
       after this the data is extracted and appendet to the fileobject.
+      The true specular reflectivity is calculated using two parallel
+      lines next to the specular line.
     '''
     data=window.measurement[window.index_mess]
     cs_dialog=gtk.Dialog(title='Create a cross-section:')
@@ -489,6 +492,8 @@ class TreffSession(GenericSession):
     if self.fit_object.layers==[]:
       self.fit_object.append_layer('Unknown', 10., 5.)
       self.fit_object.append_substrate('Unknown', 5.)
+      # for first run autoset to multiplot
+      window.active_multiplot=True
     layer_options={}
     layer_index=0
     layer_params={}
@@ -712,9 +717,12 @@ class TreffSession(GenericSession):
     max_hr=gtk.Entry()
     max_hr.set_width_chars(4)
     max_hr.set_text(str(self.max_hr))
-    show_all_button=gtk.CheckButton(label='simulate all channels', use_underline=True)
+    move_channels_button=gtk.CheckButton(label='move chanels in plot', use_underline=True)
+    move_channels_button.set_active(True)
+    align_table.attach(move_channels_button, 3, 4, 8, 9, gtk.FILL, gtk.FILL, 0, 0)
+    show_all_button=gtk.CheckButton(label='all channels', use_underline=True)
     show_all_button.set_active(self.fit_object.simulate_all_channels)
-    align_table.attach(show_all_button, 2, 4, 8, 9, gtk.FILL, gtk.FILL, 0, 0)
+    align_table.attach(show_all_button, 2, 3, 8, 9, gtk.FILL, gtk.FILL, 0, 0)
     # activating the input will apply the settings, too
     ntest.connect('activate', self.dialog_activate, dialog)
     align_table.attach(max_hr, 1, 2, 8, 9, 0, gtk.FILL, 0, 0)   
@@ -748,7 +756,7 @@ class TreffSession(GenericSession):
                    [first_slit, second_slit], 
                    scaling_factor, 
                    [polarizer_efficiancy, analyzer_efficiancy, flipper0_efficiancy, flipper1_efficiancy], 
-                   alambda_first, ntest, x_from, x_to, max_hr, show_all_button],
+                   alambda_first, ntest, x_from, x_to, max_hr, move_channels_button, show_all_button],
                    [layer_params, fit_params, max_iter])
     # befor the widget gets destroyed the textbuffer view widget is removed
     #dialog.connect("destroy",self.close_plot_options_window,sw) 
@@ -968,7 +976,7 @@ class TreffSession(GenericSession):
           new_max_hr=False
       except ValueError:
         new_max_hr=False
-      self.fit_object.simulate_all_channels=parameters_list[10].get_active()
+      self.fit_object.simulate_all_channels=parameters_list[11].get_active()
       try:
         self.x_from=float(parameters_list[7].get_text())
       except ValueError:
@@ -993,7 +1001,7 @@ class TreffSession(GenericSession):
       if response==7:
         self.user_constraint_dialog(dialog, window)
         return None
-      self.dialog_fit(action, window, new_max_hr=new_max_hr)
+      self.dialog_fit(action, window, move_channels=parameters_list[10].get_active(), new_max_hr=new_max_hr)
       # read fit parameters from file and create new object, if process is killed ignore
       if fit_list[1]['actually'] and response==5 and self.fit_object.fit==1: 
         parameters, errors=self.read_fit_file(self.TEMP_DIR+'result', self.fit_object)
@@ -1033,6 +1041,7 @@ class TreffSession(GenericSession):
     free_sims=[]
     for i, dataset in enumerate(self.fit_datasets):
       if dataset:
+        # if data for the channel was selected combine data and fit together
         simu=read_data.treff.read_simulation(self.TEMP_DIR + output_names[i])
         simu.number='sim_'+dataset.number
         simu.short_info='simulation '+names[i]
@@ -1066,6 +1075,7 @@ class TreffSession(GenericSession):
           ''' % (i+1)
         simu.logy=True
         free_sims.append(simu)
+    # create a multiplot with all datasets
     window.multiplot=[[(dataset, dataset.short_info) for dataset in self.fit_datasets if dataset]]
     window.multi_list.set_markup(' Multiplot List: \n' + '\n'.join(map(lambda item: item[1], window.multiplot[0])))
     if not window.index_mess in [self.active_file_data.index(item[0]) for item in window.multiplot[0]]:
@@ -1089,30 +1099,57 @@ class TreffSession(GenericSession):
           set style increment user
           '''
     for sim in free_sims:
+      # add simulations without dataset to the multiplot
       window.multiplot[0].append((sim, sim.short_info))
       window.multiplot[0].append((sim, sim.short_info))
     free_sims.reverse()
     if move_channels:
-      window.active_multiplot=True
-      j=0
-      for i, dataset in enumerate(reversed(self.fit_datasets)):
-        if dataset:
+      # move the polarization channels agains eachother to make it easier for the eye
+      if not self.replot:
+        self.replot=window.replot
+        window.replot=lambda *ignore: self.move_channels_replot(window)
+        def reset_replot(index):
+          window.replot=self.replot
+          self.replot=None
+          window.do_add_multiplot=self.do_add_multiplot
+          return window.do_add_multiplot(index)
+        self.do_add_multiplot=window.do_add_multiplot
+        window.do_add_multiplot=reset_replot
+    elif self.replot:
+      window.replot=self.replot
+      window.do_add_multiplot=self.do_add_multiplot
+      self.replot=None
+    window.replot()
+
+  def move_channels_replot(self, window):
+    '''
+      function to replace window.replot if the 
+      channels should be moved to show the fits.
+    '''
+    if window.active_multiplot:
+      for i, tupel in enumerate(reversed(window.multiplot[0])):
+        dataset=tupel[0]
+        if len(dataset.plot_together)>1:
           dataset.data[dataset.ydata].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.ydata].values)
           dataset.data[dataset.yerror].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.yerror].values)
           dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
             map(lambda number: number*10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
-        elif len(free_sims)>j:
-          sim=free_sims[j]
-          j+=1
-          sim.data[sim.ydata].values=map(lambda number: number*10.**(i*1), sim.data[sim.ydata].values)
-          sim.data[sim.yerror].values=map(lambda number: number*10.**(i*1), sim.data[sim.yerror].values)
-    window.replot()
-    if move_channels:
-       for i, dataset in enumerate(reversed([item for item in self.fit_datasets if item])):
-         dataset.data[dataset.ydata].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.ydata].values)
-         dataset.data[dataset.yerror].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.yerror].values)
-         dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
+        else:
+          dataset.data[dataset.ydata].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.ydata].values)
+          dataset.data[dataset.yerror].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.yerror].values)
+      self.replot()
+      for i, tupel in enumerate(reversed(window.multiplot[0])):
+        dataset=tupel[0]
+        if len(dataset.plot_together)>1:
+          dataset.data[dataset.ydata].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.ydata].values)
+          dataset.data[dataset.yerror].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.yerror].values)
+          dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
             map(lambda number: number/10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
+        else:
+          dataset.data[dataset.ydata].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.ydata].values)
+          dataset.data[dataset.yerror].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.yerror].values)
+    else:
+      self.replot()
 
   def export_data_and_entfile(self, folder, file_name, datafile_prefix='fit_temp_', 
                               use_multilayer=False, use_roughness_gradient=True):

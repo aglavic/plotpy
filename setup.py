@@ -16,7 +16,7 @@ __name__='Plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __license__ = "None"
-__version__ = "0.6b4"
+__version__ = "0.6"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://atzes.homeip.net/plotwiki"
@@ -196,7 +196,6 @@ if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
   script.write(text)
   script.close()
   
-# py2exe specific stuff to make it work:
 # py2exe specific stuff to make it work:
 if "py2exe" in sys.argv:
   print "\n*** Copying gtk stuff ***"
