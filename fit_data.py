@@ -7,9 +7,9 @@
 
 # import mathematic functions and least square fit which uses the Levenberg-Marquardt algorithm.
 import numpy
-from scipy.optimize import leastsq
+from scipy.optimize import leastsq, fsolve
 from scipy.special import wofz
-from math import pi, sqrt
+from math import pi, sqrt,  tanh
 # for dialog window import gtk
 import gtk
 # import own modules
@@ -241,7 +241,7 @@ class FitSum(FitFunction):
       self.origin[0].toggle_refine_parameter(action, index)
     else:
       self.origin[1].toggle_refine_parameter(action, index-len(self.origin[0].parameters))
-  
+
 #+++++++++++++++++++++++++++++++++ Define common functions for fits +++++++++++++++++++++++++++++++++
 
 class FitLinear(FitFunction):
@@ -417,6 +417,55 @@ class FitSQUIDSignal(FitFunction):
     self.parameters=[1., 3., 1., 0., 0.]
     FitFunction.__init__(self, initial_parameters)
 
+class FitBrillouine(FitFunction):
+  '''
+    Fit a voigt function using the representation as real part of the complex error function.
+  '''
+  
+  # define class variables.
+  name="Brillouine"
+  parameters=[1.e7, 1., 1., 4.19e16]
+  parameter_names=['lambda', 'S', 'L', 'N']
+  fit_function_text='I*Re(w(z))/Re(w(z_0))+C; w=(x-x_0)/sigma/sqrt(2)'
+  sqrt2=numpy.sqrt(2)
+  sqrt2pi=numpy.sqrt(2*numpy.pi)
+  muB=9.27e-24
+  kB=1.38e-23
+  B=80.e-3
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1.5e8, 1., 1.,4.19e16]
+    FitFunction.__init__(self, initial_parameters)
+  
+  def brillouine(self, p, M, T):
+    '''
+      Brillouine function which M=...(M) => 0=...(M)-M which
+      has to be solved for specific parameters.
+    '''
+    S=abs(p[1])
+    L=abs(p[2])
+    J=S+L
+    g=1.5+ (S*(S+1.)-L*(L+1.))/(2.*J*(J+1.))
+    d=(2.*J+1.)/(2.*J)
+    c=g*self.muB*J/self.kB
+    Ms=g*J*self.muB*p[3]
+    
+    return d/tanh(d*c*(p[0]*M/T+self.B/T))-(d-1)/tanh((d-1)*c*(p[0]*M/T+self.B/T))-M/Ms
+  
+  def fit_function(self, p, x):
+    '''
+      Return the Voigt profile of x.
+      It is calculated using the complex error function,
+      see Wikipedia articel on Voigt-profile for the details.
+    '''
+#    out=[]
+#    for i,  xi in enumerate(x):
+#      out.append(fsolve(lambda item: self.brillouine(p, item, xi), 1e-6))
+    return fsolve(lambda item: self.brillouine(p, item, x), 1e-6)
+
 
 #--------------------------------- Define common functions for fits ---------------------------------
 
@@ -437,7 +486,8 @@ class FitSession:
                        FitVoigt.name: FitVoigt, 
                        FitOneOverX.name: FitOneOverX, 
                        FitLorentzian.name: FitLorentzian, 
-                       FitSQUIDSignal.name: FitSQUIDSignal
+                       FitSQUIDSignal.name: FitSQUIDSignal, 
+                       FitBrillouine.name: FitBrillouine
                        }
   
   def __init__(self,  dataset, file_actions=None):
