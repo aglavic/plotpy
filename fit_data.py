@@ -737,7 +737,7 @@ class FitSession:
       
       @return A table widget for this function line and a list of entry widgets.
     '''
-    table=gtk.Table(15, (len(function.parameters)*3+3)//12, False)
+    table=gtk.Table(15, (len(function.parameters)*3+3)//12+1, False)
     entries=[]
     for i, parameter in enumerate(function.parameters):
       # Test,Toggle and Entry for every parameter of the funciton

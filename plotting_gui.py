@@ -1521,7 +1521,7 @@ class ApplicationMainWindow(gtk.Window):
 
 
 
-  def fit_dialog(self,action, size=(600, 400), position=None):
+  def fit_dialog(self,action, size=(800, 250), position=None):
     '''
       A dialog to fit the data with a set of functions.
       
