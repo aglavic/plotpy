@@ -510,7 +510,7 @@ class FitSession:
       @param dataset A MeasurementData object
       @param file_actions FileActions object to use      
     '''
-    self.functions=[] # a list of sequences (FitFunction, fit, plot) to be used
+    self.functions=[] # a list of sequences (FitFunction, fit, plot, ignore errors) to be used
     self.data=dataset
     self.show_covariance=False
     if file_actions:
@@ -528,7 +528,7 @@ class FitSession:
       Add a function to the list of fitted functions.
     '''
     if function_name in self.available_functions:
-      self.functions.append([self.available_functions[function_name]([]), True, True])
+      self.functions.append([self.available_functions[function_name]([]), True, True,  False])
       return True
     else:
       return False
@@ -555,7 +555,7 @@ class FitSession:
     '''
     functions=self.functions
     if (index_1 < len(functions)) and (index_2 < len(functions)):
-      functions.append([FitSum(functions[index_1][0], functions[index_2][0]), True, True])
+      functions.append([FitSum(functions[index_1][0], functions[index_2][0]), True, True, False])
       functions[index_1][1]=False
       functions[index_2][1]=False
   
@@ -579,7 +579,10 @@ class FitSession:
     covariance_matices=[]
     for function in self.functions:
       if function[1]:
-        mesg, cov_out=function[0].refine(data_x, data_y, data_yerror)
+        if not function[3]:
+          mesg, cov_out=function[0].refine(data_x, data_y, data_yerror)
+        else:
+          mesg, cov_out=function[0].refine(data_x, data_y, None)
         covariance_matices.append(cov_out)
       else:
         covariance_matices.append([[None]])
@@ -654,16 +657,25 @@ class FitSession:
         back_button.connect('clicked', function[0].history_back, dialog, window)
       text=gtk.Entry()
       text.set_text(function[0].fit_function_text)
+      text.set_width_chars(40)
       align_table.attach(text,
                   # X direction #          # Y direction
                   4, 5,                      i*2, i*2+1,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
+      toggle_errors=gtk.CheckButton(label="ignore errors")
+      toggle_errors.set_active(function[3])
+      toggle_errors.connect('toggled', set_function_param, function, 3)
+      align_table.attach(toggle_errors,
+                  # X direction #          # Y direction
+                  5, 6,                      i*2, i*2+1,
+                  gtk.EXPAND,     gtk.EXPAND,
+                  0,                         0);
       new_line, entry=self.function_line(function[0], dialog, window)
-      entries.append(entry+[text])
+      entries.append(entry+[text, toggle_errors])
       align_table.attach(new_line,
                   # X direction #          # Y direction
-                  4, 5,                      i*2+1, i*2+2,
+                  4, 6,                      i*2+1, i*2+2,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       text=gtk.Label(' fit ')
@@ -725,7 +737,7 @@ class FitSession:
       
       @return A table widget for this function line and a list of entry widgets.
     '''
-    table=gtk.Table(len(function.parameters)*3+3, 1, False)
+    table=gtk.Table(15, (len(function.parameters)*3+3)//12, False)
     entries=[]
     for i, parameter in enumerate(function.parameters):
       # Test,Toggle and Entry for every parameter of the funciton
@@ -736,12 +748,12 @@ class FitSession:
       entries.append(gtk.Entry())
       entries[i].set_width_chars(8)
       entries[i].set_text("%.6g" % parameter)
-      table.attach(toggle, i*3, i*3+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
-      table.attach(text, i*3+1, i*3+2, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
-      table.attach(entries[i], i*3+2, i*3+3, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+      table.attach(toggle, i*3%12, (i*3%12)+1, i*3//12, i*3//12+1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+      table.attach(text, (i*3%12)+1, (i*3%12)+2, i*3//12, i*3//12+1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+      table.attach(entries[i], (i*3%12)+2, (i*3%12)+3, i*3//12, i*3//12+1, gtk.EXPAND, gtk.EXPAND, 0, 0)
     # Button to delete the function
     del_button=gtk.Button(label='DEL')
-    table.attach(del_button, len(function.parameters)*3, len(function.parameters)*3+1, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+    table.attach(del_button, 12, 13, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
     del_button.connect('clicked', self.del_function_dialog, function, dialog, window)
     entries.append(gtk.Entry())
     entries[len(function.parameters)].set_width_chars(8)
@@ -750,7 +762,7 @@ class FitSession:
       entries[len(function.parameters)].set_text("%.6g" % function.x_from)
     else:
       entries[len(function.parameters)].set_text("{from}")      
-    table.attach(entries[len(function.parameters)], len(function.parameters)*3+1, len(function.parameters)*3+2, 0, 1, 
+    table.attach(entries[len(function.parameters)], 13, 14, 0, 1, 
                              gtk.EXPAND, gtk.EXPAND, 0, 0)
     entries.append(gtk.Entry())
     entries[len(function.parameters)+1].set_width_chars(8)
@@ -758,7 +770,7 @@ class FitSession:
       entries[len(function.parameters)+1].set_text("%.6g" % function.x_to)
     else:
       entries[len(function.parameters)+1].set_text("{to}")
-    table.attach(entries[len(function.parameters)+1], len(function.parameters)*3+2, len(function.parameters)*3+3, 0, 1, 
+    table.attach(entries[len(function.parameters)+1], 14,15, 0, 1, 
                              gtk.EXPAND, gtk.EXPAND, 0, 0)
     return table, entries
 
@@ -799,7 +811,7 @@ class FitSession:
       @param func_index List index of the function to be altered
       @param values List of values for the parameters to be set
     '''
-    for j, value in enumerate(values[0:-3]):
+    for j, value in enumerate(values[0:-4]):
       self.functions[func_index][0].parameters[j]=value
     self.functions[func_index][0].x_from=values[-3]
     self.functions[func_index][0].x_to=values[-2]
@@ -825,11 +837,11 @@ class FitSession:
     for i, function in enumerate(self.functions):
       # Set all function parameters according to the entries
       values=[]
-      for entry in entries[i][:-3]:
+      for entry in entries[i][:-4]:
         values.append(get_entry_values(entry))
+      values.append(get_entry_values(entries[i][-4], if_not=None))
       values.append(get_entry_values(entries[i][-3], if_not=None))
-      values.append(get_entry_values(entries[i][-2], if_not=None))
-      values.append(entries[i][-1].get_text())
+      values.append(entries[i][-2].get_text())
       self.file_actions.activate_action('set_function_parameters', i, values)
     covariance_matices=self.file_actions.activate_action('fit_functions')
     self.file_actions.activate_action('simmulate_functions')
