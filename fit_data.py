@@ -417,14 +417,14 @@ class FitSQUIDSignal(FitFunction):
     self.parameters=[1., 3., 1., 0., 0.]
     FitFunction.__init__(self, initial_parameters)
 
-class FitBrillouine(FitFunction):
+class FitBrillouineT(FitFunction):
   '''
     Fit a Brillouine's function for the magnetic behaviour of a ferromagnet
     against temperature.
   '''
   
   # define class variables.
-  name="Brillouine"
+  name="Brillouine(T)"
   parameters=[1.e7, 1., 1., 4.19e16, 1.e-1]
   parameter_names=['lambda', 'S', 'L', 'N', 'B']
   fit_function_text='Parameters (B): lambda; S; L; N'
@@ -479,6 +479,68 @@ class FitBrillouine(FitFunction):
 #      out.append(fsolve(lambda item: self.brillouine(p, item, xi), 1e-6))
     return fsolve(lambda item: self.brillouine(p, item, x), 1e-6)
 
+class FitBrillouineB(FitFunction):
+  '''
+    Fit a Brillouine's function for the magnetic behaviour of a ferromagnet
+    against field.
+  '''
+  
+  # define class variables.
+  name="Brillouine(B)"
+  parameters=[1.e7, 1., 1., 4.19e16, 300.]
+  parameter_names=['lambda', 'S', 'L', 'N', 'T']
+  fit_function_text='Parameters (T): lambda; S; L; N'
+  muB=9.27e-24 # mu_Bohr
+  kB=1.38e-23  # k_Boltzmann
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1.5e8, 1., 1.,4.19e16, 300.]
+    FitFunction.__init__(self, initial_parameters)
+    self.refine_parameters=range(4)
+  
+  def residuals(self, params, y, x, yerror=None):
+    '''
+      As the fit with fsolve is quite slow we tell the user about
+      the state of the fit.
+    '''
+    err=FitFunction.residuals(self, params, y, x, yerror=None)
+    print "End of iteration %i, chi is now %.6g" % (self.iteration, sum(err))
+    self.iteration+=1
+    return err
+  
+  def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
+    self.iteration=1
+    return FitFunction.refine(self,  dataset_x,  dataset_y, dataset_yerror=None)
+
+  def brillouine(self, p, M, B):
+    '''
+      Brillouine function which M=...(M) => 0=...(M)-M which
+      has to be solved for specific parameters.
+    '''
+    S=abs(p[1])
+    L=abs(p[2])
+    J=S+L
+    g=1.5+ (S*(S+1.)-L*(L+1.))/(2.*J*(J+1.))
+    d=(2.*J+1.)/(2.*J)
+    c=g*self.muB*J/self.kB
+    Ms=g*J*self.muB*p[3]
+    T=p[4]
+    return d/tanh(d*c*(p[0]*M/T+B/T))-(d-1)/tanh((d-1)*c*(p[0]*M/T+B/T))-M/Ms
+  
+  def fit_function(self, p, x):
+    '''
+      Return the Voigt profile of x.
+      It is calculated using the complex error function,
+      see Wikipedia articel on Voigt-profile for the details.
+    '''
+#    out=[]
+#    for i,  xi in enumerate(x):
+#      out.append(fsolve(lambda item: self.brillouine(p, item, xi), 1e-6))
+    return fsolve(lambda item: self.brillouine(p, item, x), 1e-6)
+
 
 #--------------------------------- Define common functions for fits ---------------------------------
 
@@ -500,7 +562,8 @@ class FitSession:
                        FitOneOverX.name: FitOneOverX, 
                        FitLorentzian.name: FitLorentzian, 
                        FitSQUIDSignal.name: FitSQUIDSignal, 
-                       FitBrillouine.name: FitBrillouine
+                       FitBrillouineB.name: FitBrillouineB, 
+                       FitBrillouineT.name: FitBrillouineT, 
                        }
   
   def __init__(self,  dataset, file_actions=None):
@@ -514,6 +577,7 @@ class FitSession:
     self.data=dataset
     self.show_covariance=False
     if file_actions:
+      # TODO: Is this working?, check what happens with dataset changes
       # connect the functions to the file_actions object
       file_actions.actions['add_function']=self.add_function
       file_actions.actions['sum_up_functions']=self.sum
