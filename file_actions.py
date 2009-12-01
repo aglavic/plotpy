@@ -35,6 +35,7 @@ class FileActions:
     self.actions={
                   'change filter': self.change_data_filter, 
                   'cross-section': self.cross_section, 
+                  'combine-data': self.combine_data_points, 
                   'iterate_through_measurements': self.iterate_through_measurements, 
                   'create_fit_object': self.create_fit_object, 
                   'change_color_pattern': self.change_color_pattern, 
@@ -131,7 +132,47 @@ class FileActions:
       return True
     except ValueError:
       return False
-  
+
+  def combine_data_points(self, binning, bin_distance=None):
+    '''
+      Combine points of a line scan to decrease their errors.
+    '''
+    dataset=self.window.measurement[self.window.index_mess]
+    data=dataset.list_err()
+    dims=dataset.dimensions()
+    units=dataset.units()
+    cols=(dataset.xdata, dataset.ydata, dataset.yerror)
+    new_cols=[(dims[col], units[col]) for col in cols]
+    output=MeasurementData(new_cols, 
+                           [], 
+                           0, 
+                           1, 
+                           2,
+                           )
+    def prepare_data(point):
+      return [point[0], point[0], point[0], point[1], point[2], 0]
+    def rebuild_data(point):
+      return [point[0], point[3], point[4]]
+    data2=map(prepare_data, data)
+    data3=self.sort_and_bin(data2, binning, bin_distance=bin_distance)
+    data3=map(rebuild_data, data3)
+    map(output.append, data3)
+    output.number=dataset.number
+    if not bin_distance:
+      output.short_info='%s - combined data points with %i binning' % (
+                           dataset.short_info, binning) 
+    else:
+      output.short_info='%s - combined data points every %g step' % (
+                     dataset.short_info, bin_distance) 
+    output.sample_name=dataset.sample_name
+    output.info=dataset.info
+#    if at_end:
+#      self.window.measurement.append(cs_object)
+#      self.window.index_mess=len(self.window.measurement)-1
+#    else:
+    self.window.measurement.insert(self.window.index_mess+1, output)
+    self.window.index_mess+=1
+
   def iterate_through_measurements(self, action_name):
     '''
       Change the active plotted sequence.
@@ -259,8 +300,23 @@ class FileActions:
     if len(data2)==0:
       return None
     len_vec=sqrt(x**2+y**2)
-    data3=[[(vec_e[0]*dat[0]+vec_e[1]*dat[1])*len_vec, dat[0], dat[1], dat[2], dat[3], (vec_n[0]*dat[0]+vec_n[1]*dat[1])] for dat in data2]
-    data3.sort()
+    data3=[[(vec_e[0]*dat[0]+vec_e[1]*dat[1])*len_vec, dat[0], dat[1], dat[2], dat[3], 
+                                          (vec_n[0]*dat[0]+vec_n[1]*dat[1])] for dat in data2]
+    data3=self.sort_and_bin(data3, binning,  gauss_weighting, sigma_gauss, bin_distance)
+    map(output.append, data3)
+    return output
+  
+  def sort_and_bin(self, data, binning, gauss_weighting=False, sigma_gauss=1e10, bin_distance=None):
+    '''
+      Sort a dataset and bin the datapoints together. Gaussian weighting is possible and
+      errors are calculated.
+      
+      @param data A list of datapoints consisting of (x0, x1, x2, y, dy, weighting)
+      
+      @return Binned dataset
+    '''
+    from math import sqrt, exp
+    data.sort()
     # Start to bin the datapoints
     dat_tmp=[]
     if gauss_weighting:
@@ -270,9 +326,9 @@ class FileActions:
           output+=dat*exp(-din[i][5]**2/(2*sigma_gauss**2))
         return output
     if bin_distance:
-      bin_dist_position=int(data3[0][0]/bin_distance)
+      bin_dist_position=int(data[0][0]/bin_distance)
       din=[]
-    for i, point in enumerate(data3):
+    for i, point in enumerate(data):
       if bin_distance:
         if point[0]<=bin_distance*(bin_dist_position+0.5):
           din.append([bin_dist_position*bin_distance]+point[1:])
@@ -280,7 +336,7 @@ class FileActions:
           while point[0]>bin_distance*(bin_dist_position+0.5):
             bin_dist_position+=1
           din=[[bin_dist_position*bin_distance]+point[1:]]
-        if (i+1)==len(data3) or data3[i+1][0]<=bin_distance*(bin_dist_position+0.5):
+        if (i+1)==len(data) or data[i+1][0]<=bin_distance*(bin_dist_position+0.5):
           continue
       else:
         if i%binning==0:
@@ -303,10 +359,8 @@ class FileActions:
         dout.append(sqrt(sum([d[4]**2 for d in din]))/len(din))
         dout.append(sum([d[5] for d in din])/len(din))
       dat_tmp.append(dout)
-    data3=dat_tmp
-    map(output.append, data3)
-    return output
-
+    return dat_tmp
+ 
   #-------- Functions not directly called as actions ------
 
 class MakroRepr:

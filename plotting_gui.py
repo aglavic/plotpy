@@ -1301,6 +1301,64 @@ class ApplicationMainWindow(gtk.Window):
             continue
     return transformations
 
+  def combine_data_points(self, action):
+    '''
+      Open a dialog to combine data points together
+      to get a better statistic.
+    '''
+    cd_dialog=gtk.Dialog(title='Combine data points:')
+    table=gtk.Table(3,4,False)
+    label=gtk.Label()
+    label.set_markup('Binning:')
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     gtk.FILL,
+                0,                         0);
+    binning=gtk.Entry()
+    binning.set_width_chars(4)
+    binning.set_text('1')
+    table.attach(binning,
+                # X direction #          # Y direction
+                1, 3,                      0, 1,
+                0,                       gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup('Stepsize:\n(overwrites Binning)')
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      1, 2,
+                gtk.EXPAND | gtk.FILL,     gtk.FILL,
+                0,                         0);
+    bin_distance=gtk.Entry()
+    bin_distance.set_width_chars(4)
+    bin_distance.set_text('None')
+    table.attach(bin_distance,
+                # X direction #          # Y direction
+                1, 3,                      1, 2,
+                0,                       gtk.FILL,
+                0,                         0);
+    table.show_all()
+    # Enty activation triggers calculation, too
+    binning.connect('activate', lambda *ign: cd_dialog.response(1))
+    bin_distance.connect('activate', lambda *ign: cd_dialog.response(1))
+    cd_dialog.vbox.add(table)
+    cd_dialog.add_button('OK', 1)
+    cd_dialog.add_button('Cancel', 0)
+    result=cd_dialog.run()
+    if result==1:
+      try:
+        bd=float(bin_distance.get_text())
+      except ValueError:
+        bd=None
+      self.file_actions.activate_action('combine-data', 
+                                        int(binning.get_text()), 
+                                        bd
+                                        )
+    cd_dialog.destroy()
+    self.rebuild_menus()
+    self.replot()      
+  
   def extract_cross_section(self, action):
     '''
       Open a dialog to select a cross-section through an 3D-dataset.
@@ -2193,8 +2251,6 @@ class ApplicationMainWindow(gtk.Window):
       self.active_plot_geometry=(self.widthf, self.heightf)
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
 
-
-
   def reset_statusbar(self): 
     '''
       Clear the statusbar.
@@ -2291,10 +2347,14 @@ class ApplicationMainWindow(gtk.Window):
         <placeholder name='z-actions'>
         <menuitem action='CrossSection'/>
         <menuitem action='SelectColor'/>
-        </placeholder>'''
+        </placeholder>        
+        <placeholder name='y-actions'/>'''
     else:
       output+='''
-        <placeholder name='z-actions'/>'''
+        <placeholder name='z-actions'/>
+        <placeholder name='y-actions'>
+        <menuitem action='CombinePoints'/>
+        </placeholder>'''
     output+='''
         <separator name='static6'/>
         <menuitem action='ShowPlotparams'/>
@@ -2483,6 +2543,10 @@ class ApplicationMainWindow(gtk.Window):
         "Cross-Section", None,                     # label, accelerator
         None,                                    # tooltip
         self.extract_cross_section),
+      ( "CombinePoints", None,                    # name, stock id
+        "Combine points", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.combine_data_points),
       ( "SelectColor", None,                    # name, stock id
         "Color Pattern...", None,                     # label, accelerator
         None,                                    # tooltip
