@@ -427,7 +427,7 @@ class FitBrillouineT(FitFunction):
   name="Brillouine(T)"
   parameters=[1.e7, 1., 1., 4.19e16, 1.e-1]
   parameter_names=['lambda', 'S', 'L', 'N', 'B']
-  fit_function_text='Parameters (B): lambda; S; L; N'
+  fit_function_text='Parameters (T): lambda; S; L; N'
   muB=9.27e-24 # mu_Bohr
   kB=1.38e-23  # k_Boltzmann
 
@@ -470,9 +470,7 @@ class FitBrillouineT(FitFunction):
   
   def fit_function(self, p, x):
     '''
-      Return the Voigt profile of x.
-      It is calculated using the complex error function,
-      see Wikipedia articel on Voigt-profile for the details.
+      Return the brillouine function of T.
     '''
 #    out=[]
 #    for i,  xi in enumerate(x):
@@ -489,7 +487,7 @@ class FitBrillouineB(FitFunction):
   name="Brillouine(B)"
   parameters=[1.e7, 1., 1., 4.19e16, 300.]
   parameter_names=['lambda', 'S', 'L', 'N', 'T']
-  fit_function_text='Parameters (T): lambda; S; L; N'
+  fit_function_text='Parameters (B): lambda; S; L; N'
   muB=9.27e-24 # mu_Bohr
   kB=1.38e-23  # k_Boltzmann
 
@@ -532,9 +530,7 @@ class FitBrillouineB(FitFunction):
   
   def fit_function(self, p, x):
     '''
-      Return the Voigt profile of x.
-      It is calculated using the complex error function,
-      see Wikipedia articel on Voigt-profile for the details.
+      Return the brillouine function of B.
     '''
 #    out=[]
 #    for i,  xi in enumerate(x):
@@ -875,7 +871,7 @@ class FitSession:
       @param func_index List index of the function to be altered
       @param values List of values for the parameters to be set
     '''
-    for j, value in enumerate(values[0:-4]):
+    for j, value in enumerate(values[0:-3]):
       self.functions[func_index][0].parameters[j]=value
     self.functions[func_index][0].x_from=values[-3]
     self.functions[func_index][0].x_to=values[-2]

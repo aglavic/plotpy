@@ -52,7 +52,7 @@ ENCODING='iso_8859_1'
 # set the terminal options for the gnuplot output (postscript could need other labels)
 set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[font-path]',  'Arial.ttf')+'" [font-size]' #transparent
 # used is determined by file name
-set_output_terminal_ps='postscript landscape enhanced colour "Arial" [font-size] solid lw 2'
+set_output_terminal_ps='postscript landscape enhanced colour "Arial" 16 solid lw 2'
 
 # set output file name, the postfix has to be chosen consistant to the 'set term' statement
 output_file_name='[name]_[add_info][nr].png'

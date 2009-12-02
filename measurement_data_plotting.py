@@ -18,7 +18,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b4"
+__version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -419,9 +419,15 @@ def postscript_replace(string):
     Replace special characters when using Postscript export instead of png.
   '''
   # TODO: Add common characters for replacement.
-  return string.replace('\\316\\274','{/Symbol m}').\
-  replace('\\302\\267','\\267').\
-  replace('\\302\\260','\\260')
+  # mu, cdot, square, alpha, gamma, delta, Theta, degree
+  return string.replace('\xb5','{/Symbol m}').\
+  replace(u'\xb7','\\267').\
+  replace(u'\xb2','\\262').\
+  replace(u'\u03b1','{/Symbol a}').\
+  replace(u'\u03b3','{/Symbol g}').\
+  replace(u'\u03b4','{/Symbol d}').\
+  replace(u'\u03b8','{/Symbol T}').\
+  replace(u'\xb0','\\260')
 
 def further_replacement(string):
   '''
