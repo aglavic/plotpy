@@ -33,7 +33,8 @@ from measurement_data_structure import MeasurementData
 if 'dns.py' in os.listdir('.'):
   # if a configfile is inside the directory use this instead of the standard one.
   import config
-  config.__path__=[os.path.abspath('.')]
+  import dns
+  config.dns=dns
 import read_data.dns
 import config.dns
 
