@@ -30,11 +30,6 @@ import gtk
 from generic import GenericSession
 from measurement_data_structure import MeasurementData
 # importing data readout
-if 'dns.py' in os.listdir('.'):
-  # if a configfile is inside the directory use this instead of the standard one.
-  import config
-  import dns
-  config.dns=dns
 import read_data.dns
 import config.dns
 
@@ -153,6 +148,7 @@ class DNSSession(GenericSession):
 \t-sample [name]\tSet the name of your sample to be used in every plot(can be changed in GUI)
 \t-cz [zipfile]\tGet instrumental background, vanadium and NiCr files from .zip file and use it.
 \t\t\tThe files need to be in root directory inside the zip-file.
+\t-sep-nonmag\tSeperate scattering for non magnetic samples
 
 \t-files [prefix] [ooff] [inc] [from] [to] [postfix]
 \t\t\tExplicidly give the file name prefix, omega offset, increment, numbers and postfix

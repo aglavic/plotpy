@@ -3,6 +3,8 @@
   Configurations for the DNS file import.
 '''
 
+import os, sys
+
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
@@ -67,3 +69,9 @@ SEPERATION_PRESETS={
                     'spin incoherent' : [(4, '+', 4.5), (0, '-', 1.5), (2, '-', 1.5)],
                     'nuclear coherent' : [(5, '+', 1.), (6, '-', 0.5), (7, '-', 0.3333333)],
                     }
+
+
+if 'dns_config.py' in os.listdir('.'):
+  # if a configfile is inside the directory use it's settings.
+  sys.path.append('.')
+  from dns_config import *
