@@ -142,7 +142,10 @@ class DNSSession(GenericSession):
 
 \t-powder\t\tEvaluate as powder data
 \t-b\t\tSelect background file from system directory (normally from this reactor cycle)
-\t-bg [bg]\tFile to be substracted as background
+\t-bg [bg]\tAdd a file to subtract as background, can be specified multiple times.
+\t\t\tThe files used are selected via the helmholz and flipper currents and the
+\t\t\tdetector bank position.
+\t-bs [scaling]\tScale the background files by a constant factor (e.g. for strong absorbing samples)
 \t-fr [scp]\t\tTry to make automatic flipping-ratio correction with the scatteringpropability scp
 \t-v\t\tSelect vanadium file from system directory (normally from this reactor cycle)
 \t-vana [file]\tUse different Vanadium file for evaluation
@@ -223,6 +226,9 @@ class DNSSession(GenericSession):
     self.os_path_stuff() # create temp folder according to OS
     self.read_vana_bg_nicr_files() # read NiCr files for flipping-ratio correction
     self.try_import_externals()
+    if self.BACKGROUND_FILES:
+      for bg_file in self.BACKGROUND_FILES:
+        self.read_bg_file(bg_file, self.system_bg)
     names.sort()
     self.set_transformations()
     config.transformations.known_transformations+=self.TRANSFORMATIONS
@@ -539,38 +545,10 @@ class DNSSession(GenericSession):
           fc[2].flipping_correction=(not fc[0], fc[1], new)
           new.flipping_correction=(fc[0], fc[1], fc[2])
         dnsmap=new
-      if self.AUTO_BACKGROUND:
+      if self.AUTO_BACKGROUND or self.BACKGROUND_FILES:
         self.find_background_data(dnsmap)
       if self.AUTO_VANADIUM:
         self.find_vanadium_data(dnsmap)
-      if self.BACKGROUND_FILES:
-        bgs=map(read_data.dns.read_data, self.BACKGROUND_FILES)
-        bgs.sort(lambda b1, b2: cmp(b1.dns_info['detector_bank_2T'], b2.dns_info['detector_bank_2T']))
-        bgs_detectors=[b.dns_info['detector_bank_2T'] for b in bgs]
-        detectors=list(set(dnsmap.data[0].values))
-        detectors.sort()
-        dnsmap.background_data={}
-        # Select the background data with the closest detectorbank position
-        if len(bg)==1:
-          for angle in detectors:
-            dnsmap.background_data[angle]=bg[0]
-        else:
-          i=0
-          for angle in detectors:
-            while bg_detectors[i]<=angle:
-              if (i+1)<len(bg):
-                i+=1
-              else:
-                dnsmap.background_data[angle]=bg[i]
-                break
-            if bg_detectors[i]>angle:
-              if i==0:
-                dnsmap.background_data[angle]=bg[0]
-              else:
-                if bg_detectors[i]-angle < angle-bg_detectors[i-1]:
-                  dnsmap.background_data[angle]=bg[i]
-                else:
-                  dnsmap.background_data[angle]=bg[i-1]
       if self.VANADIUM_FILE:
         vana_data=read_data.dns.read_data(self.VANADIUM_FILE, print_comments=False)
         if vana_data!='NULL':
@@ -911,7 +889,6 @@ class DNSSession(GenericSession):
                              file_list)))
     # dictionaries with the helmholz parameters are used to store the data
     nicr_data={}
-    bg_data={}
     vana_data=None
     for file_name in nicr_files:
       dataset=read_data.dns.read_data(os.path.join(directory, file_name))
@@ -924,27 +901,10 @@ class DNSSession(GenericSession):
       c_c=round(float(dataset.dns_info['C_c']), 2)
       c_z=round(float(dataset.dns_info['C_z']), 2)
       nicr_data[(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)]=dataset
+    bg_data=self.system_bg
     for file_name in bg_files:
-      dataset=read_data.dns.read_data(os.path.join(directory, file_name))
-      if self.BACKGROUND_SCALING!=1.:
-        def scale_background(point):
-          out=[point[0]]
-          for pi in point[1:]:
-            out.append(pi*self.BACKGROUND_SCALING)
-          return out
-        dataset.process_function(scale_background)
-      dataset.name=file_name
-      flip=round(float(dataset.dns_info['flipper']), 2)
-      flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
-      c_a=round(float(dataset.dns_info['C_a']), 2)
-      c_b=round(float(dataset.dns_info['C_b']), 2)
-      c_c=round(float(dataset.dns_info['C_c']), 2)
-      c_z=round(float(dataset.dns_info['C_z']), 2)
-      key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
-      if key in bg_data:
-        bg_data[key].append(dataset)
-      else:
-        bg_data[key]=[dataset]
+      bg_file=os.path.join(directory, file_name)
+      self.read_bg_file(bg_file, bg_data)
     self.system_bg=bg_data
     # correct the background
     bg_corrected_data={}
@@ -1004,13 +964,13 @@ class DNSSession(GenericSession):
       else:
         vana_data=read_data.dns.read_data(os.path.join(directory, file_name))
         vana_data.name=file_name
-        detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
-        flip=round(float(dataset.dns_info['flipper']), 2)
-        flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
-        c_a=round(float(dataset.dns_info['C_a']), 2)
-        c_b=round(float(dataset.dns_info['C_b']), 2)
-        c_c=round(float(dataset.dns_info['C_c']), 2)
-        c_z=round(float(dataset.dns_info['C_z']), 2)
+        detector=round(float(vana_data.dns_info['detector_bank_2T']), 0)
+        flip=round(float(vana_data.dns_info['flipper']), 2)
+        flip_cmp=round(float(vana_data.dns_info['flipper_compensation']), 2)
+        c_a=round(float(vana_data.dns_info['C_a']), 2)
+        c_b=round(float(vana_data.dns_info['C_b']), 2)
+        c_c=round(float(vana_data.dns_info['C_c']), 2)
+        c_z=round(float(vana_data.dns_info['C_z']), 2)
         key=(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)
         if key in bg_data:
           # subtract backgound from vanadium if suitable is found.
@@ -1022,6 +982,40 @@ class DNSSession(GenericSession):
       for file_name in os.listdir(directory):
         os.remove(os.path.join(directory, file_name))
       os.rmdir(directory)      
+
+  def read_bg_file(self, bg_file, bg_data):
+    '''
+      Read one background file and add it to a dictionary.
+      The dictionary keys correspond to the flipper and helmholz
+      coil currents.
+      
+      @param bg_file File name to read from
+      @param bg_data The dictionary to write to
+    '''
+    dataset=read_data.dns.read_data(bg_file)
+    if dataset=='NULL':
+      # if there was a problem in the file return False
+      return False
+    if self.BACKGROUND_SCALING!=1.:
+      def scale_background(point):
+        out=[point[0]]
+        for pi in point[1:]:
+          out.append(pi*self.BACKGROUND_SCALING)
+        return out
+      dataset.process_function(scale_background)
+    dataset.name=os.path.split(bg_file)[1]
+    flip=round(float(dataset.dns_info['flipper']), 2)
+    flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+    c_a=round(float(dataset.dns_info['C_a']), 2)
+    c_b=round(float(dataset.dns_info['C_b']), 2)
+    c_c=round(float(dataset.dns_info['C_c']), 2)
+    c_z=round(float(dataset.dns_info['C_z']), 2)
+    key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
+    if key in bg_data:
+      bg_data[key].append(dataset)
+    else:
+      bg_data[key]=[dataset]
+    return True
   
   def correct_flipping_ratio(self, scattering_propability=0.1):
     '''
