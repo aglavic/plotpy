@@ -16,6 +16,7 @@
 # import external modules
 import os
 import sys
+from glob import glob
 exit=sys.exit
 # if possible use the numpy functions as they work with complete arrays
 try:
@@ -150,6 +151,11 @@ class DNSSession(GenericSession):
 \t\t\tThe files need to be in root directory inside the zip-file.
 \t-sep-nonmag\tSeperate scattering for non magnetic samples
 
+\t-fullauto\t\tSet -b, -v, -fr 0. and try to get all fiels settings automatically. If
+\t\t\ta setup*.zip file is in the present directory it is used for backgound, vanadium
+\t\t\tand flipping ratio correction. If ALWAYS_FULLAUTO option is set in config this
+\t\t\toption disables it.
+
 \t-files [prefix] [ooff] [inc] [from] [to] [postfix]
 \t\t\tExplicidly give the file name prefix, omega offset, increment, numbers and postfix
 \t\t\tfor the files to be used. Can be given multiple times for diefferent prefixes
@@ -168,11 +174,13 @@ class DNSSession(GenericSession):
   ]  
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'b', 'bg', 'bs', 'fr', 'v', 'vana', 'files', 
                                                           'sample', 'setup', 'cz', 'time', 'flipper', 'monitor', 
-                                                          'powder', 'xyz', 'sep-nonmag', 'split', 'dx', 'dy', 'nx', 'ny'] 
+                                                          'powder', 'xyz', 'sep-nonmag', 'split', 'fullauto', 
+                                                          'dx', 'dy', 'nx', 'ny'] 
   file_options={'default': ['', 0, 1, [0, -1], ''],  # (prefix, omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[] # A list of all filenames to be imported
   mds_create=False # DNS data is not stored as .mds files as the import is fast
+  FULLAUTO=config.dns.ALWAYS_FULLAUTO
   VANADIUM_FILE=config.dns.VANADIUM_FILE # File name of vanadium file to be used for the correction
   BACKGROUND_FILES=None # File name of a background file to substract
   BACKGROUND_SCALING=1. # Factor to scale the background
@@ -215,10 +223,15 @@ class DNSSession(GenericSession):
     if names==None: # read_arguments returns none, if help option is set
       print self.LONG_HELP + self.SPECIFIC_HELP + self.LONG_HELP_END
       exit()
-    elif (len(self.prefixes) < 1) and (len(names)<1): # show help, if there is no file in the list
+    elif (len(self.prefixes) < 1) and (len(names)<1) and not self.FULLAUTO: # show help, if there is no file in the list
       print self.SHORT_HELP
       exit()
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
+    if self.FULLAUTO:
+      if len(names)==0:
+        names=glob('*')
+      self.initialize_fullauto(names)
+      names=[]
     self.os_path_stuff() # create temp folder according to OS
     self.read_vana_bg_nicr_files() # read NiCr files for flipping-ratio correction
     self.try_import_externals()
@@ -246,6 +259,101 @@ class DNSSession(GenericSession):
     self.active_file_data=self.file_data[self.prefixes[0]]
     self.active_file_name=self.prefixes[0]
   
+  def initialize_fullauto(self, names):
+    '''
+      Initializing the fullauto session, which tries to set every options
+      from the file names and the informations in the datafiles.
+      
+      @param names List of filenames to be used
+    '''
+    print "Initializing full automatic session..."
+    self.AUTO_BACKGROUND=True
+    self.AUTO_VANADIUM=True
+    self.CORRECT_FLIPPING=True
+    self.SCATTERING_PROPABILITY=0.
+    if not self.CORRECTION_ZIP:
+      szf=glob('setup*.zip')
+      if len(szf)>0:
+        self.CORRECTION_ZIP=szf[-1]
+        print "\tUsing setup files from %s." % szf[-1]
+    self.find_prefixes(names)
+    print "\tFound %i continous sequences. Trying to split those by Temperature." % len(self.prefixes)
+    new_prefixes=[]
+    new_options={}
+    for prefix in self.prefixes:
+      splits=[0]
+      options=self.file_options[prefix]
+      temperatures, currents=self.get_temp_current_infos(options)
+      tempi=temperatures[0]
+      for i, temp in enumerate(temperatures):
+        # Get indices of files which have different temperatures
+        if temp!=tempi:
+          tempi=temp
+          splits.append(i)
+      splits.append(i+1)
+      for i, split in enumerate(splits[:-1]):
+        name=glob("%s*%i%s" % (options[0], options[3][0]+split, options[4]))[0]
+        # get number of different helmholz, flipper settings
+        inc=len(set(currents[split:splits[i+1]+1]))
+        new_prefixes.append(name)
+        pre=options[0]+"0".join(["" for j in range(
+            len(str(options[3][1]))-len(str(splits[i+1]+1)))])
+        new_options[name]=(pre, 
+                            options[1], 
+                            inc, 
+                            (split+1, splits[i+1]), 
+                            options[4])
+    self.prefixes=new_prefixes
+    self.file_options=new_options
+    print "... initialization ready, writing options to 'last_fullauto.txt'."
+    file_handler=open('last_fullauto.txt', 'w')
+    file_handler.write('dnsplot -b -v -fr 0. ')
+    for prefix in self.prefixes: 
+      values=self.file_options[prefix]
+      file_handler.write('\\\n-files %s %i %i %i %i %s ' % (
+                                                         values[0], values[1], 
+                                                         values[2], values[3][0],  
+                                                         values[3][1], values[4]
+                                                         ))
+    file_handler.write('\n')
+    file_handler.close()
+
+  def get_temp_current_infos(self, options):
+    '''
+      Get the temperature and current infos from all files in
+      one sequence defined by options.
+    '''
+    temperatures=[]
+    currents=[]
+    file_list=glob("%s*%s" % (options[0], options[4]))
+    if len(file_list)==0:
+      return None
+    file_list.sort()
+    for file_name in file_list:
+      # get integer number of the file, catch errors form wrong file selection
+      try:
+        active_number=int(file_name.rsplit(options[4])[0].split(options[0], 1)[1])
+      except ValueError:
+        continue
+      if (active_number>=options[3][0]) and (active_number<=options[3][1] or options[3][1]==-1):
+        # read the datafile into a MeasurementData object.
+        file_handler=open(file_name, 'r')
+        # Currents
+        currents.append((
+                         round(read_data.dns.read_info(file_handler, 'Flipper_precession'), 2), 
+                         round(read_data.dns.read_info(file_handler, 'Flipper_z_compensation'), 2), 
+                         round(read_data.dns.read_info(file_handler, 'C_a'), 2), 
+                         round(read_data.dns.read_info(file_handler, 'C_b'), 2), 
+                         round(read_data.dns.read_info(file_handler, 'C_c'), 2), 
+                         round(read_data.dns.read_info(file_handler, 'C_z'), 2)
+                         )
+                        )
+        # Temperature
+        temperatures.append(read_data.dns.read_info(file_handler, 'T1'))
+      temperatures=map(lambda temp: round(temp/config.dns.FULLAUTO_TEMP_SENSITIVITY, 0)\
+                                 *config.dns.FULLAUTO_TEMP_SENSITIVITY, temperatures)
+    return temperatures, currents
+
   def read_argument_add(self, argument, last_argument_option=[False, '']):
     '''
       Additional command line arguments for dns sessions
@@ -373,6 +481,8 @@ class DNSSession(GenericSession):
         else:
           found=False
         #--------------- explicit file setting ---------------------------
+      elif argument=='-fullauto':
+        self.FULLAUTO=not self.FULLAUTO
       elif argument=='-b':
         self.AUTO_BACKGROUND=True
       elif argument=='-v':
@@ -714,7 +824,7 @@ class DNSSession(GenericSession):
         if int(found_prefixes[(prefix, postfix)][2])+1==int(number):
           found_prefixes[(prefix, postfix)][2]=number
         else:
-          found_prefixes[(prefix+'_%s' % found_prefixes[prefix][1], postfix)]=found_prefixes[(prefix, postfix)]
+          found_prefixes[(prefix+'_%s' % found_prefixes[(prefix, postfix)][1], postfix)]=found_prefixes[(prefix, postfix)]
           found_prefixes[(prefix, postfix)]=[prefix, number, number, postfix]
       else:
         found_prefixes[(prefix, postfix)]=[prefix, number, number, postfix]
@@ -1641,7 +1751,11 @@ class DNSMeasurementData(MeasurementData):
       other.process_function(other.copy_intensities)
     sys.stdout.write("flipping-ratio: ")
     sys.stdout.flush()
-    converged=self.make_flipping_correction([self.flipping_correction[1], self, other], self.scattering_propability)
+    try:
+      converged=self.make_flipping_correction([self.flipping_correction[1], self, other], self.scattering_propability)
+    except ValueError:
+      sys.stdout.write("different data length")
+      sys.stdout.flush()      
     if not self.vanadium_data is None:
       sys.stdout.write("up-vanadium, ")
       sys.stdout.flush()

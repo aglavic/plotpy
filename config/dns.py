@@ -9,7 +9,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b4"
+__version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -25,6 +25,9 @@ SETUP_DIRECTORY='/home/glavic/Daten/DNS/setup/rc21' # directory to look for last
 NICR_FILE_WILDCARD=('', 'nicr.d_dat') # nicr files start, end string
 BACKGROUND_WILDCARD=('', 'leer.d_dat') # background file start, end string
 VANADIUM_WILDCARD=('', 'vana.d_dat') # background file start, end string
+
+ALWAYS_FULLAUTO=False
+FULLAUTO_TEMP_SENSITIVITY=5.
 
 # mapping of the parameter names in the DNS data files
 GET_INFO= (\
