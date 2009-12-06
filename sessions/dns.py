@@ -693,14 +693,15 @@ class DNSSession(GenericSession):
       @param names A list of file names to process
     '''
     names.sort()
+    names=filter(lambda item: item.endswith('.d_dat'), names)
     def split_prefix_postfix(name):
       '''Split a file name for a string prefix,postfix and a number in the middle.'''
       pre_index=max(0, name.rfind(os.sep))
-      post_index=len(name)
       while not name[pre_index].isdigit():
         pre_index+=1
-      while not name[post_index-1].isdigit():
-        post_index-=1
+      post_index=pre_index
+      while name[post_index].isdigit():
+        post_index+=1
       prefix=name[0:pre_index]
       number=name[pre_index:post_index]
       postfix=name[post_index:]
@@ -709,32 +710,35 @@ class DNSSession(GenericSession):
     # find number ranges which belong together and store them in a dictionary with prefix as index
     found_prefixes={}
     for prefix, number, postfix in names_pre_post:
-      if prefix in found_prefixes:
-        if int(found_prefixes[prefix][2])+1==int(number):
-          found_prefixes[prefix][2]=number
+      if (prefix, postfix) in found_prefixes:
+        if int(found_prefixes[(prefix, postfix)][2])+1==int(number):
+          found_prefixes[(prefix, postfix)][2]=number
         else:
-          found_prefixes[prefix+'_%s' % found_prefixes[prefix][1]]=found_prefixes[prefix]
-          found_prefixes[prefix]=[prefix, number, number, postfix]
+          found_prefixes[(prefix+'_%s' % found_prefixes[prefix][1], postfix)]=found_prefixes[(prefix, postfix)]
+          found_prefixes[(prefix, postfix)]=[prefix, number, number, postfix]
       else:
-        found_prefixes[prefix]=[prefix, number, number, postfix]
-    for item in found_prefixes.items():
+        found_prefixes[(prefix, postfix)]=[prefix, number, number, postfix]
+    for item in found_prefixes.values():
       i=0
-      while item[1][1][:i]==item[1][2][:i]:
+      while item[1][:i]==item[2][:i]:
         i+=1
-        if i>len(item[1][1]):
-          print "Sorry, could not get prefixes right, try -files option."
-          exit()
-      if len(item[1][0].rsplit(os.sep, 1))==1:
+        if i>len(item[1]):
+          print "Sorry, could not get prefixes right, for %s." % (item[0]+item[1]+item[3]+'-'+\
+                                                                  item[0]+item[2]+item[3])
+          break
+      if i>len(item[1]):
+        continue
+      if len(item[0].rsplit(os.sep, 1))==1:
         add_folder='./'
       else:
         add_folder=''
-      self.prefixes.append(add_folder+item[1][0]+item[1][1]+item[1][3])
-      self.file_options[add_folder+item[1][0]+item[1][1]+item[1][3]]=[item[1][0]+item[1][1][:i-1], 
+      self.prefixes.append(add_folder+item[0]+item[1]+item[3])
+      self.file_options[add_folder+item[0]+item[1]+item[3]]=[item[0]+item[1][:i-1], 
                                                            self.file_options['default'][1], 
                                                            self.file_options['default'][2], 
-                                                           [int(item[1][1][i-1:]), 
-                                                           int(item[1][2][i-1:])], 
-                                                           item[1][3]]    
+                                                           [int(item[1][i-1:]), 
+                                                           int(item[2][i-1:])], 
+                                                           item[3]]    
   
   def split_sequences(self, length):
     '''
