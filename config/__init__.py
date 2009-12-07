@@ -50,6 +50,10 @@ if not os.access(__path__[0], os.W_OK):
             type(getattr(active_config, name)) is type(os):
             continue
           export_file.write('%s = %s\n' % (name, getattr(active_config, name).__repr__()))
+        # for code executed when importing the modules we would loose information
+        # so this code is doubled in the __configadd__ variable.
+        if '__configadd__' in dir(active_config):
+          export_file.write(active_config.__configadd__)
         export_file.close()
   # reassociate this module to use the user files
   __path__=[user_path]

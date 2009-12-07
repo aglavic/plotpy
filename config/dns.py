@@ -78,3 +78,12 @@ if 'dns_config.py' in os.listdir('.'):
   # if a configfile is inside the directory use it's settings.
   sys.path.append('.')
   from dns_config import *
+
+# This is a variable to write the above code to config files created by the binary program
+# see config.__init__ for more information
+__configadd__="""
+if 'dns_config.py' in os.listdir('.'):
+  # if a configfile is inside the directory use it's settings.
+  sys.path.append('.')
+  from dns_config import *
+"""
