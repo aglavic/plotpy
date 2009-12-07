@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Werner Schweika"]
 __license__ = "None"
-__version__ = "0.6b4"
+__version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -1189,7 +1189,8 @@ class DNSSession(GenericSession):
         else:
           print "To many chanels for %s, skipping." % str(key)
       else:
-        print "\tNo NiCr data file found for the Settings:\n\t\tdetector bank: %g; helmholz currents:%i,%i,%i,%i" %( key[0], key[3], key[4], key[5], key[6] )
+        print "\tNo NiCr data file found for the Settings:\n\t\tdetector bank: %g; helmholz currents:%i,%i,%i,%i" %( 
+                                                                            key[0], key[3], key[4], key[5], key[6] )
     # calculate flipping-ration from nicr data
     if use_numpy:
       def calc_flipping_ratio(point):
