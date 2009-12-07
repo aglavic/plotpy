@@ -49,7 +49,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b4"
+__version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -1119,7 +1119,7 @@ class ApplicationMainWindow(gtk.Window):
       trans_box.append_text('%s -> %s' % (trans[0], trans[-1]))
     transformations_dialog=gtk.Dialog(title='Transform Units/Dimensions:')
     transformations_dialog.set_default_size(600,150)
-    transformations_dialog.add_action_widget(trans_box, 2)
+    transformations_dialog.get_action_area().pack_end(trans_box,False)
     transformations_dialog.add_button('Add transformation',2)
     transformations_dialog.add_button('Apply changes',1)
     transformations_dialog.add_button('Cancel',0)
