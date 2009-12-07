@@ -280,6 +280,7 @@ class DNSSession(GenericSession):
     print "\tFound %i continous sequences. Trying to split those by Temperature." % len(self.prefixes)
     new_prefixes=[]
     new_options={}
+    discarded=[]
     for prefix in self.prefixes:
       splits=[0]
       options=self.file_options[prefix]
@@ -287,35 +288,57 @@ class DNSSession(GenericSession):
       tempi=temperatures[0]
       for i, temp in enumerate(temperatures):
         # Get indices of files which have different temperatures
-        if temp!=tempi:
+        if temp-tempi>config.dns.FULLAUTO_TEMP_SENSITIVITY:
           tempi=temp
           splits.append(i)
       splits.append(i+1)
       for i, split in enumerate(splits[:-1]):
         name=glob("%s*%i%s" % (options[0], options[3][0]+split, options[4]))[0]
         # get number of different helmholz, flipper settings
-        inc=len(set(currents[split:splits[i+1]+1]))
-        new_prefixes.append(name)
-        pre=options[0]+"0".join(["" for j in range(
-            len(str(options[3][1]))-len(str(splits[i+1]+1)))])
-        new_options[name]=(pre, 
-                            options[1], 
-                            inc, 
-                            (split+1, splits[i+1]), 
-                            options[4])
+        inc=1
+        curi=currents[split]
+        for j in range(1, splits[i+1]-split):
+          if currents[split+j]==curi:
+            break
+          else:
+            inc+=1
+        if (splits[i+1]-split)%inc!=0:
+          discarded.append((pre, 
+                              options[1], 
+                              inc, 
+                              (split+options[3][0], splits[i+1]+options[3][0]-1), 
+                              options[4]))
+        else:
+          new_prefixes.append(name)
+          pre=options[0]+"0".join(["" for j in range(
+              len(str(options[3][1]))-len(str(splits[i+1]+1)))])
+          new_options[name]=(pre, 
+                              options[1], 
+                              inc, 
+                              (split+options[3][0], splits[i+1]+options[3][0]-1), 
+                              options[4])
+    print "\tSplitted into %i sequences, using %i and discarding %i." % (len(new_prefixes)+len(discarded), len(new_prefixes), len(discarded))
     self.prefixes=new_prefixes
     self.file_options=new_options
-    print "... initialization ready, writing options to 'last_fullauto.txt'."
+    print "... initialization ready, writing options to 'last_fullauto.txt'.\n"
     file_handler=open('last_fullauto.txt', 'w')
     file_handler.write('dnsplot -b -v -fr 0. ')
+    if self.CORRECTION_ZIP:
+      file_handler.write('-cz %s ' % self.CORRECTION_ZIP)
     for prefix in self.prefixes: 
       values=self.file_options[prefix]
-      file_handler.write('\\\n-files %s %i %i %i %i %s ' % (
+      file_handler.write('\\\n-files %s %.1f %i %i %i %s ' % (
                                                          values[0], values[1], 
                                                          values[2], values[3][0],  
                                                          values[3][1], values[4]
                                                          ))
     file_handler.write('\n')
+    for values in discarded: 
+      file_handler.write('# -files %s %.1f %i %i %i %s \n' % (
+                                                         values[0], values[1], 
+                                                         values[2], values[3][0],  
+                                                         values[3][1], values[4]
+                                                         ))
     file_handler.close()
 
   def get_temp_current_infos(self, options):
@@ -341,7 +364,7 @@ class DNSSession(GenericSession):
         # Currents
         currents.append((
                          round(read_data.dns.read_info(file_handler, 'Flipper_precession'), 2), 
-                         round(read_data.dns.read_info(file_handler, 'Flipper_z_compensation'), 2), 
+                         #round(read_data.dns.read_info(file_handler, 'Flipper_z_compensation'), 2), 
                          round(read_data.dns.read_info(file_handler, 'C_a'), 2), 
                          round(read_data.dns.read_info(file_handler, 'C_b'), 2), 
                          round(read_data.dns.read_info(file_handler, 'C_c'), 2), 
@@ -350,8 +373,6 @@ class DNSSession(GenericSession):
                         )
         # Temperature
         temperatures.append(read_data.dns.read_info(file_handler, 'T1'))
-      temperatures=map(lambda temp: round(temp/config.dns.FULLAUTO_TEMP_SENSITIVITY, 0)\
-                                 *config.dns.FULLAUTO_TEMP_SENSITIVITY, temperatures)
     return temperatures, currents
 
   def read_argument_add(self, argument, last_argument_option=[False, '']):
@@ -642,7 +663,7 @@ class DNSSession(GenericSession):
     for dnsmap in self.active_file_data:
       sys.stdout.write("\tMap %s created, perfoming datatreatment: " % dnsmap.number)
       sys.stdout.flush()
-      if self.POWDER_DATA:
+      if self.POWDER_DATA or len(set(dnsmap.data[1].values))==1:
         new=dnsmap.prepare_powder_data()
         self.active_file_data[self.active_file_data.index(dnsmap)]=new
         if dnsmap.flipping_correction:
@@ -680,7 +701,7 @@ class DNSSession(GenericSession):
       if self.TRANSFORM_Q:
         dnsmap.unit_trans(self.TRANSFORMATIONS)
     # Seperate scattering for powder data x,y,z polarization analysis
-    if self.XYZ_POL and self.POWDER_DATA and self.CORRECT_FLIPPING:
+    if self.XYZ_POL and (self.POWDER_DATA or len(set(dnsmap.data[1].values))==1) and self.CORRECT_FLIPPING:
       self.separate_scattering_xyz(self.active_file_data)
     if self.SEPARATE_NONMAG:
       self.separate_scattering_nonmag(self.active_file_data)
@@ -1168,7 +1189,7 @@ class DNSSession(GenericSession):
         else:
           print "To many chanels for %s, skipping." % str(key)
       else:
-        print "NiCr for detector: %g; currents:%i,%i,%i,%i not Found!" %( key[0], key[3], key[4], key[5], key[6] )
+        print "\tNo NiCr data file found for the Settings:\n\t\tdetector bank: %g; helmholz currents:%i,%i,%i,%i" %( key[0], key[3], key[4], key[5], key[6] )
     # calculate flipping-ration from nicr data
     if use_numpy:
       def calc_flipping_ratio(point):
