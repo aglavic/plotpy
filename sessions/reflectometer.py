@@ -40,7 +40,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b4"
+__version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -95,7 +95,7 @@ class ReflectometerSession(GenericSession):
     GenericSession.__init__(self, arguments)
     
   
-  def read_argument_add(self, argument, last_argument_option=[False, '']):
+  def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
     '''
       additional command line arguments for reflectometer sessions
     '''

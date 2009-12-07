@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6b4"
+__version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -299,7 +299,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
           self.DEBUG=True
         else:
           # evaluate child arguments
-          found_add, last_argument_option=self.read_argument_add(argument,  last_argument_option)
+          found_add, last_argument_option=self.read_argument_add(argument,  last_argument_option, input_file_names)
           if not found_add:
             if argument[1:len(argument)] in self.COMMANDLINE_OPTIONS:
               last_argument_option=[True,argument[1:len(argument)]]
@@ -309,7 +309,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         input_file_names.append(argument)
     return input_file_names
       
-  def read_argument_add(self, argument, last_argument_option=[False, '']):
+  def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
     '''
       Dummi function for child classes, which makes it possible to
       add command line options for them.

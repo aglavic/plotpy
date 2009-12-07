@@ -37,7 +37,7 @@ __license__ = "None"
 __version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
-__status__ = "Development"
+__status__ = "Production"
 
 class TreffSession(GenericSession):
   '''
@@ -48,6 +48,10 @@ class TreffSession(GenericSession):
 '''
 \tTREFF-Data treatment:
 \t-no-img\tOnly import the detector window data, not the 2d-maps.
+
+\t-add [file] [join]\tAdd data of file to that of the last given filename.
+\t\t\tjoin can be -1,0 and 1, meaning get data from both, or only first/second dataset
+\t\t\tif there is a conflict.
 '''
   #------------------ help text strings ---------------
 
@@ -71,6 +75,7 @@ class TreffSession(GenericSession):
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img'] 
   replot=None 
+  add_to_files={}
   #------------------ local variables -----------------
 
   
@@ -83,7 +88,7 @@ class TreffSession(GenericSession):
     GenericSession.__init__(self, arguments)
     self.file_actions_addon['extract_specular_reflectivity']=self.do_extract_specular_reflectivity
   
-  def read_argument_add(self, argument, last_argument_option=[False, '']):
+  def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
     '''
       additional command line arguments for squid sessions
     '''
@@ -91,7 +96,16 @@ class TreffSession(GenericSession):
     if (argument[0]=='-') or last_argument_option[0]:
       # Cases of arguments:
       if last_argument_option[0]:
-        found=False
+        if last_argument_option[1]=='add':
+          if len(input_file_names)>0:
+            if input_file_names[-1] in self.add_to_files:
+              self.add_to_files[input_file_names[-1]].append(argument)
+            else:
+              self.add_to_files[input_file_names[-1]]=[argument]
+          else:
+            last_argument_option=[False,'']            
+        else:
+          found=False
       elif argument=='-no-img':
         self.import_images=False
         found=True
@@ -104,7 +118,13 @@ class TreffSession(GenericSession):
     '''
       Function to read data files.
     '''
-    return read_data.treff.read_data(file_name, self.SCRIPT_PATH, self.import_images)
+    data=read_data.treff.read_data(file_name, self.SCRIPT_PATH, self.import_images)
+    if file_name in self.add_to_files:
+      for name in self.add_to_files[file_name]:
+        add_data=read_data.treff.read_data(name, self.SCRIPT_PATH, self.import_images)
+        for i, dataset in enumerate(data):
+          dataset.append(add_data[i])
+    return data
 
 
   def create_menu(self):

@@ -18,7 +18,7 @@ __license__ = "None"
 __version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
-__status__ = "Development"
+__status__ = "Production"
 
 def read_data(file_name, print_comments=True):
   '''

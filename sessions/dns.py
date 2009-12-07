@@ -41,7 +41,7 @@ __license__ = "None"
 __version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
-__status__ = "Development"
+__status__ = "Production"
 
 # functions for evaluation of polarized neutron measurements
 def correct_flipping_ratio(flipping_ratio, pp_data, pm_data, 
@@ -375,7 +375,7 @@ class DNSSession(GenericSession):
         temperatures.append(read_data.dns.read_info(file_handler, 'T1'))
     return temperatures, currents
 
-  def read_argument_add(self, argument, last_argument_option=[False, '']):
+  def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
     '''
       Additional command line arguments for dns sessions
     '''

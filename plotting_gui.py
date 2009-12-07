@@ -1612,7 +1612,7 @@ class ApplicationMainWindow(gtk.Window):
     actions_table=gtk.Table(len(buttons),1,False)
     for i, button in enumerate(buttons):
       actions_table.attach(button, i, i+1, 0, 1, gtk.FILL, gtk.FILL, 0, 0);
-    fit_dialog.vbox.pack_end(actions_table, expand=False, fill=True, padding=0)
+    fit_dialog.get_action_area().pack_end(actions_table, expand=False, fill=True, padding=0)
     fit_dialog.show_all()
     self.open_windows.append(fit_dialog)
 

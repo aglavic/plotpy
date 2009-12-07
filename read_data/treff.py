@@ -9,6 +9,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import os
 import math
+from copy import deepcopy
 from measurement_data_structure import MeasurementData
 from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, PIXEL_WIDTH
 
@@ -16,10 +17,67 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.6b4"
+__version__ = "0.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
-__status__ = "Development"
+__status__ = "Production"
+
+class MeasurementDataTREFF(MeasurementData):
+  '''
+    Treff measurement data class, defining functions
+    to combine two sets of measurements.
+  '''
+  
+  def __init__(self, *args, **opts):
+    MeasurementData.__init__(self, *args, **opts)
+  
+  def join(self, other, join_type=0):
+    '''
+      Append the data of an other object to this object.
+      
+      @param join_type Tell function which objects parameters to use, if there is a conflict. 0=this, 1=other, -1=both
+      
+      @return Another MeasurementDataTREFF instance.
+    '''
+    if self.zdata!=other.zdata:
+      return None
+    if self.zdata>=0:
+      return self.join3d(other, join_type)
+    if join_type==1:
+      new=deepcopy(other)
+      add_obj=self
+    else:
+      new=deepcopy(self)
+      add_obj=other
+    xdata=new.data[0].values
+    for point in add_obj:
+      if point[0] in xdata and not join_type==-1:
+        continue
+      else:
+        new.append(point)
+    return new
+
+  def join3d(self, other, join_type):
+    '''
+      Append the data of an other object to this object, called if self is a 3d dataset.
+      
+      @param join_type Tell function which objects parameters to use, if there is a conflict. 0=this, 1=other, -1=both
+      
+      @return Another MeasurementDataTREFF instance.
+    '''
+    if join_type==1:
+      new=deepcopy(other)
+      add_obj=self
+    else:
+      new=deepcopy(self)
+      add_obj=other
+    xdata=new.data[0].values
+    for point in add_obj:
+      if point[0] in xdata and not join_type==-1:
+        continue
+      else:
+        new.append(point)
+    return new
 
 def read_data(file_name, script_path, import_images):
   '''
@@ -174,7 +232,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
   '''
   sqrt=math.sqrt
   # create the data object
-  scan_data_object=MeasurementData([[columns['Scantype'], 'mrad'], 
+  scan_data_object=MeasurementDataTREFF([[columns['Scantype'], 'mrad'], 
                                ['2DWindow', 'counts'], 
                                ['DetectorTotal', 'counts'], 
                                ['error','counts'], 
@@ -184,7 +242,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                ['Intensity(time)', 'counts/s'], 
                                ['error(time)','counts/s']], 
                               [], 0, 5, 6)
-  data_object=MeasurementData([['\316\261_i', 'mrad'], 
+  data_object=MeasurementDataTREFF([['\316\261_i', 'mrad'], 
                                ['\316\261_f', 'mrad'], 
                                ['\316\261_i+\316\261_f', 'mrad'], 
                                ['\316\261_i-\316\261_f', 'mrad'], 
