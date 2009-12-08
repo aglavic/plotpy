@@ -74,18 +74,18 @@ class FitFunction:
     if yerror==None: # is error list given?
       # if function is defined for arrays (e.g. numpy) use this functionality
       try:
-        err=y-function(function_parameters, x)
+        err=function(function_parameters, x)-y
       except TypeError:
         # x and y are lists and the function is only defined for one point.
-        err= map((lambda x_i: y[x.index(x_i)]-function(function_parameters, x_i)), x)
+        err= map((lambda x_i: function(function_parameters, x_i)-y[x.index(x_i)]), x)
       return err
     else:
       # if function is defined for arrays (e.g. numpy) use this functionality
       try:
-        err=(y-function(function_parameters, x))/yerror
+        err=(function(function_parameters, x)-y)/yerror
       except TypeError:
         # x and y are lists and the function is only defined for one point.
-        err= map((lambda x_i: (y[x.index(x_i)]-function(function_parameters, x_i))/yerror[x.index(x_i)]), x)
+        err= map((lambda x_i: (function(function_parameters, x_i)-y[x.index(x_i)])/yerror[x.index(x_i)]), x)
       return err      
   
   def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
@@ -131,12 +131,24 @@ class FitFunction:
           else:
             new_function_parameters.append(self.parameters[i])      
       self.set_parameters(new_function_parameters)
+    # calculate the covariance matrix from cov_x, see scipy.optimize.leastsq help for details.
+    if (len(y) > len(parameters)) and cov_x is not None:
+      if dataset_yerror:
+        s_sq = (numpy.array(self.residuals(new_function_parameters, y, x, dy))**2).sum()/\
+                                         (len(y)-len(parameters))        
+        s_sq /= ((1./numpy.array(dy))**2).sum()
+      else:
+        s_sq = (numpy.array(self.residuals(new_function_parameters, y, x))**2).sum()/\
+                                         (len(y)-len(parameters))        
+      cov = cov_x * s_sq
+    else:
+      cov = inf    
     cov_out=[]
     for i in range(len(self.parameters)):
       cov_out.append([])
       for j in range(len(self.parameters)):
-        if (cov_x is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
-          cov_out[i].append(cov_x[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
+        if (cov is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
+          cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
         else:
           cov_out[i].append(0.)
     return mesg, cov_out
@@ -445,7 +457,7 @@ class FitBrillouineT(FitFunction):
       the state of the fit.
     '''
     err=FitFunction.residuals(self, params, y, x, yerror=None)
-    print "End of iteration %i, chi is now %.6g" % (self.iteration, sum(err))
+    print "End of function call %i, chi is now %.6g" % (self.iteration, sum(err))
     self.iteration+=1
     return err
   
