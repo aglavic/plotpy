@@ -73,7 +73,7 @@ class TreffSession(GenericSession):
   max_iter=50 # maximal iterations in fit
   max_hr=5000 # Parameter in fit_pnr_multi
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img'] 
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add'] 
   replot=None 
   add_to_files={}
   #------------------ local variables -----------------
@@ -102,8 +102,7 @@ class TreffSession(GenericSession):
               self.add_to_files[input_file_names[-1]].append(argument)
             else:
               self.add_to_files[input_file_names[-1]]=[argument]
-          else:
-            last_argument_option=[False,'']            
+          last_argument_option=[False,'']            
         else:
           found=False
       elif argument=='-no-img':
@@ -121,9 +120,11 @@ class TreffSession(GenericSession):
     data=read_data.treff.read_data(file_name, self.SCRIPT_PATH, self.import_images)
     if file_name in self.add_to_files:
       for name in self.add_to_files[file_name]:
+        print "Trying to import for adding '%s'" % name
         add_data=read_data.treff.read_data(name, self.SCRIPT_PATH, self.import_images)
         for i, dataset in enumerate(data):
-          dataset.append(add_data[i])
+          print "Adding dataset %i from '%s'" %(i, name)
+          data[i]=dataset.join(add_data[i])
     return data
 
 

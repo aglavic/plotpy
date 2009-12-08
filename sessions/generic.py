@@ -257,7 +257,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
             self.seq_inc=int(argument)
             last_argument_option=[False,'']
           else:
-            found_add, last_argument_option=self.read_argument_add(argument,  last_argument_option)
+            found_add, last_argument_option=self.read_argument_add(argument,  last_argument_option, input_file_names)
             if not found_add:
               input_file_names.append(argument)
               last_argument_option=[False,'']

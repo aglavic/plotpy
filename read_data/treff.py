@@ -71,12 +71,11 @@ class MeasurementDataTREFF(MeasurementData):
     else:
       new=deepcopy(self)
       add_obj=other
-    xdata=new.data[0].values
+    xydata=["%f,%f" % (new.data[0].values[i], new.data[1].values[i]) for i in range(len(new.data[0].values))]
     for point in add_obj:
-      if point[0] in xdata and not join_type==-1:
+      if "%f,%f" % (point[0], point[1]) in xydata:
         continue
-      else:
-        new.append(point)
+      new.append(point)
     return new
 
 def read_data(file_name, script_path, import_images):
