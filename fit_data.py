@@ -119,6 +119,7 @@ class FitFunction:
       fit_args=(y, x, dy)
     new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=fit_args, full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
+    cov=cov_x
     if ier in [1, 2, 3, 4]:
       if len(parameters)==1:
         new_function_parameters=list(self.parameters)
@@ -141,16 +142,14 @@ class FitFunction:
           s_sq = (numpy.array(self.residuals(new_function_parameters, y, x))**2).sum()/\
                                            (len(y)-len(parameters))        
         cov = cov_x * s_sq
-      else:
-        cov = cov_x    
-      cov_out=[]
-      for i in range(len(self.parameters)):
-        cov_out.append([])
-        for j in range(len(self.parameters)):
-          if (cov is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
-            cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
-          else:
-            cov_out[i].append(0.)
+    cov_out=[]
+    for i in range(len(self.parameters)):
+      cov_out.append([])
+      for j in range(len(self.parameters)):
+        if (cov is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
+          cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
+        else:
+          cov_out[i].append(0.)
     return mesg, cov_out
 
   def set_parameters(self, new_params):
