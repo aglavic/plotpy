@@ -132,25 +132,25 @@ class FitFunction:
             new_function_parameters.append(self.parameters[i])      
       self.set_parameters(new_function_parameters)
     # calculate the covariance matrix from cov_x, see scipy.optimize.leastsq help for details.
-    if (len(y) > len(parameters)) and cov_x is not None:
-      if dataset_yerror:
-        s_sq = (numpy.array(self.residuals(new_function_parameters, y, x, dy))**2).sum()/\
-                                         (len(y)-len(parameters))        
-        s_sq /= ((1./numpy.array(dy))**2).sum()
-      else:
-        s_sq = (numpy.array(self.residuals(new_function_parameters, y, x))**2).sum()/\
-                                         (len(y)-len(parameters))        
-      cov = cov_x * s_sq
-    else:
-      cov = inf    
-    cov_out=[]
-    for i in range(len(self.parameters)):
-      cov_out.append([])
-      for j in range(len(self.parameters)):
-        if (cov is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
-          cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
+      if (len(y) > len(parameters)) and cov_x is not None:
+        if dataset_yerror:
+          s_sq = (numpy.array(self.residuals(new_function_parameters, y, x, dy))**2).sum()/\
+                                           (len(y)-len(parameters))        
+          s_sq /= ((1./numpy.array(dy))**2).sum()
         else:
-          cov_out[i].append(0.)
+          s_sq = (numpy.array(self.residuals(new_function_parameters, y, x))**2).sum()/\
+                                           (len(y)-len(parameters))        
+        cov = cov_x * s_sq
+      else:
+        cov = cov_x * 0.    
+      cov_out=[]
+      for i in range(len(self.parameters)):
+        cov_out.append([])
+        for j in range(len(self.parameters)):
+          if (cov is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
+            cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
+          else:
+            cov_out[i].append(0.)
     return mesg, cov_out
 
   def set_parameters(self, new_params):
@@ -451,6 +451,9 @@ class FitBrillouineT(FitFunction):
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(4)
   
+  def simulate(self, x, ignore=None):
+    return FitFunction.simulate(self, x, interpolate=1)
+  
   def residuals(self, params, y, x, yerror=None):
     '''
       As the fit with fsolve is quite slow we tell the user about
@@ -478,7 +481,7 @@ class FitBrillouineT(FitFunction):
     c=g*self.muB*J/self.kB
     Ms=g*J*self.muB*p[3]
     B=p[4]
-    return d/tanh(d*c*(p[0]*M/T+B/T))-(d-1)/tanh((d-1)*c*(p[0]*M/T+B/T))-M/Ms
+    return d/numpy.tanh(d*c*(p[0]*M/T+B/T))-(d-1)/numpy.tanh((d-1)*c*(p[0]*M/T+B/T))-M/Ms
   
   def fit_function(self, p, x):
     '''
@@ -487,7 +490,8 @@ class FitBrillouineT(FitFunction):
 #    out=[]
 #    for i,  xi in enumerate(x):
 #      out.append(fsolve(lambda item: self.brillouine(p, item, xi), 1e-6))
-    return fsolve(lambda item: self.brillouine(p, item, x), 1e-6)
+    return fsolve(lambda item: self.brillouine(p, item, numpy.array(x)), 
+            numpy.array([1e-6 for i in range(len(x))]))
 
 class FitBrillouineB(FitFunction):
   '''
@@ -511,13 +515,16 @@ class FitBrillouineB(FitFunction):
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(4)
   
+  def simulate(self, x, ignore=None):
+    return FitFunction.simulate(self, x, interpolate=1)
+  
   def residuals(self, params, y, x, yerror=None):
     '''
       As the fit with fsolve is quite slow we tell the user about
       the state of the fit.
     '''
     err=FitFunction.residuals(self, params, y, x, yerror=None)
-    print "End of iteration %i, chi is now %.6g" % (self.iteration, sum(err))
+    print "End of function call %i, chi is now %.6g" % (self.iteration, sum(err))
     self.iteration+=1
     return err
   
@@ -538,7 +545,7 @@ class FitBrillouineB(FitFunction):
     c=g*self.muB*J/self.kB
     Ms=g*J*self.muB*p[3]
     T=p[4]
-    return d/tanh(d*c*(p[0]*M/T+B/T))-(d-1)/tanh((d-1)*c*(p[0]*M/T+B/T))-M/Ms
+    return d/numpy.tanh(d*c*(p[0]*M/T+B/T))-(d-1)/numpy.tanh((d-1)*c*(p[0]*M/T+B/T))-M/Ms
   
   def fit_function(self, p, x):
     '''
@@ -547,7 +554,8 @@ class FitBrillouineB(FitFunction):
 #    out=[]
 #    for i,  xi in enumerate(x):
 #      out.append(fsolve(lambda item: self.brillouine(p, item, xi), 1e-6))
-    return fsolve(lambda item: self.brillouine(p, item, x), 1e-6)
+    return fsolve(lambda item: self.brillouine(p, item, numpy.array(x)), 
+                              numpy.array([1e-6 for i in range(len(x))]))
 
 
 #--------------------------------- Define common functions for fits ---------------------------------
@@ -570,7 +578,7 @@ class FitSession:
                        FitOneOverX.name: FitOneOverX, 
                        FitLorentzian.name: FitLorentzian, 
                        FitSQUIDSignal.name: FitSQUIDSignal, 
-                       FitBrillouineB.name: FitBrillouineB, 
+                       #FitBrillouineB.name: FitBrillouineB, 
                        FitBrillouineT.name: FitBrillouineT, 
                        }
   

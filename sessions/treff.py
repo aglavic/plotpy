@@ -99,6 +99,7 @@ class TreffSession(GenericSession):
         if last_argument_option[1]=='add':
           if len(input_file_names)>0:
             if input_file_names[-1] in self.add_to_files:
+              self.read_directly=True
               self.add_to_files[input_file_names[-1]].append(argument)
             else:
               self.add_to_files[input_file_names[-1]]=[argument]

@@ -15,6 +15,9 @@ Content:
 
 ----------- 0 - introduction --------------
 This is the third release of scripts for plotting mpms/ppms, 4Circle, reflectometer, treff, dns and in12 data.
+The main goal of this project is to create one framework for common data evaluation of a bunch of instuments
+so that common tasks are automated and the user saves a lot of time. Many people use gnuplot and with this
+program you can create nice gnuplot graphs quite fast and change the gnuplot script after exporting it.
 For a description of the features see chapter 3. 
 If you would like some new features, found any bugs or would like to have additional file-types
 supported by the script feel free to go to the Wiki http://atzes.homeip.net/plotwiki/ . Any contribution
@@ -22,12 +25,13 @@ to the Wiki content is also welcome.
 
 ----- 1 - changes since version 0.5 -------
 - added support for treff data and image files
-  - create intensity maps from the detector data
-  - extract specular reflectivity from those maps
+  - create intensity maps from the detector data, join scans
+  - extract "true" specular reflectivity from those maps
   - fit the specular reflectivity with the pnr_multi.f90 program from E. Kentzinger
   - import structure information for fit from x-ray .ent file
 - added support for in12 data files
 - added support for DNS single crystal and powder data with additional functionality:
+  - fullauto mode for fast data analysis
   - transform to q-space, with variable omega-offset
   - correct for vanadium and background file
   - correct for flipping ratio
@@ -35,21 +39,23 @@ to the Wiki content is also welcome.
   - transform to reciprocal lattice units with given d-spacing
   - Linear combination and multiplicatoin of different measurements for separation
 - changed module structure introducing config, read_data and sessions packages
-- added fitting dialog
+- added fitting dialog for common functions
 - optional platform independent python setup and Linux RPM+.deb packages
 - Windows binary build using py2exe
 - save gnuplot and datafile which creates the same image as present in GUI for later change
 - major speed enhacement for plotting and data import, slow import formats (as squid raw
    and treff image files) are stored as binary objects after readout
 - included fonts for linux distributions missing it, long folder name problem has been solved
-- history for reflectometer fit parameters
+- history for reflectometer/treff fit parameters
+- custom constraints in reflectometer/treff fit
 - relfectometer and treff fit dialog shows number of iterations and chi while fit is running
 - code cleanup and consistancy
 - multiplot from different files (stil needs imporvement)
 - automatic session detection from file postfix
 - color selection for 3d plots (can be personalized in config/gnuplot_preferences.py)
-- create arbitrary cross-sections through 3d-plots bin the data as standard and gaussian weighted mean
-- transform units and dimensions with some predefined units (e.g. 째 to mrad)
+- create arbitrary cross-sections through 3d-plots bin the data as standard and gaussian weighted mean, 
+  join datapoints with equal numbers or in equal steps
+- transform units and dimensions with some predefined units (e.g. ° to mrad)
 - plot profiles now include all 3d-plot settings, too
 - better window resize using scrolled window and gnuplot with different export sizes and not scaling
 - font size option in GUI
@@ -110,7 +116,7 @@ plotting-scripts:
 
   python setup.py install
   
-  this creates scripts to run the program from
+  this creates scripts to run the program
   ! if you don't have administrator priviliges, use 
       python setup.py install --prefix {Inst.Dir} --install-scripts {folder in your path}
       inside one of your system path folders. (type "print $PATH" to find out where to look)
@@ -176,6 +182,8 @@ Plot-script-0.6.tar.gz (.zip) contains:
 
 
 ------- 4 - description of scripts -------
+I don't have time to rewrite this list. Just try it...
+
 Commom:
   All sessions (with and without gui) have some common features:
     - the session type can be given as the first parameter
@@ -208,19 +216,22 @@ GUI:
   - Change and show all gnuplot parameters and store it as profile
 
 ------- 5 - goals for later releases -------
-The next releases will hopefully come in about 2-3 month cycles. 
+The next releases will hopefully come in about 3-6 month cycles. 
 At the moment I have these plans for the future releases:
 
   v0.7)  - convert the program to the wxWidgets backend to make the program
               accessible under OSX, too.
         - replace the multiplot functionality by a plot dialog which is easier to use and has
           additional functionality as to plot more than one column of a file
+        - revisite the datastructure, perhaps link the errors to the data
+        - make numpy a prerequisite and use only numpy arrays for speedup
         - setting up proper printing dialog
         - more error handling
         - save more settings in the config file, savable window profiles
         - open the gui without any file
         - combine data from different files together
         - increase command line functionality
+        - Save working status for easier reaccess e.g. for Treff fit sessions.
 
   v0.8) - include powder diffractometer format and interface to fullprof
         - complete mpms and ppms functionalities for all measurements

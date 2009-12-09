@@ -1119,10 +1119,22 @@ class ApplicationMainWindow(gtk.Window):
       trans_box.append_text('%s -> %s' % (trans[0], trans[-1]))
     transformations_dialog=gtk.Dialog(title='Transform Units/Dimensions:')
     transformations_dialog.set_default_size(600,150)
-    transformations_dialog.get_action_area().pack_end(trans_box,False)
-    transformations_dialog.add_button('Add transformation',2)
-    transformations_dialog.add_button('Apply changes',1)
-    transformations_dialog.add_button('Cancel',0)
+    try:
+      transformations_dialog.get_action_area().pack_end(trans_box,False)
+      transformations_dialog.add_button('Add transformation',2)
+      transformations_dialog.add_button('Apply changes',1)
+      transformations_dialog.add_button('Cancel',0)
+    except AttributeError:
+      transformations_dialog.vbox.pack_end(trans_box,False)
+      button=gtk.Button('Add transformation')
+      button.connect('clicked', lambda *ignore: transformations_dialog.response(2))
+      transformations_dialog.vbox.pack_end(button,False)
+      button=gtk.Button('Apply changes')
+      button.connect('clicked', lambda *ignore: transformations_dialog.response(1))
+      transformations_dialog.vbox.pack_end(button,False)
+      button=gtk.Button('Cancel')
+      button.connect('clicked', lambda *ignore: transformations_dialog.response(0))
+      transformations_dialog.vbox.pack_end(button,False)
     table=gtk.Table(1,1,False)
     transformations_dialog.vbox.add(table)
     transformations_dialog.show_all()
@@ -1612,7 +1624,10 @@ class ApplicationMainWindow(gtk.Window):
     actions_table=gtk.Table(len(buttons),1,False)
     for i, button in enumerate(buttons):
       actions_table.attach(button, i, i+1, 0, 1, gtk.FILL, gtk.FILL, 0, 0);
-    fit_dialog.get_action_area().pack_end(actions_table, expand=False, fill=True, padding=0)
+    try:
+      fit_dialog.get_action_area().pack_end(actions_table, expand=False, fill=True, padding=0)
+    except AttributeError:
+      fit_dialog.vbox.pack_end(actions_table, expand=False, fill=True, padding=0)
     fit_dialog.show_all()
     self.open_windows.append(fit_dialog)
 
@@ -2468,15 +2483,15 @@ class ApplicationMainWindow(gtk.Window):
         "Open a new datafile",                       # tooltip
         self.add_file ),
       ( "SaveGPL", gtk.STOCK_SAVE,                    # name, stock id
-        "_Save...","<control>S",                      # label, accelerator
+        "_Save this dataset (.out)...","<control>S",                      # label, accelerator
         "Save Gnuplot and datafile",                       # tooltip
         self.export_plot ),
       ( "Export", gtk.STOCK_SAVE,                    # name, stock id
-        "_Export","<control>E",                      # label, accelerator
+        "_Export (.png)","<control>E",                      # label, accelerator
         "Export current Plot",                       # tooltip
         self.export_plot ),
       ( "ExportAs", gtk.STOCK_SAVE,                  # name, stock id
-        "E_xport As...", '<alt>E',                       # label, accelerator
+        "E_xport As (.png/.ps)...", '<alt>E',                       # label, accelerator
         "Export Plot under other name",                          # tooltip
         self.export_plot ),
       ( "Print", gtk.STOCK_PRINT,                  # name, stock id
