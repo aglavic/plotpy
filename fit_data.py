@@ -142,7 +142,7 @@ class FitFunction:
                                            (len(y)-len(parameters))        
         cov = cov_x * s_sq
       else:
-        cov = cov_x * 0.    
+        cov = cov_x    
       cov_out=[]
       for i in range(len(self.parameters)):
         cov_out.append([])
@@ -475,7 +475,7 @@ class FitBrillouineT(FitFunction):
     '''
     S=abs(p[1])
     L=abs(p[2])
-    J=S+L
+    J=max(S+L, 0.01) # Prevent zero division error
     g=1.5+ (S*(S+1.)-L*(L+1.))/(2.*J*(J+1.))
     d=(2.*J+1.)/(2.*J)
     c=g*self.muB*J/self.kB
