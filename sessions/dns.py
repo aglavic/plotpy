@@ -1001,8 +1001,6 @@ class DNSSession(GenericSession):
           file=open(os.path.join(directory, name), 'w')
           file.write(zf.read(ziped_file.filename))
           file.close()
-        self.AUTO_BACKGROUND=True
-        self.AUTO_VANADIUM=True
       except IOError:
         print "No zip file %s." % self.CORRECTION_ZIP
     try:
