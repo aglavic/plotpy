@@ -436,8 +436,8 @@ class FitBrillouineT(FitFunction):
   
   # define class variables.
   name="Brillouine(T)"
-  parameters=[1.e7, 1., 1., 4.19e16, 1.e-1]
-  parameter_names=['lambda', 'S', 'L', 'N', 'B']
+  parameters=[1.e7, 1., 1., 4.19e16, 1.e-1, 1e-5]
+  parameter_names=['lambda', 'S', 'L', 'N', 'B', 'StartValue']
   fit_function_text='Parameters (T): lambda; S; L; N'
   muB=9.27e-24 # mu_Bohr
   kB=1.38e-23  # k_Boltzmann
@@ -446,7 +446,7 @@ class FitBrillouineT(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1.5e8, 1., 1.,4.19e16, 1.e-1]
+    self.parameters=[1.5e8, 1., 1.,4.19e16, 1.e-1, 1e-5]
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(4)
   
@@ -490,7 +490,7 @@ class FitBrillouineT(FitFunction):
 #    for i,  xi in enumerate(x):
 #      out.append(fsolve(lambda item: self.brillouine(p, item, xi), 1e-6))
     return fsolve(lambda item: self.brillouine(p, item, numpy.array(x)), 
-            numpy.array([1e-6 for i in range(len(x))]))
+            numpy.array([p[5] for i in range(len(x))]))
 
 class FitBrillouineB(FitFunction):
   '''
@@ -500,8 +500,8 @@ class FitBrillouineB(FitFunction):
   
   # define class variables.
   name="Brillouine(B)"
-  parameters=[1.e7, 1., 1., 4.19e16, 300.]
-  parameter_names=['lambda', 'S', 'L', 'N', 'T']
+  parameters=[1.e7, 1., 1., 4.19e16, 300., 1e-5]
+  parameter_names=['lambda', 'S', 'L', 'N', 'T', 'StartValue']
   fit_function_text='Parameters (B): lambda; S; L; N'
   muB=9.27e-24 # mu_Bohr
   kB=1.38e-23  # k_Boltzmann
@@ -510,7 +510,7 @@ class FitBrillouineB(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1.5e8, 1., 1.,4.19e16, 300.]
+    self.parameters=[1.5e8, 1., 1.,4.19e16, 300., 1e-5]
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(4)
   
@@ -554,7 +554,7 @@ class FitBrillouineB(FitFunction):
 #    for i,  xi in enumerate(x):
 #      out.append(fsolve(lambda item: self.brillouine(p, item, xi), 1e-6))
     return fsolve(lambda item: self.brillouine(p, item, numpy.array(x)), 
-                              numpy.array([1e-6 for i in range(len(x))]))
+                              numpy.array([p[5] for i in range(len(x))]))
 
 
 #--------------------------------- Define common functions for fits ---------------------------------
