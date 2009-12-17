@@ -2089,6 +2089,49 @@ class ApplicationMainWindow(gtk.Window):
     message.run()
     message.destroy()
 
+  def open_ipy_console(self, action):
+    '''
+      In debug mode this opens a window with an IPython console,
+      which has direct access to all important objects.
+    '''
+    from ipython_view import IPythonView
+    import pango
+    import sys
+
+    FONT = "Luxi Mono 10"
+
+    ipython_dialog= gtk.Dialog(title="IPython Console", parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
+    ipython_dialog.set_size_request(750,550)
+    ipython_dialog.set_resizable(True)
+    sw = gtk.ScrolledWindow()
+    sw.set_policy(gtk.POLICY_AUTOMATIC,gtk.POLICY_AUTOMATIC)
+    ipview = IPythonView("""      This is an interactive IPython session with direct access to the program.
+      You have the whole python functionality and can interact with the programs objects.
+
+      Objects:
+      session \tThe active session containing the data objects and settings
+      plot_gui \tThe window object with all window related funcitons
+      self \t\tThe IPythonView object.
+
+""")
+    ipview.modify_font(pango.FontDescription(FONT))
+    ipview.set_wrap_mode(gtk.WRAP_CHAR)
+    sw.add(ipview)
+    ipython_dialog.vbox.add(sw)
+    ipython_dialog.show_all()
+    ipython_dialog.connect('delete_event',lambda x,y:False)
+    def reset(action):
+      sys.stdout=sys.__stdout__
+      sys.stderr=sys.__stderr__
+    ipython_dialog.connect('destroy', reset)
+    
+    # add variables to ipython namespace
+    ipview.updateNamespace({
+                       'session': self.active_session, 
+                       'plot_gui': self, 
+                       'self': ipview, 
+                       })
+
   #--------------------------Menu/Toolbar Events---------------------------------#
 
   #----------------------------------Event hanling---------------------------------------#
@@ -2483,6 +2526,12 @@ class ApplicationMainWindow(gtk.Window):
         <menuitem action='ShowConfigPath'/>
         <menuitem action='About'/>
         <menuitem action='History'/>
+        '''
+    if self.active_session.DEBUG:
+      output+='''
+        <menuitem action='OpenConsole'/>
+      '''
+    output+=    '''
       </menu>
     </menubar>
     <toolbar  name='ToolBar'>
@@ -2639,6 +2688,10 @@ class ApplicationMainWindow(gtk.Window):
         "Export Multi-plots", None,                     # label, accelerator
         "Export Multi-plots",                                    # tooltip
         self.export_plot),
+      ( "OpenConsole", None,                    # name, stock id
+        "Open IPython Console", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.open_ipy_console),
     )+self.added_items;
     # Create the menubar and toolbar
     action_group = gtk.ActionGroup("AppWindowActions")
