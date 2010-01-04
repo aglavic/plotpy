@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2009-12-18, 16:13:04 -->
-<!-- Copyright (C) 2009 Artur Glavic, a.glavic@fz-juelich.de -->
+<!-- Saved: 2010-01-04, 22:59:21 -->
+<!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -38,7 +38,6 @@
     <Source>setup.cfg</Source>
     <Source>config/fit/fit.f90</Source>
     <Source>file_actions.py</Source>
-    <Source>config/transformations.py</Source>
     <Source>read_data/dns.py</Source>
     <Source>sessions/dns.py</Source>
     <Source>config/dns.py</Source>
