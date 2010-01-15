@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-01-04, 22:59:21 -->
+<!-- Saved: 2010-01-15, 22:40:42 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -74,11 +74,10 @@
   </Interfaces>
   <Others>
     <Other>/usr/share/eric/APIs/plotting.api</Other>
-    <Other>doc</Other>
     <Other>install</Other>
     <Other>uninstall</Other>
   </Others>
-  <MainScript>__init__.py</MainScript>
+  <MainScript>plot.py</MainScript>
   <Vcs>
     <VcsType>None</VcsType>
     <VcsOptions>

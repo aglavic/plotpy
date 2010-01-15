@@ -199,8 +199,7 @@ class ApplicationMainWindow(gtk.Window):
         0,                      0)
 
     # frame region for the image
-    self.frame1 = gtk.Frame()
-    self.frame1.set_shadow_type(gtk.SHADOW_IN)
+    self.frame1 = gtk.Notebook()
     # TODO: do we need alignment?
     align = gtk.Alignment(0.5, 0.5, 1, 1)
     align.add(self.frame1)
@@ -208,17 +207,13 @@ class ApplicationMainWindow(gtk.Window):
     # TODO: Reconsider image resizing.
     self.image = gtk.Image()    
     self.image_shown=False # variable to decrease changes in picture size
-    sw = gtk.ScrolledWindow()
-    # Set the adjustments for horizontal and vertical scroll bars.
-    # POLICY_AUTOMATIC will automatically decide whether you need
-    # scrollbars.
-    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    sw.add_with_viewport(self.image) 
-    self.frame1.add(sw)
-    # put image below label on left column, expand frame in all directions
+    self.image.set_size_request(0, 0)
+    self.image.connect('size-allocate', self.image_resize)
+    self.image_do_resize=False
+    self.frame1.append_page(self.image, gtk.Label("Plot"))
     table.attach(align,
         # X direction           Y direction
-        0, 1,                   3, 4,
+        0, 3,                   3, 4,
         gtk.EXPAND | gtk.FILL,  gtk.EXPAND | gtk.FILL,
         0,                      0)
     #---------- create image region and image for the plot ----------
@@ -229,11 +224,7 @@ class ApplicationMainWindow(gtk.Window):
     align = gtk.Alignment(0, 0.05, 1, 0) # align top
     align.add(self.multi_list)
     # put multiplot list right from the picture, expand only in y
-    table.attach(align,
-        # X direction           Y direction
-        1, 2,                   3, 4,
-        gtk.FILL,  gtk.EXPAND | gtk.FILL,
-        0,                      0)
+    self.frame1.append_page(align, gtk.Label("Multiplot List"))
 
     #++++++++++ Create additional setting input for the plot ++++++++++
     align_table = gtk.Table(12, 2, False)
@@ -267,11 +258,12 @@ class ApplicationMainWindow(gtk.Window):
     align_table.attach(self.y_range_in,7,9,0,1,gtk.FILL,gtk.FILL,0,0)
     # font size entry
     self.font_size=gtk.Entry()
-    self.font_size.set_width_chars(3)
+    self.font_size.set_width_chars(5)
     self.font_size.set_text(str(self.active_session.font_size))
     self.font_size.connect("activate",self.change_range)
     self.font_size_label=gtk.Label()
-    self.font_size_label.set_markup('font-size:')
+    self.font_size_label.set_markup('Font size:')
+    self.font_size_label.set_padding(5, 0)
     align_table.attach(self.font_size,12,13,0,1,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.font_size_label,11,12,0,1,gtk.FILL,gtk.FILL,0,0)
     # checkboxes for log x and log y
@@ -331,7 +323,7 @@ class ApplicationMainWindow(gtk.Window):
     # put statusbar below everything
     table.attach(self.statusbar,
         # X direction           Y direction
-        0, 2,                   5, 6,
+        0, 3,                   5, 6,
         gtk.EXPAND | gtk.FILL,  0,
         0,                      0)
 
@@ -2196,12 +2188,21 @@ class ApplicationMainWindow(gtk.Window):
         else:
           sleep(0.1)
     # TODO: errorhandling
-    self.image.set_from_file(self.active_session.TEMP_DIR + 'plot_temp.png')
-    #self.image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file(\
-    #                          self.active_session.TEMP_DIR + 'plot_temp.png'\
-    #                          ).scale_simple(self.widthf-20,
-    #                                        self.heightf-20,
-    #                                        gtk.gdk.INTERP_BILINEAR))
+    self.image_pixbuf=gtk.gdk.pixbuf_new_from_file(self.active_session.TEMP_DIR + 'plot_temp.png')
+    s_alloc=self.image.get_allocation()
+    pixbuf=self.image_pixbuf.scale_simple(s_alloc.width, s_alloc.height, gtk.gdk.INTERP_BILINEAR)
+    self.image.set_from_pixbuf(pixbuf)
+
+  def image_resize(self, widget, rectangel):
+    '''
+      Scale the image during a resize.
+    '''
+    if self.image_do_resize:
+      self.image_do_resize=False
+      pixbuf=self.image_pixbuf.scale_simple(rectangel.width, rectangel.height, gtk.gdk.INTERP_BILINEAR)
+      self.image.set_from_pixbuf(pixbuf)
+    else:
+      self.image_do_resize=True
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
             with_errorbars, output_file=gnuplot_preferences.output_file_name, fit_lorentz=False):
@@ -2220,7 +2221,7 @@ class ApplicationMainWindow(gtk.Window):
                                                          output_file,
                                                          fit_lorentz=False)
 
-  def replot(self, action=None): 
+  def replot(self, action=None):
     '''
       Recreate the current plot and clear statusbar.
     '''
@@ -2230,21 +2231,21 @@ class ApplicationMainWindow(gtk.Window):
     # set log checkbox according to active measurement
     self.logx.set_active(self.measurement[self.index_mess].logx)
     self.logy.set_active(self.measurement[self.index_mess].logy)
-    self.logz.set_active(self.measurement[self.index_mess].logz)    
-    self.active_session.picture_width=str(self.frame1.get_allocation().width-25)
-    self.active_session.picture_height=str(self.frame1.get_allocation().height-25)
+    self.logz.set_active(self.measurement[self.index_mess].logz)
+    self.active_session.picture_width=str(self.image.get_allocation().width)
+    self.active_session.picture_height=str(self.image.get_allocation().height)
     if self.active_multiplot:
       for plotlist in self.multiplot:
         itemlist=[item[0] for item in plotlist]
         if self.measurement[self.index_mess] in itemlist:
-          self.last_plot_text=self.plot(self.active_session, 
-                                        [item[0] for item in plotlist], 
-                                        plotlist[0][1], 
-                                        plotlist[0][0].short_info, 
-                                        [item[0].short_info for item in plotlist], 
+          self.last_plot_text=self.plot(self.active_session,
+                                        [item[0] for item in plotlist],
+                                        plotlist[0][1],
+                                        plotlist[0][0].short_info,
+                                        [item[0].short_info for item in plotlist],
                                         errorbars,
                                         self.active_session.TEMP_DIR+'plot_temp.png',
-                                        fit_lorentz=False)   
+                                        fit_lorentz=False)
           self.label.set_width_chars(len(itemlist[0].short_info)+5)
           self.label.set_text(itemlist[0].short_info)
     else:
@@ -2252,9 +2253,9 @@ class ApplicationMainWindow(gtk.Window):
       self.label.set_text(self.measurement[self.index_mess].sample_name)
       self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
       self.label2.set_text(self.measurement[self.index_mess].short_info)
-      self.last_plot_text=self.plot(self.active_session, 
+      self.last_plot_text=self.plot(self.active_session,
                                   [self.measurement[self.index_mess]],
-                                  self.input_file_name, 
+                                  self.input_file_name,
                                   self.measurement[self.index_mess].short_info,
                                   [object.short_info for object in self.measurement[self.index_mess].plot_together],
                                   errorbars, 
