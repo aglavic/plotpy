@@ -41,6 +41,7 @@ from configobj import ConfigObj
 from measurement_data_structure import MeasurementData
 import measurement_data_plotting
 from config.gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
+import config
 from config import gnuplot_preferences
 import file_actions
 #----------------------- importing modules --------------------------
@@ -49,7 +50,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -108,6 +109,8 @@ class ApplicationMainWindow(gtk.Window):
 
     # Create the toplevel window
     gtk.Window.__init__(self)
+    self.set_icon_from_file(os.path.join(
+                           os.path.realpath(config.__path__[0]),"logo.png"))
     # Reading config file
     self.read_config_file()
     # Normaly this is not important, but with it the Window could be implemented as subwindow later.
