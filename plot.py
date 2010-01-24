@@ -67,11 +67,13 @@ known_measurement_types={
                          }
 
   
-class RedirectOutput:
+class RedirectOutput(object):
   '''
     Class to redirect all print statements to the statusbar when useing the GUI.
   '''
   
+  second_output=None
+
   def __init__(self, plotting_session):
     '''
       Class consturctor.
@@ -88,15 +90,15 @@ class RedirectOutput:
       @param string Output string of stdout
     '''
     string=string.replace('\b', '')
-    self.content.append(string)
-    while '\n' in self.content:
-      self.content.remove('\n')
-    if (len(string.splitlines())>0) and string.splitlines()[-1]!='':
-      self.plotting_session.statusbar.push(0, string.splitlines()[-1])
+    if self.second_output:
+      self.second_output.write(string)
+    self.content+=string.splitlines()
+    while '' in self.content:
+      self.content.remove('')
     if (len(self.content)>0):
       self.plotting_session.statusbar.push(0, self.content[-1])
-    while gtk.events_pending():
-      gtk.main_iteration(False)
+      while gtk.events_pending():
+        gtk.main_iteration(False)
   
   def flush(self):
     '''
@@ -236,6 +238,20 @@ def initialize_gui(session):
   return plotting_gui.ApplicationMainWindow(session)
 
 if __name__ == '__main__':    #code to execute if called from command-line
+  try:
+    # initialize the session with stdoutput in gtk dialog.
+    from plotting_gui import StatusDialog
+    import gtk
+    status_dialog=StatusDialog('Import Status', flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                               parent=None, buttons=('Close', 0))
+    status_dialog.connect('response', lambda *ignore: status_dialog.destroy())
+    status_dialog.set_default_size(800, 600)
+    status_dialog.show_all()
+    status_dialog.fileno=lambda : 1
+    status_dialog.flush=lambda : True
+    sys.stdout=status_dialog
+  except:
+    pass
   active_session=initialize(sys.argv[1:])  
   if active_session.use_gui: # start a new gui session
     plotting_session=initialize_gui(active_session)
@@ -245,6 +261,7 @@ if __name__ == '__main__':    #code to execute if called from command-line
       active_session.stderr=RedirectError(plotting_session)
       sys.stdout=active_session.stdout
       sys.stderr=active_session.stderr  
+    status_dialog.destroy()
     gtk.main() # start GTK engine
   else: # in command line mode, just plot the selected data.
     active_session.plot_all()

@@ -1,0 +1,26 @@
+8048.0	scattering radiaion energy (Cu-K_alpha)
+793	number of datapoints
+
+2	number of interfaces (number of layers + 1)
+#### Begin of layers, first layer # 1: TbMnO3
+550.01893	layer thickness (in A)			parameter 1
+18.93225	delta *1e6				parameter 2
+8.9	delta/beta				parameter 3
+8.63691	layer roughness (in A)			parameter 4
+# 2: YAlO3
+13.4114	delta *1e6				parameter 5
+30.8	delta/beta				parameter 6
+2.83696	layer roughness (in A)			parameter 7
+### End of layers.
+0.3075	background				parametar 8
+3.62989	resolution in q (sigma, in 1e-3 A^-1)	parameter 9
+9.5	scaling factor *1e6			parameter 10
+
+2.3	theta_max (in deg) for recalibration
+#### fit specific parameters:
+1	1: fit; 0: simulation
+
+1		Number of parameters to be fitted
+8		indices of parameters
+0		number of constrains
+

@@ -9,7 +9,16 @@
 archiv
 build
 doc
-debug
+debug/*.mds
+debug/*.raw
+debug/*.py
+debug/*.o
+debug/*.out
+debug/*.ref
+debug/*.sim
+debug/*.res
+debug/*.png
+debug/*.sh
 config/fit/fit-script.sh
 config/fit/fit_tmp.f90
 config/fonts

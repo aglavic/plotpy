@@ -17,7 +17,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -123,19 +123,8 @@ def open_status_dialog(self, window):
       replot_present(session, window)
     
   replot_present=self.replot_present
-    
-  status=gtk.Dialog(title='Fit status after 0 s')
-  text_view=gtk.TextView()
-  # Retrieving a reference to a textbuffer from a textview. 
-  buffer = text_view.get_buffer()
-  buffer.set_text('')
-  sw = gtk.ScrolledWindow()
-  # Set the adjustments for horizontal and vertical scroll bars.
-  # POLICY_AUTOMATIC will automatically decide whether you need
-  # scrollbars.
-  sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-  sw.add(text_view) # add textbuffer view widget
-  status.vbox.add(sw) # add table to dialog box
+  from plotting_gui import StatusDialog
+  status=StatusDialog(title='Fit status after 0 s')
   status.set_default_size(500,450)
   status.add_button('Plot present simulation',2) # button kill has handler_id 2
   status.add_button('Kill Process',1) # button kill has handler_id 1
@@ -148,13 +137,10 @@ def open_status_dialog(self, window):
   events_pending=gtk.events_pending
   file_name=self.TEMP_DIR+self.RESULT_FILE
   # while the process is running ceep reading the .ref output file
-  try:
-    file=open(file_name, 'r')
-    text='Empty .ref file.'
-  except:
-    file=None
-    text='Empty .ref file.'
-  old_text=text
+  while proc.poll()==None and not os.path.exists(file_name):
+    continue
+  file=open(file_name, 'r')
+  text=file.read()
   while proc.poll()==None:
     try:
       line=open(self.TEMP_DIR+'status').read()
@@ -163,32 +149,15 @@ def open_status_dialog(self, window):
     except:
       iteration=1
       chi=0
-    if file==None:
-      try:
-        file=open(file_name, 'r')
-      except:
-        file=None
-        text='Empty .ref file.'
-    else:
-      file.seek(0)
-      text=file.read()
-      if text=='':
-        text='Empty .ref file.'
+    text=file.read()
     s_text='Status after ' + str(round(time_get()-start, 1)) + ' s: iteration %i, chi %.6g' % (iteration, chi)
     status.set_title(s_text)
-    if old_text!=text:
-      buffer.set_text(text)
-      old_text=text
-    while events_pending():
-      main_iteration(False)
-    while events_pending():
-      main_iteration(False)
+    status.write(text)
     time.sleep(0.1)
   try:
     file.close()
   except AttributeError:
     pass
-  status.set_modal(False)
   status.destroy()
 
 

@@ -31,7 +31,7 @@
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 # python modules
-import os
+import os, sys
 import gobject
 import gtk
 from time import sleep, time
@@ -563,6 +563,15 @@ class ApplicationMainWindow(gtk.Window):
       return False
     file_dialog.destroy()
     #----------------File selection dialog-------------------#
+    # show a status dialog for the file import
+    if type(sys.stdout)!=file:
+      status_dialog=StatusDialog('Import Status', flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                                 parent=self, buttons=('Close', 0))
+      status_dialog.connect('response', lambda *ignore: status_dialog.destroy())
+      status_dialog.set_default_size(800, 600)
+      status_dialog.show_all()
+      sys.stdout.second_output=status_dialog
+    # try to import the selected files and append them to the active sesssion
     # try to import the selected files and append them to the active sesssion
     if self.active_session.ONLY_IMPORT_MULTIFILE:
       self.active_session.add_file(file_names, append=True)
@@ -581,6 +590,8 @@ class ApplicationMainWindow(gtk.Window):
       window.destroy()    
     self.replot()
     self.rebuild_menus()
+    if type(sys.stdout)!=file:
+      sys.stdout.second_output=None
     # TODO: do we need to return the file name?
     return file_names
 
@@ -2628,6 +2639,45 @@ class ApplicationMainWindow(gtk.Window):
   #---------------------Functions responsible for menus and toolbar----------------------#
 
 #------------------------- ApplicationMainWindow Class ----------------------------------#
+
+class StatusDialog(gtk.Dialog):
+  '''
+    A Dialog to show a changing text with scrollbar.
+  '''
+  
+  def __init__(self, title=None, parent=None, flags=0, buttons=None, initial_text=''):
+    '''
+      Class constructor. Creates a Dialog window with scrollable TextView.
+    '''
+    gtk.Dialog.__init__(self, title, parent, flags, buttons)
+    self.textview=gtk.TextView()
+    self.buffer=self.textview.get_buffer()
+    self.buffer.set_text(initial_text)
+    # attach the textview inside a scrollbar widget
+    self.scrollwidget=gtk.ScrolledWindow()
+    self.scrollwidget.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    self.scrollwidget.add(self.textview)
+    self.vbox.add(self.scrollwidget)
+    self.end_iter=self.buffer.get_end_iter()
+    self.end_mark=self.buffer.create_mark('End', self.end_iter, False)
+  
+  def write(self, text):
+    '''
+      Append a string to the buffer and scroll at the end, if it was visible before.
+    '''
+    if type(text) is not unicode:
+      utext=unicode(text, errors='ignore')
+    else:
+      utext=text
+    # if the scrollbar is below 98% it is set to be at the bottom.
+    adj=self.scrollwidget.get_vadjustment()
+    end_visible= ((adj.value + adj.page_size) >= adj.upper*0.98)
+    self.buffer.insert(self.end_iter, utext)
+    if end_visible:
+      self.textview.scroll_to_mark(self.end_mark, 0.)
+    while gtk.events_pending():
+      gtk.main_iteration()
+
 
 #++++++++++++++++++++++++++++++ PlotProfile Class +++++++++++++++++++++++++++++++++++++++#
 class PlotProfile:

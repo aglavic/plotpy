@@ -1,0 +1,72 @@
+8048.0	scattering radiaion energy (Cu-K_alpha)
+780	number of datapoints
+
+11	number of interfaces (number of layers + 1)
+#### Begin of layers, first layer # Begin of multilay NoName# 1: TbMnO3
+55.0	layer thickness (in A)			parameter 1
+19.194	delta *1e6				parameter 2
+8.91	delta/beta				parameter 3
+6.5	layer roughness (in A)			parameter 4
+# 2: TbMnO3
+55.0	layer thickness (in A)			parameter 5
+19.194	delta *1e6				parameter 6
+8.91	delta/beta				parameter 7
+6.5	layer roughness (in A)			parameter 8
+# 3: TbMnO3
+55.0	layer thickness (in A)			parameter 9
+19.194	delta *1e6				parameter 10
+8.91	delta/beta				parameter 11
+6.5	layer roughness (in A)			parameter 12
+# 4: TbMnO3
+55.0	layer thickness (in A)			parameter 13
+19.194	delta *1e6				parameter 14
+8.91	delta/beta				parameter 15
+6.5	layer roughness (in A)			parameter 16
+# 5: TbMnO3
+55.0	layer thickness (in A)			parameter 17
+19.194	delta *1e6				parameter 18
+8.91	delta/beta				parameter 19
+6.5	layer roughness (in A)			parameter 20
+# 6: TbMnO3
+55.0	layer thickness (in A)			parameter 21
+19.194	delta *1e6				parameter 22
+8.91	delta/beta				parameter 23
+6.5	layer roughness (in A)			parameter 24
+# 7: TbMnO3
+55.0	layer thickness (in A)			parameter 25
+19.194	delta *1e6				parameter 26
+8.91	delta/beta				parameter 27
+6.5	layer roughness (in A)			parameter 28
+# 8: TbMnO3
+55.0	layer thickness (in A)			parameter 29
+19.194	delta *1e6				parameter 30
+8.91	delta/beta				parameter 31
+6.5	layer roughness (in A)			parameter 32
+# 9: TbMnO3
+55.0	layer thickness (in A)			parameter 33
+19.194	delta *1e6				parameter 34
+8.91	delta/beta				parameter 35
+6.5	layer roughness (in A)			parameter 36
+# 10: TbMnO3
+55.0	layer thickness (in A)			parameter 37
+19.194	delta *1e6				parameter 38
+8.91	delta/beta				parameter 39
+6.5	layer roughness (in A)			parameter 40
+# 11: YAlO3
+13.4114	delta *1e6				parameter 41
+30.8	delta/beta				parameter 42
+2.5	layer roughness (in A)			parameter 43
+### End of layers.
+0.3075	background				parametar 44
+3.5	resolution in q (sigma, in 1e-3 A^-1)	parameter 45
+10.7917	scaling factor *1e6			parameter 46
+
+2.3	theta_max (in deg) for recalibration
+#### fit specific parameters:
+0	1: fit; 0: simulation
+
+10		Number of parameters to be fitted
+4 8 12 16 20 24 28 32 36 40		indices of parameters
+1		number of constrains
+10		number of parameters to be kept equal
+4 8 12 16 20 24 28 32 36 40		indices of those parameters

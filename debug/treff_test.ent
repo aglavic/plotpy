@@ -1,0 +1,218 @@
+4.0	first slit opening (mm)
+4.0	second slit opening (mm)
+10.0	sample length (mm)
+2270.0	distance from first slit to sample (mm)
+450.0	distance from second slit to sample (mm)
+#+++ File names for the 4 polarization directions (++,--,+-,-+) +++
+bla_pp.ref
+10	 number of points used from this file
+bla_mm.ref
+0	 number of points used from this file
+bla_pm.ref
+0	 number of points used from this file
+bla_mp.ref
+0	 number of points used from this file
+#------ 
+7.73	wavelength of the neutrons (Angstrom)
+0.03	width of the wavelength (Angstrom)
+#+++++  Begin of layer parameters +++++
+0	number of layers on top of the (unused) multilayer
+# blank
+0	number of layers in the unicell of the multilayer
+# blank
+0	number of repititions of those unicells in the multilayer
+# blank
+21	number of layers below the (unused) multilayer
+#### Begin of layers, first layer # Begin of multilay Unnamed# 1: Fe
+123.0	layer thickness (in A)			parameter 1
+4.7	real part Nb', - (A**-2)*1e6		parameter 2
+0.000698 imagenary part Nb'' of nuclear and	parameter 3
+5.12	magnetic scat. len. dens. Np 		parameter 4
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 5
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 6
+10.0	layer roughness (in A)			parameter 7
+# 2: Ag
+10	layer thickness (in A)			parameter 8
+2.4	real part Nb', - (A**-2)*1e6		parameter 9
+0.0076 imagenary part Nb'' of nuclear and	parameter 10
+0.0	magnetic scat. len. dens. Np 		parameter 11
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 12
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 13
+10.0	layer roughness (in A)			parameter 14
+# 3: Fe
+123.0	layer thickness (in A)			parameter 15
+4.7	real part Nb', - (A**-2)*1e6		parameter 16
+0.000698 imagenary part Nb'' of nuclear and	parameter 17
+5.12	magnetic scat. len. dens. Np 		parameter 18
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 19
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 20
+10.0	layer roughness (in A)			parameter 21
+# 4: Ag
+10	layer thickness (in A)			parameter 22
+2.4	real part Nb', - (A**-2)*1e6		parameter 23
+0.0076 imagenary part Nb'' of nuclear and	parameter 24
+0.0	magnetic scat. len. dens. Np 		parameter 25
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 26
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 27
+10.0	layer roughness (in A)			parameter 28
+# 5: Fe
+123.0	layer thickness (in A)			parameter 29
+4.7	real part Nb', - (A**-2)*1e6		parameter 30
+0.000698 imagenary part Nb'' of nuclear and	parameter 31
+5.12	magnetic scat. len. dens. Np 		parameter 32
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 33
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 34
+10.0	layer roughness (in A)			parameter 35
+# 6: Ag
+10	layer thickness (in A)			parameter 36
+2.4	real part Nb', - (A**-2)*1e6		parameter 37
+0.0076 imagenary part Nb'' of nuclear and	parameter 38
+0.0	magnetic scat. len. dens. Np 		parameter 39
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 40
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 41
+10.0	layer roughness (in A)			parameter 42
+# 7: Fe
+123.0	layer thickness (in A)			parameter 43
+4.7	real part Nb', - (A**-2)*1e6		parameter 44
+0.000698 imagenary part Nb'' of nuclear and	parameter 45
+5.12	magnetic scat. len. dens. Np 		parameter 46
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 47
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 48
+10.0	layer roughness (in A)			parameter 49
+# 8: Ag
+10	layer thickness (in A)			parameter 50
+2.4	real part Nb', - (A**-2)*1e6		parameter 51
+0.0076 imagenary part Nb'' of nuclear and	parameter 52
+0.0	magnetic scat. len. dens. Np 		parameter 53
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 54
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 55
+10.0	layer roughness (in A)			parameter 56
+# 9: Fe
+123.0	layer thickness (in A)			parameter 57
+4.7	real part Nb', - (A**-2)*1e6		parameter 58
+0.000698 imagenary part Nb'' of nuclear and	parameter 59
+5.12	magnetic scat. len. dens. Np 		parameter 60
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 61
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 62
+10.0	layer roughness (in A)			parameter 63
+# 10: Ag
+10	layer thickness (in A)			parameter 64
+2.4	real part Nb', - (A**-2)*1e6		parameter 65
+0.0076 imagenary part Nb'' of nuclear and	parameter 66
+0.0	magnetic scat. len. dens. Np 		parameter 67
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 68
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 69
+10.0	layer roughness (in A)			parameter 70
+# 11: Fe
+123.0	layer thickness (in A)			parameter 71
+4.7	real part Nb', - (A**-2)*1e6		parameter 72
+0.000698 imagenary part Nb'' of nuclear and	parameter 73
+5.12	magnetic scat. len. dens. Np 		parameter 74
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 75
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 76
+10.0	layer roughness (in A)			parameter 77
+# 12: Ag
+10	layer thickness (in A)			parameter 78
+2.4	real part Nb', - (A**-2)*1e6		parameter 79
+0.0076 imagenary part Nb'' of nuclear and	parameter 80
+0.0	magnetic scat. len. dens. Np 		parameter 81
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 82
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 83
+10.0	layer roughness (in A)			parameter 84
+# 13: Fe
+123.0	layer thickness (in A)			parameter 85
+4.7	real part Nb', - (A**-2)*1e6		parameter 86
+0.000698 imagenary part Nb'' of nuclear and	parameter 87
+5.12	magnetic scat. len. dens. Np 		parameter 88
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 89
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 90
+10.0	layer roughness (in A)			parameter 91
+# 14: Ag
+10	layer thickness (in A)			parameter 92
+2.4	real part Nb', - (A**-2)*1e6		parameter 93
+0.0076 imagenary part Nb'' of nuclear and	parameter 94
+0.0	magnetic scat. len. dens. Np 		parameter 95
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 96
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 97
+10.0	layer roughness (in A)			parameter 98
+# 15: Fe
+123.0	layer thickness (in A)			parameter 99
+4.7	real part Nb', - (A**-2)*1e6		parameter 100
+0.000698 imagenary part Nb'' of nuclear and	parameter 101
+5.12	magnetic scat. len. dens. Np 		parameter 102
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 103
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 104
+10.0	layer roughness (in A)			parameter 105
+# 16: Ag
+10	layer thickness (in A)			parameter 106
+2.4	real part Nb', - (A**-2)*1e6		parameter 107
+0.0076 imagenary part Nb'' of nuclear and	parameter 108
+0.0	magnetic scat. len. dens. Np 		parameter 109
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 110
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 111
+10.0	layer roughness (in A)			parameter 112
+# 17: Fe
+123.0	layer thickness (in A)			parameter 113
+4.7	real part Nb', - (A**-2)*1e6		parameter 114
+0.000698 imagenary part Nb'' of nuclear and	parameter 115
+5.12	magnetic scat. len. dens. Np 		parameter 116
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 117
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 118
+10.0	layer roughness (in A)			parameter 119
+# 18: Ag
+10	layer thickness (in A)			parameter 120
+2.4	real part Nb', - (A**-2)*1e6		parameter 121
+0.0076 imagenary part Nb'' of nuclear and	parameter 122
+0.0	magnetic scat. len. dens. Np 		parameter 123
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 124
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 125
+10.0	layer roughness (in A)			parameter 126
+# 19: Fe
+123.0	layer thickness (in A)			parameter 127
+4.7	real part Nb', - (A**-2)*1e6		parameter 128
+0.000698 imagenary part Nb'' of nuclear and	parameter 129
+5.12	magnetic scat. len. dens. Np 		parameter 130
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 131
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 132
+10.0	layer roughness (in A)			parameter 133
+# 20: Ag
+10	layer thickness (in A)			parameter 134
+2.4	real part Nb', - (A**-2)*1e6		parameter 135
+0.0076 imagenary part Nb'' of nuclear and	parameter 136
+0.0	magnetic scat. len. dens. Np 		parameter 137
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 138
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 139
+10.0	layer roughness (in A)			parameter 140
+# 21: Fe
+123.0	layer thickness (in A)			parameter 141
+4.7	real part Nb', - (A**-2)*1e6		parameter 142
+0.000698 imagenary part Nb'' of nuclear and	parameter 143
+5.12	magnetic scat. len. dens. Np 		parameter 144
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 145
+90	phi [deg.]  (0 on x, 90 on y)		parameter 146
+10.0	layer roughness (in A)			parameter 147
+# 22: Au
+2.17	real part Nb', - (A**-2)*1e6		parameter 148
+0.0075 imagenary part Nb'' of nuclear and	parameter 149
+0.0	magnetic scat. len. dens. Np 		parameter 150
+90.0	theta [deg.] (0 on z, 90 on x-y plane)	parameter 151
+90.0	phi [deg.]  (0 on x, 90 on y)		parameter 152
+10.0	layer roughness (in A)			parameter 153
+### End of layers.
+1.0	scaling factor 				parameter 154
+0.0	background				parametar 155
+#### Polarization parameters
+0.973	polarizer efficiency			parameter 156
+0.951	analyzer efficiency			parameter 157
+1.0	first flipper efficiency		parameter 158
+1.0	second flipper efficiency		parameter 159
+#### fit specific parameters:
+[7, 14, 21, 28]	1: fit; 0: simulation
+
+0		Number of parameters to be fitted
+		indices of parameters
+
+0		number of constraints
+### Parameters for the fit algorithm:
+0.0001	alambda_first, correspons to first step size in fit algorithm
+2	ntest, the number of times chi could not be improved before fit stops

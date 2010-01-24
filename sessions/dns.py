@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Werner Schweika"]
 __license__ = "None"
-__version__ = "0.6"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -258,6 +258,7 @@ class DNSSession(GenericSession):
     # set the first measurement as active
     self.active_file_data=self.file_data[self.prefixes[0]]
     self.active_file_name=self.prefixes[0]
+    self.INIT_COMPLETE=True
   
   def initialize_fullauto(self, names):
     '''
@@ -278,8 +279,11 @@ class DNSSession(GenericSession):
         print "\tUsing setup files from %s." % szf[-1]
     self.find_prefixes(names)
     print "\tFound %i continous sequences. Trying to split those by Temperature." % len(self.prefixes)
+    self.autosplit_sequences()
+
+  def autosplit_sequences(self):
     new_prefixes=[]
-    new_options={}
+    new_options={'default': self.file_options['default']}
     discarded=[]
     for prefix in self.prefixes:
       splits=[0]
@@ -548,6 +552,9 @@ class DNSSession(GenericSession):
       self.find_prefixes(filenames)
     else:
       return False
+    # For alter imports also try fullautomode
+    if self.FULLAUTO and getattr(self, 'INIT_COMPLETE', False):
+      self.autosplit_sequences()      
     self.prefixes.sort()
     new_prefixes=[pf for pf in self.prefixes if not pf in self.file_data]
     if len(new_prefixes)>0:
