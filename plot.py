@@ -238,20 +238,21 @@ def initialize_gui(session):
   return plotting_gui.ApplicationMainWindow(session)
 
 if __name__ == '__main__':    #code to execute if called from command-line
-  try:
-    # initialize the session with stdoutput in gtk dialog.
-    from plotting_gui import StatusDialog
-    import gtk
-    status_dialog=StatusDialog('Import Status', flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
-                               parent=None, buttons=('Close', 0))
-    status_dialog.connect('response', lambda *ignore: status_dialog.destroy())
-    status_dialog.set_default_size(800, 600)
-    status_dialog.show_all()
-    status_dialog.fileno=lambda : 1
-    status_dialog.flush=lambda : True
-    sys.stdout=status_dialog
-  except:
-    pass
+  if '--help' not in sys.argv and len(sys.argv)>1:
+    try:
+      # initialize the session with stdoutput in gtk dialog.
+      from plotting_gui import StatusDialog
+      import gtk
+      status_dialog=StatusDialog('Import Status', flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                                 parent=None, buttons=('Close', 0))
+      status_dialog.connect('response', lambda *ignore: status_dialog.destroy())
+      status_dialog.set_default_size(800, 600)
+      status_dialog.show_all()
+      status_dialog.fileno=lambda : 1
+      status_dialog.flush=lambda : True
+      sys.stdout=status_dialog
+    except:
+      pass
   active_session=initialize(sys.argv[1:])  
   if active_session.use_gui: # start a new gui session
     plotting_session=initialize_gui(active_session)
