@@ -109,9 +109,10 @@ class ApplicationMainWindow(gtk.Window):
 
     # Create the toplevel window
     gtk.Window.__init__(self)
+    # TODO: this doesn't work with py2exe
     self.set_icon_from_file(os.path.join(
                             os.path.split(
-                           os.path.realpath(__file__))[0].rsplit(os.path.sep, 1)[0]
+                           os.path.realpath(__file__))[0]
                            , "config", "logo.png"))
     # Reading config file
     self.read_config_file()
