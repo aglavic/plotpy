@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-01-24, 20:21:20 -->
+<!-- Saved: 2010-01-25, 08:50:06 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -63,6 +63,7 @@
     <Source>import_debug.py</Source>
     <Source>py2exe_imports.py</Source>
     <Source>plot.py</Source>
+    <Source>config/transformations.py</Source>
   </Sources>
   <Forms>
   </Forms>

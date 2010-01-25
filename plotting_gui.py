@@ -50,7 +50,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1"
+__version__ = "0.6.1beta"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -110,7 +110,9 @@ class ApplicationMainWindow(gtk.Window):
     # Create the toplevel window
     gtk.Window.__init__(self)
     self.set_icon_from_file(os.path.join(
-                           os.path.realpath(config.__path__[0]),"logo.png"))
+                            os.path.split(
+                           os.path.realpath(__file__))[0].rsplit(os.path.sep, 1)[0]
+                           , "config", "logo.png"))
     # Reading config file
     self.read_config_file()
     # Normaly this is not important, but with it the Window could be implemented as subwindow later.
