@@ -35,6 +35,7 @@ if not os.access(__path__[0], os.W_OK):
                          'dns', 
                          'gnuplot_preferences', 
                          'in12',
+                         'kws2',
                          'reflectometer', 
                          'scattering_length_table', 
                          'squid', 

@@ -45,10 +45,11 @@ COLUMNS_MAPPING=[\
 ,["m' (emu)",3,['M_{ac}','emu']]\
 ,["m' Scan Std Dev",4,['delta_M','emu']]\
 # AC PPMS dat file
-,["M' (emu)",3,["M_{ac}",'emu']]\
+,["M' (emu)",7,["M\\047{ac}",'emu']]\
+,["M'' (emu)",8,["M\\047\\047_{ac}",'emu']]\
 ,["M-Std.Dev. (emu)",4,['delta_M','emu']]\
 # VSM PPMS dat file
-,["Moment (emu)",3,["M_{vsm}",'emu']]\
+,["Moment (emu)",3,["M",'emu']]\
 ,['M. Std. Err. (emu)',4,['delta_M','emu']]\
 # for RSO raw data files
 ,['Start Temperature (K)',2,['T','K']]\
@@ -59,7 +60,7 @@ COLUMNS_MAPPING=[\
 ,['Long Average Voltage', 6, ['V_{avrg}', 'V']]\
 ,['End Temperature (K)',7,['T_{End}','V']]\
 ,["M'' (emu)",8,["M2_{ac}",'emu']]\
-,["Frequency (Hz)",8,["Frequency",'Hz']]\
+,["Frequency (Hz)",6,["Frequency",'Hz']]\
 ,['Long Detrended Voltage',8,['V_{det}','V']]\
 ,['Long Demeaned Voltage', 9, ['V_{dem}', 'V']]\
 ,['Long Scaled Response',4,['V_{SC-long}','V']]\
@@ -72,12 +73,16 @@ COLUMNS_MAPPING=[\
 # Diviations are only compared with last datapoint, so slow increases won't trigger a new sequence.
 MEASUREMENT_TYPES=[\
 # raw data, sequence have same time stamp, temperature should be shown for every sequence (div=300K always true)
-[[[2,300],[0,1]],3,4,4,''],\
+[[[2,300.],[0,1.]],3,4,4,''],\
 # MvsT, H is constant
-[[[1,1]],2,3,4,''],\
+[[[1,1.]],2,3,4,''],\
 # MvsH T is constant
 [[[2,0.25]],1,3,4,'set key outside\n']\
 ]
+
+SPLIT_AFTER=[
+             ['Frequency', 5.], 
+             ]
 
 # permanent datafilters applied, a list of
 # ( column , from , to , include )

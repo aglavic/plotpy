@@ -633,7 +633,7 @@ class DNSSession(GenericSession):
               round(omega-detector_bank_2T, 1), 
               point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE-detector_bank_2T, 
               point[0]
-              ]+point[1:]+point[1:]+[0, 0]
+              ]+point[1:]+point[1:]+[0, 0, i]
     # go through every raw data object.
     for i, scan in enumerate(scans):
       if i<increment:
@@ -646,7 +646,7 @@ class DNSSession(GenericSession):
                  [[scan.dimensions()[j], scan.units()[j]] for j in range(1, len(scan.units()))]+\
                  [['I_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
                  [['error_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
-                 [['q_x', '\303\205^{-1}'], ['q_y', '\303\205^{-1}']]
+                 [['q_x', '\303\205^{-1}'], ['q_y', '\303\205^{-1}'], ['Filenumber', '']]
         self.file_data[file].append(DNSMeasurementData(columns, [], 1, 3, (len(scan.units())-1)/2+5, zdata=5))
         # set some parameters for the object
         active_map=self.file_data[file][i]
@@ -1671,7 +1671,7 @@ class DNSMeasurementData(MeasurementData):
       Calculate the wavevectors from omega, 2Theta and lambda.
     '''
     if self.zdata>0:
-      qx_index=len(self.units())-2
+      qx_index=len(self.units())-3
       qy_index=qx_index+1
       lambda_n=self.dns_info['lambda_n']
       two_pi_over_lambda=2*pi/lambda_n
@@ -1695,7 +1695,7 @@ class DNSMeasurementData(MeasurementData):
       self.ydata=qy_index
     else:
       # Powderdata
-      q_index=len(self.units())-2
+      q_index=len(self.units())-3
       qx_index=q_index+1
       lambda_n=self.dns_info['lambda_n']
       two_pi_over_lambda=2*pi/lambda_n

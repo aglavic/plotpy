@@ -64,6 +64,7 @@ known_measurement_types={
                          'treff': ('treff', 'TreffSession', ['___']), 
                          'in12': ('in12', 'IN12Session', ['___']), 
                          'dns': ('dns', 'DNSSession', ['d_dat']), 
+                         'kws2': ('kws2', 'KWS2Session', ['DAT']), 
                          }
 
   
@@ -238,7 +239,7 @@ def initialize_gui(session):
   return plotting_gui.ApplicationMainWindow(session)
 
 if __name__ == '__main__':    #code to execute if called from command-line
-  if '--help' not in sys.argv and len(sys.argv)>1:
+  if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
     try:
       # initialize the session with stdoutput in gtk dialog.
       from plotting_gui import StatusDialog
@@ -261,8 +262,9 @@ if __name__ == '__main__':    #code to execute if called from command-line
       active_session.stdout=RedirectOutput(plotting_session)
       active_session.stderr=RedirectError(plotting_session)
       sys.stdout=active_session.stdout
-      sys.stderr=active_session.stderr  
-    status_dialog.destroy()
+      sys.stderr=active_session.stderr
+    if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
+      status_dialog.destroy()
     gtk.main() # start GTK engine
   else: # in command line mode, just plot the selected data.
     active_session.plot_all()

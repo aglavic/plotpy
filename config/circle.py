@@ -53,5 +53,5 @@ MEASUREMENT_TYPES=[\
 ,[[[0,0.05]],1,2,7,'',6]\
 # hl mesh
 ,[[[1,0.05]],0,2,7,'',6]\
-,[[],0,6,7,'set title "Unknown Scan"\n']\
+,[[],0,3,6,'set title "Unknown Scan"\n']\
 ] # raw data measureing with temperature shown, MvsT with constand H,MvsH with constand T

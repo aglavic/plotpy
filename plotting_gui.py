@@ -280,7 +280,11 @@ class ApplicationMainWindow(gtk.Window):
     align_table.attach(self.logy,10,11,0,1,gtk.FILL,gtk.FILL,0,0)
     # button to open additional plot options dialog
     self.plot_options_button=gtk.ToolButton(gtk.STOCK_EDIT)
-    self.plot_options_button.set_tooltip(gtk.Tooltips(),'Add custom Gnuplot commands')
+    try:
+      self.plot_options_button.set_tooltip_text('Add custom Gnuplot commands')
+    except AttributeError:
+      # for earlier versions of gtk, this is deprecated in python 2.6
+      self.plot_options_button.set_tooltip(gtk.Tooltips(),'Add custom Gnuplot commands')
     self.plot_options_handler_id=self.plot_options_button.connect("clicked",self.open_plot_options_window)
     align_table.attach(self.plot_options_button,13,14,0,2,gtk.FILL,gtk.FILL,0,0)
     # z range and log z checkbox
@@ -534,7 +538,6 @@ class ApplicationMainWindow(gtk.Window):
     self.index_mess=0
     self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
     self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
-    self.plot_page_entry.set_max_length(len(self.measurement[-1].number))
     for window in self.open_windows:
       window.destroy()    
     self.replot()
@@ -588,7 +591,6 @@ class ApplicationMainWindow(gtk.Window):
     self.index_mess=0
     self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
     self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
-    self.plot_page_entry.set_max_length(len(self.measurement[-1].number))
     for window in self.open_windows:
       window.destroy()    
     self.replot()
@@ -2133,11 +2135,14 @@ class ApplicationMainWindow(gtk.Window):
       
       @return Newer version number or None
     '''
+    import socket
     import urllib
-    # Open the wikipage
+    # Open the wikipage, timeout if server is offline
+    socket.setdefaulttimeout(3)
     try:
       download_page=urllib.urlopen(DOWNLOAD_PAGE_URL)
-    except IOError:
+    except IOError, ertext:
+      self.statusbar.push(0, 'Error accessing update server: %s' % ertext)
       return None
     lines=download_page.readlines()
     if self.config_object['Update']['CheckBeta']:
@@ -2317,7 +2322,7 @@ class ApplicationMainWindow(gtk.Window):
         "zMenu",                                   # tooltip
         None ),
     ( "dyMenu", None,                             # name, stock id
-        "y-_error", None,                    # label, accelerator
+        "_error", None,                    # label, accelerator
         "dyMenu",                                   # tooltip
         None ),
     ( "Profiles", None,                             # name, stock id

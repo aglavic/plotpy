@@ -19,6 +19,7 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
+from time import time
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # importing preferences and data readout
@@ -49,6 +50,9 @@ class CircleSession(GenericSession):
   #++++++++++++++++++ local variables +++++++++++++++++
   show_counts=False
   FILE_WILDCARDS=(('4circle data','*.spec'), )  
+  mds_create=False
+  read_directly=True
+  autoreload_active=False
   #------------------ local variables -----------------
 
   
@@ -104,15 +108,13 @@ class CircleSession(GenericSession):
       elif (dataset.xdata==1)&(dataset.zdata==-1):
         dataset.short_info=hkl[0] +',k,'+hkl[2] +' scan'
       elif (dataset.xdata==2)&(dataset.zdata==-1):
-        dataset.short_info=+hkl[0] +','+hkl[1] +',l scan'
+        dataset.short_info=hkl[0] +','+hkl[1] +',l scan'
       elif dataset.zdata>=0:
         dataset.short_info=dataset.xdim()+dataset.ydim()+' mesh at '+hkl[0]+ ','+hkl[1]+ ','+ hkl[2]
       else:
         dataset.short_info=dataset.xdim()+' scan at '+hkl[0] +','+ hkl[1]+ ','+hkl[2]
       if not self.show_counts:
-        self.units=dataset.units()
-        dataset.process_function(self.counts_to_cps)
-        dataset.unit_trans([['counts',1,0,'counts/s']])
+        self.counts_to_cps(dataset)
     return datasets
 
   def create_menu(self):
@@ -122,7 +124,9 @@ class CircleSession(GenericSession):
     # Create XML for squid menu
     string='''
       <menu action='4CircleMenu'>
-      
+        <menuitem action='ReloadFile' />
+        <menuitem action='Autoreload' />
+        <menuitem action='ToggleCPS' />
       </menu>
     '''
     # Create actions for the menu
@@ -131,12 +135,81 @@ class CircleSession(GenericSession):
                 "4 Circle", None,                    # label, accelerator
                 None,                                   # tooltip
                 None ),
-             )
+           ( "ReloadFile", None,                             # name, stock id
+                "Reload File", "F5",                    # label, accelerator
+                None ,                                   # tooltip
+                self.reload_active_measurement ),
+           ( "Autoreload", None,                             # name, stock id
+                "Toggle Autoreload", None,                    # label, accelerator
+                None ,                                   # tooltip
+                self.autoreload_dataset ),
+           ( "ToggleCPS", None,                             # name, stock id
+                "Toggle CPS", None,                    # label, accelerator
+                None ,                                   # tooltip
+                self.toggle_cps ),
+)
     return string,  actions
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
 
-  def counts_to_cps(self, input_data):
+  def counts_to_cps(self, dataset):
+    '''
+      Convert couts to couts per second.
+    '''
+    self.units=dataset.units()
+    dataset.process_function(self.counts_to_cps_calc)
+    dataset.unit_trans([['counts',1,0,'counts/s']])
+  
+  def cps_to_counts(self, dataset):
+    '''
+      Convert couts to couts per second.
+    '''
+    self.units=dataset.units()
+    dataset.process_function(self.cps_to_counts_calc)
+    dataset.unit_trans([['counts/s',1,0,'counts']])    
+  
+  def toggle_cps(self, action, window):
+    '''
+      Change couts to cps and vice verca.
+    '''
+    dataset=self.active_file_data[window.index_mess]
+    if 'counts/s' in dataset.units():
+      self.cps_to_counts(dataset)
+    else:
+      self.counts_to_cps(dataset)
+    window.replot()
+
+  def reload_active_measurement(self, action, window):
+    '''
+      Reload the data of the active file.
+    '''
+    new_data=self.read_file(self.active_file_name)
+    for i, dataset in enumerate(new_data):
+      if i<len(self.active_file_data):
+        self.active_file_data[i].data=dataset.data
+      else:
+        self.active_file_data.append(dataset)
+    index=window.index_mess
+    window.change_active_file_object((self.active_file_name, self.file_data[self.active_file_name]))    
+    window.index_mess=index
+    window.replot()
+  
+  def autoreload_dataset(self, action, window):
+    '''
+      Enter a mode where the active measurement is automatically reloaded one per second.
+    '''
+    import gtk    
+    if self.autoreload_active:
+      self.autoreload_active=False
+    else:
+      self.autoreload_active=True
+      while self.autoreload_active:
+        last=time()
+        self.reload_active_measurement(action, window)
+        while (time()-last)<1.:
+          gtk.main_iteration()
+
+  def counts_to_cps_calc(self, input_data):
     '''
       Calculate counts/s for one datapoint.
       This function will be used in process_function() of
@@ -153,4 +226,23 @@ class CircleSession(GenericSession):
         time_column=i
     for counts in counts_column:
       output_data[counts]=output_data[counts]/output_data[time_column]# calculate cps
+    return output_data
+
+  def cps_to_counts_calc(self, input_data):
+    '''
+      Calculate counts/s for one datapoint.
+      This function will be used in process_function() of
+      a measurement_data_structure object.
+    '''
+    output_data=input_data
+    counts_column=[]
+    time_column=0
+    for i,unit in enumerate(self.units): 
+  # selection of the columns for counts
+      if unit=='counts/s':
+        counts_column.append(i)
+      if unit=='s':
+        time_column=i
+    for counts in counts_column:
+      output_data[counts]=output_data[counts]*output_data[time_column]# calculate cps
     return output_data

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-01-25, 08:50:06 -->
+<!-- Saved: 2010-02-03, 12:06:57 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -64,6 +64,9 @@
     <Source>py2exe_imports.py</Source>
     <Source>plot.py</Source>
     <Source>config/transformations.py</Source>
+    <Source>sessions/kws2.py</Source>
+    <Source>read_data/kws2.py</Source>
+    <Source>config/kws2.py</Source>
   </Sources>
   <Forms>
   </Forms>

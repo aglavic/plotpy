@@ -38,6 +38,15 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
       while input_file_lines.pop(0).find('[Data]')==-1:
         continue
       measurement_data=read_data_lines(input_file_lines,measurement_info,COLUMNS_MAPPING,MEASUREMENT_TYPES)
+      for split in config.squid.SPLIT_AFTER:
+        new_measurement_data=[]
+        for i, dataset in enumerate(measurement_data):
+          if split[0] in dataset.dimensions():
+            new_measurement_data+=split_after_read(dataset, split)
+          else:
+            new_measurement_data.append(dataset)
+        measurement_data=new_measurement_data
+      pass
     else:
       print "Wrong file type! Doesn't contain header information."
       return 'NULL'
@@ -202,4 +211,31 @@ def read_data_line(input_file_line, columns):
     return values
   else:
     return 'NULL'
+  
+def split_after_read(dataset, split):
+  '''
+    Split a dataset by a specific column after the file has been read.
+    
+    @param dataset A MeasurementData object
+    @param split A list of 'dimension name', 'sensitivity'
+    
+    @return list of MeasurementData objects
+  '''
+  from copy import deepcopy
+  output=[]
+  split_col=dataset.dimensions().index(split[0])
+  found_entries=[]
+  for point in dataset:
+    key=round(point[split_col]/split[1])
+    if key in found_entries:
+      output[found_entries.index(key)].append(point)
+    else:
+      found_entries.append(key)
+      output.append(deepcopy(dataset))
+      for physprop in output[-1].data:
+        physprop.values=[]
+      output[-1].number_of_points=0
+      output[-1].append(point)
+      output[-1].short_info='at %d %s' % (key*split[1], dataset.units()[split_col])
+  return output
   

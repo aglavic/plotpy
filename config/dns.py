@@ -20,6 +20,7 @@ FIRST_DETECTOR_ANGLE=0.0
 START_WITH_DETECTOR=4
 NUMBER_OF_DETECTORS=24
 DETECTOR_ANGULAR_INCREMENT=5.
+LAMBDA_NEUTRON=None
 VANADIUM_FILE=None
 SETUP_DIRECTORY='/home/glavic/Daten/DNS/setup/rc21' # directory to look for last reactore cycle calibrations
 NICR_FILE_WILDCARD=('', 'nicr.d_dat') # nicr files start, end string

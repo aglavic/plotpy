@@ -60,7 +60,7 @@ def read_header(input_file_lines):
   output=''
   for i in range(len(input_file_lines)):
     line=input_file_lines.pop(0)
-    if (input_file_lines[0][0]==' '):
+    if ('COUNTS' in line):
       scantype=line[1:-1].rstrip('\r\n')
       return [output,scantype]
     else:
@@ -109,7 +109,7 @@ def read_data_line(input_file_line):
     line=input_file_line.strip().split()
     if len(line)<2:
       return 'NULL'
-    return [float(line[0]),float(line[1]),math.sqrt(float(line[1]))]
+    return [float(line[0]),float(line[1]),math.sqrt(abs(float(line[1])))]
 
 def read_simulation(file_name):
   '''

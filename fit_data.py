@@ -403,6 +403,42 @@ class FitVoigt(FitFunction):
     value=p[0] * wofz(z).real / wofz(z0).real + p[4]
     return value
 
+class FitCuK(FitFunction):
+  '''
+    Fit a voigt function using the representation as real part of the complex error function.
+  '''
+  
+  # define class variables.
+  name="Cu K-radiation"
+  parameters=[1, 0, 0.001, 0.001, 0, 2, 0,99752006]
+  parameter_names=['I', 'x_0', 'gamma', 'sigma', 'C', 'K_a1/K_a2', 'x_01/x_02']
+  fit_function_text='x_0 ; gamma ; sigma'
+  sqrt2=numpy.sqrt(2)
+  sqrt2pi=numpy.sqrt(2*numpy.pi)
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1, 0, 0.001, 0.001, 0, 2, 0.99752006]
+    FitFunction.__init__(self, initial_parameters)
+    self.refine_parameters=range(6)
+  
+  def fit_function(self, p, x):
+    '''
+      Return the Voigt profile of x.
+      It is calculated using the complex error function,
+      see Wikipedia articel on Voigt-profile for the details.
+    '''
+    x=numpy.float64(numpy.array(x))
+    p=numpy.float64(numpy.array(p))
+    z=(x - p[1] + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
+    z2=(x - p[1]/p[6] + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
+    z0=(0. + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
+    value=p[0] * wofz(z).real / wofz(z0).real + p[4]
+    value2=p[0]/p[5] * wofz(z2).real / wofz(z0).real + p[4]
+    return value+value2
+
 class FitSQUIDSignal(FitFunction):
   '''
     Fit three gaussians to SQUID raw data to calculate magnetic moments.
@@ -579,6 +615,7 @@ class FitSession:
                        FitSQUIDSignal.name: FitSQUIDSignal, 
                        #FitBrillouineB.name: FitBrillouineB, 
                        FitBrillouineT.name: FitBrillouineT, 
+                       FitCuK.name: FitCuK, 
                        }
   
   def __init__(self,  dataset, file_actions=None):

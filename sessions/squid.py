@@ -190,8 +190,9 @@ Data columns and unit transformations are defined in config.squid.py.
       else:
         dataset.para_corrected=False
       # name the dataset
-      constant, unit=dataset.unit_trans_one(dataset.type(),config.squid.TRANSFORMATIONS_CONST)        
-      dataset.short_info='at %d ' % constant + unit # set short info as the value of the constant column
+      constant, unit=dataset.unit_trans_one(dataset.type(),config.squid.TRANSFORMATIONS_CONST)      
+      if dataset.short_info=='':
+        dataset.short_info='at %d ' % constant + unit # set short info as the value of the constant column
       if 'T' in units:
         self.dia_mag_correct/=1e4
         self.para[0]/=1e4

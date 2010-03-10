@@ -9,6 +9,7 @@
 import os
 from math import sqrt
 from measurement_data_structure import MeasurementData
+import config.dns
 from config.dns import *
 
 __author__ = "Artur Glavic"
@@ -36,7 +37,11 @@ def read_data(file_name, print_comments=True):
   if (file_handler.readline().split()[0:3]==['#','DNS','Data']): 
     file_handler.readline() # skip empty line
     add_info['header']=read_header(file_handler) # read header information
-    add_info['lambda_n']=read_lambda(file_handler) # find wavelength
+    if config.dns.LAMBDA_NEUTRON:
+      add_info['lambda_n']=config.dns.LAMBDA_NEUTRON
+      read_lambda(file_handler)
+    else:
+      add_info['lambda_n']=read_lambda(file_handler) # find wavelength
     # get the information defined in config.dns.GET_INFO function
     for info in GET_INFO: 
       add_info[info[1]]=read_info(file_handler,info[0]) 
