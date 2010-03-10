@@ -246,7 +246,7 @@ if __name__ == '__main__':    #code to execute if called from command-line
       import gtk
       status_dialog=StatusDialog('Import Status', flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
                                  parent=None, buttons=('Close', 0))
-      status_dialog.connect('response', lambda *ignore: status_dialog.destroy())
+      status_dialog.connect('response', lambda *ignore: status_dialog.hide())
       status_dialog.set_default_size(800, 600)
       status_dialog.show_all()
       status_dialog.fileno=lambda : 1
@@ -264,7 +264,8 @@ if __name__ == '__main__':    #code to execute if called from command-line
       sys.stdout=active_session.stdout
       sys.stderr=active_session.stderr
     if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
-      status_dialog.destroy()
+      status_dialog.hide()
+      plotting_session.status_dialog=status_dialog
     gtk.main() # start GTK engine
   else: # in command line mode, just plot the selected data.
     active_session.plot_all()

@@ -64,6 +64,8 @@ class ApplicationMainWindow(gtk.Window):
     Main window of the GUI.
     Everything the GUI does is in this Class.
   '''
+  status_dialog=None
+  
   #+++++++++++++++++++++++++++++++Window Constructor+++++++++++++++++++++++++++++++++++++#
   def __init__(self, active_session, parent=None, script_suf=''):
     '''
@@ -571,10 +573,14 @@ class ApplicationMainWindow(gtk.Window):
     #----------------File selection dialog-------------------#
     # show a status dialog for the file import
     if type(sys.stdout)!=file:
-      status_dialog=StatusDialog('Import Status', flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
-                                 parent=self, buttons=('Close', 0))
-      status_dialog.connect('response', lambda *ignore: status_dialog.destroy())
-      status_dialog.set_default_size(800, 600)
+      if not self.status_dialog:
+        status_dialog=StatusDialog('Import Status', flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                                  parent=self, buttons=('Close', 0))
+        self.status_dialog=status_dialog
+        status_dialog.connect('response', lambda *ignore: status_dialog.hide())
+        status_dialog.set_default_size(800, 600)
+      else:
+        status_dialog=self.status_dialog
       status_dialog.show_all()
       sys.stdout.second_output=status_dialog
     # try to import the selected files and append them to the active sesssion
@@ -597,6 +603,7 @@ class ApplicationMainWindow(gtk.Window):
     self.rebuild_menus()
     if type(sys.stdout)!=file:
       sys.stdout.second_output=None
+      status_dialog.hide()
     # TODO: do we need to return the file name?
     return file_names
 
@@ -999,6 +1006,12 @@ class ApplicationMainWindow(gtk.Window):
     self.open_windows.append(param_dialog)
     param_dialog.connect("destroy", lambda *w: self.open_windows.remove(param_dialog))    
 
+  def show_status_dialog(self, action):
+    '''
+      Show the dialog which holds the file import informations.
+    '''
+    if self.status_dialog:
+      self.status_dialog.show_all()
 
   def change_data_filter(self,action):
     '''
@@ -2396,6 +2409,7 @@ class ApplicationMainWindow(gtk.Window):
     output+='''
         <separator name='static6'/>
         <menuitem action='ShowPlotparams'/>
+        <menuitem action='ShowImportInfo'/>
         <menuitem action='Makro'/>
         <menuitem action='LastMakro'/>
       </menu>
@@ -2569,6 +2583,10 @@ class ApplicationMainWindow(gtk.Window):
         "Show plot parameters", None,                     # label, accelerator
         "Show the gnuplot parameters used for plot.",                                    # tooltip
         self.show_last_plot_params),
+      ( "ShowImportInfo", None,                    # name, stock id
+        "Show File Import Informations", None,                     # label, accelerator
+        "Show the information from the file import in this session.",                                    # tooltip
+        self.show_status_dialog),
       ( "FilterData", None,                    # name, stock id
         "Filter the data points", None,                     # label, accelerator
         None,                                    # tooltip
