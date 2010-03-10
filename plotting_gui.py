@@ -66,6 +66,11 @@ class ApplicationMainWindow(gtk.Window):
   '''
   status_dialog=None
   
+  def get_active_dataset(self):
+      return self.measurement[self.index_mess]
+
+  active_dataset=property(get_active_dataset)
+  
   #+++++++++++++++++++++++++++++++Window Constructor+++++++++++++++++++++++++++++++++++++#
   def __init__(self, active_session, parent=None, script_suf=''):
     '''
@@ -2109,6 +2114,8 @@ class ApplicationMainWindow(gtk.Window):
       You have the whole python functionality and can interact with the programs objects.
 
       Objects:
+      replot() \tFunction to replot the dataset
+      dataset() \tFunction to get the active MeasurementData object
       session \tThe active session containing the data objects and settings
       plot_gui \tThe window object with all window related funcitons
       self \t\tThe IPythonView object.
@@ -2116,6 +2123,7 @@ class ApplicationMainWindow(gtk.Window):
 """)
     ipview.modify_font(pango.FontDescription(FONT))
     ipview.set_wrap_mode(gtk.WRAP_CHAR)
+    sys.stderr=ipview
     sw.add(ipview)
     ipython_dialog.vbox.add(sw)
     ipython_dialog.show_all()
@@ -2124,12 +2132,13 @@ class ApplicationMainWindow(gtk.Window):
       sys.stdout=sys.__stdout__
       sys.stderr=sys.__stderr__
     ipython_dialog.connect('destroy', reset)
-    
     # add variables to ipython namespace
     ipview.updateNamespace({
                        'session': self.active_session, 
                        'plot_gui': self, 
                        'self': ipview, 
+                       'dataset': self.get_active_dataset, 
+                       'replot': self.replot, 
                        })
 
   #--------------------------Menu/Toolbar Events---------------------------------#
