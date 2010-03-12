@@ -1,12 +1,13 @@
-      Release Notes for the plotting script collection Version 0.6
+      Release Notes for the plotting script collection Version 0.6.1
              Please report bugs and feature requests to http://atzes.homeip.net/plotwiki/tiki-forums.php
 
 
 Content:
 
 0   - introduction
-1   - changes since version 0.5
-1.1   - changes from version 0.4 to 0.5
+1   - changes since version 0.6
+1.1 - changes from version 0.5 to 0.6
+1.2 - changes from version 0.4 to 0.5
 2   - installation Linux
 2.1 - installation Windows
 3   - list of modules and packages
@@ -23,7 +24,28 @@ If you would like some new features, found any bugs or would like to have additi
 supported by the script feel free to go to the Wiki http://atzes.homeip.net/plotwiki/ . Any contribution
 to the Wiki content is also welcome.
 
------ 1 - changes since version 0.5 -------
+----- 1 - changes since version 0.6 -------
+- rearanged menu structure to improve usability
+- added new Plot.py logo to the gui
+- improved the scaling of the GUI image
+- added a import status dialog when starting the progran, 
+  that can be viewed from the GUI after import.
+- added KWS2 datatype
+- added Lambda setting in dns config
+- PPMS split AC measurements by frequency
+- added x-ray ka1, ka2 fit function
+- added 4circle reload a measurement and toggle cps
+- added iPython console window for interactive python access to the program variables
+- using unicode source files
+- fixed covariance is None issue in fit routine
+- fixed DeprecationWarnig using gtk.Tooltips in plotting_gui.py
+- fixed Time out when update server is not reachable
+- fixed Import in reflectometer doesn't need leeding spaces
+- fixed DNS reimplement a column with the file numbers
+- fixed small issue in DNS fullauto import optional
+- some minor fixes and changes
+
+----- 1.1 - changes from version 0.5 to 0.6 -------
 - added support for treff data and image files
   - create intensity maps from the detector data, join scans
   - extract "true" specular reflectivity from those maps
@@ -67,7 +89,7 @@ to the Wiki content is also welcome.
 - config files in user directory if installed by admin
 
 
------ 1.1 - changes from version 0.4 to 0.5 -------
+----- 1.2 - changes from version 0.4 to 0.5 -------
 - combined all scripts into one executable with many changes in the backend for more
   flexibility using more object orientation
 - using temporal folder depending on the process ID so you can use more then one instance
