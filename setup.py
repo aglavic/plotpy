@@ -24,7 +24,7 @@ __description__='''Program to plot measured data with Gnuplot. Provides a GUI in
 
 __scripts__=['plot.py']
 __py_modules__=['plot', 'plotting_gui', 'measurement_data_structure', 'measurement_data_plotting', 
-                'fit_data', 'file_actions', 'py2exe_imports']
+                'fit_data', 'file_actions', 'py2exe_imports', 'ipython_view']
 __packages__=['config', 'read_data', 'sessions', 'sessions.reflectometer_fit']
 __package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 
                             'fit/pnr_multi/*.f90', 'fonts/*.ttf', 'logo.png'], 

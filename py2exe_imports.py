@@ -20,6 +20,9 @@ import sessions.generic
 import sessions.in12
 import sessions.squid
 import sessions.treff
+import sessions.kws2
 import numpy
 import scipy.optimize
 import scipy.special
+import ipython_view
+import IPython

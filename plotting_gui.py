@@ -120,7 +120,7 @@ class ApplicationMainWindow(gtk.Window):
     self.set_icon_from_file(os.path.join(
                             os.path.split(
                            os.path.realpath(__file__))[0]
-                           , "config", "logo.png"))
+                           , "config", "logo.png").replace('library.zip', ''))
     # Reading config file
     self.read_config_file()
     # Normaly this is not important, but with it the Window could be implemented as subwindow later.
@@ -2413,7 +2413,7 @@ class ApplicationMainWindow(gtk.Window):
     ( "FilesMenu", None,                             # name, stock id
         "_Change", None,                    # label, accelerator
         None,                                   # tooltip
-        self.change ),)
+        None ),)
   # Menus allways present
   # TODO: Add unit transformation to GUI.
     output='''<ui>

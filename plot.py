@@ -156,7 +156,7 @@ class RedirectError(RedirectOutput):
     from cPickle import dumps
     if response_id==-5:
       debug_log=open('debug.log', 'w')
-      debug_log.write('# This is a debug log file created by plot.py\n# The following error(s) have occured at %s.\n' % time.strftime('%D %T', time.localtime()))
+      debug_log.write('# This is a debug log file created by plot.py\n# The following error(s) have occured at %s.\n' % time.strftime('%m/%d/%y %H:%M:%S', time.localtime()))
       debug_log.write('# The script has been started with the options:\n %s \n' % ' ; '.join(sys.argv))
       debug_log.write('\n# Error Messages: \n\n')
       debug_log.write('\n'.join(self.content))

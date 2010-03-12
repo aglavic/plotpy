@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-02-03, 12:06:57 -->
+<!-- Saved: 2010-03-12, 16:54:31 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -67,6 +67,7 @@
     <Source>sessions/kws2.py</Source>
     <Source>read_data/kws2.py</Source>
     <Source>config/kws2.py</Source>
+    <Source>ipython_view.py</Source>
   </Sources>
   <Forms>
   </Forms>
@@ -261,6 +262,7 @@
               <list>
                 <unicode>import_debug.py</unicode>
                 <unicode>py2exe_imports.py</unicode>
+                <unicode>setup.py</unicode>
               </list>
             </value>
             <key>
@@ -274,6 +276,12 @@
             </key>
             <value>
               <unicode>doc</unicode>
+            </value>
+            <key>
+              <string>qtHelpEnabled</string>
+            </key>
+            <value>
+              <bool>False</bool>
             </value>
             <key>
               <string>sourceExtensions</string>
