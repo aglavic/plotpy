@@ -307,6 +307,16 @@ class DNSSession(GenericSession):
           else:
             inc+=1
         if (splits[i+1]-split)%inc!=0:
+          discard_items=(splits[i+1]-split)%inc
+          print "\tFound uncomplete file sequence, discarding last %i files." % discard_items
+          new_prefixes.append(name)
+          pre=options[0]+"0".join(["" for j in range(
+              len(str(options[3][1]))-len(str(splits[i+1]+1)))])
+          new_options[name]=(pre, 
+                              options[1], 
+                              inc, 
+                              (split+options[3][0], splits[i+1]+options[3][0]-1-discard_items), 
+                              options[4])
           discarded.append((pre, 
                               options[1], 
                               inc, 

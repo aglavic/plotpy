@@ -2378,7 +2378,7 @@ class ApplicationMainWindow(gtk.Window):
         "_x-axes", None,                    # label, accelerator
         "xMenu",                                   # tooltip
         None ),
-    ( "yMenu", None,                             # name, stock id
+        ( "yMenu", None,                             # name, stock id
         "_y-axes", None,                    # label, accelerator
         "yMenu",                                   # tooltip
         None ),
@@ -2411,7 +2411,7 @@ class ApplicationMainWindow(gtk.Window):
         None,                                   # tooltip
         self.change ),
     ( "FilesMenu", None,                             # name, stock id
-        "Change active file", None,                    # label, accelerator
+        "_Change", None,                    # label, accelerator
         None,                                   # tooltip
         self.change ),)
   # Menus allways present
@@ -2432,7 +2432,67 @@ class ApplicationMainWindow(gtk.Window):
         <separator name='static2'/>
         <menuitem action='Quit'/>
       </menu>
-      <menu action='ActionMenu'>
+      <menu action='FilesMenu'>
+      '''
+    for i, name in enumerate([object[0] for object in sorted(self.active_session.file_data.items())]):
+      output+="        <menuitem action='File-"+ str(i) +"'/>\n"
+      self.added_items+=(("File-"+ str(i), None, name, None, None, self.change_active_file),)
+    output+='''
+      </menu>
+      <separator name='static12'/>
+      <menu action='ViewMenu'>
+        <menu action='AxesMenu'>
+      '''
+    # Menus for column selection created depending on input measurement
+    output+='''
+          <menu action='xMenu'>
+            <menuitem action='x-number'/>
+      '''
+    for dimension in self.measurement[self.index_mess].dimensions():
+      output+="         <menuitem action='x-"+dimension+"'/>\n"
+      self.added_items=self.added_items+(("x-"+dimension, None,dimension,None,None,self.change),)
+    output+='''
+          </menu>
+          <menu action='yMenu'>
+            <menuitem action='y-number'/>
+      '''
+    for dimension in self.measurement[self.index_mess].dimensions():
+      output+="            <menuitem action='y-"+dimension+"'/>\n"
+      self.added_items=self.added_items+(("y-"+dimension, None,dimension,None,None,self.change),)
+    if self.measurement[self.index_mess].zdata>=0:
+      output+='''
+            </menu>
+            <placeholder name='zMenu'>
+            <menu action='zMenu'>
+        '''
+      for dimension in self.measurement[self.index_mess].dimensions():
+        output+="          <menuitem action='z-"+dimension+"'/>\n"
+        self.added_items=self.added_items+(("z-"+dimension, None,dimension,None,None,self.change),)
+      output+="</menu></placeholder>\n"
+    else:
+      output+='''
+            </menu>      
+            <placeholder name='zMenu'/>'''
+    output+='''
+          <menu action='dyMenu'>
+      '''
+    for dimension in self.measurement[self.index_mess].dimensions():
+      output+="              <menuitem action='dy-"+dimension+"'/>\n"
+      self.added_items=self.added_items+(("dy-"+dimension, None,dimension,None,None,self.change),)
+    # allways present stuff and toolbar
+    output+='''                   </menu>
+        </menu>
+        <menu action='Profiles'>
+      '''
+    for name in sorted(self.profiles.items()):
+      output+="        <menuitem action='"+\
+        name[0]+"' position='top'/>\n"
+      self.added_items+=((name[0], None,'_'+name[0],None,None,self.load_profile),)
+    output+='''  <separator name='static8'/>
+          <menuitem action='SaveProfile' position="bottom"/>
+          <menuitem action='DeleteProfile' position="bottom"/>
+        </menu>
+        <separator name='static9'/>
         <menuitem action='Next'/>
         <menuitem action='Prev'/>
         <menuitem action='First'/>
@@ -2441,6 +2501,17 @@ class ApplicationMainWindow(gtk.Window):
         <menuitem action='AddMulti'/>
         <menuitem action='AddAll'/>
         <separator name='static4'/>
+        <menuitem action='ShowPlotparams'/>
+        <menuitem action='ShowImportInfo'/>
+      </menu>
+      <menu action='TreatmentMenu'>
+        '''
+    #++++++++++++++ create session specific menu ++++++++
+    specific_menu_items=self.active_session.create_menu()
+    output+=specific_menu_items[0]
+    self.session_added_items=specific_menu_items[1]
+    #-------------- create session specific menu --------
+    output+='''
         <menuitem action='FitData'/>
         <separator name='static5'/>
         <menuitem action='FilterData'/>
@@ -2460,85 +2531,20 @@ class ApplicationMainWindow(gtk.Window):
         </placeholder>'''
     output+='''
         <separator name='static6'/>
-        <menuitem action='ShowPlotparams'/>
-        <menuitem action='ShowImportInfo'/>
+      </menu>
+      <menu action='ExtrasMenu'>
         <menuitem action='Makro'/>
         <menuitem action='LastMakro'/>
+        <menuitem action='History'/>
+        <menuitem action='OpenConsole'/>
       </menu>
-      <separator name='static6'/>'''
-    # Menus for column selection created depending on input measurement
-    output+='''
-      <menu action='xMenu'>
-        <menuitem action='x-number'/>
-      '''
-    for dimension in self.measurement[self.index_mess].dimensions():
-      output+="        <menuitem action='x-"+dimension+"'/>\n"
-      self.added_items=self.added_items+(("x-"+dimension, None,dimension,None,None,self.change),)
-    output+='''
-      </menu>
-      <menu action='yMenu'>
-        <menuitem action='y-number'/>
-      '''
-    for dimension in self.measurement[self.index_mess].dimensions():
-      output+="        <menuitem action='y-"+dimension+"'/>\n"
-      self.added_items=self.added_items+(("y-"+dimension, None,dimension,None,None,self.change),)
-    if self.measurement[self.index_mess].zdata>=0:
-      output+='''
-        </menu>
-        <placeholder name='zMenu'>
-        <menu action='zMenu'>
-        '''
-      for dimension in self.measurement[self.index_mess].dimensions():
-        output+="        <menuitem action='z-"+dimension+"'/>\n"
-        self.added_items=self.added_items+(("z-"+dimension, None,dimension,None,None,self.change),)
-      output+="</menu></placeholder>\n"
-    else:
-      output+='''
-        </menu>      
-        <placeholder name='zMenu'/>'''
-    output+='''
-      <menu action='dyMenu'>
-      '''
-    for dimension in self.measurement[self.index_mess].dimensions():
-      output+="        <menuitem action='dy-"+dimension+"'/>\n"
-      self.added_items=self.added_items+(("dy-"+dimension, None,dimension,None,None,self.change),)
-    # allways present stuff and toolbar
-    output+='''     </menu>
-      <separator name='static7'/>
-      <menu action='Profiles'>
-    '''
-    for name in sorted(self.profiles.items()):
-      output+="        <menuitem action='"+\
-        name[0]+"' position='top'/>\n"
-      self.added_items+=((name[0], None,'_'+name[0],None,None,self.load_profile),)
-    output+=''' <separator name='static8'/>
-        <menuitem action='SaveProfile' position="bottom"/>
-        <menuitem action='DeleteProfile' position="bottom"/>
-      </menu>
-      <separator name='static9'/>
-      <menu action='FilesMenu'>
-      '''
-    for i, name in enumerate([object[0] for object in sorted(self.active_session.file_data.items())]):
-      output+="        <menuitem action='File-"+ str(i) +"'/>\n"
-      self.added_items+=(("File-"+ str(i), None, name, None, None, self.change_active_file),)
-    output+='''
-      </menu>
-      <separator name='static12'/>'''
-    #++++++++++++++ create session specific menu ++++++++
-    specific_menu_items=self.active_session.create_menu()
-    output+=specific_menu_items[0]
-    self.session_added_items=specific_menu_items[1]
-    #-------------- create session specific menu --------
-    output+='''
       <separator name='static13'/>
       <menu action='HelpMenu'>
         <menuitem action='ShowConfigPath'/>
         <menuitem action='About'/>
-        <menuitem action='History'/>
         '''
     if self.active_session.DEBUG:
       output+='''
-        <menuitem action='OpenConsole'/>
       '''
     output+=    '''
       </menu>
@@ -2570,7 +2576,10 @@ class ApplicationMainWindow(gtk.Window):
     '''
     entries = (
       ( "FileMenu", None, "_File" ),               # name, stock id, label
-      ( "ActionMenu", None, "A_ction" ),               # name, stock id, label
+      ( "ViewMenu", None, "_View" ),               # name, stock id, label
+      ( "AxesMenu", None,  "_Axes"),                # name, stock id, label
+      ( "TreatmentMenu", None, "_Data treatment" ),               # name, stock id, label
+      ( "ExtrasMenu", None,  "_Extras"),                # name, stock id, label
       ( "HelpMenu", None, "_Help" ),               # name, stock id, label
       ( "ToolBar", None, "Toolbar" ),               # name, stock id, label
       ( "OpenDatafile", gtk.STOCK_OPEN,                    # name, stock id
@@ -2586,7 +2595,7 @@ class ApplicationMainWindow(gtk.Window):
         "Export current Plot",                       # tooltip
         self.export_plot ),
       ( "ExportAs", gtk.STOCK_SAVE,                  # name, stock id
-        "E_xport As (.png/.ps)...", '<alt>E',                       # label, accelerator
+        "E_xport As (.png/.ps)...", '<control><shift>E',                       # label, accelerator
         "Export Plot under other name",                          # tooltip
         self.export_plot ),
       ( "Print", gtk.STOCK_PRINT,                  # name, stock id
