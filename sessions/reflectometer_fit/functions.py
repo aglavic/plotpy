@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   Functions for reflectometer and treff sessions to work with fortran fit program. 
   They only work if imported inside a plotting session and are expanded with specific functions in the
@@ -17,7 +17,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"

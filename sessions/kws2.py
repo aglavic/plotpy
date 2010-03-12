@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   class for KWS2 data sessions
 '''
@@ -27,7 +27,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"

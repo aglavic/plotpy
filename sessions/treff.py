@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   class for treff data sessions
 '''
@@ -34,7 +34,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -58,10 +58,10 @@ class TreffSession(GenericSession):
   #++++++++++++++++++ local variables +++++++++++++++++
   FILE_WILDCARDS=(('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'), ('All','*'))  
   TRANSFORMATIONS=[\
-                  ['mrad',1/config.treff.GRAD_TO_MRAD,0,'\302\260'],
+                  ['mrad',1/config.treff.GRAD_TO_MRAD,0,'°'],
                   ['detector', 'mrad', 1., 0, '2Theta', 'mrad'], 
                   ['detector', 'rad', 1., 0, '2Theta', 'rad'], 
-                  ['detector', '\302\260', 1., 0, '2Theta', '\302\260'], 
+                  ['detector', '°', 1., 0, '2Theta', '°'], 
                   ]  
   import_images=True
   fit_object=None # used for storing the fit parameters
@@ -1185,7 +1185,7 @@ class TreffSession(GenericSession):
     for i, dataset in enumerate(self.fit_datasets):
       # if the channel dataset is None use 0 points.
       if dataset:
-        dataset.unit_trans([['\302\260', math.pi/180.*1000., 0, 'mrad'], 
+        dataset.unit_trans([['°', math.pi/180.*1000., 0, 'mrad'], 
                             ['rad', 1000., 0, 'mrad']])    
         dataset.unit_trans([['2Theta', 'mrad', 0.5, 0, 'Theta', 'mrad']])    
         data_lines.append(dataset.export(os.path.join(folder, datafile_prefix+names[i]+'.ref'), 

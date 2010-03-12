@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
  Some general settings for the 4circle session
 '''
@@ -7,7 +7,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -21,10 +21,10 @@ TRANSFORMATIONS_CONST=[]
 #  (every measurement file the positions have to start with 0 and have no holes in between
 # [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
 COLUMNS_MAPPING=[\
-['Two Theta',7,['2Theta','\302\260']]\
-,['Theta',7,['Theta','\302\260']]\
-,['Chi',7,['Chi','\302\260']]\
-,['Phi',7,['Phi','\302\260']]\
+['Two Theta',7,['2Theta','°']]\
+,['Theta',7,['Theta','°']]\
+,['Chi',7,['Chi','°']]\
+,['Phi',7,['Phi','°']]\
 ,['H',0,['h','']]\
 ,['K',1,['k','']]\
 ,['L',2,['l','']]\

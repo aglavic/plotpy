@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   Some general settings for the reflectometer sessions
 '''
@@ -10,7 +10,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -24,10 +24,10 @@ TRANSFORMATIONS_CONST=[]
 #  (every measurement file the positions have to start with 0 and have no holes in between
 # [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
 DATA_COLUMNS={\
-'THETA':['Theta','\302\260']\
-,'2THETA':['2 Theta','\302\260']\
-,'PHI':['Phi','\302\260']\
-,'COUPLED':['2 Theta','\302\260']\
+'THETA':['Theta','°']\
+,'2THETA':['2 Theta','°']\
+,'PHI':['Phi','°']\
+,'COUPLED':['2 Theta','°']\
 ,'COUNTS':['Intensity','counts']\
 ,'STEPTIME':['Time per Step','s']\
 ,'AUX1':['z','mm']

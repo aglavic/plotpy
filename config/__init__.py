@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   Package containing configuration moduls.
   This folder containes all files which define constants and parameters

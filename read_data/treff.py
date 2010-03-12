@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   Functions to read from treff data and .img. files.
   MeasurementData Object from 'measurement_data_structure' is used to store the data points.
@@ -17,7 +17,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -241,12 +241,12 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                ['Intensity(time)', 'counts/s'], 
                                ['error(time)','counts/s']], 
                               [], 0, 5, 6)
-  data_object=MeasurementDataTREFF([['\316\261_i', 'mrad'], 
-                               ['\316\261_f', 'mrad'], 
-                               ['\316\261_i+\316\261_f', 'mrad'], 
-                               ['\316\261_i-\316\261_f', 'mrad'], 
-                               ['q_x', '\303\205^{-1}'], 
-                               ['q_z', '\303\205^{-1}'], 
+  data_object=MeasurementDataTREFF([['α_i', 'mrad'], 
+                               ['α_f', 'mrad'], 
+                               ['α_i+α_f', 'mrad'], 
+                               ['α_i-α_f', 'mrad'], 
+                               ['q_x', 'Å^{-1}'], 
+                               ['q_z', 'Å^{-1}'], 
                                ['Intensity', 'a.u.'], 
                                ['log_{10}(Intensity)', 'a.u.'], 
                                ['error','a.u.']], 

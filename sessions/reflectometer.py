@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   classes for reflectometer sessions and fits with fit.f90
 '''
@@ -40,7 +40,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -341,7 +341,7 @@ class ReflectometerSession(GenericSession):
     scaling_factor.connect('activate', self.dialog_activate, dialog)
     align_table.attach(scaling_factor, 1, 2, 2, 3, gtk.FILL, gtk.FILL, 0, 0)   
     text_filed=gtk.Label()
-    text_filed.set_markup('Theta_max (\302\260): ')
+    text_filed.set_markup('Theta_max (°): ')
     align_table.attach(text_filed, 2, 3, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
     theta_max=gtk.Entry()
     theta_max.set_width_chars(10)
@@ -683,8 +683,8 @@ class ReflectometerSession(GenericSession):
     '''
     dataset=window.measurement[window.index_mess]
       # convert x values from angle to q
-    dataset.unit_trans([['Theta', '\302\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
-                      ['2 Theta', '\302\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])    
+    dataset.unit_trans([['Theta', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
+                      ['2 Theta', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
     data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, ' ', xfrom=self.x_from, xto=self.x_to)
     self.fit_object.number_of_points=data_lines
     self.fit_object.set_fit_constrains()
@@ -958,8 +958,8 @@ class ReflectometerSession(GenericSession):
       #------------------- create fit parameters object -------------------
     self.fit_object.set_fit_constrains() # set constrained parameters for multilayer
       # convert x values from angle to q
-    dataset.unit_trans([['Theta', '\\302\\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
-                      ['2 Theta', '\\302\\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])
+    dataset.unit_trans([['Theta', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
+                      ['2 Theta', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])
       # first guess for scaling factor is the maximum intensity
     self.fit_object.scaling_factor=(dataset.max(xstart=0.005)[1]/1e5)
       # first guess for the background is the minimum intensity
@@ -967,8 +967,8 @@ class ReflectometerSession(GenericSession):
     #+++++ Try to refine the scaling factorn and roughnesses +++++
     if self.try_refine: 
       print "Try to refine scaling"
-      dataset.unit_trans([['Theta', '\302\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
-                      ['2 Theta', '\302\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])    
+      dataset.unit_trans([['Theta', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
+                      ['2 Theta', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
       self.refine_scaling(dataset)
       print "Try to refine roughnesses"
       self.refine_roughnesses(dataset)

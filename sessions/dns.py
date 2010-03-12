@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   class for DNS data sessions and derived MeasurementData object.
 '''
@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = ["Werner Schweika"]
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -641,12 +641,12 @@ class DNSSession(GenericSession):
           channels=['x', 'x', 'y', 'y', 'z', 'z']
           scan.dns_info['pol_channel']=channels[i]
         # Create the objects for every polarization chanel
-        columns=[['Detectorbank', '\302\260'], ['Omega', '\302\260'], ['OmegaRAW', '\302\260'], 
-                 ['2Theta', '\302\260'], ['Detector', '']]+\
+        columns=[['Detectorbank', '°'], ['Omega', '°'], ['OmegaRAW', '°'], 
+                 ['2Theta', '°'], ['Detector', '']]+\
                  [[scan.dimensions()[j], scan.units()[j]] for j in range(1, len(scan.units()))]+\
                  [['I_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
                  [['error_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
-                 [['q_x', '\303\205^{-1}'], ['q_y', '\303\205^{-1}'], ['Filenumber', '']]
+                 [['q_x', 'Å^{-1}'], ['q_y', 'Å^{-1}'], ['Filenumber', '']]
         self.file_data[file].append(DNSMeasurementData(columns, [], 1, 3, (len(scan.units())-1)/2+5, zdata=5))
         # set some parameters for the object
         active_map=self.file_data[file][i]
@@ -987,8 +987,8 @@ class DNSSession(GenericSession):
     d_star_x=2.*pi/self.D_SPACING_X
     d_star_y=2.*pi/self.D_SPACING_Y
     self.TRANSFORMATIONS=[\
-      ['q_x','\303\205^{-1}',1./d_star_x,0,self.D_NAME_X,'r.l.u.'],\
-      ['q_y','\303\205^{-1}',1/d_star_y,0,self.D_NAME_Y,'r.l.u.'],\
+      ['q_x','Å^{-1}',1./d_star_x,0,self.D_NAME_X,'r.l.u.'],\
+      ['q_y','Å^{-1}',1/d_star_y,0,self.D_NAME_Y,'r.l.u.'],\
                           ]
   
   def read_vana_bg_nicr_files(self):
@@ -1687,8 +1687,8 @@ class DNSMeasurementData(MeasurementData):
                   two_pi_over_lambda
         return output    
       self.process_function(angle_to_wavevector)
-      self.data[qx_index].unit='\303\205^{-1}'
-      self.data[qy_index].unit='\303\205^{-1}'
+      self.data[qx_index].unit='Å^{-1}'
+      self.data[qy_index].unit='Å^{-1}'
       self.data[qx_index].dimension='q_x'
       self.data[qy_index].dimension='q_y'
       self.xdata=qx_index
@@ -1709,8 +1709,8 @@ class DNSMeasurementData(MeasurementData):
         output[q_index]=sin(0.5*point[3]*grad_to_rad)*2.*two_pi_over_lambda
         return output    
       self.process_function(angle_to_wavevector)
-      self.data[q_index].unit='\303\205^{-1}'
-      self.data[qx_index].unit='\303\205^{-1}'
+      self.data[q_index].unit='Å^{-1}'
+      self.data[qx_index].unit='Å^{-1}'
       self.data[q_index].dimension='q'
       self.data[qx_index].dimension='q_x'
       self.xdata=q_index

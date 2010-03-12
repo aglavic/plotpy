@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   Functions to read from reflectometer UXD data file. Mostly just string processing.
   MeasurementData Object from 'measurement_data_structure' is used to store the data points.
@@ -15,7 +15,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -120,7 +120,7 @@ def read_simulation(file_name):
   sim_file=open(file_name,'r')
   sim_lines=sim_file.readlines()
   sim_file.close()
-  data=MeasurementData([['q','A^{-1}'],['Intensity','counts/s'],['error','counts']],[],0,1,2)
+  data=MeasurementData([['q','Å^{-1}'],['Intensity','counts/s'],['error','counts']],[],0,1,2)
   data.info='Simulation'
   for line in sim_lines:
     if len(line.split())>1:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   Functions to read from kws2 data files.
   MeasurementData Object from 'measurement_data_structure' is used to store the data points.
@@ -18,7 +18,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -68,7 +68,7 @@ def create_dataobj(data_lines, header_lines, countingtime, setup):
   '''
   detector_sensitivities
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                           ['q_y', 'A^{-1}'], ['q_z', 'A^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
   data_joined=" ".join(data_lines)
   data_array=array(map(float, data_joined.split()))

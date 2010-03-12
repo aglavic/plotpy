@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   Module for GTK GUI from plot.py program. 
   All general GUI functions are defined here.
@@ -50,7 +50,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -428,7 +428,7 @@ class ApplicationMainWindow(gtk.Window):
     dialog.set_program_name("Plotting GUI")
     dialog.set_version("v%s" % __version__)
     dialog.set_authors(["Artur Glavic"])
-    dialog.set_copyright("\302\251 Copyright 2008-2009 Artur Glavic\n a.glavic@fz-juelich.de")
+    dialog.set_copyright("© Copyright 2008-2009 Artur Glavic\n a.glavic@fz-juelich.de")
     dialog.set_website("http://www.fz-juelich.de/iff/Glavic_A/")
     dialog.set_website_label('Webseite @ fz-juelich.de')
     ## Close dialog on user response

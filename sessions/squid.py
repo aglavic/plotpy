@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   class for squid data sessions
 '''
@@ -31,7 +31,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -176,7 +176,7 @@ Data columns and unit transformations are defined in config.squid.py.
       if 'T' in units:
         self.dia_mag_correct*=1e4
         self.para[0]*=1e4
-      if 'A\302\267m\302\262' in units:
+      if 'A·m²' in units:
         self.dia_mag_correct/=1e3
         self.para[0]/=1e3
       if correct_dia:
@@ -196,7 +196,7 @@ Data columns and unit transformations are defined in config.squid.py.
       if 'T' in units:
         self.dia_mag_correct/=1e4
         self.para[0]/=1e4
-      if 'A\302\267m\302\262' in units:
+      if 'A·m²' in units:
         self.dia_mag_correct*=1e3
         self.para[0]*=1e3
     return datasets
@@ -358,7 +358,7 @@ Data columns and unit transformations are defined in config.squid.py.
       if 'T' in units:
         self.dia_mag_correct*=1e4
         self.para[0]*=1e4
-      if 'A\302\267m\302\262' in units:
+      if 'A·m²' in units:
         self.dia_mag_correct/=1e3
         self.para[0]/=1e3
       if name=='SquidDia':
@@ -379,7 +379,7 @@ Data columns and unit transformations are defined in config.squid.py.
       if 'T' in units:
         self.dia_mag_correct/=1e4
         self.para[0]/=1e4
-      if 'A\302\267m\302\262' in units:
+      if 'A·m²' in units:
         self.dia_mag_correct*=1e3
         self.para[0]*=1e3
     window.replot()

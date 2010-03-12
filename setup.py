@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   Script used for setup and installation purpose. 
   If all works the right way this should test the system environment for all dependencies and create source and binary distributions.
@@ -16,7 +16,7 @@ __name__='Plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __license__ = "None"
-__version__ = "0.6.1beta"
+__version__ = "0.6.1"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://atzes.homeip.net/plotwiki"

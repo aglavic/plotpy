@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''
   Package containing all modules for data file reading.
   This folder containes all files which define functions to read out
