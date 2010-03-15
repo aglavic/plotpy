@@ -2214,10 +2214,13 @@ class ApplicationMainWindow(gtk.Window):
       lines=filter(lambda line: 'Latest' in line and 'Version' in line, lines)
     else:
       lines=filter(lambda line: 'Latest stable Version' in line, lines)
-    version=max(map(lambda line: line.split('Version')[-1].split(':')[0].strip(), lines))
-    if version>__version__:
-      return version
-    else:
+    try:
+      version=max(map(lambda line: line.split('Version')[-1].split(':')[0].strip(), lines))
+      if version>__version__:
+        return version
+      else:
+        return None
+    except ValueError:
       return None
 
   def check_for_updates(self):
