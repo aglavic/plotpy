@@ -592,7 +592,49 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         None
     else:
       None
+
+  def store_snapshot(self):
+    '''
+      Create a snapshot of the active measurement to reload it later.
+      The method uses cPickle to create a file with the content of
+      the active_file_data list and stores it in active_file_name.mdd.
+    '''
+    dump_obj=self.create_snapshot_obj()
+    print "Writing snapshot to file..."
+    dump_file=open(self.active_file_name+'.mdd', 'wb')
+    dump(dump_obj, dump_file, -1)
+    dump_file.close()
+
+  def reload_snapshot(self):
+    '''
+      Reload a snapshot created with store_snapshot.
+    '''
+    if os.path.exists(self.active_file_name+'.mdd'):
+      dump_file=open(self.active_file_name+'.mdd', 'rb')
+      print "Reading snapshot from file..."
+      dump_obj=load(dump_file)
+      dump_file.close()
+      self.extract_snapshot_obj(dump_obj)
+    else:
+      print "No snapshot file found."
+
+  def create_snapshot_obj(self):
+    '''
+      Create a python object that should be pickled as snapshot.
+      Child classes can overwrite this to save additional parts in the snapshot.
+      The main class only stores the active_file_data list.
+    '''
+    return self.active_file_data
   
+  def extract_snapshot_obj(self, dump_obj):
+    '''
+      Extract a python object that was pickled as snapshot to the associated objects.
+      Child classes can overwrite this to load additional parts from the snapshot.
+      The main class only loads the active_file_data list.
+    '''
+    self.file_data[self.active_file_name]=dump_obj
+    self.active_file_data=self.file_data[self.active_file_name]
+
   def create_menu(self):
     '''
       Create a specifig menu for the session. Only child classes

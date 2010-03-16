@@ -312,11 +312,11 @@ class DNSSession(GenericSession):
           new_prefixes.append(name)
           pre=options[0]+"0".join(["" for j in range(
               len(str(options[3][1]))-len(str(splits[i+1]+1)))])
-          new_options[name]=(pre, 
+          new_options[name]=[pre, 
                               options[1], 
                               inc, 
                               (split+options[3][0], splits[i+1]+options[3][0]-1-discard_items), 
-                              options[4])
+                              options[4]]
           discarded.append((pre, 
                               options[1], 
                               inc, 
@@ -326,11 +326,11 @@ class DNSSession(GenericSession):
           new_prefixes.append(name)
           pre=options[0]+"0".join(["" for j in range(
               len(str(options[3][1]))-len(str(splits[i+1]+1)))])
-          new_options[name]=(pre, 
+          new_options[name]=[pre, 
                               options[1], 
                               inc, 
                               (split+options[3][0], splits[i+1]+options[3][0]-1), 
-                              options[4])
+                              options[4]]
     print "\tSplitted into %i sequences, using %i and discarding %i." % (len(new_prefixes)+len(discarded), len(new_prefixes), len(discarded))
     self.prefixes=new_prefixes
     self.file_options=new_options

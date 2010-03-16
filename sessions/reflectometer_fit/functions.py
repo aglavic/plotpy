@@ -35,11 +35,11 @@ def result_window_response(self, response, dialog, window, new_fit):
     depending of response to the result window use new fit parameters
     or old ones.
   '''
-  self.fit_object.fit=0
+  self.active_file_data.fit_object.fit=0
   if response==1:
-    self.fit_object_history.append(self.fit_object)
-    self.fit_object_future=[]
-    self.fit_object=new_fit
+    self.active_file_data.fit_object_history.append(self.active_file_data.fit_object)
+    self.active_file_data.fit_object_future=[]
+    self.active_file_data.fit_object=new_fit
     self.rebuild_dialog(dialog, window)
   else:
     self.dialog_fit(None, window)
@@ -49,11 +49,11 @@ def fit_history(self, action, back, dialog, window):
     Change fit options to older parameters and back.
   '''
   if back:
-    self.fit_object_future=[self.fit_object] + self.fit_object_future
-    self.fit_object=self.fit_object_history.pop(-1)
+    self.active_file_data.fit_object_future=[self.active_file_data.fit_object] + self.active_file_data.fit_object_future
+    self.active_file_data.fit_object=self.active_file_data.fit_object_history.pop(-1)
   else:
-    self.fit_object_history.append(self.fit_object)
-    self.fit_object=self.fit_object_future.pop(0)
+    self.active_file_data.fit_object_history.append(self.active_file_data.fit_object)
+    self.active_file_data.fit_object=self.active_file_data.fit_object_future.pop(0)
   self.rebuild_dialog(dialog, window)
 
 def rebuild_dialog(self, dialog, window):
@@ -70,7 +70,7 @@ def delete_layer(self, action, layer, dialog, window):
   '''
     remove a layer after button is pressed
   '''
-  self.fit_object.remove_layer(layer)
+  self.active_file_data.fit_object.remove_layer(layer)
   self.rebuild_dialog(dialog, window)
 
 def up_layer(self, action, layer, dialog, window):
@@ -78,11 +78,11 @@ def up_layer(self, action, layer, dialog, window):
     remove a layer after button is pressed
   '''
   # is the layer not part of a multilayer?
-  if layer in self.fit_object.layers:
-    self.fit_object.layers=self.move_layer_up_in_list(layer, self.fit_object.layers)
+  if layer in self.active_file_data.fit_object.layers:
+    self.active_file_data.fit_object.layers=self.move_layer_up_in_list(layer, self.active_file_data.fit_object.layers)
     self.rebuild_dialog(dialog, window)
   else: # it is a part of a multilayer, try to find it
-    for layer_in in self.fit_object.layers:
+    for layer_in in self.active_file_data.fit_object.layers:
       if layer_in.multilayer:
         if layer in layer_in.layers:
           layer_in.layers=self.move_layer_up_in_list(layer, layer_in.layers)
@@ -105,7 +105,7 @@ def delete_multilayer(self, action, multilayer, dialog, window):
   '''
     remove a multilayer after button is pressed
   '''
-  self.fit_object.layers.remove(multilayer)
+  self.active_file_data.fit_object.layers.remove(multilayer)
   self.rebuild_dialog(dialog, window)
 
 def open_status_dialog(self, window):
@@ -185,7 +185,7 @@ def user_constraint_dialog(self, fit_dialog, window):
   '''
   from pango import FontDescription
   # create the constraints list
-  self.fit_object.set_fit_constrains()
+  self.active_file_data.fit_object.set_fit_constrains()
   constraint_dialog=gtk.Dialog(title='Add constraints:', parent=fit_dialog, 
                                flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
                                buttons=('Add constraint', 2, 'OK', 1, 'Cancel', 0))
@@ -197,7 +197,7 @@ def user_constraint_dialog(self, fit_dialog, window):
   constraint_dialog.set_default_size(400, 50)
   constraint_dialog.move(600, 0)
   parameter_text=gtk.TextView()
-  parameter_text.get_buffer().set_text(self.fit_object.get_ent_str())
+  parameter_text.get_buffer().set_text(self.active_file_data.fit_object.get_ent_str())
   # set monospace fonts for better readability
   parameter_text.modify_font(FontDescription("mono"))
   sw=gtk.ScrolledWindow()
@@ -206,16 +206,16 @@ def user_constraint_dialog(self, fit_dialog, window):
   parameter_dilog.vbox.add(sw)
   parameter_dilog.show_all()
   # remove User Constrints from the list
-  for cons in self.fit_object.user_constraints:
+  for cons in self.active_file_data.fit_object.user_constraints:
     try:
-      self.fit_object.constrains.remove(cons)
+      self.active_file_data.fit_object.constrains.remove(cons)
     except ValueError:
       continue
-  for constraint in self.fit_object.constrains:
+  for constraint in self.active_file_data.fit_object.constrains:
     text=gtk.Label()
     text.set_markup(str(constraint))
     constraint_dialog.vbox.pack_start(text, expand=False)
-  for user_con in self.fit_object.user_constraints:
+  for user_con in self.active_file_data.fit_object.user_constraints:
     table=gtk.Table(4, 1, False)
     text=gtk.Label()
     text.set_markup('[')
@@ -257,14 +257,14 @@ def user_constraint_response(self, action, response, dialog, fit_dialog):
     table.show_all()
     dialog.vbox.pack_end(table)
   if response==1:
-    self.fit_object.user_constraints=[]
+    self.active_file_data.fit_object.user_constraints=[]
     objects=dialog.vbox.get_children()
     for object in objects:
       if type(object) is gtk.Table:
         for widget in object.get_children():
           if type(widget) is gtk.Entry:
             try:
-              self.fit_object.user_constraints.append(map(int, widget.get_text().split(',')))
+              self.active_file_data.fit_object.user_constraints.append(map(int, widget.get_text().split(',')))
             except ValueError:
               continue
     fit_dialog.response(5)

@@ -424,7 +424,7 @@ Data columns and unit transformations are defined in config.squid.py.
         print "Extracting datapoint No: %i" %i
       data.ydata=v_index
       data.dydata=v_index
-      fit_object=FitSession(data, window.file_actions)
+      fit_object=FitSession(data)
       data.fit_object=fit_object
       fit_object.add_function('SQUID RAW-data')
       fit_object.fit()

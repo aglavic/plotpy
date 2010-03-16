@@ -286,7 +286,7 @@ class ApplicationMainWindow(gtk.Window):
     align_table.attach(self.logx,9,10,0,1,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.logy,10,11,0,1,gtk.FILL,gtk.FILL,0,0)
     # button to open additional plot options dialog
-    self.plot_options_button=gtk.ToolButton(gtk.STOCK_EDIT)
+    self.plot_options_button=gtk.ToolButton(gtk.STOCK_PREFERENCES)
     try:
       self.plot_options_button.set_tooltip_text('Add custom Gnuplot commands')
     except AttributeError:
@@ -611,6 +611,20 @@ class ApplicationMainWindow(gtk.Window):
       status_dialog.hide()
     # TODO: do we need to return the file name?
     return file_names
+
+  def save_snapshot(self, action):
+    '''
+      Save a snapshot of the active work.
+    '''
+    self.active_session.store_snapshot()
+  
+  def load_snapshot(self, action):
+    '''
+      Load a snapshot of earlier work.
+    '''
+    self.active_session.reload_snapshot()
+    self.measurement=self.active_session.active_file_data
+    self.replot()
 
   def change_range(self,action):
     '''
@@ -2424,6 +2438,8 @@ class ApplicationMainWindow(gtk.Window):
       <menu action='FileMenu'>
         <menuitem action='OpenDatafile'/>
         <menuitem action='SaveGPL'/>
+        <menuitem action='SaveSnapshot'/>
+        <menuitem action='LoadSnapshot'/>
         <separator name='static14'/>
         <menuitem action='Export'/>
         <menuitem action='ExportAs'/>
@@ -2564,6 +2580,9 @@ class ApplicationMainWindow(gtk.Window):
       <separator name='static11'/>
       <toolitem action='AddMulti'/>
       <toolitem action='MultiPlot'/>
+      <separator name='static12'/>
+      <toolitem action='SaveSnapshot'/>
+      <toolitem action='LoadSnapshot'/>
     </toolbar>
     </ui>'''
     return output
@@ -2589,6 +2608,14 @@ class ApplicationMainWindow(gtk.Window):
         "_Open File","<control>O",                      # label, accelerator
         "Open a new datafile",                       # tooltip
         self.add_file ),
+      ( "SaveSnapshot", gtk.STOCK_EDIT,                    # name, stock id
+        "Save Snapshot",None,                      # label, accelerator
+        "Save the current state for this measurement.",                       # tooltip
+        self.save_snapshot ),
+      ( "LoadSnapshot", gtk.STOCK_OPEN,                    # name, stock id
+        "Load Snapshot", None,                      # label, accelerator
+        "Load a state for this measurement stored before.",                       # tooltip
+        self.load_snapshot ),
       ( "SaveGPL", gtk.STOCK_SAVE,                    # name, stock id
         "_Save this dataset (.out)...","<control>S",                      # label, accelerator
         "Save Gnuplot and datafile",                       # tooltip

@@ -618,7 +618,7 @@ class FitSession:
                        FitCuK.name: FitCuK, 
                        }
   
-  def __init__(self,  dataset, file_actions=None):
+  def __init__(self,  dataset):
     '''
       Constructor creating pointer to the dataset.
       
@@ -628,16 +628,6 @@ class FitSession:
     self.functions=[] # a list of sequences (FitFunction, fit, plot, ignore errors) to be used
     self.data=dataset
     self.show_covariance=False
-    if file_actions:
-      # TODO: Is this working?, check what happens with dataset changes
-      # connect the functions to the file_actions object
-      file_actions.actions['add_function']=self.add_function
-      file_actions.actions['sum_up_functions']=self.sum
-      file_actions.actions['set_function_parameters']=self.set_function_parameters
-      file_actions.actions['fit_functions']=self.fit
-      file_actions.actions['simmulate_functions']=self.simulate
-      self.file_actions=file_actions
-
 
   def add_function(self, function_name):
     '''
@@ -899,7 +889,7 @@ class FitSession:
       @param dialog Dialog to recreate with the new function
       @param window Paranet window for the dialog
     '''
-    self.file_actions.activate_action('add_function', name.get_active_text())
+    window.file_actions.activate_action('add_function', name.get_active_text())
     #self.add_function(name.get_active_text())
     size=dialog.get_size()
     position=dialog.get_position()
@@ -958,9 +948,9 @@ class FitSession:
       values.append(get_entry_values(entries[i][-4], if_not=None))
       values.append(get_entry_values(entries[i][-3], if_not=None))
       values.append(entries[i][-2].get_text())
-      self.file_actions.activate_action('set_function_parameters', i, values)
-    covariance_matices=self.file_actions.activate_action('fit_functions')
-    self.file_actions.activate_action('simmulate_functions')
+      window.file_actions.activate_action('set_function_parameters', i, values)
+    covariance_matices=window.file_actions.activate_action('fit_functions')
+    window.file_actions.activate_action('simmulate_functions')
     # save the geometry of the fit dialog and replot the data+fit
     size=dialog.get_size()
     position=dialog.get_position()
@@ -1006,7 +996,7 @@ class FitSession:
     selected=[int(function_1.get_active_text().split(':')[0]), int(function_2.get_active_text().split(':')[0])]
     if result in [2, 3]:
       if result==2:
-        self.file_actions.activate_action('sum_up_functions', selected[0], selected[1])
+        window.file_actions.activate_action('sum_up_functions', selected[0], selected[1])
         size=dialog.get_size()
         position=dialog.get_position()
         dialog.destroy()

@@ -39,6 +39,18 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
+class FitList(list):
+  '''
+    Class to store the fit parameters together with the list of MeasurementData objects.
+  '''
+  
+  def __init__(self, *args):
+    list.__init__(self, *args)
+    self.fit_object=TreffFitParameters() 
+    self.fit_object_history=[]
+    self.fit_object_future=[]
+    self.fit_datasets=[None, None, None, None] # a list of datasets used for fit [++,--,+-,-+]
+
 class TreffSession(GenericSession):
   '''
     Class to handle treff data sessions
@@ -64,10 +76,6 @@ class TreffSession(GenericSession):
                   ['detector', '°', 1., 0, '2Theta', '°'], 
                   ]  
   import_images=True
-  fit_object=None # used for storing the fit parameters
-  fit_datasets=[None, None, None, None] # a list of datasets used for fit [++,--,+-,-+]
-  fit_object_history=[]
-  fit_object_future=[]
   x_from=5 # fit only x regions between x_from and x_to
   x_to=''
   max_iter=50 # maximal iterations in fit
@@ -83,10 +91,12 @@ class TreffSession(GenericSession):
     '''
       class constructor expands the GenericSession constructor
     '''
-    self.fit_object=TreffFitParameters() # create a new empty TreffFitParameters object
     self.RESULT_FILE=config.treff.RESULT_FILE
     GenericSession.__init__(self, arguments)
     self.file_actions_addon['extract_specular_reflectivity']=self.do_extract_specular_reflectivity
+    for key in self.file_data.keys():
+      self.file_data[key]=FitList(self.file_data[key])
+    self.active_file_data=self.file_data[self.active_file_name]
   
   def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
     '''
@@ -126,7 +136,7 @@ class TreffSession(GenericSession):
         for i, dataset in enumerate(data):
           print "Adding dataset %i from '%s'" %(i, name)
           data[i]=dataset.join(add_data[i])
-    return data
+    return FitList(data)
 
 
   def create_menu(self):
@@ -460,9 +470,9 @@ class TreffSession(GenericSession):
     text_filed.set_markup('Down-Up-Channel: ')      
     align_table.attach(text_filed, 0, 1,  3, 4, gtk.FILL, gtk.FILL, 0, 3)
     align_table.attach(object_box_4, 1, 2,  3, 4, gtk.FILL, gtk.FILL, 0, 3)
-    if any(self.fit_datasets):
+    if any(self.active_file_data.fit_datasets):
       indices=[]
-      for item in self.fit_datasets:
+      for item in self.active_file_data.fit_datasets:
         if item:
           indices.append(self.active_file_data.index(item)+1)
         else:
@@ -489,11 +499,11 @@ class TreffSession(GenericSession):
     selection_dialog.show_all()
     if selection_dialog.run() == 1:
       set_list=[None] + self.active_file_data
-      self.fit_datasets=[set_list[object_box_1.get_active()], 
+      self.active_file_data.fit_datasets=[set_list[object_box_1.get_active()], 
                         set_list[object_box_2.get_active()], 
                         set_list[object_box_3.get_active()], 
                         set_list[object_box_4.get_active()]]
-      for object in self.fit_datasets:
+      for object in self.active_file_data.fit_datasets:
         if object:
           object.logy=True
       selection_dialog.destroy()
@@ -508,12 +518,12 @@ class TreffSession(GenericSession):
       create a dialog window for the fit options
     '''
     # if no dataset is selected open the selection dialog
-    if not any(self.fit_datasets):
+    if not any(self.active_file_data.fit_datasets):
       if not self.select_fittable_sequences(action, window):
         return False
-    if self.fit_object.layers==[]:
-      self.fit_object.append_layer('Unknown', 10., 5.)
-      self.fit_object.append_substrate('Unknown', 5.)
+    if self.active_file_data.fit_object.layers==[]:
+      self.active_file_data.fit_object.append_layer('Unknown', 10., 5.)
+      self.active_file_data.fit_object.append_substrate('Unknown', 5.)
       # for first run autoset to multiplot
       window.active_multiplot=True
     layer_options={}
@@ -534,7 +544,7 @@ class TreffSession(GenericSession):
     if position!=None:
       dialog.move(position[0], position[1])
     #layer parameters
-    for layer in self.fit_object.layers:
+    for layer in self.active_file_data.fit_object.layers:
       layer_options[layer_index]=self.create_layer_options(layer, layer_index, layer_params, dialog, window)
       layer_index+=1
     #create table for widgets
@@ -548,7 +558,7 @@ class TreffSession(GenericSession):
     align_table.attach(text_filed, 0, 1, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
     first_slit=gtk.Entry()
     first_slit.set_width_chars(10)
-    first_slit.set_text(str(self.fit_object.slits[0]))
+    first_slit.set_text(str(self.active_file_data.fit_object.slits[0]))
     # activating the input will apply the settings, too
     first_slit.connect('activate', self.dialog_activate, dialog)
     align_table.attach(first_slit, 0, 1,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
@@ -557,7 +567,7 @@ class TreffSession(GenericSession):
     align_table.attach(text_filed, 1, 2, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
     second_slit=gtk.Entry()
     second_slit.set_width_chars(10)
-    second_slit.set_text(str(self.fit_object.slits[1]))
+    second_slit.set_text(str(self.active_file_data.fit_object.slits[1]))
     # activating the input will apply the settings, too
     second_slit.connect('activate', self.dialog_activate, dialog)
     align_table.attach(second_slit, 1, 2,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
@@ -566,7 +576,7 @@ class TreffSession(GenericSession):
     align_table.attach(text_filed, 2, 3, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
     length=gtk.Entry()
     length.set_width_chars(10)
-    length.set_text(str(self.fit_object.sample_length))
+    length.set_text(str(self.active_file_data.fit_object.sample_length))
     # activating the input will apply the settings, too
     length.connect('activate', self.dialog_activate, dialog)
     align_table.attach(length, 2, 3,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
@@ -575,7 +585,7 @@ class TreffSession(GenericSession):
     align_table.attach(text_filed, 3, 4, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
     first_distance=gtk.Entry()
     first_distance.set_width_chars(10)
-    first_distance.set_text(str(self.fit_object.distances[0]))
+    first_distance.set_text(str(self.active_file_data.fit_object.distances[0]))
     # activating the input will apply the settings, too
     first_distance.connect('activate', self.dialog_activate, dialog)
     align_table.attach(first_distance, 3, 4,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
@@ -584,7 +594,7 @@ class TreffSession(GenericSession):
     align_table.attach(text_filed, 4, 5, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
     second_distance=gtk.Entry()
     second_distance.set_width_chars(10)
-    second_distance.set_text(str(self.fit_object.distances[1]))
+    second_distance.set_text(str(self.active_file_data.fit_object.distances[1]))
     # activating the input will apply the settings, too
     second_distance.connect('activate', self.dialog_activate, dialog)
     align_table.attach(second_distance, 4, 5,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
@@ -595,7 +605,7 @@ class TreffSession(GenericSession):
     wavelength_table.attach(text_filed, 0, 1, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
     wavelength=gtk.Entry()
     wavelength.set_width_chars(5)
-    wavelength.set_text(str(self.fit_object.wavelength[0]))
+    wavelength.set_text(str(self.active_file_data.fit_object.wavelength[0]))
     # activating the input will apply the settings, too
     wavelength.connect('activate', self.dialog_activate, dialog)
     wavelength_table.attach(wavelength, 1, 2,  0, 1, gtk.FILL, gtk.FILL, 0, 3)
@@ -604,7 +614,7 @@ class TreffSession(GenericSession):
     wavelength_table.attach(text_filed, 2, 3, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
     delta_wavelength=gtk.Entry()
     delta_wavelength.set_width_chars(5)
-    delta_wavelength.set_text(str(self.fit_object.wavelength[1]))
+    delta_wavelength.set_text(str(self.active_file_data.fit_object.wavelength[1]))
     # activating the input will apply the settings, too
     wavelength.connect('activate', self.dialog_activate, dialog)
     wavelength_table.attach(delta_wavelength, 3, 4,  0, 1, gtk.FILL, gtk.FILL, 0, 3)
@@ -633,7 +643,7 @@ class TreffSession(GenericSession):
     for i in range(layer_index):
       table.attach(layer_options[i], 0, 1, i+1, i+2, gtk.FILL, gtk.FILL, 0, 0)
     # substrate parameters
-    substrat_options=self.create_layer_options(self.fit_object.substrate, 0, fit_params, dialog, window, substrate=True)
+    substrat_options=self.create_layer_options(self.active_file_data.fit_object.substrate, 0, fit_params, dialog, window, substrate=True)
     table.attach(substrat_options, 0, 1, layer_index+2, layer_index+3, gtk.FILL,  gtk.FILL, 0, 0)
     
     #bottom parameters
@@ -647,7 +657,7 @@ class TreffSession(GenericSession):
     align_table.attach(background_x, 0, 1, 2, 3, gtk.FILL,  gtk.FILL, 0, 0)
     background=gtk.Entry()
     background.set_width_chars(10)
-    background.set_text(str(self.fit_object.background))
+    background.set_text(str(self.active_file_data.fit_object.background))
     # activating the input will apply the settings, too
     background.connect('activate', self.dialog_activate, dialog)
     align_table.attach(background, 1, 2, 2, 3, gtk.FILL, gtk.FILL, 0, 0)   
@@ -656,7 +666,7 @@ class TreffSession(GenericSession):
     align_table.attach(scaling_x, 0, 1, 3, 4, gtk.FILL, gtk.FILL, 0, 0)
     scaling_factor=gtk.Entry()
     scaling_factor.set_width_chars(10)
-    scaling_factor.set_text(str(self.fit_object.scaling_factor))
+    scaling_factor.set_text(str(self.active_file_data.fit_object.scaling_factor))
     # activating the input will apply the settings, too
     scaling_factor.connect('activate', self.dialog_activate, dialog)
     align_table.attach(scaling_factor, 1, 2, 3, 4, gtk.FILL, gtk.FILL, 0, 0)   
@@ -669,7 +679,7 @@ class TreffSession(GenericSession):
     align_table.attach(polarizer_efficiancy_x, 2, 3, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
     polarizer_efficiancy=gtk.Entry()
     polarizer_efficiancy.set_width_chars(10)
-    polarizer_efficiancy.set_text(str(self.fit_object.polarization_parameters[0]))
+    polarizer_efficiancy.set_text(str(self.active_file_data.fit_object.polarization_parameters[0]))
     # activating the input will apply the settings, too
     polarizer_efficiancy.connect('activate', self.dialog_activate, dialog)
     align_table.attach(polarizer_efficiancy, 3, 4, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
@@ -678,7 +688,7 @@ class TreffSession(GenericSession):
     align_table.attach(analyzer_efficiancy_x, 2, 3, 3, 4, gtk.FILL, gtk.FILL, 0, 0)
     analyzer_efficiancy=gtk.Entry()
     analyzer_efficiancy.set_width_chars(10)
-    analyzer_efficiancy.set_text(str(self.fit_object.polarization_parameters[1]))
+    analyzer_efficiancy.set_text(str(self.active_file_data.fit_object.polarization_parameters[1]))
     # activating the input will apply the settings, too
     analyzer_efficiancy.connect('activate', self.dialog_activate, dialog)
     align_table.attach(analyzer_efficiancy, 3, 4, 3, 4, gtk.FILL, gtk.FILL, 0, 0)
@@ -687,7 +697,7 @@ class TreffSession(GenericSession):
     align_table.attach(flipper0_efficiancy_x, 2, 3, 4, 5, gtk.FILL, gtk.FILL, 0, 0)
     flipper0_efficiancy=gtk.Entry()
     flipper0_efficiancy.set_width_chars(10)
-    flipper0_efficiancy.set_text(str(self.fit_object.polarization_parameters[2]))
+    flipper0_efficiancy.set_text(str(self.active_file_data.fit_object.polarization_parameters[2]))
     # activating the input will apply the settings, too
     flipper0_efficiancy.connect('activate', self.dialog_activate, dialog)
     align_table.attach(flipper0_efficiancy, 3, 4, 4, 5, gtk.FILL, gtk.FILL, 0, 0)
@@ -696,7 +706,7 @@ class TreffSession(GenericSession):
     align_table.attach(flipper1_efficiancy_x, 2, 3, 5, 6, gtk.FILL, gtk.FILL, 0, 0)
     flipper1_efficiancy=gtk.Entry()
     flipper1_efficiancy.set_width_chars(10)
-    flipper1_efficiancy.set_text(str(self.fit_object.polarization_parameters[3]))
+    flipper1_efficiancy.set_text(str(self.active_file_data.fit_object.polarization_parameters[3]))
     # activating the input will apply the settings, too
     flipper1_efficiancy.connect('activate', self.dialog_activate, dialog)
     align_table.attach(flipper1_efficiancy, 3, 4, 5, 6, gtk.FILL, gtk.FILL, 0, 0)
@@ -719,7 +729,7 @@ class TreffSession(GenericSession):
     align_table.attach(text_filed, 0, 1, 6, 7, gtk.FILL, gtk.FILL, 0, 0)
     alambda_first=gtk.Entry()
     alambda_first.set_width_chars(10)
-    alambda_first.set_text(str(self.fit_object.alambda_first))
+    alambda_first.set_text(str(self.active_file_data.fit_object.alambda_first))
     # activating the input will apply the settings, too
     alambda_first.connect('activate', self.dialog_activate, dialog)
     align_table.attach(alambda_first, 1, 2, 6, 7, 0, gtk.FILL, 0, 0)   
@@ -728,7 +738,7 @@ class TreffSession(GenericSession):
     align_table.attach(text_filed, 0, 1, 7, 8, gtk.FILL, gtk.FILL, 0, 0)
     ntest=gtk.Entry()
     ntest.set_width_chars(2)
-    ntest.set_text(str(self.fit_object.ntest))
+    ntest.set_text(str(self.active_file_data.fit_object.ntest))
     # activating the input will apply the settings, too
     ntest.connect('activate', self.dialog_activate, dialog)
     align_table.attach(ntest, 1, 2, 7, 8, 0, gtk.FILL, 0, 0)   
@@ -743,17 +753,17 @@ class TreffSession(GenericSession):
     move_channels_button.set_active(True)
     align_table.attach(move_channels_button, 3, 4, 8, 9, gtk.FILL, gtk.FILL, 0, 0)
     show_all_button=gtk.CheckButton(label='all channels', use_underline=True)
-    show_all_button.set_active(self.fit_object.simulate_all_channels)
+    show_all_button.set_active(self.active_file_data.fit_object.simulate_all_channels)
     align_table.attach(show_all_button, 2, 3, 8, 9, gtk.FILL, gtk.FILL, 0, 0)
     # activating the input will apply the settings, too
     ntest.connect('activate', self.dialog_activate, dialog)
     align_table.attach(max_hr, 1, 2, 8, 9, 0, gtk.FILL, 0, 0)   
-    if self.fit_object_history!=[]:
-      history_back=gtk.Button(label='Undo (%i)' % len(self.fit_object_history), use_underline=True)
+    if self.active_file_data.fit_object_history!=[]:
+      history_back=gtk.Button(label='Undo (%i)' % len(self.active_file_data.fit_object_history), use_underline=True)
       history_back.connect('clicked', self.fit_history, True, dialog, window)
       align_table.attach(history_back, 2, 3, 7, 8, gtk.FILL, gtk.FILL, 0, 0)
-    if self.fit_object_future!=[]:
-      history_forward=gtk.Button(label='Redo (%i)' % len(self.fit_object_future), use_underline=True)
+    if self.active_file_data.fit_object_future!=[]:
+      history_forward=gtk.Button(label='Redo (%i)' % len(self.active_file_data.fit_object_future), use_underline=True)
       history_forward.connect('clicked', self.fit_history, False, dialog, window)
       align_table.attach(history_forward, 3, 4, 7, 8, gtk.FILL, gtk.FILL, 0, 0)
     frame = gtk.Frame()
@@ -871,7 +881,7 @@ class TreffSession(GenericSession):
       SL_selector=gtk.combo_box_new_text()
       SL_selector.append_text('SL')
       SL_selector.set_active(0)
-      for i, SL in enumerate(sorted(self.fit_object.NEUTRON_SCATTERING_LENGTH_DENSITIES.items())):
+      for i, SL in enumerate(sorted(self.active_file_data.fit_object.NEUTRON_SCATTERING_LENGTH_DENSITIES.items())):
         SL_selector.append_text(SL[0])
         if layer.scatter_density_Nb==SL[1][0] and layer.scatter_density_Nb2==SL[1][1] and layer.scatter_density_Np==SL[1][2]:
           SL_selector.set_active(i+1)
@@ -960,7 +970,7 @@ class TreffSession(GenericSession):
     '''
     name=layer.SL_selector.get_active_text()
     try:
-      SL=self.fit_object.NEUTRON_SCATTERING_LENGTH_DENSITIES[name]
+      SL=self.active_file_data.fit_object.NEUTRON_SCATTERING_LENGTH_DENSITIES[name]
       layer.name=name
       scatter_density_Nb.set_text(str(SL[0]))
       scatter_density_Nb2.set_text(str(SL[1]))
@@ -980,13 +990,13 @@ class TreffSession(GenericSession):
     '''
     if response>=5:
       try:
-        self.fit_object.wavelength[0]=float(parameters_list[0].get_text())
-        self.fit_object.background=float(parameters_list[1].get_text())
-        self.fit_object.slits=map(float, map(lambda item: item.get_text(), parameters_list[2]))
-        self.fit_object.scaling_factor=float(parameters_list[3].get_text())
-        self.fit_object.polarization_parameters=map(float, map(lambda item: item.get_text(), parameters_list[4]))
-        self.fit_object.alambda_first=float(parameters_list[5].get_text())
-        self.fit_object.ntest=int(parameters_list[6].get_text())
+        self.active_file_data.fit_object.wavelength[0]=float(parameters_list[0].get_text())
+        self.active_file_data.fit_object.background=float(parameters_list[1].get_text())
+        self.active_file_data.fit_object.slits=map(float, map(lambda item: item.get_text(), parameters_list[2]))
+        self.active_file_data.fit_object.scaling_factor=float(parameters_list[3].get_text())
+        self.active_file_data.fit_object.polarization_parameters=map(float, map(lambda item: item.get_text(), parameters_list[4]))
+        self.active_file_data.fit_object.alambda_first=float(parameters_list[5].get_text())
+        self.active_file_data.fit_object.ntest=int(parameters_list[6].get_text())
       except ValueError:
         None
       try:
@@ -998,7 +1008,7 @@ class TreffSession(GenericSession):
           new_max_hr=False
       except ValueError:
         new_max_hr=False
-      self.fit_object.simulate_all_channels=parameters_list[11].get_active()
+      self.active_file_data.fit_object.simulate_all_channels=parameters_list[11].get_active()
       try:
         self.x_from=float(parameters_list[7].get_text())
       except ValueError:
@@ -1007,7 +1017,7 @@ class TreffSession(GenericSession):
         self.x_to=float(parameters_list[8].get_text())
       except ValueError:
         self.x_to=None
-      self.fit_object.set_fit_parameters(layer_params=fit_list[0], substrate_params=map(lambda x: x-1, fit_list[1][0]),
+      self.active_file_data.fit_object.set_fit_parameters(layer_params=fit_list[0], substrate_params=map(lambda x: x-1, fit_list[1][0]),
                                          background=fit_list[1]['background'],
                                          polarizer_efficiancy=fit_list[1]['polarizer_efficiancy'],
                                          analyzer_efficiancy=fit_list[1]['analyzer_efficiancy'],
@@ -1019,28 +1029,28 @@ class TreffSession(GenericSession):
       except ValueError:
         self.max_iter=50
       if fit_list[1]['actually'] and response==5:
-        self.fit_object.fit=1
+        self.active_file_data.fit_object.fit=1
       if response==7:
         self.user_constraint_dialog(dialog, window)
         return None
       self.dialog_fit(action, window, move_channels=parameters_list[10].get_active(), new_max_hr=new_max_hr)
       # read fit parameters from file and create new object, if process is killed ignore
-      if fit_list[1]['actually'] and response==5 and self.fit_object.fit==1: 
-        parameters, errors=self.read_fit_file(self.TEMP_DIR+'result', self.fit_object)
-        new_fit=self.fit_object.copy()
+      if fit_list[1]['actually'] and response==5 and self.active_file_data.fit_object.fit==1: 
+        parameters, errors=self.read_fit_file(self.TEMP_DIR+'result', self.active_file_data.fit_object)
+        new_fit=self.active_file_data.fit_object.copy()
         new_fit.get_parameters(parameters)
         sorted_errors=new_fit.get_errors(errors)
         self.show_result_window(dialog, window, new_fit, sorted_errors)
       #os.remove(self.TEMP_DIR+'fit_temp.ref')
-      self.fit_object.fit=0
+      self.active_file_data.fit_object.fit=0
     elif response==3: # new layer
       new_layer=TreffLayerParam()
-      self.fit_object.layers.append(new_layer)
+      self.active_file_data.fit_object.layers.append(new_layer)
       self.rebuild_dialog(dialog, window)
     elif response==4: # new multilayer
       multilayer=TreffMultilayerParam()
       multilayer.layers.append(TreffLayerParam())
-      self.fit_object.layers.append(multilayer)
+      self.active_file_data.fit_object.layers.append(multilayer)
       self.rebuild_dialog(dialog, window)
 
   def dialog_fit(self, action, window, move_channels=True, new_max_hr=False):
@@ -1054,14 +1064,14 @@ class TreffSession(GenericSession):
     #open a background process for the fit function
     reflectometer_fit.functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', new_max_hr)
     print "PNR program started."
-    if self.fit_object.fit!=1 and any(self.fit_datasets): # if this is not a fit just wait till finished
+    if self.active_file_data.fit_object.fit!=1 and any(self.active_file_data.fit_datasets): # if this is not a fit just wait till finished
       exec_time, stderr_value = reflectometer_fit.functions.proc.communicate()
       print "PNR program finished in %.2g seconds." % float(exec_time.splitlines()[-1])
     else:
       self.open_status_dialog(window)
     first=True
     free_sims=[]
-    for i, dataset in enumerate(self.fit_datasets):
+    for i, dataset in enumerate(self.active_file_data.fit_datasets):
       if dataset:
         # if data for the channel was selected combine data and fit together
         simu=read_data.treff.read_simulation(self.TEMP_DIR + output_names[i])
@@ -1087,7 +1097,7 @@ class TreffSession(GenericSession):
           set style line 2 lc %i
           set style increment user
           ''' % (i+1, i+1)
-      elif self.fit_object.simulate_all_channels:
+      elif self.active_file_data.fit_object.simulate_all_channels:
         simu=read_data.treff.read_simulation(self.TEMP_DIR + output_names[i])
         simu.number='%i' % i
         simu.short_info='simulation '+names[i]
@@ -1098,7 +1108,7 @@ class TreffSession(GenericSession):
         simu.logy=True
         free_sims.append(simu)
     # create a multiplot with all datasets
-    window.multiplot=[[(dataset, dataset.short_info) for dataset in self.fit_datasets if dataset]]
+    window.multiplot=[[(dataset, dataset.short_info) for dataset in self.active_file_data.fit_datasets if dataset]]
     window.multi_list.set_markup(' Multiplot List: \n' + '\n'.join(map(lambda item: item[1], window.multiplot[0])))
     if not window.index_mess in [self.active_file_data.index(item[0]) for item in window.multiplot[0]]:
       try:
@@ -1182,7 +1192,7 @@ class TreffSession(GenericSession):
     output_names=config.treff.FIT_OUTPUT_FILES
     # convert x values from grad to mrad and 2Theta to Theta
     data_lines=[]
-    for i, dataset in enumerate(self.fit_datasets):
+    for i, dataset in enumerate(self.active_file_data.fit_datasets):
       # if the channel dataset is None use 0 points.
       if dataset:
         dataset.unit_trans([['°', math.pi/180.*1000., 0, 'mrad'], 
@@ -1192,26 +1202,26 @@ class TreffSession(GenericSession):
                                          False, ' ', 
                                          xfrom=self.x_from, xto=self.x_to, 
                                          only_fitted_columns=True))
-      elif not self.fit_object.simulate_all_channels and not i==0:
+      elif not self.active_file_data.fit_object.simulate_all_channels and not i==0:
         data_lines.append(0)
       else:
         ref_file=open(os.path.join(folder, datafile_prefix+names[i]+'.ref'), 'w')
         ref_file.write('1 1 1\n150 1 1\n')
         ref_file.close()
         data_lines.append(2)
-    self.fit_object.number_of_points=data_lines
-    self.fit_object.input_file_names=[os.path.join(folder, datafile_prefix+names[i]+'.ref') for i in range(4)]
-    self.fit_object.set_fit_constrains()
+    self.active_file_data.fit_object.number_of_points=data_lines
+    self.active_file_data.fit_object.input_file_names=[os.path.join(folder, datafile_prefix+names[i]+'.ref') for i in range(4)]
+    self.active_file_data.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(os.path.join(folder, file_name), 'w')
-    ent_file.write(self.fit_object.get_ent_str(use_multilayer=use_multilayer, use_roughness_gradient=use_roughness_gradient)+'\n')
+    ent_file.write(self.active_file_data.fit_object.get_ent_str(use_multilayer=use_multilayer, use_roughness_gradient=use_roughness_gradient)+'\n')
     ent_file.close()
 
   def show_result_window(self, dialog, window, new_fit, sorted_errors):
     '''
       show the result of a fit and ask to retrieve the result
     '''
-    old_fit=self.fit_object
+    old_fit=self.active_file_data.fit_object
     results=gtk.Dialog(title='Fit results:')
     text_string='These are the parameters retrieved by the last fit\n'
     #+++++++++++ get_layer_text responde function ++++++++++++++++
@@ -1380,12 +1390,12 @@ class TreffSession(GenericSession):
       return False
     file_dialog.destroy()
     #----------------File selection dialog-------------------#
-    self.fit_object=TreffFitParameters()
+    self.active_file_data.fit_object=TreffFitParameters()
     if x_ray_import.get_active():
-      self.fit_object.read_params_from_X_file(file_name)
+      self.active_file_data.fit_object.read_params_from_X_file(file_name)
     else:
-      self.fit_object.read_params_from_file(file_name)
-    if not any(self.fit_datasets):
+      self.active_file_data.fit_object.read_params_from_file(file_name)
+    if not any(self.active_file_data.fit_datasets):
       if not self.select_fittable_sequences(action, window):
         return False
     self.dialog_fit(action, window)

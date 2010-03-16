@@ -30,6 +30,7 @@ class FileActions:
     '''
     self.history=[]
     self.window=window
+    self.init_fit_functions()
     # action functions that can be executed from activate_action,
     # can be altered in runtime by the specific sessions
     self.actions={
@@ -38,12 +39,33 @@ class FileActions:
                   'combine-data': self.combine_data_points, 
                   'iterate_through_measurements': self.iterate_through_measurements, 
                   'create_fit_object': self.create_fit_object, 
+                  'add_function': self.fit_functions['add'], 
+                  'sum_up_functions': self.fit_functions['sum'], 
+                  'set_function_parameters': self.fit_functions['set_parameters'], 
+                  'fit_functions': self.fit_functions['fit'], 
+                  'simmulate_functions': self.fit_functions['simulate'], 
                   'change_color_pattern': self.change_color_pattern, 
                   'unit_transformations': self.unit_transformations, 
                   }
     # add session specific functions
     for key, item in window.active_session.file_actions_addon.items():
       self.actions[key]=lambda *args: item(self, *args)
+
+  def init_fit_functions(self):
+    fit_functions={
+                 "add": lambda *args: \
+                  self.window.measurement[self.window.index_mess].fit_object.add_function(*args), 
+                 "sum": lambda *args: \
+                  self.window.measurement[self.window.index_mess].fit_object.sum(*args), 
+                 "set_parameters": lambda *args: \
+                  self.window.measurement[self.window.index_mess].fit_object.set_function_parameters(*args), 
+                 "fit": lambda *args:  \
+                  self.window.measurement[self.window.index_mess].fit_object.fit(*args), 
+                 "simulate": lambda *args: \
+                  self.window.measurement[self.window.index_mess].fit_object.simulate(*args), 
+                 
+                 }
+    self.fit_functions=fit_functions
 
   def activate_action(self, action, *args):
     '''
@@ -203,7 +225,7 @@ class FileActions:
     '''
     dataset=self.window.measurement[self.window.index_mess]
     from fit_data import FitSession
-    dataset.fit_object=FitSession(dataset, self)
+    dataset.fit_object=FitSession(dataset)
   
   def change_color_pattern(self, pattern):
     '''
