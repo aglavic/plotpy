@@ -160,6 +160,14 @@ class DNSSession(GenericSession):
 \t\t\tExplicidly give the file name prefix, omega offset, increment, numbers and postfix
 \t\t\tfor the files to be used. Can be given multiple times for diefferent prefixes
 
+\tReciprocal lattice settings:
+\t\t-dx [d-spacing]\tSet the d-spacing of the measured crystal lattice in x-direction 
+\t\t\t\t\t(depends on omega-offset setting and measured sample alignment)
+\t\t-dy [d-spacing]\tSet the d-spacing of the measured crystal lattice in y-direction 
+\t\t\t\t\t(depends on omega-offset setting and measured sample alignment)
+\t\t-nx [name]\tSet the naming of the reciprocal axes in x-direction 
+\t\t-ny [name]\tSet the naming of the reciprocal axes in y-direction 
+
 \tShort info settings: 
 \t\t-time, -flipper, -monitor
 \t\t\tDon't use temperature for the short info but time, flipper or monitor value.'
