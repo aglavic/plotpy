@@ -2116,6 +2116,8 @@ class ApplicationMainWindow(gtk.Window):
     from ipython_view import IPythonView
     import pango
     import sys
+    import numpy
+    import scipy
 
     FONT = "Luxi Mono 10"
 
@@ -2127,12 +2129,17 @@ class ApplicationMainWindow(gtk.Window):
     ipview = IPythonView("""      This is an interactive IPython session with direct access to the program.
       You have the whole python functionality and can interact with the programs objects.
 
-      Objects:
-      replot() \tFunction to replot the dataset
-      dataset() \tFunction to get the active MeasurementData object
+    Functions:
+      replot \tFunction to replot the dataset
+      dataset \tFunction to get the active MeasurementData object
+
+    Objects:
       session \tThe active session containing the data objects and settings
       plot_gui \tThe window object with all window related funcitons
       self \t\tThe IPythonView object.
+    Modules:
+      np \tNumpy
+      sp \tScipy
 
 """)
     ipview.modify_font(pango.FontDescription(FONT))
@@ -2146,6 +2153,9 @@ class ApplicationMainWindow(gtk.Window):
       sys.stdout=sys.__stdout__
       sys.stderr=sys.__stderr__
     ipython_dialog.connect('destroy', reset)
+    x=self.get_active_dataset().data[self.get_active_dataset().xdata].values
+    y=self.get_active_dataset().data[self.get_active_dataset().ydata].values
+    z=self.get_active_dataset().data[self.get_active_dataset().zdata].values
     # add variables to ipython namespace
     ipview.updateNamespace({
                        'session': self.active_session, 
@@ -2153,6 +2163,11 @@ class ApplicationMainWindow(gtk.Window):
                        'self': ipview, 
                        'dataset': self.get_active_dataset, 
                        'replot': self.replot, 
+                       'x': numpy.array(x), 
+                       'y': numpy.array(y), 
+                       'z': numpy.array(z), 
+                       'np': numpy, 
+                       'sp': scipy, 
                        })
 
   #--------------------------Menu/Toolbar Events---------------------------------#
@@ -2511,6 +2526,7 @@ class ApplicationMainWindow(gtk.Window):
           <menuitem action='SaveProfile' position="bottom"/>
           <menuitem action='DeleteProfile' position="bottom"/>
         </menu>
+        <menuitem action='SelectColor'/>
         <separator name='static9'/>
         <menuitem action='Next'/>
         <menuitem action='Prev'/>
@@ -2539,7 +2555,6 @@ class ApplicationMainWindow(gtk.Window):
       output+='''
         <placeholder name='z-actions'>
         <menuitem action='CrossSection'/>
-        <menuitem action='SelectColor'/>
         </placeholder>        
         <placeholder name='y-actions'/>'''
     else:
