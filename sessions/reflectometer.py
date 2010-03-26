@@ -41,7 +41,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -99,8 +99,8 @@ class ReflectometerSession(GenericSession):
     self.DATA_COLUMNS=config.reflectometer.DATA_COLUMNS # read data columns from preferences
     self.TRANSFORMATIONS=config.reflectometer.TRANSFORMATIONS # read TRANSFORMATIONS from preferences
     GenericSession.__init__(self, arguments)
-    for key in self.file_data.keys():
-      self.file_data[key]=FitList(self.file_data[key])
+    #for key in self.file_data.keys():
+    #  self.file_data[key]=FitList(self.file_data[key])
     self.active_file_data=self.file_data[self.active_file_name]
   
   def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
@@ -213,8 +213,16 @@ class ReflectometerSession(GenericSession):
     # TODO: GUI selection to show only data or fit
     #if self.export_for_fit: # export fit files
      # self.add_data(refinements, filename+"_simulation")
-    return FitList(datasets)
+    return datasets
 
+  def add_data(self, data_list, name, append=True):
+    '''
+      Function which ither adds file data to the object or replaces
+      all data by a new dictionary.
+    '''
+    if not append:
+      self.file_data={}
+    self.file_data[name]=FitList(data_list)
 
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
