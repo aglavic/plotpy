@@ -10,6 +10,7 @@ archiv
 build
 doc
 debug/*.mds
+debug/*.mdd
 debug/*.raw
 debug/*.py
 debug/*.o
