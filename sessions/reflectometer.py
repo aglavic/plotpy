@@ -35,6 +35,7 @@ import reflectometer_fit.functions
 # importing preferences and data readout
 import read_data.reflectometer
 import config.reflectometer
+from measurement_data_structure import MeasurementData
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -145,6 +146,7 @@ class ReflectometerSession(GenericSession):
         <menuitem action='ReflectometerFit'/>
         <menuitem action='ReflectometerExport'/>
         <menuitem action='ReflectometerImport'/>
+        <menuitem action='ReflectometerCreateMap'/>
       </menu>
     '''
     # Create actions for the menu
@@ -165,6 +167,10 @@ class ReflectometerSession(GenericSession):
                 "Import Fit Parameters...", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.import_fit_dialog ),
+            ( "ReflectometerCreateMap", None,                             # name, stock id
+                "Create 3d Map from Rocking Scans", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.combine_th_scans ),
              )
     return string,  actions
   
@@ -228,6 +234,27 @@ class ReflectometerSession(GenericSession):
     for counts in counts_column:
       output_data[counts]=output_data[counts]/self.time_col # calculate the cps
     return output_data
+  
+  def combine_th_scans(self, action, window):
+    '''
+      Create an alpha_i vs. alpha_f map of all Theta scans in the active data list.
+    '''
+    created_map=MeasurementData([['2Theta', '°'], 
+                                 ['Theta', '°'],
+                                 ['α_i', '°'], 
+                                 ['α_f', '°'], 
+                                 ['intensity', 'counts/s'], 
+                                 ['error', 'counts/s']
+                                 ], [], 2, 3, 5, 4)
+    for dataset in self.active_file_data:
+      if "DRIVE='THETA'" in dataset.info:
+        two_theta=float(dataset.info.split('2THETA=')[1].split("\n")[0])
+        for point in dataset:
+          created_map.append([two_theta, point[0], point[0], two_theta-point[0], point[1], point[2]])
+    self.active_file_data.append(created_map)
+    window.index_mess=len(self.active_file_data)-1
+    window.replot()
+    window.logz.set_active(True)
   
   #++++ functions for fitting with fortran program by E. Kentzinger ++++
   
