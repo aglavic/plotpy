@@ -48,10 +48,10 @@ MEASUREMENT_TYPES=[\
 # l scan
 ,[[[0,0.005],[1,0.005]],2,6,7,'']\
 # hk mesh
-,[[[2,0.05]],0,1,7,'',6]\
+,[[[2,0.005]],0,1,7,'',6]\
 # kl mesh
-,[[[0,0.05]],1,2,7,'',6]\
+,[[[0,0.005]],1,2,7,'',6]\
 # hl mesh
-,[[[1,0.05]],0,2,7,'',6]\
+,[[[1,0.005]],0,2,7,'',6]\
 ,[[],0,3,6,'set title "Unknown Scan"\n']\
 ] # raw data measureing with temperature shown, MvsT with constand H,MvsH with constand T

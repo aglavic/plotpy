@@ -9,7 +9,7 @@
 import numpy
 from scipy.optimize import leastsq, fsolve
 from scipy.special import wofz
-from math import pi, sqrt,  tanh
+from math import pi, sqrt,  tanh, sin, asin
 # for dialog window import gtk
 import gtk
 # import own modules
@@ -432,8 +432,14 @@ class FitCuK(FitFunction):
     '''
     x=numpy.float64(numpy.array(x))
     p=numpy.float64(numpy.array(p))
+    if p[1]<20:
+      p2=p[1]/p[6]
+    else:
+      # if x0 is larger than 20 assume it is the th angle,
+      # for smaller values it doesn't change a lot
+      p2=asin( sin(p[1]*pi/180.)/p[6] )/pi*180.
     z=(x - p[1] + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
-    z2=(x - p[1]/p[6] + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
+    z2=(x - p2 + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
     z0=(0. + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
     value=p[0] * wofz(z).real / wofz(z0).real + p[4]
     value2=p[0]/p[5] * wofz(z2).real / wofz(z0).real + p[4]

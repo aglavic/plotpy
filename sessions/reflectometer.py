@@ -62,17 +62,17 @@ class ReflectometerSession(GenericSession):
   '''
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
-'''
-\tReflectometer-Data treatment:
-\t-counts\t\tShow actual counts, not counts/s
-\t-fit [layers] [thicknesses] [est._roughness]
-\t\t\t\tExport measurements for use with fit programm by Emmanuel Kentzinger and create .ent file for it.
-\t\t\t\tlayers is a list of layers with format L1-L2-L3-S or 5[L1_L2]-S, where L,S are the names
-\t\t\t\tof the compounds of the layers and substrate as provided in config.scattering_length_table.py
-\t\t\t\tthicknesses is a list of layer thicknesses with format LT1-LT2-LT3 or [LT1_LT2] in A
-\t\t\t\test._roughness is the estimated overall roughness to begin with
-\t-ref\t\tTry to refine the scaling factor, background and roughnesses.
-'''
+  '''
+  \tReflectometer-Data treatment:
+  \t-counts\t\tShow actual counts, not counts/s
+  \t-fit [layers] [thicknesses] [est._roughness]
+  \t\t\t\tExport measurements for use with fit programm by Emmanuel Kentzinger and create .ent file for it.
+  \t\t\t\tlayers is a list of layers with format L1-L2-L3-S or 5[L1_L2]-S, where L,S are the names
+  \t\t\t\tof the compounds of the layers and substrate as provided in config.scattering_length_table.py
+  \t\t\t\tthicknesses is a list of layer thicknesses with format LT1-LT2-LT3 or [LT1_LT2] in A
+  \t\t\t\test._roughness is the estimated overall roughness to begin with
+  \t-ref\t\tTry to refine the scaling factor, background and roughnesses.
+  '''
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
@@ -1323,6 +1323,12 @@ class RefLayerParam(LayerParam):
       self.d_over_b=value
     else:
       LayerParam.set_param(self, index, 3, value)
+  
+  def dialog_get_SL_online(self):
+    '''
+      Open a dialog to retrieve delta and beta online via http://henke.lbl.gov.
+    '''
+    dialog=gtk.Dialog()
   
   def get_ent_text(self, layer_index, para_index, add_roughness=0., use_roughness_gradient=True):
     '''
