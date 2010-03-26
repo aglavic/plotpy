@@ -1640,7 +1640,7 @@ class DNSMeasurementData(MeasurementData):
     Datatreatment is done here and additional data treatment functions should
     be put here, too.
   '''
-
+  SPLIT_SENSITIVITY=0.01
   dns_info={}
   scan_line=3
   scan_line_constant=1

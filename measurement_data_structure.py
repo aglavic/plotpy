@@ -21,8 +21,6 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
-SPLIT_SENSITIVITY=0.001
-
 #++++++++++++++++++++++++++++++++++++++MeasurementData-Class+++++++++++++++++++++++++++++++++++++++++++++++++++++#
 class MeasurementData:
   '''
@@ -58,6 +56,7 @@ class MeasurementData:
   view_z=30
   filters=[] # a list of filters to be applied when returning the data, the format is:
              # ( column , from , to , include )
+  SPLIT_SENSITIVITY=0.001
 
   def __init__(self, columns, const,x,y,yerror,zdata=-1): 
     '''
@@ -413,6 +412,7 @@ class MeasurementData:
     yd=self.ydata
     zd=self.zdata
     ed=self.yerror
+    SPLIT_SENSITIVITY=self.SPLIT_SENSITIVITY
     data=[point for point in self if (((xfrom is None) or (point[xd]>=xfrom)) and \
                                       ((xto is None) or (point[xd]<=xto)))]
     if only_fitted_columns:
