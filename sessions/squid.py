@@ -302,7 +302,7 @@ Data columns and unit transformations are defined in config.squid.py.
       Returns the diamagnetic moment of the elements in self.dia_calc[1] with the mass self.dia_calc[2] 
       The format for the elements strin is 'La_1-Fe_2-O_4','la_1-fe2+_2-o_4', 'La-Fe_2-O_4' or 'LaFe2O4'
     '''
-    input_string=self.dia_calc[1]
+    input_string=self.dia_calc[1].lower()
     if input_string is '':
       return True, 0.
     element_dia=config.diamagnetism_table.ELEMENT_DIA
