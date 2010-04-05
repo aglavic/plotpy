@@ -279,8 +279,17 @@ Data columns and unit transformations are defined in config.squid.py.
       Evaluate the response of the dialog from dia_para_dialog.
     '''
     if response==0:
+      units=window.measurement[window.index_mess].units()
+      dia=self.dia_mag_correct
+      para=self.para[0]
+      if 'T' in units:
+        dia*=1e4
+        para*=1e4
+      if 'A·m²' in units:
+        dia/=1e3
+        para/=1e3
       self.dia_para_correction(window.measurement[window.index_mess], 
-                               self.dia_mag_correct, self.para[0])
+                               dia, para)
       window.replot()      
       dialog.destroy()
       return None

@@ -2357,7 +2357,8 @@ class ApplicationMainWindow(gtk.Window):
           self.last_plot_text=self.plot(self.active_session,
                                         [item[0] for item in plotlist],
                                         plotlist[0][1],
-                                        plotlist[0][0].short_info,
+                                        #plotlist[0][0].short_info,
+                                        '', 
                                         [item[0].short_info for item in plotlist],
                                         errorbars,
                                         self.active_session.TEMP_DIR+'plot_temp.png',
@@ -2624,11 +2625,11 @@ class ApplicationMainWindow(gtk.Window):
         "Open a new datafile",                       # tooltip
         self.add_file ),
       ( "SaveSnapshot", gtk.STOCK_EDIT,                    # name, stock id
-        "Save Snapshot",None,                      # label, accelerator
+        "Save Snapshot","<control><shift>S",                      # label, accelerator
         "Save the current state for this measurement.",                       # tooltip
         self.save_snapshot ),
       ( "LoadSnapshot", gtk.STOCK_OPEN,                    # name, stock id
-        "Load Snapshot", None,                      # label, accelerator
+        "Load Snapshot", "<control><shift>O",                      # label, accelerator
         "Load a state for this measurement stored before.",                       # tooltip
         self.load_snapshot ),
       ( "SaveGPL", gtk.STOCK_SAVE,                    # name, stock id

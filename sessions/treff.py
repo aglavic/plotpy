@@ -160,7 +160,7 @@ class TreffSession(GenericSession):
                 None,                                   # tooltip
                 None ),
             ( "TreffFit", None,                             # name, stock id
-                "Fit...", None,                    # label, accelerator
+                "Fit...", "<control><shift>F",                    # label, accelerator
                 None,                                   # tooltip
                 self.fit_window ),
             ( "TreffSpecRef", None,                             # name, stock id

@@ -117,7 +117,7 @@ def open_status_dialog(self, window):
   def status_response(action, response, session, window):
     if response==1: # if the process is abborted, plot without fit
       proc.kill()
-      session.fit_object.fit=0
+      session.active_file_data.fit_object.fit=0
       session.dialog_fit(action, window)
     elif response==2:
       replot_present(session, window)

@@ -156,7 +156,7 @@ class ReflectometerSession(GenericSession):
                 None,                                   # tooltip
                 None ),
             ( "ReflectometerFit", None,                             # name, stock id
-                "Fit...", None,                    # label, accelerator
+                "Fit...", "<control><shift>F",                    # label, accelerator
                 None,                                   # tooltip
                 self.fit_window ),
             ( "ReflectometerExport", None,                             # name, stock id
@@ -1224,11 +1224,26 @@ class RefFitParameters(FitParameters):
       else:
         con_index+=4
     fit_cons+=self.user_constraints
-    self.constrains=[]
+    fit_cons2=[]
     # remove constrains not importent for the fitted parameters
     for constrain in fit_cons:
       if constrain[0] in self.fit_params:
-        self.constrains.append(constrain)
+        fit_cons2.append(constrain)
+    # write actual constraints and combine constraints with same indices
+    fit_cons3=[]
+    for constrain in fit_cons2:
+      # go through the list in both directions and collect any lists which contain at
+      # least one element with the same value, this way every constrains will be
+      # merged without missing any crosscorrelations.
+      for constrain2 in fit_cons2:
+        if len(set(constrain+constrain2))!=len(set(constrain))+len(set(constrain2)):
+          constrain=sorted(list(set(constrain+constrain2)))
+      for constrain2 in reversed(fit_cons2):
+        if len(set(constrain+constrain2))!=len(set(constrain))+len(set(constrain2)):
+          constrain=sorted(list(set(constrain+constrain2)))
+      if not constrain in fit_cons3:
+        fit_cons3.append(constrain)
+    self.constrains=fit_cons3
 
   def copy(self):
     '''
