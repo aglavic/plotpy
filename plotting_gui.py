@@ -1036,10 +1036,9 @@ class ApplicationMainWindow(gtk.Window):
     '''
       A dialog to select filters, that remove points from the plotted dataset.
     '''
-    # TODO: let filter dialog stay open while replotting
     filters=[]
     data=self.measurement[self.index_mess]
-    filter_dialog=gtk.Dialog(title='Filter the plotted data:')
+    filter_dialog=gtk.Dialog(title='Filter the plotted data:', parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
     filter_dialog.set_default_size(600,150)
     sw = gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
@@ -1059,21 +1058,26 @@ class ApplicationMainWindow(gtk.Window):
     table_rows+=1
     table.resize(table_rows,5)
     # add dialog buttons
-    filter_dialog.add_button('New Filter',2)
-    filter_dialog.add_button('Apply changes',1)
+    filter_dialog.add_button('New Filter',3)
+    filter_dialog.add_button('OK',1)
+    filter_dialog.add_button('Apply changes',2)
     filter_dialog.add_button('Cancel',0)
     filter_dialog.show_all()
     # open dialog and wait for a response
-    response=filter_dialog.run()
+    filter_dialog.connect("response", self.change_data_filter_response, table, table_rows, filters, data)
+
+  def change_data_filter_response(self, filter_dialog, response, table, table_rows, filters, data):
+    '''
+      Response actions for the add data filter dialog.
+    '''
     # if the response is 'New Filter' add a new filter row and rerun the dialog
-    while(response==2):
+    if response==3:
       filters.append(self.get_new_filter(table,table_rows,data))
       table_rows+=1
       table.resize(table_rows,5)
       filter_dialog.show_all()
-      response=filter_dialog.run()
     # if response is apply change the dataset filters
-    if response==1:
+    if response==1 or response==2:
       new_filters=[]
       for filter_widgets in filters:
         if filter_widgets[0].get_active()==0:
@@ -1085,10 +1089,10 @@ class ApplicationMainWindow(gtk.Window):
           filter_widgets[3].get_active())\
           )
       self.file_actions.activate_action('change filter', new_filters)
-      #data.filters=new_filters
-    # close dialog and replot
-    filter_dialog.destroy()
-    self.replot()
+      self.replot()
+    if response<2:
+      # close dialog and replot
+      filter_dialog.destroy()
     
   def get_new_filter(self,table,row,data,parameters=(-1,0,0,False)):
     ''' 

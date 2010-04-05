@@ -1212,8 +1212,9 @@ class RefFitParameters(FitParameters):
   
   def set_fit_constrains(self):
     '''
-      set fit constrains depending on (multi)layers
+      Set fit constrains depending on (multi)layers.
       layer_params is a dictionary with the layer number as index
+      Merge custom constrins with multilayer constrains.
     '''
     fit_cons=[]
     con_index=1
