@@ -164,37 +164,24 @@ Data columns and unit transformations are defined in config.squid.py.
     datasets=GenericSession.add_file(self, filename, append)
     self.calc_dia()
     # faster lookup
-    correct_dia=self.dia_mag_correct!=0
-    correct_para=self.para[0]!=0
+    correct=(self.dia_mag_correct!=0 or self.para[0]!=0)
     for dataset in datasets:
       units=dataset.units()
+      dia=self.dia_mag_correct
+      para=self.para[0]
       if 'T' in units:
-        self.dia_mag_correct*=1e4
-        self.para[0]*=1e4
+        dia*=1e4
+        para*=1e4
       if 'A·m²' in units:
-        self.dia_mag_correct/=1e3
-        self.para[0]/=1e3
-      if correct_dia:
-        dataset.process_function(self.diamagnetic_correction)
-        dataset.dia_corrected=True
-      else:
-        dataset.dia_corrected=False
-      if correct_para:
-        dataset.process_function(self.paramagnetic_correction)
-        dataset.para_corrected=True
-      else:
-        dataset.para_corrected=False
+        dia/=1e3
+        para/=1e3
+      if correct:
+        self.dia_para_correction(dataset, dia, para)
       # name the dataset
       constant, unit=dataset.unit_trans_one(dataset.type(),config.squid.TRANSFORMATIONS_CONST)      
       if dataset.short_info=='':
         unit=unit or dataset.units()[dataset.type()]
         dataset.short_info='at %d ' % constant + unit # set short info as the value of the constant column
-      if 'T' in units:
-        self.dia_mag_correct/=1e4
-        self.para[0]/=1e4
-      if 'A·m²' in units:
-        self.dia_mag_correct*=1e3
-        self.para[0]*=1e3
     return datasets
 
 
@@ -207,6 +194,15 @@ Data columns and unit transformations are defined in config.squid.py.
       asymptotic behaviour of a MvsH measurement.
     '''
     import gtk
+    units=window.measurement[window.index_mess].units()
+    dia=self.dia_mag_correct
+    para=self.para[0]
+    if 'T' in units:
+      dia*=1e4
+      para*=1e4
+    if 'A·m²' in units:
+      dia/=1e3
+      para/=1e3
     dialog=gtk.Dialog(title="Enter diamagnetic and paramagnetic correction factors:", 
                       parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
     # create a table with the entries
@@ -225,7 +221,7 @@ Data columns and unit transformations are defined in config.squid.py.
                 0,                       gtk.FILL,
                 0,                         0)
     dia_entry=gtk.Entry()
-    dia_entry.set_text(str(self.dia_mag_correct))
+    dia_entry.set_text(str(dia))
     table.attach(dia_entry,
                 # X direction #          # Y direction
                 2, 4,                      1, 2,
@@ -260,7 +256,7 @@ Data columns and unit transformations are defined in config.squid.py.
                 0,                       gtk.FILL,
                 0,                         0)
     para_entry=gtk.Entry()
-    para_entry.set_text(str(self.para[0]))
+    para_entry.set_text(str(para))
     table.attach(para_entry,
                 # X direction #          # Y direction
                 2, 4,                      3, 4,
@@ -320,11 +316,17 @@ Data columns and unit transformations are defined in config.squid.py.
       window.replot()
     if response==2:
       # if OK is pressed, apply the corrections and save as global.
+      units=window.measurement[window.index_mess].units()
+      if 'T' in units:
+        dia/=1e4
+        para/=1e4
+      if 'A·m²' in units:
+        dia*=1e3
+        para*=1e3      
       self.dia_mag_correct=dia
       self.para[0]=para
       dialog.destroy()
-  
-  
+    
   #-------------------------- GUI functions --------------------------------
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
@@ -335,6 +337,7 @@ Data columns and unit transformations are defined in config.squid.py.
       A new collumn is created for the corrected data and the old data
       stays unchanged.
     '''
+    # TODO: The fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
     field=1
     temp=2
     mag=3
@@ -352,92 +355,6 @@ Data columns and unit transformations are defined in config.squid.py.
     dataset.process_function(dia_para_calc)
     dataset.ydata=len(dataset.data)-1
 
-  def diamagnetic_correction(self, input_data):
-    '''
-      Calculate a diamagnetic correction for one datapoint.
-      This function will be used in process_function() of
-      a measurement_data_structure object.
-    '''
-    output_data=input_data
-    # TODO: The fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
-    # TODO: Replace dia and para correction by one function
-    # TODO: Fit a dataset to get dia and para factor
-    # TODO: Extra colum with corrected data and don't change original data
-    # TODO: Graphical interface to change the correction factor.
-    field=1
-    mag=3
-#    for mapping in self.COLUMNS_MAPPING: 
-#      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in config.squid.py
-#      if mapping[2][0]=='H':
-#        field=mapping[1]
-#      if mapping[2][0]=='M_{rso}':
-#        mag=mapping[1]
-#      if mapping[2][0]=='M_{ac}':
-#        mag=mapping[1]
-    output_data[mag]+= output_data[field] * self.dia_mag_correct # calculate the linear correction
-    return output_data
-  
-  def diamagnetic_correction_undo(self, input_data):
-    ''' undo the correction '''
-    output_data=input_data
-    # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
-    field=1
-    mag=3
-#    for mapping in self.COLUMNS_MAPPING: 
-#      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in config.squid.py
-#      if mapping[2][0]=='H':
-#        field=mapping[1]
-#      if mapping[2][0]=='M_{rso}':
-#        mag=mapping[1]
-#      if mapping[2][0]=='M_{ac}':
-#        mag=mapping[1]
-    output_data[mag]-= output_data[field] * self.dia_mag_correct # calculate the linear correction
-    return output_data
-
-  def paramagnetic_correction(self, input_data):
-    '''
-      Calculate a paramagnetic correction for one datapoint.
-      This function will be used in process_function() of
-      a measurement_data_structure object.
-    '''
-    output_data=input_data
-    # The fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
-    field=1
-    temp=2
-    mag=3
-#    for mapping in self.COLUMNS_MAPPING: 
-#      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in config.squid.py
-#      if mapping[2][0]=='H':
-#        field=mapping[1]
-#      if mapping[2][0]=='M_{rso}':
-#        mag=mapping[1]
-#      if mapping[2][0]=='M_{ac}':
-#        mag=mapping[1]
-#      if mapping[2][0]=='T':
-#        temp=mapping[1]
-    output_data[mag]-= output_data[field] * self.para[0] / (output_data[temp]-self.para[1]) # calculate the paramagnetic correction
-    return output_data
-  
-  def paramagnetic_correction_undo(self, input_data):
-    ''' undo the correction '''
-    output_data=input_data
-    # the fixed columns should be replaced by a dynamic solution, perhaps a child datastructure
-    field=1
-    temp=2
-    mag=3
-#    for mapping in self.COLUMNS_MAPPING: 
-#      # selection of the columns for H and M, only works with right COLUMNS_MAPPING settings in config.squid.py
-#      if mapping[2][0]=='H':
-#        field=mapping[1]
-#      if mapping[2][0]=='M_{rso}':
-#        mag=mapping[1]
-#      if mapping[2][0]=='M_{ac}':
-#        mag=mapping[1]
-#      if mapping[2][0]=='T':
-#        temp=mapping[1]
-    output_data[mag]+= output_data[field] * self.para[0] / (output_data[temp]-self.para[1]) # calculate the paramagnetic correction
-    return output_data
-  
   def calc_dia(self):
     found, elements_dia=self.calc_dia_elements()
     if found:
