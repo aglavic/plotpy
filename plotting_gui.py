@@ -47,7 +47,7 @@ import file_actions
 #----------------------- importing modules --------------------------
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2009"
+__copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
 __version__ = "0.6.2"
@@ -428,7 +428,7 @@ class ApplicationMainWindow(gtk.Window):
     dialog.set_program_name("Plotting GUI")
     dialog.set_version("v%s" % __version__)
     dialog.set_authors(["Artur Glavic"])
-    dialog.set_copyright("© Copyright 2008-2009 Artur Glavic\n a.glavic@fz-juelich.de")
+    dialog.set_copyright("© Copyright 2008-2010 Artur Glavic\n a.glavic@fz-juelich.de")
     dialog.set_website("http://www.fz-juelich.de/iff/Glavic_A/")
     dialog.set_website_label('Webseite @ fz-juelich.de')
     ## Close dialog on user response
@@ -616,13 +616,67 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Save a snapshot of the active work.
     '''
-    self.active_session.store_snapshot()
+    if action.get_name()=='SaveSnapshot':
+      name=None
+    else:
+      #++++++++++++++++File selection dialog+++++++++++++++++++#
+      file_dialog=gtk.FileChooserDialog(title='Save Snapshot to File...', 
+                                        action=gtk.FILE_CHOOSER_ACTION_SAVE, 
+                                        buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+      file_dialog.set_select_multiple(False)
+      file_dialog.set_default_response(gtk.RESPONSE_OK)
+      filter = gtk.FileFilter()
+      filter.set_name("Snapshots (*.mdd)")
+      filter.add_pattern("*.mdd")
+      file_dialog.add_filter(filter)
+      filter = gtk.FileFilter()
+      filter.set_name("All Files")
+      filter.add_pattern("*")
+      file_dialog.add_filter(filter)
+      response = file_dialog.run()
+      if response == gtk.RESPONSE_OK:
+        name=file_dialog.get_filenames()[0]
+        if not name.endswith(".mdd"):
+          name+=".mdd"
+      elif response == gtk.RESPONSE_CANCEL:
+        file_dialog.destroy()
+        return False
+      file_dialog.destroy()
+      #----------------File selection dialog-------------------#
+    self.active_session.store_snapshot(name)
   
   def load_snapshot(self, action):
     '''
       Load a snapshot of earlier work.
     '''
-    self.active_session.reload_snapshot()
+    if action.get_name()=='LoadSnapshot':
+      name=None
+    else:
+      #++++++++++++++++File selection dialog+++++++++++++++++++#
+      file_dialog=gtk.FileChooserDialog(title='Save Snapshot to File...', 
+                                        action=gtk.FILE_CHOOSER_ACTION_OPEN, 
+                                        buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+      file_dialog.set_select_multiple(False)
+      file_dialog.set_default_response(gtk.RESPONSE_OK)
+      filter = gtk.FileFilter()
+      filter.set_name("Snapshots (*.mdd)")
+      filter.add_pattern("*.mdd")
+      file_dialog.add_filter(filter)
+      filter = gtk.FileFilter()
+      filter.set_name("All Files")
+      filter.add_pattern("*")
+      file_dialog.add_filter(filter)
+      response = file_dialog.run()
+      if response == gtk.RESPONSE_OK:
+        name=file_dialog.get_filenames()[0]
+        if not name.endswith(".mdd"):
+          name+=".mdd"
+      elif response == gtk.RESPONSE_CANCEL:
+        file_dialog.destroy()
+        return False
+      file_dialog.destroy()
+      #----------------File selection dialog-------------------#
+    self.active_session.reload_snapshot(name)
     self.measurement=self.active_session.active_file_data
     self.replot()
 
@@ -1042,8 +1096,6 @@ class ApplicationMainWindow(gtk.Window):
     filter_dialog.set_default_size(600,150)
     sw = gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
-    # POLICY_AUTOMATIC will automatically decide whether you need
-    # scrollbars.
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
     table_rows=1
     table=gtk.Table(1,5,False)
@@ -2458,8 +2510,12 @@ class ApplicationMainWindow(gtk.Window):
       <menu action='FileMenu'>
         <menuitem action='OpenDatafile'/>
         <menuitem action='SaveGPL'/>
-        <menuitem action='SaveSnapshot'/>
-        <menuitem action='LoadSnapshot'/>
+        <menu action='SnapshotSub'>
+          <menuitem action='SaveSnapshot'/>
+          <menuitem action='SaveSnapshotAs'/>
+          <menuitem action='LoadSnapshot'/>
+          <menuitem action='LoadSnapshotFrom'/>
+        </menu>
         <separator name='static14'/>
         <menuitem action='Export'/>
         <menuitem action='ExportAs'/>
@@ -2628,12 +2684,23 @@ class ApplicationMainWindow(gtk.Window):
         "_Open File","<control>O",                      # label, accelerator
         "Open a new datafile",                       # tooltip
         self.add_file ),
+      ( "SnapshotSub", gtk.STOCK_EDIT,                    # name, stock id
+        "Snapshots", None,                      # label, accelerator
+        None, None),                       # tooltip
       ( "SaveSnapshot", gtk.STOCK_EDIT,                    # name, stock id
         "Save Snapshot","<control><shift>S",                      # label, accelerator
         "Save the current state for this measurement.",                       # tooltip
         self.save_snapshot ),
+      ( "SaveSnapshotAs", gtk.STOCK_EDIT,                    # name, stock id
+        "Save Snapshot As...", None,                      # label, accelerator
+        "Save the current state for this measurement.",                       # tooltip
+        self.save_snapshot ),
       ( "LoadSnapshot", gtk.STOCK_OPEN,                    # name, stock id
         "Load Snapshot", "<control><shift>O",                      # label, accelerator
+        "Load a state for this measurement stored before.",                       # tooltip
+        self.load_snapshot ),
+      ( "LoadSnapshotFrom", gtk.STOCK_OPEN,                    # name, stock id
+        "Load Snapshot From...", None,                      # label, accelerator
         "Load a state for this measurement stored before.",                       # tooltip
         self.load_snapshot ),
       ( "SaveGPL", gtk.STOCK_SAVE,                    # name, stock id

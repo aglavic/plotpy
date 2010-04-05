@@ -35,10 +35,10 @@ import config.transformations
 # importing own modules
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2009"
+__copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -593,7 +593,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     else:
       None
 
-  def store_snapshot(self):
+  def store_snapshot(self, name=None):
     '''
       Create a snapshot of the active measurement to reload it later.
       The method uses cPickle to create a file with the content of
@@ -601,22 +601,29 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
     dump_obj=self.create_snapshot_obj()
     print "Writing snapshot to file..."
-    dump_file=open(self.active_file_name+'.mdd', 'wb')
+    if not name:
+      dump_file=open(self.active_file_name+'.mdd', 'wb')
+    else:
+      dump_file=open(name, 'wb')
     dump(dump_obj, dump_file, -1)
     dump_file.close()
 
-  def reload_snapshot(self):
+  def reload_snapshot(self, name=None):
     '''
       Reload a snapshot created with store_snapshot.
     '''
-    if os.path.exists(self.active_file_name+'.mdd'):
-      dump_file=open(self.active_file_name+'.mdd', 'rb')
-      print "Reading snapshot from file..."
-      dump_obj=load(dump_file)
-      dump_file.close()
-      self.extract_snapshot_obj(dump_obj)
+    if not name:
+      if os.path.exists(self.active_file_name+'.mdd'):
+        dump_file=open(self.active_file_name+'.mdd', 'rb')
+      else:
+        print "No snapshot file found."
+        return False
     else:
-      print "No snapshot file found."
+      dump_file=open(name, 'rb')
+    print "Reading snapshot from file..."
+    dump_obj=load(dump_file)
+    dump_file.close()
+    self.extract_snapshot_obj(dump_obj)
 
   def create_snapshot_obj(self):
     '''

@@ -14,7 +14,7 @@ if "py2exe" in sys.argv:
 
 __name__='Plot-script'
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2009"
+__copyright__ = "Copyright 2008-2010"
 __license__ = "None"
 __version__ = "0.6.2"
 __email__ = "a.glavic@fz-juelich.de"

@@ -1,4 +1,4 @@
-      Release Notes for the plotting script collection Version 0.6.1
+      Release Notes for the plotting script collection Version 0.6.2
              Please report bugs and feature requests to http://atzes.homeip.net/plotwiki/tiki-forums.php
 
 

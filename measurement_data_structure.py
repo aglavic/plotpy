@@ -14,10 +14,10 @@ except ImportError:
   numpy=None
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2009"
+__copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
