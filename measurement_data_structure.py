@@ -7,6 +7,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 from sys import hexversion
+from copy import deepcopy
 try:
   import numpy
 except ImportError:
@@ -144,6 +145,24 @@ class MeasurementData:
       return point
     else:
       return 'NULL'
+
+  def append_column(self, column, dimension="", unit=""):
+    '''
+      Append a new column to the datastructure.
+      If the column is already a PhysicalProperty, a copy
+      of it is used, otherwise a new PhysicalProperty object
+      is created with the column data.
+    '''
+    if len(column)!=len(self):
+      return False
+    if getattr(column, "unit", False) and getattr(column, "dimension", False):
+      self.data.append(deepcopy(column))
+      return True
+    else:
+      col=PysicalProperty(dimension, unit)
+      col.values=list(column)
+      self.data.append(col)
+      return True
 
   def get_data(self,count): 
     '''
@@ -315,7 +334,7 @@ class MeasurementData:
     '''
     from copy import deepcopy
     data=deepcopy(self.data[col])
-    unit_used=''
+    unit_used=None
     for unit in unit_list:
       if len(unit)==4:
         transformed=data.unit_trans(unit)

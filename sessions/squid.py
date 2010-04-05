@@ -133,8 +133,7 @@ Data columns and unit transformations are defined in config.squid.py.
     # Create XML for squid menu
     string='''
       <menu action='SquidMenu'>
-        <menuitem action='SquidDia'/>
-        <menuitem action='SquidPara'/>
+        <menuitem action='SquidDiaPara'/>
         <menuitem action='SquidExtractRaw'/>
       </menu>
     '''
@@ -145,14 +144,10 @@ Data columns and unit transformations are defined in config.squid.py.
                 "SQUID", None,                    # label, accelerator
                 None,                                   # tooltip
                 None ),
-            ( "SquidDia", None,                             # name, stock id
-                "Diamagnetic Correction", None,                    # label, accelerator
+            ( "SquidDiaPara", None,                             # name, stock id
+                "_Dia-/Paramagnetic Correction...", "<control>d",                    # label, accelerator
                 None,                                   # tooltip
-                self.toggle_correction ),
-            ( "SquidPara", None,                             # name, stock id
-                "Paramagnetic Correction", None,                    # label, accelerator
-                None,                                   # tooltip
-                self.toggle_correction ),
+                self.dia_para_dialog ),
             ( "SquidExtractRaw", None,                             # name, stock id
                 "Extract magnetic moment", None,                    # label, accelerator
                 None,                                   # tooltip
@@ -192,6 +187,7 @@ Data columns and unit transformations are defined in config.squid.py.
       # name the dataset
       constant, unit=dataset.unit_trans_one(dataset.type(),config.squid.TRANSFORMATIONS_CONST)      
       if dataset.short_info=='':
+        unit=unit or dataset.units()[dataset.type()]
         dataset.short_info='at %d ' % constant + unit # set short info as the value of the constant column
       if 'T' in units:
         self.dia_mag_correct/=1e4
@@ -202,7 +198,160 @@ Data columns and unit transformations are defined in config.squid.py.
     return datasets
 
 
+  #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
+  
+  def dia_para_dialog(self, action, window):
+    '''
+      A dialog to enter the diamagnetic and paramagnetic correction.
+      Diamagnetic correction can be calculated from a fit to the
+      asymptotic behaviour of a MvsH measurement.
+    '''
+    import gtk
+    dialog=gtk.Dialog(title="Enter diamagnetic and paramagnetic correction factors:", 
+                      parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
+    # create a table with the entries
+    table=gtk.Table(4, 4, False)
+    top_label=gtk.Label("\nYou can enter a diamgnetic and paramagnetic Correction Factor here,\n"+\
+                        "the data will then be correct as: NEWDATA=DATA - PARA * 1/T + DIA.\n\n")
+    table.attach(top_label,
+                # X direction #          # Y direction
+                0, 3,                      0, 1,
+                0,                       gtk.FILL|gtk.EXPAND,
+                0,                         0)
+    label=gtk.Label("Diamagnetic Correction: ")
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 2,                      1, 2,
+                0,                       gtk.FILL,
+                0,                         0)
+    dia_entry=gtk.Entry()
+    dia_entry.set_text(str(self.dia_mag_correct))
+    table.attach(dia_entry,
+                # X direction #          # Y direction
+                2, 4,                      1, 2,
+                0,                       gtk.FILL,
+                0,                         0)
+    
+    fit_button=gtk.Button("Fit asymptotes")
+    table.attach(fit_button,
+                # X direction #          # Y direction
+                0, 1,                      2, 3,
+                0,                       gtk.FILL,
+                0,                         0)
+    label=gtk.Label("of MvsH measurement, excluding ±")
+    table.attach(label,
+                # X direction #          # Y direction
+                1, 3,                      2, 3,
+                gtk.FILL,                       gtk.FILL,
+                0,                         0)
+    fit_exclude_regtion=gtk.Entry()
+    fit_exclude_regtion.set_width_chars(4)
+    fit_exclude_regtion.set_text("1")
+    table.attach(fit_exclude_regtion,
+                # X direction #          # Y direction
+                3, 4,                      2, 3,
+                0,                       gtk.FILL,
+                0,                         0)
+    
+    label=gtk.Label("Paramagnetic Correction: ")
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 2,                      3, 4,
+                0,                       gtk.FILL,
+                0,                         0)
+    para_entry=gtk.Entry()
+    para_entry.set_text(str(self.para[0]))
+    table.attach(para_entry,
+                # X direction #          # Y direction
+                2, 4,                      3, 4,
+                0,                       gtk.FILL,
+                0,                         0)
+    # insert the table and buttons to the dialog
+    dialog.vbox.add(table)
+    dialog.add_button("OK", 2)
+    dialog.add_button("Apply", 1)
+    dialog.add_button("Cancel", 0)
+    fit_button.connect("clicked", lambda *ignore: dialog.response(3))
+    fit_exclude_regtion.connect("activate", lambda *ignore: dialog.response(3))
+    dia_entry.connect("activate", lambda *ignore: dialog.response(2))
+    para_entry.connect("activate", lambda *ignore: dialog.response(2))
+    dialog.show_all()
+    dialog.connect("response", self.dia_para_response, window, [dia_entry, para_entry, fit_exclude_regtion])
+  
+  def dia_para_response(self, dialog, response, window, entries):
+    '''
+      Evaluate the response of the dialog from dia_para_dialog.
+    '''
+    if response==0:
+      self.dia_para_correction(window.measurement[window.index_mess], 
+                               self.dia_mag_correct, self.para[0])
+      window.replot()      
+      dialog.destroy()
+      return None
+    try:
+      dia=float(entries[0].get_text())
+    except ValueError:
+      dia=0.
+      entries[0].set_text("0")
+    try:
+      para=float(entries[1].get_text())
+    except ValueError:
+      para=0.
+      entries[1].set_text("0")
+    try:
+      split=float(entries[2].get_text())
+    except ValueError:
+      split=1.
+      entries[2].set_text("1")
+    if response==3:
+      dataset=window.measurement[window.index_mess]
+      if dataset.xdata==1:
+        from fit_data import FitDiamagnetism
+        # fit after paramagnetic correction
+        self.dia_para_correction(dataset, 0. , para)
+        fit=FitDiamagnetism(([0, 0, 0, split]))
+        fit.refine(dataset.data[1].values, 
+                   dataset.data[-1].values, 
+                   dataset.data[dataset.yerror].values)
+        entries[0].set_text(str(-fit.parameters[0]))
+      return None
+    if response>0:
+      self.dia_para_correction(window.measurement[window.index_mess], dia, para)
+      window.replot()
+    if response==2:
+      # if OK is pressed, apply the corrections and save as global.
+      self.dia_mag_correct=dia
+      self.para[0]=para
+      dialog.destroy()
+  
+  
+  #-------------------------- GUI functions --------------------------------
+
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
+  
+  def dia_para_correction(self, dataset, dia, para):
+    '''
+      Calculate dia- and paramagnetic correction for the given dataset.
+      A new collumn is created for the corrected data and the old data
+      stays unchanged.
+    '''
+    field=1
+    temp=2
+    mag=3
+    dims=dataset.dimensions()
+    first=True
+    for dim in dims:
+      if dim.startswith("Corrected"):
+        first=False
+    if first:
+      dataset.append_column(dataset.data[mag])
+      dataset.data[-1].dimension="Corrected "+dataset.data[-1].dimension
+    def dia_para_calc(point):
+      point[-1]= point[mag] + point[field] * ( dia - para / point[temp])
+      return point
+    dataset.process_function(dia_para_calc)
+    dataset.ydata=len(dataset.data)-1
+
   def diamagnetic_correction(self, input_data):
     '''
       Calculate a diamagnetic correction for one datapoint.

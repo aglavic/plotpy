@@ -77,7 +77,7 @@ MEASUREMENT_TYPES=[\
 # MvsT, H is constant
 [[[1,1.]],2,3,4,''],\
 # MvsH T is constant
-[[[2,0.25]],1,3,4,'set key outside\n']\
+[[[2,0.25]],1,3,4,'']\
 ]
 
 SPLIT_AFTER=[

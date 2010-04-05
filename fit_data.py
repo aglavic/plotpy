@@ -274,6 +274,35 @@ class FitLinear(FitFunction):
     self.parameters=[1, 0]
     FitFunction.__init__(self, initial_parameters)
 
+class FitDiamagnetism(FitFunction):
+  '''
+    Fit two linear functions with the same slope, an offset and a hole around zero.
+  '''
+  
+  # define class variables.
+  name="Linear Asymptotes"
+  parameters=[0, 0, 0, 1]
+  parameter_names=['a', 'b', 'c', 'split']
+  fit_function_text='slope=a'
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[0, 0, 0, 1]
+    FitFunction.__init__(self, initial_parameters)
+    self.refine_parameters=range(3)
+  
+  def fit_function(self, p, x):
+    '''
+      Two linear functions with different offsets,
+      split left and right from the y-axes.
+    '''
+    xarray=numpy.array(x)
+    # create an array with True at every xposition which is outside the split region
+    switch=(xarray<-abs(p[3]))+(xarray>abs(p[3]))
+    output=p[0] * xarray + numpy.sign(xarray) * p[1] + p[2]
+    return switch*output
 
 class FitQuadratic(FitFunction):
   '''
@@ -612,6 +641,7 @@ class FitSession:
   # a dictionary of known fit functions
   available_functions={
                        FitLinear.name: FitLinear, 
+                       #FitDiamagnetism.name: FitDiamagnetism, 
                        FitQuadratic.name: FitQuadratic, 
                        FitExponential.name: FitExponential, 
                        FitGaussian.name: FitGaussian, 
