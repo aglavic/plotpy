@@ -48,7 +48,7 @@ import file_actions
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
-__credits__ = []
+__credits__ = ["Werner Schweika", "Emmanuel Kenzinger", "Paul Zakalek", "Daniel Schumacher",  "All other Tester!"]
 __license__ = "None"
 __version__ = "0.6.2"
 __maintainer__ = "Artur Glavic"
@@ -427,7 +427,7 @@ class ApplicationMainWindow(gtk.Window):
     dialog = gtk.AboutDialog()
     dialog.set_program_name("Plotting GUI")
     dialog.set_version("v%s" % __version__)
-    dialog.set_authors(["Artur Glavic"])
+    dialog.set_authors([__author__]+__credits__)
     dialog.set_copyright("© Copyright 2008-2010 Artur Glavic\n a.glavic@fz-juelich.de")
     dialog.set_website("http://www.fz-juelich.de/iff/Glavic_A/")
     dialog.set_website_label('Webseite @ fz-juelich.de')

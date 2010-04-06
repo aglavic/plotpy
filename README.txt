@@ -5,9 +5,10 @@
 Content:
 
 0   - introduction
-1   - changes since version 0.6
-1.1 - changes from version 0.5 to 0.6
-1.2 - changes from version 0.4 to 0.5
+1   - changes since version 0.6.1
+1.1   - changes since version 0.6
+1.2 - changes from version 0.5 to 0.6
+1.3 - changes from version 0.4 to 0.5
 2   - installation Linux
 2.1 - installation Windows
 3   - list of modules and packages
@@ -24,7 +25,20 @@ If you would like some new features, found any bugs or would like to have additi
 supported by the script feel free to go to the Wiki http://atzes.homeip.net/plotwiki/ . Any contribution
 to the Wiki content is also welcome.
 
------ 1 - changes since version 0.6 -------
+----- 1 - changes since version 0.6.1 -------
+- added snapshot framework to store the working stat including fits etc.
+- added possiblity to combine reflectometer rocking curves to 3d maps
+- added gui option to change squid dia- and paramagnetic correction including fit to asymptotic behaviour
+- fix TREFF and reflectometer fits with different datasets not working in one session
+- fix reflectometer custom constrints not working whith multilayer parameters
+- revisited scattering length density table of reflectometer
+- filtering datapoints can be applied without closing the dialog
+- fix crash when trying to import improper squid/ppms data files
+- reload config files and .mds files when a new script version is created
+- some minor changes an fixes
+
+
+----- 1.1 - changes since version 0.6 -------
 - rearanged menu structure to improve usability
 - added new Plot.py logo to the gui
 - improved the scaling of the GUI image
@@ -45,7 +59,7 @@ to the Wiki content is also welcome.
 - fixed small issue in DNS fullauto import optional
 - some minor fixes and changes
 
------ 1.1 - changes from version 0.5 to 0.6 -------
+----- 1.2 - changes from version 0.5 to 0.6 -------
 - added support for treff data and image files
   - create intensity maps from the detector data, join scans
   - extract "true" specular reflectivity from those maps
@@ -77,7 +91,7 @@ to the Wiki content is also welcome.
 - color selection for 3d plots (can be personalized in config/gnuplot_preferences.py)
 - create arbitrary cross-sections through 3d-plots bin the data as standard and gaussian weighted mean, 
   join datapoints with equal numbers or in equal steps
-- transform units and dimensions with some predefined units (e.g. ° to mrad)
+- transform units and dimensions with some predefined units (e.g. 째 to mrad)
 - plot profiles now include all 3d-plot settings, too
 - better window resize using scrolled window and gnuplot with different export sizes and not scaling
 - font size option in GUI
@@ -89,7 +103,7 @@ to the Wiki content is also welcome.
 - config files in user directory if installed by admin
 
 
------ 1.2 - changes from version 0.4 to 0.5 -------
+----- 1.3 - changes from version 0.4 to 0.5 -------
 - combined all scripts into one executable with many changes in the backend for more
   flexibility using more object orientation
 - using temporal folder depending on the process ID so you can use more then one instance
@@ -185,7 +199,7 @@ Now you should be ready to use the scripts with and without GUI-mode under windo
 
 
 ---------- 3 - list of modules and packages -------------
-Plot-script-0.6.tar.gz (.zip) contains:
+Plot-script-0.6.2.tar.gz (.zip) contains:
   config/                                                         - package with all settings for the datafile import and plot layout
                                                                         to change these can make sense also for users
   read_data/                                                   - contains all modules for datafile readout
@@ -241,19 +255,21 @@ GUI:
 The next releases will hopefully come in about 3-6 month cycles. 
 At the moment I have these plans for the future releases:
 
+  v0.6.3) - revisite dns powder evaluation
+              - please give me feedback, thats the only way for me to find errors arising from differnt input options
+
   v0.7)  - convert the program to the wxWidgets backend to make the program
               accessible under OSX, too.
         - replace the multiplot functionality by a plot dialog which is easier to use and has
           additional functionality as to plot more than one column of a file
-        - revisite the datastructure, perhaps link the errors to the data
-        - make numpy a prerequisite and use only numpy arrays for speedup
+        - revisite the datastructure, perhaps link the errors to the data (already on the way)
+        - make numpy a prerequisite and use only numpy arrays for speedup (also already working on that)
         - setting up proper printing dialog
         - more error handling
         - save more settings in the config file, savable window profiles
-        - open the gui without any file
+        - open the gui without any file (in alpha stage possible)
         - combine data from different files together
         - increase command line functionality
-        - Save working status for easier reaccess e.g. for Treff fit sessions.
 
   v0.8) - include powder diffractometer format and interface to fullprof
         - complete mpms and ppms functionalities for all measurements
