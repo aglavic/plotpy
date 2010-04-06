@@ -477,7 +477,9 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     # for faster access the MeasurementData objects are saved via cPickle
     # when this file exists it is used to reload it.
     # This can be ignored by the command line option '-rd'
-    if os.path.exists(filename + '.mds') and not self.read_directly:
+    # if the script is newer than the .mds file, reimport it
+    if os.path.exists(filename + '.mds') and not self.read_directly and \
+        (os.path.getmtime(os.path.abspath(__file__))<os.path.getmtime(filename+'.mds')):
       print "Importing previously saved data from '" +filename + ".mds'."
       pickled=open(filename + '.mds', 'rb')
       datasets=load(pickled)

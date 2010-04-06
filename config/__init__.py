@@ -18,6 +18,9 @@ if not os.access(__path__[0], os.W_OK):
   user_path=os.path.join(config_path, 'config')
   if not os.path.exists(user_path):
     os.mkdir(user_path)
+  # create new config files if the script version is newer
+  if not os.path.exists(os.path.join(user_path, "gnuplot_preferences.py")) or \
+      os.path.getmtime(os.path.join(user_path, "gnuplot_preferences.py"))<os.path.getmtime(os.path.abspath(__file__)):  
     try:
       # copy all files to the users directory
       files=filter(lambda file: file.endswith('.py'), os.listdir(__path__[0]))
@@ -55,6 +58,6 @@ if not os.access(__path__[0], os.W_OK):
         # so this code is doubled in the __configadd__ variable.
         if '__configadd__' in dir(active_config):
           export_file.write(active_config.__configadd__)
-        export_file.close()
+        export_file.close()    
   # reassociate this module to use the user files
   __path__=[user_path]

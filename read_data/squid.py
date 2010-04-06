@@ -38,6 +38,9 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
       while input_file_lines.pop(0).find('[Data]')==-1:
         continue
       measurement_data=read_data_lines(input_file_lines,measurement_info,COLUMNS_MAPPING,MEASUREMENT_TYPES)
+      if measurement_data=='NULL':
+        print "No valid data found!"
+        return 'NULL'
       for split in config.squid.SPLIT_AFTER:
         new_measurement_data=[]
         for i, dataset in enumerate(measurement_data):
@@ -115,7 +118,10 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
     @return List of MeasurementData objects
   '''
   output=[] #initialise data array containing data objects
-  line=input_file_lines.pop(0).split(',')
+  try:
+    line=input_file_lines.pop(0).split(',')
+  except IndexError:
+    return "NULL"
   count=1
   columns=[]
 # define which columns contain the relevant data
