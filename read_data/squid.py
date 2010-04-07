@@ -49,7 +49,13 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
           else:
             new_measurement_data.append(dataset)
         measurement_data=new_measurement_data
-      pass
+      new_measurement_data=[]
+      for dataset in measurement_data:
+        if len(set(dataset.data[dataset.ydata].values)) <= 1:
+          continue
+        else:
+          new_measurement_data.append(dataset)
+      measurement_data=new_measurement_data
     else:
       print "Wrong file type! Doesn't contain header information."
       return 'NULL'
@@ -131,26 +137,31 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
       if item==mapping[0]:
         columns.append([count-2,mapping[1],mapping[2]])
     columns.sort(key=lambda x:x[1])
-  #read 2 lines to determine the type of the first sequence
-  data_1=read_data_line(input_file_lines.pop(0),columns)
-  data_2=read_data_line(input_file_lines.pop(0),columns)
   not_found=True
-  if (data_1!='NULL')&(data_2!='NULL'):
-    for type_i in MEASUREMENT_TYPES:
-      if not_found and check_type(data_1,data_2,type_i):
-        data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
-        data.append(data_1)
-        data.append(data_2)
-        data.plot_options=type_i[4]
-        data.filters=config.squid.filters
-        not_found=False
-  else:
-    return 'NULL'
+  while not_found:
+    try:
+      #read 2 lines to determine the type of the first sequence
+      data_1=read_data_line(input_file_lines.pop(0),columns)
+      data_2=read_data_line(input_file_lines.pop(0),columns)
+    except IndexError:
+      print "No valid data in file."
+      return 'NULL'
+    if (data_1!='NULL')&(data_2!='NULL'):
+      for type_i in MEASUREMENT_TYPES:
+        if not_found and check_type(data_1,data_2,type_i):
+          data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
+          data.append(data_1)
+          data.append(data_2)
+          data.plot_options=type_i[4]
+          data.filters=config.squid.filters
+          not_found=False
+    else:
+      return 'NULL'
   try: # if no sequence of set types is found return null
     data.info=info[0]
   except:
     print 'No sequence with right type found!'
-    return 'Null'
+    return 'NULL'
   data.sample_name=info[1]
   # trying to speed up function lookup
   data_is_type=data.is_type
@@ -229,10 +240,15 @@ def split_after_read(dataset, split):
   '''
   from copy import deepcopy
   output=[]
-  split_col=dataset.dimensions().index(split[0])
+  dims=dataset.dimensions()
+  # only split if the right measurement is presen (e.g. frequency only for AC)
+  for dim in split[0]:
+    if dim not in dims:
+      return [dataset]
+  split_col=dims.index(split[1])
   found_entries=[]
   for point in dataset:
-    key=round(point[split_col]/split[1])
+    key=round(point[split_col]/split[2])
     if key in found_entries:
       output[found_entries.index(key)].append(point)
     else:
@@ -242,6 +258,6 @@ def split_after_read(dataset, split):
         physprop.values=[]
       output[-1].number_of_points=0
       output[-1].append(point)
-      output[-1].short_info='at %d %s' % (key*split[1], dataset.units()[split_col])
+      output[-1].short_info='at %d %s' % (key*split[2], dataset.units()[split_col])
   return output
   

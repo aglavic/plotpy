@@ -80,8 +80,9 @@ MEASUREMENT_TYPES=[\
 [[[2,0.25]],1,3,4,'']\
 ]
 
+# Split sequences after readout [list_for_scantype, split_by, split_sensitivity]
 SPLIT_AFTER=[
-             ['Frequency', 5.], 
+             [("M\\047{ac}"),'Frequency', 5.], 
              ]
 
 # permanent datafilters applied, a list of

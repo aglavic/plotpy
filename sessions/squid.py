@@ -237,13 +237,19 @@ Data columns and unit transformations are defined in config.squid.py.
     label=gtk.Label("of MvsH measurement, excluding ±")
     table.attach(label,
                 # X direction #          # Y direction
-                1, 3,                      2, 3,
+                1, 2,                      2, 3,
                 gtk.FILL,                       gtk.FILL,
                 0,                         0)
     fit_exclude_regtion=gtk.Entry()
     fit_exclude_regtion.set_width_chars(4)
     fit_exclude_regtion.set_text("1")
     table.attach(fit_exclude_regtion,
+                # X direction #          # Y direction
+                2, 3,                      2, 3,
+                0,                       gtk.FILL,
+                0,                         0)
+    ignore_errors=gtk.CheckButton("ignore errors")
+    table.attach(ignore_errors,
                 # X direction #          # Y direction
                 3, 4,                      2, 3,
                 0,                       gtk.FILL,
@@ -272,7 +278,7 @@ Data columns and unit transformations are defined in config.squid.py.
     dia_entry.connect("activate", lambda *ignore: dialog.response(2))
     para_entry.connect("activate", lambda *ignore: dialog.response(2))
     dialog.show_all()
-    dialog.connect("response", self.dia_para_response, window, [dia_entry, para_entry, fit_exclude_regtion])
+    dialog.connect("response", self.dia_para_response, window, [dia_entry, para_entry, fit_exclude_regtion, ignore_errors])
   
   def dia_para_response(self, dialog, response, window, entries):
     '''
@@ -315,9 +321,13 @@ Data columns and unit transformations are defined in config.squid.py.
         # fit after paramagnetic correction
         self.dia_para_correction(dataset, 0. , para)
         fit=FitDiamagnetism(([0, 0, 0, split]))
-        fit.refine(dataset.data[1].values, 
-                   dataset.data[-1].values, 
-                   dataset.data[dataset.yerror].values)
+        if not entries[3].get_active():
+          fit.refine(dataset.data[1].values, 
+                     dataset.data[-1].values, 
+                     dataset.data[dataset.yerror].values)
+        else:
+          fit.refine(dataset.data[1].values, 
+                     dataset.data[-1].values)
         entries[0].set_text(str(-fit.parameters[0]))
       return None
     if response>0:

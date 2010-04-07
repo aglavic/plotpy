@@ -199,7 +199,7 @@ class DNSSession(GenericSession):
   AUTO_VANADIUM=False # try to use all vanadium files in setup directory
   CORRECTION_ZIP=None
   CORRECT_FLIPPING=False # try automatic flipping-rato correction
-  SCATTERING_PROPABILITY=0.1 # scattering_propability used for automatic flipping-ratio correction
+  SCATTERING_PROPABILITY=0.0 # scattering_propability used for automatic flipping-ratio correction
   SHORT_INFO=[('temperature', lambda temp: 'at T='+str(temp), 'K')] # For the plots this is used to creat the short info
   SAMPLE_NAME='' # Name of the Sample for the data objects
   POWDER_DATA=False # If powder data is to be evaluated this is True.
@@ -726,7 +726,7 @@ class DNSSession(GenericSession):
       if self.TRANSFORM_Q:
         dnsmap.unit_trans(self.TRANSFORMATIONS)
     # Seperate scattering for powder data x,y,z polarization analysis
-    if self.XYZ_POL and (self.POWDER_DATA or len(set(dnsmap.data[1].values))==1) and self.CORRECT_FLIPPING:
+    if self.XYZ_POL and (self.POWDER_DATA or len(set(dnsmap.data[1].values))==1) and self.CORRECT_FLIPPING and len(self.active_file_data)==6:
       self.separate_scattering_xyz(self.active_file_data)
     if self.SEPARATE_NONMAG:
       self.separate_scattering_nonmag(self.active_file_data)
@@ -1640,7 +1640,7 @@ class DNSMeasurementData(MeasurementData):
     Datatreatment is done here and additional data treatment functions should
     be put here, too.
   '''
-  SPLIT_SENSITIVITY=0.01
+  SPLIT_SENSITIVITY=0.005
   dns_info={}
   scan_line=3
   scan_line_constant=1
