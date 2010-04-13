@@ -194,6 +194,7 @@ class DNSSession(GenericSession):
   BACKGROUND_SCALING=1. # Factor to scale the background
   bg_corrected_nicr_data={} # dictionary of background corrected NiCr data
   system_bg={} # dictionary of background data from the system directory
+  user_bg={} # dictionary of background data supplied by the user
   system_vana=None # sum of all vanadium files in setup directory
   AUTO_BACKGROUND=False # try to select a background data from system_bg
   AUTO_VANADIUM=False # try to use all vanadium files in setup directory
@@ -236,29 +237,35 @@ class DNSSession(GenericSession):
       exit()
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     if self.FULLAUTO:
+      # Initialize full automatic search for appropriate sequences
       if len(names)==0:
-        names=glob('*')
+        # If noe filenames are supplied, try to get all dns datafiles
+        # in the active directory
+        names=glob('*.d_dat')
       self.initialize_fullauto(names)
       names=[]
     self.os_path_stuff() # create temp folder according to OS
     self.read_vana_bg_nicr_files() # read NiCr files for flipping-ratio correction
     self.try_import_externals()
     if self.BACKGROUND_FILES:
+      # read all background files supplied by the user with the -bg option
+      # every dataset will be corrected by the user bg files and if no
+      # fitting user bg file is found the system background files
       for bg_file in self.BACKGROUND_FILES:
-        self.read_bg_file(bg_file, self.system_bg)
+        self.read_bg_file(bg_file, self.user_bg)
     names.sort()
     self.set_transformations()
     config.transformations.known_transformations+=self.TRANSFORMATIONS
     if len(names) > 1:
-      self.find_prefixes(names)
+      self.find_prefixes(names) # try to find the sequences for the remaining file names
     if not self.SPLIT is None:
-      self.split_sequences(self.SPLIT)
+      self.split_sequences(self.SPLIT) # old way of splitting sequences every SPLIT step
     #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
     self.prefixes.sort()
     for prefix in self.prefixes:
       # for every measured sequence read the datafiles and create a map/lineplot.
       self.read_files(prefix)
-
+    
     if len(self.prefixes) == 0: # show help, if there is no valid file in the list
       print "No valid datafile found!"
       print self.SHORT_HELP
@@ -290,6 +297,9 @@ class DNSSession(GenericSession):
     self.autosplit_sequences()
 
   def autosplit_sequences(self):
+    '''
+      Go through all sequences and try to split them by temperature.
+    '''
     new_prefixes=[]
     new_options={'default': self.file_options['default']}
     discarded=[]
@@ -454,7 +464,7 @@ class DNSSession(GenericSession):
           self.SAMPLE_NAME=argument
           last_argument_option=[False,'']
         elif last_argument_option[1]=='setup':
-          config.dns.SETUP_DIRECTORY=argument
+          config.dns.SETUP_DIRECTORYS=[argument]
           last_argument_option=[False,'']
         #+++++++++++++++ explicit file setting +++++++++++++++++++++++++++
         # Enty checking is quite extensive as there are many options which could
@@ -794,17 +804,35 @@ class DNSSession(GenericSession):
     detectors=list(set(dataset.data[0].values))
     detectors.sort()
     # get the currents
-    flip=round(float(dataset.dns_info['flipper']), 2)
-    flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
-    c_a=round(float(dataset.dns_info['C_a']), 2)
-    c_b=round(float(dataset.dns_info['C_b']), 2)
-    c_c=round(float(dataset.dns_info['C_c']), 2)
-    c_z=round(float(dataset.dns_info['C_z']), 2)
+    flip=float(dataset.dns_info['flipper'])
+    flip_cmp=float(dataset.dns_info['flipper_compensation'])
+    c_a=float(dataset.dns_info['C_a'])
+    c_b=float(dataset.dns_info['C_b'])
+    c_c=float(dataset.dns_info['C_c'])
+    c_z=float(dataset.dns_info['C_z'])
+    found=False
     # create a key for the currents and search for it in the
     # background dictionary
-    key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
-    if key in self.system_bg: 
-      bg=self.system_bg[key]
+    for key in self.user_bg.keys():
+      if abs(key[0]-flip)<0.05 and \
+         abs(key[1]-flip_cmp)<0.05 and \
+         abs(key[2]-c_a)<0.05 and \
+         abs(key[3]-c_b)<0.05 and \
+         abs(key[4]-c_c)<0.05 and \
+         abs(key[5]-c_z)<0.05:
+        bg=self.user_bg[key]
+        found=True
+    if not found:
+      for key in self.system_bg.keys():
+        if abs(key[0]-flip)<0.05 and \
+           abs(key[1]-flip_cmp)<0.05 and \
+           abs(key[2]-c_a)<0.05 and \
+           abs(key[3]-c_b)<0.05 and \
+           abs(key[4]-c_c)<0.05 and \
+           abs(key[5]-c_z)<0.05:
+          bg=self.system_bg[key]
+          found=True
+    if found:
       bg.sort(lambda b1, b2: cmp(b1.dns_info['detector_bank_2T'], b2.dns_info['detector_bank_2T']))
       bg_detectors=[b.dns_info['detector_bank_2T'] for b in bg]
       dataset.background_data={}
@@ -1011,42 +1039,55 @@ class DNSSession(GenericSession):
   
   def read_vana_bg_nicr_files(self):
     '''
-      Read all NiCr, background and vanadium files in the chosen directory and correct the backgound.
+      Read all NiCr, background and vanadium files in the chosen directorys and zipfile and correct NiCr for backgound.
     '''
-    directory=config.dns.SETUP_DIRECTORY
+    directorys=config.dns.SETUP_DIRECTORYS
+    # if set, unzip the zipfile with the setup data
     if self.CORRECTION_ZIP:
       import zipfile
       try:
         zf=zipfile.ZipFile(self.CORRECTION_ZIP, 'r')
-        directory=os.path.join(self.TEMP_DIR, 'setup')
-        os.mkdir(directory)
-        print "Extracting ziped setup data."
+        directorys.append(os.path.join(self.TEMP_DIR, 'setup'))
+        os.mkdir(directorys[-1])
+        print "Extracting ziped setup data %s." % self.CORRECTION_ZIP
         for ziped_file in zf.filelist:
           name=os.path.split(ziped_file.filename)[1]
-          file=open(os.path.join(directory, name), 'w')
+          file=open(os.path.join(directorys[-1], name), 'w')
           file.write(zf.read(ziped_file.filename))
           file.close()
       except IOError:
         print "No zip file %s." % self.CORRECTION_ZIP
-    try:
-      file_list=sorted(os.listdir(directory))
-    except OSError:
-      file_list=[]
-    nicr_files=sorted(filter(lambda name: name.startswith(config.dns.NICR_FILE_WILDCARD[0]), 
-                      filter(lambda name: name.endswith(config.dns.NICR_FILE_WILDCARD[1]), 
+    file_list=[]
+    # create a list of all files in the setup directorys
+    for directory in directorys:
+      try:
+        dir_list=sorted(os.listdir(directory))
+        file_list+=[os.path.join(directory, name) for name in dir_list]
+      except OSError:
+        pass
+    nicr_files=[]
+    bg_files=[]
+    vana_files=[]
+    # filter the file names by the wildcards set in config.dns
+    for wildcard in config.dns.NICR_FILE_WILDCARDS:
+      nicr_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
                              file_list)))
-    bg_files=sorted(filter(lambda name: name.startswith(config.dns.BACKGROUND_WILDCARD[0]), 
-                      filter(lambda name: name.endswith(config.dns.BACKGROUND_WILDCARD[1]), 
+    for wildcard in config.dns.BACKGROUND_WILDCARDS:
+      bg_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
                              file_list)))
-    vana_files=sorted(filter(lambda name: name.startswith(config.dns.VANADIUM_WILDCARD[0]), 
-                      filter(lambda name: name.endswith(config.dns.VANADIUM_WILDCARD[1]), 
+    for wildcard in config.dns.VANADIUM_WILDCARDS:
+      vana_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
                              file_list)))
-    # dictionaries with the helmholz parameters are used to store the data
+    # a dictionary with the detector bank helmholz parameters is used to store the NiCr data
     nicr_data={}
     vana_data=None
+    # read all nicr files
     for file_name in nicr_files:
-      dataset=read_data.dns.read_data(os.path.join(directory, file_name))
-      dataset.name=file_name
+      dataset=read_data.dns.read_data(file_name)
+      dataset.name=os.path.split(file_name)[1]
       detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
       flip=round(float(dataset.dns_info['flipper']), 2)
       flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
@@ -1055,12 +1096,12 @@ class DNSSession(GenericSession):
       c_c=round(float(dataset.dns_info['C_c']), 2)
       c_z=round(float(dataset.dns_info['C_z']), 2)
       nicr_data[(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)]=dataset
+    # read all background files
     bg_data=self.system_bg
-    for file_name in bg_files:
-      bg_file=os.path.join(directory, file_name)
+    for bg_file in bg_files:
       self.read_bg_file(bg_file, bg_data)
     self.system_bg=bg_data
-    # correct the background
+    # correct the background of the nicr data
     bg_corrected_data={}
     if use_numpy:
       def subtract_background(point):
@@ -1098,7 +1139,7 @@ class DNSSession(GenericSession):
     self.bg_corrected_nicr_data=bg_corrected_data
     for file_name in vana_files:
       if vana_data:
-        dataset=read_data.dns.read_data(os.path.join(directory, file_name))
+        dataset=read_data.dns.read_data(file_name)
         detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
         flip=round(float(dataset.dns_info['flipper']), 2)
         flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
@@ -1116,7 +1157,7 @@ class DNSSession(GenericSession):
           vana_data.data[2].values[i]=sqrt((vana_data.data[2].values[i]**2+data[2]**2)/2.)
         vana_data.name+='+'+file_name
       else:
-        vana_data=read_data.dns.read_data(os.path.join(directory, file_name))
+        vana_data=read_data.dns.read_data(file_name)
         vana_data.name=file_name
         detector=round(float(vana_data.dns_info['detector_bank_2T']), 0)
         flip=round(float(vana_data.dns_info['flipper']), 2)
@@ -1131,11 +1172,11 @@ class DNSSession(GenericSession):
           background_data=bg_data[key]
           vana_data.process_function(subtract_background)
     self.system_vana=vana_data
-    if directory==os.path.join(self.TEMP_DIR, 'setup'):
+    if directorys[-1]==os.path.join(self.TEMP_DIR, 'setup'):
       # remove files
-      for file_name in os.listdir(directory):
-        os.remove(os.path.join(directory, file_name))
-      os.rmdir(directory)      
+      for file_name in os.listdir(directorys[-1]):
+        os.remove(os.path.join(directorys[-1], file_name))
+      os.rmdir(directorys[-1])      
 
   def read_bg_file(self, bg_file, bg_data):
     '''
@@ -1184,36 +1225,39 @@ class DNSSession(GenericSession):
     data_nicr={}
     for dataset in self.active_file_data:
       # get the currents
-      detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
-      flip=round(float(dataset.dns_info['flipper']), 2)
-      flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
-      c_a=round(float(dataset.dns_info['C_a']), 2)
-      c_b=round(float(dataset.dns_info['C_b']), 2)
-      c_c=round(float(dataset.dns_info['C_c']), 2)
-      c_z=round(float(dataset.dns_info['C_z']), 2)
+      detector=float(dataset.dns_info['detector_bank_2T'])
+      flip=float(dataset.dns_info['flipper'])
+      flip_cmp=float(dataset.dns_info['flipper_compensation'])
+      c_a=float(dataset.dns_info['C_a'])
+      c_b=float(dataset.dns_info['C_b'])
+      c_c=float(dataset.dns_info['C_c'])
+      c_z=float(dataset.dns_info['C_z'])
+      use_key=False
       # create a key for the currents and search for it in the
       # background corrected nicr data dictionary
-      key=(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)
-      if not key in self.bg_corrected_nicr_data:
-        # search for near setting
-        for i in range(-2, 3):
-          key=(detector+i, flip, flip_cmp, c_a, c_b, c_c, c_z)
-          if key in self.bg_corrected_nicr_data:
-            break
-      if key in self.bg_corrected_nicr_data:
+      for key in self.bg_corrected_nicr_data.keys():
+        if abs(key[0]-detector)<1.1 and \
+           abs(key[1]-flip)<0.05 and \
+           abs(key[2]-flip_cmp)<0.05 and \
+           abs(key[3]-c_a)<0.05 and \
+           abs(key[4]-c_b)<0.05 and \
+           abs(key[5]-c_c)<0.05 and \
+           abs(key[6]-c_z)<0.05:
+          use_key=key
+      if use_key:
         # there have to be two flipper channels
-        if not key[3:] in data_nicr:
-          data_nicr[key[3:]]=[(key[1:3]==(0., 0.), self.bg_corrected_nicr_data[key], dataset)]
-        elif len(data_nicr[key[3:]])==1:
-          data_nicr[key[3:]].append((key[1:3]==(0., 0.), self.bg_corrected_nicr_data[key], dataset))
+        if not use_key[3:] in data_nicr:
+          data_nicr[use_key[3:]]=[(use_key[1:3]==(0., 0.), self.bg_corrected_nicr_data[use_key], dataset)]
+        elif len(data_nicr[use_key[3:]])==1:
+          data_nicr[use_key[3:]].append((use_key[1:3]==(0., 0.), self.bg_corrected_nicr_data[use_key], dataset))
           # put spin-flip channels first
-          data_nicr[key[3:]].sort()
-          data_nicr[key[3:]].reverse()
+          data_nicr[use_key[3:]].sort()
+          data_nicr[use_key[3:]].reverse()
         else:
           print "To many chanels for %s, skipping." % str(key)
       else:
-        print "\tNo NiCr data file found for the Settings:\n\t\tdetector bank: %g; helmholz currents:%i,%i,%i,%i" %( 
-                                                                            key[0], key[3], key[4], key[5], key[6] )
+        print "\tNo NiCr data file found at detector bank=%g for helmholz currents (a,b,c,z):%.2f,%.2f,%.2f,%.2f" % ( 
+                                            detector, c_a, c_b, c_c, c_z)
     # calculate flipping-ration from nicr data
     if use_numpy:
       def calc_flipping_ratio(point):
@@ -1640,7 +1684,7 @@ class DNSMeasurementData(MeasurementData):
     Datatreatment is done here and additional data treatment functions should
     be put here, too.
   '''
-  SPLIT_SENSITIVITY=0.005
+  SPLIT_SENSITIVITY=0.007
   dns_info={}
   scan_line=3
   scan_line_constant=1

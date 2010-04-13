@@ -22,10 +22,10 @@ NUMBER_OF_DETECTORS=24
 DETECTOR_ANGULAR_INCREMENT=5.
 LAMBDA_NEUTRON=None
 VANADIUM_FILE=None
-SETUP_DIRECTORY='/home/glavic/Daten/DNS/setup/rc21' # directory to look for last reactore cycle calibrations
-NICR_FILE_WILDCARD=('', 'nicr.d_dat') # nicr files start, end string
-BACKGROUND_WILDCARD=('', 'leer.d_dat') # background file start, end string
-VANADIUM_WILDCARD=('', 'vana.d_dat') # background file start, end string
+SETUP_DIRECTORYS=['.'] # directories to look for the calibration files
+NICR_FILE_WILDCARDS=[('', 'nicr.d_dat'), ('', 'NiCr.d_dat')] # nicr files start, end string
+BACKGROUND_WILDCARDS=[('', 'leer.d_dat'), ('', 'back.d_dat')]  # background file start, end string
+VANADIUM_WILDCARDS=[('', 'vana.d_dat'), ('', 'Vana.d_dat')] # vanadium file start, end string
 
 ALWAYS_FULLAUTO=False
 FULLAUTO_TEMP_SENSITIVITY=5.

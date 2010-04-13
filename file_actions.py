@@ -46,6 +46,7 @@ class FileActions:
                   'simmulate_functions': self.fit_functions['simulate'], 
                   'change_color_pattern': self.change_color_pattern, 
                   'unit_transformations': self.unit_transformations, 
+                  'integrate_intensities': self.integrate_intensities, 
                   }
     # add session specific functions
     for key, item in window.active_session.file_actions_addon.items():
@@ -256,6 +257,61 @@ class FileActions:
     dataset=self.window.measurement[self.window.index_mess]
     dataset.unit_trans(transformations)
 
+  def integrate_intensities(self, x_pos, y_pos, radius, destination_dimension, destination_unit, 
+                           dataset_indices, dataset_destination_values):
+    '''
+      Integrate the intensities of differt datasets around the position (x_pos, y_pos) up to a distance radius.
+      
+      @param x_pos X-position of the reflex to be integrated
+      @param y_pos Y-position of the reflex to be integrated
+      @param radius Maximal distance from (x_pos,y_pos) to which points are included
+      @param destination_dimension The dimension of the values in x to which the integrated points should be assigned to
+      @param destination_unit The unit of the values in x to which the integrated points should be assigned to
+      @param dataset_indices a list of ('name', i) to define the datasets to be integrated
+      @param dataset_destination_values The x value of all datasets from dataset_indices
+    '''
+    file_data=self.window.active_session.file_data
+    integrated_values=[]
+    y_dimunit=None
+    error_dimunit=None
+    # collect informations of the datasets which will be included in the calculations
+    # after that the integrated intensities are calculated and collected
+    for dataset_index in dataset_indices:
+      if dataset_index[0] not in file_data or \
+         len(file_data[dataset_index[0]])<dataset_index[1]:
+        raise IndexError, "%s[%i] not in list" % (dataset_index[0], dataset_index[1])
+      dataset=file_data[dataset_index[0]][dataset_index[1]]
+      if not y_dimunit:
+        y_dimunit=( dataset.dimensions()[dataset.zdata],
+                    dataset.units()[dataset.zdata] )
+        error_dimunit=( dataset.dimensions()[dataset.yerror],
+                    dataset.units()[dataset.yerror] )
+        info_data=(dataset.dimensions()[dataset.xdata],
+                   x_pos,
+                   dataset.dimensions()[dataset.ydata],
+                   y_pos,
+                   )
+      integrated_values.append(self.integrate_around_point(x_pos, y_pos, radius, dataset))
+    # add the data to a MeasurementData object
+    integrated_object=MeasurementData([(destination_dimension, destination_unit), y_dimunit, error_dimunit], 
+                                        [],0,1,2)
+    for i, item in enumerate(integrated_values):
+      integrated_object.append([dataset_destination_values[i], item[0], item[1]])
+    integrated_object.short_info='(%s=%.2g, %s=%.2g) ' % info_data
+    integrated_object.sample_name="Integrated intensity vs. %s" % str(destination_dimension)
+    # paste the object in the active session
+    if "Integrated intensities" in file_data:
+      integrated_object.number=str(len(file_data["Integrated intensities"]))
+      file_data["Integrated intensities"].append(integrated_object)
+    else:
+      integrated_object.number='0'
+      file_data["Integrated intensities"]=[integrated_object]
+    self.window.measurement=file_data["Integrated intensities"]
+    self.window.index_mess=len(file_data["Integrated intensities"])-1
+    self.window.active_session.active_file_data=file_data["Integrated intensities"]
+    self.window.active_session.active_file_name="Integrated intensities"
+    self.window.rebuild_menus()
+
   #----------- The performable actions --------------------
 
 
@@ -383,6 +439,36 @@ class FileActions:
       dat_tmp.append(dout)
     return dat_tmp
  
+  def integrate_around_point(self, x_pos, y_pos, radius, dataset):
+    '''
+      Integrate the intensities of dataset around the point (x_pos, y_pos) up to
+      a distance radius.
+      
+      @return The average of the integrated values with their errors.
+    '''
+    from numpy import array, sqrt
+    x=array(dataset.data[dataset.xdata].values)
+    y=array(dataset.data[dataset.ydata].values)
+    z=array(dataset.data[dataset.zdata].values)
+    dz=array(dataset.data[dataset.yerror].values)
+    distances=sqrt((x-x_pos)**2 + (y-y_pos)**2)
+    values=[]
+    errors=[]
+    for i, dist in enumerate(distances):
+      if dist<=radius:
+        values.append(z[i])
+        errors.append(dz[i])
+    if len(values)>0:
+      values=array(values)
+      errors=array(errors)
+      # calculate mean of the values
+      value=values.sum() / len(values)
+      # calculate the error of the value
+      error=sqrt((errors**2).sum()) / len(values)
+      return (value, error)
+    else:
+      return (0., 1.)
+
   #-------- Functions not directly called as actions ------
 
 class MakroRepr:

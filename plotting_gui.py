@@ -1666,6 +1666,182 @@ class ApplicationMainWindow(gtk.Window):
       self.replot()      
     return gotit
 
+  def extract_integrated_intensities(self, action):
+    '''
+      Open a dialog to select points and datasets for integration of intensities.
+      Measured data around that point is avaridged and plotted agains a user defined value.
+      
+      @return If the extraction was successful
+    '''
+    eii_dialog=gtk.Dialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                          title='Select points and datasets to integrate intensities...')
+    data_list=[]
+    # Get all datasets with 3d data
+    for key, value in sorted(self.active_session.file_data.items()):
+      for i, dataset in enumerate(value):
+        if dataset.zdata>=0:
+          data_list.append((key, i, dataset.short_info))
+    table=gtk.Table(6, 3, False)
+    position_table=gtk.Table(6, 3, False)
+    dataset_table=gtk.Table(3, 2, False)
+    dimension=gtk.Entry()
+    dimension.set_width_chars(10)
+    dimension.set_text("Dimension")
+    dataset_table.attach(dimension,
+                # X direction #          # Y direction
+                0, 1,                      0, 1,
+                0,                       gtk.FILL,
+                0,                         0);
+    unit=gtk.Entry()
+    unit.set_width_chars(10)
+    unit.set_text("Unit")
+    dataset_table.attach(unit,
+                # X direction #          # Y direction
+                1, 2,                      0, 1,
+                0,                       gtk.FILL,
+                0,                         0);
+    label=gtk.Label("   Selected Dataset")
+    dataset_table.attach(label,
+                # X direction #          # Y direction
+                2, 3,                      0, 1,
+                0,                       gtk.FILL,
+                0,                         0);
+    table.attach(position_table,
+                # X direction #          # Y direction
+                0, 5,                      0, 1,
+                0,                       gtk.FILL,
+                0,                         0);
+    table.attach(dataset_table,
+                # X direction #          # Y direction
+                0, 5,                      1, 2,
+                0,                       gtk.FILL,
+                0,                         0);
+    datasets=[]
+    int_points=[]
+    add_dataset_button=gtk.Button("Add Dataset")
+    add_dataset_button.connect('clicked', self.get_dataset_selection, datasets, dataset_table, data_list)
+    self.get_dataset_selection(None, datasets, dataset_table, data_list)
+    add_position_button=gtk.Button("Add Position")
+    add_position_button.connect('clicked', self.get_position_selection, int_points, position_table)
+    self.get_position_selection(None, int_points, position_table)
+    table.attach(add_dataset_button,
+                # X direction #          # Y direction
+                2, 5,                      2, 3,
+                0,                       gtk.FILL,
+                0,                         0);
+    table.attach(add_position_button,
+                # X direction #          # Y direction
+                0, 2,                      2, 3,
+                0,                       gtk.FILL,
+                0,                         0);
+    eii_dialog.add_button('OK', 1)
+    eii_dialog.add_button('Cancel', 0)
+    eii_dialog.vbox.add(table)
+    table.show_all()
+    result=eii_dialog.run()
+    if result==1:
+      # User pressed OK, try to get all entry values
+      for x_pos, y_pos, radius in int_points:
+        try:
+          x_pos=float(x_pos.get_text())
+        except ValueError:
+          continue
+        try:
+          y_pos=float(y_pos.get_text())
+        except ValueError:
+          continue
+        try:
+          radius=float(radius.get_text())
+        except ValueError:
+          continue
+        data_indices=[]
+        data_values=[]
+        for entry in datasets:
+          try:
+            data_value=float(entry[0].get_text())
+          except ValueError:
+            data_value=0.0
+          data_values.append(data_value)
+          dataset=data_list[entry[1].get_active()]
+          data_indices.append((dataset[0], dataset[1]))
+        if len(data_indices)<2:
+          print "You need to calculate at least 2 integrated intensities."
+          continue
+        self.file_actions.activate_action('integrate_intensities', x_pos, y_pos, radius, 
+                                                dimension.get_text(), unit.get_text(), 
+                                                data_indices, data_values)
+      self.replot()
+    eii_dialog.destroy()
+
+  def get_position_selection(self, action, int_points, position_table):
+    '''
+      Return selection entries for x,y positions.
+    '''
+    label=gtk.Label("x-position: ")
+    position_table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      len(int_points), len(int_points)+1,
+                0,                       gtk.FILL,
+                0,                         0);
+    x_pos=gtk.Entry()
+    x_pos.set_width_chars(6)
+    position_table.attach(x_pos,
+                # X direction #          # Y direction
+                1, 2,                      len(int_points), len(int_points)+1,
+                0,                       gtk.FILL,
+                0,                         0);    
+    label=gtk.Label(" y-position: ")                
+    position_table.attach(label,
+                # X direction #          # Y direction
+                2, 3,                      len(int_points), len(int_points)+1,
+                0,                       gtk.FILL,
+                0,                         0);
+    y_pos=gtk.Entry()
+    y_pos.set_width_chars(6)
+    position_table.attach(y_pos,
+                # X direction #          # Y direction
+                3, 4,                      len(int_points), len(int_points)+1,
+                0,                       gtk.FILL,
+                0,                         0);    
+    label=gtk.Label(" radius: ")                
+    position_table.attach(label,
+                # X direction #          # Y direction
+                4, 5,                      len(int_points), len(int_points)+1,
+                0,                       gtk.FILL,
+                0,                         0);
+    radius=gtk.Entry()
+    radius.set_width_chars(6)
+    position_table.attach(radius,
+                # X direction #          # Y direction
+                5, 6,                      len(int_points), len(int_points)+1,
+                0,                       gtk.FILL,
+                0,                         0);
+    position_table.show_all()
+    int_points.append((x_pos, y_pos, radius))
+
+  def get_dataset_selection(self, action, datasets, dataset_table, data_list):
+    '''
+      Create a selection button for datasets and attach it to the dataset_table widget.
+    '''
+    dataset=gtk.combo_box_new_text()
+    for entry in data_list:
+      dataset.append_text("%s[%i] - %s" % (os.path.split(entry[0])[1], entry[1], entry[2]))
+    entry=gtk.Entry()
+    entry.set_width_chars(12)
+    datasets.append((entry, dataset))
+    entry.show()
+    dataset.show()
+    dataset_table.attach(entry, 
+                # X direction #          # Y direction
+                0, 2,                      len(datasets), len(datasets)+1,
+                0,                       gtk.FILL,
+                0,                         0);
+    dataset_table.attach(dataset, 
+                # X direction #          # Y direction
+                2, 3,                      len(datasets), len(datasets)+1,
+                0,                       gtk.FILL,
+                0,                         0);
+
   def change_color_pattern(self, action):
     '''
       Open a dialog to select a different color pattern.
@@ -1971,7 +2147,9 @@ class ApplicationMainWindow(gtk.Window):
     elif action.get_name()=='MultiPlotExport':
       for plotlist in self.multiplot:
         #++++++++++++++++File selection dialog+++++++++++++++++++#
-        file_dialog=gtk.FileChooserDialog(title='Export multi-plot as...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+        file_dialog=gtk.FileChooserDialog(title='Export multi-plot as...', action=gtk.FILE_CHOOSER_ACTION_SAVE, 
+                                          buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, 
+                                                   gtk.STOCK_SAVE, gtk.RESPONSE_OK))
         file_dialog.set_default_response(gtk.RESPONSE_OK)
         file_dialog.set_current_name(self.input_file_name + '_multi_'+ \
                                      plotlist[0][0].number + '.' + self.set_file_type)
@@ -1991,7 +2169,8 @@ class ApplicationMainWindow(gtk.Window):
         self.last_plot_text=self.plot(self.active_session, 
                                       [item[0] for item in plotlist], 
                                       plotlist[0][1], 
-                                      plotlist[0][0].short_info, 
+                                      #plotlist[0][0].short_info, 
+                                      '', 
                                       [item[0].short_info for item in plotlist], 
                                       errorbars,
                                       self.active_session.TEMP_DIR+'plot_temp.png',
@@ -2005,7 +2184,8 @@ class ApplicationMainWindow(gtk.Window):
           self.last_plot_text=self.plot(self.active_session, 
                                         [item[0] for item in plotlist], 
                                         plotlist[0][1], 
-                                        plotlist[0][0].short_info, 
+                                        #plotlist[0][0].short_info, 
+                                        '', 
                                         [item[0].short_info for item in plotlist], 
                                         errorbars,
                                         multi_file_name,
@@ -2616,6 +2796,7 @@ class ApplicationMainWindow(gtk.Window):
       output+='''
         <placeholder name='z-actions'>
         <menuitem action='CrossSection'/>
+        <menuitem action='IntegrateIntensities'/>
         </placeholder>        
         <placeholder name='y-actions'/>'''
     else:
@@ -2783,6 +2964,10 @@ class ApplicationMainWindow(gtk.Window):
         "Cross-Section", None,                     # label, accelerator
         None,                                    # tooltip
         self.extract_cross_section),
+      ( "IntegrateIntensities", None,                    # name, stock id
+        "Integrat Intensities", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.extract_integrated_intensities),
       ( "CombinePoints", None,                    # name, stock id
         "Combine points", None,                     # label, accelerator
         None,                                    # tooltip
