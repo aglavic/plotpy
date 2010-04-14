@@ -29,11 +29,14 @@ to the Wiki content is also welcome.
 - added snapshot framework to store the working stat including fits etc.
 - added possiblity to combine reflectometer rocking curves to 3d maps
 - added gui option to change squid dia- and paramagnetic correction including fit to asymptotic behaviour
+- added function to integrate intensities of differen datasets
 - fix TREFF and reflectometer fits with different datasets not working in one session
 - fix reflectometer custom constrints not working whith multilayer parameters
 - revisited scattering length density table of reflectometer
 - filtering datapoints can be applied without closing the dialog
 - fix crash when trying to import improper squid/ppms data files
+- fix DNS crashes when -xyz option is evoked and not all sequences have 6 channels
+- better DNS correction posibilities
 - reload config files and .mds files when a new script version is created
 - some minor changes an fixes
 

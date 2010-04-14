@@ -203,6 +203,7 @@ if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
 # py2exe specific stuff to make it work:
 if "py2exe" in sys.argv:
   print "\n*** Copying gtk stuff ***"
+  from glob import glob
   try:
     os.mkdir('archiv\\etc')
     os.mkdir('archiv\\share')
@@ -219,8 +220,9 @@ if "py2exe" in sys.argv:
     print handle.read()
     handle=os.popen('xcopy config archiv\\config /y /e')
     print handle.read()
-    handle=os.popen('xcopy scripts\\*.bat archiv /y /e')
-    print handle.read()
+    for script_file in glob('scripts\\*.bat'):
+      sf=open(script_file, 'r').read()
+      open(os.pyth.join('archiv', os.path.split(script_file)[1]), 'w').write(sf.replace('plot.py', 'plot'))
   except:
     pass
   
