@@ -478,8 +478,11 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     # when this file exists it is used to reload it.
     # This can be ignored by the command line option '-rd'
     # if the script is newer than the .mds file, reimport it
+    own_path=os.path.abspath(__file__)
+    if 'library.zip' in own_path:
+      own_path=own_path.split('library.zip')[0]+'library.zip'
     if os.path.exists(filename + '.mds') and not self.read_directly and \
-        (os.path.getmtime(os.path.abspath(__file__))<os.path.getmtime(filename+'.mds')):
+        (os.path.getmtime(own_path)<os.path.getmtime(filename+'.mds')):
       print "Importing previously saved data from '" +filename + ".mds'."
       pickled=open(filename + '.mds', 'rb')
       datasets=load(pickled)

@@ -210,6 +210,9 @@ if "py2exe" in sys.argv:
     os.mkdir('archiv\\lib')
     os.mkdir('archiv\\gnuplot')
     os.mkdir('archiv\\config')
+  except:
+    print "Directories already exist."
+  try:
     handle=os.popen('xcopy c:\\gtk\\etc archiv\\etc /y /e')
     print handle.read()
     handle=os.popen('xcopy c:\\gtk\\share archiv\\share /y /e')
@@ -220,9 +223,9 @@ if "py2exe" in sys.argv:
     print handle.read()
     handle=os.popen('xcopy config archiv\\config /y /e')
     print handle.read()
-    for script_file in glob('scripts\\*.bat'):
-      sf=open(script_file, 'r').read()
-      open(os.pyth.join('archiv', os.path.split(script_file)[1]), 'w').write(sf.replace('plot.py', 'plot'))
   except:
-    pass
+    print "Problem with copy"
+  for script_file in glob('scripts\\*.bat'):
+    sf=open(script_file, 'r').read()
+    open(os.path.join('archiv', os.path.split(script_file)[1]), 'w').write(sf.replace('plot.py', 'plot'))
   

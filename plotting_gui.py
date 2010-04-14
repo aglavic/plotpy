@@ -546,7 +546,8 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
     self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
     for window in self.open_windows:
-      window.destroy()    
+      window.destroy() 
+    self.rebuild_menus()
     self.replot()
   
   def add_file(self, action):
