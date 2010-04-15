@@ -36,6 +36,7 @@ class FileActions:
     self.actions={
                   'change filter': self.change_data_filter, 
                   'cross-section': self.cross_section, 
+                  'radial_integration': self.radial_integration, 
                   'combine-data': self.combine_data_points, 
                   'iterate_through_measurements': self.iterate_through_measurements, 
                   'create_fit_object': self.create_fit_object, 
@@ -144,6 +145,37 @@ class FileActions:
       cs_object.number=data.number
       cs_object.short_info='%s - Cross-Section through (%g,%g)+x*(%g,%g)' % (
                            data.short_info, x_0, y_0, x,y) 
+      cs_object.sample_name=data.sample_name
+      cs_object.info=data.info
+      if at_end:
+        self.window.measurement.append(cs_object)
+        self.window.index_mess=len(self.window.measurement)-1
+      else:
+        self.window.measurement.insert(self.window.index_mess+1, cs_object)
+        self.window.index_mess+=1
+      return True
+    except ValueError:
+      return False
+
+  def radial_integration(self, x_0, y_0, dr, max_r, at_end=False):
+    '''
+      Create a radial integration around one point of a dataset
+      
+      @param x_0 Center point x position
+      @param y_0 Center point y position
+      @param dr  Step width in radius
+      @param max_r Maximal radius to integrate to
+      
+      @return If the extraction has been sucessful
+    '''
+    data=self.window.measurement[self.window.index_mess]
+    try:
+      cs_object=self.create_radial_integration(x_0, y_0, dr, max_r)
+      if cs_object is None:
+        return False
+      cs_object.number=data.number
+      cs_object.short_info='%s - Radial integration around (%g,%g)' % (
+                           data.short_info, x_0, y_0) 
       cs_object.sample_name=data.sample_name
       cs_object.info=data.info
       if at_end:
@@ -383,6 +415,58 @@ class FileActions:
     data3=self.sort_and_bin(data3, binning,  gauss_weighting, sigma_gauss, bin_distance)
     map(output.append, data3)
     return output
+  
+  def create_radial_integration(self, x_0, y_0, dr, max_r):
+    '''
+      Create a radial integration around one point (x_0,y_0)
+      
+      @param x_0 x-position of the center point
+      @param y_0 y-position of the center point
+      @param dr Step size in radius for the created plot
+      @param max_r Maximal radius to integrate to
+    '''
+    from numpy import sqrt, array
+    dataset=[data.values for data in self.window.measurement[self.window.index_mess].data]
+    data=map(array, dataset)
+    dims=self.window.measurement[self.window.index_mess].dimensions()
+    units=self.window.measurement[self.window.index_mess].units()
+    cols=(self.window.measurement[self.window.index_mess].xdata, 
+          self.window.measurement[self.window.index_mess].ydata, 
+          self.window.measurement[self.window.index_mess].zdata, 
+          self.window.measurement[self.window.index_mess].yerror)
+    new_cols=[(dims[col], units[col]) for col in cols]
+    # Distances to the point
+    dist_r=sqrt((data[cols[0]]-x_0)**2+(data[cols[1]]-y_0)**2)
+    max_r=min(dist_r.max(), max_r)
+    values=data[cols[2]]
+    errors=data[cols[3]]
+    first_dim="r"
+    first_unit=units[cols[0]]
+    new_cols=[(first_dim, first_unit), (dims[cols[2]], units[cols[2]]), (dims[cols[3]], units[cols[3]])]
+    output=MeasurementData(new_cols, 
+                           [], 
+                           0, 
+                           1, 
+                           2,
+                           )
+    # go from 0 to max_r in dr steps
+    for i in range(int(max_r/dr)+1):
+      r=i*dr
+      x_val=(i+0.5)*dr
+      y_vals=[]
+      dy_vals=[]
+      for i, dist in enumerate(dist_r):
+        if dist>=x_val and dist<x_val+dr:
+          y_vals.append(values[i])
+          dy_vals.append(errors[i])
+      if len(y_vals)>0:
+        y_val=sum(y_vals)/float(len(y_vals))
+        dy_val=sqrt( (array(dy_vals)**2).sum()) /float(len(y_vals))
+        output.append( (x_val, y_val, dy_val) )
+    if len(output)==0:
+      return None
+    else:
+      return output
   
   def sort_and_bin(self, data, binning, gauss_weighting=False, sigma_gauss=1e10, bin_distance=None):
     '''

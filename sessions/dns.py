@@ -1758,23 +1758,21 @@ class DNSMeasurementData(MeasurementData):
     else:
       # Powderdata
       q_index=len(self.units())-3
-      qx_index=q_index+1
+      d_index=q_index+1
       lambda_n=self.dns_info['lambda_n']
-      two_pi_over_lambda=2*pi/lambda_n
+      two_pi_over_lambda=2.*pi/lambda_n
       grad_to_rad=pi/180.
       # calculation of the wavevector, also works with arrays
       def angle_to_wavevector(point):
         output=point
-        output[qx_index]=(cos(-point[1]*grad_to_rad)-\
-                  cos(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
-                  two_pi_over_lambda
         output[q_index]=sin(0.5*point[3]*grad_to_rad)*2.*two_pi_over_lambda
+        output[d_index]=2.*pi/output[q_index]
         return output    
       self.process_function(angle_to_wavevector)
       self.data[q_index].unit='Å^{-1}'
-      self.data[qx_index].unit='Å^{-1}'
+      self.data[d_index].unit='Å'
       self.data[q_index].dimension='q'
-      self.data[qx_index].dimension='q_x'
+      self.data[d_index].dimension='d'
       self.xdata=q_index
   
   def change_omega_offset(self, omega_offset):

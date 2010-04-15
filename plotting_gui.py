@@ -1667,6 +1667,130 @@ class ApplicationMainWindow(gtk.Window):
       self.replot()      
     return gotit
 
+  def extract_radial_integration(self, action):
+    '''
+      Open a dialog to select point as center of a radial integration.
+      
+      @return If the extraction was successful
+    '''
+    data=self.measurement[self.index_mess]
+    dimension_names=[]
+    dims=data.dimensions()
+    dimension_names.append(dims[data.xdata])
+    dimension_names.append(dims[data.ydata])
+    ri_dialog=gtk.Dialog(title='Create a radial integration:')
+    table=gtk.Table(3,7,False)
+    label=gtk.Label()
+    label.set_markup('Center Point:')
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup(dimension_names[0])
+    table.attach(label,
+                # X direction #          # Y direction
+                1, 2,                      0, 1,
+                0,                       gtk.FILL,
+                0,                         0);
+    center_x0=gtk.Entry()
+    center_x0.set_width_chars(6)
+    center_x0.set_text('0')
+    table.attach(center_x0,
+                # X direction #          # Y direction
+                2, 3,                      0, 1, 
+                0,                       gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup(dimension_names[1])
+    table.attach(label,
+                # X direction #          # Y direction
+                1, 2,                      1, 2,
+                0,                       gtk.FILL,
+                0,                         0);
+    center_y0=gtk.Entry()
+    center_y0.set_width_chars(6)
+    center_y0.set_text('0')
+    table.attach(center_y0,
+                # X direction #          # Y direction
+                2, 3,                      1, 2,
+                0,                       gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup('Stepsize:')
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      2, 3,
+                gtk.EXPAND | gtk.FILL,     gtk.FILL,
+                0,                         0);
+    delta_r=gtk.Entry()
+    delta_r.set_width_chars(4)
+    delta_r.set_text('0.001')
+    table.attach(delta_r,
+                # X direction #          # Y direction
+                1, 3,                      2, 3,
+                0,                       gtk.FILL,
+                0,                         0);
+    label=gtk.Label()
+    label.set_markup('Maximal Radius:')
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 1,                      3, 4,
+                gtk.EXPAND | gtk.FILL,     gtk.FILL,
+                0,                         0);
+    max_r=gtk.Entry()
+    max_r.set_width_chars(4)
+    max_r.set_text('1e10')
+    table.attach(max_r,
+                # X direction #          # Y direction
+                1, 3,                      3, 4,
+                0,                       gtk.FILL,
+                0,                         0);
+    table.show_all()
+    # Enty activation triggers calculation, too
+    center_x0.connect('activate', lambda *ign: ri_dialog.response(1))
+    center_y0.connect('activate', lambda *ign: ri_dialog.response(1))
+    delta_r.connect('activate', lambda *ign: ri_dialog.response(1))
+    max_r.connect('activate', lambda *ign: ri_dialog.response(1))
+    ri_dialog.vbox.add(table)
+    ri_dialog.add_button('OK', 1)
+    ri_dialog.add_button('Cancel', 0)
+    result=ri_dialog.run()
+    if result==1:
+      try:
+        dr=float(delta_r.get_text())
+        x0=float(center_x0.get_text())
+        y0=float(center_y0.get_text())
+        mr=float(max_r.get_text())
+      except ValueError:
+        message=gtk.MessageDialog(parent=self, 
+                                  flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                                  type=gtk.MESSAGE_INFO, 
+                                  buttons=gtk.BUTTONS_CLOSE, 
+                                  message_format='No point in selected area.')
+        message.run()
+        message.destroy()
+        return False
+      gotit=self.file_actions.activate_action('radial_integration', 
+                                        x0, y0, dr, mr, False
+                                        )
+      if not gotit:
+        message=gtk.MessageDialog(parent=self, 
+                                  flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                                  type=gtk.MESSAGE_INFO, 
+                                  buttons=gtk.BUTTONS_CLOSE, 
+                                  message_format='No point in selected area.')
+        message.run()
+        message.destroy()
+    else:
+      gotit=False
+    ri_dialog.destroy()
+    if gotit:
+      self.rebuild_menus()
+      self.replot()      
+    return gotit
+
   def extract_integrated_intensities(self, action):
     '''
       Open a dialog to select points and datasets for integration of intensities.
@@ -2355,6 +2479,7 @@ class ApplicationMainWindow(gtk.Window):
     import sys
     import numpy
     import scipy
+    from copy import deepcopy
 
     FONT = "Luxi Mono 10"
 
@@ -2369,6 +2494,11 @@ class ApplicationMainWindow(gtk.Window):
     Functions:
       replot \tFunction to replot the dataset
       dataset \tFunction to get the active MeasurementData object
+      get_xyz \tReturn 3 numpy arrays of the x,y and z columns from the active dataset
+      get_all \tReturn all data columns of the active dataset
+      new_xyz \tCreate a new plot with changed columns, takes three lists or arrays as input
+      new_all \tCreate a new plot from a list of all data columns, the list 
+              \thas to have the same length as returned by get_all
 
     Objects:
       session \tThe active session containing the data objects and settings
@@ -2378,6 +2508,8 @@ class ApplicationMainWindow(gtk.Window):
       np \tNumpy
       sp \tScipy
 
+  Remark: This functionality is mainly for developers. If you are experienced
+          in python it is recommanded to use the get_... and new_... functions.
 """)
     ipview.modify_font(pango.FontDescription(FONT))
     ipview.set_wrap_mode(gtk.WRAP_CHAR)
@@ -2393,6 +2525,55 @@ class ApplicationMainWindow(gtk.Window):
     x=self.get_active_dataset().data[self.get_active_dataset().xdata].values
     y=self.get_active_dataset().data[self.get_active_dataset().ydata].values
     z=self.get_active_dataset().data[self.get_active_dataset().zdata].values
+    # create functions for the use with ipython
+    def get_xyz():
+      # returns numpy arrays of x,y and z
+      d=self.get_active_dataset()
+      xi=d.xdata
+      yi=d.ydata
+      zi=d.zdata
+      x=numpy.array(d.data[xi].values)
+      y=numpy.array(d.data[yi].values)
+      if zi>=0:
+        z=numpy.array(d.data[zi].values)
+      else:
+        z=None
+      return x, y, z
+    def get_all():
+      # returns a list of all columns as nump arrays
+      d=self.get_active_dataset()
+      units=d.units()
+      dims=d.dimensions()
+      data_list=[numpy.array(item.values) for item in d.data]
+      print "Returning columns: [" +\
+          ",\n                    ".join(["%2i: %s [%s]" % (i, dims[i], units[i]) for i in range(len(units)) ]) +"]"
+      return data_list
+    def new_xyz(x, y, z=None):
+      # create new plot of changed x,y and z columns
+      d=self.get_active_dataset()
+      xi=d.xdata
+      yi=d.ydata
+      zi=d.zdata
+      newd=deepcopy(d)
+      newd.data[xi].values=list(x)
+      newd.data[yi].values=list(y)
+      if zi>0:
+        newd.data[zi].values=list(z)
+      newd.short_info+=" processed"
+      self.measurement.append(newd)
+      self.index_mess=len(self.measurement)-1
+      self.replot()
+    def new_all(new_list):
+      # create a new plot from all columns
+      d=self.get_active_dataset()
+      newd=deepcopy(d)
+      for i, col in enumerate(newd.data):
+        col.values=list(new_list[i])
+      newd.short_info+=" processed"
+      self.measurement.append(newd)
+      self.index_mess=len(self.measurement)-1
+      self.replot()
+      
     # add variables to ipython namespace
     ipview.updateNamespace({
                        'session': self.active_session, 
@@ -2400,9 +2581,10 @@ class ApplicationMainWindow(gtk.Window):
                        'self': ipview, 
                        'dataset': self.get_active_dataset, 
                        'replot': self.replot, 
-                       'x': numpy.array(x), 
-                       'y': numpy.array(y), 
-                       'z': numpy.array(z), 
+                       'get_xyz': get_xyz, 
+                       'new_xyz': new_xyz, 
+                       'get_all': get_all, 
+                       'new_all': new_all, 
                        'np': numpy, 
                        'sp': scipy, 
                        })
@@ -2792,11 +2974,13 @@ class ApplicationMainWindow(gtk.Window):
         <menuitem action='FitData'/>
         <separator name='static5'/>
         <menuitem action='FilterData'/>
-        <menuitem action='TransformData'/>'''
+        <menuitem action='TransformData'/>
+        <separator name='TreatmentStatic'/>'''
     if self.measurement[self.index_mess].zdata>=0:
       output+='''
         <placeholder name='z-actions'>
         <menuitem action='CrossSection'/>
+        <menuitem action='RadialIntegration'/>
         <menuitem action='IntegrateIntensities'/>
         </placeholder>        
         <placeholder name='y-actions'/>'''
@@ -2962,11 +3146,15 @@ class ApplicationMainWindow(gtk.Window):
         None,                                    # tooltip
         self.unit_transformation),
       ( "CrossSection", None,                    # name, stock id
-        "Cross-Section", None,                     # label, accelerator
+        "Cross-Section...", None,                     # label, accelerator
         None,                                    # tooltip
         self.extract_cross_section),
+      ( "RadialIntegration", None,                    # name, stock id
+        "Calculate Radial Integration...", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.extract_radial_integration),
       ( "IntegrateIntensities", None,                    # name, stock id
-        "Integrat Intensities", None,                     # label, accelerator
+        "Integrat Intensities...", None,                     # label, accelerator
         None,                                    # tooltip
         self.extract_integrated_intensities),
       ( "CombinePoints", None,                    # name, stock id
