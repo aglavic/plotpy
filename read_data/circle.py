@@ -30,7 +30,14 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
   '''
   if os.path.exists(input_file):
     measurement_data=[]
-    input_file_lines=open(input_file,'r').readlines()
+    if input_file.endswith('.gz'):
+      # use gziped format file
+      import gzip
+      file_handle=gzip.open(input_file, 'r')
+    else:
+      file_handle=open(input_file, 'r')
+    input_file_lines=file_handle.readlines()
+    file_handle.close()
     first=True
     while len(input_file_lines)>0:
       measurement_info=read_header(input_file_lines)

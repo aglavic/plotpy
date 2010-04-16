@@ -15,13 +15,13 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
 
-def read_data(input_file,DATA_COLUMNS): 
+def read_data(file_name, DATA_COLUMNS): 
   '''
     Read the datafile.
     
@@ -31,10 +31,17 @@ def read_data(input_file,DATA_COLUMNS):
     @return List of MeasurementData objects with the file data
   '''
   measurement_data=[]
-  if os.path.exists(input_file):
+  if os.path.exists(file_name):
     global sample_name
     sample_name=''
-    input_file_lines=open(input_file,'r').readlines()
+    if file_name.endswith('.gz'):
+      # use gziped data format
+      import gzip
+      file_handler=gzip.open(file_name, 'r')
+    else:
+      file_handler=open(file_name, 'r')
+    input_file_lines=file_handler.readlines()
+    file_handler.close()
     while len(input_file_lines)>0:
       measurement_info=read_header(input_file_lines)
       if measurement_info=='NULL':

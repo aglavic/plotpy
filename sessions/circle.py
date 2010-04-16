@@ -30,7 +30,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -49,7 +49,7 @@ class CircleSession(GenericSession):
 
   #++++++++++++++++++ local variables +++++++++++++++++
   show_counts=False
-  FILE_WILDCARDS=(('4circle data','*.spec'), )  
+  FILE_WILDCARDS=(('4circle data','*.spec'),('gziped data', '*.spec.gz'), )  
   mds_create=False
   read_directly=True
   autoreload_active=False

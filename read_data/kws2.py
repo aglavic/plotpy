@@ -18,7 +18,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -27,7 +27,7 @@ detector_sensitivities={}
 
 def read_data(file_name):
   '''
-    Read the data of a in12 data file.
+    Read the data of a kws2 data file.
     
     @param file_name The name of the file to import
     
@@ -43,7 +43,12 @@ def read_data(file_name):
       setup=value
   if setup['DETECTOR_SENSITIVITY'] and not setup['DETECTOR_SENSITIVITY'] in detector_sensitivities:
     read_sensitivities(folder, setup['DETECTOR_SENSITIVITY'])
-  file_handler=open(file_name, 'r')
+  if file_name.endswith('.gz'):
+    # use gziped data format
+    import gzip
+    file_handler=gzip.open(file_name, 'r')
+  else:
+    file_handler=open(file_name, 'r')
   lines=file_handler.readlines()
   header_lines=lines[:config.kws2.HEADER]
   countingtime=read_countingtime(header_lines)
@@ -102,7 +107,15 @@ def read_sensitivities(folder, name):
     Read data from the sensitivity file and normalize it.
   '''
   global detector_sensitivities
-  data_lines=open(os.path.join(folder, name), 'r').readlines()[config.kws2.HEADER:]
+  file_name=os.path.join(folder, name)
+  if file_name.endswith('.gz'):
+    # use gziped data format
+    import gzip
+    file_handler=gzip.open(file_name, 'r')
+  else:
+    file_handler=open(file_name, 'r')
+  data_lines=file_handler.readlines()[config.kws2.HEADER:]
+  file_handler.close()
   data_joined=" ".join(data_lines)
   data_array=array(map(float, data_joined.split()))
   # normalize to get about the same cps values

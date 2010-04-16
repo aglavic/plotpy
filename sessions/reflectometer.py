@@ -41,7 +41,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -77,7 +77,7 @@ class ReflectometerSession(GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('reflectometer (.UXD)','*.[Uu][Xx][Dd]'), ('All','*'))  
+  FILE_WILDCARDS=(('reflectometer (.UXD)','*.[Uu][Xx][Dd]'), ('gziped (.UXD.gz)','*.[Uu][Xx][Dd].gz'), ('All','*'))  
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['fit', 'ref']
   #options:
   show_counts=False # dont convert to conts/s

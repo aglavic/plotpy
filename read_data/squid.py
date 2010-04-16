@@ -16,12 +16,12 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
-def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
+def read_data(file_name,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
   '''
     Read the ppms/mpms datafile.
     
@@ -31,8 +31,15 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
     
     @return List of MeasurementData objects for all measured sequences of 'NULL'
   '''
-  if os.path.exists(input_file):
-    input_file_lines=open(input_file,'r').readlines()
+  if os.path.exists(file_name):
+    if file_name.endswith('.gz'):
+      # use gziped data format
+      import gzip
+      file_handler=gzip.open(file_name, 'r')
+    else:
+      file_handler=open(file_name, 'r')
+    input_file_lines=file_handler.readlines()
+    file_handler.close()
     if input_file_lines[0].find('[Header]')>=0:
       measurement_info=read_header(input_file_lines)
       while input_file_lines.pop(0).find('[Data]')==-1:

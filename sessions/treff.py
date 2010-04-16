@@ -68,7 +68,7 @@ class TreffSession(GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'), ('All','*'))  
+  FILE_WILDCARDS=(('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'), ('Zip Archives','*.zip'), ('All','*'))  
   TRANSFORMATIONS=[\
                   ['mrad',1/config.treff.GRAD_TO_MRAD,0,'°'],
                   ['detector', 'mrad', 1., 0, '2Theta', 'mrad'], 

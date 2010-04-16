@@ -176,7 +176,7 @@ class DNSSession(GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('All','*'), ('DNS (.d_dat)', '*.d_dat'))
+  FILE_WILDCARDS=(('All','*'), ('DNS (.d_dat)', '*.d_dat'), ('gziped DNS (.d_dat.gz)', '*.d_dat.gz'))
 
   TRANSFORMATIONS=[\
   ]  
@@ -241,7 +241,7 @@ class DNSSession(GenericSession):
       if len(names)==0:
         # If noe filenames are supplied, try to get all dns datafiles
         # in the active directory
-        names=glob('*.d_dat')
+        names=glob('*.d_dat')+glob('*.d_dat.gz')
       self.initialize_fullauto(names)
       names=[]
     self.os_path_stuff() # create temp folder according to OS
@@ -877,7 +877,7 @@ class DNSSession(GenericSession):
       @param names A list of file names to process
     '''
     names.sort()
-    names=filter(lambda item: item.endswith('.d_dat'), names)
+    names=filter(lambda item: item.endswith('.d_dat') or item.endswith('.d_dat.gz'), names)
     def split_prefix_postfix(name):
       '''Split a file name for a string prefix,postfix and a number in the middle.'''
       pre_index=max(0, name.rfind(os.sep))

@@ -481,17 +481,31 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     own_path=os.path.abspath(__file__)
     if 'library.zip' in own_path:
       own_path=own_path.split('library.zip')[0]+'library.zip'
-    if os.path.exists(filename + '.mds') and not self.read_directly and \
-        (os.path.getmtime(own_path)<os.path.getmtime(filename+'.mds')):
-      print "Importing previously saved data from '" +filename + ".mds'."
-      pickled=open(filename + '.mds', 'rb')
+    if filename.endswith('.gz'):
+      zip_mds=True
+      mds_name=filename.rsplit('.', 1)[0]+'.mds.gz'
+    else:
+      zip_mds=False
+      mds_name=filename+'.mds'
+    if os.path.exists(mds_name) and not self.read_directly and \
+        (os.path.getmtime(own_path)<os.path.getmtime(mds_name)):
+      print "Importing previously saved data from '" +mds_name + "'."
+      if zip_mds:
+        import gzip
+        pickled=gzip.open(mds_name, 'rb')
+      else:
+        pickled=open(mds_name,  'rb')
       datasets=load(pickled)
       pickled.close()
     else:
       print "Trying to import '" + filename + "'."
       datasets=self.read_file(filename)
       if datasets!=[] and self.mds_create:
-        pickling=open(filename + '.mds', 'wb')
+        if zip_mds:
+          import gzip
+          pickling=gzip.open(mds_name, 'wb')
+        else:
+          pickling=open(mds_name, 'wb')
         dump(datasets, pickling, 2)
         pickling.close()
     if datasets=='NULL':

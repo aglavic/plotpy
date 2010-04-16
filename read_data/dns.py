@@ -31,7 +31,12 @@ def read_data(file_name, print_comments=True):
     if print_comments:
       print "File does not exist."
     return 'NULL'
-  file_handler=open(file_name, 'r')
+  if file_name.endswith('.gz'):
+    # use gziped data format
+    import gzip
+    file_handler=gzip.open(file_name, 'r')
+  else:
+    file_handler=open(file_name, 'r')
   add_info={}
   # read header to test if this is a dns data file
   if (file_handler.readline().split()[0:3]==['#','DNS','Data']): 
@@ -53,6 +58,7 @@ def read_data(file_name, print_comments=True):
     time_channels=float(line[2])
     # collect the data
     data_array=read_detector_data(file_handler,detectors,time_channels)
+    file_handler.close()
     #measurement_data=evaluate_data(data_array,add_info['detector_bank_2T'])
     columns=[['Detector', '']]
     error_columns=[]

@@ -31,7 +31,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -58,7 +58,8 @@ Data columns and unit transformations are defined in config.squid.py.
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('SQUID (.dat/.raw)','*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]'), ('All', '*'))
+  FILE_WILDCARDS=(('SQUID (.dat/.raw)','*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]'), 
+                  ('gziped SQUID (.dat.gz/.raw.gz)','*.[Dd][Aa][Tt].gz', '*.[Rr][Aa][Ww].gz'), ('All', '*'))
   # options:
   dia_mag_correct=0. # diamagnetic correction factor
   dia_calc=[False, '', 0.0] # chemical formular and mass to calculate the correction

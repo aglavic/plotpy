@@ -91,7 +91,15 @@ def read_data(file_name, script_path, import_images):
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
-  file_handler=open(file_name, 'r')
+  if file_name.endswith('.zip'):
+    # All data is stored in one zip file, open the files in the zip file
+    from zipfile import ZipFile
+    treff_zip=ZipFile(file_name)
+    file_name=os.path.split(file_name[:-4])[1]
+    file_handler=treff_zip.open(file_name, 'r')
+  else:
+    file_handler=open(file_name, 'r')
+    treff_zip=None
   lines=file_handler.readlines()
   file_handler.close()
   if len(lines)<5:
@@ -109,7 +117,12 @@ def read_data(file_name, script_path, import_images):
     columns_line.remove('MF')
     columns_line.remove('[G]')
   # get the columns of interest
-  columns={ 'Image': columns_line.index('Image'), 
+  try:
+    image_col=columns_line.index('Image')
+  except ValueError:
+    image_col=None
+    import_images=False
+  columns={ 'Image': image_col, 
            'Polarization': columns_line.index('Pol.'),
            'Monitor': columns_line.index('Monitor'), 
            '2DWindow': columns_line.index('2DWind.'), 
@@ -163,43 +176,56 @@ def read_data(file_name, script_path, import_images):
   scans=[]
   if len(data_uu_lines)>0:
     print "Evaluating up-up images."
-    data_uu, scan_uu=integrate_pictures(data_uu_lines, columns, const_information, path_name, calibration, import_images)
-    data_uu.short_info='++ map'
-    maps.append(data_uu)
+    data_uu, scan_uu=integrate_pictures(data_uu_lines, columns, const_information, 
+                                        path_name, calibration, import_images, treff_zip)
+    if len(data_uu)>0:
+      data_uu.short_info='++ map'
+      maps.append(data_uu)
     scan_uu.short_info='++'
     scans.append(scan_uu)
   if len(data_dd_lines)>0:
     print "Evaluating down-down images."
-    data_dd, scan_dd=integrate_pictures(data_dd_lines, columns, const_information, path_name, calibration, import_images)
-    data_dd.short_info='-- map'
-    maps.append(data_dd)
+    data_dd, scan_dd=integrate_pictures(data_dd_lines, columns, const_information, 
+                                        path_name, calibration, import_images, treff_zip)
+    if len(data_dd)>0:
+      data_dd.short_info='-- map'
+      maps.append(data_dd)
     scan_dd.short_info='--'
     scans.append(scan_dd)
   if len(data_ud_lines)>0:
     print "Evaluating up-down images."
-    data_ud, scan_ud=integrate_pictures(data_ud_lines, columns, const_information, path_name, calibration, import_images)
-    data_ud.short_info='+- map'
-    maps.append(data_ud)
+    data_ud, scan_ud=integrate_pictures(data_ud_lines, columns, const_information, 
+                                        path_name, calibration, import_images, treff_zip)
+    if len(data_ud)>0:
+      data_ud.short_info='+- map'
+      maps.append(data_ud)
     scan_ud.short_info='+-'
     scans.append(scan_ud)
   if len(data_du_lines)>0:
     print "Evaluating down-up images."
-    data_du, scan_du=integrate_pictures(data_du_lines, columns, const_information, path_name, calibration, import_images)
-    data_du.short_info='-+ map'
-    maps.append(data_du)
+    data_du, scan_du=integrate_pictures(data_du_lines, columns, const_information, 
+                                        path_name, calibration, import_images, treff_zip)
+    if len(data_du)>0:
+      data_du.short_info='-+ map'
+      maps.append(data_du)
     scan_du.short_info='-+'
     scans.append(scan_du)
   if len(data_xx_lines)>0:
     print "Evaluating unpolarized images."
-    data_xx, scan_xx=integrate_pictures(data_xx_lines, columns, const_information, path_name, calibration, import_images)
-    data_xx.short_info='unpolarized'
-    maps.append(data_xx)
+    data_xx, scan_xx=integrate_pictures(data_xx_lines, columns, const_information, 
+                                        path_name, calibration, import_images, treff_zip)
+    if len(data_xx)>0:
+      data_xx.short_info='unpolarized'
+      maps.append(data_xx)
     scan_xx.short_info='unpolarized'
     scans.append(scan_xx)
   if import_images:
     output=maps + scans
   else:
     output= scans
+  if treff_zip:
+    # this is very importent as the zip file could be damadged otherwise!
+    treff_zip.close()
   return output
 
 def string_or_float(string_line):
@@ -215,7 +241,7 @@ def string_or_float(string_line):
   except ValueError:
     return False
 
-def integrate_pictures(data_lines, columns, const_information, data_path, calibration, import_images):
+def integrate_pictures(data_lines, columns, const_information, data_path, calibration, import_images, treff_zip=None):
   '''
     Integrate detector rows of the image files corresponding to one polarization direction.
     This function is tuned quite much for fast readout, so some parts are a bit tricky.
@@ -226,6 +252,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     @param data_path Path to the image files which should be integrated
     @param calibration Calibration data for the 2d detector as List of integers
     @param import_images Boolian to select if only the datafile should be imported or the 2d-detector images, too
+    @param treff_zip ZipFile object which can be used insted of the local folder to get the image files
     
     @return MeasurementData objects for the map and the scan for this polarization channel
   '''
@@ -269,7 +296,14 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                       line[columns['Time']])))
     if not import_images:
       continue
-    if os.path.exists(data_path + line[columns['Image']]):
+    if treff_zip and line[columns['Image']] in treff_zip.namelist():
+      # use data inside ziped file
+      img_file=treff_zip.open(line[columns['Image']], 'r')
+    elif treff_zip and line[columns['Image']]+'.gz' in treff_zip.namelist():
+      # use data inside ziped file
+      print "gziped files not supported inside of .zip file."
+      continue
+    elif os.path.exists(data_path + line[columns['Image']]):
       # unziped images
       img_file=open(data_path + line[columns['Image']], 'r')
     elif os.path.exists(data_path + line[columns['Image']] + '.gz'):
@@ -338,7 +372,10 @@ def integrate_one_picture(img_data, line, columns, alphai, alphaf_center, calibr
   # every image file consists of 256 rows and 256 columns of the detector
   # as the sum function returns 0 for empty list we can remove '0' from the lists
   # to increase the speed of the integer conversion
-  parts=[[img_data[i] for i in map_i if not img_data[i] is '0'] for map_i in DETECTOR_ROWS_MAP]
+  try:
+    parts=[[img_data[i] for i in map_i if not img_data[i] is '0'] for map_i in DETECTOR_ROWS_MAP]
+  except IndexError:
+    return []
   monitor=float(line[columns['Monitor']])
   for i in range(256):
     if calibration[i] <= 0 :

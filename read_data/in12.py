@@ -31,7 +31,12 @@ def read_data(file_name):
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
-  file_handler=open(file_name, 'r')
+  if file_name.endswith('.gz'):
+    # use gziped data format
+    import gzip
+    file_handler=gzip.open(file_name, 'r')
+  else:
+    file_handler=open(file_name, 'r')
   lines=file_handler.readlines()
   header_lines=lines[:get_first_data_line(lines)]
   data_lines=lines[get_first_data_line(lines):]
