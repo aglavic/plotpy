@@ -239,7 +239,22 @@ def initialize_gui(session):
   import gtk
   return plotting_gui.ApplicationMainWindow(session)
 
+def initialize_debug(log_file='debug.log'):
+  '''
+    Initialize logging and output for debug mode.
+  '''
+  import plotting_debug
+  if '--logall' in sys.argv:
+    level='DEBUG'
+    sys.argv.remove('--logall')
+  else:
+    level='INFO'
+  plotting_debug.initialize(log_file, level)
+  
+
 if __name__ == '__main__':    #code to execute if called from command-line
+  if '--debug' in sys.argv:
+    initialize_debug()
   if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
     try:
       # initialize the session with stdoutput in gtk dialog.
