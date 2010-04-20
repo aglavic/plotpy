@@ -9,7 +9,10 @@
 import os
 import sys
 import math
-from measurement_data_structure import MeasurementData
+import measurement_data_structure
+from copy import deepcopy
+from numpy import array
+from numpy import sqrt
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
@@ -135,3 +138,64 @@ def read_simulation(file_name):
       point.append(0.0)
       data.append(point)
   return data
+
+class MeasurementData(measurement_data_structure.MeasurementData):
+  '''
+    Class implementing additions for Reflectometer data objects.
+  '''
+  def __add__(self, other):
+    '''
+      Add two measurements together.
+    '''
+    out=deepcopy(self)
+    out.short_info=self.short_info+'+'+other.short_info
+    out.data[1].values=(array(self.data[1].values)+array(other.data[1].values)).tolist()    
+    out.data[2].values=(sqrt(array(self.data[2].values)**2+array(other.data[2].values)**2)).tolist()
+    return out
+  
+  def __sub__(self, other):
+    '''
+      Subtract two measurements from another.
+    '''
+    out=deepcopy(self)
+    out.short_info=self.short_info+'-'+other.short_info
+    out.data[1].values=(array(self.data[1].values)-array(other.data[1].values)).tolist()    
+    out.data[2].values=(sqrt(array(self.data[2].values)**2+array(other.data[2].values)**2)).tolist()
+    return out
+  
+  def __rmul__(self, other):
+    '''
+      Multiply measurement with a scalar.
+    '''
+    out=deepcopy(self)
+    out.data[1].values=(other*array(self.data[1].values)).tolist()    
+    out.data[2].values=(other*array(self.data[2].values)).tolist()    
+    return out
+  
+  def __mul__(self, other):
+    '''
+      Multiply two measurements.
+    '''
+    if type(self)!=type(other):
+      return self.__rmul__(other)
+    out=deepcopy(self)
+    out.short_info=self.short_info+'+'+other.short_info
+    out.data[1].values=(array(self.data[1].values)*array(other.data[1].values)).tolist()    
+    out.data[2].values=(sqrt(array(self.data[2].values)**2*array(other.data[1].values)**2+\
+                             array(other.data[2].values)**2*array(self.data[1].values)**2)).tolist()
+    return out
+  
+  def __div__(self, other):
+    '''
+      Divide two measurements.
+    '''
+    if type(self)!=type(other):
+      return self.__rmul__(1./other)
+    out=deepcopy(self)
+    out.short_info=self.short_info+'+'+other.short_info
+    out.data[1].values=(array(self.data[1].values)/array(other.data[1].values)).tolist()    
+    out.data[2].values=(sqrt(array(self.data[2].values)**2/array(other.data[1].values)**2+\
+                             array(other.data[2].values)**2*array(self.data[1].values)**2\
+                             /array(other.data[1].values)**4)).tolist()
+    return out
+  

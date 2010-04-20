@@ -4,13 +4,14 @@
 '''
 
 from sys import prefix
+from os.path import exists, split
 from os.path import join as join_path
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -44,13 +45,32 @@ gnuplot_file_name='gnuplot.tmp'
 PRINT_COMMAND="lpr -P IFF17c4 -J \'plot_SQUID_data.py output\'  "
 # Command for script mode to accress gnuplot
 GNUPLOT_COMMAND="gnuplot"
+
 # font path for export
-FONT_PATH=join_path('[script-path]', 'config', 'fonts')
+if exists('/usr/share/fonts/truetype/msttcorefonts'):
+  ## - DEBIAN - ## 
+  FONT_PATH='/usr/share/fonts/truetype/msttcorefonts'
+elif exists('C:\\WINDOWS\\Fonts'):
+  FONT_PATH='C:\\WINDOWS\\Fonts'
+else:
+  try:
+    # try to get the font path from the pygame module
+    from pygame.font import match_font
+    file_path=match_font('arial')
+    if file_path:
+      FONT_PATH=split(file_path)[0]
+    else:
+      FONT_PATH=join_path('[script-path]', 'config', 'fonts')
+  except ImportError:
+    # if there is no pygame module installed, use the fonts from this program
+    FONT_PATH=join_path('[script-path]', 'config', 'fonts')
+
 
 # character encoding in gnuplot
 ENCODING='iso_8859_1'
 # set the terminal options for the gnuplot output (postscript could need other labels)
-set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[font-path]',  'Arial.ttf')+'" [font-size]' #transparent
+set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[font-path]',  'Arial.ttf')+\
+                          '" [font-size] lw 2' #transparent
 # used is determined by file name
 set_output_terminal_ps='postscript landscape enhanced colour "Arial" 16 solid lw 2'
 
@@ -65,8 +85,8 @@ z_label='[z-dim] [[z-unit]]'
 # title for the whole picture
 plot_title='[sample] [title_add]'
 # parameters for the courve
-plotting_parameters='w lines lw 2' # plotting x-y
-plotting_parameters_errorbars='w errorbars pt 5 ps 0.5 lw 2' # plotting with errorbars
+plotting_parameters='w lines lw 1.5' # plotting x-y
+plotting_parameters_errorbars='w errorbars pt 5 ps 0.5 lw 1.5' # plotting with errorbars
 plotting_parameters_3d='w pm3d' # plotting 3d
 plotting_parameters_fit='w lines lw 3'
 settings_3d=\

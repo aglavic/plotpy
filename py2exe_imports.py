@@ -26,3 +26,4 @@ import scipy.optimize
 import scipy.special
 import ipython_view
 import IPython
+import pygame.font

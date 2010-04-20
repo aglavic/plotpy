@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-03-12, 16:54:31 -->
+<!-- Saved: 2010-04-20, 13:39:11 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
   <ProgLanguage mixed="0">Python</ProgLanguage>
   <ProjectType>Other</ProjectType>
   <Description>This is a Plotting script using gnuplot with a GUI.</Description>
-  <Version>0.6</Version>
+  <Version>0.6.3</Version>
   <Author>Artur Glavic</Author>
   <Email>a.glavic@fz-juelich.de</Email>
   <Sources>
@@ -68,6 +68,7 @@
     <Source>read_data/kws2.py</Source>
     <Source>config/kws2.py</Source>
     <Source>ipython_view.py</Source>
+    <Source>plotting_debug.py</Source>
   </Sources>
   <Forms>
   </Forms>

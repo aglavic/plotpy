@@ -1,6 +1,11 @@
 # -*- encoding: utf-8 -*-
 '''
-  Module to log all interesting events in a debugging session.
+  Module to log all interesting events in a debugging session. With the --debug and --logall option even function calls
+  are stored in the log file.
+  
+  CAREFUL: The --logall option can create a huge amount of data, be sure not to reproduce errors rapidly after starting
+           the program to let the file size stay at a minimum. (a 1MB log file just after starting the Program is not 
+           unlikely)
 '''
 
 import logging
@@ -15,7 +20,7 @@ class RedirectOutput(object):
   '''
   second_output=None
 
-  def __init__(self, obj, connection):
+  def __init__(self, obj, connection, connect_on_keyword=[]):
     '''
       Class consturctor.
       
@@ -23,6 +28,7 @@ class RedirectOutput(object):
     '''
     self.file_object=obj
     self.connection=connection
+    self.connect_on_keyword=connect_on_keyword
     self.buffer=""
 
   def write(self, string):
@@ -33,7 +39,11 @@ class RedirectOutput(object):
     '''
     self.buffer+=string
     if "\n" in string:
-      self.connection(self.buffer.replace("\n", ''))
+      connection=self.connection
+      for keyword, connect in self.connect_on_keyword:
+        if keyword in self.buffer:
+          connection=connect
+      connection(self.buffer.replace("\n", ''))
       self.buffer=""
     #self.file_object.write(string)
   
@@ -41,7 +51,11 @@ class RedirectOutput(object):
     '''
       Show last content line in statusbar.
     '''
-    self.connection(self.buffer.replace("\n", ''))
+    connection=self.connection
+    for keyword, connect in self.connect_on_keyword:
+      if keyword in self.buffer:
+        connection=connect
+    connection(self.buffer.replace("\n", ''))
     self.buffer=""
     self.file_object.flush()
   
@@ -57,6 +71,7 @@ class LogFunction(object):
     Very useful to trace calls to specific functions or even all functions of
     some modules of interest.
   '''
+  log_function=True
   
   def __init__(self, function, overwrite_name=None):
     '''
@@ -64,19 +79,25 @@ class LogFunction(object):
       
       @param name Name written in the log for every function call.
       @param function The function to be used.
-    '''
+    '''      
     if overwrite_name:
       self.name=overwrite_name
+      logger.debug('Logging %s' % self.name)
     else:
       self.name=function.__name__
+      logger.debug('Logging %s' % function.__module__+'.'+function.__name__)
     self.function=function
-    logger.debug('Logging %s' % self.name)
   
   def __call__(self, *params, **opts):
     '''
       Write a function call with its parameters and options to
       the log file.
     '''
+    # use this call to check if an exception has been found
+    # this only works if this function is called in the "except" block.
+    exc_info=sys.exc_info()[1]
+    if exc_info:
+      logger.warning('Cought exception %s' % str(exc_info))
     return_value=None
     write_string=self.name + "("
     i=0
@@ -107,6 +128,7 @@ class LogClass:
       Store the old class in this object
     '''
     self.old_class=old_class
+    logger.debug('Logging Class %s' % old_class.__module__+'.'+old_class.__name__)
     logging.disable(logging.INFO)
     for arg in dir(old_class):
       if arg not in ['__call__','__class__']:
@@ -154,7 +176,7 @@ def logon(module):
   # get all functions/build-in-function of the module not starting with underscore
   modfunctions=filter(lambda key: type(getattr(module, key)) in [type(logon), type(getattr)] and not key.startswith('_'),
                       module.__dict__.keys())
-  modclasses=filter(lambda key: type(getattr(module, key)) in [type(LogFunction), type(EmptyClass)] and not key.startswith('_'),
+  modclasses=filter(lambda key: 'class' in str(type(getattr(module, key))) and not key.startswith('_'),
                       module.__dict__.keys())
   for function in modfunctions:
     # replace the function by a WriteFunction object
@@ -184,10 +206,11 @@ def initialize(log_file, level='INFO'):
   logger.addHandler(console_handle)
   logger.addHandler(file_handle)
   sys.stdout=RedirectOutput(sys.stdout, logger.info)
-  sys.stderr=RedirectOutput(sys.stderr, logger.error)
+  sys.stderr=RedirectOutput(sys.stderr, logger.error, connect_on_keyword=[('Warning', logger.warning)])
   if level==logging.DEBUG:
     # In complete debug mode all function calls get logged
     logger.debug("Beginning initialize logging for all modules...")
+    sys.exc_clear=LogFunction(sys.exc_clear)
     base_files=glob(os.path.join(os.path.split(os.path.realpath(__file__))[0], '*.py'))
     package_files=glob(os.path.join(os.path.split(os.path.realpath(__file__))[0], '*/*.py'))
     base_modules=map(lambda item: os.path.split(item)[1].replace('.py', ''), base_files)

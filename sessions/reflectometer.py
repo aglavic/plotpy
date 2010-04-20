@@ -146,6 +146,8 @@ class ReflectometerSession(GenericSession):
         <menuitem action='ReflectometerFit'/>
         <menuitem action='ReflectometerExport'/>
         <menuitem action='ReflectometerImport'/>
+        <separator name='Reflectometer1'/>
+        <menuitem action='ReflectometerCombineScans'/>
         <menuitem action='ReflectometerCreateMap'/>
       </menu>
     '''
@@ -167,6 +169,10 @@ class ReflectometerSession(GenericSession):
                 "Import Fit Parameters...", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.import_fit_dialog ),
+            ( "ReflectometerCombineScans", None,                             # name, stock id
+                "Calculate Combination of Different Scans...", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.combine_scans ),
             ( "ReflectometerCreateMap", None,                             # name, stock id
                 "Create 3d Map from Rocking Scans", None,                    # label, accelerator
                 None,                                   # tooltip
@@ -264,6 +270,138 @@ class ReflectometerSession(GenericSession):
     window.replot()
     window.logz.set_active(True)
   
+
+  def combine_scans(self, action, window, preset=None):
+    '''
+      Add or substract measured scans from each other.
+    '''
+    # build a list of MeasurementData objects in active_file_data for the scans
+    file_list=[object[0] for object in self.file_data.items()]
+    file_list.remove(self.active_file_name)
+    file_list.insert(0, self.active_file_name)
+    scan_list=[]
+    for file in file_list:
+      scan_list+=[(object, file, i) for i, object in enumerate(self.file_data[file])]
+    combine_list=[]
+    def add_object():
+      '''Subdialog to add one chanel to the separation.'''
+      add_dialog=gtk.Dialog(title='Add scan:')
+      add_dialog.set_default_size(100,50)
+      add_dialog.add_button('OK', 1)
+      add_dialog.add_button('Cancle', 0)
+      align_table=gtk.Table(4,1,False)
+      label=gtk.Label('sign: ')
+      align_table.attach(label, 0,1, 0, 1, 0,0, 0,0);
+      sign=gtk.Entry()
+      sign.set_text('+')
+      align_table.attach(sign, 1,2, 0, 1, 0,0, 0,0);
+      multiplier=gtk.Entry()
+      multiplier.set_text('1')
+      align_table.attach(multiplier, 2,3, 0, 1, 0,0, 0,0);
+      object_box=gtk.combo_box_new_text()
+      for object in scan_list:
+        if object[0].zdata>=0:
+          continue
+        else:
+          object_box.append_text(os.path.split(object[1])[1]+' '+str(object[2])+'-('+object[0].short_info+')')
+      object_box.set_active(0)
+      align_table.attach(object_box, 3,4, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0)
+      add_dialog.vbox.add(align_table)
+      add_dialog.show_all()
+      result=add_dialog.run()
+      if result==1:
+        if sign.get_text() in ['+','-', '*', '/']:
+          sign=sign.get_text()
+        else:
+          sign='+'
+        combine_list.append( (object_box.get_active(), sign, float(multiplier.get_text())) )
+        label=gtk.Label(sign+multiplier.get_text()+'*{'+object_box.get_active_text()+'}')
+        label.show()
+        function_table.attach(label, 0,1, len(combine_list)-1,len(combine_list), 0,0, 0,0)
+      add_dialog.destroy()
+    combine_dialog=gtk.Dialog(title='Combination of scans:')
+    combine_dialog.set_default_size(150,50)
+    combine_dialog.add_button('Add', 2)
+    combine_dialog.add_button('OK', 1)
+    combine_dialog.add_button('Cancle', 0)
+    table=gtk.Table(3,1,False)
+    input_filed=gtk.Entry()
+    input_filed.set_width_chars(4)
+    input_filed.set_text('Result')
+    table.attach(input_filed,
+                # X direction #          # Y direction
+                0, 1,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    label=gtk.Label(" = ")
+    table.attach(label,
+                # X direction #          # Y direction
+                1, 2,                      0, 1,
+                0,                         0,
+                0,                         0);
+    function_table=gtk.Table(1,1,False)
+    table.attach(function_table,
+                # X direction #          # Y direction
+                2, 3,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    combine_dialog.vbox.add(table)
+    combine_dialog.show_all()
+    # if a preset is used create the right list and show the function
+    if preset is None:
+      add_object()
+    else:
+      combine_list=preset
+      for i, item in enumerate(combine_list):
+        try:
+          label=gtk.Label(item[1]+str(item[2])+'*{'+str(i)+'-('+scan_list[item[0]][0].short_info+')}')
+          label.show()
+          function_table.attach(label, 0,1, i,i+1, 0,0, 0,0)        
+        except IndexError:
+          combine_dialog.destroy()
+          return None
+    result=combine_dialog.run()
+    while result>1:
+      add_object()
+      result=combine_dialog.run()
+    if result==1:
+      self.calculate_combination(combine_list, scan_list, input_filed.get_text())
+      window.index_mess=len(self.active_file_data)-1
+      window.replot()
+    combine_dialog.destroy()
+  
+  def calculate_combination(self, combine_list, scan_list, title):
+    '''
+      Calculate a combination of polarization directions as
+      set in the combine_list.
+      
+      @param combine_layers List of how the chanels should be combined
+      @param scan_list The chanels which will be combined
+      @param title Name of the new created chanel
+    '''
+    if combine_list[0][1] != '-':
+      result=combine_list[0][2]*scan_list[combine_list[0][0]][0]
+    else:
+      result=-1.*combine_list[0][2]*scan_list[combine_list[0][0]][0]
+    for object, sign, multiplier in combine_list[1:]:
+      if sign == '+':
+        result=result+multiplier*scan_list[object][0]
+      elif sign == '*':
+        result=result*(multiplier*scan_list[object][0])
+      elif sign == '/':
+        result=result/(multiplier*scan_list[object][0])
+      else:
+        result=result-multiplier*scan_list[object][0]
+      if result is None:
+        message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
+                                  message_format='You can only combine scans with the same number of measured points!')
+        message.run()
+        message.destroy()
+        return None
+    result.short_info=title
+    result.number=str(len(scan_list))
+    self.active_file_data.append(result)
+
   #++++ functions for fitting with fortran program by E. Kentzinger ++++
   
   from reflectometer_fit.functions import \
