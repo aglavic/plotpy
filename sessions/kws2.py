@@ -82,12 +82,12 @@ class KWS2Session(GenericSession):
     '''
       Function to read data files.
     '''
-    folder, rel_file=os.path.split(file_name)
+    folder, rel_file=os.path.split(os.path.realpath(file_name))
     setups=ConfigObj(os.path.join(folder, 'kws2_setup.ini'), unrepr=True)
     setups.indent_type='\t'
     found=False
     for key, value in setups.items():
-      if rel_file in glob(key):
+      if os.path.join(folder, rel_file) in glob(os.path.join(folder, key)):
         found=True
     if not found:
       self.new_configuration(setups, rel_file, folder)

@@ -96,7 +96,10 @@ class TreffSession(GenericSession):
     self.file_actions_addon['extract_specular_reflectivity']=self.do_extract_specular_reflectivity
     for key in self.file_data.keys():
       self.file_data[key]=FitList(self.file_data[key])
-    self.active_file_data=self.file_data[self.active_file_name]
+    try:
+      self.active_file_data=self.file_data[self.active_file_name]
+    except KeyError:
+      self.active_file_data=[]
   
   def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
     '''

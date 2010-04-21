@@ -152,6 +152,7 @@ setup(name=__name__,
 # If binary distribution has been created rename it and create .deb package, too.
 if ('bdist' in sys.argv):
   print "Moving distribution files..."
+  from glob import glob
   os.chdir('archiv')
   os.rename(__name__+'-'+__version__+'-1.noarch.rpm', __name__+'-'+__version__+'.rpm')
   os.remove(__name__+'-'+__version__+'-1.src.rpm')
@@ -159,6 +160,13 @@ if ('bdist' in sys.argv):
   print "Creating debian folder..."
   subprocess.Popen(['fakeroot', 'alien', '-k', '-g', __name__+'-'+__version__+'.rpm'], shell=False, 
                    stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  # creating menu entries
+  os.mkdir(__name__+'-'+__version__+'/usr/share/applications/')
+  os.mkdir(__name__+'-'+__version__+'.orig/usr/share/applications/')
+  subprocess.Popen(['cp']+ glob('../menu_entries/*.desktop')+[__name__+'-'+__version__+'/usr/share/applications/'], 
+                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['cp']+glob('../menu_entries/*.desktop')+[__name__+'-'+__version__+'.orig/usr/share/applications/'], 
+                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
   os.chdir(__name__+'-'+__version__)
   deb_con=open('debian/control', 'w')
   deb_con.write(open('../../deb_control', 'r').read())

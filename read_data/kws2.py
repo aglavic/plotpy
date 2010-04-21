@@ -36,10 +36,10 @@ def read_data(file_name):
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
-  folder, rel_file_name=os.path.split(file_name)
+  folder, rel_file_name=os.path.split(os.path.realpath(file_name))
   setups=ConfigObj(os.path.join(folder, 'kws2_setup.ini'), unrepr=True)
   for key, value in setups.items():
-    if rel_file_name in glob(key):
+    if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
       setup=value
   if setup['DETECTOR_SENSITIVITY'] and not setup['DETECTOR_SENSITIVITY'] in detector_sensitivities:
     read_sensitivities(folder, setup['DETECTOR_SENSITIVITY'])
