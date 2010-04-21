@@ -167,7 +167,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       if files==None: # read_arguments returns none, if help option is set
         print self.LONG_HELP + self.SPECIFIC_HELP + self.LONG_HELP_END
         exit()
-      elif len(files) < 1: # show help, if there is no file in the list
+      elif len(files) < 1 and not self.use_gui: # show help, if there is no file in the list
         print self.SHORT_HELP
         exit()
     else:
@@ -189,10 +189,14 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     if type(arguments) is list:
       if len(files) == 0: # show help, if there is no valid file in the list
         print "No valid datafile found!"
-        print self.SHORT_HELP
-        exit()
-      self.active_file_data=self.file_data[files[0]]
-      self.active_file_name=files[0]
+        if not self.use_gui:
+          print self.SHORT_HELP
+          exit()
+        self.active_file_data=[]
+        self.active_file_name="None"
+      else:
+        self.active_file_data=self.file_data[files[0]]
+        self.active_file_name=files[0]
 
   #---------------- class consturction over ---------------------
 
@@ -464,7 +468,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
     if not append:
       self.file_data={}
-    self.file_data[name]=data_list
+    if len(data_list)>0:
+      self.file_data[name]=data_list
   
   def add_file(self, filename, append=True):
     '''

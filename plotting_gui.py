@@ -67,12 +67,13 @@ class ApplicationMainWindow(gtk.Window):
   status_dialog=None
   
   def get_active_dataset(self):
-      return self.measurement[self.index_mess]
+    return self.measurement[self.index_mess]
 
   active_dataset=property(get_active_dataset)
+  geometry=((0, 0), (800, 600))
   
   #+++++++++++++++++++++++++++++++Window Constructor+++++++++++++++++++++++++++++++++++++#
-  def __init__(self, active_session, parent=None, script_suf=''):
+  def __init__(self, active_session, parent=None, script_suf='', status_dialog=None):
     '''
       Class constructor which builds the main window with it's menus, buttons and the plot area.
       
@@ -83,6 +84,7 @@ class ApplicationMainWindow(gtk.Window):
     global errorbars
     # TODO: remove global errorbars variable and put in session or m_d_structure
     #+++++++++++++++++ set class variables ++++++++++++++++++
+    self.status_dialog=status_dialog
     self.heightf=100 # picture frame height
     self.widthf=100 # pricture frame width
     self.set_file_type=output_file_name.rsplit('.',1)[1] # export file type
@@ -111,6 +113,7 @@ class ApplicationMainWindow(gtk.Window):
     # Retrieving a reference to a textbuffer from a textview.
     # TODO: call buffer directly from textview widget
     self.plot_options_buffer = self.plot_options_view.get_buffer()
+    self.active_folder=os.path.realpath('.') # For file dialogs to stay in the active directory
     #----------------- set class variables ------------------
 
 
@@ -177,16 +180,8 @@ class ApplicationMainWindow(gtk.Window):
     top_table=gtk.Table(2, 1, False)
     # first entry for sample name part of title
     self.label = gtk.Entry()
-    self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5) # title width
-    self.label.set_text(self.measurement[self.index_mess].sample_name)
-    self.label.connect("activate",self.change) # changed entry triggers change() function 
     # second entry for additional infor part ofr title
     self.label2 = gtk.Entry()
-    self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5) # title width
-    self.label2.set_text(self.measurement[self.index_mess].short_info)
-    self.label2.connect("activate",self.change) # changed entry triggers change() function 
-    # TODO: put this to a different location
-    self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
     self.plot_options_view.show()
     # attach entrys to sub table
     top_table.attach(self.label,
@@ -218,7 +213,6 @@ class ApplicationMainWindow(gtk.Window):
     self.image = gtk.Image()    
     self.image_shown=False # variable to decrease changes in picture size
     self.image.set_size_request(0, 0)
-    self.image.connect('size-allocate', self.image_resize)
     self.image_do_resize=False
     self.frame1.append_page(self.image, gtk.Label("Plot"))
     table.attach(align,
@@ -242,24 +236,20 @@ class ApplicationMainWindow(gtk.Window):
     page_label=gtk.Label()
     page_label.set_markup('Go to Plot:')
     align_table.attach(page_label,0,1,0,1,gtk.FILL,gtk.FILL,0,0)
-    self.plot_page_entry=gtk.Entry(max=len(self.measurement[-1].number))
-    self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
+    self.plot_page_entry=gtk.Entry()
+    self.plot_page_entry.set_width_chars(4)
     self.plot_page_entry.set_text('0')
-    self.plot_page_entry.connect("activate",self.iterate_through_measurements)
     align_table.attach(self.plot_page_entry,1,2,0,1,gtk.FILL,gtk.FILL,0,0)
     # checkbox for more Settings
     self.check_add=gtk.CheckButton(label='Show more options.', use_underline=True)
-    self.check_add.connect("toggled",self.show_add_info)
     align_table.attach(self.check_add,2,3,0,1,gtk.EXPAND|gtk.FILL,gtk.FILL,0,0)
     # x,y ranges
     self.x_range_in=gtk.Entry()
     self.x_range_in.set_width_chars(6)
-    self.x_range_in.connect("activate",self.change_range)
     self.x_range_label=gtk.Label()
     self.x_range_label.set_markup('x-range:')
     self.y_range_in=gtk.Entry()
     self.y_range_in.set_width_chars(6)
-    self.y_range_in.connect("activate",self.change_range)
     self.y_range_label=gtk.Label()
     self.y_range_label.set_markup('y-range:')
     align_table.attach(self.x_range_label,3,4,0,1,gtk.FILL,gtk.FILL,0,0)
@@ -270,7 +260,6 @@ class ApplicationMainWindow(gtk.Window):
     self.font_size=gtk.Entry()
     self.font_size.set_width_chars(5)
     self.font_size.set_text(str(self.active_session.font_size))
-    self.font_size.connect("activate",self.change_range)
     self.font_size_label=gtk.Label()
     self.font_size_label.set_markup('Font size:')
     self.font_size_label.set_padding(5, 0)
@@ -279,10 +268,6 @@ class ApplicationMainWindow(gtk.Window):
     # checkboxes for log x and log y
     self.logx=gtk.CheckButton(label='log x', use_underline=True)
     self.logy=gtk.CheckButton(label='log y', use_underline=True)
-    self.logx.set_active(self.measurement[self.index_mess].logx)
-    self.logy.set_active(self.measurement[self.index_mess].logy)
-    self.logx.connect("toggled",self.change)
-    self.logy.connect("toggled",self.change)
     align_table.attach(self.logx,9,10,0,1,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.logy,10,11,0,1,gtk.FILL,gtk.FILL,0,0)
     # button to open additional plot options dialog
@@ -292,27 +277,18 @@ class ApplicationMainWindow(gtk.Window):
     except AttributeError:
       # for earlier versions of gtk, this is deprecated in python 2.6
       self.plot_options_button.set_tooltip(gtk.Tooltips(),'Add custom Gnuplot commands')
-    self.plot_options_handler_id=self.plot_options_button.connect("clicked",self.open_plot_options_window)
     align_table.attach(self.plot_options_button,13,14,0,2,gtk.FILL,gtk.FILL,0,0)
     # z range and log z checkbox
     self.z_range_in=gtk.Entry()
     self.z_range_in.set_width_chars(6)
-    self.z_range_in.connect("activate",self.change_range)
     self.z_range_label=gtk.Label()
     self.z_range_label.set_markup('z-range:')
     self.logz=gtk.CheckButton(label='log z', use_underline=True)
-    self.logz.set_active(self.measurement[self.index_mess].logz)
-    self.logz.set_active(self.measurement[self.index_mess].logz)
-    self.logz.connect("toggled",self.change)
     # 3d Viewpoint buttons to rotate the view
     self.view_left=gtk.ToolButton(gtk.STOCK_GO_BACK)
     self.view_up=gtk.ToolButton(gtk.STOCK_GO_UP)
     self.view_down=gtk.ToolButton(gtk.STOCK_GO_DOWN)
     self.view_right=gtk.ToolButton(gtk.STOCK_GO_FORWARD)
-    self.view_left.connect("clicked",self.change)
-    self.view_up.connect("clicked",self.change)
-    self.view_down.connect("clicked",self.change)
-    self.view_right.connect("clicked",self.change)
     align_table.attach(self.z_range_label,3,4,1,2,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.z_range_in,4,5,1,2,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.view_left,5,6,1,2,gtk.FILL,gtk.FILL,0,0)
@@ -330,6 +306,21 @@ class ApplicationMainWindow(gtk.Window):
         gtk.FILL,  gtk.FILL,
         0,                      0)
     #---------- Create additional setting input for the plot ----------
+
+    #+++ Creating entries and options according to the active measurement +++
+    if len(self.measurement)>0:
+      self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5) # title width
+      self.label.set_text(self.measurement[self.index_mess].sample_name)
+      self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5) # title width
+      self.label2.set_text(self.measurement[self.index_mess].short_info)
+      # TODO: put this to a different location
+      self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
+      self.logx.set_active(self.measurement[self.index_mess].logx)
+      self.logy.set_active(self.measurement[self.index_mess].logy)
+      self.logz.set_active(self.measurement[self.index_mess].logz)
+      self.logz.set_active(self.measurement[self.index_mess].logz)
+    
+    #--- Creating entries and options according to the active measurement ---
 
     # Create statusbar
     self.statusbar = gtk.Statusbar()
@@ -360,14 +351,48 @@ class ApplicationMainWindow(gtk.Window):
     self.view_down.hide()
     self.view_right.hide()
 
-    self.connect("event-after", self.update_picture)
-    self.connect("event-after", self.update_size)
+    if not self.active_session.DEBUG:
+      # redirect script output to session objects
+      self.active_session.stdout=RedirectOutput(self)
+      self.active_session.stderr=RedirectError(self)
+      sys.stdout=self.active_session.stdout
+      sys.stderr=self.active_session.stderr
 
-    self.replot()
+    while len(self.measurement)==0:
+      while gtk.events_pending():
+        gtk.main_iteration(False)
+      return_status_ok=self.add_file(None)
+      if not return_status_ok:
+        self.destroy()
     self.check_add.set_active(True)
     self.check_add.toggled()
-    self.geometry= (self.get_position(), self.get_size())
 
+    #+++++++++++++ connecting events ++++++++++++++
+    self.connect("event-after", self.update_picture)
+    self.connect("event-after", self.update_size)
+    self.label.connect("activate",self.change) # changed entry triggers change() function 
+    self.label2.connect("activate",self.change) # changed entry triggers change() function 
+    self.image.connect('size-allocate', self.image_resize)
+    self.plot_page_entry.connect("activate",self.iterate_through_measurements)
+    self.check_add.connect("toggled",self.show_add_info)
+    self.x_range_in.connect("activate",self.change_range)
+    self.y_range_in.connect("activate",self.change_range)
+    self.font_size.connect("activate",self.change_range)
+    self.logx.connect("toggled",self.change)
+    self.logy.connect("toggled",self.change)
+    self.plot_options_handler_id=self.plot_options_button.connect("clicked",self.open_plot_options_window)
+    self.z_range_in.connect("activate",self.change_range)
+    self.logz.connect("toggled",self.change)
+    self.view_left.connect("clicked",self.change)
+    self.view_up.connect("clicked",self.change)
+    self.view_down.connect("clicked",self.change)
+    self.view_right.connect("clicked",self.change)
+    
+    #------------- connecting events --------------
+
+    self.replot()
+    
+    self.geometry=(self.get_position(), self.get_size())
     self.check_for_updates()
 
   #-------------------------------Window Constructor-------------------------------------#
@@ -463,6 +488,7 @@ class ApplicationMainWindow(gtk.Window):
     self.active_multiplot=False
     # recreate the menus, if the columns for this dataset aren't the same
     self.rebuild_menus()
+    self.reset_statusbar()
     # plot the data
     self.replot()
 
@@ -512,10 +538,15 @@ class ApplicationMainWindow(gtk.Window):
       else:
         self.measurement[self.index_mess].view_x=170
     # change plot title labels
-    elif action==self.label:
-      self.measurement[self.index_mess].sample_name=self.label.get_text()
-    elif action==self.label2:
-      self.measurement[self.index_mess].short_info=self.label2.get_text()
+    elif action==self.label or action==self.label2:
+      if self.active_multiplot:
+        for plotlist in self.multiplot:
+          if self.measurement[self.index_mess] in [item[0] for item in plotlist]:
+            plotlist.sample_name=self.label.get_text()
+            plotlist.title=self.label2.get_text()
+      else:
+        self.measurement[self.index_mess].sample_name=self.label.get_text()
+        self.measurement[self.index_mess].short_info=self.label2.get_text()
     # change log settings
     # TODO: check if realy log was triggering this action
     else:
@@ -543,10 +574,12 @@ class ApplicationMainWindow(gtk.Window):
     self.input_file_name=object[0]
     # reset index to the first sequence in that file
     self.index_mess=0
+    self.active_multiplot=False
     self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
     self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
     for window in self.open_windows:
       window.destroy() 
+    self.reset_statusbar()
     self.rebuild_menus()
     self.replot()
   
@@ -563,6 +596,7 @@ class ApplicationMainWindow(gtk.Window):
                                       buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
     file_dialog.set_select_multiple(True)
     file_dialog.set_default_response(gtk.RESPONSE_OK)
+    file_dialog.set_current_folder(self.active_folder)
     for wildcard in self.active_session.FILE_WILDCARDS:
       filter = gtk.FileFilter()
       filter.set_name(wildcard[0])
@@ -571,6 +605,7 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.add_filter(filter)
     response = file_dialog.run()
     if response == gtk.RESPONSE_OK:
+      self.active_folder=file_dialog.get_current_folder()
       file_names=file_dialog.get_filenames()
     elif response == gtk.RESPONSE_CANCEL:
       file_dialog.destroy()
@@ -595,23 +630,30 @@ class ApplicationMainWindow(gtk.Window):
       self.active_session.add_file(file_names, append=True)
     else:
       for file_name in file_names:
-        self.active_session.add_file(file_name, append=True)
-        self.active_session.change_active(name=file_name)
+        datasets=self.active_session.add_file(file_name, append=True)
+        if len(datasets)>0:
+          self.active_session.change_active(name=file_name)
     # set the last imported file as active
     self.measurement=self.active_session.active_file_data
+    if len(self.measurement)==0:
+      # file was selected but without producing any result
+      # this can only be triggered when importing at startup
+      if type(sys.stdout)!=file:
+        sys.stdout.second_output=None
+        status_dialog.hide()
+      return True
     self.input_file_name=self.active_session.active_file_name
     self.index_mess=0
     self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
     self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
     for window in self.open_windows:
       window.destroy()    
-    self.replot()
-    self.rebuild_menus()
     if type(sys.stdout)!=file:
       sys.stdout.second_output=None
       status_dialog.hide()
-    # TODO: do we need to return the file name?
-    return file_names
+    self.rebuild_menus()
+    self.replot()
+    return True
 
   def save_snapshot(self, action):
     '''
@@ -626,6 +668,8 @@ class ApplicationMainWindow(gtk.Window):
                                         buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
       file_dialog.set_select_multiple(False)
       file_dialog.set_default_response(gtk.RESPONSE_OK)
+      file_dialog.set_current_folder(self.active_folder)
+      file_dialog.set_current_name(self.active_session.active_file_name+'.mdd')
       filter = gtk.FileFilter()
       filter.set_name("Snapshots (*.mdd)")
       filter.add_pattern("*.mdd")
@@ -636,6 +680,7 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.add_filter(filter)
       response = file_dialog.run()
       if response == gtk.RESPONSE_OK:
+        self.active_folder=file_dialog.get_current_folder()
         name=file_dialog.get_filenames()[0]
         if not name.endswith(".mdd"):
           name+=".mdd"
@@ -659,6 +704,7 @@ class ApplicationMainWindow(gtk.Window):
                                         buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
       file_dialog.set_select_multiple(False)
       file_dialog.set_default_response(gtk.RESPONSE_OK)
+      file_dialog.set_current_folder(self.active_folder)
       filter = gtk.FileFilter()
       filter.set_name("Snapshots (*.mdd)")
       filter.add_pattern("*.mdd")
@@ -669,6 +715,7 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.add_filter(filter)
       response = file_dialog.run()
       if response == gtk.RESPONSE_OK:
+        self.active_folder=file_dialog.get_current_folder()
         name=file_dialog.get_filenames()[0]
         if not name.endswith(".mdd"):
           name+=".mdd"
@@ -2109,7 +2156,7 @@ class ApplicationMainWindow(gtk.Window):
       dataset.logz=self.measurement[self.index_mess].logz
       dataset.plot_options=self.measurement[self.index_mess].plot_options
       self.reset_statusbar()
-      self.statusbar.push(0,'Applied settings to all Plots!')
+      print 'Applied settings to all Plots!'
 
   def add_multiplot(self,action): 
     '''
@@ -2134,7 +2181,7 @@ class ApplicationMainWindow(gtk.Window):
       if active_data in itemlist:
         plotlist.pop(itemlist.index(active_data))
         self.reset_statusbar()
-        self.statusbar.push(0,'Plot ' + active_data.number + ' removed.')
+        print 'Plot ' + active_data.number + ' removed.'
         changed=True
         if len(plotlist)==0:
           self.multiplot.remove(plotlist)
@@ -2149,14 +2196,14 @@ class ApplicationMainWindow(gtk.Window):
             (active_data.units()[yi]==plotlist[0][0].units()[yj]))):
           plotlist.append((active_data, self.active_session.active_file_name))
           self.reset_statusbar()
-          self.statusbar.push(0,'Plot ' + active_data.number + ' added.')
+          print 'Plot ' + active_data.number + ' added.'
           changed=True
           break
     # recreate the shown multiplot list
     if not changed:
-      self.multiplot.append([(active_data, self.active_session.active_file_name)])
+      self.multiplot.append(MultiplotList([(active_data, self.active_session.active_file_name)]))
       self.reset_statusbar()
-      self.statusbar.push(0,'Plot ' + active_data.number + ' added.')
+      print 'Plot ' + active_data.number + ' added.'
     mp_list=''
     for i,plotlist in enumerate(self.multiplot):
       if i>0:
@@ -2180,7 +2227,7 @@ class ApplicationMainWindow(gtk.Window):
     errorbars= not errorbars
     self.reset_statusbar()
     self.replot()
-    self.statusbar.push(0,'Show errorbars='+str(errorbars))
+    print 'Show errorbars='+str(errorbars)
 
   def export_plot(self,action): 
     '''
@@ -2192,16 +2239,20 @@ class ApplicationMainWindow(gtk.Window):
     self.active_session.picture_width='1600'
     self.active_session.picture_height='1200'
     if action.get_name()=='MultiPlot':
-      self.active_multiplot=not self.active_multiplot
+      if len(self.multiplot)>0:
+        self.active_multiplot=not self.active_multiplot
+      else:
+        self.active_multiplot=False
       return self.replot()
     if action.get_name()=='SaveGPL':
       #++++++++++++++++File selection dialog+++++++++++++++++++#
       file_dialog=gtk.FileChooserDialog(title='Save Gnuplot(.gp) and Datafiles(.out)...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
       file_dialog.set_default_response(gtk.RESPONSE_OK)
+      file_dialog.set_current_folder(self.active_folder)
       if self.active_multiplot:
-        file_dialog.set_current_name(self.active_session.active_file_name + '_multi_')
+        file_dialog.set_current_name(os.path.split(self.active_session.active_file_name + '_multi_')[1])
       else:
-        file_dialog.set_current_name(self.active_session.active_file_name + '_')
+        file_dialog.set_current_name(os.path.split(self.active_session.active_file_name + '_')[1])
       # create the filters in the file selection dialog
       filter = gtk.FileFilter()
       filter.set_name("Gnuplot (.gp)")
@@ -2213,6 +2264,7 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.add_filter(filter)
       response = file_dialog.run()
       if response != gtk.RESPONSE_OK:
+        self.active_folder=file_dialog.get_current_folder()
         file_dialog.destroy()
         return None
       common_file_prefix=file_dialog.get_filename().rsplit('.gp', 1)[0]
@@ -2225,13 +2277,14 @@ class ApplicationMainWindow(gtk.Window):
                                           self.active_session, 
                                           [item[0] for item in plotlist], 
                                           common_file_prefix, 
-                                          '', 
+                                          plotlist.title, 
                                           plotlist[0][0].short_info, 
                                           [item[0].short_info for item in plotlist], 
                                           errorbars,
                                           common_file_prefix + '.png',
                                           fit_lorentz=False, 
-                                          output_file_prefix=common_file_prefix)
+                                          output_file_prefix=common_file_prefix, 
+                                          sample_name=plotlist.sample_name)
         file_numbers=[]
         for j, dataset in enumerate(itemlist):
           for i, attachedset in enumerate(dataset.plot_together):
@@ -2268,58 +2321,54 @@ class ApplicationMainWindow(gtk.Window):
                                       errorbars,
                                       fit_lorentz=False)
         self.reset_statusbar()
-        self.statusbar.push(0,'Export plot number '+dataset.number+'... Done!')
-    elif action.get_name()=='MultiPlotExport':
+        print 'Export plot number '+dataset.number+'... Done!'
+    elif self.active_multiplot:
       for plotlist in self.multiplot:
-        #++++++++++++++++File selection dialog+++++++++++++++++++#
-        file_dialog=gtk.FileChooserDialog(title='Export multi-plot as...', action=gtk.FILE_CHOOSER_ACTION_SAVE, 
-                                          buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, 
-                                                   gtk.STOCK_SAVE, gtk.RESPONSE_OK))
-        file_dialog.set_default_response(gtk.RESPONSE_OK)
-        file_dialog.set_current_name(self.input_file_name + '_multi_'+ \
-                                     plotlist[0][0].number + '.' + self.set_file_type)
-        # create the filters in the file selection dialog
-        filter = gtk.FileFilter()
-        filter.set_name("Images (png/ps)")
-        filter.add_mime_type("image/png")
-        filter.add_mime_type("image/ps")
-        filter.add_pattern("*.png")
-        filter.add_pattern("*.ps")
-        file_dialog.add_filter(filter)
-        filter = gtk.FileFilter()
-        filter.set_name("All files")
-        filter.add_pattern("*")
-        file_dialog.add_filter(filter)
-        # show multiplot on screen before the file is actually selected
+        if not self.measurement[self.index_mess] in [item[0] for item in plotlist]:
+          continue
+        multi_file_name=plotlist[0][1]+'_multi_'
+        if action.get_name()=='ExportAs':
+          #++++++++++++++++File selection dialog+++++++++++++++++++#
+          file_dialog=gtk.FileChooserDialog(title='Export multi-plot as...', action=gtk.FILE_CHOOSER_ACTION_SAVE, 
+                                            buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, 
+                                                     gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+          file_dialog.set_default_response(gtk.RESPONSE_OK)
+          file_dialog.set_current_name(os.path.split(plotlist[0][1] + '_multi_'+ \
+                                       plotlist[0][0].number + '.' + self.set_file_type)[1])
+          file_dialog.set_current_folder(self.active_folder)
+          # create the filters in the file selection dialog
+          filter = gtk.FileFilter()
+          filter.set_name("Images (png/ps)")
+          filter.add_mime_type("image/png")
+          filter.add_mime_type("image/ps")
+          filter.add_pattern("*.png")
+          filter.add_pattern("*.ps")
+          file_dialog.add_filter(filter)
+          filter = gtk.FileFilter()
+          filter.set_name("All files")
+          filter.add_pattern("*")
+          file_dialog.add_filter(filter)
+          response = file_dialog.run()
+          if response == gtk.RESPONSE_OK:
+            self.active_folder=file_dialog.get_current_folder()
+            multi_file_name=file_dialog.get_filename()
+          file_dialog.destroy()
+          if response != gtk.RESPONSE_OK:
+            return
+          #----------------File selection dialog-------------------#
         self.last_plot_text=self.plot(self.active_session, 
                                       [item[0] for item in plotlist], 
                                       plotlist[0][1], 
                                       #plotlist[0][0].short_info, 
-                                      '', 
+                                      plotlist.title, 
                                       [item[0].short_info for item in plotlist], 
                                       errorbars,
-                                      self.active_session.TEMP_DIR+'plot_temp.png',
-                                      fit_lorentz=False)     
-        self.label.set_width_chars(len('Multiplot title')+5)
-        self.label.set_text('Multiplot title')
-        self.set_image()
-        response = file_dialog.run()
-        if response == gtk.RESPONSE_OK:
-          multi_file_name=file_dialog.get_filename()
-          self.last_plot_text=self.plot(self.active_session, 
-                                        [item[0] for item in plotlist], 
-                                        plotlist[0][1], 
-                                        #plotlist[0][0].short_info, 
-                                        '', 
-                                        [item[0].short_info for item in plotlist], 
-                                        errorbars,
-                                        multi_file_name,
-                                        fit_lorentz=False)
-          # give user information in Statusbar
-          self.reset_statusbar()
-          self.statusbar.push(0,'Export multi-plot ' + multi_file_name + '... Done!')
-        file_dialog.destroy()
-        #----------------File selection dialog-------------------#
+                                      multi_file_name,
+                                      fit_lorentz=False, 
+                                      sample_name=plotlist.sample_name)     
+        # give user information in Statusbar
+        self.reset_statusbar()
+        print 'Export multi-plot ' + multi_file_name + '... Done!'
     else:
       new_name=output_file_name
       if action.get_name()=='ExportAs':
@@ -2328,7 +2377,9 @@ class ApplicationMainWindow(gtk.Window):
                                           action=gtk.FILE_CHOOSER_ACTION_SAVE, 
                                           buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
         file_dialog.set_default_response(gtk.RESPONSE_OK)
-        file_dialog.set_current_name(self.input_file_name+'_'+ self.measurement[self.index_mess].number+'.'+self.set_file_type)
+        file_dialog.set_current_name(os.path.split(
+                      self.input_file_name+'_'+ self.measurement[self.index_mess].number+'.'+self.set_file_type)[1])
+        file_dialog.set_current_folder(self.active_folder)
         filter = gtk.FileFilter()
         filter.set_name("Images (png/ps)")
         filter.add_mime_type("image/png")
@@ -2342,6 +2393,7 @@ class ApplicationMainWindow(gtk.Window):
         file_dialog.add_filter(filter)
         response = file_dialog.run()
         if response == gtk.RESPONSE_OK:
+          self.active_folder=file_dialog.get_current_folder()
           new_name=file_dialog.get_filename()
         elif response == gtk.RESPONSE_CANCEL:
           file_dialog.destroy()
@@ -2357,7 +2409,7 @@ class ApplicationMainWindow(gtk.Window):
                                     new_name,
                                     fit_lorentz=False)
       self.reset_statusbar()
-      self.statusbar.push(0,'Export plot number '+self.measurement[self.index_mess].number+'... Done!')
+      print 'Export plot number '+self.measurement[self.index_mess].number+'... Done!'
 
   def print_plot(self,action): 
     '''
@@ -2375,7 +2427,7 @@ class ApplicationMainWindow(gtk.Window):
                                     output_file=self.active_session.TEMP_DIR+'plot_temp.ps',
                                     fit_lorentz=False)
       self.reset_statusbar()
-      self.statusbar.push(0,'Printed with: '+PRINT_COMMAND)
+      print 'Printed with: '+PRINT_COMMAND
       os.popen2(PRINT_COMMAND+self.active_session.TEMP_DIR+'plot_temp.ps')
     elif action.get_name()=='PrintAll':
       term='postscript landscape enhanced colour'
@@ -2391,7 +2443,7 @@ class ApplicationMainWindow(gtk.Window):
                                       fit_lorentz=False)
         print_string=print_string+self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps '
       self.reset_statusbar()
-      self.statusbar.push(0,'Printed with: '+PRINT_COMMAND)
+      print 'Printed with: '+PRINT_COMMAND
       os.popen2(print_string)
       # TODO: In the future, setting up propper printing dialog here:
       #operation=gtk.PrintOperation()
@@ -2508,9 +2560,9 @@ class ApplicationMainWindow(gtk.Window):
       np \tNumpy
       sp \tScipy
 
-  Remark: This functionality is mainly for developers. If you are experienced
-          in python it is recommanded to use the get_... and new_... functions.
-""")
+    Remark: This functionality is mainly for developers. If you are experienced
+              in python it is recommanded to use the get_... and new_... functions.
+    """)
     ipview.modify_font(pango.FontDescription(FONT))
     ipview.set_wrap_mode(gtk.WRAP_CHAR)
     sys.stderr=ipview
@@ -2655,7 +2707,7 @@ class ApplicationMainWindow(gtk.Window):
     try:
       download_page=urllib.urlopen(DOWNLOAD_PAGE_URL)
     except IOError, ertext:
-      self.statusbar.push(0, 'Error accessing update server: %s' % ertext)
+      print 'Error accessing update server: %s' % ertext
       return None
     lines=download_page.readlines()
     if self.config_object['Update']['CheckBeta']:
@@ -2734,8 +2786,12 @@ class ApplicationMainWindow(gtk.Window):
     '''
     if self.image_do_resize:
       self.image_do_resize=False
-      pixbuf=self.image_pixbuf.scale_simple(rectangel.width, rectangel.height, gtk.gdk.INTERP_BILINEAR)
-      self.image.set_from_pixbuf(pixbuf)
+      try:
+        # if no image was set, there is not self.image_pixbuf
+        pixbuf=self.image_pixbuf.scale_simple(rectangel.width, rectangel.height, gtk.gdk.INTERP_BILINEAR)
+        self.image.set_from_pixbuf(pixbuf)
+      except AttributeError:
+        pass
     else:
       self.image_do_resize=True
 
@@ -2767,6 +2823,11 @@ class ApplicationMainWindow(gtk.Window):
     self.logx.set_active(self.measurement[self.index_mess].logx)
     self.logy.set_active(self.measurement[self.index_mess].logy)
     self.logz.set_active(self.measurement[self.index_mess].logz)
+    # wait for all gtk events to finish to get the right size
+    print "Plotting"
+    while gtk.events_pending():
+      gtk.main_iteration(False)
+    self.frame1.set_current_page(0)
     self.active_session.picture_width=str(self.image.get_allocation().width)
     self.active_session.picture_height=str(self.image.get_allocation().height)
     if self.active_multiplot:
@@ -2777,13 +2838,16 @@ class ApplicationMainWindow(gtk.Window):
                                         [item[0] for item in plotlist],
                                         plotlist[0][1],
                                         #plotlist[0][0].short_info,
-                                        '', 
+                                        plotlist.title, 
                                         [item[0].short_info for item in plotlist],
                                         errorbars,
                                         self.active_session.TEMP_DIR+'plot_temp.png',
-                                        fit_lorentz=False)
-          self.label.set_width_chars(len(itemlist[0].short_info)+5)
-          self.label.set_text(itemlist[0].short_info)
+                                        fit_lorentz=False, 
+                                        sample_name=plotlist.sample_name)
+          self.label.set_width_chars(len(plotlist.sample_name)+5)
+          self.label.set_text(plotlist.sample_name)
+          self.label2.set_width_chars(len(plotlist.title)+5)
+          self.label2.set_text(plotlist.title)
     else:
       self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
       self.label.set_text(self.measurement[self.index_mess].sample_name)
@@ -2798,12 +2862,13 @@ class ApplicationMainWindow(gtk.Window):
                                   output_file=self.active_session.TEMP_DIR+'plot_temp.png',
                                   fit_lorentz=False)
     if self.last_plot_text!='':
-      self.statusbar.push(0, 'Gnuplot error!')
+      print 'Gnuplot error!'
       self.show_last_plot_params(None)
     else:
       self.set_image()
       self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
       self.active_plot_geometry=(self.widthf, self.heightf)
+      self.reset_statusbar()
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
 
   def reset_statusbar(self): 
@@ -2894,51 +2959,55 @@ class ApplicationMainWindow(gtk.Window):
       '''
     for i, name in enumerate([object[0] for object in sorted(self.active_session.file_data.items())]):
       output+="        <menuitem action='File-"+ str(i) +"'/>\n"
-      self.added_items+=(("File-"+ str(i), None, name, None, None, self.change_active_file),)
+      self.added_items+=(("File-"+ str(i), None, 
+                          os.path.split(name)[1], 
+                          None, None, self.change_active_file),)
     output+='''
       </menu>
       <separator name='static12'/>
       <menu action='ViewMenu'>
         <menu action='AxesMenu'>
       '''
-    # Menus for column selection created depending on input measurement
-    output+='''
-          <menu action='xMenu'>
-            <menuitem action='x-number'/>
-      '''
-    for dimension in self.measurement[self.index_mess].dimensions():
-      output+="         <menuitem action='x-"+dimension+"'/>\n"
-      self.added_items=self.added_items+(("x-"+dimension, None,dimension,None,None,self.change),)
-    output+='''
-          </menu>
-          <menu action='yMenu'>
-            <menuitem action='y-number'/>
-      '''
-    for dimension in self.measurement[self.index_mess].dimensions():
-      output+="            <menuitem action='y-"+dimension+"'/>\n"
-      self.added_items=self.added_items+(("y-"+dimension, None,dimension,None,None,self.change),)
-    if self.measurement[self.index_mess].zdata>=0:
+    if len(self.measurement)>0:
+      # Menus for column selection created depending on input measurement
       output+='''
-            </menu>
-            <placeholder name='zMenu'>
-            <menu action='zMenu'>
+            <menu action='xMenu'>
+              <menuitem action='x-number'/>
         '''
       for dimension in self.measurement[self.index_mess].dimensions():
-        output+="          <menuitem action='z-"+dimension+"'/>\n"
-        self.added_items=self.added_items+(("z-"+dimension, None,dimension,None,None,self.change),)
-      output+="</menu></placeholder>\n"
-    else:
+        output+="         <menuitem action='x-"+dimension+"'/>\n"
+        self.added_items=self.added_items+(("x-"+dimension, None,dimension,None,None,self.change),)
       output+='''
-            </menu>      
-            <placeholder name='zMenu'/>'''
+            </menu>
+            <menu action='yMenu'>
+              <menuitem action='y-number'/>
+        '''
+      for dimension in self.measurement[self.index_mess].dimensions():
+        output+="            <menuitem action='y-"+dimension+"'/>\n"
+        self.added_items=self.added_items+(("y-"+dimension, None,dimension,None,None,self.change),)
+      if self.measurement[self.index_mess].zdata>=0:
+        output+='''
+              </menu>
+              <placeholder name='zMenu'>
+              <menu action='zMenu'>
+          '''
+        for dimension in self.measurement[self.index_mess].dimensions():
+          output+="          <menuitem action='z-"+dimension+"'/>\n"
+          self.added_items=self.added_items+(("z-"+dimension, None,dimension,None,None,self.change),)
+        output+="</menu></placeholder>\n"
+      else:
+        output+='''
+              </menu>      
+              <placeholder name='zMenu'/>'''
+      output+='''
+            <menu action='dyMenu'>
+        '''
+      for dimension in self.measurement[self.index_mess].dimensions():
+        output+="              <menuitem action='dy-"+dimension+"'/>\n"
+        self.added_items=self.added_items+(("dy-"+dimension, None,dimension,None,None,self.change),)
+      # allways present stuff and toolbar
+      output+='''                   </menu>'''
     output+='''
-          <menu action='dyMenu'>
-      '''
-    for dimension in self.measurement[self.index_mess].dimensions():
-      output+="              <menuitem action='dy-"+dimension+"'/>\n"
-      self.added_items=self.added_items+(("dy-"+dimension, None,dimension,None,None,self.change),)
-    # allways present stuff and toolbar
-    output+='''                   </menu>
         </menu>
         <menu action='Profiles'>
       '''
@@ -2970,26 +3039,27 @@ class ApplicationMainWindow(gtk.Window):
     output+=specific_menu_items[0]
     self.session_added_items=specific_menu_items[1]
     #-------------- create session specific menu --------
-    output+='''
-        <menuitem action='FitData'/>
-        <separator name='static5'/>
-        <menuitem action='FilterData'/>
-        <menuitem action='TransformData'/>
-        <separator name='TreatmentStatic'/>'''
-    if self.measurement[self.index_mess].zdata>=0:
+    if len(self.measurement)>0:
       output+='''
-        <placeholder name='z-actions'>
-        <menuitem action='CrossSection'/>
-        <menuitem action='RadialIntegration'/>
-        <menuitem action='IntegrateIntensities'/>
-        </placeholder>        
-        <placeholder name='y-actions'/>'''
-    else:
-      output+='''
-        <placeholder name='z-actions'/>
-        <placeholder name='y-actions'>
-        <menuitem action='CombinePoints'/>
-        </placeholder>'''
+          <menuitem action='FitData'/>
+          <separator name='static5'/>
+          <menuitem action='FilterData'/>
+          <menuitem action='TransformData'/>
+          <separator name='TreatmentStatic'/>'''
+      if self.measurement[self.index_mess].zdata>=0:
+        output+='''
+          <placeholder name='z-actions'>
+          <menuitem action='CrossSection'/>
+          <menuitem action='RadialIntegration'/>
+          <menuitem action='IntegrateIntensities'/>
+          </placeholder>        
+          <placeholder name='y-actions'/>'''
+      else:
+        output+='''
+          <placeholder name='z-actions'/>
+          <placeholder name='y-actions'>
+          <menuitem action='CombinePoints'/>
+          </placeholder>'''
     output+='''
         <separator name='static6'/>
       </menu>
@@ -3383,3 +3453,115 @@ class PlotProfile:
 
 
 #------------------------------ PlotProfile Class ---------------------------------------#
+
+#++++++++++++++++++++++++++++ Redirection Filelike Objects +++++++++++++++++++++++++++++
+
+class RedirectOutput(object):
+  '''
+    Class to redirect all print statements to the statusbar when useing the GUI.
+  '''
+  
+  second_output=None
+
+  def __init__(self, plotting_session):
+    '''
+      Class consturctor.
+      
+      @param plotting_session A session object derived from GenericSession.
+    '''
+    self.content = []
+    self.plotting_session=plotting_session
+
+  def write(self, string):
+    '''
+      Add content.
+      
+      @param string Output string of stdout
+    '''
+    string=string.replace('\b', '')
+    if self.second_output:
+      self.second_output.write(string)
+    self.content+=string.splitlines()
+    while '' in self.content:
+      self.content.remove('')
+    if (len(self.content)>0):
+      self.plotting_session.statusbar.push(0, self.content[-1])
+      while gtk.events_pending():
+        gtk.main_iteration(False)
+  
+  def flush(self):
+    '''
+      Show last content line in statusbar.
+    '''
+    if (len(self.content)>0):
+      self.plotting_session.statusbar.push(0, self.content[-1])
+      while gtk.events_pending():
+        gtk.main_iteration(False)
+  
+  def fileno(self):
+    return 1
+
+class RedirectError(RedirectOutput):
+  '''
+    Class to redirect all error messages to a message dialog when useing the GUI.
+    The message dialog has an option to export a bugreport, which includes the active
+    measurement to help debugging.
+  '''
+  
+  def __init__(self, plotting_session):
+    '''
+      Class constructor, as in RedirectOutput and creates the message dialog.
+    '''
+    RedirectOutput.__init__(self, plotting_session)
+    self.messagebox=gtk.MessageDialog(parent=None, flags=0, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK_CANCEL, message_format='Errorbox')
+    self.messagebox.connect('response', self.response)
+    self.messagebox.set_title('Unecpected Error!')
+  
+  def write(self, string):
+    '''
+      Add content and show the dialog.
+      
+      @param string Output string of stderr
+    '''
+    string=string.replace('\b', '')
+    self.content.append(string)
+    while '\n' in self.content:
+      self.content.remove('\n')
+    self.messagebox.set_markup('An unexpected error has occured:\n'+'\n'.join(self.content)+\
+                              '\n\nDo you want to create a debug logfile?')
+    self.messagebox.show_all()
+  
+  def response(self, dialog, response_id):
+    '''
+      Hide the dialog on response and export debug information if response was OK.
+      
+      @param dialog The message dialog
+      @param response_id The dialog response ID
+    '''
+    self.messagebox.hide()
+    import time
+    from cPickle import dumps
+    if response_id==-5:
+      debug_log=open('debug.log', 'w')
+      debug_log.write('# This is a debug log file created by plot.py\n# The following error(s) have occured at %s.\n' % time.strftime('%m/%d/%y %H:%M:%S', time.localtime()))
+      debug_log.write('# The script has been started with the options:\n %s \n' % ' ; '.join(sys.argv))
+      debug_log.write('\n# Error Messages: \n\n')
+      debug_log.write('\n'.join(self.content))
+      debug_log.write('\n\n#-----------------------------start of pickled datasets-----------------------\n')
+      debug_log.write(dumps(self.plotting_session.active_session.active_file_data))
+      debug_log.write('\n#-----------------------------end of pickled datasets-----------------------\n')
+      debug_log.close()
+      msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log has been created.\n\nPlease upload it to the bugreport forum at\n\nhttp://atzes.homeip.net/plotwiki\n\nwith some additional information.\nFor larger files, please use zip or gzip first.")
+      msg.run()
+      msg.destroy()
+
+#---------------------------- Redirection Filelike Objects -----------------------------
+
+class MultiplotList(list):
+  '''
+    A list of measurements for a multiplot.
+  '''
+  def __init__(self, input_list):
+    self.title="Multiplot"
+    self.sample_name=str(input_list[0][0].sample_name)
+    list.__init__(self, input_list)

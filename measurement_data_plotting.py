@@ -31,7 +31,8 @@ def gnuplot_plot(session,
                  with_errorbars,
                  output_file=gnuplot_preferences.output_file_name,
                  additional_info='',
-                 fit_lorentz=False):
+                 fit_lorentz=False, 
+                 sample_name=None):
   '''
     Plotting with direct piping of the data to gnuplot, should work much faster
     Gnuplot.py must by installed and properly working.
@@ -50,7 +51,8 @@ def gnuplot_plot(session,
   '''
   gp=gnuplot_preferences # short form for gnuplot_preferences
   import Gnuplot
-  sample_name=datasets[0].sample_name
+  if not sample_name:
+    sample_name=datasets[0].sample_name
   file_numbers=[]
   for j, dataset in enumerate(datasets):
     for i, attachedset in enumerate(dataset.plot_together):
@@ -176,7 +178,8 @@ def gnuplot_plot_script(session,
                         with_errorbars,
                         output_file=gnuplot_preferences.output_file_name,
                         additional_info='',
-                        fit_lorentz=False): 
+                        fit_lorentz=False, 
+                        sample_name=None): 
   '''
     Function to plot with an additional data and gnuplot file and calling to the gnuplot program.
     Files are stored in temporary folder set in gnuplot_preferences.
@@ -198,7 +201,8 @@ def gnuplot_plot_script(session,
     for i, attachedset in enumerate(dataset.plot_together):
       file_numbers.append(str(j)+'-'+str(i))
       attachedset.export(session.TEMP_DIR+'tmp_data_'+str(j)+'-'+str(i)+'.out')
-  sample_name=datasets[0].sample_name
+  if not sample_name:
+    sample_name=datasets[0].sample_name
   if output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
@@ -225,7 +229,8 @@ def gnuplot_plot_script(session,
                                        with_errorbars,
                                        output_file,
                                        additional_info,
-                                       fit_lorentz)
+                                       fit_lorentz, 
+                                       sample_name)
   write_file=open(script_name,'w')
   write_file.write( gnuplot_file_text+'\n' )
   write_file.close()
@@ -306,7 +311,8 @@ def create_plot_script(session,
                        output_file=gnuplot_preferences.output_file_name,
                        additional_info='',
                        fit_lorentz=False, 
-                       output_file_prefix=None
+                       output_file_prefix=None, 
+                       sample_name=None
                        ):
   '''
       Create a script for the gnuplot program.
@@ -318,7 +324,8 @@ def create_plot_script(session,
   if output_file_prefix is None:
     output_file_prefix=session.TEMP_DIR+'tmp_data_'
   gp=gnuplot_preferences # define global gnuplot_preferences modul as local gp 
-  sample_name=datasets[0].sample_name
+  if not sample_name:
+    sample_name=datasets[0].sample_name
   file_numbers=[]
   inserted=0
   for j, dataset in enumerate(datasets):
