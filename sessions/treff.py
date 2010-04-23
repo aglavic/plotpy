@@ -1433,7 +1433,7 @@ class TreffSession(GenericSession):
         call_params.append(config.treff.FORTRAN_COMPILER_OPTIONS)
       if  config.treff.FORTRAN_COMPILER_MARCH!=None:
         call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
-      subprocess.call(call_params)
+      subprocess.call(call_params, shell=False)
       print 'Compiled'
     process = subprocess.Popen([exe, file_ent, str(self.max_iter)], 
                         shell=False, 

@@ -17,9 +17,6 @@ __status__ = "Production"
 known_transformations=[
                       # magnetism
                       ['H','Oe',1e-4,0,'μ_0·H','T'],
-                      ['2 Theta','°',2 , 0, 'Theta', '°'], 
-                      ['2 Theta','rad',2 , 0, 'Theta', 'rad'], 
-                      ['2 Theta','mrad',2 , 0, 'Theta', 'mrad'], 
                       ['emu',1e-3,0,'A·m²'],
                       # time
                       ['h', 24, 0, 'd'], 
@@ -36,6 +33,9 @@ known_transformations=[
                       # angle
                       ['°',pi/180,0,'rad'], 
                       ['rad',1000.,0,'mrad'], 
+                      ['2 Theta','°',0.5 , 0, 'Theta', '°'], 
+                      ['2 Theta','rad',0.5 , 0, 'Theta', 'rad'], 
+                      ['2 Theta','mrad',0.5 , 0, 'Theta', 'mrad'], 
                       # temperature
                       ['K', 1, -273.15, '°C']
                       ]

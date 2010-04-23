@@ -26,4 +26,16 @@ import scipy.optimize
 import scipy.special
 import ipython_view
 import IPython
+import IPython.Extensions
+import IPython.ipapi
+import gtk
+import gtk._lazyutils
+from gtk import keysyms
 import pygame.font
+
+
+import IPython.Shell
+if __name__=='__main__':
+  ips=IPython.Shell.start()
+  from IPython.Extensions import ipy_profile_none, ipy_defaults
+  ips.mainloop()

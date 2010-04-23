@@ -230,7 +230,7 @@ def gnuplot_plot_script(session,
                                        output_file,
                                        additional_info,
                                        fit_lorentz, 
-                                       sample_name)
+                                       sample_name=sample_name)
   write_file=open(script_name,'w')
   write_file.write( gnuplot_file_text+'\n' )
   write_file.close()

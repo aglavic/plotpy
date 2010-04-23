@@ -23,7 +23,7 @@ __url__ = "http://atzes.homeip.net/plotwiki"
 __description__='''Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.'''
 
 __scripts__=['plot.py']
-__py_modules__=['plot', 'plotting_gui', 'measurement_data_structure', 'measurement_data_plotting', 
+__py_modules__=['plot', 'plotting_gui', 'plotting_debug', 'measurement_data_structure', 'measurement_data_plotting', 
                 'fit_data', 'file_actions', 'py2exe_imports', 'ipython_view']
 __packages__=['config', 'read_data', 'sessions', 'sessions.reflectometer_fit']
 __package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 
@@ -43,17 +43,12 @@ for script in script_files:
   open(script+'.bat', 'w').write(line.replace('$', '%'))
 __scripts__+=script_files+win_batches
 
-#if ('install' in sys.argv) and (not 'win' in sys.platform) and len(sys.argv)==2:
-#  # For installation, test if the scripts are already installed.
-#  for lp in os.path.expandvars('$PATH').split(':'):
-#    for file in script_files:
-#      if os.path.exists(os.path.join(lp, file)) or\
-#        os.path.islink(os.path.join(lp, file)):
-#        if raw_input("%s exists, remove it first (Y/N)? " % os.path.join(lp, file)).lower() == 'y':
-#          os.remove(os.path.join(lp, file))
-#        else:
-#          continue
-#
+if '-test' in sys.argv:
+  sys.argv.remove('-test')
+  py2exe_test=True
+else:
+  py2exe_test=False
+
 if 'install' not in sys.argv:
   # Remove MANIFEST befor distributing to be sure no file is missed
   if os.path.exists('MANIFEST'):
@@ -145,7 +140,8 @@ setup(name=__name__,
       packages=__packages__, 
       package_data=__package_data__,
       requires=__requires__, #does not do anything
-      console = [ "plot.py" , "py2exe_imports.py"],
+      console = [ "py2exe_imports.py" ],
+      windows = [ "plot.py" ],
       options = __options__, 
      )
 
@@ -195,9 +191,9 @@ if ('install' in sys.argv) and len(sys.argv)==2:
     # Linux/OS-X installation
     pass
 
-# If not installing to python default path change a line in the script to add the program location
-# to pythons module search path when executing.
-# TODO: Try to make this work with all setup parameters not only --install-scripts + --prefix
+  # If not installing to python default path change a line in the script to add the program location
+  # to pythons module search path when executing.
+  # TODO: Try to make this work with all setup parameters not only --install-scripts + --prefix
 if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
   print "Adding module directory to python path in plot.py script."
   script=open(os.path.join(sys.argv[sys.argv.index('--install-scripts')+1], 'plot.py'), 'r')
@@ -209,7 +205,7 @@ if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
   script.close()
   
 # py2exe specific stuff to make it work:
-if "py2exe" in sys.argv:
+if "py2exe" in sys.argv and not py2exe_test:
   print "\n*** Copying gtk stuff ***"
   from glob import glob
   try:

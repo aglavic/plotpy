@@ -1,8 +1,10 @@
 [Desktop Entry]
 Encoding=UTF-8
 Name=Plot.py (SQUID Session)
+Name[de]=Plot.py (SQUID Sitzung)
 Version=0.6.3
 Comment=Plotting and manipulating SQUID and PPMS data
+Comment[de]=Plottet und verarbeitet Messdaten des SQUID und PPMS
 GenericName=Plot.py
 Terminal=false
 Icon=/usr/local/lib/python2.6/dist-packages/config/logo.png

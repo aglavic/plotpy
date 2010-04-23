@@ -1034,7 +1034,7 @@ class ReflectometerSession(GenericSession):
         call_params.append(config.reflectometer.FORTRAN_COMPILER_OPTIONS)
       if  config.reflectometer.FORTRAN_COMPILER_MARCH!=None:
         call_params.append(config.reflectometer.FORTRAN_COMPILER_MARCH)
-      subprocess.call(call_params)
+      subprocess.call(call_params, shell=False)
       print 'Compiled'
     process = subprocess.Popen([exe, file_ent, file_res, file_out+'.ref', file_out+'.sim', str(max_iter)], 
                         shell=False, 

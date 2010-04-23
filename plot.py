@@ -137,7 +137,8 @@ def initialize_gui(session, status_dialog=None):
   # GUI module
   import plotting_gui
   import gtk
-  return plotting_gui.ApplicationMainWindow(session, status_dialog)
+  # TODO:  Set different fonts for windows, as the standart font doesn't support all characters
+  return plotting_gui.ApplicationMainWindow(session, status_dialog=status_dialog)
 
 def initialize_debug(log_file='debug.log'):
   '''
@@ -170,14 +171,16 @@ if __name__ == '__main__':    #code to execute if called from command-line
       sys.stdout=status_dialog
     except:
       pass
+  else:
+    status_dialog=None
   active_session=initialize(sys.argv[1:])  
   if active_session.use_gui: # start a new gui session
-    if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
-      status_dialog.hide()
-    else:
-      status_dialog=None
     plotting_session=initialize_gui(active_session, status_dialog)
-    gtk.main() # start GTK engine
+    if getattr(plotting_session, 'destroyed_directly', False):
+      while gtk.events_pending():
+        gtk.main_iteration(False)
+    else:
+      gtk.main() # start GTK engine
   else: # in command line mode, just plot the selected data.
     active_session.plot_all()
 

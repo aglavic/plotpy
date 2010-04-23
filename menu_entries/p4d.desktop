@@ -1,8 +1,10 @@
 [Desktop Entry]
 Encoding=UTF-8
 Name=Plot.py (4-Circle Session)
+Name=Plot.py (4-Kreiser Sitzung)
 Version=0.6.3
 Comment=Plotting and manipulating 4circle data
+Comment[de]=Plottet und verarbeitet Messdaten des 4-Kreis Diffraktometers
 GenericName=Plot.py
 Terminal=false
 Icon=/usr/local/lib/python2.6/dist-packages/config/logo.png

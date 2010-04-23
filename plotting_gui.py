@@ -71,6 +71,7 @@ class ApplicationMainWindow(gtk.Window):
 
   active_dataset=property(get_active_dataset)
   geometry=((0, 0), (800, 600))
+  active_plot_geometry=(780, 550)
   
   #+++++++++++++++++++++++++++++++Window Constructor+++++++++++++++++++++++++++++++++++++#
   def __init__(self, active_session, parent=None, script_suf='', status_dialog=None):
@@ -363,9 +364,13 @@ class ApplicationMainWindow(gtk.Window):
         gtk.main_iteration(False)
       return_status_ok=self.add_file(None)
       if not return_status_ok:
-        self.destroy()
+        self.main_quit(store_config=False)
+        self.destroyed_directly=True
+        return
     self.check_add.set_active(True)
     self.check_add.toggled()
+    if self.status_dialog:
+      self.status_dialog.hide()
 
     #+++++++++++++ connecting events ++++++++++++++
     self.connect("event-after", self.update_picture)
@@ -421,29 +426,32 @@ class ApplicationMainWindow(gtk.Window):
   #----------------------------Interrupt Events----------------------------------#
 
   #++++++++++++++++++++++++++Menu/Toolbar Events+++++++++++++++++++++++++++++++++#
-  def main_quit(self, action=None):
+  def main_quit(self, action=None, store_config=True):
     '''
       When window is closed save the settings in home folder.
       All open dialogs are closed before exit.
     '''
-    try:
-      os.mkdir(os.path.expanduser('~')+'/.plotting_gui')
-    except OSError:
-      pass
-    # ConfigObj config structure for profiles
-    self.config_object['profiles']={}
-    for name, profile in self.profiles.items():
-      profile.write(self.config_object['profiles'])
-    del self.config_object['profiles']['default']
-    # ConfigObj Window parameters
-    self.config_object['Window']={
-                                  'size': self.geometry[1], 
-                                  'position': self.geometry[0], 
-                                  }
-    self.config_object.write()
+    if store_config:
+      if not os.path.exists(os.path.expanduser('~')+'/.plotting_gui'):
+        os.mkdir(os.path.expanduser('~')+'/.plotting_gui')
+      # ConfigObj config structure for profiles
+      self.config_object['profiles']={}
+      for name, profile in self.profiles.items():
+        profile.write(self.config_object['profiles'])
+      del self.config_object['profiles']['default']
+      # ConfigObj Window parameters
+      self.config_object['Window']={
+                                    'size': self.geometry[1], 
+                                    'position': self.geometry[0], 
+                                    }
+      self.config_object.write()
     for window in self.open_windows:
       window.destroy()
-    gtk.main_quit()
+    try:
+      # if the windows is destoryed before the main loop has started.
+      gtk.main_quit()
+    except RuntimeError:
+      pass
 
   def activate_about(self, action):
     '''
@@ -1103,6 +1111,7 @@ class ApplicationMainWindow(gtk.Window):
     # scrollbars.
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
     text_filed=gtk.Label()
+    plot_text=unicode(plot_text, 'utf-8', 'ignore')
     text_filed.set_markup(plot_text)
     sw.add_with_viewport(text_filed) # add textbuffer view widget
     table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0);
@@ -1118,7 +1127,7 @@ class ApplicationMainWindow(gtk.Window):
       # scrollbars.
       sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
       text_filed=gtk.Label()
-      text_filed.set_markup(self.last_plot_text)
+      text_filed.set_markup(unicode(self.last_plot_text, 'utf-8', 'ignore'))
       sw.add_with_viewport(text_filed) # add textbuffer view widget
       table.attach(sw, 0, 1, 3, 4, gtk.EXPAND|gtk.FILL, gtk.FILL, 0, 0);
     param_dialog.vbox.add(table)
@@ -1214,6 +1223,7 @@ class ApplicationMainWindow(gtk.Window):
                 0,                         0);
     from_data=gtk.Entry()
     from_data.set_width_chars(8)
+    from_data.set_text('{from}')
     from_data.set_text(str(parameters[1]))
     table.attach(from_data,
                 # X direction #          # Y direction
@@ -1222,6 +1232,7 @@ class ApplicationMainWindow(gtk.Window):
                 0,                         0);
     to_data=gtk.Entry()
     to_data.set_width_chars(8)
+    to_data.set_text('{to}')
     to_data.set_text(str(parameters[2]))
     table.attach(to_data,
                 # X direction #          # Y direction
@@ -1262,8 +1273,12 @@ class ApplicationMainWindow(gtk.Window):
 
     trans_box=gtk.combo_box_new_text()
     trans_box.append_text('empty')
+    trans_box.set_active(0)
     for trans in allowed_trans:
-      trans_box.append_text('%s -> %s' % (trans[0], trans[-1]))
+      if len(trans)==4:
+        trans_box.append_text('%s -> %s' % (trans[0], trans[3]))
+      else:
+        trans_box.append_text('%s -> %s' % (trans[0], trans[4]))
     transformations_dialog=gtk.Dialog(title='Transform Units/Dimensions:')
     transformations_dialog.set_default_size(600,150)
     try:
@@ -1294,7 +1309,7 @@ class ApplicationMainWindow(gtk.Window):
         trans=allowed_trans[index-1]
       else:
         trans=['', '', 1., 0, '', '']
-      self.get_new_transformation(trans, table, transformations_list)
+      self.get_new_transformation(trans, table, transformations_list, units, dimensions)
       trans_box.set_active(0)
       result=transformations_dialog.run()
     if result==1:
@@ -1304,28 +1319,15 @@ class ApplicationMainWindow(gtk.Window):
       self.rebuild_menus()
     transformations_dialog.destroy()
 
-  def get_new_transformation(self, transformations, dialog_table,  list):
+  def get_new_transformation(self, transformations, dialog_table,  list, units, dimensions):
     '''
       Create a entry field line for a unit transformation.
     '''
-    table=table=gtk.Table(10,1,False)
+    table=table=gtk.Table(11,1,False)
     entry_list=[]
     entry=gtk.Entry()
-    entry.set_width_chars(8)
+    entry.set_width_chars(10)
     if len(transformations)>4:
-      entry.set_text(transformations[0])
-    entry_list.append(entry)
-    table.attach(entry,
-                # X direction #          # Y direction
-                0, 1,                      0, 1,
-                gtk.EXPAND | gtk.FILL,     0,
-                0,                         0);
-
-    entry=gtk.Entry()
-    entry.set_width_chars(8)
-    if len(transformations)>4:
-      entry.set_text(transformations[1])
-    else:
       entry.set_text(transformations[0])
     entry_list.append(entry)
     table.attach(entry,
@@ -1333,16 +1335,50 @@ class ApplicationMainWindow(gtk.Window):
                 1, 2,                      0, 1,
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
+    selector=gtk.MenuBar()
+    selector_menu_button=gtk.MenuItem('↓')
+    selector.add(selector_menu_button)
+    selector_menu=gtk.Menu()
+    def set_entry(action, dim, unit):
+      # Put the selected unit and dimension in the entries
+      entry_list[0].set_text(dim)
+      entry_list[1].set_text(unit)
+      entry_list[4].set_text(dim)
+      entry_list[5].set_text(unit)
+    for i, dim in enumerate(dimensions):
+      add_menu=gtk.MenuItem("%s [%s]" % (dim, units[i]))
+      add_menu.connect('activate', set_entry, dim, units[i])
+      selector_menu.add(add_menu)
+    selector_menu_button.set_submenu(selector_menu)
     
-    label=gtk.Label(' * ')
-    table.attach(label,
+    table.attach(selector,
                 # X direction #          # Y direction
-                2, 3,                      0, 1,
+                0, 1,                      0, 1,
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
 
     entry=gtk.Entry()
-    entry.set_width_chars(8)
+    entry.set_width_chars(6)
+    if len(transformations)>4:
+      entry.set_text(transformations[1])
+    else:
+      entry.set_text(transformations[0])
+    entry_list.append(entry)
+    table.attach(entry,
+                # X direction #          # Y direction
+                2, 3,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+    
+    label=gtk.Label(' · ')
+    table.attach(label,
+                # X direction #          # Y direction
+                3, 4,                      0, 1,
+                gtk.EXPAND | gtk.FILL,     0,
+                0,                         0);
+
+    entry=gtk.Entry()
+    entry.set_width_chars(6)
     if len(transformations)>4:
       entry.set_text(str(transformations[2]))
     else:
@@ -1350,19 +1386,19 @@ class ApplicationMainWindow(gtk.Window):
     entry_list.append(entry)
     table.attach(entry,
                 # X direction #          # Y direction
-                3, 4,                      0, 1,
+                4, 5,                      0, 1,
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
 
     label=gtk.Label(' + ')
     table.attach(label,
                 # X direction #          # Y direction
-                4, 5,                      0, 1,
+                5, 6,                      0, 1,
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
 
     entry=gtk.Entry()
-    entry.set_width_chars(8)
+    entry.set_width_chars(6)
     if len(transformations)>4:
       entry.set_text(str(transformations[3]))
     else:
@@ -1370,19 +1406,19 @@ class ApplicationMainWindow(gtk.Window):
     entry_list.append(entry)
     table.attach(entry,
                 # X direction #          # Y direction
-                5, 6,                      0, 1,
+                6, 7,                      0, 1,
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
 
     label=gtk.Label(' -> ')
     table.attach(label,
                 # X direction #          # Y direction
-                6, 7,                      0, 1,
+                7, 8,                      0, 1,
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
 
     entry=gtk.Entry()
-    entry.set_width_chars(8)
+    entry.set_width_chars(10)
     if len(transformations)>4:
       entry.set_text(transformations[4])
     else:
@@ -1390,18 +1426,18 @@ class ApplicationMainWindow(gtk.Window):
     entry_list.append(entry)
     table.attach(entry,
                 # X direction #          # Y direction
-                7, 8,                      0, 1,
+                8, 9,                      0, 1,
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
 
     entry=gtk.Entry()
-    entry.set_width_chars(8)
+    entry.set_width_chars(6)
     if len(transformations)>4:
       entry.set_text(transformations[5])
     entry_list.append(entry)
     table.attach(entry,
                 # X direction #          # Y direction
-                8, 9,                      0, 1,
+                9, 10,                      0, 1,
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
     item=(table, entry_list)
@@ -1409,7 +1445,7 @@ class ApplicationMainWindow(gtk.Window):
     button=gtk.Button('DEL')
     table.attach(button,
                 # X direction #          # Y direction
-                9, 10,                      0, 1,
+                10, 11,                      0, 1,
                 gtk.EXPAND | gtk.FILL,     0,
                 0,                         0);
     dialog_table.attach(table,
@@ -1913,6 +1949,10 @@ class ApplicationMainWindow(gtk.Window):
     result=eii_dialog.run()
     if result==1:
       # User pressed OK, try to get all entry values
+      did_calculate=False
+      # if only one dataset is selected the values and errors of
+      # the integration are stored in a list an shown in a dialog afterwards
+      int_int_values=[]
       for x_pos, y_pos, radius in int_points:
         try:
           x_pos=float(x_pos.get_text())
@@ -1936,14 +1976,41 @@ class ApplicationMainWindow(gtk.Window):
           data_values.append(data_value)
           dataset=data_list[entry[1].get_active()]
           data_indices.append((dataset[0], dataset[1]))
-        if len(data_indices)<2:
-          print "You need to calculate at least 2 integrated intensities."
+        if len(data_indices)==0:
+          print "You need to select at least one dataset."
+          break
+        elif len(data_indices)==1:
+          dataset=self.active_session.file_data[data_indices[0][0]][data_indices[0][1]]
+          value, error=self.file_actions.integrate_around_point(
+                                          x_pos, y_pos, radius, dataset)
+          int_int_values.append((x_pos, y_pos, value, error))
           continue
         self.file_actions.activate_action('integrate_intensities', x_pos, y_pos, radius, 
                                                 dimension.get_text(), unit.get_text(), 
                                                 data_indices, data_values)
-      self.replot()
+        did_calculate=True
+      if did_calculate:
+        self.replot()
     eii_dialog.destroy()
+    if len(int_int_values)>0:
+      self.show_integrated_intensities(int_int_values)
+
+  def show_integrated_intensities(self, int_int_values):
+    '''
+      Show a Dialog with the values of the integrated intensities
+      calculated in extract_integrated_intensities
+      
+      @param int_int_values List of (x-position,y-position,value,error) for the intensities
+    '''
+    message="Calculated integrated intensities:\n\n"
+    for item in int_int_values:
+      message+="(%.2f,%.2f)\t →   <b>%g</b> ± %g\n" % item
+    dialog=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                             type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE)
+    dialog.set_title('Result')
+    dialog.set_markup(unicode(message, 'utf-8', 'ignore'))
+    dialog.show_all()
+    dialog.connect('response', lambda *ignore: dialog.destroy())
 
   def get_position_selection(self, action, int_points, position_table):
     '''
@@ -2326,12 +2393,12 @@ class ApplicationMainWindow(gtk.Window):
       for plotlist in self.multiplot:
         if not self.measurement[self.index_mess] in [item[0] for item in plotlist]:
           continue
-        multi_file_name=plotlist[0][1]+'_multi_'
+        multi_file_name=plotlist[0][1] + '_multi_'+ plotlist[0][0].number + '.' + self.set_file_type
         if action.get_name()=='ExportAs':
           #++++++++++++++++File selection dialog+++++++++++++++++++#
-          file_dialog=gtk.FileChooserDialog(title='Export multi-plot as...', action=gtk.FILE_CHOOSER_ACTION_SAVE, 
-                                            buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, 
-                                                     gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+          file_dialog=ExportFileChooserDialog(self.active_session.picture_width, 
+                                            self.active_session.picture_height, 
+                                            title='Export multi-plot as...')
           file_dialog.set_default_response(gtk.RESPONSE_OK)
           file_dialog.set_current_name(os.path.split(plotlist[0][1] + '_multi_'+ \
                                        plotlist[0][0].number + '.' + self.set_file_type)[1])
@@ -2351,6 +2418,7 @@ class ApplicationMainWindow(gtk.Window):
           response = file_dialog.run()
           if response == gtk.RESPONSE_OK:
             self.active_folder=file_dialog.get_current_folder()
+            self.active_session.picture_width, self.active_session.picture_height=file_dialog.get_with_height()
             multi_file_name=file_dialog.get_filename()
           file_dialog.destroy()
           if response != gtk.RESPONSE_OK:
@@ -2373,9 +2441,9 @@ class ApplicationMainWindow(gtk.Window):
       new_name=output_file_name
       if action.get_name()=='ExportAs':
         #++++++++++++++++File selection dialog+++++++++++++++++++#
-        file_dialog=gtk.FileChooserDialog(title='Export plot as...', 
-                                          action=gtk.FILE_CHOOSER_ACTION_SAVE, 
-                                          buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+        file_dialog=ExportFileChooserDialog(self.active_session.picture_width, 
+                                            self.active_session.picture_height, 
+                                            title='Export plot as...')
         file_dialog.set_default_response(gtk.RESPONSE_OK)
         file_dialog.set_current_name(os.path.split(
                       self.input_file_name+'_'+ self.measurement[self.index_mess].number+'.'+self.set_file_type)[1])
@@ -2391,9 +2459,12 @@ class ApplicationMainWindow(gtk.Window):
         filter.set_name("All files")
         filter.add_pattern("*")
         file_dialog.add_filter(filter)
+        # get hbox widget for the entries
+        file_dialog.show_all()
         response = file_dialog.run()
         if response == gtk.RESPONSE_OK:
           self.active_folder=file_dialog.get_current_folder()
+          self.active_session.picture_width, self.active_session.picture_height=file_dialog.get_with_height()
           new_name=file_dialog.get_filename()
         elif response == gtk.RESPONSE_CANCEL:
           file_dialog.destroy()
@@ -2492,7 +2563,7 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Reexecute the last makro.
     '''
-    if not self.last_makro is None:
+    if getattr(self, 'last_makro', False):
       self.file_actions.run_makro(self.last_makro)
       self.rebuild_menus()
       self.replot()
@@ -2533,22 +2604,23 @@ class ApplicationMainWindow(gtk.Window):
     import scipy
     from copy import deepcopy
 
-    FONT = "Luxi Mono 10"
+    FONT = "Mono 8"
 
     ipython_dialog= gtk.Dialog(title="IPython Console", parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
     ipython_dialog.set_size_request(750,550)
     ipython_dialog.set_resizable(True)
     sw = gtk.ScrolledWindow()
     sw.set_policy(gtk.POLICY_AUTOMATIC,gtk.POLICY_AUTOMATIC)
-    ipview = IPythonView("""      This is an interactive IPython session with direct access to the program.
-      You have the whole python functionality and can interact with the programs objects.
+    ipview = IPythonView("""    This is an interactive IPython session with direct access to the program.
+    You have the whole python functionality and can interact with the programs objects.
 
     Functions:
       replot \tFunction to replot the dataset
       dataset \tFunction to get the active MeasurementData object
       get_xyz \tReturn 3 numpy arrays of the x,y and z columns from the active dataset
       get_all \tReturn all data columns of the active dataset
-      new_xyz \tCreate a new plot with changed columns, takes three lists or arrays as input
+      new_xyz \tCreate a new plot with changed columns, takes three lists or 
+              \tarrays as input. For line plots the last parameter is 'None'.
       new_all \tCreate a new plot from a list of all data columns, the list 
               \thas to have the same length as returned by get_all
 
@@ -2560,9 +2632,8 @@ class ApplicationMainWindow(gtk.Window):
       np \tNumpy
       sp \tScipy
 
-    Remark: This functionality is mainly for developers. If you are experienced
-              in python it is recommanded to use the get_... and new_... functions.
-    """)
+    Remark: This functionality is mainly for developers. If you are a user experienced
+            in python it is recommanded to use the get_... and new_... functions.\n\n""")
     ipview.modify_font(pango.FontDescription(FONT))
     ipview.set_wrap_mode(gtk.WRAP_CHAR)
     sys.stderr=ipview
@@ -2766,7 +2837,7 @@ class ApplicationMainWindow(gtk.Window):
     '''
     # in windows we have to wait for the picture to be written to disk
     if self.active_session.OPERATING_SYSTEM=='windows':
-      sleep(0.1)
+      sleep(0.05)
       for i in range(100):
         if os.path.exists(self.active_session.TEMP_DIR + 'plot_temp.png'):
           if os.path.getsize(self.active_session.TEMP_DIR + 'plot_temp.png') > 1000:
@@ -2774,11 +2845,15 @@ class ApplicationMainWindow(gtk.Window):
           sleep(0.1)
         else:
           sleep(0.1)
+      if os.path.getsize(self.active_session.TEMP_DIR + 'plot_temp.png') < 1000:
+        # if this was not successful stop trying.
+        return False
     # TODO: errorhandling
     self.image_pixbuf=gtk.gdk.pixbuf_new_from_file(self.active_session.TEMP_DIR + 'plot_temp.png')
     s_alloc=self.image.get_allocation()
     pixbuf=self.image_pixbuf.scale_simple(s_alloc.width, s_alloc.height, gtk.gdk.INTERP_BILINEAR)
     self.image.set_from_pixbuf(pixbuf)
+    return True
 
   def image_resize(self, widget, rectangel):
     '''
@@ -2796,7 +2871,8 @@ class ApplicationMainWindow(gtk.Window):
       self.image_do_resize=True
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
-            with_errorbars, output_file=gnuplot_preferences.output_file_name, fit_lorentz=False):
+            with_errorbars, output_file=gnuplot_preferences.output_file_name, 
+            fit_lorentz=False, sample_name=None):
     '''
       Plot via script file instead of using python gnuplot pipeing.
       
@@ -2810,7 +2886,8 @@ class ApplicationMainWindow(gtk.Window):
                                                          names,
                                                          with_errorbars,
                                                          output_file,
-                                                         fit_lorentz=False)
+                                                         fit_lorentz=False, 
+                                                         sample_name=sample_name)
 
   def replot(self, action=None):
     '''
@@ -2825,8 +2902,10 @@ class ApplicationMainWindow(gtk.Window):
     self.logz.set_active(self.measurement[self.index_mess].logz)
     # wait for all gtk events to finish to get the right size
     print "Plotting"
-    while gtk.events_pending():
+    i=0
+    while gtk.events_pending() and i<10:
       gtk.main_iteration(False)
+      i+=1
     self.frame1.set_current_page(0)
     self.active_session.picture_width=str(self.image.get_allocation().width)
     self.active_session.picture_height=str(self.image.get_allocation().height)
@@ -2865,10 +2944,10 @@ class ApplicationMainWindow(gtk.Window):
       print 'Gnuplot error!'
       self.show_last_plot_params(None)
     else:
-      self.set_image()
       self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
       self.active_plot_geometry=(self.widthf, self.heightf)
       self.reset_statusbar()
+      self.set_image()
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
 
   def reset_statusbar(self): 
@@ -2948,7 +3027,6 @@ class ApplicationMainWindow(gtk.Window):
         <menuitem action='Export'/>
         <menuitem action='ExportAs'/>
         <menuitem action='ExportAll'/>
-        <menuitem action='MultiPlotExport'/>
         <separator name='static1'/>
         <menuitem action='Print'/>
         <menuitem action='PrintAll'/>
@@ -3513,7 +3591,8 @@ class RedirectError(RedirectOutput):
       Class constructor, as in RedirectOutput and creates the message dialog.
     '''
     RedirectOutput.__init__(self, plotting_session)
-    self.messagebox=gtk.MessageDialog(parent=None, flags=0, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK_CANCEL, message_format='Errorbox')
+    self.messagebox=gtk.MessageDialog(parent=None, flags=0, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK_CANCEL, 
+                                      message_format='Errorbox')
     self.messagebox.connect('response', self.response)
     self.messagebox.set_title('Unecpected Error!')
   
@@ -3527,8 +3606,12 @@ class RedirectError(RedirectOutput):
     self.content.append(string)
     while '\n' in self.content:
       self.content.remove('\n')
-    self.messagebox.set_markup('An unexpected error has occured:\n'+'\n'.join(self.content)+\
-                              '\n\nDo you want to create a debug logfile?')
+    message_text='An unexpected error has occured:\n'
+    message_text+='\n'.join(self.content)
+    message_text+='\n\nDo you want to create a debug logfile?'
+    # < signs can cause an gtk.Warning message because they get confused with markup tags
+    message_text=message_text.replace('<', '[').replace('>', ']')
+    self.messagebox.set_markup(unicode(message_text, 'utf-8', 'ignore'))
     self.messagebox.show_all()
   
   def response(self, dialog, response_id):
@@ -3554,8 +3637,82 @@ class RedirectError(RedirectOutput):
       msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log has been created.\n\nPlease upload it to the bugreport forum at\n\nhttp://atzes.homeip.net/plotwiki\n\nwith some additional information.\nFor larger files, please use zip or gzip first.")
       msg.run()
       msg.destroy()
+    else:
+      self.content=[]
 
 #---------------------------- Redirection Filelike Objects -----------------------------
+
+#+++++++++++++++++++ FileChooserDialog with entries for with and height ++++++++++++++++
+
+class ExportFileChooserDialog(gtk.FileChooserDialog):
+  '''
+    A file chooser dialog with two entries for with and height of an export image.
+  '''
+  
+  def __init__(self, width, height, *args, **opts):
+    '''
+      Class constructor which adds two entries for with and height.
+    '''
+    gtk.FileChooserDialog.__init__(self, *args, action=gtk.FILE_CHOOSER_ACTION_SAVE, 
+                                          buttons=(gtk.STOCK_CANCEL, 
+                                                   gtk.RESPONSE_CANCEL, 
+                                                   gtk.STOCK_SAVE, 
+                                                   gtk.RESPONSE_OK), **opts)
+    self.width=width
+    self.height=height
+    # Get the top moste table widget from the dialog
+    table=self.vbox.get_children()[0].get_children()[0].get_children()[0].get_children()[0]
+    label=gtk.Label('width')
+    table.attach(label, 
+            # X direction #          # Y direction
+            3, 4,                      0, 1,
+            0,                       gtk.FILL,
+            0,                         0)
+    label=gtk.Label('height')
+    table.attach(label, 
+            # X direction #          # Y direction
+            4, 5,                      0, 1,
+            0,                       gtk.FILL,
+            0,                         0)
+    width_ent=gtk.Entry()
+    width_ent.set_text(width)      
+    width_ent.set_width_chars(4)
+    self.width_entry=width_ent
+    height_ent=gtk.Entry()
+    height_ent.set_text(height) 
+    height_ent.set_width_chars(4)
+    self.height_entry=height_ent
+    table.attach(width_ent, 
+            # X direction #          # Y direction
+            3, 4,                      1, 2,
+            0,                       gtk.FILL,
+            0,                         0)
+    table.attach(height_ent, 
+            # X direction #          # Y direction
+            4, 5,                      1, 2,
+            0,                       gtk.FILL,
+            0,                         0)
+    table.show_all()
+    
+  def get_with_height(self):
+    '''
+      Return width and height of the entries.
+    '''
+    width=self.width
+    height=self.height
+    try:
+      int_width=int(self.width_entry.get_text())
+      width=str(int_width)
+    except ValueError:
+      pass
+    try:
+      int_height=int(self.height_entry.get_text())
+      height=str(int_height)
+    except ValueError:
+      pass
+    return width, height
+
+#+++++++++++++++++++ FileChooserDialog with entries for with and height ++++++++++++++++
 
 class MultiplotList(list):
   '''

@@ -635,6 +635,8 @@ class MakroRepr:
     '''
       String representation for the makro.
     '''
+    if self.string.strip()=="":
+      return ""
     out=self.string.splitlines()
     def getlines(item):
       return item.split('=', 1)[1]
