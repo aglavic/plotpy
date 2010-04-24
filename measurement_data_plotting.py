@@ -425,16 +425,10 @@ def postscript_replace(string):
   '''
     Replace special characters when using Postscript export instead of png.
   '''
-  # TODO: Add common characters for replacement.
-  # mu, cdot, square, alpha, gamma, delta, Theta, degree
-  return string.replace('\xb5','{/Symbol m}').\
-  replace(u'\xb7','\\267').\
-  replace(u'\xb2','\\262').\
-  replace(u'\u03b1','{/Symbol a}').\
-  replace(u'\u03b3','{/Symbol g}').\
-  replace(u'\u03b4','{/Symbol d}').\
-  replace(u'\u03b8','{/Symbol T}').\
-  replace(u'\xb0','\\260')
+  for from_char, to_char in gnuplot_preferences.postscript_characters:
+    string=string.replace(from_char, to_char)
+  return string
+
 
 def further_replacement(string):
   '''

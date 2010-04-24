@@ -210,7 +210,7 @@ class ReflectometerSession(GenericSession):
         self.units=dataset.units()
         dataset.process_function(self.counts_to_cps)
         dataset.unit_trans([['counts',1,0,'counts/s']])
-      dataset.short_info=' started at Th='+str(round(th,4))+' 2Th='+str(round(twoth,4))+' Phi='+str(round(phi,4))
+      dataset.short_info=' started at Θ='+str(round(th,4))+' 2Θ='+str(round(twoth,4))+' φ='+str(round(phi,4))
       if self.export_for_fit: # export fit files
         self.export_fit(dataset,  filename)
         simu=read_data.reflectometer.read_simulation(self.TEMP_DIR+'fit_temp.sim')
@@ -256,8 +256,8 @@ class ReflectometerSession(GenericSession):
     '''
       Create an alpha_i vs. alpha_f map of all Theta scans in the active data list.
     '''
-    created_map=MeasurementData([['2Theta', '°'], 
-                                 ['Theta', '°'],
+    created_map=MeasurementData([['2Θ', '°'], 
+                                 ['Θ', '°'],
                                  ['α_i', '°'], 
                                  ['α_f', '°'], 
                                  ['intensity', 'counts/s'], 
@@ -866,8 +866,8 @@ class ReflectometerSession(GenericSession):
     '''
     dataset=window.measurement[window.index_mess]
       # convert x values from angle to q
-    dataset.unit_trans([['Theta', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
-                      ['2 Theta', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
+    dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
+                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
     data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, ' ', xfrom=self.x_from, xto=self.x_to)
     self.active_file_data.fit_object.number_of_points=data_lines
     self.active_file_data.fit_object.set_fit_constrains()
@@ -1141,8 +1141,8 @@ class ReflectometerSession(GenericSession):
       #------------------- create fit parameters object -------------------
     self.active_file_data.fit_object.set_fit_constrains() # set constrained parameters for multilayer
       # convert x values from angle to q
-    dataset.unit_trans([['Theta', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
-                      ['2 Theta', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])
+    dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
+                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])
       # first guess for scaling factor is the maximum intensity
     self.active_file_data.fit_object.scaling_factor=(dataset.max(xstart=0.005)[1]/1e5)
       # first guess for the background is the minimum intensity
@@ -1150,8 +1150,8 @@ class ReflectometerSession(GenericSession):
     #+++++ Try to refine the scaling factorn and roughnesses +++++
     if self.try_refine: 
       print "Try to refine scaling"
-      dataset.unit_trans([['Theta', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
-                      ['2 Theta', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
+      dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
+                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
       self.refine_scaling(dataset)
       print "Try to refine roughnesses"
       self.refine_roughnesses(dataset)

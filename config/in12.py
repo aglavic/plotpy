@@ -27,11 +27,11 @@ column_dimensions=(
 
 name_replacements=(
                 ('A1', 'mono. tilt'), 
-                ('A2', 'mono. 2Theta'), 
-                ('A3', 'omega'), 
-                ('A4', '2Theta'), 
+                ('A2', 'mono. 2Θ'), 
+                ('A3', 'ω'), 
+                ('A4', '2Θ'), 
                 ('A5', 'ana. tilt'), 
-                ('A6', 'ana. 2Theta'), 
+                ('A6', 'ana. 2Θ'), 
                 ('CNTS', 'Intensity'), 
                 ('QH', 'h'), 
                 ('QK', 'k'), 

@@ -114,3 +114,25 @@ defined_color_patterns={
                         }
 # title for a curve
 titles='[titles_add]'
+
+postscript_characters= [ 
+          ('µ','{/Symbol m}'), 
+          ('°','\\260'), 
+          ('·','\\267'), 
+          ('²','\\262'), 
+          ('α','{/Symbol a}'), 
+          ('β','{/Symbol b}'), 
+          ('γ','{/Symbol g}'), 
+          ('Γ','{/Symbol G}'), 
+          ('δ','{/Symbol d}'), 
+          ('φ','{/Symbol f}'), 
+          ('χ','{/Symbol c}'), 
+          ('π','{/Symbol p}'), 
+          ('σ','{/Symbol s}'), 
+          ('ω','{/Symbol w}'), 
+          ('Σ','{/Symbol S}'), 
+          ('Δ','{/Symbol D}'), 
+          ('Ω','{/Symbol W}'), 
+          ('Θ','{/Symbol Q}'), 
+          ('Å','A'), 
+]

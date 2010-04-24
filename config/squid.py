@@ -21,7 +21,7 @@ squid_factor=0.00057486103 # scalation factor to calculate the mag. moment
 
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
 TRANSFORMATIONS=[\
-['H','Oe',1e-4,0,'μ_0·H','T'],\
+['H','Oe',1e-4,0,'µ_0·H','T'],\
 ['emu',1e-3,0,'A·m²'],\
 ['s',1./60,0,'min']\
 ]

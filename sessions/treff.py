@@ -71,9 +71,12 @@ class TreffSession(GenericSession):
   FILE_WILDCARDS=(('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'), ('Zip Archives','*.zip'), ('All','*'))  
   TRANSFORMATIONS=[\
                   ['mrad',1/config.treff.GRAD_TO_MRAD,0,'°'],
-                  ['detector', 'mrad', 1., 0, '2Theta', 'mrad'], 
-                  ['detector', 'rad', 1., 0, '2Theta', 'rad'], 
-                  ['detector', '°', 1., 0, '2Theta', '°'], 
+                  ['detector', 'mrad', 1., 0, '2Θ', 'mrad'], 
+                  ['detector', 'rad', 1., 0, '2Θ', 'rad'], 
+                  ['detector', '°', 1., 0, '2Θ', '°'], 
+                  ['omega', 'mrad', 1., 0, 'ω', 'mrad'], 
+                  ['omega', 'rad', 1., 0, 'ω', 'rad'], 
+                  ['omega', '°', 1., 0, 'ω', '°'], 
                   ]  
   import_images=True
   x_from=5 # fit only x regions between x_from and x_to
@@ -839,10 +842,10 @@ class TreffSession(GenericSession):
       scatter_density_Np_x=gtk.CheckButton(label='Np', use_underline=True)
       scatter_density_Np_x.connect('toggled', self.toggle_fit_option, layer_params[layer_index], 3)
       align_table.attach(scatter_density_Np_x, 3, 4, 1, 2, gtk.FILL, gtk.FILL, 0, 0)
-      theta_x=gtk.CheckButton(label='theta', use_underline=True)
+      theta_x=gtk.CheckButton(label='Θ', use_underline=True)
       theta_x.connect('toggled', self.toggle_fit_option, layer_params[layer_index], 4)
       align_table.attach(theta_x, 1, 2, 3, 4, gtk.FILL, gtk.FILL, 0, 0)
-      phi_x=gtk.CheckButton(label='phi', use_underline=True)
+      phi_x=gtk.CheckButton(label='φ', use_underline=True)
       phi_x.connect('toggled', self.toggle_fit_option, layer_params[layer_index], 5)
       align_table.attach(phi_x, 2, 3, 3, 4, gtk.FILL, gtk.FILL, 0, 0)
       roughness_x=gtk.CheckButton(label='roughness', use_underline=True)
@@ -1200,7 +1203,7 @@ class TreffSession(GenericSession):
       if dataset:
         dataset.unit_trans([['°', math.pi/180.*1000., 0, 'mrad'], 
                             ['rad', 1000., 0, 'mrad']])    
-        dataset.unit_trans([['2Theta', 'mrad', 0.5, 0, 'Theta', 'mrad']])    
+        dataset.unit_trans([['2Θ', 'mrad', 0.5, 0, 'Θ', 'mrad']])    
         data_lines.append(dataset.export(os.path.join(folder, datafile_prefix+names[i]+'.ref'), 
                                          False, ' ', 
                                          xfrom=self.x_from, xto=self.x_to, 

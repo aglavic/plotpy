@@ -669,8 +669,8 @@ class DNSSession(GenericSession):
           channels=['x', 'x', 'y', 'y', 'z', 'z']
           scan.dns_info['pol_channel']=channels[i]
         # Create the objects for every polarization chanel
-        columns=[['Detectorbank', '°'], ['Omega', '°'], ['OmegaRAW', '°'], 
-                 ['2Theta', '°'], ['Detector', '']]+\
+        columns=[['Detectorbank', '°'], ['ω', '°'], ['ω-RAW', '°'], 
+                 ['2Θ', '°'], ['Detector', '']]+\
                  [[scan.dimensions()[j], scan.units()[j]] for j in range(1, len(scan.units()))]+\
                  [['I_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
                  [['error_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\

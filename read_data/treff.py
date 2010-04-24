@@ -411,7 +411,7 @@ def read_simulation(file_name):
   sim_file=open(file_name,'r')
   sim_lines=sim_file.readlines()
   sim_file.close()
-  data=MeasurementData([['Theta','mrad'],['Intensity','a.u.'],['Unknown','counts/s'],['Unknown2','counts/s']],[],0,1,2)
+  data=MeasurementData([['Θ','mrad'],['Intensity','a.u.'],['Unknown','counts/s'],['Unknown2','counts/s']],[],0,1,2)
   data.info='Simulation'
   for line in sim_lines:
     if len(line.split())>1:
