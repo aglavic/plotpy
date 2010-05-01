@@ -23,6 +23,8 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
+persistene_plots=0
+
 def gnuplot_plot(session, 
                  datasets,
                  file_name_prefix, 
@@ -167,7 +169,7 @@ def gnuplot_plot(session,
   gplot.close()
   # read stdout and stderr from gnuplot
   output=(session.gnuplot_output[0].read(), session.gnuplot_output[1].read())
-  return unicode(output[1]) # return the stderror
+  return output[1] # return the stderror
 
 def gnuplot_plot_script(session,  
                         datasets,
@@ -179,7 +181,8 @@ def gnuplot_plot_script(session,
                         output_file=gnuplot_preferences.output_file_name,
                         additional_info='',
                         fit_lorentz=False, 
-                        sample_name=None): 
+                        sample_name=None, 
+                        show_persistent=False): 
   '''
     Function to plot with an additional data and gnuplot file and calling to the gnuplot program.
     Files are stored in temporary folder set in gnuplot_preferences.
@@ -197,10 +200,18 @@ def gnuplot_plot_script(session,
   '''
   gp=gnuplot_preferences # short form for gnuplot_preferences
   file_numbers=[]
+  if show_persistent:
+    global persistene_plots
+    tmp_name='tmp_data_p-%i_' % persistene_plots
+    persistene_plots+=1
+    output_file_prefix=session.TEMP_DIR+tmp_name
+  else:
+    tmp_name='tmp_data_'
+    output_file_prefix=session.TEMP_DIR+tmp_name
   for j, dataset in enumerate(datasets):
     for i, attachedset in enumerate(dataset.plot_together):
       file_numbers.append(str(j)+'-'+str(i))
-      attachedset.export(session.TEMP_DIR+'tmp_data_'+str(j)+'-'+str(i)+'.out')
+      attachedset.export(output_file_prefix+str(j)+'-'+str(i)+'.out')
   if not sample_name:
     sample_name=datasets[0].sample_name
   if output_file.rsplit('.',1)[1]=='ps':
@@ -230,22 +241,31 @@ def gnuplot_plot_script(session,
                                        output_file,
                                        additional_info,
                                        fit_lorentz, 
-                                       sample_name=sample_name)
+                                       output_file_prefix=output_file_prefix, 
+                                       sample_name=sample_name, 
+                                       show_persistent=show_persistent)
   write_file=open(script_name,'w')
   write_file.write( gnuplot_file_text+'\n' )
   write_file.close()
   try:
-    proc = subprocess.Popen([session.GNUPLOT_COMMAND, script_name], 
+    if show_persistent:
+      params=[session.GNUPLOT_COMMAND, '-persist', script_name]      
+    else:
+      params=[session.GNUPLOT_COMMAND, script_name]
+    proc = subprocess.Popen(params, 
                         shell=False, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         stdin=subprocess.PIPE, 
                         )
-    output = proc.communicate()
+    if show_persistent:
+      output=('', '')
+    else:
+      output = proc.communicate()
   except:
     print "\n!Problem communicating with Gnuplot, please check your system settings!"
     print "Gnuplot command used: %s\n" % session.GNUPLOT_COMMAND
-    exit()
+    return "\n!Problem communicating with Gnuplot, please check your system settings!"
   try:
     # on older version of python this doesn't work
     proc.stdin.close()
@@ -312,7 +332,8 @@ def create_plot_script(session,
                        additional_info='',
                        fit_lorentz=False, 
                        output_file_prefix=None, 
-                       sample_name=None
+                       sample_name=None, 
+                       show_persistent=False
                        ):
   '''
       Create a script for the gnuplot program.
@@ -334,7 +355,10 @@ def create_plot_script(session,
       if i>0:
         names.insert(j+inserted+1, attachedset.short_info)
         inserted+=1
-  if output_file.rsplit('.',1)[1]=='ps':
+  if show_persistent:
+    postscript_export=False
+    terminal=gp.set_output_terminal_wxt
+  elif output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
   else:
@@ -347,12 +371,13 @@ def create_plot_script(session,
     plotting_param=gp.plotting_parameters
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)
   gnuplot_file_text=gp.GNUPLOT_FILE_HEAD+\
-                    'set term '+terminal+'\n'+\
-                    'set output "'+output_file+'"\n'+\
-                    'set encoding '+gp.ENCODING+'\n'+\
-                    'set xlabel "'+gp.x_label+'"\n'+\
-                    'set ylabel "'+gp.y_label+'"\n'+\
-                    'set title "'+gp.plot_title+'"\n'
+                    'set term '+terminal+'\n'
+  if not show_persistent:
+    gnuplot_file_text+='set output "'+output_file+'"\n'
+  gnuplot_file_text+='set encoding '+gp.ENCODING+'\n'+\
+                     'set xlabel "'+gp.x_label+'"\n'+\
+                     'set ylabel "'+gp.y_label+'"\n'+\
+                     'set title "'+gp.plot_title+'"\n'
   if (len(datasets)==1) and (len(datasets[0].plot_together)==1): # if there is only one graph don't show a key
     gnuplot_file_text+='unset key\n'
   gnuplot_file_text+=datasets[0].plot_options

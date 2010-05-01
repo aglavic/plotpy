@@ -65,7 +65,9 @@ known_measurement_types={
                          'treff': ('treff', 'TreffSession', ['___']), 
                          'in12': ('in12', 'IN12Session', ['___']), 
                          'dns': ('dns', 'DNSSession', ['d_dat']), 
-                         'kws2': ('kws2', 'KWS2Session', ['DAT']), 
+                         'kws2': ('kws2', 'KWS2Session', ['DAT']),                         
+                         'scd': ('single_diff', 'SingleDiffSession', ['___']), 
+                         'generic': ('generic', 'GenericSession', ['___']), 
                          }
 
 '''

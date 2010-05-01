@@ -24,6 +24,7 @@ __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
 detector_sensitivities={}
+background_data={}
 
 def read_data(file_name):
   '''
@@ -43,6 +44,8 @@ def read_data(file_name):
       setup=value
   if setup['DETECTOR_SENSITIVITY'] and not setup['DETECTOR_SENSITIVITY'] in detector_sensitivities:
     read_sensitivities(folder, setup['DETECTOR_SENSITIVITY'])
+  if setup['BACKGROUND'] and not setup['BACKGROUND'] in detector_sensitivities:
+    read_background(folder, setup['BACKGROUND'])
   if file_name.endswith('.gz'):
     # use gziped data format
     import gzip
@@ -71,7 +74,6 @@ def create_dataobj(data_lines, header_lines, countingtime, setup):
   '''
     Create a MeasurementData object form the input datalines.
   '''
-  detector_sensitivities
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
                            ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
@@ -82,9 +84,23 @@ def create_dataobj(data_lines, header_lines, countingtime, setup):
   error_array=sqrt(data_array)
   corrected_data=data_array/countingtime
   corrected_error=error_array/countingtime
-  if setup['DETECTOR_SENSITIVITY']:
-    corrected_data/=detector_sensitivities[setup['DETECTOR_SENSITIVITY']]
-    corrected_error/=detector_sensitivities[setup['DETECTOR_SENSITIVITY']]
+  if setup['BACKGROUND']:
+    print "\tcorrecting for background"
+    corrected_data-=background_data[setup['BACKGROUND']][0]
+    corrected_error=sqrt(corrected_error**2+background_data[setup['BACKGROUND']][1]**2)
+    if setup['BACKGROUND']:
+      print "\tcorrecting for detector sensitivity"
+      ds=detector_sensitivities[setup['DETECTOR_SENSITIVITY']]-\
+                        background_data[setup['BACKGROUND']][0]
+      ds/=ds.mean()
+      corrected_data/=ds
+      corrected_error/=ds
+  elif setup['DETECTOR_SENSITIVITY']:
+    print "\tcorrecting for detector sensitivity"
+    ds=detector_sensitivities[setup['DETECTOR_SENSITIVITY']]
+    ds/=ds.mean()
+    corrected_data/=ds
+    corrected_error/=ds
   qy_array=4.*pi/config.kws2.LAMBDA_N*\
            sin(arctan((y_array-setup['CENTER_X'])*config.kws2.PIXEL_SIZE/setup['DETECTOR_DISTANCE'])/2.)
   qz_array=4.*pi/config.kws2.LAMBDA_N*\
@@ -104,9 +120,10 @@ def create_dataobj(data_lines, header_lines, countingtime, setup):
   
 def read_sensitivities(folder, name):
   '''
-    Read data from the sensitivity file and normalize it.
+    Read data from the sensitivity file.
   '''
   global detector_sensitivities
+  print "\treading detector sesitivity from %s" % name
   file_name=os.path.join(folder, name)
   if file_name.endswith('.gz'):
     # use gziped data format
@@ -114,14 +131,38 @@ def read_sensitivities(folder, name):
     file_handler=gzip.open(file_name, 'r')
   else:
     file_handler=open(file_name, 'r')
-  data_lines=file_handler.readlines()[config.kws2.HEADER:]
+  lines=file_handler.readlines()
+  countingtime=read_countingtime(lines[:config.kws2.HEADER])
+  data_lines=lines[config.kws2.HEADER:]
+  file_handler.close()
+  data_joined=" ".join(data_lines)
+  data_array=array(map(float, data_joined.split()))
+  # take at minimum 0.5 counts for the sensitivity
+  data_array=maximum(0.5, data_array)
+  detector_sensitivities[name]=data_array/countingtime
+  
+def read_background(folder, name):
+  '''
+    Read data from the background file.
+  '''
+  global background_data
+  print "\treading background data from %s" % name
+  file_name=os.path.join(folder, name)
+  if file_name.endswith('.gz'):
+    # use gziped data format
+    import gzip
+    file_handler=gzip.open(file_name, 'r')
+  else:
+    file_handler=open(file_name, 'r')
+  lines=file_handler.readlines()
+  countingtime=read_countingtime(lines[:config.kws2.HEADER])
+  data_lines=lines[config.kws2.HEADER:]
   file_handler.close()
   data_joined=" ".join(data_lines)
   data_array=array(map(float, data_joined.split()))
   # normalize to get about the same cps values
-  data_array=maximum(1., data_array)
-  data_array/=data_array.mean()
-  detector_sensitivities[name]=data_array
+  error_array=sqrt(data_array)
+  background_data[name]=(data_array/countingtime, error_array/countingtime)
   
 class KWS2MeasurementData(MeasurementData):
   '''

@@ -3,7 +3,7 @@
   class for KWS2 data sessions
 '''
 #################################################################################################
-#                        Script to plot IN12-measurements with gnuplot                          #
+#                        Script to plot KWS2-measurements with gnuplot                          #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                         please report bugs to a.glavic@fz-juelich.de                          #
@@ -105,6 +105,7 @@ class KWS2Session(GenericSession):
     label_center_y=gtk.Label('Vertical Beamcenter:')
     label_detector_distance=gtk.Label('Detector distance:')
     label_detector_sensitivity=gtk.Label('Sensitivity measurement:')
+    label_background=gtk.Label('Background measurement:')
     label_apply=gtk.Label('Apply this to files:')
     rl_center_x=gtk.Label('pix')
     rl_center_y=gtk.Label('pix')
@@ -122,23 +123,30 @@ class KWS2Session(GenericSession):
     entry_detector_sensitivity=gtk.Entry()
     entry_detector_sensitivity.set_text('None')
     button_detector_sensitivity=gtk.Button(None, gtk.STOCK_OPEN)
-    button_detector_sensitivity.connect('clicked', self.select_sensitivity_file, folder, entry_detector_sensitivity)
+    button_detector_sensitivity.connect('clicked', self.select_file, folder, entry_detector_sensitivity)
+    entry_background=gtk.Entry()
+    entry_background.set_text('None')
+    button_background=gtk.Button(None, gtk.STOCK_OPEN)
+    button_background.connect('clicked', self.select_file, folder, entry_background)
     # add to table
     table.attach(label_center_x, 0,1, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(label_center_y, 0,1, 1,2, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(label_detector_distance, 0,1, 2,3, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(label_detector_sensitivity, 0,1, 4,5, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(label_apply, 0,1, 5,6, gtk.EXPAND|gtk.FILL,0, 0,0);
+    table.attach(label_background, 0,1, 5,6, gtk.EXPAND|gtk.FILL,0, 0,0);
+    table.attach(label_apply, 0,1, 6,7, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(entry_center_x, 1,2, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(entry_center_y, 1,2, 1,2, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(entry_detector_distance, 1,2, 2,3, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(toggle_button_swapyz, 1,3, 3,4, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(entry_detector_sensitivity, 1,2, 4,5, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(entry_apply, 1,2, 5,6, gtk.EXPAND|gtk.FILL,0, 0,0);
+    table.attach(entry_background, 1,2, 5,6, gtk.EXPAND|gtk.FILL,0, 0,0);
+    table.attach(entry_apply, 1,2, 6,7, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(rl_center_x, 2,3, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(rl_center_y, 2,3, 1,2, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(rl_detector_distance, 2,3, 2,3, gtk.EXPAND|gtk.FILL,0, 0,0);  
     table.attach(button_detector_sensitivity, 2,3, 4,5, gtk.EXPAND|gtk.FILL,0, 0,0);  
+    table.attach(button_background, 2,3, 5,6, gtk.EXPAND|gtk.FILL,0, 0,0);  
     
     dialog.vbox.add(table)
     dialog.show_all()
@@ -146,12 +154,16 @@ class KWS2Session(GenericSession):
     
     # read the configuration
     setup_name=entry_apply.get_text()
-    if not file_name in glob(os.path.join(folder, setup_name)):
+    if not os.path.join(folder, file_name) in glob(os.path.join(folder, setup_name)):
       setup_name=file_name
     detector_sensitivity=entry_detector_sensitivity.get_text()
     if not os.path.exists(os.path.join(folder, detector_sensitivity)):
       detector_sensitivity=None
     setup['DETECTOR_SENSITIVITY']=detector_sensitivity
+    background=entry_background.get_text()
+    if not os.path.exists(os.path.join(folder, background)):
+      background=None
+    setup['BACKGROUND']=background
     try:
       setup['CENTER_X']=float(entry_center_x.get_text())
     except:
@@ -169,15 +181,15 @@ class KWS2Session(GenericSession):
     setups.write()
     dialog.destroy()
 
-  def select_sensitivity_file(self, action, folder, entry_detector_sensitivity):
+  def select_file(self, action, folder, entry_detector_sensitivity):
     '''
       Select a file for the sensitivity measurement.
     '''
-    dialog=gtk.FileChooserDialog(title='Select sensitivity file...', action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=('OK', 1))
+    dialog=gtk.FileChooserDialog(title='Select file...', action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=('OK', 1))
     dialog.set_current_folder(folder)
     result=dialog.run()
     if result==1:
-      entry_detector_sensitivity.set_text(os.path.relpath(dialog.get_filename()))
+      entry_detector_sensitivity.set_text(os.path.relpath(dialog.get_filename(), start=folder))
     dialog.destroy()
 
   def create_menu(self):

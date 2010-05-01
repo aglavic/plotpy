@@ -129,7 +129,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   single_picture=False # plot all sequences in one picture
   list_all=False # show a list of sequences found in the file
   list_sequences=False # show a list of sequences found in the file which are selected for plotting
-  gnuplot_script=False # use script mode
+  gnuplot_script=True # use script mode
   do_output=False # export .out files
   info_in_file=True # write header in output files
   plot_data=True # plot the data (otherwise only convert files)

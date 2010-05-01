@@ -1684,10 +1684,10 @@ class DNSMeasurementData(MeasurementData):
     Datatreatment is done here and additional data treatment functions should
     be put here, too.
   '''
-  SPLIT_SENSITIVITY=0.007
+  SPLIT_SENSITIVITY=0.005
   dns_info={}
-  scan_line=3
-  scan_line_constant=1
+  scan_line=1
+  scan_line_constant=3
   number_of_channels=1
   vanadium_data=None
   vanadium_correct_by_detector=True

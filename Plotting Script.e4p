@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-04-20, 13:39:11 -->
+<!-- Saved: 2010-04-28, 18:33:07 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -69,6 +69,7 @@
     <Source>config/kws2.py</Source>
     <Source>ipython_view.py</Source>
     <Source>plotting_debug.py</Source>
+    <Source>sessions/single_diff.py</Source>
   </Sources>
   <Forms>
   </Forms>

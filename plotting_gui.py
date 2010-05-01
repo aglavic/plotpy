@@ -34,6 +34,7 @@
 import os, sys
 import gobject
 import gtk
+import cairo
 from time import sleep, time
 # own modules
 # Module to save and load variables from/to config files
@@ -120,14 +121,13 @@ class ApplicationMainWindow(gtk.Window):
 
     # Create the toplevel window
     gtk.Window.__init__(self)
-    # TODO: this doesn't work with py2exe
     self.set_icon_from_file(os.path.join(
                             os.path.split(
                            os.path.realpath(__file__))[0]
                            , "config", "logo.png").replace('library.zip', ''))
     # Reading config file
     self.read_config_file()
-    # Normaly this is not important, but with it the Window could be implemented as subwindow later.
+    # When the window gets destroyed, process some cleanup and save the configuration
     self.connect('destroy', lambda *w: self.main_quit())
     # Set the title of the window, will be changed when the active plot changes
     self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
@@ -1111,7 +1111,6 @@ class ApplicationMainWindow(gtk.Window):
     # scrollbars.
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
     text_filed=gtk.Label()
-    plot_text=unicode(plot_text, 'utf-8', 'ignore')
     text_filed.set_markup(plot_text)
     sw.add_with_viewport(text_filed) # add textbuffer view widget
     table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0);
@@ -1127,7 +1126,7 @@ class ApplicationMainWindow(gtk.Window):
       # scrollbars.
       sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
       text_filed=gtk.Label()
-      text_filed.set_markup(unicode(self.last_plot_text, 'utf-8', 'ignore'))
+      text_filed.set_markup(self.last_plot_text)
       sw.add_with_viewport(text_filed) # add textbuffer view widget
       table.attach(sw, 0, 1, 3, 4, gtk.EXPAND|gtk.FILL, gtk.FILL, 0, 0);
     param_dialog.vbox.add(table)
@@ -2008,7 +2007,7 @@ class ApplicationMainWindow(gtk.Window):
     dialog=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
                              type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE)
     dialog.set_title('Result')
-    dialog.set_markup(unicode(message, 'utf-8', 'ignore'))
+    dialog.set_markup(message)
     dialog.show_all()
     dialog.connect('response', lambda *ignore: dialog.destroy())
 
@@ -2482,56 +2481,98 @@ class ApplicationMainWindow(gtk.Window):
       self.reset_statusbar()
       print 'Export plot number '+self.measurement[self.index_mess].number+'... Done!'
 
-  def print_plot(self,action): 
+  #def print_plot(self,action): 
+    #'''
+      #Dummy function for systems not supported for printing.
+    #'''
+    #msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
+                          #message_format="""
+    #Sorry,
+                          #
+        #Printing is not supported for your platform configuration, yet.""")
+    #msg.run()
+    #msg.destroy()
+
+  def unix_print_from_dialog(self, action):
     '''
-      Send plot to printer, can also print every plot.
+      Open a dialot with print options and send the picture(s) to the printer.
     '''
-    global errorbars
-    if action.get_name()=='Print':
-      term='postscript landscape enhanced colour'
-      self.last_plot_text=self.plot(self.active_session, 
-                                    [self.measurement[self.index_mess]],
-                                    self.input_file_name, 
-                                    self.measurement[self.index_mess].short_info,
-                                    [object.short_info for object in self.measurement[self.index_mess].plot_together],
-                                    errorbars, 
-                                    output_file=self.active_session.TEMP_DIR+'plot_temp.ps',
-                                    fit_lorentz=False)
-      self.reset_statusbar()
-      print 'Printed with: '+PRINT_COMMAND
-      os.popen2(PRINT_COMMAND+self.active_session.TEMP_DIR+'plot_temp.ps')
-    elif action.get_name()=='PrintAll':
-      term='postscript landscape enhanced colour'
-      print_string=PRINT_COMMAND
-      for dataset in self.measurement: # combine all plot files in one print statement
+    import gtkunixprint
+    if action.get_name()=='PrintAll':
+      measurements=self.measurement
+      dialog_title='Print all plots form active file...'
+    else:
+      measurements=[self.measurement[self.index_mess]]
+      dialog_title='Print the current plot...'
+    def job_complete(print_job, data, errormsg):
+      if errormsg!=None:
+        print errormsg
+      else:
+        print 'PrintJob '+print_job.get_title() + ' - Done!'
+      while gtk.events_pending():
+        gtk.main_iteration()
+    
+    print_dialog=gtkunixprint.PrintUnixDialog(title=dialog_title, parent=self)
+    use_png=gtk.CheckButton(label='use png instead of postscript export', use_underline=True)
+    #use_png.show()
+    #use_png.set_active(measurements[0].zdata>=0)
+    print_dialog.vbox.pack_end(use_png)
+    if getattr(self, 'page_setup', False):
+      print_dialog.set_settings(self.print_settings)
+      print_dialog.set_page_setup(self.page_setup)
+    response=print_dialog.run()
+    
+    if response==gtk.RESPONSE_OK:
+      print_settings=print_dialog.get_settings()
+      printer=print_dialog.get_selected_printer()
+      page_setup=print_dialog.get_page_setup()
+      self.print_settings=print_settings
+      self.page_setup=page_setup
+      self.last_printer=printer
+      print_dialog.destroy()
+      if use_png.get_active():
+        file_type='png'
+        self.active_session.picture_width='2800'
+        self.active_session.picture_height='2000'
+      else:
+        file_type='ps'
+      for i, dataset in enumerate(measurements): # combine all plot files in one print statement
+        print "Plotting dataset %i" % i
+        while gtk.events_pending():
+          gtk.main_iteration()
+        # creating the picture
         self.last_plot_text=self.plot(self.active_session, 
                                       [dataset],
                                       self.input_file_name,
                                       dataset.short_info,
-                                      [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                                      [object.short_info for object in dataset.plot_together],
                                       errorbars, 
-                                      output_file=self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps',
+                                      output_file=self.active_session.TEMP_DIR+'plot_temp.'+file_type,
                                       fit_lorentz=False)
-        print_string=print_string+self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps '
-      self.reset_statusbar()
-      print 'Printed with: '+PRINT_COMMAND
-      os.popen2(print_string)
-      # TODO: In the future, setting up propper printing dialog here:
-      #operation=gtk.PrintOperation()
-      #operation.set_job_name('Print SQUID Data Nr.'+str(self.index_mess))
-      #operation.set_n_pages(1)
-      #response=operation.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG)
-      #if response == gtk.PRINT_OPERATION_RESULT_ERROR:
-      #   error_dialog = gtk.MessageDialog(parent,
-      #                                    gtk.DIALOG_DESTROY_WITH_PARENT,
-      #                                    gtk.MESSAGE_ERROR,
-      #                                     gtk.BUTTONS_CLOSE,
-      #                                     "Error printing file:\n")
-      #   error_dialog.connect("response", lambda w,id: w.destroy())
-      #   error_dialog.show()
-      #elif response == gtk.PRINT_OPERATION_RESULT_APPLY:
-      #    settings = operation.get_print_settings()
-  
+        job=gtkunixprint.PrintJob('Plot.py dataset %i' % i, 
+                                printer, print_settings, page_setup)
+        job.set_source_file(self.active_session.TEMP_DIR+'plot_temp.'+file_type)
+        job.send(job_complete)
+    else:
+      print_dialog.destroy()
+
+  def print_plot(self, action):
+    if action.get_name()=='PrintAll':
+      dialog=PreviewDialog(self.active_session.file_data, title='Select Plots for Printing...', 
+                           buttons=('OK', 1, 'Cancel', 0), parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
+      dialog.set_default_size(800, 600)
+      dialog.set_preview_parameters(self.plot, self.active_session, self.active_session.TEMP_DIR+'plot_temp.png')
+      result=dialog.run()
+      if result==1:
+        plot_list=dialog.get_active_objects()
+        dialog.destroy()
+        PrintDatasetDialog(plot_list, self)
+      else:
+        dialog.destroy()
+    else:
+      measurements=[self.measurement[self.index_mess]]
+      PrintDatasetDialog(measurements, self)
+
   def run_action_makro(self, action):
     '''
       Execute a list of actions as a makro.
@@ -2872,7 +2913,7 @@ class ApplicationMainWindow(gtk.Window):
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
             with_errorbars, output_file=gnuplot_preferences.output_file_name, 
-            fit_lorentz=False, sample_name=None):
+            fit_lorentz=False, sample_name=None, show_persistent=False):
     '''
       Plot via script file instead of using python gnuplot pipeing.
       
@@ -2887,9 +2928,49 @@ class ApplicationMainWindow(gtk.Window):
                                                          with_errorbars,
                                                          output_file,
                                                          fit_lorentz=False, 
-                                                         sample_name=sample_name)
+                                                         sample_name=sample_name, 
+                                                         show_persistent=show_persistent)
 
-  def replot(self, action=None):
+  def plot_persistent(self, action=None):
+    '''
+      Open a persistent gnuplot window.
+    '''
+    global errorbars
+    i=0
+    if self.active_multiplot:
+      for plotlist in self.multiplot:
+        itemlist=[item[0] for item in plotlist]
+        if self.measurement[self.index_mess] in itemlist:
+          self.last_plot_text=self.plot(self.active_session,
+                                        [item[0] for item in plotlist],
+                                        plotlist[0][1],
+                                        #plotlist[0][0].short_info,
+                                        plotlist.title, 
+                                        [item[0].short_info for item in plotlist],
+                                        errorbars,
+                                        self.active_session.TEMP_DIR+'plot_temp.png',
+                                        fit_lorentz=False, 
+                                        sample_name=plotlist.sample_name, 
+                                        show_persistent=True)
+    else:
+      self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
+      self.label.set_text(self.measurement[self.index_mess].sample_name)
+      self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
+      self.label2.set_text(self.measurement[self.index_mess].short_info)
+      self.last_plot_text=self.plot(self.active_session,
+                                  [self.measurement[self.index_mess]],
+                                  self.input_file_name,
+                                  self.measurement[self.index_mess].short_info,
+                                  [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                                  errorbars, 
+                                  output_file=self.active_session.TEMP_DIR+'plot_temp.png',
+                                  fit_lorentz=False, 
+                                  show_persistent=True)
+    if self.last_plot_text!='':
+      print 'Gnuplot error!'
+      self.show_last_plot_params(None)
+
+  def replot(self):
     '''
       Recreate the current plot and clear statusbar.
     '''
@@ -2948,6 +3029,8 @@ class ApplicationMainWindow(gtk.Window):
       self.active_plot_geometry=(self.widthf, self.heightf)
       self.reset_statusbar()
       self.set_image()
+      if not self.active_multiplot:
+        self.measurement[self.index_mess].preview=self.image_pixbuf.scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
     self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
 
   def reset_statusbar(self): 
@@ -3173,6 +3256,8 @@ class ApplicationMainWindow(gtk.Window):
       <separator name='static12'/>
       <toolitem action='SaveSnapshot'/>
       <toolitem action='LoadSnapshot'/>
+      <separator name='static13'/>
+      <toolitem action='ShowPersistent'/>
     </toolbar>
     </ui>'''
     return output
@@ -3234,7 +3319,7 @@ class ApplicationMainWindow(gtk.Window):
         None,                          # tooltip
         self.print_plot ),
       ( "PrintAll", gtk.STOCK_PRINT,                  # name, stock id
-        "Print All Plots...", None,                       # label, accelerator
+        "Print All Plots...", "<control><shift>P",                       # label, accelerator
         None,                          # tooltip
         self.print_plot ),
       ( "Quit", gtk.STOCK_QUIT,                    # name, stock id
@@ -3349,6 +3434,10 @@ class ApplicationMainWindow(gtk.Window):
         "Open IPython Console", None,                     # label, accelerator
         None,                                    # tooltip
         self.open_ipy_console),
+      ( "ShowPersistent", gtk.STOCK_FULLSCREEN,                    # name, stock id
+        "Open Persistent Gnuplot Window", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.plot_persistent),
     )+self.added_items;
     # Create the menubar and toolbar
     action_group = gtk.ActionGroup("AppWindowActions")
@@ -3642,6 +3731,228 @@ class RedirectError(RedirectOutput):
 
 #---------------------------- Redirection Filelike Objects -----------------------------
 
+#++++++++++++++++++++++++++ PreviewDialog to select one plot +++++++++++++++++++++++++++
+
+class PreviewDialog(gtk.Dialog):
+  '''
+    A dialog to show a list of plot previews to give the user the possibility to
+    select one or more plots.
+  '''
+  main_table=None
+  
+  def __init__(self, data_dict, show_previews=True, **opts):
+    '''
+      Constructor setting up a gtk.Dialog with a table of preview items.
+    '''
+    gtk.Dialog.__init__(self, **opts)
+    self.data_dict=data_dict
+    # List to store unset previews to be created after the dialog is shown
+    self.unset_previews=[]
+    # List of image objects to be able to show or hide them
+    self.images=[]
+    # Will store the checkboxes corresponding to one plot
+    self.check_boxes={}
+    self.show_previews=show_previews
+    self.vbox.add(self.get_scrolled_main_table())
+    for key, datalist in sorted(data_dict.items()):
+      self.add_line(key, datalist)
+    toggle_previews=gtk.CheckButton('Show Previews', use_underline=False)
+    toggle_previews.show()
+    if show_previews:
+      toggle_previews.set_active(True)
+    toggle_previews.connect('toggled', self.toggle_previews)
+    self.vbox.pack_end(toggle_previews, False)
+  
+  def run(self):
+    '''
+      Called to show the dialog and create unset previews.
+    '''
+    self.show()
+    while gtk.events_pending():
+      gtk.main_iteration(False)
+    for image, dataset in self.unset_previews:
+      self.create_preview(image, dataset)
+    return gtk.Dialog.run(self)
+  
+  def get_scrolled_main_table(self):
+    '''
+      Create the Table which holds all previews with scrollbars.
+      
+      @return The Table widget
+    '''
+    if self.main_table:
+      return self.main_table
+    self.last_line=0
+    self.main_table=gtk.Table(4, 1, False)
+    self.main_table.show()
+    sw=gtk.ScrolledWindow()
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add_with_viewport(self.main_table)
+    sw.show()
+    return sw
+  
+  def add_line(self, key, datalist):
+    '''
+      Add one line of previews to the main table.
+      
+      @param key The name of the file the previews in this line belong to.
+      @param datalist List of MeasurementData object.
+    '''
+    if key.endswith('|raw_data'):
+      return
+    main_table=self.main_table
+    line=self.last_line
+    select_all=gtk.Button('Select All')
+    select_none=gtk.Button('Unselect')
+    label=gtk.Label(key)
+    table=gtk.Table(len(datalist), 2, False)
+    align=gtk.Alignment(0, 0.5, 0, 0)
+    align.add(table)
+    align.show()
+    main_table.attach(select_all, 
+            # X direction #          # Y direction
+            0, 1,                      line+1, line+2,
+            0,                       0,
+            0,                         0)
+    select_all.show()
+    main_table.attach(select_none, 
+            # X direction #          # Y direction
+            1, 2,                      line+1, line+2,
+            0,                       0,
+            0,                         0)
+    select_none.show()
+    main_table.attach(label, 
+            # X direction #          # Y direction
+            0, 2,                      line, line+1,
+            0,                       gtk.FILL,
+            0,                         0)
+    label.show()
+    main_table.attach(align, 
+            # X direction #          # Y direction
+            2, 3,                      line, line+2,
+            gtk.FILL,                       gtk.FILL,
+            0,                         0)
+    table.show()
+    self.last_line+=2
+    check_boxes=[]
+    for i, dataset in enumerate(datalist):
+      check_box=gtk.CheckButton(label="[%i] %s" % (i, dataset.short_info[:10]), use_underline=True)
+      check_box.show()
+      check_boxes.append(check_box)
+      table.attach(check_box, 
+            # X direction #          # Y direction
+            i, i+1,                   1, 2,
+            0,                       gtk.FILL,
+            0,                         0)
+      image=self.get_preview(dataset)
+      self.images.append(image)
+      # toggle the checkbox when button gets pressed
+      #image.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+      #image.connect('button_press_event', lambda *ignore: check_box.toggle(True))
+      if self.show_previews:
+        image.show()
+      eventbox=gtk.EventBox()
+      eventbox.add(image)
+      eventbox.show()
+      eventbox.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+      eventbox.connect("button_press_event", self.test, check_box)
+      table.attach(eventbox, 
+            # X direction #          # Y direction
+            i, i+1,                   0, 1,
+            0,                       gtk.FILL,
+            0,                         0)      
+    self.check_boxes[key]=check_boxes
+    select_all.connect('clicked', self.toggle_entries, check_boxes, True)
+    select_none.connect('clicked', self.toggle_entries, check_boxes, False)
+  
+  def test(self, widget, action, check_box):
+    check_box.set_active(not check_box.get_active())
+
+  def toggle_entries(self, widget, check_boxes, set_value):
+    '''
+      Toggle all entreis in check_boxes to set_value.
+    '''
+    for check_box in check_boxes:
+      check_box.set_active(set_value)
+  
+  def get_preview(self, dataset):
+    '''
+      Create an image as preview, if the dataset has no preview, add it to the
+      list of unset previews.
+    '''
+    image=gtk.Image()
+    if getattr(dataset, 'preview', False):
+      image.set_from_pixbuf(dataset.preview)
+    else:
+      self.unset_previews.append( (image, dataset))
+    return image
+  
+  def set_preview_parameters(self, plot_function, session, temp_file):
+    '''
+      Connect objects needed for preview creation.
+    '''
+    self.preview_plot=plot_function
+    self.preview_session=session
+    self.preview_temp_file=temp_file
+  
+  def create_preview(self, image, dataset):
+    '''
+      Create an preview of the dataset and render it onto image.
+    '''
+    if getattr(self, 'preview_plot', False):
+      self.preview_plot(self.preview_session,
+                                  [dataset],
+                                  'preview',
+                                  dataset.short_info,
+                                  [object.short_info for object in dataset.plot_together],
+                                  errorbars, 
+                                  output_file=self.preview_temp_file,
+                                  fit_lorentz=False)
+      buf=gtk.gdk.pixbuf_new_from_file(self.preview_temp_file).scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
+      image.set_from_pixbuf(buf)
+      dataset.preview=buf
+    while gtk.events_pending():
+      gtk.main_iteration(False)
+  
+  def get_active_keys(self):
+    '''
+      Return the keys and indices of the activeded check_box widgets.
+    '''
+    output={}
+    for key, checkbox_list in self.check_boxes.items():
+      output[key]=[]
+      for i, check_box in enumerate(checkbox_list):
+        if check_box.get_active():
+          output[key].append(i)
+    return output
+
+  def get_active_objects(self):
+    '''
+      Return a list of data object for which the chackbox is set.
+    '''
+    active_dict=self.get_active_keys()
+    data_dict=self.data_dict
+    output=[]
+    for key, active_list in sorted(active_dict.items()):
+      for i in active_list:
+        output.append(data_dict[key][i])
+    return output
+  def toggle_previews(self, widget):
+    '''
+      Show or hide all previews.
+    '''
+    if self.show_previews:
+      self.show_previews=False
+      for image in self.images:
+        image.hide()
+    else:
+      self.show_previews=True
+      for image in self.images:
+        image.show()
+      
+  
+#-------------------------- PreviewDialog to select one plot ---------------------------
+
 #+++++++++++++++++++ FileChooserDialog with entries for with and height ++++++++++++++++
 
 class ExportFileChooserDialog(gtk.FileChooserDialog):
@@ -3653,11 +3964,12 @@ class ExportFileChooserDialog(gtk.FileChooserDialog):
     '''
       Class constructor which adds two entries for with and height.
     '''
-    gtk.FileChooserDialog.__init__(self, *args, action=gtk.FILE_CHOOSER_ACTION_SAVE, 
-                                          buttons=(gtk.STOCK_CANCEL, 
-                                                   gtk.RESPONSE_CANCEL, 
-                                                   gtk.STOCK_SAVE, 
-                                                   gtk.RESPONSE_OK), **opts)
+    opts['action']=gtk.FILE_CHOOSER_ACTION_SAVE
+    opts['buttons']=(gtk.STOCK_CANCEL, 
+                     gtk.RESPONSE_CANCEL, 
+                     gtk.STOCK_SAVE, 
+                     gtk.RESPONSE_OK)
+    gtk.FileChooserDialog.__init__(self, *args, **opts)
     self.width=width
     self.height=height
     # Get the top moste table widget from the dialog
@@ -3722,3 +4034,132 @@ class MultiplotList(list):
     self.title="Multiplot"
     self.sample_name=str(input_list[0][0].sample_name)
     list.__init__(self, input_list)
+
+
+#+++ Printing Dialog which imports creates PNG files for the datasets and sends it to a printer +++
+
+class PrintDatasetDialog:
+  '''
+    Creating this class will create a gtk.PrintOperation and open a printing Dialog to
+    print the datasets, supplied to the constructor.
+    The datasets are exported to high-resolution PNG files and after processing through cairo
+    get send to the Printer.
+  '''
+  
+  def __init__(self, datasets, main_window, resolution=300):
+    '''
+      Constructor setting setting the objects datasets and running the dialog
+      
+      @param datasets A list of MeasurementData objects
+      @param main_window The active ApplicationMainWindow instance
+      @param resolution The resolution the printer, only if A4 is selected.
+    '''
+    self.datasets=datasets
+    self.main_window=main_window
+    self.width=resolution*11.666
+    self.do_print()
+
+  def do_print(self):
+    '''
+      Create a PrintOperation with the number of pages corresponding to the number of datasets.
+      Afterwards the Printing dialog is run.
+    '''
+    old_terminal=gnuplot_preferences.set_output_terminal_png
+    terminal_items=old_terminal.split()
+    for i, item in enumerate(terminal_items):
+      if item in ['lw', 'linewidth']:
+        # scale the linewidth
+        terminal_items[i+1]=str(int(terminal_items[i+1])*(self.width/1600.))
+    terminal_items+=['crop']
+    gnuplot_preferences.set_output_terminal_png=" ".join(terminal_items)
+    print_op = gtk.PrintOperation()
+    print_op.set_n_pages(len(self.datasets))
+    # set landscape as default page orientation
+    page_setup=gtk.PageSetup()
+    page_setup.set_orientation(gtk.PAGE_ORIENTATION_LANDSCAPE)
+    print_op.set_default_page_setup(page_setup)
+    # connect the objects print method
+    print_op.connect("draw_page", self.print_page)
+    # connect preview method
+    print_op.connect("preview", self.preview)
+    # Custom entries to the print dialog
+    print_op.connect("create-custom-widget", self.create_custom_widgets)
+    print_op.connect("custom-widget-apply", self.read_custom_widgets)
+    print_op.set_property('custom-tab-label', 'Plot Settings')
+    # run the dialog
+    res = print_op.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG, self.main_window)
+    gnuplot_preferences.set_output_terminal_png=old_terminal
+
+  def create_custom_widgets(self, operation):
+    '''
+      Create a table with custom entries for the print Dialog.
+    '''
+    table=gtk.Table(2, 2, False)
+    label=gtk.Label('            Resolution: ')
+    self.entry=gtk.Entry()
+    self.entry.set_text(str(int(self.width/11.666)))
+    table.attach(label, 0, 1, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
+    table.attach(self.entry, 1, 2, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
+    table.show_all()
+    return table
+  
+  def read_custom_widgets(self, operation, widget):
+    '''
+      Read the settings supplied by the user.
+    '''
+    try:
+      res=float(self.entry.get_text())
+      self.width=res*11.666
+    except ValueError:
+      pass
+
+  def print_page(self, operation=None, context=None, page_nr=None):
+    '''
+      Method called for every page to be rendered. Creates the plot and imports,draws it with cairo.
+      
+      @param operation gtk.PrintOperation
+      @param context gtk.PrintContext
+      @param current page number
+    '''
+    print "Plotting page %i/%i" % (page_nr+1, len(self.datasets))
+    dataset=self.datasets[page_nr]
+    self.plot(dataset)
+    # get the cairo context to draw in
+    page_setup=context.get_page_setup()
+    cairo_context = context.get_cairo_context()
+    p_width=page_setup.get_page_width('inch')*72
+    p_height=page_setup.get_page_height('inch')*72
+    # import the image
+    surface=cairo.ImageSurface.create_from_png(self.main_window.active_session.TEMP_DIR+'plot_temp.png')
+    # scale and center the image to fit the drawable area
+    scale=min(p_width/surface.get_width(), p_height/surface.get_height())
+    move_x=(p_width-scale*surface.get_width())/scale/2
+    move_y=(p_height-scale*surface.get_height())/scale/2
+    cairo_context.scale(scale,scale)
+    cairo_context.set_source_surface(surface, move_x, move_y)
+    cairo_context.paint()
+    print "Sending page  %i/%i" % (page_nr+1, len(self.datasets))
+    return
+
+  def plot(self, dataset):
+    '''
+      Method to create one plot in print quality.
+    '''
+    session=self.main_window.active_session
+    session.picture_width=str(int(self.width))
+    session.picture_height=str(int(self.width/1.414))
+    window=self.main_window
+    window.plot(session,
+                [dataset],
+                session.active_file_name,
+                dataset.short_info,
+                [object.short_info for object in dataset.plot_together],
+                errorbars, 
+                output_file=session.TEMP_DIR+'plot_temp.png',
+                fit_lorentz=False)
+    
+  def preview(self, operation, preview, context, parent):
+    '''
+      Create a preview of the plots to be printed.
+    '''
+    pass
