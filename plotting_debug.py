@@ -12,6 +12,15 @@ import logging
 import sys, os
 from glob import glob
 
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2010"
+__credits__ = []
+__license__ = "None"
+__version__ = "0.6.3"
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Development"
+
 logger=logging
 
 class RedirectOutput(object):

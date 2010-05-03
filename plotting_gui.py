@@ -459,7 +459,10 @@ class ApplicationMainWindow(gtk.Window):
       Show the about dialog.
     '''
     dialog = gtk.AboutDialog()
-    dialog.set_program_name("Plotting GUI")
+    try:
+      dialog.set_program_name("Plotting GUI")
+    except AttributeError:
+      pass
     dialog.set_version("v%s" % __version__)
     dialog.set_authors([__author__]+__credits__)
     dialog.set_copyright("© Copyright 2008-2010 Artur Glavic\n a.glavic@fz-juelich.de")
@@ -1149,7 +1152,8 @@ class ApplicationMainWindow(gtk.Window):
     '''
     filters=[]
     data=self.measurement[self.index_mess]
-    filter_dialog=gtk.Dialog(title='Filter the plotted data:', parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
+    filter_dialog=gtk.Dialog(title='Filter the plotted data:', parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                             buttons=('New Filter',3, 'OK',1, 'Apply changes',2, 'Cancel',0))
     filter_dialog.set_default_size(600,150)
     sw = gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
@@ -1166,11 +1170,6 @@ class ApplicationMainWindow(gtk.Window):
     filters.append(self.get_new_filter(table,table_rows,data))
     table_rows+=1
     table.resize(table_rows,5)
-    # add dialog buttons
-    filter_dialog.add_button('New Filter',3)
-    filter_dialog.add_button('OK',1)
-    filter_dialog.add_button('Apply changes',2)
-    filter_dialog.add_button('Cancel',0)
     filter_dialog.show_all()
     # open dialog and wait for a response
     filter_dialog.connect("response", self.change_data_filter_response, table, table_rows, filters, data)
@@ -1283,20 +1282,12 @@ class ApplicationMainWindow(gtk.Window):
     transformations_dialog.set_default_size(600,150)
     try:
       transformations_dialog.get_action_area().pack_end(trans_box,False)
-      transformations_dialog.add_button('Add transformation',2)
-      transformations_dialog.add_button('Apply changes',1)
-      transformations_dialog.add_button('Cancel',0)
     except AttributeError:
-      transformations_dialog.vbox.pack_end(trans_box,False)
-      button=gtk.Button('Add transformation')
-      button.connect('clicked', lambda *ignore: transformations_dialog.response(2))
-      transformations_dialog.vbox.pack_end(button,False)
-      button=gtk.Button('Apply changes')
-      button.connect('clicked', lambda *ignore: transformations_dialog.response(1))
-      transformations_dialog.vbox.pack_end(button,False)
-      button=gtk.Button('Cancel')
-      button.connect('clicked', lambda *ignore: transformations_dialog.response(0))
-      transformations_dialog.vbox.pack_end(button,False)
+      button_box=transformations_dialog.vbox.get_children()[-1]
+      button_box.pack_end(trans_box,False)
+    transformations_dialog.add_button('Add transformation',2)
+    transformations_dialog.add_button('Apply changes',1)
+    transformations_dialog.add_button('Cancel',0)
     table=gtk.Table(1,1,False)
     transformations_dialog.vbox.add(table)
     transformations_dialog.show_all()
@@ -2535,8 +2526,8 @@ class ApplicationMainWindow(gtk.Window):
                                     errorbars, 
                                     output_file=self.active_session.TEMP_DIR+'plot_temp.ps',
                                     fit_lorentz=False)
-      print 'Printed with: '+(print_command % self.active_session.TEMP_DIR+'plot_temp.ps')
-      subprocess.call((print_command % self.active_session.TEMP_DIR+'plot_temp.ps').split(" ", 1))
+      print 'Printing with: '+(print_command % self.active_session.TEMP_DIR+'plot_temp.ps')
+      subprocess.call((print_command % self.active_session.TEMP_DIR+'plot_temp.ps').split())
     elif action.get_name()=='PrintAll':
       term='postscript landscape enhanced colour'
       dialog=PreviewDialog(self.active_session.file_data, title='Select Plots for Printing...', 
@@ -2551,6 +2542,7 @@ class ApplicationMainWindow(gtk.Window):
         dialog.destroy()
         return
       print_string=''
+      combined_file=open(self.active_session.TEMP_DIR+'plot_temp.ps', 'w')      
       for i, dataset in enumerate(plot_list): # combine all plot files in one print statement
         self.last_plot_text=self.plot(self.active_session, 
                                       [dataset],
@@ -2560,9 +2552,14 @@ class ApplicationMainWindow(gtk.Window):
                                       errorbars, 
                                       output_file=self.active_session.TEMP_DIR+'plot_temp_%i.ps' % i,
                                       fit_lorentz=False)
-        print_string+=self.active_session.TEMP_DIR+('plot_temp_%i.ps ' % i)
-      print 'Printed with: ' + print_command % print_string
-      subprocess.call((print_command % print_string).split(" ", 1))
+        # combine the documents into one postscript file
+        if i>0:
+          combined_file.write('false 0 startjob pop\n')
+        combined_file.write(open(self.active_session.TEMP_DIR+('plot_temp_%i.ps' % i), 'r').read())
+        
+      combined_file.close()
+      print 'Printing with: ' + print_command % self.active_session.TEMP_DIR+'plot_temp.ps'
+      subprocess.call((print_command % self.active_session.TEMP_DIR+'plot_temp.ps').split())
 
   def print_plot_dialog(self, action):
     if action.get_name()=='PrintAll':
@@ -2581,7 +2578,8 @@ class ApplicationMainWindow(gtk.Window):
       measurements=[self.measurement[self.index_mess]]
       PrintDatasetDialog(measurements, self)
 
-  if False and gtk.pygtk_version[1]>=10:
+  # not all gtk platforms support printing, other linux systems can print .ps from commandline
+  if gtk.pygtk_version[1]>=10:
     print_plot=print_plot_dialog
   elif 'linux' in sys.platform:
     print_plot=unix_lpr_pring
@@ -3332,7 +3330,7 @@ class ApplicationMainWindow(gtk.Window):
         None,                          # tooltip
         self.print_plot ),
       ( "PrintAll", gtk.STOCK_PRINT,                  # name, stock id
-        "Print All Plots...", "<control><shift>P",                       # label, accelerator
+        "Print Selection...", "<control><shift>P",                       # label, accelerator
         None,                          # tooltip
         self.print_plot ),
       ( "Quit", gtk.STOCK_QUIT,                    # name, stock id
