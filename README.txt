@@ -1,11 +1,11 @@
-      Release Notes for the plotting script collection Version 0.6.2
+      Release Notes for the plotting script collection Version 0.6.3
              Please report bugs and feature requests to http://atzes.homeip.net/plotwiki/tiki-forums.php
 
 
 Content:
 
 0   - introduction
-1   - changes since version 0.6.1
+1   - changes since version 0.6.2
 1.1   - changes since version 0.6
 1.2 - changes from version 0.5 to 0.6
 1.3 - changes from version 0.4 to 0.5
@@ -21,11 +21,36 @@ The main goal of this project is to create one framework for common data evaluat
 so that common tasks are automated and the user saves a lot of time. Many people use gnuplot and with this
 program you can create nice gnuplot graphs quite fast and change the gnuplot script after exporting it.
 For a description of the features see chapter 3. 
+Version 0.6.3 is mainly fixing some issues with the GUI and backend but some additional features, which should
+not interfere with old functions, have also been included.
 If you would like some new features, found any bugs or would like to have additional file-types
 supported by the script feel free to go to the Wiki http://atzes.homeip.net/plotwiki/ . Any contribution
 to the Wiki content is also welcome.
 
------ 1 - changes since version 0.6.1 -------
+----- 1 - changes since version 0.6.2 -------
+- added printing with system print dialog (pygtk >= 2.10) or with commandline tool for unix
+- added Radial integration around one point of a plotted maps
+- added some convenience functions to the IPython console to give experienced users the possibility to 
+   treat the data with own functions
+- added possibilty to use gzip compressed files for most of the session types
+- added reflectometer option to combine multiple scans into one map (rocking curves)
+- added possibility to open the GUI without datafile so it can be run from the menu (.deb and windows
+   automatically adds menu entries)
+- added a button to show the plot in an external gnuplot (wxt/windows) window, this gives the possibility to
+  zomm in with the mouse, find the exact position of a point and have multiple plots opened at the same time
+- added possibility to select the picture size in the export dialog
+- fix export and open dialogs now stay in the last used folder
+- fix multiplot did not have it's own title
+- fix first title entry will lose changes when entering into second title entry at the same time
+- fix IPython did not work on all systems, especially windows
+- fix Postscript export with wrong symbols
+- fix integrate intensities of only one dataset
+- a lot of small fixes for the usability
+
+
+
+
+----- 1.1 - changes since version 0.6 -------
 - added snapshot framework to store the working stat including fits etc.
 - added possiblity to combine reflectometer rocking curves to 3d maps
 - added gui option to change squid dia- and paramagnetic correction including fit to asymptotic behaviour
@@ -39,9 +64,6 @@ to the Wiki content is also welcome.
 - better DNS correction posibilities
 - reload config files and .mds files when a new script version is created
 - some minor changes an fixes
-
-
------ 1.1 - changes since version 0.6 -------
 - rearanged menu structure to improve usability
 - added new Plot.py logo to the gui
 - improved the scaling of the GUI image
@@ -202,7 +224,7 @@ Now you should be ready to use the scripts with and without GUI-mode under windo
 
 
 ---------- 3 - list of modules and packages -------------
-Plot-script-0.6.2.tar.gz (.zip) contains:
+Plot-script-0.6.3.tar.gz (.zip) contains:
   config/                                                         - package with all settings for the datafile import and plot layout
                                                                         to change these can make sense also for users
   read_data/                                                   - contains all modules for datafile readout

@@ -32,6 +32,7 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 # python modules
 import os, sys
+import subprocess
 import gobject
 import gtk
 import cairo
@@ -51,7 +52,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = ["Werner Schweika", "Emmanuel Kenzinger", "Paul Zakalek", "Daniel Schumacher",  "All other Tester!"]
 __license__ = "None"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -2312,7 +2313,10 @@ class ApplicationMainWindow(gtk.Window):
       return self.replot()
     if action.get_name()=='SaveGPL':
       #++++++++++++++++File selection dialog+++++++++++++++++++#
-      file_dialog=gtk.FileChooserDialog(title='Save Gnuplot(.gp) and Datafiles(.out)...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+      file_dialog=gtk.FileChooserDialog(title='Save Gnuplot(.gp) and Datafiles(.out)...', 
+                                        action=gtk.FILE_CHOOSER_ACTION_SAVE, 
+                                        buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+      file_dialog.set_do_overwrite_confirmation(True)
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
       if self.active_multiplot:
@@ -2504,20 +2508,23 @@ class ApplicationMainWindow(gtk.Window):
                           
         Printing is only supported for PyGTK >=2.10.
         You can use a linux commandline tool for plotting.
-        %s will be replaced by the filename.
+        %s will be replaced by the filename(s).
         
     Enter the Linux command to print the plots.
     """)
+    global PRINT_COMMAND
     entry=gtk.Entry()
     entry.set_text(PRINT_COMMAND)
     dialog.vbox.add(label)
     dialog.vbox.add(entry)
     dialog.show_all()
+    entry.connect('activate', lambda *ignore: dialog.response(1))
     result=dialog.run()
     print_command=entry.get_text()
     dialog.destroy()
     if result!=1:
       return
+    PRINT_COMMAND=print_command
     if action.get_name()=='Print':
       term='postscript landscape enhanced colour'
       self.last_plot_text=self.plot(self.active_session, 
@@ -2528,25 +2535,34 @@ class ApplicationMainWindow(gtk.Window):
                                     errorbars, 
                                     output_file=self.active_session.TEMP_DIR+'plot_temp.ps',
                                     fit_lorentz=False)
-      self.reset_statusbar()
-      self.statusbar.push(0,'Printed with: '+print_command)
-      os.popen2(print_command % self.active_session.TEMP_DIR+'plot_temp.ps')
+      print 'Printed with: '+(print_command % self.active_session.TEMP_DIR+'plot_temp.ps')
+      subprocess.call((print_command % self.active_session.TEMP_DIR+'plot_temp.ps').split(" ", 1))
     elif action.get_name()=='PrintAll':
       term='postscript landscape enhanced colour'
-      print_string=print_command
-      for dataset in self.measurement: # combine all plot files in one print statement
+      dialog=PreviewDialog(self.active_session.file_data, title='Select Plots for Printing...', 
+                           buttons=('OK', 1, 'Cancel', 0), parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
+      dialog.set_default_size(800, 600)
+      dialog.set_preview_parameters(self.plot, self.active_session, self.active_session.TEMP_DIR+'plot_temp.png')
+      result=dialog.run()
+      if result==1:
+        plot_list=dialog.get_active_objects()
+        dialog.destroy()
+      else:
+        dialog.destroy()
+        return
+      print_string=''
+      for i, dataset in enumerate(plot_list): # combine all plot files in one print statement
         self.last_plot_text=self.plot(self.active_session, 
                                       [dataset],
                                       self.input_file_name,
                                       dataset.short_info,
-                                      [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                                      [object.short_info for object in dataset.plot_together],
                                       errorbars, 
-                                      output_file=self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps',
+                                      output_file=self.active_session.TEMP_DIR+'plot_temp_%i.ps' % i,
                                       fit_lorentz=False)
-        print_string=print_string % self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps '
-      self.reset_statusbar()
-      self.statusbar.push(0,'Printed with: '+print_command)
-      os.popen2(print_string)
+        print_string+=self.active_session.TEMP_DIR+('plot_temp_%i.ps ' % i)
+      print 'Printed with: ' + print_command % print_string
+      subprocess.call((print_command % print_string).split(" ", 1))
 
   def print_plot_dialog(self, action):
     if action.get_name()=='PrintAll':
@@ -2565,7 +2581,7 @@ class ApplicationMainWindow(gtk.Window):
       measurements=[self.measurement[self.index_mess]]
       PrintDatasetDialog(measurements, self)
 
-  if gtk.pygtk_version[1]>=10:
+  if False and gtk.pygtk_version[1]>=10:
     print_plot=print_plot_dialog
   elif 'linux' in sys.platform:
     print_plot=unix_lpr_pring
@@ -3764,10 +3780,18 @@ class PreviewDialog(gtk.Dialog):
     '''
       Called to show the dialog and create unset previews.
     '''
+    def stop_preview_creation(dialog, id):
+      # Stop the preview creation on a response signal
+      self.stop_preview=True
+      self.response_id=id
     self.show()
+    self.stop_preview=False
+    self.connect('response',  stop_preview_creation)
     while gtk.events_pending():
       gtk.main_iteration(False)
     for image, dataset in self.unset_previews:
+      if self.stop_preview:
+        return self.response_id
       self.create_preview(image, dataset)
     return gtk.Dialog.run(self)
   
