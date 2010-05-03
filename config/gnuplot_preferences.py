@@ -3,7 +3,7 @@
  Variables for gnuplot options to be used by plot commands.
 '''
 
-from sys import prefix
+from sys import prefix, platform
 from os.path import exists, split
 from os.path import join as join_path
 
@@ -42,7 +42,7 @@ __status__ = "Production"
 GNUPLOT_FILE_HEAD='#Gnuplot inputfile to plot the data of plot.py\n#[info]\n'
 gnuplot_file_name='gnuplot.tmp'
 # Linux printing command (works properly with .ps, problems with png with wrong size)
-PRINT_COMMAND="lpr -P IFF17c4 -J \'plot_SQUID_data.py output\'  "
+PRINT_COMMAND="lpr -P IFF17c4 -J \'plot.py output\' %s"
 # Command for script mode to accress gnuplot
 GNUPLOT_COMMAND="gnuplot"
 
@@ -74,8 +74,12 @@ set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[
 # used is determined by file name
 set_output_terminal_ps='postscript landscape enhanced colour "Arial" 16 solid lw 2'
 
-# 
-set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\
+# terminal for external gnuplot window
+if "linux" in platform:
+  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\
+                          '" 16'
+else:
+  set_output_terminal_wxt='windows enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\
                           '" 16'
 
 # set output file name, the postfix has to be chosen consistant to the 'set term' statement

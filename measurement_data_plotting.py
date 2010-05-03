@@ -205,6 +205,7 @@ def gnuplot_plot_script(session,
     tmp_name='tmp_data_p-%i_' % persistene_plots
     persistene_plots+=1
     output_file_prefix=session.TEMP_DIR+tmp_name
+    postscript_export=True
   else:
     tmp_name='tmp_data_'
     output_file_prefix=session.TEMP_DIR+tmp_name
@@ -356,7 +357,7 @@ def create_plot_script(session,
         names.insert(j+inserted+1, attachedset.short_info)
         inserted+=1
   if show_persistent:
-    postscript_export=False
+    postscript_export=True
     terminal=gp.set_output_terminal_wxt
   elif output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True

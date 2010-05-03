@@ -2481,82 +2481,74 @@ class ApplicationMainWindow(gtk.Window):
       self.reset_statusbar()
       print 'Export plot number '+self.measurement[self.index_mess].number+'... Done!'
 
-  #def print_plot(self,action): 
-    #'''
-      #Dummy function for systems not supported for printing.
-    #'''
-    #msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
-                          #message_format="""
-    #Sorry,
-                          #
-        #Printing is not supported for your platform configuration, yet.""")
-    #msg.run()
-    #msg.destroy()
+  def print_plot(self,action): 
+    '''
+      Dummy function for systems not supported for printing.
+    '''
+    msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
+                          message_format="""
+    Sorry,
+                          
+        Printing is only supported for PyGTK >=2.10.""")
+    msg.run()
+    msg.destroy()
 
-  def unix_print_from_dialog(self, action):
+  def unix_lpr_pring(self, action):
     '''
-      Open a dialot with print options and send the picture(s) to the printer.
+      Print plot with unix commandline tool.
     '''
-    import gtkunixprint
-    if action.get_name()=='PrintAll':
-      measurements=self.measurement
-      dialog_title='Print all plots form active file...'
-    else:
-      measurements=[self.measurement[self.index_mess]]
-      dialog_title='Print the current plot...'
-    def job_complete(print_job, data, errormsg):
-      if errormsg!=None:
-        print errormsg
-      else:
-        print 'PrintJob '+print_job.get_title() + ' - Done!'
-      while gtk.events_pending():
-        gtk.main_iteration()
-    
-    print_dialog=gtkunixprint.PrintUnixDialog(title=dialog_title, parent=self)
-    use_png=gtk.CheckButton(label='use png instead of postscript export', use_underline=True)
-    #use_png.show()
-    #use_png.set_active(measurements[0].zdata>=0)
-    print_dialog.vbox.pack_end(use_png)
-    if getattr(self, 'page_setup', False):
-      print_dialog.set_settings(self.print_settings)
-      print_dialog.set_page_setup(self.page_setup)
-    response=print_dialog.run()
-    
-    if response==gtk.RESPONSE_OK:
-      print_settings=print_dialog.get_settings()
-      printer=print_dialog.get_selected_printer()
-      page_setup=print_dialog.get_page_setup()
-      self.print_settings=print_settings
-      self.page_setup=page_setup
-      self.last_printer=printer
-      print_dialog.destroy()
-      if use_png.get_active():
-        file_type='png'
-        self.active_session.picture_width='2800'
-        self.active_session.picture_height='2000'
-      else:
-        file_type='ps'
-      for i, dataset in enumerate(measurements): # combine all plot files in one print statement
-        print "Plotting dataset %i" % i
-        while gtk.events_pending():
-          gtk.main_iteration()
-        # creating the picture
+    dialog=gtk.Dialog('Print with unix command...', 
+                      buttons=('OK', 1, 'Cancel', 0))
+    label=gtk.Label("""
+    Sorry,
+                          
+        Printing is only supported for PyGTK >=2.10.
+        You can use a linux commandline tool for plotting.
+        %s will be replaced by the filename.
+        
+    Enter the Linux command to print the plots.
+    """)
+    entry=gtk.Entry()
+    entry.set_text(PRINT_COMMAND)
+    dialog.vbox.add(label)
+    dialog.vbox.add(entry)
+    dialog.show_all()
+    result=dialog.run()
+    print_command=entry.get_text()
+    dialog.destroy()
+    if result!=1:
+      return
+    if action.get_name()=='Print':
+      term='postscript landscape enhanced colour'
+      self.last_plot_text=self.plot(self.active_session, 
+                                    [self.measurement[self.index_mess]],
+                                    self.input_file_name, 
+                                    self.measurement[self.index_mess].short_info,
+                                    [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                                    errorbars, 
+                                    output_file=self.active_session.TEMP_DIR+'plot_temp.ps',
+                                    fit_lorentz=False)
+      self.reset_statusbar()
+      self.statusbar.push(0,'Printed with: '+print_command)
+      os.popen2(print_command % self.active_session.TEMP_DIR+'plot_temp.ps')
+    elif action.get_name()=='PrintAll':
+      term='postscript landscape enhanced colour'
+      print_string=print_command
+      for dataset in self.measurement: # combine all plot files in one print statement
         self.last_plot_text=self.plot(self.active_session, 
                                       [dataset],
                                       self.input_file_name,
                                       dataset.short_info,
-                                      [object.short_info for object in dataset.plot_together],
+                                      [object.short_info for object in self.measurement[self.index_mess].plot_together],
                                       errorbars, 
-                                      output_file=self.active_session.TEMP_DIR+'plot_temp.'+file_type,
+                                      output_file=self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps',
                                       fit_lorentz=False)
-        job=gtkunixprint.PrintJob('Plot.py dataset %i' % i, 
-                                printer, print_settings, page_setup)
-        job.set_source_file(self.active_session.TEMP_DIR+'plot_temp.'+file_type)
-        job.send(job_complete)
-    else:
-      print_dialog.destroy()
+        print_string=print_string % self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps '
+      self.reset_statusbar()
+      self.statusbar.push(0,'Printed with: '+print_command)
+      os.popen2(print_string)
 
-  def print_plot(self, action):
+  def print_plot_dialog(self, action):
     if action.get_name()=='PrintAll':
       dialog=PreviewDialog(self.active_session.file_data, title='Select Plots for Printing...', 
                            buttons=('OK', 1, 'Cancel', 0), parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
@@ -2572,6 +2564,11 @@ class ApplicationMainWindow(gtk.Window):
     else:
       measurements=[self.measurement[self.index_mess]]
       PrintDatasetDialog(measurements, self)
+
+  if gtk.pygtk_version[1]>=10:
+    print_plot=print_plot_dialog
+  elif 'linux' in sys.platform:
+    print_plot=unix_lpr_pring
 
   def run_action_makro(self, action):
     '''
