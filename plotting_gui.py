@@ -1980,11 +1980,13 @@ class ApplicationMainWindow(gtk.Window):
                                                 dimension.get_text(), unit.get_text(), 
                                                 data_indices, data_values)
         did_calculate=True
+      eii_dialog.destroy()
       if did_calculate:
         self.replot()
-    eii_dialog.destroy()
-    if len(int_int_values)>0:
-      self.show_integrated_intensities(int_int_values)
+      if len(int_int_values)>0:
+        self.show_integrated_intensities(int_int_values)
+    else:
+      eii_dialog.destroy()
 
   def show_integrated_intensities(self, int_int_values):
     '''

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-04-28, 18:33:07 -->
+<!-- Saved: 2010-05-03, 15:17:32 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -266,12 +266,6 @@
                 <unicode>py2exe_imports.py</unicode>
                 <unicode>setup.py</unicode>
               </list>
-            </value>
-            <key>
-              <string>noempty</string>
-            </key>
-            <value>
-              <bool>True</bool>
             </value>
             <key>
               <string>outputDirectory</string>
