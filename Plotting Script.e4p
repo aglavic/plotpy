@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-05-03, 15:17:32 -->
+<!-- Saved: 2010-05-12, 13:31:46 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
   <ProgLanguage mixed="0">Python</ProgLanguage>
   <ProjectType>Other</ProjectType>
   <Description>This is a Plotting script using gnuplot with a GUI.</Description>
-  <Version>0.6.3</Version>
+  <Version>0.7a</Version>
   <Author>Artur Glavic</Author>
   <Email>a.glavic@fz-juelich.de</Email>
   <Sources>
     <Source>measurement_data_structure.py</Source>
     <Source>measurement_data_plotting.py</Source>
-    <Source>plotting_gui.py</Source>
     <Source>fit_data.py</Source>
     <Source>config/__init__.py</Source>
     <Source>config/gnuplot_preferences.py</Source>
@@ -62,7 +61,6 @@
     <Source>deb_control</Source>
     <Source>import_debug.py</Source>
     <Source>py2exe_imports.py</Source>
-    <Source>plot.py</Source>
     <Source>config/transformations.py</Source>
     <Source>sessions/kws2.py</Source>
     <Source>read_data/kws2.py</Source>
@@ -70,6 +68,22 @@
     <Source>ipython_view.py</Source>
     <Source>plotting_debug.py</Source>
     <Source>sessions/single_diff.py</Source>
+    <Source>__init__.py</Source>
+    <Source>config/gui.py</Source>
+    <Source>configobj.py</Source>
+    <Source>gtkgui/__init__.py</Source>
+    <Source>gtkgui/circle.py</Source>
+    <Source>gtkgui/dialogs.py</Source>
+    <Source>gtkgui/diverse_classes.py</Source>
+    <Source>gtkgui/dns.py</Source>
+    <Source>gtkgui/fit_data.py</Source>
+    <Source>gtkgui/in12.py</Source>
+    <Source>gtkgui/main_window.py</Source>
+    <Source>gtkgui/refl_fit_functions.py</Source>
+    <Source>gtkgui/reflectometer.py</Source>
+    <Source>gtkgui/squid.py</Source>
+    <Source>gtkgui/treff.py</Source>
+    <Source>plot.py</Source>
   </Sources>
   <Forms>
   </Forms>
@@ -85,7 +99,7 @@
     <Other>uninstall</Other>
     <Other>doc</Other>
   </Others>
-  <MainScript>plot.py</MainScript>
+  <MainScript>__init__.py</MainScript>
   <Vcs>
     <VcsType>None</VcsType>
     <VcsOptions>
