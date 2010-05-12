@@ -58,7 +58,7 @@ def read_data(file_name):
   data_lines=lines[config.kws2.HEADER:]
   file_handler.close()
   output= create_dataobj(data_lines,  header_lines, countingtime, setup)
-  output.short_info=file_name
+  output.short_info=os.path.split(file_name)[1]
   
   return [output]
 
@@ -101,18 +101,19 @@ def create_dataobj(data_lines, header_lines, countingtime, setup):
     ds/=ds.mean()
     corrected_data/=ds
     corrected_error/=ds
-  qy_array=4.*pi/config.kws2.LAMBDA_N*\
+  if 'LAMBDA_N' in setup:
+    lambda_n=setup['LAMBDA_N']
+  else:
+    lambda_n=config.kws2.LAMBDA_N
+  qy_array=4.*pi/lambda_n*\
            sin(arctan((y_array-setup['CENTER_X'])*config.kws2.PIXEL_SIZE/setup['DETECTOR_DISTANCE'])/2.)
-  qz_array=4.*pi/config.kws2.LAMBDA_N*\
+  qz_array=4.*pi/lambda_n*\
            sin(arctan((z_array-setup['CENTER_Y'])*config.kws2.PIXEL_SIZE/setup['DETECTOR_DISTANCE'])/2.)
   if setup['SWAP_YZ']:
     # swap the directions
     tmp=qz_array
     qz_array=qy_array
     qy_array=tmp
-    tmp=z_array
-    z_array=y_array
-    y_array=tmp
   for i in range(config.kws2.PIXEL_X**2):
     dataobj.append((y_array[i], z_array[i], corrected_data[i], corrected_error[i], 
                     qy_array[i], qz_array[i], data_array[i], error_array[i]))

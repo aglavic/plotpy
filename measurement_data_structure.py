@@ -122,6 +122,13 @@ class MeasurementData:
       # return the next datapoint
       yield [value.values[(data_pointer-1)] for value in data]
  
+  def __getstate__(self):
+    '''
+      Define how the class is pickled and copied.
+    '''
+    self.preview=None
+    return self.__dict__
+ 
   def __len__(self): 
     '''
       len(MeasurementData) returns number of Datapoints.

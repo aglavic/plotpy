@@ -67,6 +67,7 @@ class ApplicationMainWindow(gtk.Window):
     Everything the GUI does is in this Class.
   '''
   status_dialog=None
+  garbage=[]
   
   def get_active_dataset(self):
     return self.measurement[self.index_mess]
@@ -311,9 +312,11 @@ class ApplicationMainWindow(gtk.Window):
 
     #+++ Creating entries and options according to the active measurement +++
     if len(self.measurement)>0:
-      self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5) # title width
+      self.label.set_width_chars(min(len(self.measurement[self.index_mess].sample_name)+5, 
+                                                          45)) # title width
       self.label.set_text(self.measurement[self.index_mess].sample_name)
-      self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5) # title width
+      self.label2.set_width_chars(min(len(self.measurement[self.index_mess].short_info)+5, 
+                                                           45)) # title width
       self.label2.set_text(self.measurement[self.index_mess].short_info)
       # TODO: put this to a different location
       self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
@@ -504,6 +507,15 @@ class ApplicationMainWindow(gtk.Window):
     # plot the data
     self.replot()
 
+  def remove_active_plot(self, action):
+    '''
+      Remove the active plot from this session.
+    '''
+    if len(self.measurement)>1:
+      self.garbage.append(self.measurement.pop(self.index_mess))
+      self.file_actions.activate_action('iterate_through_measurements', 'Prev')
+      self.replot()
+      print "Plot removed."
 
   def change(self,action):
     '''
@@ -2227,6 +2239,12 @@ class ApplicationMainWindow(gtk.Window):
     if (action.get_name()=='AddAll')&(len(self.measurement)<40): # dont autoadd more than 40
       for i in range(len(self.measurement)):
         self.do_add_multiplot(i)
+    elif action.get_name()=='ClearMultiplot':
+      self.multiplot=[]
+      self.active_multiplot=False
+      self.replot()
+      print "Multiplots cleared."
+      self.multi_list.set_markup(' Multiplot List: \n' )      
     else:
       self.do_add_multiplot(self.index_mess)
 
@@ -2308,7 +2326,7 @@ class ApplicationMainWindow(gtk.Window):
       #++++++++++++++++File selection dialog+++++++++++++++++++#
       file_dialog=gtk.FileChooserDialog(title='Save Gnuplot(.gp) and Datafiles(.out)...', 
                                         action=gtk.FILE_CHOOSER_ACTION_SAVE, 
-                                        buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+                                        buttons=(gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
       file_dialog.set_do_overwrite_confirmation(True)
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
@@ -2325,12 +2343,26 @@ class ApplicationMainWindow(gtk.Window):
       filter.set_name("All files")
       filter.add_pattern("*")
       file_dialog.add_filter(filter)
+      # add to checkboxes if the picture should be created and if it should be .ps
+      ps_box=gtk.CheckButton('Picture as Postscript', True)
+      ps_box.show()
+      pic_box=gtk.CheckButton('Also create Picture', True)
+      pic_box.set_active(True)
+      pic_box.show()
+      file_dialog.vbox.get_children()[-1].pack_start(ps_box, False)
+      file_dialog.vbox.get_children()[-1].pack_start(pic_box, False)
+      file_dialog.vbox.get_children()[-1].reorder_child(ps_box, 0)
+      file_dialog.vbox.get_children()[-1].reorder_child(pic_box, 0)
       response = file_dialog.run()
       if response != gtk.RESPONSE_OK:
-        self.active_folder=file_dialog.get_current_folder()
         file_dialog.destroy()
         return None
-      common_file_prefix=file_dialog.get_filename().rsplit('.gp', 1)[0]
+      self.active_folder=file_dialog.get_current_folder()
+      common_folder, common_file_prefix=os.path.split(file_dialog.get_filename().rsplit('.gp', 1)[0])
+      if ps_box.get_active():
+        picture_type='.ps'
+      else:
+        picture_type='.png'
       file_dialog.destroy()
       if self.active_multiplot:
         for plotlist in self.multiplot:
@@ -2344,7 +2376,7 @@ class ApplicationMainWindow(gtk.Window):
                                           plotlist[0][0].short_info, 
                                           [item[0].short_info for item in plotlist], 
                                           errorbars,
-                                          common_file_prefix + '.png',
+                                          common_file_prefix + picture_type,
                                           fit_lorentz=False, 
                                           output_file_prefix=common_file_prefix, 
                                           sample_name=plotlist.sample_name)
@@ -2352,7 +2384,7 @@ class ApplicationMainWindow(gtk.Window):
         for j, dataset in enumerate(itemlist):
           for i, attachedset in enumerate(dataset.plot_together):
             file_numbers.append(str(j)+'-'+str(i))
-            attachedset.export(common_file_prefix+str(j)+'-'+str(i)+'.out')
+            attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
       else:
         plot_text=measurement_data_plotting.create_plot_script(
                            self.active_session, 
@@ -2362,7 +2394,7 @@ class ApplicationMainWindow(gtk.Window):
                            self.measurement[self.index_mess].short_info,
                            [object.short_info for object in self.measurement[self.index_mess].plot_together],
                            errorbars, 
-                           output_file=common_file_prefix + '.png',
+                           output_file=common_file_prefix + picture_type,
                            fit_lorentz=False, 
                            output_file_prefix=common_file_prefix)
         file_numbers=[]
@@ -2370,9 +2402,19 @@ class ApplicationMainWindow(gtk.Window):
         dataset=self.measurement[self.index_mess]
         for i, attachedset in enumerate(dataset.plot_together):
           file_numbers.append(str(j)+'-'+str(i))
-          attachedset.export(common_file_prefix+str(j)+'-'+str(i)+'.out')
-      open(common_file_prefix+'.gp', 'w').write(plot_text+'\n')
-      
+          attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
+      write_file=open(os.path.join(common_folder, common_file_prefix+'.gp'), 'w')
+      write_file.write(plot_text+'\n')
+      write_file.close()
+      if pic_box.get_active():
+        proc=subprocess.Popen([self.active_session.GNUPLOT_COMMAND, 
+                         common_file_prefix+'.gp'], 
+                        shell=False, 
+                        stderr=subprocess.PIPE,
+                        stdout=subprocess.PIPE, 
+                        stdin=subprocess.PIPE, 
+                        cwd=common_folder
+                        )
       #----------------File selection dialog-------------------#      
     elif action.get_name()=='ExportAll':
       for dataset in self.measurement:
@@ -2966,9 +3008,11 @@ class ApplicationMainWindow(gtk.Window):
                                         sample_name=plotlist.sample_name, 
                                         show_persistent=True)
     else:
-      self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
+      self.label.set_width_chars(min(len(self.measurement[self.index_mess].sample_name)+5, 
+                                                          45))
       self.label.set_text(self.measurement[self.index_mess].sample_name)
-      self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
+      self.label2.set_width_chars(min(len(self.measurement[self.index_mess].short_info)+5, 
+                                                           45))
       self.label2.set_text(self.measurement[self.index_mess].short_info)
       self.last_plot_text=self.plot(self.active_session,
                                   [self.measurement[self.index_mess]],
@@ -3017,14 +3061,18 @@ class ApplicationMainWindow(gtk.Window):
                                         self.active_session.TEMP_DIR+'plot_temp.png',
                                         fit_lorentz=False, 
                                         sample_name=plotlist.sample_name)
-          self.label.set_width_chars(len(plotlist.sample_name)+5)
+          self.label.set_width_chars(min(len(plotlist.sample_name)+5, 
+                                         45))
           self.label.set_text(plotlist.sample_name)
-          self.label2.set_width_chars(len(plotlist.title)+5)
+          self.label2.set_width_chars(min(len(plotlist.title)+5, 
+                                          45))
           self.label2.set_text(plotlist.title)
     else:
-      self.label.set_width_chars(len(self.measurement[self.index_mess].sample_name)+5)
+      self.label.set_width_chars(min(len(self.measurement[self.index_mess].sample_name)+5, 
+                                                          45))
       self.label.set_text(self.measurement[self.index_mess].sample_name)
-      self.label2.set_width_chars(len(self.measurement[self.index_mess].short_info)+5)
+      self.label2.set_width_chars(min(len(self.measurement[self.index_mess].short_info)+5, 
+                                                           45))
       self.label2.set_text(self.measurement[self.index_mess].short_info)
       self.last_plot_text=self.plot(self.active_session,
                                   [self.measurement[self.index_mess]],
@@ -3202,6 +3250,7 @@ class ApplicationMainWindow(gtk.Window):
         <separator name='static3'/>
         <menuitem action='AddMulti'/>
         <menuitem action='AddAll'/>
+        <menuitem action='ClearMultiplot'/>
         <separator name='static4'/>
         <menuitem action='ShowPlotparams'/>
         <menuitem action='ShowImportInfo'/>
@@ -3236,6 +3285,7 @@ class ApplicationMainWindow(gtk.Window):
           </placeholder>'''
     output+='''
         <separator name='static6'/>
+        <menuitem action='RemovePlot'/>
       </menu>
       <menu action='ExtrasMenu'>
         <menuitem action='Makro'/>
@@ -3428,9 +3478,17 @@ class ApplicationMainWindow(gtk.Window):
         "Add/Remove plot to/from multi-plot list",                                    # tooltip
         self.add_multiplot),
       ( "AddAll", gtk.STOCK_JUMP_TO,                    # name, stock id
-        "Add all to Multiplot", None,                     # label, accelerator
+        "Add all to Multiplot", '<alt><shift>a',                     # label, accelerator
         "Add/Remove all sequences to/from multi-plot list",                                    # tooltip
         self.add_multiplot),
+      ( "ClearMultiplot", gtk.STOCK_JUMP_TO,                    # name, stock id
+        "Clear Multiplot List",  None,                     # label, accelerator
+        "Remove all multi-plot list entries",                                    # tooltip
+        self.add_multiplot),
+      ( "RemovePlot", None,                    # name, stock id
+        "Remove the active Plot (no way back!)",  None,                     # label, accelerator
+        "Remove the active Plot (no way back!)",                                    # tooltip
+        self.remove_active_plot),
       ( "FitData", None,                    # name, stock id
         "_Fit data...", "<control>F",                     # label, accelerator
         "Dialog for fitting of a function to the active dataset.",                                    # tooltip
@@ -3535,6 +3593,10 @@ class PlotProfile:
   settings_3d=''
   settings_3dmap=''
   additional_commands=''
+  log_xyz=[False, False, False]
+  xrange=''
+  yrange=''
+  zrange=''
 
   def __init__(self,name):
     '''
@@ -3550,6 +3612,17 @@ class PlotProfile:
       active_class.plot_options_buffer.get_text(\
         active_class.plot_options_buffer.get_start_iter(),\
         active_class.plot_options_buffer.get_end_iter())
+    try:
+      self.log_xyz=[
+                  active_class.logx.get_active(), 
+                  active_class.logy.get_active(), 
+                  active_class.logz.get_active()
+                  ]
+      self.xrange=active_class.x_range_in.get_text()
+      self.yrange=active_class.y_range_in.get_text()
+      self.zrange=active_class.z_range_in.get_text()
+    except AttributeError:
+      self.log_xyz=[False, False, False]
     self.set_output_terminal_png=gnuplot_preferences.set_output_terminal_png
     self.set_output_terminal_ps=gnuplot_preferences.set_output_terminal_ps
     self.x_label=gnuplot_preferences.x_label
@@ -3568,6 +3641,9 @@ class PlotProfile:
     '''
     active_class.measurement[active_class.index_mess].plot_options = self.additional_commands
     active_class.plot_options_buffer.set_text(self.additional_commands)
+    active_class.x_range_in.set_text(self.xrange)
+    active_class.y_range_in.set_text(self.yrange)
+    active_class.z_range_in.set_text(self.zrange)
     gnuplot_preferences.set_output_terminal_png=self.set_output_terminal_png
     gnuplot_preferences.set_output_terminal_ps=self.set_output_terminal_ps
     gnuplot_preferences.x_label=self.x_label
@@ -3580,55 +3656,32 @@ class PlotProfile:
     gnuplot_preferences.settings_3dmap=self.settings_3dmap
     active_class.active_session.font_size=self.font_size
     active_class.font_size.set_text(str(self.font_size))
+    active_class.measurement[active_class.index_mess].logx=self.log_xyz[0]
+    active_class.measurement[active_class.index_mess].logy=self.log_xyz[1]
+    active_class.measurement[active_class.index_mess].logz=self.log_xyz[2]
     active_class.replot() # plot with new settings
 
   def prnt(self):
     '''
       Show the profile settings.
     '''
-    print self.name,self.set_output_terminal_png,self.set_output_terminal_ps,\
-      self.x_label,self.y_label,self.z_label,self.plotting_parameters, \
-      self.plotting_parameters_errorbars,self.plotting_parameters_3d,self.additional_commands
+    output=''
+    for key, value in self.__dict__.items():
+      output+=key + ': ' + value.__repr__()
+    print output
 
   def write(self,config_object):
     '''
       Export the profile settings to a dictionary which is needed
       to store it with the ConfigObj.
     '''
-    config_object[self.name]={}
-    config=config_object[self.name]
-    config['set_output_terminal_png']=self.set_output_terminal_png
-    config['set_output_terminal_ps']=self.set_output_terminal_ps
-    config['x_label']=self.x_label
-    config['y_label']=self.y_label
-    config['z_label']=self.z_label
-    config['plotting_parameters']=self.plotting_parameters
-    config['plotting_parameters_errorbars']=self.plotting_parameters_errorbars
-    config['plotting_parameters_3d']=self.plotting_parameters_3d
-    config['additional_commands']=self.additional_commands
-    config['settings_3d']=self.settings_3d
-    config['settings_3dmap']=self.settings_3dmap
-    config['font_size']=self.font_size
+    config_object[self.name]=self.__dict__
 
   def read(self,config_object):
     '''
       Read a profile from a dictionary, see write.
     '''
-    config=config_object[self.name]
-    self.set_output_terminal_png=config['set_output_terminal_png']
-    self.set_output_terminal_ps=config['set_output_terminal_ps']
-    self.x_label=config['x_label']
-    self.y_label=config['y_label']
-    self.z_label=config['z_label']
-    self.plotting_parameters=config['plotting_parameters']
-    self.plotting_parameters_errorbars=config['plotting_parameters_errorbars']
-    self.plotting_parameters_3d=config['plotting_parameters_3d']
-    self.additional_commands=config['additional_commands']
-    self.settings_3d=config['settings_3d']
-    self.settings_3dmap=config['settings_3dmap']
-    self.additional_commands=config['additional_commands']
-    self.font_size=float(config['font_size'])
-
+    self.__dict__=config_object[self.name]
 
 
 

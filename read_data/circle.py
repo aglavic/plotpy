@@ -29,6 +29,8 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
     @param MEASUREMENT_TYPES List of predefined settings for the measured columns
   '''
   if os.path.exists(input_file):
+    global sample_name
+    sample_name=''
     measurement_data=[]
     if input_file.endswith('.gz'):
       # use gziped format file
@@ -46,6 +48,7 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
       first=False
       sequence=read_data_lines(input_file_lines,measurement_info,COLUMNS_MAPPING,MEASUREMENT_TYPES)
       if not sequence=='NULL':
+        sequence.sample_name=sample_name
         measurement_data.append(sequence)
     if first:
       print "Wrong file type, no columns defined in header (#L)!"
@@ -69,6 +72,9 @@ def read_header(input_file_lines):
     if (line[0:2]=='#L'):
       columns=line[3:-1].split('  ')
       return [output,columns]
+    elif (line[0:2]=='#C') and 'User' in line:
+      global sample_name
+      sample_name=line[3:-1].split('User')[0]
     else:
       output=output+'\n'+line.rstrip('\n')
   return 'NULL'

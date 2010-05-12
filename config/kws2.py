@@ -28,4 +28,5 @@ setup_config={'CENTER_X' :65.,
               'DETECTOR_DISTANCE' :5285., 
               'SWAP_YZ' : False,
               'DETECTOR_SENSITIVITY' : None, 
+              'LAMBDA_N': LAMBDA_N, 
               }

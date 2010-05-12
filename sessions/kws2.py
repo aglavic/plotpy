@@ -99,17 +99,19 @@ class KWS2Session(GenericSession):
     '''
     setup=dict(config.kws2.setup_config)
     dialog=gtk.Dialog('Setup parameters:')
-    table=gtk.Table(3, 6, False)
+    table=gtk.Table(3, 7, False)
     # labels
     label_center_x=gtk.Label('Horizontal Beamcenter:')
     label_center_y=gtk.Label('Vertical Beamcenter:')
     label_detector_distance=gtk.Label('Detector distance:')
+    label_lambda_n=gtk.Label('Neutron Wavelength λ:')
     label_detector_sensitivity=gtk.Label('Sensitivity measurement:')
     label_background=gtk.Label('Background measurement:')
     label_apply=gtk.Label('Apply this to files:')
     rl_center_x=gtk.Label('pix')
     rl_center_y=gtk.Label('pix')
     rl_detector_distance=gtk.Label('mm')
+    rl_lambda_n=gtk.Label('Å')
     # entries
     entry_center_x=gtk.Entry()
     entry_center_x.set_text(str(setup['CENTER_X']))
@@ -117,6 +119,8 @@ class KWS2Session(GenericSession):
     entry_center_y.set_text(str(setup['CENTER_Y']))
     entry_detector_distance=gtk.Entry()
     entry_detector_distance.set_text(str(setup['DETECTOR_DISTANCE']))
+    entry_lambda_n=gtk.Entry()
+    entry_lambda_n.set_text(str(setup['LAMBDA_N']))
     entry_apply=gtk.Entry()
     entry_apply.set_text(file_name)
     toggle_button_swapyz=gtk.CheckButton('Swap z to horizontal ')
@@ -129,24 +133,27 @@ class KWS2Session(GenericSession):
     button_background=gtk.Button(None, gtk.STOCK_OPEN)
     button_background.connect('clicked', self.select_file, folder, entry_background)
     # add to table
-    table.attach(label_center_x, 0,1, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(label_center_y, 0,1, 1,2, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(label_detector_distance, 0,1, 2,3, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(label_detector_sensitivity, 0,1, 4,5, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(label_background, 0,1, 5,6, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(label_apply, 0,1, 6,7, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(entry_center_x, 1,2, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(entry_center_y, 1,2, 1,2, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(entry_detector_distance, 1,2, 2,3, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(toggle_button_swapyz, 1,3, 3,4, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(entry_detector_sensitivity, 1,2, 4,5, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(entry_background, 1,2, 5,6, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(entry_apply, 1,2, 6,7, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(rl_center_x, 2,3, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(rl_center_y, 2,3, 1,2, gtk.EXPAND|gtk.FILL,0, 0,0);
-    table.attach(rl_detector_distance, 2,3, 2,3, gtk.EXPAND|gtk.FILL,0, 0,0);  
-    table.attach(button_detector_sensitivity, 2,3, 4,5, gtk.EXPAND|gtk.FILL,0, 0,0);  
-    table.attach(button_background, 2,3, 5,6, gtk.EXPAND|gtk.FILL,0, 0,0);  
+    table.attach(label_center_x, 0,1, 0,1, gtk.FILL,0, 0,0);
+    table.attach(label_center_y, 0,1, 1,2, gtk.FILL,0, 0,0);
+    table.attach(label_detector_distance, 0,1, 2,3, gtk.FILL,0, 0,0);
+    table.attach(label_lambda_n, 0,1, 3,4, gtk.FILL,0, 0,0);
+    table.attach(label_detector_sensitivity, 0,1, 5,6, gtk.FILL,0, 0,0);
+    table.attach(label_background, 0,1, 6,7, gtk.FILL,0, 0,0);
+    table.attach(label_apply, 0,1, 7,8, gtk.FILL,0, 0,0);
+    table.attach(entry_center_x, 1,2, 0,1, 0,0, 0,0);
+    table.attach(entry_center_y, 1,2, 1,2, 0,0, 0,0);
+    table.attach(entry_detector_distance, 1,2, 2,3, 0,0, 0,0);
+    table.attach(entry_lambda_n, 1,2, 3,4, 0,0, 0,0);
+    table.attach(toggle_button_swapyz, 1,3, 4,5, gtk.EXPAND|gtk.FILL,0, 0,0);
+    table.attach(entry_detector_sensitivity, 1,2, 5,6, gtk.EXPAND|gtk.FILL,0, 0,0);
+    table.attach(entry_background, 1,2, 6,7, gtk.EXPAND|gtk.FILL,0, 0,0);
+    table.attach(entry_apply, 1,2, 7,8, gtk.EXPAND|gtk.FILL,0, 0,0);
+    table.attach(rl_center_x, 2,3, 0,1, gtk.FILL,0, 0,0);
+    table.attach(rl_center_y, 2,3, 1,2, gtk.FILL,0, 0,0);
+    table.attach(rl_detector_distance, 2,3, 2,3, gtk.FILL,0, 0,0);  
+    table.attach(rl_lambda_n, 2,3, 3,4, gtk.FILL,0, 0,0);  
+    table.attach(button_detector_sensitivity, 2,3, 5,6, gtk.FILL,0, 0,0);  
+    table.attach(button_background, 2,3, 6,7, gtk.FILL,0, 0,0);  
     
     dialog.vbox.add(table)
     dialog.show_all()
