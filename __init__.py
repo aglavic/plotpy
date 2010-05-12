@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''
-  Main script which imports the other modules.
+  Plot-script package for data plotting and analyzing for different instruments.
 '''
 #################################################################################################
 #                    Script to plot different measurements with gnuplot                         #
@@ -48,7 +48,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.3"
+__version__ = "0.7a"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -70,7 +70,7 @@ known_measurement_types={
                          'in12': ('in12', 'IN12Session', ['___']), 
                          'dns': ('dns', 'DNSSession', ['d_dat']), 
                          'kws2': ('kws2', 'KWS2Session', ['DAT']),                         
-                         'scd': ('single_diff', 'SingleDiffSession', ['___']), 
+                         #'scd': ('single_diff', 'SingleDiffSession', ['___']), 
                          'generic': ('generic', 'GenericSession', ['___']), 
                          }
 
