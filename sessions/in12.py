@@ -17,6 +17,12 @@
 from generic import GenericSession
 # importing data readout
 import read_data.in12
+# import gui functions for active toolkit
+from config.gui import toolkit
+try:
+  GUI=__import__( toolkit+'gui.in12', fromlist=['IN12GUI']).IN12GUI
+except ImportError: 
+  class GUI: pass
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
@@ -27,7 +33,7 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-class IN12Session(GenericSession):
+class IN12Session(GenericSession, GUI):
   '''
     Class to handle in12 data sessions
   '''
@@ -78,24 +84,5 @@ class IN12Session(GenericSession):
     '''
     return read_data.in12.read_data(file_name)
 
-
-  def create_menu(self):
-    '''
-      create a specifig menu for the 4circle session
-    '''
-    # Create XML for squid menu
-    string=''#'
-      #<menu action='TREFF'>
-      #
-      #</menu>
-    #'''
-    # Create actions for the menu
-    actions=(
-            ( "IN12", None,                             # name, stock id
-                "IN12", None,                    # label, accelerator
-                None,                                   # tooltip
-                None ),
-             )
-    return string,  actions
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
