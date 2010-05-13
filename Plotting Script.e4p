@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-05-13, 17:14:55 -->
+<!-- Saved: 2010-05-13, 18:35:23 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -84,6 +84,17 @@
     <Source>gtkgui/kws2.py</Source>
     <Source>gtkgui/ipython_view.py</Source>
     <Source>gtkgui/reflectometer_functions.py</Source>
+    <Source>wxgui/__init__.py</Source>
+    <Source>wxgui/circle.py</Source>
+    <Source>wxgui/dns.py</Source>
+    <Source>wxgui/fit_data.py</Source>
+    <Source>wxgui/in12.py</Source>
+    <Source>wxgui/MyClasses.py</Source>
+    <Source>wxgui/refl_fit_functions.py</Source>
+    <Source>wxgui/squid.py</Source>
+    <Source>wxgui/treff.py</Source>
+    <Source>wxgui/main_window.py</Source>
+    <Source>wxgui/dialogs.py</Source>
   </Sources>
   <Forms>
   </Forms>
@@ -97,7 +108,6 @@
     <Other>/usr/share/eric/APIs/plotting.api</Other>
     <Other>install</Other>
     <Other>uninstall</Other>
-    <Other>doc</Other>
   </Others>
   <MainScript>__init__.py</MainScript>
   <Vcs>
