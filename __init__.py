@@ -189,36 +189,3 @@ def _run():
 
 if __name__ == '__main__':    #code to execute if called from command-line
   _run()
-
-def test_mpl(arguments):
-  '''
-    Testing the matplotlib plotting stuff
-  '''
-  active_session=initialize(arguments)  
-  plotting_session=initialize_gui(active_session)
-  import gtk
-  from matplotlib.figure import Figure
-  from numpy import arange, sin, pi
-  from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
-  from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
-
-  vbox = gtk.VBox()
-  plotting_session.frame1.remove(plotting_session.frame1.child)
-  plotting_session.frame1.add(vbox)
-
-  fig = Figure(figsize=(5,4), dpi=100)
-  ax = fig.add_subplot(111)
-  t = arange(0.0,3.0,0.01)
-  s = sin(2*pi*t)
-
-  ax.plot(t,s)
-
-
-  canvas = FigureCanvas(fig)  # a gtk.DrawingArea
-  vbox.pack_start(canvas)
-  toolbar = NavigationToolbar(canvas, plotting_session)
-  vbox.pack_start(toolbar, False, False)
-
-
-  vbox.show_all()
-  return plotting_session, (vbox, fig, ax, canvas, toolbar)

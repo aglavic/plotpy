@@ -6,6 +6,10 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
 import gtk
+import os
+import math
+# own modules
+import read_data.reflectometer
 
 #----------------------- importing modules --------------------------
 
@@ -674,10 +678,10 @@ class ReflectometerGUI:
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
     ent_file.close()
     #open a background process for the fit function
-    reflectometer_fit.functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',self.max_iter)
+    self.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',self.max_iter)
     print "fit.f90 program started."
     if self.active_file_data.fit_object.fit!=1: # if this is not a fit just wait till finished
-      exec_time, stderr_value = reflectometer_fit.functions.proc.communicate()
+      exec_time, stderr_value = self.proc.communicate()
       print "fit.f90 program finished in %.2g seconds." % float(exec_time.splitlines()[-1])
     else:
       self.open_status_dialog(window)

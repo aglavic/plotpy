@@ -23,7 +23,6 @@ import time
 from generic import GenericSession
 # import parameter class for fits
 from reflectometer_fit.parameters import FitParameters, LayerParam, MultilayerParam
-import reflectometer_fit.functions
 from measurement_data_structure import MeasurementData
 # importing data readout
 import read_data.treff
@@ -32,6 +31,7 @@ import config.treff
 from config.gui import toolkit
 try:
   GUI=__import__( toolkit+'gui.treff', fromlist=['TreffGUI']).TreffGUI
+  ReflectometerFitGUI=__import__( toolkit+'gui.ReflectometerFitGUI', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
 except ImportError: 
   class GUI: pass
 
@@ -57,7 +57,7 @@ class FitList(list):
     self.fit_object_future=[]
     self.fit_datasets=[None, None, None, None] # a list of datasets used for fit [++,--,+-,-+]
 
-class TreffSession(GenericSession, GUI):
+class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
   '''
     Class to handle treff data sessions
   '''
@@ -238,24 +238,6 @@ class TreffSession(GenericSession, GUI):
     self.active_file_data.append(true_specular)
     file_actions.window.index_mess=len(self.active_file_data)-1
     return True
-
-  #++++ functions for fitting with fortran program by E. Kentzinger ++++
-  
-  from reflectometer_fit.functions import \
-      dialog_activate, \
-      result_window_response, \
-      fit_history, \
-      rebuild_dialog, \
-      delete_layer, \
-      up_layer, \
-      move_layer_up_in_list, \
-      delete_multilayer, \
-      open_status_dialog, \
-      toggle_fit_option, \
-      toggle_fit_bool_option, \
-      read_fit_file, \
-      user_constraint_dialog, \
-      user_constraint_response
   
   def export_data_and_entfile(self, folder, file_name, datafile_prefix='fit_temp_', 
                               use_multilayer=False, use_roughness_gradient=True):

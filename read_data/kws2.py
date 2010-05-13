@@ -77,6 +77,8 @@ def create_dataobj(data_lines, header_lines, countingtime, setup):
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
                            ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
+  dataobj.scan_line=0
+  dataobj.scan_line_constant=1
   data_joined=" ".join(data_lines)
   data_array=array(map(float, data_joined.split()))
   y_array=array([i%config.kws2.PIXEL_X for i in range(config.kws2.PIXEL_X**2)])

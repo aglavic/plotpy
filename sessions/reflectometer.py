@@ -30,7 +30,6 @@ import time
 from generic import GenericSession
 # import parameter class for fits
 from reflectometer_fit.parameters import FitParameters, LayerParam, MultilayerParam
-import reflectometer_fit.functions
 # importing preferences and data readout
 import read_data.reflectometer
 import config.reflectometer
@@ -39,6 +38,7 @@ from measurement_data_structure import MeasurementData
 from config.gui import toolkit
 try:
   GUI=__import__( toolkit+'gui.reflectometer', fromlist=['ReflectometerGUI']).ReflectometerGUI
+  ReflectometerFitGUI=__import__( toolkit+'gui.reflectometer_functions', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
 except ImportError: 
   class GUI: pass
 
@@ -62,7 +62,7 @@ class FitList(list):
     self.fit_object_history=[]
     self.fit_object_future=[]
 
-class ReflectometerSession(GenericSession, GUI):
+class ReflectometerSession(GenericSession, GUI, ReflectometerFitGUI):
   '''
     Class to handle reflectometer data sessions
   '''
@@ -212,25 +212,7 @@ class ReflectometerSession(GenericSession, GUI):
     for counts in counts_column:
       output_data[counts]=output_data[counts]/self.time_col # calculate the cps
     return output_data
-  
-  #++++ functions for fitting with fortran program by E. Kentzinger ++++
-  
-  from reflectometer_fit.functions import \
-      dialog_activate, \
-      result_window_response, \
-      fit_history, \
-      rebuild_dialog, \
-      delete_layer, \
-      up_layer, \
-      move_layer_up_in_list, \
-      delete_multilayer, \
-      open_status_dialog, \
-      toggle_fit_option, \
-      toggle_fit_bool_option, \
-      read_fit_file, \
-      user_constraint_dialog, \
-      user_constraint_response
-  
+
   def call_fit_program(self, file_ent, file_res, file_out, max_iter, exe=None):
     '''
       This function calls the fit.f90 program and if it is not compiled with 
@@ -303,8 +285,8 @@ class ReflectometerSession(GenericSession, GUI):
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    reflectometer_fit.functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',20)
-    retcode = reflectometer_fit.functions.proc.communicate()
+    self.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',20)
+    retcode = self.proc.communicate()
     parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref', self.active_file_data.fit_object)
     self.active_file_data.fit_object.scaling_factor=parameters[self.active_file_data.fit_object.fit_params[0]]
     self.active_file_data.fit_object.fit=0
@@ -329,15 +311,15 @@ class ReflectometerSession(GenericSession, GUI):
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    reflectometer_fit.functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',20)
+    self.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',20)
     sec=0.
-    while reflectometer_fit.functions.proc.poll()==None:
+    while self.proc.poll()==None:
       time.sleep(0.1)
       sec+=0.1
       sys.stdout.write( '\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b'+\
                         'Script running for % 6dsec' % sec)
       sys.stdout.flush()
-    retcode = reflectometer_fit.functions.proc.communicate()
+    retcode = self.proc.communicate()
     parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref',self.active_file_data.fit_object)
     self.active_file_data.fit_object.get_parameters(parameters)
     self.active_file_data.fit_object.fit=0
@@ -395,10 +377,10 @@ class ReflectometerSession(GenericSession, GUI):
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
     ent_file.close()
     print "Simulate the measurement"
-    reflectometer_fit.functions.proc = self.call_fit_program(export_file_prefix+'.ent', 
+    self.proc = self.call_fit_program(export_file_prefix+'.ent', 
                                                              export_file_prefix+'.res', 
                                                              export_file_prefix,20)
-    retcode = reflectometer_fit.functions.proc.communicate()
+    retcode = self.proc.communicate()
     #------- create final input file and make a simulation -------
 
   #---- functions for fitting with fortran program by E. Kentzinger ----

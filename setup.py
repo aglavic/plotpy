@@ -97,7 +97,7 @@ __py_modules__.append('configobj')
 # as the requires keyword from distutils is not working, we test for the dependencies ourselves.
 if 'install' in sys.argv:
   dependencies_ok=True
-  print "Testing all dependencies."
+  print "Testing dependencies."
   # call linux and windows gnuplot command with --help option to test if it can be called.
   try:
     subprocess.Popen(['gnuplot','--help'], shell=False,stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
@@ -115,7 +115,7 @@ if 'install' in sys.argv:
     import gobject
     import gtk
   except ImportError:
-    print "PyGTK with gobject has to be installes."
+    print "PyGTK with gobject has to be installed to use GTK GUI."
     dependencies_ok=False
   # fitting dependencies, not crucial
   try:

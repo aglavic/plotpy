@@ -223,12 +223,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       except ImportError:
         print "Gnuplot.py not available, falling back to script mode!"
         self.gnuplot_script=True
-    if self.use_gui: # verify pygtk is installed
-      try:
-        import gtk
-      except ImportError:
-        print "You have to install pygtk to run in GUI-mode, falling back to command-line mode!"
-        self.use_gui=False
     try: # verify mathematic modules needed for fitting
       import numpy
       import scipy
@@ -665,10 +659,3 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
     self.file_data[self.active_file_name]=dump_obj
     self.active_file_data=self.file_data[self.active_file_name]
-
-  def create_menu(self):
-    '''
-      Create a specifig menu for the session. Only child classes
-      will add anything here.
-    '''
-    return '',  ()

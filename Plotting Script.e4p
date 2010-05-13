@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-05-12, 15:49:31 -->
+<!-- Saved: 2010-05-13, 16:03:48 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -65,7 +65,6 @@
     <Source>sessions/kws2.py</Source>
     <Source>read_data/kws2.py</Source>
     <Source>config/kws2.py</Source>
-    <Source>ipython_view.py</Source>
     <Source>plotting_debug.py</Source>
     <Source>sessions/single_diff.py</Source>
     <Source>__init__.py</Source>
@@ -85,6 +84,7 @@
     <Source>gtkgui/treff.py</Source>
     <Source>plot.py</Source>
     <Source>gtkgui/kws2.py</Source>
+    <Source>gtkgui/ipython_view.py</Source>
   </Sources>
   <Forms>
   </Forms>
