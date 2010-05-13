@@ -131,6 +131,8 @@ def read_data(file_name, script_path, import_images):
            'omega': -1, 
            'detector': -1
            }
+  global negative_omega
+  negative_omega=False
   const_information={}
   for line in headers:
     try:
@@ -138,13 +140,19 @@ def read_data(file_name, script_path, import_images):
         columns['Scantype']=line[-1]
         if line[-1] == 'omega':
           columns['omega']=0
-        elif line[-1] == 'detector':
+        elif line[-1] == 'detector' or line[-1] == 'scatteringarm':
           columns['detector']=0
+        elif line[-1] == 'sampletable':
+          columns['omega']=0
+          negative_omega=True
       elif line[0] == '2nd':
         if line[-1] == 'omega':
           columns['omega']=1
         elif line[-1] == 'detector':
           columns['detector']=1
+        elif line[-1] == 'sampletable':
+          columns['omega']=1
+          negative_omega=True
       else:
         const_information[line[0]]=float(line[1])
     except IndexError:
@@ -319,6 +327,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
       alphai = float(line[columns['omega']])
     else:
       alphai = const_information['omega']
+    if negative_omega:
+      alphai *= -1
     if columns['detector'] >= 0:
       alphaf_center = float(line[columns['detector']]) - alphai
     else:

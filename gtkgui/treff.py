@@ -6,6 +6,7 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
 import gtk
+from diverse_classes import MultiplotList
 
 #----------------------- importing modules --------------------------
 
@@ -886,7 +887,8 @@ class TreffGUI:
         simu.logy=True
         free_sims.append(simu)
     # create a multiplot with all datasets
-    window.multiplot=[[(dataset, dataset.short_info) for dataset in self.active_file_data.fit_datasets if dataset]]
+    window.multiplot=[MultiplotList([(dataset, dataset.short_info) for dataset in \
+                                     self.active_file_data.fit_datasets if dataset])]
     window.multi_list.set_markup(' Multiplot List: \n' + '\n'.join(map(lambda item: item[1], window.multiplot[0])))
     if not window.index_mess in [self.active_file_data.index(item[0]) for item in window.multiplot[0]]:
       try:

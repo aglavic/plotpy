@@ -150,6 +150,15 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
           data[i]=dataset.join(add_data[i])
     return FitList(data)
 
+  def add_data(self, data_list, name, append=True):
+    '''
+      Function which ither adds file data to the object or replaces
+      all data by a new dictionary.
+    '''
+    if not append:
+      self.file_data={}
+    self.file_data[name]=FitList(data_list)
+
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
 
   def do_extract_specular_reflectivity(self, file_actions, line_width, weighting, sigma, binning, center_position_offset=(0., 0.)):

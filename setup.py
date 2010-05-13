@@ -141,8 +141,8 @@ setup(name=__name__,
       packages=__packages__, 
       package_data=__package_data__,
       requires=__requires__, #does not do anything
-      console = [ "py2exe_imports.py" ],
-      windows = [ "plot.py" ],
+      console = [ "plot.py","py2exe_imports.py" ],
+      #windows = [ "plot.py" ],
       options = __options__, 
      )
 

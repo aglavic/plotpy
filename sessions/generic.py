@@ -358,7 +358,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       self.GNUPLOT_COMMAND="wgnuplot"
       self.gnuplot_scripts=True
       def replace_systemdependent( string): # replace backthlash by double backthlash for gnuplot under windows
-        return string.replace('\\','\\\\').replace('\\\\\n','\\\n')
+        return string.replace('\\','\\\\').replace('\\\\\n','\\\n').replace('\\\\\\\\', '\\\\')
       self.replace_systemdependent=replace_systemdependent
     self.TEMP_DIR=self.TEMP_DIR+'plottingscript-'+self.OWN_PID+os.sep
     try:
