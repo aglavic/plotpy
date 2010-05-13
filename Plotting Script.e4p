@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-05-13, 16:03:48 -->
+<!-- Saved: 2010-05-13, 17:14:55 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -50,7 +50,6 @@
     <Source>config/scattering_length_table.py</Source>
     <Source>sessions/reflectometer_fit/__init__.py</Source>
     <Source>sessions/reflectometer_fit/parameters.py</Source>
-    <Source>sessions/reflectometer_fit/functions.py</Source>
     <Source>config/fit/pnr_multi/calchi.f90</Source>
     <Source>config/fit/pnr_multi/fit_pnr_mult_newcons.f90</Source>
     <Source>config/fit/pnr_multi/levenberg_rough_newcons.f90</Source>
@@ -78,13 +77,13 @@
     <Source>gtkgui/fit_data.py</Source>
     <Source>gtkgui/in12.py</Source>
     <Source>gtkgui/main_window.py</Source>
-    <Source>gtkgui/refl_fit_functions.py</Source>
     <Source>gtkgui/reflectometer.py</Source>
     <Source>gtkgui/squid.py</Source>
     <Source>gtkgui/treff.py</Source>
     <Source>plot.py</Source>
     <Source>gtkgui/kws2.py</Source>
     <Source>gtkgui/ipython_view.py</Source>
+    <Source>gtkgui/reflectometer_functions.py</Source>
   </Sources>
   <Forms>
   </Forms>
