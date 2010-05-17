@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-05-13, 18:35:23 -->
+<!-- Saved: 2010-05-17, 08:46:08 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -36,7 +36,6 @@
     <Source>MANIFEST.in</Source>
     <Source>setup.cfg</Source>
     <Source>config/fit/fit.f90</Source>
-    <Source>file_actions.py</Source>
     <Source>read_data/dns.py</Source>
     <Source>sessions/dns.py</Source>
     <Source>config/dns.py</Source>
@@ -74,7 +73,6 @@
     <Source>gtkgui/dialogs.py</Source>
     <Source>gtkgui/diverse_classes.py</Source>
     <Source>gtkgui/dns.py</Source>
-    <Source>gtkgui/fit_data.py</Source>
     <Source>gtkgui/in12.py</Source>
     <Source>gtkgui/main_window.py</Source>
     <Source>gtkgui/reflectometer.py</Source>
@@ -95,6 +93,10 @@
     <Source>wxgui/treff.py</Source>
     <Source>wxgui/main_window.py</Source>
     <Source>wxgui/dialogs.py</Source>
+    <Source>wxgui/diverse_classes.py</Source>
+    <Source>gtkgui/file_actions.py</Source>
+    <Source>wxgui/gui_fit_data.py</Source>
+    <Source>gtkgui/gui_fit_data.py</Source>
   </Sources>
   <Forms>
   </Forms>

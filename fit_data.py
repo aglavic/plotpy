@@ -15,8 +15,8 @@ from measurement_data_structure import MeasurementData
 # import gui functions for active toolkit
 from config.gui import toolkit
 try:
-  FitSessionGUI=__import__( toolkit+'gui.fit_data', fromlist=['FitSessionGUI']).FitSessionGUI
-  FitFunctionGUI=__import__( toolkit+'gui.fit_data', fromlist=['FitFunctionGUI']).FitFunctionGUI
+  FitSessionGUI=__import__( toolkit+'gui.gui_fit_data', fromlist=['FitSessionGUI']).FitSessionGUI
+  FitFunctionGUI=__import__( toolkit+'gui.gui_fit_data', fromlist=['FitFunctionGUI']).FitFunctionGUI
 except ImportError: 
   class FitSessionGUI: pass
   class FitFunctionGUI: pass

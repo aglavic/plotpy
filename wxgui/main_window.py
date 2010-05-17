@@ -25,7 +25,7 @@ from measurement_data_structure import MeasurementData
 import measurement_data_plotting
 from config.gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
 from config import gnuplot_preferences
-from plot_profile import PlotProfile
+from diverse_classes import PlotProfile
 import file_actions
 from config.gui import DOWNLOAD_PAGE_URL
 
@@ -43,7 +43,10 @@ __maintainer__ = "Artur Glavic"
 __email__      = "a.glavic@fz-juelich.de"
 __status__     = "Development"
 
-main_loop      = wx.App(0)
+WXAPPLICATION=wx.App(0)
+
+def main_loop(session):
+  WXAPPLICATION.MainLoop()
 
 # window IDs ( wichtig fuer event handling)
 idShowConfigPath    = wx.ID_HIGHEST + 1
@@ -136,6 +139,9 @@ class ApplicationMainWindow( wx.Frame ):
     Main window of the GUI.
     Everything the GUI does is in this Class.
   '''
+  
+  active_plot_geometry=(800, 600)
+  
   #+++++++++++++++++++++++++++++++Window Constructor+++++++++++++++++++++++++++++++++++++#
   def __init__(self, active_session, parent=None, script_suf='', status_dialog=None):
     '''
@@ -243,7 +249,7 @@ class ApplicationMainWindow( wx.Frame ):
     # attach entrys to sub table
     top_table.Add( self.label )
     top_table.Add( self.label2)
-    table.Add( top_table,0, wx.ALL|wx.CENTER, 5 )
+    table.Add( top_table,0, wx.ALL|wx.CENTER|wx.EXPAND, 5 )
 
     self.frame1 = wx.Notebook(self, wx.ID_ANY,  size=wx.Size(300,500), style=wx.NB_TOP )
 

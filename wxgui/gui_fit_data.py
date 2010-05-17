@@ -16,8 +16,9 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
+class FitFunctionGUI: pass
 
-class FitGUI:
+class FitSessionGUI:
   '''
     GUI Methods for the FitSession class .
   '''
@@ -174,7 +175,7 @@ class FitGUI:
     entries.append( wx.TextCtrl( sw, wx.ID_ANY ))
     entries[len(function.parameters)+1].SetMaxLength(8)
     if function.x_to is not None:
-      entries[len(function.parameters)+1].SetValuet("%.6g" % function.x_to)
+      entries[len(function.parameters)+1].SetValue("%.6g" % function.x_to)
     else:
       entries[len(function.parameters)+1].SetValue("{to}")
 
@@ -196,7 +197,7 @@ class FitGUI:
     print 'name   = ', name
     print 'dialog = ', dialog
     print 'window = ', window
-    self.file_actions.activate_action('add_function', name.GetValue())
+    window.file_actions.activate_action('add_function', name.GetValue())
     print 'sel value = ', name.GetValue()
     size     = dialog.GetSize()
     position = dialog.GetPosition()
@@ -260,9 +261,9 @@ class FitGUI:
       values.append(get_entry_values(entries[i][-4], if_not=None))
       values.append(get_entry_values(entries[i][-3], if_not=None))
       values.append(entries[i][-2].GetValue())
-      self.file_actions.activate_action('set_function_parameters', i, values)
-    covariance_matices=self.file_actions.activate_action('fit_functions')
-    self.file_actions.activate_action('simmulate_functions')
+      window.file_actions.activate_action('set_function_parameters', i, values)
+    covariance_matices=window.file_actions.activate_action('fit_functions')
+    window.file_actions.activate_action('simmulate_functions')
     # save the geometry of the fit dialog and replot the data+fit
     size     = dialog.GetSize()
     position = dialog.GetPosition()
@@ -351,7 +352,7 @@ class FitGUI:
     if result in [2, 3]:
       if result==2:
         print 'selected = ',selected
-        self.file_actions.activate_action('sum_up_functions', selected[0], selected[1])
+        window.file_actions.activate_action('sum_up_functions', selected[0], selected[1])
         size     = dialog.GetSize()
         position = dialog.GetPosition()
         dialog.Destroy()
