@@ -1743,7 +1743,7 @@ class ApplicationMainWindow( wx.Frame ):
 
 
 
-  def fit_dialog(self,action, size=(900, 250), position=None):
+  def fit_dialog(self,action, size=(900, 350), position=None):
      '''
        A dialog to fit the data with a set of functions.
       
@@ -1791,23 +1791,14 @@ class ApplicationMainWindow( wx.Frame ):
        actions_table.Add(button, 0, wx.ALIGN_LEFT|wx.ALL, 3)
 
      sw.SetSizer( align_table )
-     vbox.Add( sw, 0, wx.ALL, 10 )
+     vbox.Add( sw, 1, wx.ALL|wx.EXPAND, 10 )
      vbox.Add( actions_table, 0, wx.ALIGN_LEFT  )
-
-     sw.SetSizerAndFit( align_table )
-     sw.FitInside()
 
      def fit_dialog_close(  self, parent ):
        parent.open_windows.remove(fit_dialog)
        fit_dialog.Destroy()
 
      fit_dialog.Bind( wx.EVT_CLOSE,  handler=lambda evt, arg1=self: fit_dialog_close( evt, arg1 ) )
-
-
-     try:
-       fit_dialog.Fit()
-     except AttributeError:
-       pass
 
      fit_dialog.Show()
      self.open_windows.append(fit_dialog)
