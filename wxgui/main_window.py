@@ -228,14 +228,12 @@ class ApplicationMainWindow( wx.Frame ):
     # TODO: don't lose entry when not pressing enter
 
     self.label = wx.TextCtrl(self, id=idLabel, style=wx.TE_PROCESS_ENTER)                  # style=wx.TE_PROCESS_ENTER  
-    self.label.SetMaxLength( len(self.measurement[self.index_mess].sample_name)+5 )        # title width
     # SetValue generates a wx.wxEVT_COMMAND_TEXT_UPDATED event
     self.label.ChangeValue(self.measurement[self.index_mess].sample_name)
     self.label.Bind(event=wx.EVT_TEXT_ENTER, handler=self.change )                         # Enter entry triggers change() function
 
     # second entry for additional information part of title
     self.label2 = wx.TextCtrl(self, id=idLabel2, style=wx.TE_PROCESS_ENTER)
-    self.label2.SetMaxLength( len(self.measurement[self.index_mess].short_info)+5 )        # title width
     self.label2.ChangeValue( self.measurement[self.index_mess].short_info )
     self.label2.Bind(event=wx.EVT_TEXT_ENTER, handler=self.change)                         # Enter entry triggers change() function 
 
@@ -573,10 +571,8 @@ class ApplicationMainWindow( wx.Frame ):
          self.measurement[self.index_mess].view_x=170
 
      # change plot title labels
-     elif id == idLabel:
+     elif id == idLabel or id == idLabel2:
        self.measurement[self.index_mess].sample_name=self.label.GetValue()
-
-     elif id == idLabel2:
        self.measurement[self.index_mess].short_info=self.label2.GetValue()
 
      # change log settings
