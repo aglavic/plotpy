@@ -44,6 +44,15 @@ gui_main=None
 
 #----------------------- importing modules --------------------------
 
+# set default encoding
+try:
+  sys.setdefaultencoding('utf8')
+except AttributeError:
+  try:
+    sys.setappdefaultencoding('utf8')
+  except AttributeError:
+    pass
+
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []

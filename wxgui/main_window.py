@@ -458,7 +458,7 @@ class ApplicationMainWindow( wx.Frame ):
      about_info.SetName( 'Plotting GUI' )
      about_info.SetVersion( 'v%s'%__version__ )
      about_info.SetDevelopers( ['Artur Glavic'] )
-     about_info.SetCopyright( unicode('\302\251 Copyright 2008-2010 Artur Glavic\n a.glavic@fz-juelich.de', 'utf-8') )
+     about_info.SetCopyright( '\302\251 Copyright 2008-2010 Artur Glavic\n a.glavic@fz-juelich.de' )
      about_info.SetWebSite("http://www.fz-juelich.de/iff/Glavic_A/")
      dialog = wx.AboutBox( about_info )
   
@@ -1049,7 +1049,7 @@ class ApplicationMainWindow( wx.Frame ):
      sBox      = wx.StaticBox(param_dialog)
      sBoxSizer = wx.StaticBoxSizer( sBox, wx.VERTICAL )
      sw = wx.TextCtrl( param_dialog, wx.ID_ANY, style=wx.ALIGN_LEFT|wx.TE_MULTILINE|wx.TE_READONLY, size=(500,300) )
-     sw.SetValue( unicode(plot_text, 'utf-8', 'ignore') )
+     sw.SetValue( plot_text )
 #     sw.SetValue( plot_text )
      table.Add(sBoxSizer, 0, wx.ALL|wx.EXPAND, 0)
      sBoxSizer.Add( sw, 0, wx.ALIGN_LEFT|wx.EXPAND )
@@ -1063,7 +1063,7 @@ class ApplicationMainWindow( wx.Frame ):
        sBox      = wx.StaticBox(param_dialog)
        sBoxSizer = wx.StaticBoxSizer( sBox, wx.VERTICAL )
        sw = wx.TextCtrl( param_dialog, wx.ID_ANY, style=wx.ALIGN_LEFT|wx.TE_MULTILINE|wx.TE_READONLY, size=(500,200) )
-#       sw.SetValue( unicode(self.last_plot_text, 'utf-8') ) 
+       sw.SetValue( self.last_plot_text ) 
        sw.SetValue( self.last_plot_text ) 
        table.Add(sBoxSizer, 0, wx.ALL|wx.EXPAND, 0)
        sBoxSizer.Add( sw, 0, wx.ALIGN_LEFT|wx.EXPAND )
@@ -1179,7 +1179,7 @@ class ApplicationMainWindow( wx.Frame ):
      
      # drop down menu for the columns present in the dataset
      for column_dim in data.dimensions():
-       column.Append(unicode(column_dim, 'utf-8') )
+       column.Append(column_dim)
 
      column.SetSelection(parameters[0]+1)
      hBox.Add(column, 0, wx.ALL, 3 )
@@ -1244,7 +1244,7 @@ class ApplicationMainWindow( wx.Frame ):
      trans_box = wx.ComboBox(transformation_dialog)
      trans_box.Append('empty')
      for trans in allowed_trans:
-       trans_box.Append(unicode('%s -> %s' % (trans[0], trans[-1]),'utf-8') )
+       trans_box.Append('%s -> %s' % (trans[0], trans[-1]))
      try:
        but1 = wx.Button( transformation_dialog, wx.ID_ANY, label='Add transformation')       # returns 2
        but1.Bind( wx.EVT_BUTTON, handler=butClicked )
@@ -2964,7 +2964,7 @@ class ApplicationMainWindow( wx.Frame ):
       print 'append item ',id
 
       for dimension in self.measurement[self.index_mess].dimensions():
-          output = unicode(dimension, 'utf-8')
+          output = dimension
           id = self.menuXAxes.Append( wx.ID_ANY, output, output ).GetId()
           self.Bind(wx.EVT_MENU, self.change, id=id)
           self.action_dict[id] = 'x-'+output
@@ -2995,7 +2995,7 @@ class ApplicationMainWindow( wx.Frame ):
       print 'append item ',id
 
       for dimension in self.measurement[self.index_mess].dimensions():
-          output = unicode(dimension, 'utf-8')
+          output = dimension
           id = self.menuYAxes.Append( wx.ID_ANY, output, output ).GetId()
           self.Bind(wx.EVT_MENU, self.change, id=id)
           self.action_dict[id] = 'y-'+output
@@ -3029,7 +3029,7 @@ class ApplicationMainWindow( wx.Frame ):
          self.menuZAxes.Enable(id, False)
 
       for dimension in self.measurement[self.index_mess].dimensions():
-          output = unicode(dimension, 'utf-8')
+          output = dimension
           id = self.menuZAxes.Append(wx.ID_ANY, output, 
                               output).GetId()
           self.Bind( wx.EVT_MENU, self.change, id=id )
@@ -3059,7 +3059,7 @@ class ApplicationMainWindow( wx.Frame ):
 
       self.menuYError = wx.Menu()
       for dimension in self.measurement[self.index_mess].dimensions():
-          output = unicode(dimension, 'utf-8')
+          output = dimension
           id = self.menuYError.Append(wx.ID_ANY, output, 
                               output).GetId()
           self.Bind( wx.EVT_MENU, self.change, id=id )
@@ -3278,7 +3278,7 @@ class ApplicationMainWindow( wx.Frame ):
 #
 #     Menues for column selection created depending on input measurement
       for dimension in self.measurement[self.index_mess].dimensions():
-          output = unicode(dimension, 'utf-8')
+          output = dimension
           id = self.menuXAxes.Append(wx.ID_ANY, output, 
                               output).GetId()
           self.Bind( wx.EVT_MENU, self.change, id=id )
@@ -3295,7 +3295,7 @@ class ApplicationMainWindow( wx.Frame ):
       self.action_dict[id] = 'y-number'
 
       for dimension in self.measurement[self.index_mess].dimensions():
-          output = unicode(dimension, 'utf-8')
+          output = dimension
           id = self.menuYAxes.Append(wx.ID_ANY, output, 
                               output).GetId()
           self.Bind( wx.EVT_MENU, self.change, id=id )
@@ -3313,7 +3313,7 @@ class ApplicationMainWindow( wx.Frame ):
          self.menuZAxes.Enable(id, False)
  
       for dimension in self.measurement[self.index_mess].dimensions():
-          output = unicode(dimension, 'utf-8')
+          output = dimension
           id = self.menuZAxes.Append(wx.ID_ANY, output, 
                               output).GetId()
           self.Bind( wx.EVT_MENU, self.change, id=id )
@@ -3328,7 +3328,7 @@ class ApplicationMainWindow( wx.Frame ):
       self.menuYError = wx.Menu()
 
       for dimension in self.measurement[self.index_mess].dimensions():
-          output = unicode(dimension, 'utf-8')
+          output = dimension
           id = self.menuYError.Append(wx.ID_ANY, output, 
                               output).GetId()
           self.Bind( wx.EVT_MENU, self.change, id=id )
