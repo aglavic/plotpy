@@ -284,11 +284,7 @@ class ApplicationMainWindow( wx.Frame ):
     self.x_range_in    = wx.TextCtrl(self,   wx.ID_ANY, style=wx.TE_PROCESS_ENTER)
     self.y_range_label = wx.StaticText(self, wx.ID_ANY, 'y-range:')
     self.y_range_in    = wx.TextCtrl(self,   wx.ID_ANY, style=wx.TE_PROCESS_ENTER)
-    self.x_range_in.SetMaxLength( 6 )
-    self.y_range_in.SetMaxLength( 6 )
-    self.x_range_in.Bind( event=wx.EVT_TEXT,       handler=self.change_range )
     self.x_range_in.Bind( event=wx.EVT_TEXT_ENTER, handler=self.change_range )
-    self.y_range_in.Bind( event=wx.EVT_TEXT,       handler=self.change_range )
     self.y_range_in.Bind( event=wx.EVT_TEXT_ENTER, handler=self.change_range )
 
 
@@ -314,7 +310,6 @@ class ApplicationMainWindow( wx.Frame ):
     self.font_size_label = wx.StaticText(self, wx.ID_ANY, 'font-size:' )
     self.font_size       = wx.TextCtrl(self,   wx.ID_ANY, style=wx.TE_PROCESS_ENTER )
     self.font_size.ChangeValue( str(self.active_session.font_size) )
-    self.font_size.Bind( event=wx.EVT_TEXT,       handler=self.change_range)
     self.font_size.Bind( event=wx.EVT_TEXT_ENTER, handler=self.change_range)
     bottom_table.Add(self.font_size_label, 0, wx.ALL|wx.CENTER, 3)
     bottom_table.Add(self.font_size,       0, wx.ALL|wx.CENTER, 3)
@@ -327,7 +322,6 @@ class ApplicationMainWindow( wx.Frame ):
     self.z_range_label = wx.StaticText(self, wx.ID_ANY, 'z-range:')
     self.z_range_in    = wx.TextCtrl(self,   wx.ID_ANY, style=wx.TE_PROCESS_ENTER)
     self.logz          = wx.CheckBox(self, wx.ID_ANY, 'log z')
-    self.z_range_in.SetMaxLength( 6 )
     self.logz.SetValue(self.measurement[self.index_mess].logz)
 
     # 3d Viewpoint buttons to rotate the view
@@ -345,7 +339,6 @@ class ApplicationMainWindow( wx.Frame ):
     bottom_z_table.Add(self.view_right,    0, wx.ALL|wx.CENTER, 3)
     bottom_z_table.Add(self.logz, 0, wx.ALL|wx.CENTER, 3)
 
-    self.z_range_in.Bind( event=wx.EVT_TEXT,       handler=self.change_range )
     self.z_range_in.Bind( event=wx.EVT_TEXT_ENTER, handler=self.change_range )
     self.logz.Bind(       event=wx.EVT_CHECKBOX,   handler=self.change )
     self.view_left.Bind(  event=wx.EVT_BUTTON,     handler=self.change)
@@ -471,12 +464,6 @@ class ApplicationMainWindow( wx.Frame ):
      about_info.SetWebSite("http://www.fz-juelich.de/iff/Glavic_A/")
      dialog = wx.AboutBox( about_info )
   
-
-
-
-
-
-
   def show_config_path(self, action):
      '''
        Show a dialog with the path to the config files.
@@ -488,12 +475,6 @@ class ApplicationMainWindow( wx.Frame ):
                                 wx.OK | wx.ICON_INFORMATION | wx.STAY_ON_TOP )
      dialog.ShowModal()
      dialog.Destroy()
-
-
-
-
-
-
 
       
   def iterate_through_measurements(self, event):
