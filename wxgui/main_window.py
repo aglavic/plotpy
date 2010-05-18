@@ -221,8 +221,6 @@ class ApplicationMainWindow( wx.Frame ):
     table = wx.BoxSizer( wx.VERTICAL ) 
     self.SetSizer(table)
 
-
-
     #++++++++++ create image region and image for the plot ++++++++++
     top_table = wx.BoxSizer( wx.HORIZONTAL ) 
     # first entry for sample name part of title
@@ -251,7 +249,7 @@ class ApplicationMainWindow( wx.Frame ):
     top_table.Add( self.label2)
     table.Add( top_table,0, wx.ALL|wx.CENTER|wx.EXPAND, 5 )
 
-    self.frame1 = wx.Notebook(self, wx.ID_ANY,  size=wx.Size(300,500), style=wx.NB_TOP )
+    self.frame1 = wx.Notebook(self, wx.ID_ANY, style=wx.NB_TOP )
 
     # frame region for the image
     self.image = wx.Panel(self.frame1, wx.ID_ANY)
@@ -264,7 +262,7 @@ class ApplicationMainWindow( wx.Frame ):
     self.multi_list = wx.TextCtrl(self.frame1, wx.ID_ANY, style=wx.TE_MULTILINE|wx.TE_CENTRE)
     self.frame1.AddPage( self.multi_list, 'Multiplot List', False)
 
-    table.Add( self.frame1, 0, wx.ALL|wx.CENTER|wx.EXPAND, 5)
+    table.Add( self.frame1, 1, wx.ALL|wx.CENTER|wx.EXPAND, 5)
 
     self.image_shown = False                                                         # variable to decrease changes in picture size
 
@@ -321,7 +319,7 @@ class ApplicationMainWindow( wx.Frame ):
     bottom_table.Add(self.font_size_label, 0, wx.ALL|wx.CENTER, 3)
     bottom_table.Add(self.font_size,       0, wx.ALL|wx.CENTER, 3)
 
-    table.Add( bottom_table, 0, wx.ALL )
+    table.Add( bottom_table, 0, wx.ALL|wx.EXPAND )
 
 
     bottom_z_table    = wx.BoxSizer( wx.HORIZONTAL )
@@ -357,7 +355,7 @@ class ApplicationMainWindow( wx.Frame ):
 
 
 
-    table.Add ( bottom_z_table, 0, wx.ALL, 3)
+    table.Add ( bottom_z_table, 0, wx.ALL|wx.EXPAND, 3)
 
     bottom_table_2    = wx.BoxSizer( wx.HORIZONTAL ) 
 
@@ -373,7 +371,7 @@ class ApplicationMainWindow( wx.Frame ):
     self.plot_options_button.Bind( event=wx.EVT_BUTTON ,handler=self.open_plot_options_window )
     bottom_table_2.Add(self.plot_options_button, 0, wx.ALL|wx.CENTER, 3 )
 
-    table.Add( bottom_table_2, 0, wx.ALL, 3 )
+    table.Add( bottom_table_2, 0, wx.ALL|wx.EXPAND, 3 )
 
 
     self.x_range_in.Disable()
@@ -2519,6 +2517,9 @@ class ApplicationMainWindow( wx.Frame ):
      self.logx.SetValue(self.measurement[self.index_mess].logx)
      self.logy.SetValue(self.measurement[self.index_mess].logy)
      self.logz.SetValue(self.measurement[self.index_mess].logz)
+     
+     self.Layout()
+     WXAPPLICATION.ProcessPendingEvents()
 
      self.active_session.picture_width  = str(self.frame1.GetClientSize().GetWidth()-20)
      self.active_session.picture_height = str(self.frame1.GetClientSize().GetHeight()-45)

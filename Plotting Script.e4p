@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-05-17, 08:46:08 -->
+<!-- Saved: 2010-05-17, 18:00:09 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -85,7 +85,6 @@
     <Source>wxgui/__init__.py</Source>
     <Source>wxgui/circle.py</Source>
     <Source>wxgui/dns.py</Source>
-    <Source>wxgui/fit_data.py</Source>
     <Source>wxgui/in12.py</Source>
     <Source>wxgui/MyClasses.py</Source>
     <Source>wxgui/refl_fit_functions.py</Source>
@@ -95,8 +94,9 @@
     <Source>wxgui/dialogs.py</Source>
     <Source>wxgui/diverse_classes.py</Source>
     <Source>gtkgui/file_actions.py</Source>
-    <Source>wxgui/gui_fit_data.py</Source>
     <Source>gtkgui/gui_fit_data.py</Source>
+    <Source>wxgui/file_actions.py</Source>
+    <Source>wxgui/gui_fit_data.py</Source>
   </Sources>
   <Forms>
   </Forms>
