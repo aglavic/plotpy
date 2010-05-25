@@ -10,6 +10,7 @@ import os
 import math
 # own modules
 import read_data.reflectometer
+from sessions.reflectometer_fit.reflectometer import *
 
 #----------------------- importing modules --------------------------
 
@@ -397,15 +398,16 @@ class ReflectometerGUI:
       layer_params[layer_index]=[]
       align_table=gtk.Table(6, 3, False)
       # labels
-      layer_title=gtk.Label()
+      layer_title=gtk.Entry()
+      layer_title.connect('key-press-event', self.change_layer_name, layer)
       if not substrate:
-        layer_title.set_markup(str(layer_index + 1) + ' - ' + layer.name)
+        layer_title.set_text(str(layer_index + 1) + ' - ' + layer.name)
         align_table.attach(layer_title, 0, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
         thickness_x=gtk.CheckButton(label='thickness', use_underline=True)
         thickness_x.connect('toggled', self.toggle_fit_option, layer_params[layer_index], 0)
         align_table.attach(thickness_x, 0, 1, 1, 2, gtk.FILL, gtk.FILL, 0, 0)
       else:
-        layer_title.set_markup('Substrate - ' + layer.name)
+        layer_title.set_text('Substrate - ' + layer.name)
         align_table.attach(layer_title, 0, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
         spacer=gtk.Label()
         spacer.set_markup('  ')
@@ -519,6 +521,16 @@ class ReflectometerGUI:
       align_table=frame
     return align_table
   
+  def change_layer_name(self, widget, action, layer):
+    '''
+      Change the name of a layer, when anything is entered in the entryfield.
+    '''
+    text=widget.get_text()
+    try:
+      name=text.split('-', 1)[1].lstrip()
+      layer.name=name
+    except IndexError:
+      layer.name=text
   
   def dialog_response(self, action, response, dialog, window, parameters_list, fit_list):
     '''
@@ -678,7 +690,8 @@ class ReflectometerGUI:
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
     ent_file.close()
     #open a background process for the fit function
-    self.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',self.max_iter)
+    self.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', 
+                                      self.TEMP_DIR+'fit_temp',self.max_iter)
     print "fit.f90 program started."
     if self.active_file_data.fit_object.fit!=1: # if this is not a fit just wait till finished
       exec_time, stderr_value = self.proc.communicate()
@@ -704,9 +717,9 @@ class ReflectometerGUI:
       delta.set_text(str(SL[0]))
       d_over_b.set_text(str(SL[1]))
       if substrate:
-        layer_title.set_markup('Substrate - ' + layer.name)
+        layer_title.set_text('Substrate - ' + layer.name)
       else:
-        layer_title.set_markup(str(layer_index + 1) + ' - ' + layer.name)
+        layer_title.set_text(str(layer_index + 1) + ' - ' + layer.name)
     except KeyError:
       delta.set_text("1")
       d_over_b.set_text("1")

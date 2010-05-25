@@ -85,7 +85,6 @@ class ReflectometerFitGUI:
             layer_in.layers=self.move_layer_up_in_list(layer, layer_in.layers)
             self.rebuild_dialog(dialog, window)
 
-
   def move_layer_up_in_list(self, layer, old_layer_list):
       index_layer=old_layer_list.index(layer)
       new_layer_list=[]

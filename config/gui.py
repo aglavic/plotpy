@@ -14,8 +14,8 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-toolkit='wx'
-#toolkit='gtk'
+#toolkit='wx'
+toolkit='gtk'
 
 DOWNLOAD_PAGE_URL='http://atzes.homeip.net/plotwiki/tiki-index.php?page=Download+Area'
 
