@@ -1,11 +1,8 @@
-# -*- encoding: utf-8 -*-
 '''
-  Session expansion class for GUI in treff session with wxWidgets.
+  Session expansion class for GUI in treff session.
 '''
-
-__version__    = "0.7a"
-
-import gtk, math, os
+import sys
+import  math, os
 import wx
 # import parameter class for fits
 if __name__ == '__main__':
@@ -42,6 +39,7 @@ class TreffGUI:
     '''
       create a specifig menu for the TREFF session
     '''
+    print 'treff.py: Entry create_menu'
     menu_list = []
 
     title = 'TREFF'
@@ -718,13 +716,15 @@ class TreffGUI:
 
  
     if self.fit_object_history!=[]:
-      history_back=gtk.Button(label='Undo (%i)' % len(self.fit_object_history), use_underline=True)
-      history_back.connect('clicked', self.fit_history, True, dialog, window)
-      align_table.attach(history_back, 2, 3, 7, 8, gtk.FILL, gtk.FILL, 0, 0)
+      history_back = wx.Button(sw, wx.ID_ANY, label='Undo (%i)' % len(self.fit_object_history),style=wx.BU_EXACTFIT )
+      history_back.Bind(event=EVT_BUTTON, handler=lambda evt, arg1=True, arg2=dialog, arg3=window, func=self.fit_history:
+                                                  func( evt, ar1, arg2, arg3) )
+      align_table.Add(history_back, wx.GBPosition(8,3), flag=wx.CENTER|wx.EXPAND|wx.ALL, border=5 )
     if self.fit_object_future!=[]:
-      history_forward=gtk.Button(label='Redo (%i)' % len(self.fit_object_future), use_underline=True)
-      history_forward.connect('clicked', self.fit_history, False, dialog, window)
-      align_table.attach(history_forward, 3, 4, 7, 8, gtk.FILL, gtk.FILL, 0, 0)
+      history_forward = wx.Button(sw, wx.ID_ANY, label='Redo (%i)' % len(self.fit_object_future), style=wx.BU_EXACTFIT)
+      history_forward.Bind(event=EVT_BUTTON, handler=lambda evt, arg1=False, arg2=dialog, arg3=window, func=self.fit_history:
+                                                  func( evt, ar1, arg2, arg3) )
+      align_table.Addd(history_forward, wx.GBPosition(8,4), flag=wx.CENTER|wx.EXPAND|wx.ALL, border=5 )
 
     vbox.Add(s_boxsizer, 0, wx.ALL|wx.EXPAND, 10)
 
@@ -743,6 +743,12 @@ class TreffGUI:
     butBoxSizer.Add( butMultiLayer, 1, wx.EXPAND|wx.ALL, 3)
     butBoxSizer.Add( butFit,        1, wx.EXPAND|wx.ALL, 3)
     global_vbox.Add(butBoxSizer, 0, wx.EXPAND|wx.ALL, 10)
+    butCustom.Bind( event=wx.EVT_BUTTON, handler=lambda evt, arg1=7, arg2=dialog, arg3=window,
+                        arg4=[wavelength, background,[first_slit, second_slit], scaling_factor,
+                             [polarizer_efficiancy, analyzer_efficiancy, flipper0_efficiancy, flipper1_efficiancy],
+                             alambda_first, ntest, x_from, x_to, max_hr, move_channels_button, show_all_button],
+                        arg5=[layer_params, fit_params, max_iter],
+                        func=self.dialog_response: func( evt, arg1, arg2, arg3, arg4, arg5 ) )
     butLayer.Bind( event=wx.EVT_BUTTON, handler=lambda evt, arg1=3, arg2=dialog, arg3=window,
                         arg4=[wavelength, background,[first_slit, second_slit], scaling_factor,
                              [polarizer_efficiancy, analyzer_efficiancy, flipper0_efficiancy, flipper1_efficiancy],
@@ -755,6 +761,14 @@ class TreffGUI:
                              alambda_first, ntest, x_from, x_to, max_hr, move_channels_button, show_all_button],
                         arg5=[layer_params, fit_params, max_iter],
                         func=self.dialog_response: func( evt, arg1, arg2, arg3, arg4, arg5 ) )
+
+    butFit.Bind( event=wx.EVT_BUTTON, handler=lambda evt, arg1=5, arg2=dialog, arg3=window,
+                        arg4=[wavelength, background,[first_slit, second_slit], scaling_factor,
+                             [polarizer_efficiancy, analyzer_efficiancy, flipper0_efficiancy, flipper1_efficiancy],
+                             alambda_first, ntest, x_from, x_to, max_hr, move_channels_button, show_all_button],
+                        arg5=[layer_params, fit_params, max_iter],
+                        func=self.dialog_response: func( evt, arg1, arg2, arg3, arg4, arg5 ) )
+    
 ##    dialog.connect("response", self.dialog_response, dialog, window,
 #                   [wavelength, background, 
 #                   [first_slit, second_slit], 
@@ -764,10 +778,15 @@ class TreffGUI:
 #                   [layer_params, fit_params, max_iter])
 
     dialog.Show()
+    window.open_windows.append(dialog)
 
-    # connect dialog to main window
-#    window.open_windows.append(dialog)
-#    dialog.Bind(wx.EVT_CLOSE, lambda arg1=dialog: window.open_windows.remove(arg1))
+    def myRemove(evt, arg1):
+        print 'treff.py entry myRemove: arg1 = ', arg1 
+        arg1.Destroy() 
+        window.open_windows.remove(arg1)
+        print 'window.open_windows = ', window.open_windows
+
+    dialog.Bind(wx.EVT_CLOSE, lambda  evt, arg1=dialog, func=myRemove: func(evt, arg1))
 
 
   def stop_scroll_emission(self, SL_selector, action):
@@ -801,9 +820,9 @@ class TreffGUI:
       else:
         layer_title.SetLabel('Substrate - ' + layer.name)
         align_table.Add(layer_title, wx.GBPosition(0, 0), flag=wx.CENTER|wx.EXPAND|wx.ALL, span=wx.GBSpan(1,4), border=5)
-        spacer = wx.StaticText( home, wx.ID_ANY )
-        spacer.SetLabel('  ')
-        align_table.Add(spacer, wx.GBPosition(0, 1), flag=wx.CENTER|wx.EXPAND|wx.ALL, border=5)
+#        spacer = wx.StaticText( home, wx.ID_ANY )
+#        spacer.SetLabel('  ')
+#        align_table.Add(spacer, wx.GBPosition(0, 1), flag=wx.CENTER|wx.EXPAND|wx.ALL, border=5)
 
       scatter_density_Nb_x = wx.CheckBox( home, wx.ID_ANY, label='Nb\'')
       align_table.Add(scatter_density_Nb_x, wx.GBPosition(1,1), flag=wx.CENTER|wx.EXPAND|wx.ALL, border=3 )
@@ -979,6 +998,7 @@ class TreffGUI:
                    func=self.up_layer: func(evt, arg1, arg2, arg3) )
       small_table.Add(delete, flag=wx.CENTER|wx.EXPAND|wx.ALL, border=3 )
 
+
 ######      dialog.connect('response', layer.dialog_get_params, repititions, roughness_gradient) # when apply button is pressed, send data
       align_table.Add(small_table, wx.GBPosition(0,4), span=wx.GBSpan(1,2), flag=wx.CENTER|wx.EXPAND|wx.ALL, border=3 )
       # sublayers are appended to the align_table via recursion
@@ -1025,15 +1045,18 @@ class TreffGUI:
     '''
     print 'treff.py: Entry dialog_response: response        = ',response
     print 'treff.py: Entry dialog_response: parrameter_list = ',parameters_list
+    print 'parameters_list[10] = ',parameters_list[10]
+    print 'parameters_list[11] = ',parameters_list[11]
     if response>=5:
       try:
-        self.fit_object.wavelength[0]=float(parameters_list[0].get_text())
-        self.fit_object.background=float(parameters_list[1].get_text())
-        self.fit_object.slits=map(float, map(lambda item: item.get_text(), parameters_list[2]))
-        self.fit_object.scaling_factor=float(parameters_list[3].get_text())
-        self.fit_object.polarization_parameters=map(float, map(lambda item: item.get_text(), parameters_list[4]))
-        self.fit_object.alambda_first=float(parameters_list[5].get_text())
-        self.fit_object.ntest=int(parameters_list[6].get_text())
+        self.fit_object.wavelength[0]           = float(parameters_list[0].GetValue())
+        self.fit_object.background              = float(parameters_list[1].GetValue())
+        self.fit_object.slits                   = map(float, map(lambda item: item.GetValue(), parameters_list[2]))
+        self.fit_object.scaling_factor          = float(parameters_list[3].GetValue())
+        self.fit_object.polarization_parameters = map(float, map(lambda item: item.GetValue(), parameters_list[4]))
+        self.fit_object.alambda_first           = float(parameters_list[5].GetValue())
+        self.fit_object.ntest                   = int(parameters_list[6].GetValue())
+        print 'response >=5: values ausgelesen'
       except ValueError:
         None
       try:
@@ -1045,7 +1068,7 @@ class TreffGUI:
           new_max_hr=False
       except ValueError:
         new_max_hr=False
-      self.fit_object.simulate_all_channels=parameters_list[11].get_active()
+      self.fit_object.simulate_all_channels=parameters_list[11].IsChecked()
       try:
         self.x_from=float(parameters_list[7].GetValue())
       except ValueError:
@@ -1068,9 +1091,11 @@ class TreffGUI:
       if fit_list[1]['actually'] and response==5:
         self.fit_object.fit=1
       if response==7:
+        print 'response ist 7'
         self.user_constraint_dialog(dialog, window)
         return None
-      self.dialog_fit(action, window, move_channels=parameters_list[10].get_active(), new_max_hr=new_max_hr)
+
+      self.dialog_fit(action, window, move_channels=parameters_list[10].IsChecked(), new_max_hr=new_max_hr)
       # read fit parameters from file and create new object, if process is killed ignore
       if fit_list[1]['actually'] and response==5 and self.fit_object.fit==1: 
         parameters, errors=self.read_fit_file(self.TEMP_DIR+'result', self.fit_object)
@@ -1080,7 +1105,9 @@ class TreffGUI:
         self.show_result_window(dialog, window, new_fit, sorted_errors)
       #os.remove(self.TEMP_DIR+'fit_temp.ref')
       self.fit_object.fit=0
+
     elif response==3: # new layer
+      print 'response ist 3 --> new layer'
       new_layer=TreffLayerParam()
       self.fit_object.layers.append(new_layer)
       self.rebuild_dialog(dialog, window)
@@ -1097,6 +1124,7 @@ class TreffGUI:
       function invoked when apply button is pressed
       at fit dialog. Fits with the new parameters.
     '''
+    print 'treff.py: Entry dialog_fit'
     names=config.treff.REF_FILE_ENDINGS
     output_names=config.treff.FIT_OUTPUT_FILES
     self.export_data_and_entfile(self.TEMP_DIR, 'fit_temp.ent')
@@ -1148,7 +1176,7 @@ class TreffGUI:
         free_sims.append(simu)
     # create a multiplot with all datasets
     window.multiplot=[[(dataset, dataset.short_info) for dataset in self.fit_datasets if dataset]]
-    window.multi_list.set_markup(' Multiplot List: \n' + '\n'.join(map(lambda item: item[1], window.multiplot[0])))
+    window.multi_list.SetValue(' Multiplot List: \n' + '\n'.join(map(lambda item: item[1], window.multiplot[0])))
     if not window.index_mess in [self.active_file_data.index(item[0]) for item in window.multiplot[0]]:
       try:
         window.index_mess=self.active_file_data.index(window.multiplot[0][0][0])
@@ -1260,8 +1288,25 @@ class TreffGUI:
     '''
       show the result of a fit and ask to retrieve the result
     '''
+    def butClicked(event):
+        id = event.GetId()
+        print 'treff.py Entry butClicked: id = ', id
+        ret = 0
+        if id == idButOk:
+           ret = 1
+        elif id == idButCancel:
+           ret = 2
+
+        results.EndModal( ret )
+
+
     old_fit=self.fit_object
-    results=gtk.Dialog(title='Fit results:')
+
+    results = wx.Dialog(dialog, wx.ID_ANY, title='Fit results:',  size=(500,450),
+                              style=wx.RESIZE_BORDER|wx.DEFAULT_DIALOG_STYLE)
+    vbox = wx.BoxSizer( wx.VERTICAL)
+    results.SetSizer( vbox )
+
     text_string='These are the parameters retrieved by the last fit\n'
     #+++++++++++ get_layer_text responde function ++++++++++++++++
     def get_layer_text(new_layer, old_layer, index, index_add=''):
@@ -1339,63 +1384,82 @@ class TreffGUI:
       text_string+='2nd Flipper efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
         (old_fit.polarization_parameters[3], new_fit.polarization_parameters[3], sorted_errors['flipper1_efficiancy'])
     text_string+='\n\nDo you want to use these new parameters?'
-    text=gtk.TextView()
-    # Retrieving a reference to a textbuffer from a textview. 
-    buffer = text.get_buffer()
-    buffer.set_text(text_string)
-    sw = gtk.ScrolledWindow()
-    # Set the adjustments for horizontal and vertical scroll bars.
-    # POLICY_AUTOMATIC will automatically decide whether you need
-    # scrollbars.
-    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    sw.add_with_viewport(text) # add textbuffer view widget
-    sw.show_all()
-    results.vbox.add(sw) # add table to dialog box
-    results.set_default_size(500,450)
-    results.add_button('OK',1) # button replot has handler_id 1
-    results.add_button('Cancel',2) # button replot has handler_id 2
+
+    text = wx.TextCtrl( results, wx.ID_ANY )
+    text.SetValue( text )
+    vbox.Add( text, 0, wx.EXPAND, 3 )
+   
+    butBox      = wx.BoxSizer( wx.HORIZONTAL )
+    butOk       = wx.Button( results, wx.ID_ANY, label='OK' )  
+    butCancel   = wx.Button( results, wx.ID_ANY, label='Cancel' )
+    idButOk     = butOk.GetId()
+    idButCancel = butCancel.GetId()
+    butBox.Add( butOk,     wx.CENTER|wx.EXPAND )
+    butBox.Add( butCancel, wx.CENTER|wx.EXPAND )
+    butOk.Bind( event=wx.EVT_BUTTON, handler=butClicked )        # returns 1
+    butCancel.Bind( event=wx.EVT_BUTTON, handler=butClicked )    # returns 2
+    vbox.Add( butBox, 0, wx.EXPAND, 3 )
+
     #dialog.connect("response", self.result_window_response, dialog, window, new_fit)
     # connect dialog to main window
+########## ??????????????  window.open_windows.append(results) ????????
+########## ?????????????? remove(results) ???????????
     window.open_windows.append(dialog)
-    results.connect("destroy", lambda *w: window.open_windows.remove(dialog))
-    response=results.run()
+#    results.connect("destroy", lambda *w: window.open_windows.remove(dialog))
+    results.Bind( event=wx.EVT_CLOSE, handler=lambda evt, arg1=results: window.open_windows.remove(evt, arg1) )
+
+    response = results.ShowModal()
+
     self.result_window_response(response, dialog, window, new_fit)
-    results.destroy()
+    results.Destroy()
 
   def export_fit_dialog(self, action, window):
     '''
       file selection dialog for parameter export to .ent file
     '''
     #++++++++++++++++File selection dialog+++++++++++++++++++#
-    file_dialog=gtk.FileChooserDialog(title='Export to...', action=gtk.FILE_CHOOSER_ACTION_SAVE, 
-                                      buttons=(gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, 
-                                               gtk.RESPONSE_CANCEL))
-    file_dialog.set_default_response(gtk.RESPONSE_OK)
-    file_dialog.set_current_name(self.active_file_name+'.ent')
-    filter = gtk.FileFilter()
-    filter.set_name('Entry file')
-    filter.add_pattern('*.ent')
-    file_dialog.add_filter(filter)
-    filter = gtk.FileFilter()
-    filter.set_name('All')
-    filter.add_pattern('*.*')
-    file_dialog.add_filter(filter)
-    use_multilayer=gtk.CheckButton(label='Combine 1st multiplot (don\'t export every single layer)', use_underline=True)
-    use_multilayer.show()
-    file_dialog.vbox.pack_end(use_multilayer, expand=False)
-    response = file_dialog.run()
-    if response == gtk.RESPONSE_OK:
-      file_name=file_dialog.get_filename()
-    elif response == gtk.RESPONSE_CANCEL:
-      file_dialog.destroy()
+    file_dialog = wx.FileDialog(None, message='Export to ...',
+                                      style=wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT )
+
+    filter = ''
+    filter += 'Entry file (*.ent)|*.ent' 
+    filter += '|All files |*.*' 
+    file_dialog.SetWildcard( filter )
+    print 'self.active_file_name = ',self.active_file_name 
+    if sys.platform == 'darwin':
+      file_dialog.SetPath(self.active_file_name+'.ent' )
+    else:
+     file_dialog.SetFilename(self.active_file_name+'.ent' )
+
+##  fuer die naechsten n Zeilen muss noch eine Loesung gefunden werden ( SetExtraControlCreator ab 2.9)
+##  Jetzt: Eigener Dialog mit checkBox
+    hlp_dialog =  wx.Dialog(window, wx.ID_ANY, title='Combine', size=wx.Size(400,50),
+                              style=wx.RESIZE_BORDER|wx.DEFAULT_DIALOG_STYLE)
+    hlp_vbox = wx.BoxSizer( wx.VERTICAL )
+    hlp_dialog.SetSizer(hlp_vbox)
+
+    use_multilayer = wx.CheckBox( hlp_dialog, wx.ID_ANY, label='Combine 1st multiplot (don\'t export every single layer)' )
+    hlp_vbox.Add(use_multilayer)
+    hlp_dialog.ShowModal()
+##    use_multilayer.show()
+##    file_dialog.vbox.pack_end(use_multilayer, expand=False)
+
+    response = file_dialog.ShowModal()
+    print 'treff.py: export_fit_dialog response file dialog = ', response
+    if response == wx.ID_OK:
+      file_name = file_dialog.GetFilename()
+    elif response == wx.ID_CANCEL:
+      file_dialog.Destroy()
       return False
-    file_dialog.destroy()
+
+    file_dialog.Destroy()
     #----------------File selection dialog-------------------#
     file_prefix=file_name.rsplit('.ent', 1)[0]
+    print 'use_multilayer Checked = ', use_multilayer.IsChecked()
     self.export_data_and_entfile(os.path.dirname(file_prefix), 
                                  os.path.basename(file_prefix)+'.ent', 
                                  datafile_prefix=os.path.basename(file_prefix), 
-                                 use_multilayer=use_multilayer.get_active(), use_roughness_gradient=False)
+                                 use_multilayer=use_multilayer.IsChecked(), use_roughness_gradient=False)
     return True
   
   def import_fit_dialog(self, action, window):
@@ -1403,34 +1467,33 @@ class TreffGUI:
       file selection dialog for parameter import from .ent file
     '''
     #++++++++++++++++File selection dialog+++++++++++++++++++#
-    file_dialog=gtk.FileChooserDialog(title='Open new entfile...', 
-                                      action=gtk.FILE_CHOOSER_ACTION_OPEN, 
-                                      buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
-    file_dialog.set_default_response(gtk.RESPONSE_OK)
-    filter = gtk.FileFilter()
-    filter.set_name('Entry file')
-    filter.add_pattern('*.ent')
-    file_dialog.add_filter(filter)
-    filter = gtk.FileFilter()
-    filter.set_name('All')
-    filter.add_pattern('*.*')
-    file_dialog.add_filter(filter)
+    file_dialog = wx.FileDialog(None, message='Open new entfile',
+                                 style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST )
+    filter = ''
+    filter += 'Entry file (*.ent)|*.ent' 
+    filter += '|All files |*.*' 
+    file_dialog.SetWildcard( filter )
+
     # Add a check box for importing x-ray .ent files.
-    x_ray_import=gtk.CheckButton('Convert from x-ray .ent File')
-    align=gtk.Alignment(xalign=1.0, yalign=0.0, xscale=0.0, yscale=0.0)
-    align.add(x_ray_import)
-    align.show_all()
-    file_dialog.vbox.pack_end(align, expand=False, fill=True, padding=0)
-    response = file_dialog.run()
-    if response == gtk.RESPONSE_OK:
-      file_name=file_dialog.get_filename()
-    elif response == gtk.RESPONSE_CANCEL:
-      file_dialog.destroy()
+##  fuer die naechsten 5 Zeilen muss noch eine Loesung gefunden werden ( SetExtraControlCreator ab 2.9)
+    x_ray_import = wx.CheckBox( window, wx.ID_ANY, label='Convert from x-ray to .ent file' )
+##    align=gtk.Alignment(xalign=1.0, yalign=0.0, xscale=0.0, yscale=0.0)
+##    align.add(x_ray_import)
+##    align.show_all()
+##    file_dialog.vbox.pack_end(align, expand=False, fill=True, padding=0)
+
+    response = file_dialog.ShowModal()
+    print 'treff.py: import_fit_dialog response file dialog = ', response
+ 
+    if response == wx.ID_OK:
+      file_name=file_dialog.GetFilename()
+    elif response == wx.ID_CANCEL:
+      file_dialog.Destroy()
       return False
-    file_dialog.destroy()
+    file_dialog.Destroy()
     #----------------File selection dialog-------------------#
     self.fit_object=TreffFitParameters()
-    if x_ray_import.get_active():
+    if x_ray_import.IsChecked():
       self.fit_object.read_params_from_X_file(file_name)
     else:
       self.fit_object.read_params_from_file(file_name)
@@ -1997,6 +2060,7 @@ class TreffLayerParam(LayerParam):
     '''
       class constructor
     '''
+    print 'treff.py: Entry __init__: parameters_list = ', parameters_list
     LayerParam.__init__(self, name, parameters_list)
     if parameters_list!=None:
       self.scatter_density_Nb=parameters_list[1]
@@ -2046,11 +2110,11 @@ class TreffLayerParam(LayerParam):
     '''
     LayerParam.dialog_get_params(self, action, response, thickness, roughness)
     try:
-      self.scatter_density_Nb=float(scatter_density_Nb.get_text())
-      self.scatter_density_Nb2=float(scatter_density_Nb2.get_text())
-      self.scatter_density_Np=float(scatter_density_Np.get_text())
-      self.theta=float(theta.get_text())
-      self.phi=float(phi.get_text())
+      self.scatter_density_Nb  = float(scatter_density_Nb.GetValue())
+      self.scatter_density_Nb2 = float(scatter_density_Nb2.GetValue())
+      self.scatter_density_Np  = float(scatter_density_Np.GetValue())
+      self.theta               = float(theta.GetValue())
+      self.phi                 = float(phi.GetValue())
     except TypeError:
       None
   
