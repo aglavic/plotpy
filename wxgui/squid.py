@@ -30,23 +30,23 @@ class SquidGUI:
     title        = 'SQUID'
     menuSquid    = wx.Menu()
  
-    id = menuSquid.Append( wx.ID_ANY, 'Diamagnetic Correction',
-                           'Diamagnetic Correction').GetId()
-    act = 'SquidDia'
-    home.Bind( wx.EVT_MENU, id= id,
-               handler=lambda evt, arg1=act, arg2=home, arg3=self.toggle_correction: arg3( evt, arg1, arg2) )
+    #id = menuSquid.Append( wx.ID_ANY, 'Diamagnetic Correction',
+      #                     'Diamagnetic Correction').GetId()
+    #act = 'SquidDia'
+    #home.Bind( wx.EVT_MENU, id= id,
+        #       handler=lambda evt, arg1=act, arg2=home, arg3=self.toggle_correction: arg3( evt, arg1, arg2) )
   
-    id = menuSquid.Append( wx.ID_ANY, 'Paramagnetic Correction',
-                           'Paramagnetic Correction').GetId()
-    act = 'SquidPara'
-    home.Bind( wx.EVT_MENU, id= id,
-               handler=lambda evt, arg1=act, arg2=home, arg3=self.toggle_correction: arg3( evt, arg1, arg2) )
+    #id = menuSquid.Append( wx.ID_ANY, 'Paramagnetic Correction',
+       #                    'Paramagnetic Correction').GetId()
+    #act = 'SquidPara'
+    #home.Bind( wx.EVT_MENU, id= id,
+      #         handler=lambda evt, arg1=act, arg2=home, arg3=self.toggle_correction: arg3( evt, arg1, arg2) )
  
-    id = menuSquid.Append( wx.ID_ANY, 'Extract magnetic moment',
-                           'Extract magnetic moment').GetId()
-    act = 'SquidExtractRaw'
-    home.Bind( wx.EVT_MENU, id= id,
-               handler=lambda evt, arg1=act, arg2=home, arg3=self.calc_moment_from_rawdata: arg3( evt, arg1, arg2) )
+    #id = menuSquid.Append( wx.ID_ANY, 'Extract magnetic moment',
+     #                      'Extract magnetic moment').GetId()
+    #act = 'SquidExtractRaw'
+    #home.Bind( wx.EVT_MENU, id= id,
+     #          handler=lambda evt, arg1=act, arg2=home, arg3=self.calc_moment_from_rawdata: arg3( evt, arg1, arg2) )
 
     menu = [menuSquid, title]
     print 'menu = ', menu

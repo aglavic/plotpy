@@ -31,9 +31,12 @@ import config.treff
 from config.gui import toolkit
 try:
   GUI=__import__( toolkit+'gui.treff', fromlist=['TreffGUI']).TreffGUI
-  ReflectometerFitGUI=__import__( toolkit+'gui.ReflectometerFitGUI', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
 except ImportError: 
   class GUI: pass
+try:
+  ReflectometerFitGUI=__import__( toolkit+'gui.ReflectometerFitGUI', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
+except ImportError: 
+  class ReflectometerFitGUI: pass
 
 
 __author__ = "Artur Glavic"

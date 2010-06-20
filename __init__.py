@@ -150,7 +150,7 @@ def initialize_gui_toolkit():
   '''
   global gui_main, status_dialog
   gui_main=__import__( config.gui.toolkit+'gui.main_window' , fromlist=["main_window"])
-  if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
+  if False and ('--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1):
     dialogs=__import__( config.gui.toolkit+'gui.dialogs' , fromlist=["dialogs"])
     status_dialog=dialogs.connect_stdout_dialog()
   else:
