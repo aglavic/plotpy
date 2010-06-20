@@ -8,10 +8,8 @@
 
 from sys import hexversion
 from copy import deepcopy
-try:
-  import numpy
-except ImportError:
-  numpy=None
+
+import numpy
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
@@ -57,7 +55,7 @@ class MeasurementData:
   view_z=30
   filters=[] # a list of filters to be applied when returning the data, the format is:
              # ( column , from , to , include )
-  SPLIT_SENSITIVITY=0.001
+  SPLIT_SENSITIVITY=0.01
 
   def __init__(self, columns, const,x,y,yerror,zdata=-1): 
     '''
@@ -100,27 +98,39 @@ class MeasurementData:
       Function to iterate through the data-points, object can be used in "for bla in data:".
       Skippes pointes that are filtered.
     '''
-    data_pointer=0
-    # for faster access use local variables
-    data=self.data
-    filters=self.filters
-    number_points=len(data[0])
-    while data_pointer<number_points:
-      # Iterate through the datapoints
-      filtered=False
-      for data_filter in filters:
-        # if the datapoint is not included (filter[3]=True) or excluded skip it
-        filtered = (filtered or (not ((data_filter[3] and \
-                    (data[data_filter[0]].values[data_pointer]>data_filter[1]) and \
-                    (data[data_filter[0]].values[data_pointer]<data_filter[2])\
-              ) or ((not data_filter[3]) and \
-                  ((data[data_filter[0]].values[data_pointer]<data_filter[1]) or \
-                    (data[data_filter[0]].values[data_pointer]>data_filter[2]))))))
-      data_pointer+=1
-      if filtered:
-        continue
+    data=self.get_filtered_data_matrix().transpose().tolist()
+    for point in data:
       # return the next datapoint
-      yield [value.values[(data_pointer-1)] for value in data]
+      yield point
+
+  def get_filtered_data_matrix(self):
+    '''
+      Return the data as numpy array with applied filters.
+      
+      @return numpy array of point lists
+    '''
+    data=numpy.array([col.values for col in self.data])
+    filters=self.filters
+    for data_filter in filters:
+      filter_column=data[data_filter[0]]
+      filter_from, filter_to=data_filter[1:3]
+      if filter_from>filter_to:
+        filter_from=data_filter[2]
+        filter_to=data_filter[1]
+      if data_filter[3]:
+        if filter_from is None:
+          filter_from=filter_column.min()
+        if filter_to is None:
+          filter_to=filter_column.max()
+        data_indices=numpy.where(1-((filter_column<filter_from)+(filter_column>filter_to)))
+      else:
+        if filter_from is None:
+          filter_from=filter_column.max()
+        if filter_to is None:
+          filter_to=filter_column.min()
+        data_indices=numpy.where(((filter_column>filter_to)+(filter_column<filter_from)))
+      data=data.transpose()[data_indices].transpose()
+    return data
  
   def __getstate__(self):
     '''
@@ -358,21 +368,6 @@ class MeasurementData:
     return data.values[-1], unit_used
 
   # When numpy is accessible use a faster array approach
-  if numpy is None:
-    def process_function(self,function): 
-      '''
-        Processing a function on every data point.
-        
-        @param function Python function to execute on each point
-        
-        @return Last point after function execution
-      '''
-      for i in range(self.number_of_points):
-        point = self.get_data(i)
-        self.set_data(function(point),i)
-      return self.last()
-
-  else:
     def process_function_nonumpy(self,function): 
       '''
         Processing a function on every data point.
@@ -550,9 +545,52 @@ class MeasurementData:
       for i in range(len(self.data)):
         columns=columns+' '+self.dimensions()[i]+'['+self.units()[i]+']'
       write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
-    write_file.write('\n'.join(data_lines)+'\n')
+    #self.write_data_matrix(write_file, data, split_indices)
+    self.write_data_matrix2(write_file, data, split_indices)
     write_file.close()
-    return len(data_lines) # return the number of exported data lines
+    return split_indices[-1] # return the number of exported data lines
+
+  def rough_sort(self, ds1, ds2, sensitivity):
+    '''
+      Return the sorting index from a first and second column ignoring small
+      differences.
+    '''
+    srt_run1=numpy.lexsort(keys=(ds1, ds2))
+    ds1_run1=ds1[srt_run1]
+    max_step=(ds1_run1[1:]-ds1_run1[:-1]).max()
+    abs_sensitivity=max_step*sensitivity
+    small_step_indices=numpy.where(((ds1_run1[1:]-ds1_run1[:-1])<abs_sensitivity)*((ds1_run1[:-1]-ds1_run1[1:])!=0))
+    for i, index in enumerate(small_step_indices[1:]):
+      from_data=ds1_run1[i+1]
+      to_data=ds1_run1[i]
+      ds1=numpy.where(ds1==from_data, ds1, to_data)
+    srt_run2=numpy.lexsort(keys=(ds1, ds2))
+    return srt_run2
+
+  def write_data_matrix(self, write_file, data, split_indices, seperator=" "):
+    '''
+      Write a given matrix of data to a file object.
+    '''
+    
+    numpy.savetxt(write_file, data[:split_indices[0]], fmt='%g', delimiter=seperator)
+    write_file.write('\n')
+    for i, split_i in enumerate(split_indices[1:]):
+      numpy.savetxt(write_file, data[split_indices[i]:split_i], fmt='%.6g', delimiter=seperator)
+      write_file.write('\n')
+
+  def write_data_matrix2(self, write_file, data, split_indices):
+    '''
+      Write a given matrix of data to a file object.
+    '''
+    lines, cols=data.shape
+    # convert data to a log 1d array
+    data=numpy.nan_to_num(data.reshape(lines*cols))
+    output_line=("%g "*cols)[:-1]
+    output_list=["\n".join([output_line for j in range(split_indices[0])])]
+    for i, split_i in enumerate(split_indices[1:]):
+      output_list.append("\n".join([output_line for j in range(split_i-split_indices[i])]))
+    output=("\n\n".join(output_list)) % tuple(data)
+    write_file.write(output)
 
   def max(self,xstart=None,xstop=None): 
     '''
