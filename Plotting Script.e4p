@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-05-21, 08:46:04 -->
+<!-- Saved: 2010-06-20, 19:36:04 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -98,6 +98,7 @@
     <Source>wxgui/file_actions.py</Source>
     <Source>wxgui/gui_fit_data.py</Source>
     <Source>sessions/reflectometer_fit/reflectometer.py</Source>
+    <Source>wxgui/reflectometer.py</Source>
   </Sources>
   <Forms>
   </Forms>

@@ -14,7 +14,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7a"
+__version__ = "0.7beta1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -471,4 +471,3 @@ class DNSGUI:
     '''
     self.read_files(self.active_file_name.rsplit('|raw_data')[0])
     window.change_active_file_object((self.active_file_name, self.file_data[self.active_file_name]))
-

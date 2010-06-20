@@ -29,10 +29,10 @@
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 # python modules
-import sys
+import sys, os
 exit=sys.exit
 from glob import glob
-##---add_python_path_here---## # Place holder to add installation directory to python path for non superuser installation.
+sys.path.insert(0, os.path.split(__file__)[0])
 
 # own modules
 # parent class
@@ -57,7 +57,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7a"
+__version__ = "0.7beta1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"

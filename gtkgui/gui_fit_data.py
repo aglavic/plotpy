@@ -15,7 +15,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7a"
+__version__ = "0.7beta1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -311,5 +311,4 @@ class FitSessionGUI:
         dialog.destroy()
         window.fit_dialog(None, size, position)
     combine_dialog.destroy()
-
 

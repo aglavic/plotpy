@@ -15,13 +15,13 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7a"
+__version__ = "0.7beta1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
 #++++++++++++++++++++++++++++++++++++++MeasurementData-Class+++++++++++++++++++++++++++++++++++++++++++++++++++++#
-class MeasurementData:
+class MeasurementData(object):
   '''
     The main class for the data storage. Stores the data as a list of
     PhysicalProperty objects. Sample name and measurement informations
@@ -49,7 +49,6 @@ class MeasurementData:
   short_info=''
   number=''
   sample_name=''
-  plot_options=''
   # view angle for the 3d plot
   view_x=60
   view_z=30
@@ -74,7 +73,7 @@ class MeasurementData:
     self.index=0
     self.info=''
     self.sample_name=''
-    self.plot_options=''
+    self._plot_options=PlotOptions()
     self.data=[]
     for column in columns: # create Property for every column
       self.data.append(PysicalProperty(column[0],column[1]))
@@ -131,7 +130,7 @@ class MeasurementData:
         data_indices=numpy.where(((filter_column>filter_to)+(filter_column<filter_from)))
       data=data.transpose()[data_indices].transpose()
     return data
- 
+
   def __getstate__(self):
     '''
       Define how the class is pickled and copied.
@@ -144,6 +143,40 @@ class MeasurementData:
       len(MeasurementData) returns number of Datapoints.
     '''
     return len(self.data[0])
+
+  def __getitem__(self, index):
+    '''
+      MeasurementData[index] returns one datapoint.
+    '''
+    return self.get_data(index)
+  
+  def __getslice__(self, start, end):
+    '''
+      MeasurementData[start:end] returns a list of datapoints.
+    '''
+    if start<0:
+      start=max(0, self.number_of_points+start)
+    if end<0:
+      end=max(0, self.number_of_points+end)
+    else:
+      end=min(self.number_of_points, end)
+    region=range(start, end)
+    return [point for i, point in enumerate(self) if i in region]
+
+  def get_plot_options(self): return self._plot_options
+  
+  def set_plot_options(self, input):
+    '''
+      Set the PlotOptions object from a string or item input.
+    '''
+    if type(input) is str:
+      self._plot_options=PlotOptions(input)
+    elif type(input) is PlotOptions:
+      self._plot_options=input
+    else:
+      raise TypeError, "plot_options has to be of type PlotOptions or String"
+
+  plot_options=property(get_plot_options, set_plot_options)
 
   def append(self, point):
     '''
@@ -368,40 +401,40 @@ class MeasurementData:
     return data.values[-1], unit_used
 
   # When numpy is accessible use a faster array approach
-    def process_function_nonumpy(self,function): 
-      '''
-        Processing a function on every data point.
-        
-        @param function Python function to execute on each point
-        
-        @return Last point after function execution
-      '''
-      for i in range(self.number_of_points):
-        point = self.get_data(i)
-        self.set_data(function(point),i)
-      return self.last()
+  def process_function_nonumpy(self,function): 
+    '''
+      Processing a function on every data point.
+      
+      @param function Python function to execute on each point
+      
+      @return Last point after function execution
+    '''
+    for i in range(self.number_of_points):
+      point = self.get_data(i)
+      self.set_data(function(point),i)
+    return self.last()
 
-    def process_function(self,function): 
-      '''
-        Processing a function on every data point.
-        When numpy is installed this is done via one proccess call 
-        for arrays. (This leads to a huge speedup)
-        
-        @param function Python function to execute on each point
-        
-        @return Last point after function execution
-      '''
-      try:
-        arrays=[]
-        for column in self.data:
-          array=numpy.array(column.values)
-          arrays.append(array)
-        processed_arrays=function(arrays)
-        for i, array in enumerate(processed_arrays):
-          self.data[i].values=list(array)
-      except: # if the function does not work with arrays the conventional method is used.
-        self.process_function_nonumpy(function)
-      return self.last()
+  def process_function(self,function): 
+    '''
+      Processing a function on every data point.
+      When numpy is installed this is done via one proccess call 
+      for arrays. (This leads to a huge speedup)
+      
+      @param function Python function to execute on each point
+      
+      @return Last point after function execution
+    '''
+    try:
+      arrays=[]
+      for column in self.data:
+        array=numpy.array(column.values)
+        arrays.append(array)
+      processed_arrays=function(arrays)
+      for i, array in enumerate(processed_arrays):
+        self.data[i].values=list(array)
+    except: # if the function does not work with arrays the conventional method is used.
+      self.process_function_nonumpy(function)
+    return self.last()
 
   def sort(self, column=None):
     '''
@@ -434,110 +467,71 @@ class MeasurementData:
     zd=self.zdata
     ed=self.yerror
     SPLIT_SENSITIVITY=self.SPLIT_SENSITIVITY
-    data=[point for point in self if (((xfrom is None) or (point[xd]>=xfrom)) and \
-                                      ((xto is None) or (point[xd]<=xto)))]
+    data=self.get_filtered_data_matrix()
+    if not xto:
+      xto=data[xd].max()
+    data_window=numpy.where((1-((data[xd]<xfrom) + (data[xd]>xto))))[0]
+    data=data.transpose()[data_window].transpose()
     if only_fitted_columns:
       if zd>=0:
-        data=map(lambda point: (point[xd], point[yd], point[zd], point[ed]), data)
+        data=data[(xd, yd, zd, ed)]
       else:
-        data=map(lambda point: (point[xd], point[yd], point[ed]), data)        
-    # convert Numbers to str
+        data=data[(xd, yd, ed)]
+    split_indices=numpy.array([])
     if zd>=0:
-      if self.scan_line_constant<0:
-        max_dx=max([abs(data[i][xd]-data[i+1][xd]) for i in range(len(data)-1)])
-        max_dy=max([abs(data[i][yd]-data[i+1][yd]) for i in range(len(data)-1)])
-      else:
-        slc=self.scan_line_constant
-        max_dslc=max([abs(data[i][slc]-data[i+1][slc]) for i in range(len(data)-1)])
-      # for logarithmic data avoid holes because of low values
+      # crop data to prevent white holes in the plot
       if self.crop_zdata:
-        absmin=None
-        absmax=None
-        for line in self.plot_options.splitlines():
-          if 'cbrange' in line:
-            try:
-              absmin=float(line.split('[')[1].split(':')[0])
-            except ValueError:
-              absmin=None
-            try: 
-              absmax=float(line.split(':')[1].split(']')[0])
-              print absmax
-            except ValueError:
-              absmax=None
+        absmin, absmax=self.plot_options.zrange
+        if absmin is None:
+          absmin=numpy.nan_to_num(data[zd]).min()
+        if absmax is None:
+          absmax=numpy.nan_to_num(data[zd]).max()
         if self.logz:
           if not absmin > 0:
-            absmin=min(map(abs, self.data[zd].values))
+            absmin=(numpy.abs(data[zd])).min()
           if absmin==0:
             absmin=1e-10
-        if absmax:
-          def zdata_to_absminmax(point):
-            point[zd]=min(absmax, max(absmin, point[zd]))
-            return point
+        data[zd]=numpy.where(data[zd]>=absmin, data[zd], absmin)
+        data[zd]=numpy.where(data[zd]<=absmax, data[zd], absmax)
+      # for large datasets just export points lying in the plotted region
+      if len(data[0])>10000:
+        xrange=self.plot_options.xrange
+        yrange=self.plot_options.yrange
+        if xrange[0] is not None:
+          indices=numpy.where(data[xd]>=xrange[0])[0]
+          data=data.transpose()[indices].transpose()
+        if xrange[1] is not None:
+          indices=numpy.where(data[xd]<=xrange[1])[0]
+          data=data.transpose()[indices].transpose()
+        if yrange[0] is not None:
+          indices=numpy.where(data[yd]>=yrange[0])[0]
+          data=data.transpose()[indices].transpose()
+        if yrange[1] is not None:
+          indices=numpy.where(data[yd]<=yrange[1])[0]
+          data=data.transpose()[indices].transpose()
+      # get the best way to sort and split the data for gnuplot
+      if self.scan_line_constant<0:
+        x_sort_indices=self.rough_sort(data[xd], data[yd], SPLIT_SENSITIVITY)
+        y_sort_indices=self.rough_sort(data[yd], data[xd], SPLIT_SENSITIVITY)
+        sorted_x=data.transpose()[x_sort_indices].transpose()
+        sorted_y=data.transpose()[y_sort_indices].transpose()
+        #max_dx=(data[xd][1:]-data[xd][:-1]).max()
+        #max_dy=(data[xd][1:]-data[xd][:-1]).max()
+        split_indices_x=numpy.where(sorted_x[xd][:-1]>sorted_x[xd][1:])[0]
+        split_indices_y=numpy.where(sorted_y[yd][:-1]>sorted_y[yd][1:])[0]
+        if len(split_indices_x)<=len(split_indices_y):
+          split_indices=split_indices_x+1
+          data=sorted_x
         else:
-          def zdata_to_absminmax(point):
-            point[zd]=max(absmin, point[zd])
-            return point
-        map(zdata_to_absminmax, data)
-      
-      # try to find the best way to split the data for Gnuplot
-      if self.scan_line_constant >= 0:
-        scan_line_constant=self.scan_line_constant
-        if self.scan_line >= 0:
-          cmp_to=self.scan_line
-        elif xd!=scan_line_constant:
-          cmp_to=xd
-        else:
-          cmp_to=yd
-        sensitivity=SPLIT_SENSITIVITY*max_dslc
-        def compare_columns(point1, point2):
-          if point1[scan_line_constant]-sensitivity>point2[scan_line_constant]:
-            return 1
-          if point1[scan_line_constant]<point2[scan_line_constant]-sensitivity:
-            return -1
-          return cmp(point1[cmp_to], point2[cmp_to])
-        data.sort(compare_columns)
-        insert_indices=[i for i in range(len(data)-1) if (data[i+1][cmp_to]<data[i][cmp_to])]
+          split_indices=split_indices_y+1
+          data=sorted_y
       else:
-        def compare_xy_columns(point1, point2):
-          '''Compare two points by y- and x-column'''
-          if point1[xd]-sensitivity>point2[xd]:
-            return 1
-          if point1[xd]<point2[xd]-sensitivity:
-            return -1
-          return cmp(point1[yd], point2[yd])
-            
-        def compare_yx_columns(point1, point2):
-          if point1[yd]-sensitivity>point2[yd]:
-            return 1
-          if point1[yd]<point2[yd]-sensitivity:
-            return -1
-          return cmp(point1[xd], point2[xd])
-        
-        data_xysort=list(data)
-        data_yxsort=data
-        sensitivity=SPLIT_SENSITIVITY*max_dx
-        data_xysort.sort(compare_xy_columns)
-        sensitivity=SPLIT_SENSITIVITY*max_dy
-        data_yxsort.sort(compare_yx_columns)
-        # insert blanck lines between scans for 3d plot
-        insert_indices_xy=[i for i in range(len(data)-1) if (data_xysort[i+1][yd]<data_xysort[i][yd])]
-        insert_indices_yx=[i for i in range(len(data)-1) if (data_yxsort[i+1][xd]<data_yxsort[i][xd])]
-        if len(insert_indices_xy) <= len(insert_indices_yx):
-          insert_indices=insert_indices_xy
-          data=data_xysort
-        else:
-          insert_indices=insert_indices_yx
-          data=data_yxsort
-    if hex(hexversion) >= '0x2060000': # test if format function is available (py 2.6.0)
-      float_format='{0:g}'.format
-    else:
-      def float_format(string):
-        return "%g" % string
-    data_str=map(lambda point: map(float_format, point), data)
-    data_lines=map(seperator.join, data_str)
-    if self.zdata>=0:
-      for i, j in enumerate(insert_indices):
-        data_lines.insert(i+j+1, '')
+        sort_indices=self.rough_sort(data[self.scan_line_constant], data[self.scan_line_constant], SPLIT_SENSITIVITY)
+        data=data.transpose()[sort_indices].transpose()
+        split_indices=numpy.where(data[self.scan_line][:-1]>data[self.scan_line][1:])[0]+1
+    split_indices=split_indices.tolist()+[len(data[0])]
+    data=data.transpose()
+    # write data to file
     write_file=open(file_name,'w')
     if print_info:
       write_file.write('# exportet dataset from measurement_data_structure.py\n# Sample: '+self.sample_name+'\n#\n# other informations:\n#'+self.info.replace('\n','\n#'))
@@ -720,3 +714,143 @@ class PysicalProperty:
     if to_index==None:
       to_index=len(self)-1
     return min([self.values[i] for i in range(from_index,to_index)])
+
+class PlotOptions(object):
+  '''
+    Object for storing information about the illustration of the data in the plot.
+  '''
+  special_plot_parameters=None
+  special_using_parameters=""
+  
+  def __init__(self, initial_text=""):
+    '''
+      Initialize the object with optional start parameters.
+    '''
+    self.settings={}
+    self.free_input=[]
+    self._xrange=[None, None]
+    self._yrange=[None, None]
+    self._zrange=[None, None]
+    self.input_string(initial_text)
+
+  def __str__(self):
+    '''
+      Return the settings as a string.
+    '''
+    output=""
+    for key, items in self.settings.items():
+      for value in items:
+        output+="set "+key+" "+value+"\n"
+    for value in self.free_input:
+      output+=value+"\n"
+    output+=("set xrange [%s:%s]\n" % (self._xrange[0], self._xrange[1] )).replace("None", "")
+    output+=("set yrange [%s:%s]\n" % (self._yrange[0], self._yrange[1] )).replace("None", "")
+    output+=("set zrange [%s:%s]\n" % (self._zrange[0], self._zrange[1] )).replace("None", "")
+    output+=("set cbrange [%s:%s]\n" % (self._zrange[0], self._zrange[1] )).replace("None", "")
+    return output
+  
+  def __add__(self, input_string):
+    '''
+      Joing own string with other string.
+    '''
+    return str(self) + input_string
+  
+  def __radd__(self, input_string):
+    '''
+      Joing own string with other string.
+    '''
+    return input_string + str(self) 
+  
+  def input_string(self, text):
+    '''
+      Get setting information from a text.
+    '''
+    lines=text.splitlines()
+    for line in lines:
+      if line.startswith("set"):
+        split=line.split(" ", 2)
+        if len(split)==2:
+          split.append('')
+        if split[1] not in ["xrange", "yrange", "zrange", "cbrange"]:
+          if split[1] in self.settings:
+            self.settings[split[1]].append(split[2])
+          else:
+            self.settings[split[1]]=[split[2]]
+        elif split[1]=="xrange":
+          try:
+            subsplit=split[2].split(":")
+            xfrom=subsplit[0].lstrip("[")
+            xto=subsplit[1].rstrip("]")
+            self.xrange=[xfrom, xto]
+          except:
+            pass
+        elif split[1]=="yrange":
+          try:
+            subsplit=split[2].split(":")
+            yfrom=subsplit[0].lstrip("[")
+            yto=subsplit[1].rstrip("]")
+            self.yrange=[yfrom, yto]
+          except:
+            pass
+        elif split[1] in ["zrange", "cbrange"]:
+          try:
+            subsplit=split[2].split(":")
+            zfrom=subsplit[0].lstrip("[")
+            zto=subsplit[1].rstrip("]")
+            self.zrange=[zfrom, zto]
+          except:
+            pass
+      else:
+        self.free_input.append(line)
+      
+
+  def get_xrange(self): return self._xrange  
+  def get_yrange(self): return self._yrange
+  def get_zrange(self): return self._zrange
+  def set_xrange(self, range): 
+    if len(range)==2:
+      try:
+        xrange=[None, None]
+        if range[0]:
+          xrange[0]=float(range[0])
+        if range[1]:
+          xrange[1]=float(range[1])
+        self._xrange=xrange
+      except ValueError:
+        raise ValueError, 'xrange has to be a tuple or list with two elements of float or None'
+    else:
+      raise ValueError, 'xrange has to be a tuple or list with two elements of float or None'
+
+  def set_yrange(self, range): 
+    if len(range)==2:
+      try:
+        yrange=[None, None]
+        if range[0]:
+          yrange[0]=float(range[0])
+        if range[1]:
+          yrange[1]=float(range[1])
+        self._yrange=yrange
+      except ValueError:
+        raise ValueError, 'yrange has to be a tuple or list with two elements of float or None'
+    else:
+      raise ValueError, 'yrange has to be a tuple or list with two elements of float or None'
+
+  def set_zrange(self, range): 
+    if len(range)==2:
+      try:
+        zrange=[None, None]
+        if range[0]:
+          zrange[0]=float(range[0])
+        if range[1]:
+          zrange[1]=float(range[1])
+        self._zrange=zrange
+      except ValueError:
+        raise ValueError, 'zrange has to be a tuple or list with two elements of float or None'
+    else:
+      raise ValueError, 'zrange has to be a tuple or list with two elements of float or None'
+
+
+  xrange=property(get_xrange, set_xrange)
+  yrange=property(get_yrange, set_yrange)
+  zrange=property(get_zrange, set_zrange)
+

@@ -5,7 +5,12 @@
 '''
 
 import sys, os
-sys.path.insert(0, os.path.split(__file__)[0])
-import __init__ as plot_script
+##---add_python_path_here---## # Place holder to add installation directory to python path for non superuser installation.
 
-plot_script._run()
+try:
+  import __init__ as plot_script
+except ImportError:
+  import plot_script
+
+if __name__=='__main__':
+  plot_script._run()

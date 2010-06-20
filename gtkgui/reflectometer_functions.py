@@ -17,7 +17,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7a"
+__version__ = "0.7beta1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -118,7 +118,7 @@ class ReflectometerFitGUI:
         replot_present(session, window)
       
     replot_present=self.replot_present
-    from plotting_gui import StatusDialog
+    from gtkgui.dialogs import StatusDialog
     status=StatusDialog(title='Fit status after 0 s')
     status.set_default_size(500,450)
     status.add_button('Plot present simulation',2) # button kill has handler_id 2

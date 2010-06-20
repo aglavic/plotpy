@@ -17,17 +17,18 @@ __name__='Plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __license__ = "None"
-__version__ = "0.7a"
+__version__ = "0.7beta1"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://atzes.homeip.net/plotwiki"
 __description__='''Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.'''
 
 __scripts__=['plot.py']
-__py_modules__=['plot', 'plotting_gui', 'plotting_debug', 'measurement_data_structure', 'measurement_data_plotting', 
-                'fit_data', 'file_actions', 'py2exe_imports', 'ipython_view']
-__packages__=['config', 'read_data', 'sessions', 'sessions.reflectometer_fit']
-__package_data__={'config': ['squid_calibration', '*.dat', 'fit/fit.f90', 
+__py_modules__=[]
+__package_dir__={'plot_script': ''}
+__packages__=['plot_script', 'plot_script.config', 'plot_script.read_data', 'plot_script.sessions', 
+            'plot_script.sessions.reflectometer_fit', 'plot_script.wxgui', 'plot_script.gtkgui']
+__package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90', 
                             'fit/pnr_multi/*.f90', 'fonts/*.ttf', 'logo.png'], 
                     }
 __requires__=['pygtk', 'gobject', 'numpy', 'scipy']
@@ -70,7 +71,8 @@ if 'sdist' in sys.argv:
         print "File %s.py has no version number." % (module)
         versions_fit=False
   # test modules in packages
-  for package in __packages__:
+  for package in __packages__[1:]:
+    package=package.split('.', 1)[1]
     modules=filter(lambda file: file[-3:]=='.py',os.listdir(package.replace(".", "/")))
     modules.remove('__init__.py')
     for module in modules:
@@ -92,7 +94,7 @@ if 'sdist' in sys.argv:
     elif answer!='y':
       exit()
 
-__py_modules__.append('configobj')
+#__py_modules__.append('configobj')
 
 # as the requires keyword from distutils is not working, we test for the dependencies ourselves.
 if 'install' in sys.argv:
@@ -139,6 +141,7 @@ setup(name=__name__,
       scripts=__scripts__, 
       py_modules=__py_modules__, 
       packages=__packages__, 
+      package_dir=__package_dir__, 
       package_data=__package_data__,
       requires=__requires__, #does not do anything
       console = [ "plot.py","py2exe_imports.py" ],
