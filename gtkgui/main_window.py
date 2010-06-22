@@ -753,39 +753,24 @@ class ApplicationMainWindow(gtk.Window):
     xin=self.x_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
     yin=self.y_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
     zin=self.z_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
-    # only use settings, if they are valid numbers
-    if (len(xin)==2) and\
-        ((xin[0].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-          (xin[0]==''))&\
-        ((xin[1].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-        (xin[1]=='')):
-      self.x_range='set xrange ['+str(xin[0])+':'+str(xin[1])+']'
+    plot_options=self.measurement[self.index_mess].plot_options
+    if self.active_multiplot:
+      for mp in self.multiplot:
+        for mpi, mpname in mp:
+          if self.measurement[self.index_mess] is mpi:
+            plot_options=mp[0][0].plot_options
+    if len(xin)==2:
+      plot_options.xrange=xin
     else:
-      self.x_range='set autoscale x'
-      self.x_range_in.set_text('')
-    if (len(yin)==2) and\
-        ((yin[0].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-          (yin[0]==''))&\
-        ((yin[1].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-        (yin[1]=='')):
-      self.y_range='set yrange ['+str(yin[0])+':'+str(yin[1])+']'
+      plot_options.xrange=[None, None]
+    if len(yin)==2:
+      plot_options.yrange=yin
     else:
-      self.y_range='set autoscale y'
-      self.y_range_in.set_text('')
-    if (len(zin)==2) and\
-        ((zin[0].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-          (zin[0]==''))&\
-        ((zin[1].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-        (zin[1]=='')):
-      self.z_range='set zrange ['+str(zin[0])+':'+str(zin[1])+']\nset cbrange ['+str(zin[0])+':'+str(zin[1])+']'
+      plot_options.yrange=[None, None]
+    if len(zin)==2:
+      plot_options.zrange=zin
     else:
-      self.z_range='set autoscale z\nset autoscale cb'
-      self.z_range_in.set_text('')
-    # add the ranges to the plot options
-    self.measurement[self.index_mess].plot_options=self.measurement[self.index_mess].plot_options+\
-    self.x_range+\
-    '\n'+self.y_range+\
-    '\n'+self.z_range+'\n'
+      plot_options.zrange=[None, None]
     self.replot() # plot with new settings
 
   def open_plot_options_window(self,action):
@@ -2183,23 +2168,30 @@ class ApplicationMainWindow(gtk.Window):
       self.view_right.hide()
       self.check_add.set_label('Show more options.')
 
-      
-
   def apply_to_all(self,action): 
     '''
       Apply changed plotsettings to all plots. This includes x,y,z-ranges,
       logarithmic plotting and the custom plot settings.
     '''
-    # TODO: Check if all options are included here
+    use_data=self.measurement[self.index_mess]
+    use_dim=use_data.dimensions()
+    use_maxcol=max([use_data.xdata, use_data.ydata, use_data.zdata, use_data.yerror])
     for dataset in self.measurement:
-      dataset.xdata=self.measurement[self.index_mess].xdata
-      dataset.ydata=self.measurement[self.index_mess].ydata
-      dataset.zdata=self.measurement[self.index_mess].zdata
-      dataset.yerror=self.measurement[self.index_mess].yerror
-      dataset.logx=self.measurement[self.index_mess].logx
-      dataset.logy=self.measurement[self.index_mess].logy
-      dataset.logz=self.measurement[self.index_mess].logz
-      dataset.plot_options=self.measurement[self.index_mess].plot_options
+      dim=dataset.dimensions()
+      # skip datasets which dont have enough columns
+      if len(dim)<use_maxcol:
+        continue
+      # skip datasets which are 2d when this is 3d or vice vercer
+      if (dataset.zdata<0) and (use_data.zdata>=0):
+        continue
+      dataset.xdata=use_data.xdata
+      dataset.ydata=use_data.ydata
+      dataset.zdata=use_data.zdata
+      dataset.yerror=use_data.yerror
+      dataset.logx=use_data.logx
+      dataset.logy=use_data.logy
+      dataset.logz=use_data.logz
+      dataset.plot_options=use_data.plot_options
       self.reset_statusbar()
       print 'Applied settings to all Plots!'
 
