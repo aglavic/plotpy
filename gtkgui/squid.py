@@ -6,6 +6,7 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
 import gtk
+from gtkgui.dialogs import PreviewDialog
 
 #----------------------- importing modules --------------------------
 
@@ -33,6 +34,7 @@ class SquidGUI:
     string='''
       <menu action='SquidMenu'>
         <menuitem action='SquidDiaPara'/>
+        <menuitem action='SubtractDataset'/>
         <menuitem action='SquidExtractRaw'/>
       </menu>
     '''
@@ -51,10 +53,174 @@ class SquidGUI:
                 "Extract magnetic moment", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.calc_moment_from_rawdata ),
+            ( "SubtractDataset", None,                             # name, stock id
+                "Subtract another dataset...", None,                    # label, accelerator
+                None,                                   # tooltip
+                self.subtract_dataset ),
              )
     return string,  actions
   
    #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
+  
+  def dia_para_dialog(self, action, window):
+    '''
+      A dialog to enter the diamagnetic and paramagnetic correction.
+      Diamagnetic correction can be calculated from a fit to the
+      asymptotic behaviour of a MvsH measurement.
+    '''
+    import gtk
+    units=window.measurement[window.index_mess].units()
+    dia=self.dia_mag_correct
+    para=self.para[0]
+    if 'T' in units:
+      dia*=1e4
+      para*=1e4
+    if 'A·m²' in units:
+      dia/=1e3
+      para/=1e3
+    dialog=gtk.Dialog(title="Enter diamagnetic and paramagnetic correction factors:", 
+                      parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
+    # create a table with the entries
+    table=gtk.Table(4, 4, False)
+    top_label=gtk.Label("\nYou can enter a diamgnetic and paramagnetic Correction Factor here,\n"+\
+                        "the data will then be correct as: NEWDATA=DATA - PARA * 1/T + DIA.\n\n")
+    table.attach(top_label,
+                # X direction #          # Y direction
+                0, 3,                      0, 1,
+                0,                       gtk.FILL|gtk.EXPAND,
+                0,                         0)
+    label=gtk.Label("Diamagnetic Correction: ")
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 2,                      1, 2,
+                0,                       gtk.FILL,
+                0,                         0)
+    dia_entry=gtk.Entry()
+    dia_entry.set_text(str(dia))
+    table.attach(dia_entry,
+                # X direction #          # Y direction
+                2, 4,                      1, 2,
+                0,                       gtk.FILL,
+                0,                         0)
+    
+    fit_button=gtk.Button("Fit asymptotes")
+    table.attach(fit_button,
+                # X direction #          # Y direction
+                0, 1,                      2, 3,
+                0,                       gtk.FILL,
+                0,                         0)
+    label=gtk.Label("of MvsH measurement, excluding ±")
+    table.attach(label,
+                # X direction #          # Y direction
+                1, 2,                      2, 3,
+                gtk.FILL,                       gtk.FILL,
+                0,                         0)
+    fit_exclude_regtion=gtk.Entry()
+    fit_exclude_regtion.set_width_chars(4)
+    fit_exclude_regtion.set_text("1")
+    table.attach(fit_exclude_regtion,
+                # X direction #          # Y direction
+                2, 3,                      2, 3,
+                0,                       gtk.FILL,
+                0,                         0)
+    ignore_errors=gtk.CheckButton("ignore errors")
+    table.attach(ignore_errors,
+                # X direction #          # Y direction
+                3, 4,                      2, 3,
+                0,                       gtk.FILL,
+                0,                         0)
+    
+    label=gtk.Label("Paramagnetic Correction: ")
+    table.attach(label,
+                # X direction #          # Y direction
+                0, 2,                      3, 4,
+                0,                       gtk.FILL,
+                0,                         0)
+    para_entry=gtk.Entry()
+    para_entry.set_text(str(para))
+    table.attach(para_entry,
+                # X direction #          # Y direction
+                2, 4,                      3, 4,
+                0,                       gtk.FILL,
+                0,                         0)
+    # insert the table and buttons to the dialog
+    dialog.vbox.add(table)
+    dialog.add_button("OK", 2)
+    dialog.add_button("Apply", 1)
+    dialog.add_button("Cancel", 0)
+    fit_button.connect("clicked", lambda *ignore: dialog.response(3))
+    fit_exclude_regtion.connect("activate", lambda *ignore: dialog.response(3))
+    dia_entry.connect("activate", lambda *ignore: dialog.response(2))
+    para_entry.connect("activate", lambda *ignore: dialog.response(2))
+    dialog.show_all()
+    dialog.connect("response", self.dia_para_response, window, [dia_entry, para_entry, fit_exclude_regtion, ignore_errors])
+  
+  def dia_para_response(self, dialog, response, window, entries):
+    '''
+      Evaluate the response of the dialog from dia_para_dialog.
+    '''
+    if response==0:
+      units=window.measurement[window.index_mess].units()
+      dia=self.dia_mag_correct
+      para=self.para[0]
+      if 'T' in units:
+        dia*=1e4
+        para*=1e4
+      if 'A·m²' in units:
+        dia/=1e3
+        para/=1e3
+      self.dia_para_correction(window.measurement[window.index_mess], 
+                               dia, para)
+      window.replot()      
+      dialog.destroy()
+      return None
+    try:
+      dia=float(entries[0].get_text())
+    except ValueError:
+      dia=0.
+      entries[0].set_text("0")
+    try:
+      para=float(entries[1].get_text())
+    except ValueError:
+      para=0.
+      entries[1].set_text("0")
+    try:
+      split=float(entries[2].get_text())
+    except ValueError:
+      split=1.
+      entries[2].set_text("1")
+    if response==3:
+      dataset=window.measurement[window.index_mess]
+      if dataset.xdata==1:
+        from fit_data import FitDiamagnetism
+        # fit after paramagnetic correction
+        self.dia_para_correction(dataset, 0. , para)
+        fit=FitDiamagnetism(([0, 0, 0, split]))
+        if not entries[3].get_active():
+          fit.refine(dataset.data[1].values, 
+                     dataset.data[-1].values, 
+                     dataset.data[dataset.yerror].values)
+        else:
+          fit.refine(dataset.data[1].values, 
+                     dataset.data[-1].values)
+        entries[0].set_text(str(-fit.parameters[0]))
+      return None
+    if response>0:
+      self.dia_para_correction(window.measurement[window.index_mess], dia, para)
+      window.replot()
+    if response==2:
+      # if OK is pressed, apply the corrections and save as global.
+      units=window.measurement[window.index_mess].units()
+      if 'T' in units:
+        dia/=1e4
+        para/=1e4
+      if 'A·m²' in units:
+        dia*=1e3
+        para*=1e3      
+      self.dia_mag_correct=dia
+      self.para[0]=para
+      dialog.destroy()
+    
   
   def dia_para_dialog(self, action, window):
     '''

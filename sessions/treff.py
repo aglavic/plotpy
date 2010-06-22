@@ -16,7 +16,7 @@
 # import buildin modules
 import os
 import sys
-import math
+import math, numpy
 import subprocess
 import time
 # import GenericSession, which is the parent class for the squid_session
@@ -26,6 +26,7 @@ from reflectometer_fit.parameters import FitParameters, LayerParam, MultilayerPa
 from measurement_data_structure import MeasurementData
 # importing data readout
 import read_data.treff
+import read_data.treff_addon1
 import config.treff
 # import gui functions for active toolkit
 from config.gui import toolkit
@@ -60,6 +61,99 @@ class FitList(list):
     self.fit_object_future=[]
     self.fit_datasets=[None, None, None, None] # a list of datasets used for fit [++,--,+-,-+]
 
+def calc_intensities(R, P):
+  '''
+    Calculate intensities from given reflectivity channels R and given polarizations P.
+    
+    @param R Dictionary of ++, --, +-, -+ reflectivities (arrays)
+    @param P Dictionary of polarizer,flipper1,flipper2,analyzer polarization component efficiencies (scalars)
+  '''
+  I={}
+  # calculate up-up intensity
+  I['++']=R['++'] * (P['polarizer']*P['flipper1']*P['analyzer']                             +\
+                    (1.-P['polarizer'])*(1.-P['flipper1'])*P['analyzer'])                   +\
+          R['--'] * ((1.-P['polarizer'])*P['flipper1']*(1.-P['analyzer'])                   +\
+                    P['polarizer']*(1.-P['flipper1'])*(1.-P['analyzer']))                   +\
+          R['+-'] * (P['polarizer']*P['flipper1']*(1.-P['analyzer'])                        +\
+                    (1.-P['polarizer'])*(1.-P['flipper1'])*(1.-P['analyzer']))              +\
+          R['-+'] * ((1.-P['polarizer'])*P['flipper1']*P['analyzer']                        +\
+                    P['polarizer']*(1.-P['flipper1'])*P['analyzer'])
+  # calculate down-down intensity
+  I['--']=R['--'] * (P['polarizer']*P['flipper2']*P['analyzer']                             +\
+                    P['polarizer']*(1.-P['flipper2'])*(1.-P['analyzer']))                   +\
+          R['++'] * ((1.-P['polarizer'])*P['flipper2']*(1.-P['analyzer'])                   +\
+                    (1.-P['polarizer'])*(1.-P['flipper2'])*P['analyzer'])                   +\
+          R['-+'] * (P['polarizer']*P['flipper2']*(1.-P['analyzer'])                        +\
+                    P['polarizer']*(1.-P['flipper2'])*P['analyzer'])                        +\
+          R['+-'] * ((1.-P['polarizer'])*P['flipper2']*P['analyzer']                        +\
+                    (1.-P['polarizer'])*(1.-P['flipper2'])*(1.-P['analyzer']))
+  # calculate up-down intensity
+  I['+-']=R['+-'] * (P['polarizer']*P['flipper1']*P['flipper2']*P['analyzer']               +\
+                    (1.-P['polarizer'])*(1.-P['flipper1'])*P['flipper2']*P['analyzer'])     +\
+          R['-+'] * ((1.-P['polarizer'])*P['flipper1']*P['flipper2']*(1.-P['analyzer'])     +\
+                    P['polarizer']*(1.-P['flipper1'])*P['flipper2']*(1.-P['analyzer'])      +\
+                    (1.-P['polarizer'])*P['flipper1']*(1.-P['flipper2'])*P['analyzer']      +\
+                    P['polarizer']*(1.-P['flipper1'])*(1.-P['flipper2'])*P['analyzer'])     +\
+          R['++'] * (P['polarizer']*P['flipper1']*P['flipper2']*(1.-P['analyzer'])          +\
+                    P['polarizer']*P['flipper1']*(1.-P['flipper2'])*P['analyzer'])          +\
+          R['--'] * ((1.-P['polarizer'])*P['flipper1']*P['flipper2']*P['analyzer']          +\
+                    P['polarizer']*(1.-P['flipper1'])*P['flipper2']*P['analyzer']) # + O((1-p)^3) + (1-P)^4
+  # calculate down-up intensity
+  I['-+']=R['-+'] * (P['polarizer']*P['analyzer'])                                          +\
+          R['+-'] * ((1.-P['polarizer'])*(1.-P['analyzer']))                                +\
+          R['--'] * (P['polarizer']*(1.-P['analyzer']))                                     +\
+          R['++'] * ((1.-P['polarizer'])*P['analyzer'])
+  # normalize intensities for output
+  scale_by=1./sum(I.values())
+  for key in I.keys():
+    I[key]*=scale_by
+  return I
+
+def seperate_scattering(datasets, P):
+  '''
+    Try to calculate the true reflectivity channels from the polarization components and the measured data.
+    
+    @param datasets A list of MeasurementData objects for ++, --, +- and -+ channel
+    @param P Dictionary of polarizer,flipper1,flipper2,analyzer polarization component efficiencies
+  '''
+  from copy import deepcopy
+  maximum_iterations=100
+  stop_iteration_at=1e-10
+  I={}
+  min_length=min(map(len, datasets))
+  if datasets[0].zdata<0:
+    I['++']=numpy.array(datasets[0].data[datasets[0].ydata].values[:min_length])
+    I['--']=numpy.array(datasets[1].data[datasets[0].ydata].values[:min_length])
+    I['+-']=numpy.array(datasets[2].data[datasets[0].ydata].values[:min_length])
+    I['-+']=numpy.array(datasets[3].data[datasets[0].ydata].values[:min_length])
+  else:
+    I['++']=numpy.maximum(numpy.array(datasets[0].data[datasets[0].zdata].values[:min_length]), 1e-8)
+    I['--']=numpy.maximum(numpy.array(datasets[1].data[datasets[0].zdata].values[:min_length]), 1e-8)
+    I['+-']=numpy.maximum(numpy.array(datasets[2].data[datasets[0].zdata].values[:min_length]), 1e-8)
+    I['-+']=numpy.maximum(numpy.array(datasets[3].data[datasets[0].zdata].values[:min_length]), 1e-8)
+  normalization_factor=sum(I.values())
+  for key in I.keys():
+    I[key]/=normalization_factor
+  R=deepcopy(I)
+  
+  for i in range(maximum_iterations):
+    I_neu=calc_intensities(R, P)
+    I_div={}
+    sum_of_divs=0.
+    for key in I.keys():
+      I_div[key]=I[key]-I_neu[key]
+      R[key]+=I_div[key]
+      sum_of_divs+=numpy.abs(I_div[key]).sum()
+    print "Iteration %i: Sum of I_div=%.8f" % (i+1, sum_of_divs)
+    if (sum_of_divs < stop_iteration_at):
+      break
+  output=[]
+  output.append(R['++']*normalization_factor)
+  output.append(R['--']*normalization_factor)
+  output.append(R['+-']*normalization_factor)
+  output.append(R['-+']*normalization_factor)
+  return output
+
 class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
   '''
     Class to handle treff data sessions
@@ -93,7 +187,8 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
   max_iter=50 # maximal iterations in fit
   max_hr=5000 # Parameter in fit_pnr_multi
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add'] 
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add', 'ft1', 'maria']
+  MARIA=False
   replot=None 
   add_to_files={}
   #------------------ local variables -----------------
@@ -103,6 +198,7 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
     '''
       class constructor expands the GenericSession constructor
     '''
+    self.read_data=read_data.treff.read_data    
     self.RESULT_FILE=config.treff.RESULT_FILE
     GenericSession.__init__(self, arguments)
     self.file_actions_addon['extract_specular_reflectivity']=self.do_extract_specular_reflectivity
@@ -131,6 +227,11 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
           last_argument_option=[False,'']            
         else:
           found=False
+      elif argument=='-ft1':
+        self.read_data=read_data.treff_addon1.read_data
+      elif argument=='-maria':
+        self.maria=True
+        self.read_data=read_data.treff.read_data_maria
       elif argument=='-no-img':
         self.import_images=False
         found=True
@@ -143,14 +244,16 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
     '''
       Function to read data files.
     '''
-    data=read_data.treff.read_data(file_name, self.SCRIPT_PATH, self.import_images)
+    data=self.read_data(file_name, self.SCRIPT_PATH, self.import_images)
     if file_name in self.add_to_files:
       for name in self.add_to_files[file_name]:
         print "Trying to import for adding '%s'" % name
-        add_data=read_data.treff.read_data(name, self.SCRIPT_PATH, self.import_images)
+        add_data=self.read_data(name, self.SCRIPT_PATH, self.import_images)
         for i, dataset in enumerate(data):
           print "Adding dataset %i from '%s'" %(i, name)
           data[i]=dataset.join(add_data[i])
+    if data=='NULL':
+      return data
     return FitList(data)
 
   def add_data(self, data_list, name, append=True):
@@ -188,7 +291,7 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
                                                 line_width, 1, gauss_weighting=False, 
                                                 sigma_gauss=1., bin_distance=binning)
     # Create a new object for the stored data
-    new_cols=[('2Theta', specular.units()[0]), 
+    new_cols=[('2Θ', specular.units()[0]), 
               ('Specular Intensity', 'a.u.'), 
               ("True Specular Intensity", 'a.u.'), 
               ('Specular Error', 'a.u.'), 

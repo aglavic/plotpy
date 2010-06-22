@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta1"
+__version__ = "0.6.3.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -28,10 +28,8 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
     @param COLUMNS_MAPPING List of predefined columns
     @param MEASUREMENT_TYPES List of predefined settings for the measured columns
   '''
+  measurement_data=[]
   if os.path.exists(input_file):
-    global sample_name
-    sample_name=''
-    measurement_data=[]
     if input_file.endswith('.gz'):
       # use gziped format file
       import gzip
@@ -40,25 +38,46 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
       file_handle=open(input_file, 'r')
     input_file_lines=file_handle.readlines()
     file_handle.close()
-    first=True
+    sample_name=read_file_header(input_file_lines)
+    if not sample_name:
+      print "Wrong file type, no spec header found (#F,#E,#D,#C)!"
+      sample_name=''
     while len(input_file_lines)>0:
-      measurement_info=read_header(input_file_lines)
-      if measurement_info=='NULL':
+      measurement_info=read_scan_header(input_file_lines)
+      if not measurement_info:
         break
-      first=False
       sequence=read_data_lines(input_file_lines,measurement_info,COLUMNS_MAPPING,MEASUREMENT_TYPES)
       if not sequence=='NULL':
         sequence.sample_name=sample_name
         measurement_data.append(sequence)
-    if first:
-      print "Wrong file type, no columns defined in header (#L)!"
+    if len(measurement_data)==0:
+      print "No scan data found in file %s." % input_file
     return measurement_data
   else:
     print 'File '+input_file+' does not exist.'
     return measurement_data
 
+def read_file_header(input_file_lines):
+  '''
+    Read the header of the file.
+    
+    @param input_file_lines List of lines to be evaluated
+    
+    @return The sample name defined in the file or None if the wron filetype.
+  '''
+  if not (input_file_lines[0].startswith('#F') and 
+          input_file_lines[1].startswith('#E') and 
+          input_file_lines[2].startswith('#D')):
+    return None
+  try:
+    line=input_file_lines[3]
+    sample_name=line.split('User')[0].split(' ', 1)[1]
+    return sample_name
+  except:
+    return None
+  
 
-def read_header(input_file_lines): 
+def read_scan_header(input_file_lines): 
   '''
     Read header of datafile and return the columns present.
     
@@ -66,18 +85,23 @@ def read_header(input_file_lines):
     
     @return List of header information and data column names or 'NULL' if not the right format
   '''
-  output=''
+  output=None
   for i in range(len(input_file_lines)):
     line=input_file_lines.pop(0)
     if (line[0:2]=='#L'):
       columns=line[3:-1].split('  ')
       return [output,columns]
-    elif (line[0:2]=='#C') and 'User' in line:
-      global sample_name
-      sample_name=line[3:-1].split('User')[0]
-    else:
-      output=output+'\n'+line.rstrip('\n')
-  return 'NULL'
+    elif (line[0:2]=='#S'):
+      output=line.replace('#S', 'Scan: ').rstrip('\n')
+    elif output:
+      if line[0:2] in ['#G', '#P', '#N']:
+        continue
+      else:
+        info=line.rstrip('\n').replace('#D', 'Date: ')
+        info=info.replace('#T', 'Counting time: ')
+        info=info.replace('#Q', 'Q at start: ')
+        output+='\n'+info
+  return None
 
 def column_compare(col1,col2):
   '''
@@ -127,13 +151,10 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
   #read 2 lines to determine the type of the first sequence
   # if the scan was aborted this can lead to an IndexError
   # so this scan is considered not present.
-  try:
-    data_1=read_data_line(input_file_lines.pop(0),columns)
-    data_2=read_data_last_line(input_file_lines,columns)
-  except IndexError:
-    return 'NULL'
+  data_1=read_data_line(input_file_lines,columns)
+  data_2=read_data_last_line(input_file_lines,columns)
   not_found=True
-  if (data_1!='NULL')&(data_2!='NULL')&(data_1!='Comment')&(data_2!='Comment'):
+  if data_1 and data_2:
     for type_i in MEASUREMENT_TYPES:
         if check_type(data_1,data_2,type_i)&not_found:
           columns.append([0,len(columns),['delta intensity','counts']])
@@ -151,22 +172,13 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
   except:
     print 'No sequence with right type found!'
     return 'Null'
-  data.sample_name=''
-  while len(input_file_lines)>0: # append data from one sequence to the object or create new object for the next sequence
-    line=input_file_lines.pop(0)
-    next_data=read_data_line(line,columns)
-    if next_data!='NULL':
-      if next_data=='Comment':
-        continue
-      elif data.is_type(next_data):
-        data.append(next_data)
-      else:
-        return data
-    else:
-      return data
+  next_data=read_data_line(input_file_lines, columns)
+  while next_data: # append data from one sequence to the object or create new object for the next sequence
+    data.append(next_data)
+    next_data=read_data_line(input_file_lines,columns)
   return data
 
-def read_data_line(input_file_line,columns): 
+def read_data_line(input_file_lines,columns): 
   '''
     Read one line and output data as list.
     
@@ -174,13 +186,16 @@ def read_data_line(input_file_line,columns):
     
     @return List of floating point numbers of 'NULL' if error
   '''
-  if input_file_line[0]=='#':
-    if input_file_line[1]=='C':
-      return 'Comment'
-    else:
-      return 'NULL'
+  if len(input_file_lines)==0:
+    return None
+  line=input_file_lines[0]
+  if line[0:2]=='#S':
+    return None
+  elif input_file_lines[0][0]=='#':
+    input_file_lines.pop(0)
+    return read_data_line(input_file_lines, columns)
   else:
-    line=input_file_line.split()
+    line=input_file_lines.pop(0).split()
     values=[]
     if len(line)>=len(columns):
       for column in columns:
@@ -191,19 +206,30 @@ def read_data_line(input_file_line,columns):
       values.append(max(math.sqrt(float(line[-1])),1))
       return values
     else:
-      return 'NULL'
+      return None
 
 def read_data_last_line(input_file_lines,columns): 
   '''
     Returns second last line of one sequence for type finding.
     Second last because of possibility of abborted scans.
   '''
-  for i,line in enumerate(input_file_lines):
-    if line[0]=='#':
-      return read_data_line(input_file_lines[i-2],columns)
-    elif len(line.split())<2:
-      return read_data_line(input_file_lines[i-2],columns)
-  try:
-    return read_data_line(input_file_lines[-2],columns)
-  except IndexError:
-    raise IndexError
+  if len(input_file_lines)<2:
+    return None
+  for i, line in enumerate(input_file_lines[2:]):
+    if line[0:2]=='#S' or i==(len(input_file_lines)-3):
+      while input_file_lines[i][0]=='#':
+        if i==1:
+          return None
+        i-=1
+      line=input_file_lines[i].split()
+      values=[]
+      if len(line)>=len(columns):
+        for column in columns:
+          if line[column[0]]=='':
+            values.append(0.)
+          else:
+            values.append(float(line[column[0]]))
+        values.append(max(math.sqrt(float(line[-1])),1))
+        return values
+      else:
+        return None

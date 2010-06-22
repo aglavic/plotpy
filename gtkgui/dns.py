@@ -5,6 +5,8 @@
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
+from dialogs import SimpleEntryDialog
+from diverse_classes import MultiplotList
 import gtk
 
 #----------------------- importing modules --------------------------
@@ -36,6 +38,8 @@ class DNSGUI:
         <menuitem action='SetIncrement' />
         <menuitem action='SetMultipleScattering' />
         <menuitem action='SetDSpacing' />
+        <separator name='dns0' />
+        <menuitem action='OmegaSlice' />
         <menuitem action='SeperateScattering' />
         <menuitem action='SeperatePreset' />
         <separator name='dns1' />
@@ -68,6 +72,10 @@ class DNSGUI:
                 "Correct for flipping-ratio", None,                    # label, accelerator
                 "Correct scattering for the finite flipping-ratio.",                                   # tooltip
                 self.correct_flipping_dialog ),
+            ( "OmegaSlice", None,                             # name, stock id
+                "Extract ω-scan", None,                    # label, accelerator
+                "Extract a scan with fixed 2Θ value and changing ω.",                                   # tooltip
+                self.extract_omega_slice ),
             ( "SeperateScattering", None,                             # name, stock id
                 "Seperate Scattering", None,                    # label, accelerator
                 "Calculate seperated scattering parts from polarization directions.",                                   # tooltip
@@ -315,7 +323,54 @@ class DNSGUI:
       else:
         result=inc_dialog.run()
     inc_dialog.destroy()
-  
+
+  def extract_omega_slice(self, action, window):
+    '''
+      Extract ω-scans with constant 2θ from all datasets. 
+    '''
+    params, result=SimpleEntryDialog('Defint 2θ-value for the slice...', [
+                                    ('2θ-center', 90., float, gtk.Label('°')), 
+                                    ('2θ-width', 2.6, float, gtk.Label('°'))
+                                                                          ]).run()
+    if not result:
+      return None
+    slices=[]
+    for i, dataset in enumerate(self.active_file_data):
+      if dataset.zdata<0:
+        continue
+      saved_x=dataset.xdata
+      saved_y=dataset.ydata
+      dataset.xdata=1
+      dataset.ydata=3
+      window.index_mess=i
+      slice=window.file_actions.create_cross_section(
+                        1, 0, 0, params['2θ-center'], params['2θ-width'], 
+                        0.1, bin_distance=0.1
+                                               )
+      if slice is None:
+        continue
+      slice.ydata-=1
+      slice.yerror-=1
+      slice.data.pop(0)
+      slice.short_info=dataset.short_info + ' 2θ='+str(params['2θ-center'])
+      slice.sample_name=dataset.sample_name
+      slice.number=str(i)
+      slices.append(slice)
+      dataset.xdata=saved_x
+      dataset.ydata=saved_y
+    if len(slices)==0:
+      return None
+    self.active_file_data=slices
+    self.active_file_name=self.active_file_name+'-2Θ='+str(params['2θ-center'])
+    self.file_data[self.active_file_name]=self.active_file_data
+    window.index_mess=0
+    window.measurement=self.active_file_data
+    window.rebuild_menus()
+    slices_names=[(slice, self.active_file_name) for slice in slices]
+    window.multiplot.append(MultiplotList(slices_names))
+    window.active_multiplot=True
+    window.replot()
+
   def seperate_scattering_preset(self, action, window):
     '''
       A selection dialog to choose a preset for seperate_scattering.

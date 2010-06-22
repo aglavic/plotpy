@@ -468,6 +468,441 @@ class FitCuK(FitFunction):
     value2=p[0]/p[5] * wofz(z2).real / wofz(z0).real + p[4]
     return value+value2
 
+class FitSuperlattice(FitFunction):
+  '''
+    Fit a bragg reflex from a multilayer. Formulas are taken from:
+      "Structural refinement of superlattices from x-ray diffraction",
+      Eric E. Fullerton, Ivan K. Schuller, H.Vanderstraeten and Y.Bruynseraede
+      Physical Review B, Volume 45, Number 16 (1992)
+      
+      With additions from related publications, referenced in the paper mentioned above.
+  '''
+  
+  # define class variables.
+  name="Superlattice"
+  parameters=[10, 1., 2.71, 1., 2.71 , 1., 3.01,10. , 0.5, 1.,  0.5, 2., 1.0, 0.01, 0.2, 6.]
+  parameter_names=['M', 'I-A','x_0-A', 'I-B', 'x_0-B', 'I-subs.', 'x_0-subs.', 
+                    'D_{xA+(1-x)B}', 'x', 'δ_AB', 'σ_AB', 'ω_AB','a*', 'sigma', 'C', 'F_select']
+  fit_function_text='(params)'
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[10, 1., 2.71, 1., 2.71 , 1., 3.01,10. , 0.5, 1.,  0.5, 2., 1.0, 0.01, 0.2, 6.]
+    FitFunction.__init__(self, initial_parameters)
+    self.refine_parameters=[]
+    self._parameter_dictionary={}
+    self.rebuild_param_dictionary(self.parameters)
+  
+  def rebuild_param_dictionary(self, p):
+    '''
+      Create a dictionary of the parameters for better readability of all funcions.
+      
+      @param p List of parameters to be used
+    '''
+    params=self._parameter_dictionary
+    # reciprocal lattice parameter
+    params['a*']=p[12]
+    # number of bilayers M
+    params['M']=int(p[0])
+    # structure peak parameters of both layers and substrat
+    params['q0_A']=p[2]*p[12]
+    params['q0_B']=p[4]*p[12]
+    params['I_A']=p[1]
+    params['I_B']=p[3]
+    params['q0_substrat']=p[6]*p[12]
+    params['I_substrat']=p[5]
+    # thickness of both layers (including δ)
+    params['t_A']=p[7]*min(abs(p[8]), 1.)
+    params['t_B']=p[7]*min(abs(1-p[8]), 1.)
+    # lattice parameters
+    d_A=(numpy.pi*2./params['q0_A'])
+    d_B=(numpy.pi*2./params['q0_B'])
+    # distance δ of two planes (The given layer thickness and the offset because of only integer lattice planes) 
+    # and distance fluctuation σ and size fluctuation (e.g. roughness) ω
+    params['δ_AB']=(d_A+d_B)/2.
+    params['σ_AB']=p[10]
+    params['ω_AB']=p[11]
+    # Background intensity
+    params['resolution']=p[13]*p[12]
+    params['BG']=p[14]
+    # select which structurefactor to return
+    self.output_select=p[15]
+  
+  def fit_function(self, p, q):
+    '''
+      Calculate the intensities of the multilayer at reciprocal lattice positions q.
+      The user can select which parts of the structure factor should be plotted by changing the
+      F_select parameter. A negativ parameter means no convolution with the resolution function.
+      
+      @param p Parameters for the function
+      @param q Reciprocal lattice vector q
+      
+      @return The calculated intensities for the selected structure factor + background
+    '''
+    self.rebuild_param_dictionary(p)
+    params=self._parameter_dictionary
+    q=params['a*']*numpy.array(q, dtype=numpy.complex64)
+    if self.output_select==0:
+      I=abs(self.calc_F_substrat(q))**2
+    elif abs(self.output_select)==1:
+      I=abs(self.calc_F_layer(q, params['I_A'], params['q0_A'], params['t_A']-params['δ_AB']))**2*params['M']**2
+    elif abs(self.output_select)==2:
+      I=abs(self.calc_F_layer(q, params['I_B'], params['q0_B'], params['t_B']-params['δ_AB']))**2*params['M']**2
+    elif abs(self.output_select)==3:
+      F_SL=self.calc_F_bilayer(q)
+      I=abs(F_SL)**2
+    elif abs(self.output_select)==4:
+      F_SL=self.calc_F_ML(q)
+      I=abs(F_SL)**2
+    elif abs(self.output_select)==5:
+      F_SL=self.calc_F_ML(q)
+      I=abs(F_SL+self.calc_F_substrat(q))**2
+    elif abs(self.output_select)==6:
+      F_SL=self.calc_F_ML_roughness(q)
+      I=abs(F_SL+self.calc_F_substrat(q))**2
+    elif abs(self.output_select)==7:
+      I=self.calc_I_ML_fluctuation(q)+abs(self.calc_F_substrat(q))**2
+    elif abs(self.output_select)==8:
+      I=self.calc_I_ML_roughness(q)+abs(self.calc_F_substrat(q))**2
+    else:
+      I=q*0.+1.
+    if self.output_select>=0:
+      I=self.convolute_with_resolutions(I, q)
+    return numpy.float64(I+params['BG'])
+  
+  def convolute_with_resolutions(self, I, q):
+    '''
+      Convolute the calculated intensity with the resolution function.
+      
+      @param I Calculated intensity to convolute
+      @param q Reciprocal lattice vector q
+      
+      @return Convoluted intensity
+    '''    
+    params=self._parameter_dictionary
+    sigma_res=params['resolution']
+    q_center=numpy.linspace(-((q.max()-q.min())/2.), (q.max()-q.min())/2., len(q))
+    resolution=numpy.exp(-0.5*(q_center/sigma_res)**2)
+    resolution/=resolution.sum()
+    output=numpy.convolve(I, resolution, 'same')
+    return output
+  
+  ###################################### Calculate structue factors #########################################
+  
+  # slit function approach
+  def calc_F_layer__(self, q, I, q0, t_j):
+    '''
+      Calculate the structure factor function for one layer. This is the structure factor
+      of a crystal with the thickness t_j at the bragg peak q0.
+      
+      @param q Reciprocal lattice vector q
+      @param I Scaling factor
+      @param q0 Position of the corresponding bragg peak
+      @param t_j Thickness of the layer
+      
+      @return structure factor for this layer at the origin position.
+    '''
+    params=self._parameter_dictionary
+    # parameter for (q-q0)*width/2
+    t=(q-q0)*0.5*t_j*numpy.pi
+    # intensity scaling
+    I_layer=numpy.sqrt(I)*t_j
+    # Structure factor
+    F_layer=I_layer*numpy.sin(t)/t
+    # exchange NaN by Intensity
+    NaNs=numpy.isnan(F_layer)
+    F_layer=numpy.nan_to_num(F_layer)+I_layer*NaNs
+    return F_layer
+  
+  # structure factor approach
+  def calc_F_layer_(self, q, I, q0, t_j):
+    '''
+      Calculate the structurefactor by summing up all unit cells in the region.
+      
+      @param q Reciprocal lattice vector q
+      @param I Scaling factor
+      @param q0 Position of the corresponding bragg peak
+      @param t_j Thickness of the layer
+      
+      @return structure factor for this layer at the origin position.
+    '''
+    params=self._parameter_dictionary
+    d=(numpy.pi*2./q0)
+    planes=int(t_j/d)
+    F_layer=numpy.zeros_like(q)
+    for i in range(planes):
+      F_layer+=numpy.exp(1j*q*i*d)
+    return numpy.sqrt(I)*F_layer#*numpy.exp(1j*q*(t_j/d-planes)*0.5)
+  
+  def calc_F_layer(self, q, I, q0, t_j):
+    '''
+      Calculate the structurefactor by summing up all unit cells in the region.
+      
+      @param q Reciprocal lattice vector q
+      @param I Scaling factor
+      @param q0 Position of the corresponding bragg peak
+      @param t_j Thickness of the layer
+      
+      @return structure factor for this layer at the origin position.
+    '''
+    params=self._parameter_dictionary
+    d=(numpy.pi*2./q0)
+    planes=int(t_j/d)
+    F_layer=(1.-numpy.exp(1j*q*(planes+1)*d))/(1.-numpy.exp(1j*q*d))
+    return numpy.sqrt(I)*F_layer
+  
+
+  def calc_F_substrat(self, q):
+    '''
+      Calculate the structure factor of the substrate (crystal truncation rod at substrate peak position.
+      
+      @param q Reciprocal lattice vector q
+      
+      @return structure factor for the substrate
+    '''
+    params=self._parameter_dictionary
+    F_substrate=1j/(q-params['q0_substrat'])
+    F_substrate=numpy.nan_to_num(F_substrate)
+    # set the integrated intensity to I_substrate
+    F_substrate*=numpy.sqrt(params['I_substrat']/(abs(F_substrate)**2).sum())
+    return F_substrate
+  
+  def calc_F_bilayer(self, q):
+    '''
+      Calculate the structure factor for a bilayer
+
+      @param q Reciprocal lattice vector q
+      
+      @return the complete Intensity of the multilayer without the substrate
+    '''
+    # get relevant parameters
+    params=self._parameter_dictionary
+    # parameters for the interface distances
+    return self.calc_F_layer(q, params['I_A'], params['q0_A'], params['t_A']-params['δ_AB'])+\
+               numpy.exp(1j*q*(params['t_A']+params['δ_AB']))*self.calc_F_layer(q, params['I_B'], params['q0_B'], params['t_B']-params['δ_AB'])
+
+
+  def calc_F_ML(self, q):
+    '''
+      Calculate the structure factor for a superlattice without any roughness
+      using eq(3) from PRB paper.
+
+      @param q Reciprocal lattice vector q
+      
+      @return the complete structure factor of the multilayer (without substrate)
+    '''
+    exp=numpy.exp
+    # get relevant parameters
+    params=self._parameter_dictionary
+    M=params['M']
+    F_AB=self.calc_F_bilayer(q)
+    x=self.calc_xj()
+    iq=1j*q
+    #F_SLi=map(lambda item: exp(iq*item), x)
+    #F_SL=sum(F_SLi)
+    F_SL=(1.-exp(iq*(M+1)*x[1]))/(1.-exp(iq*x[1]))
+    return F_SL*F_AB
+  
+  def calc_F_ML_roughness(self, q):
+    '''
+      Calculate the avaraged structure factor for the multilayer with thickness variations.
+
+      @param q Reciprocal lattice vector q
+      
+      @return the complete structure factor of the multilayer (without substrate)
+    '''
+    # get relevant parameters
+    params=self._parameter_dictionary
+    # calculate t_j's for the discrete avarage because of roughness
+    t_deltaj=self.calc_tj()
+    t_A0=params['t_A']
+    t_B0=params['t_B']
+    t_A=t_A0+t_deltaj[0]
+    t_B=t_B0+t_deltaj[1]
+    # propability for every distance
+    P=self.calc_Pj(t_deltaj[0])
+    params['t_A']=t_A[0]
+    params['t_B']=t_B[0]
+    F_ML_roughness=P[0]*self.calc_F_ML(q)
+    for j, P_j in enumerate(P[1:]):
+      params['t_A']=t_A[j+1]
+      params['t_B']=t_B[j+1]
+      F_ML_roughness+=P_j*self.calc_F_ML(q)
+    params['t_A']=t_A0
+    params['t_B']=t_B0
+    return F_ML_roughness
+  
+  ############# additional function for more complicated approach including roughness ##############
+  
+  
+  
+  def calc_I_ML_fluctuation(self, q):
+    '''
+      Calculate the structure factor for a superlattice including fluctuations
+      of the interface distance using eq(1) from J.-P. Locquet et al., PRB 38, No. 5 (1988).
+
+      @param q Reciprocal lattice vector q
+      
+      @return the complete Intensity of the multilayer without the substrate
+    '''
+    # get relevant parameters
+    params=self._parameter_dictionary
+    exp=numpy.exp
+    cos=numpy.cos
+    M=params['M']
+    # structure factors of the layers
+    A=self.calc_F_layer(q, params['I_A'], params['q0_A'], params['t_A']-params['δ_AB'])
+    B=self.calc_F_layer(q, params['I_B'], params['q0_B'], params['t_B']-params['δ_AB'])
+    t_A=params['t_A']
+    t_B=params['t_B']
+    # crystal lattice parameters
+    d_A=(numpy.pi*2./params['q0_A'])
+    d_B=(numpy.pi*2./params['q0_B'])
+    # roughness parameter
+    c=1./params['σ_AB']
+    a_avg=params['δ_AB']
+    LAMBDA=t_A+t_B
+    I=M*(abs(A)**2+abs(B)**2+2.*abs(A*B)*exp(-q**2/(4.*c**2))*cos(q*LAMBDA/2.))
+    
+    for m in range(1, M):
+      I+=2.*(M-m) * ( (abs(A)**2+abs(B)**2)*exp(-2.*m*q**2/(4.*c**2))*cos(2.*m*q*LAMBDA/2.) +\
+                    abs(A*B)*exp( -(2.*m+1)*q**2/(4.*c**2) )*cos((2.*m+1)*q*LAMBDA/2.) +\
+                    abs(A*B)*exp(-(2.*m-1)*q**2/(4.*c**2))*cos((2.*m-1)*q*LAMBDA/2.)   )
+    
+    return I
+
+  def calc_I_ML_roughness(self, q):
+    '''
+      Calculate the structure factor for a superlattice including fluctuations and of the interface 
+      distance roughness using eq(7)-eq(10) from E.E.Fullerton et al., PRB 45, No. 16 (1992).
+
+      @param q Reciprocal lattice vector q
+      
+      @return the complete Intensity of the multilayer without the substrate
+    '''
+    # get relevant parameters
+    params=self._parameter_dictionary
+    exp=numpy.exp
+    M=params['M']
+    # parameters for the interface distances
+    a_avg=params['δ_AB']
+    psi=1j*q*a_avg-q**2/(params['σ_AB']*2.)
+    # calculate t_j's for the discrete avarage because of roughness
+    t_deltaj=self.calc_tj()
+    t_A=params['t_A']+t_deltaj[0]
+    t_B=params['t_B']+t_deltaj[1]
+    # propability for every distance
+    P_A=self.calc_Pj(t_deltaj[0])
+    P_B=self.calc_Pj(t_deltaj[1])
+    #calculate avarages (I is F·F*)
+    I_A_avg=0.
+    I_B_avg=0.
+    F_A_avg=0.
+    F_B_avg=0.
+    Phi_A_avg=0.
+    Phi_B_avg=0.
+    T_A=0.
+    T_B=0.
+    for j, P_Aj in enumerate(P_A):
+      F_Aj=self.calc_F_layer(q, params['I_A'], params['q0_A'], t_A[j]-params['δ_AB'])
+      F_A_avg+=P_Aj*F_Aj
+      Phi_A_avg+=P_Aj*exp(1j*q*(t_A[j]-params['δ_AB']))*F_Aj.conjugate()
+      I_A_avg+=P_Aj*F_Aj*F_Aj.conjugate()
+      T_A+=P_Aj*exp(1j*q*(t_A[j]-params['δ_AB']))
+    for j, P_Bj in enumerate(P_B):
+      F_Bj=self.calc_F_layer(q, params['I_B'], params['q0_B'], t_B[j]-params['δ_AB'])
+      F_B_avg+=P_Bj*F_Bj
+      Phi_B_avg+=P_Bj*exp(1j*q*(t_B[j]-params['δ_AB']))*F_Bj.conjugate()
+      I_B_avg+=P_Bj*F_Bj*F_Bj.conjugate()
+      T_B+=P_Bj*exp(1j*q*(t_B[j]-params['δ_AB']))
+    # calculate the Intensity (eq(7) in paper)
+    # there can still be an imaginary part becaus of calculation errors 
+    I_0=abs(M*(I_A_avg+2.*(exp(psi)*abs(Phi_A_avg*F_B_avg)).real+I_B_avg))
+    I_1=  2.*((exp(-psi)*Phi_B_avg*F_A_avg/(T_A*T_B)+\
+               Phi_B_avg*F_A_avg/T_A+\
+               Phi_B_avg*F_B_avg/T_B+\
+               exp(psi)*Phi_A_avg*F_B_avg)*\
+        ((M-(M+1)*exp(2*psi)*T_A*T_B+\
+          (exp(2*psi)*T_A*T_B)**(M+1))/(1.-exp(2.*psi)*T_A*T_B)-M)).real
+    return I_0+I_1
+
+  
+  ######################################## calculate parameters ######################################
+  
+  def calc_xj(self):
+    '''
+      Calculate xoffset of bilayer.
+      
+      @return offset position for every layer
+    '''
+    params=self._parameter_dictionary
+    x=[]
+    x.append(0.)
+    for j in range(params['M']-1):
+      x.append(x[j]+params['t_A']+params['t_B'])
+    return x
+  
+  def calc_tj(self):
+    '''
+      Calculate deviation of thickness as discrete gaussians.
+      
+      @return deviation of thickness from -3ω to +3ω as numpy array
+    '''
+    params=self._parameter_dictionary
+    # avarage dspacing
+    dA=(numpy.pi*2./params['q0_A'])
+    dB=(numpy.pi*2./params['q0_B'])
+    # 3*omega in integer d/2 values
+    three_omega_A=(4.*params['ω_AB'])-(4.*params['ω_AB']%dA)
+    three_omega_B=(4.*params['ω_AB'])-(4.*params['ω_AB']%dB)
+    t_deltaj_A=numpy.linspace(-three_omega_A, three_omega_A, 2.*three_omega_A/dA+1)
+    t_deltaj_B=numpy.linspace(-three_omega_B, three_omega_B, 2.*three_omega_B/dB+1)
+    return t_deltaj_A, t_deltaj_B
+  
+  def calc_Pj(self, tj):
+    '''
+      Calculate the propability for every thickness fluctuation tj.
+      
+      @return the propability for the jth deviation
+    '''
+    params=self._parameter_dictionary
+    omega=params['ω_AB']
+    P_j=numpy.exp(-tj**2/(2.*omega**2))
+    P_j/=P_j.sum()
+    return P_j
+  
+  #################################### changed derived functions ######################################
+  
+  def simulate(self, x, interpolate=5):
+    output=FitFunction.simulate(self, x, interpolate)
+    params=self._parameter_dictionary
+    if "Å" in self.fit_function_text:
+      self.fit_function_text="%iXml: dA=%.2fÅ dB=%.2fÅ dS=%.2fÅ => tA=%iuc (+%.2g Å) tB=%iuc (+%.2g Å)" % (
+                    params['M'], 
+                    (numpy.pi*2./params['q0_A']), 
+                    (numpy.pi*2./params['q0_B']), 
+                    (numpy.pi*2./params['q0_substrat']), 
+                    int(params['t_A']/(numpy.pi*2./params['q0_A'])), 
+                    (params['t_A']/(numpy.pi*2./params['q0_A'])-int(params['t_A']/(numpy.pi*2./params['q0_A'])))*(numpy.pi*2./params['q0_A']),
+                    int(params['t_B']/(numpy.pi*2./params['q0_B'])), 
+                    (params['t_B']/(numpy.pi*2./params['q0_B'])-int(params['t_B']/(numpy.pi*2./params['q0_B'])))*(numpy.pi*2./params['q0_B'])
+                                                                                  )
+    else:
+      self.fit_function_text=self.fit_function_text.replace('(params)', "%iXml: dA=%.2fÅ dB=%.2fÅ dS=%.2fÅ => tA=%iuc (+%.2g Å) tB=%iuc (+%.2g Å)" % (
+                    params['M'], 
+                    (numpy.pi*2./params['q0_A']), 
+                    (numpy.pi*2./params['q0_B']), 
+                    (numpy.pi*2./params['q0_substrat']), 
+                    int(params['t_A']/(numpy.pi*2./params['q0_A'])), 
+                    (params['t_A']/(numpy.pi*2./params['q0_A'])-int(params['t_A']/(numpy.pi*2./params['q0_A'])))*(numpy.pi*2./params['q0_A']),
+                    int(params['t_B']/(numpy.pi*2./params['q0_B'])), 
+                    (params['t_B']/(numpy.pi*2./params['q0_B'])-int(params['t_B']/(numpy.pi*2./params['q0_B'])))*(numpy.pi*2./params['q0_B'])
+                                                                                  ))
+    return output
+    
+
 class FitSQUIDSignal(FitFunction):
   '''
     Fit three gaussians to SQUID raw data to calculate magnetic moments.

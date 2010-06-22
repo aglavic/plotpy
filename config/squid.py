@@ -7,7 +7,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta1"
+__version__ = "0.6.3.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -65,9 +65,10 @@ COLUMNS_MAPPING=[\
 ,['Long Demeaned Voltage', 9, ['V_{dem}', 'V']]\
 ,['Long Scaled Response',4,['V_{SC-long}','V']]\
 ,['Long Avg. Scaled Response', 11, ['V_{SC-avrg}', 'V']]\
+,['Long Voltmeter Gain', 11, ['Range', '']]
 ]
 # Measurement types where some parameters are fix and x,y and yerror columns are set.
-# [ 'list of constant parameters [ column , max_div ]' , x-col, y-col, div_y-col , plot options]
+# [ 'list of constant parameters [ column , max_div , {same direction} ]' , x-col, y-col, div_y-col , plot options]
 # The first measurement fitting is used (so you should put stricter rules before others).
 # If no type fits the data collected nothing will be plotted. 
 # Diviations are only compared with last datapoint, so slow increases won't trigger a new sequence.
@@ -82,7 +83,8 @@ MEASUREMENT_TYPES=[\
 
 # Split sequences after readout [list_for_scantype, split_by, split_sensitivity]
 SPLIT_AFTER=[
-             [("M\\047{ac}"),'Frequency', 5.], 
+             ["M\\047{ac}",'Frequency', 5.], 
+             ["T",'DIRECTION', 0.25], 
              ]
 
 # permanent datafilters applied, a list of

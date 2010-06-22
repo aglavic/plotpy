@@ -18,7 +18,8 @@
 #                                                                                               #
 #################################################################################################
 
-# Pleas do not make any changes here unless you know what you are doing.
+import scipy.interpolate
+import numpy
 
 # import GenericSession, which is the parent class for the SquidSession
 from generic import GenericSession
@@ -248,3 +249,61 @@ Data columns and unit transformations are defined in config.squid.py.
       return True, (mol_dia/mol_mass*self.dia_calc[2]*1e-6)
     else:
       return False, elements
+
+  def subtract_dataset(self, action, window):
+    '''
+      Subtract one dataset from another using interpolated values.
+    '''
+    if window.measurement[window.index_mess].zdata>=0:
+      return None
+    interpolate=scipy.interpolate.interp1d
+    selection_dialog=PreviewDialog(self.file_data, 
+                                title='Select Dataset for Subtraction...', 
+                                show_previews=False, 
+                                buttons=('OK', 1, 'Cancel', 0), 
+                                parent=window, 
+                                flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                                single_selection=True
+                                )
+    selection_dialog.set_default_size(800, 600)
+    selection_dialog.set_preview_parameters(window.plot, self, self.TEMP_DIR+'plot_temp.png')
+    result=selection_dialog.run()
+    if result==1:
+      from copy import deepcopy
+      dataset=window.measurement[window.index_mess]
+      object=selection_dialog.get_active_objects()[0]
+      xdata=numpy.array(dataset.data[dataset.xdata].values)
+      ydata=numpy.array(dataset.data[dataset.ydata].values)
+      error=numpy.array(dataset.data[dataset.yerror].values)
+      x2data=numpy.array(object.data[object.xdata].values)
+      y2data=numpy.array(object.data[object.ydata].values)
+      error2=numpy.array(object.data[object.yerror].values)
+      if x2data[0]>x2data[-1]:
+        x2data=numpy.array(list(reversed(x2data.tolist())))
+        y2data=numpy.array(list(reversed(y2data.tolist())))
+        error2=numpy.array(list(reversed(error2.tolist())))
+      func2=interpolate(x2data, y2data, kind='cubic', bounds_error=False, fill_value=0.)
+      efunc2=interpolate(x2data, error2, kind='cubic', bounds_error=False, fill_value=0.)
+      y2interp=func2(xdata)
+      error2interp=efunc2(xdata)
+      x2_start=x2data.min()
+      x2_stop=x2data.max()
+      y2_start=y2data[0]
+      y2_stop=y2data[-1]
+      e2_start=error2[0]
+      e2_stop=error2[-1]
+      for i, x in enumerate(xdata):
+        if x<x2_start:
+          y2interp[i]=y2_start
+          error2interp[i]=e2_start
+        if x>x2_stop:
+          y2interp[i]=y2_stop
+          error2interp[i]=e2_stop
+      newdata=deepcopy(dataset)
+      newdata.data[newdata.ydata].values=(ydata-y2interp).tolist()
+      newdata.data[newdata.yerror].values=(numpy.sqrt(error**2+error2interp**2)).tolist()
+      newdata.short_info=dataset.short_info+' - '+object.short_info
+      window.measurement.insert(window.index_mess+1, newdata)
+      window.index_mess+=1
+      window.replot()
+    selection_dialog.destroy()

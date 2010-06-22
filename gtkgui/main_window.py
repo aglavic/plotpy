@@ -307,7 +307,6 @@ class ApplicationMainWindow(gtk.Window):
       self.logx.set_active(self.measurement[self.index_mess].logx)
       self.logy.set_active(self.measurement[self.index_mess].logy)
       self.logz.set_active(self.measurement[self.index_mess].logz)
-      self.logz.set_active(self.measurement[self.index_mess].logz)
     
     #--- Creating entries and options according to the active measurement ---
 
@@ -559,9 +558,15 @@ class ApplicationMainWindow(gtk.Window):
     # change log settings
     # TODO: check if realy log was triggering this action
     else:
-      self.measurement[self.index_mess].logx=self.logx.get_active()
-      self.measurement[self.index_mess].logy=self.logy.get_active()
-      self.measurement[self.index_mess].logz=self.logz.get_active()
+      logitems=self.measurement[self.index_mess]
+      if self.active_multiplot:
+        for mp in self.multiplot:
+          for mpi, mpname in mp:
+            if self.measurement[self.index_mess] is mpi:
+              logitems=mp[0][0]
+      logitems.logx=self.logx.get_active()
+      logitems.logy=self.logy.get_active()
+      logitems.logz=self.logz.get_active()
     self.replot() # plot with new Settings
   
   def change_active_file(self, action):
@@ -952,10 +957,21 @@ class ApplicationMainWindow(gtk.Window):
     '''
     # only apply when the triggered action is realy the apply button.
     if action==1:
-      self.measurement[self.index_mess].plot_options=\
-        self.plot_options_buffer.get_text(\
-          self.plot_options_buffer.get_start_iter(),\
-          self.plot_options_buffer.get_end_iter())
+      found=False
+      if self.active_multiplot:
+        for mp in self.multiplot:
+          for mpi, mpname in mp:
+            if self.measurement[self.index_mess] is mpi:
+              mp[0][0].plot_options=\
+                self.plot_options_buffer.get_text(\
+                  self.plot_options_buffer.get_start_iter(),\
+                  self.plot_options_buffer.get_end_iter())
+              found=True
+      if not found:
+        self.measurement[self.index_mess].plot_options=\
+          self.plot_options_buffer.get_text(\
+            self.plot_options_buffer.get_start_iter(),\
+            self.plot_options_buffer.get_end_iter())
       gnuplot_preferences.set_output_terminal_png=terminal_png.get_text()
       gnuplot_preferences.set_output_terminal_ps=terminal_ps.get_text()
       gnuplot_preferences.x_label=x_label.get_text()
@@ -1160,12 +1176,20 @@ class ApplicationMainWindow(gtk.Window):
       for filter_widgets in filters:
         if filter_widgets[0].get_active()==0:
           continue
+        try:
+          ffrom=float(filter_widgets[1].get_text())
+        except ValueError:
+          ffrom=None
+        try:
+          fto=float(filter_widgets[2].get_text())
+        except ValueError:
+          fto=None
         new_filters.append(\
-          (filter_widgets[0].get_active()-1,\
-          float(filter_widgets[1].get_text()),\
-          float(filter_widgets[2].get_text()),\
-          filter_widgets[3].get_active())\
-          )
+            (filter_widgets[0].get_active()-1,\
+            ffrom,\
+            fto,\
+            filter_widgets[3].get_active())\
+            )
       self.file_actions.activate_action('change filter', new_filters)
       self.replot()
     if response<2:
@@ -1514,6 +1538,41 @@ class ApplicationMainWindow(gtk.Window):
     cd_dialog.destroy()
     self.rebuild_menus()
     self.replot()      
+
+  def savitzky_golay(self, action):
+    '''
+      Filter the dataset with Savitzky-Golay filter.
+    '''
+    parameters, result=SimpleEntryDialog('Savitzky Golay Filter...', 
+                         (('Window Size', 5, int), ('Polynomial Order', 2, int), ('Maximal Derivative', 1, int))).run()
+    if parameters['Polynomial Order']>parameters['Window Size']-2:
+      parameters['Polynomial Order']=parameters['Window Size']-2
+    if parameters['Maximal Derivative']+1>parameters['Polynomial Order']:
+      parameters['Maximal Derivative']=parameters['Polynomial Order']-1
+    if result==1:
+      # create a new dataset with the smoothed data and all derivatives till the selected order
+      self.file_actions.activate_action('savitzky_golay', 
+                        parameters['Window Size'], 
+                        parameters['Polynomial Order'], 
+                        parameters['Maximal Derivative']+1)
+      self.rebuild_menus()
+      self.replot()
+  
+  def colorcode_points(self, action):
+    '''
+      Show points colorcoded by their number.
+    '''
+    global errorbars
+    dataset=self.measurement[self.index_mess]
+    if errorbars:
+      errorbars=False
+    dataset.plot_options.special_plot_parameters="w lines palette"
+    dataset.plot_options.special_using_parameters=":0"   
+    dataset.plot_options.settings['cblabel']='"Pointnumber"'
+    self.replot()
+    dataset.plot_options.special_plot_parameters=None
+    dataset.plot_options.special_using_parameters=""
+    del(dataset.plot_options.settings['cblabel'])  
   
   def extract_cross_section(self, action):
     '''
@@ -2337,8 +2396,8 @@ class ApplicationMainWindow(gtk.Window):
                                           self.active_session, 
                                           [item[0] for item in plotlist], 
                                           common_file_prefix, 
+                                          '', 
                                           plotlist.title, 
-                                          plotlist[0][0].short_info, 
                                           [item[0].short_info for item in plotlist], 
                                           errorbars,
                                           common_file_prefix + picture_type,
@@ -2584,8 +2643,14 @@ class ApplicationMainWindow(gtk.Window):
       else:
         dialog.destroy()
     else:
-      measurements=[self.measurement[self.index_mess]]
-      PrintDatasetDialog(measurements, self)
+      if self.active_multiplot:
+        for plotlist in self.multiplot:
+          itemlist=[item[0] for item in plotlist]
+          if self.measurement[self.index_mess] in itemlist:
+            PrintDatasetDialog(plotlist, self, multiplot=True)
+      else:
+        measurements=[self.measurement[self.index_mess]]
+        PrintDatasetDialog(measurements, self)
 
   # not all gtk platforms support printing, other linux systems can print .ps from commandline
   if gtk.pygtk_version[1]>=10:
@@ -3000,9 +3065,16 @@ class ApplicationMainWindow(gtk.Window):
     # change label and plot other picture
     self.show_add_info(None)
     # set log checkbox according to active measurement
-    self.logx.set_active(self.measurement[self.index_mess].logx)
-    self.logy.set_active(self.measurement[self.index_mess].logy)
-    self.logz.set_active(self.measurement[self.index_mess].logz)
+    logitems=self.measurement[self.index_mess]
+    if self.active_multiplot:
+      for mp in self.multiplot:
+        for mpi, mpname in mp:
+          if self.measurement[self.index_mess] is mpi:
+            logitems=mp[0][0]
+    self.logx.set_active(logitems.logx)
+    self.logy.set_active(logitems.logy)
+    self.logz.set_active(logitems.logz)
+    
     # wait for all gtk events to finish to get the right size
     print "Plotting"
     i=0
@@ -3247,6 +3319,8 @@ class ApplicationMainWindow(gtk.Window):
           <placeholder name='z-actions'/>
           <placeholder name='y-actions'>
           <menuitem action='CombinePoints'/>
+          <menuitem action='SavitzkyGolay'/>
+          <menuitem action='ColorcodePoints'/>
           </placeholder>'''
     output+='''
         <separator name='static6'/>
@@ -3422,6 +3496,14 @@ class ApplicationMainWindow(gtk.Window):
         "Combine points", None,                     # label, accelerator
         None,                                    # tooltip
         self.combine_data_points),
+      ( "SavitzkyGolay", None,                    # name, stock id
+        "Savitzky Golay Filtering", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.savitzky_golay),
+      ( "ColorcodePoints", None,                    # name, stock id
+        "Show Colorcoded Points", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.colorcode_points),
       ( "SelectColor", None,                    # name, stock id
         "Color Pattern...", None,                     # label, accelerator
         None,                                    # tooltip

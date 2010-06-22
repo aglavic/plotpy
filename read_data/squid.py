@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta1"
+__version__ = "0.6.3.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -249,22 +249,48 @@ def split_after_read(dataset, split):
   output=[]
   dims=dataset.dimensions()
   # only split if the right measurement is presen (e.g. frequency only for AC)
-  for dim in split[0]:
-    if dim not in dims:
+  if split[0] not in dims:
       return [dataset]
-  split_col=dims.index(split[1])
-  found_entries=[]
-  for point in dataset:
-    key=round(point[split_col]/split[2])
-    if key in found_entries:
-      output[found_entries.index(key)].append(point)
-    else:
-      found_entries.append(key)
-      output.append(deepcopy(dataset))
-      for physprop in output[-1].data:
-        physprop.values=[]
-      output[-1].number_of_points=0
-      output[-1].append(point)
-      output[-1].short_info='at %d %s' % (key*split[2], dataset.units()[split_col])
+  if split[1]!='DIRECTION':
+    split_col=dims.index(split[1])
+    found_entries=[]
+    for point in dataset:
+      key=round(point[split_col]/split[2])
+      if key in found_entries:
+        output[found_entries.index(key)].append(point)
+      else:
+        found_entries.append(key)
+        output.append(deepcopy(dataset))
+        for physprop in output[-1].data:
+          physprop.values=[]
+        output[-1].number_of_points=0
+        output[-1].append(point)
+        output[-1].short_info='at %d %s' % (key*split[2], dataset.units()[split_col])
+  else:
+    xcol=dataset.xdata
+    if dims[xcol]!=split[0]:
+      return [dataset]
+    direction = dataset[0][xcol]<dataset[4][xcol]
+    lastpoint=dataset[0]
+    active_data=deepcopy(dataset)
+    active_data.number_of_points=0
+    for col in active_data.data:
+      col.values=[]
+    active_data.append(lastpoint)
+    for point in dataset[1:]:
+      if (direction and (lastpoint[xcol]<=point[xcol]+split[2])) or\
+         (not direction and (lastpoint[xcol]>=point[xcol]-split[2])):
+        active_data.append(point)
+        lastpoint=point
+      else:
+        direction=not direction
+        lastpoint=point
+        output.append(active_data)
+        active_data=deepcopy(dataset)
+        active_data.number_of_points=0
+        for col in active_data.data:
+          col.values=[]
+        active_data.append(point)
+    output.append(active_data)
   return output
   

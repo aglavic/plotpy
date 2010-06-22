@@ -90,7 +90,7 @@ class PreviewDialog(gtk.Dialog):
   '''
   main_table=None
   
-  def __init__(self, data_dict, show_previews=True, **opts):
+  def __init__(self, data_dict, show_previews=False, single_selection=True, **opts):
     '''
       Constructor setting up a gtk.Dialog with a table of preview items.
     '''
@@ -103,6 +103,8 @@ class PreviewDialog(gtk.Dialog):
     # Will store the checkboxes corresponding to one plot
     self.check_boxes={}
     self.show_previews=show_previews
+    # if true, only one plot can be selected.
+    self.single_selection=single_selection
     self.vbox.add(self.get_scrolled_main_table())
     for key, datalist in sorted(data_dict.items()):
       self.add_line(key, datalist)
@@ -160,25 +162,26 @@ class PreviewDialog(gtk.Dialog):
       return
     main_table=self.main_table
     line=self.last_line
-    select_all=gtk.Button('Select All')
-    select_none=gtk.Button('Unselect')
     label=gtk.Label(key)
     table=gtk.Table(len(datalist), 2, False)
     align=gtk.Alignment(0, 0.5, 0, 0)
     align.add(table)
     align.show()
-    main_table.attach(select_all, 
-            # X direction #          # Y direction
-            0, 1,                      line+1, line+2,
-            0,                       0,
-            0,                         0)
-    select_all.show()
-    main_table.attach(select_none, 
-            # X direction #          # Y direction
-            1, 2,                      line+1, line+2,
-            0,                       0,
-            0,                         0)
-    select_none.show()
+    if not self.single_selection:
+      select_all=gtk.Button('Select All')
+      select_none=gtk.Button('Unselect')
+      main_table.attach(select_all, 
+              # X direction #          # Y direction
+              0, 1,                      line+1, line+2,
+              0,                       0,
+              0,                         0)
+      select_all.show()
+      main_table.attach(select_none, 
+              # X direction #          # Y direction
+              1, 2,                      line+1, line+2,
+              0,                       0,
+              0,                         0)
+      select_none.show()
     main_table.attach(label, 
             # X direction #          # Y direction
             0, 2,                      line, line+1,
@@ -194,7 +197,14 @@ class PreviewDialog(gtk.Dialog):
     self.last_line+=2
     check_boxes=[]
     for i, dataset in enumerate(datalist):
-      check_box=gtk.CheckButton(label="[%i] %s" % (i, dataset.short_info[:10]), use_underline=True)
+      if self.single_selection:
+        if len(self.check_boxes.values())>0:
+          group=self.check_boxes.values()[0][0]
+        else:
+          group=None
+        check_box=gtk.RadioButton(group=group, label="[%i] %s" % (i, dataset.short_info[:10]), use_underline=True)
+      else:
+        check_box=gtk.CheckButton(label="[%i] %s" % (i, dataset.short_info[:10]), use_underline=True)
       check_box.show()
       check_boxes.append(check_box)
       table.attach(check_box, 
@@ -213,18 +223,22 @@ class PreviewDialog(gtk.Dialog):
       eventbox.add(image)
       eventbox.show()
       eventbox.add_events(gtk.gdk.BUTTON_PRESS_MASK)
-      eventbox.connect("button_press_event", self.test, check_box)
+      eventbox.connect("button_press_event", self.toggle_check_box, check_box)
       table.attach(eventbox, 
             # X direction #          # Y direction
             i, i+1,                   0, 1,
             0,                       gtk.FILL,
             0,                         0)      
     self.check_boxes[key]=check_boxes
-    select_all.connect('clicked', self.toggle_entries, check_boxes, True)
-    select_none.connect('clicked', self.toggle_entries, check_boxes, False)
+    if not self.single_selection:
+      select_all.connect('clicked', self.toggle_entries, check_boxes, True)
+      select_none.connect('clicked', self.toggle_entries, check_boxes, False)
   
-  def test(self, widget, action, check_box):
-    check_box.set_active(not check_box.get_active())
+  def toggle_check_box(self, widget, action, check_box):
+    if type(check_box) is gtk.CheckButton:
+      check_box.set_active(not check_box.get_active())
+    else:
+      check_box.set_active(True)
 
   def toggle_entries(self, widget, check_boxes, set_value):
     '''
@@ -242,7 +256,7 @@ class PreviewDialog(gtk.Dialog):
     if getattr(dataset, 'preview', False):
       image.set_from_pixbuf(dataset.preview)
     else:
-      self.unset_previews.append( (image, dataset))
+      self.unset_previews.append( (image, dataset) )
     return image
   
   def set_preview_parameters(self, plot_function, session, temp_file):
@@ -295,6 +309,7 @@ class PreviewDialog(gtk.Dialog):
       for i in active_list:
         output.append(data_dict[key][i])
     return output
+  
   def toggle_previews(self, widget):
     '''
       Show or hide all previews.
@@ -308,8 +323,91 @@ class PreviewDialog(gtk.Dialog):
       for image in self.images:
         image.show()
       
-  
 #-------------------------- PreviewDialog to select one plot ---------------------------
+
+#+++++++++++++++ SimpleEntryDialog to get a list of values from the user +++++++++++++++
+
+class SimpleEntryDialog(gtk.Dialog):
+  '''
+    A dialog with user defined entries. The values of the entries are converted to a
+    given type and then returned when run() is called.
+  '''
+  
+  def __init__(self, title, entries, **opts):
+    '''
+      Class constructor. Creates the dialog and label + entries from the list of entries supplied above.
+      
+      @param entries a list of tuples containing the values name, start value and function for type conversion.
+    '''
+    # Initialize this dialog
+    gtk.Dialog.__init__(self, title=title, buttons=('OK', 1, 'Cancel', 0), **opts)
+    self.entries={}
+    self.values={}
+    self.conversions={}
+    self.table=gtk.Table(3, len(entries), False)
+    self.table.show()
+    self.vbox.add(self.table)
+    self._init_entries(entries)
+  
+  def _init_entries(self, entries):
+    '''
+      Append labels and entries to the main table and the objects dictionaries and show them. 
+    '''
+    for i, entry_list in enumerate(entries):
+      if len(entry_list)<3 and len(entry_list)>4:
+        raise ValueError, "All entries have to be tuples with 3 or 4 items"
+      key=entry_list[0]
+      label=gtk.Label(key + ': ')
+      label.show()
+      entry=gtk.Entry()
+      entry.show()
+      entry.set_text(str(entry_list[1]))
+      entry.connect('activate', lambda *ignore: self.response(1))
+      self.entries[key]=entry
+      self.values[key]=entry_list[1]
+      self.conversions[key]=entry_list[2]
+      self.table.attach(label, 
+            # X direction #          # Y direction
+            0, 1,                      i, i+1,
+            gtk.FILL,                       gtk.FILL,
+            0,                         0)
+      self.table.attach(entry, 
+            # X direction #          # Y direction
+            1, 2,                      i, i+1,
+            gtk.FILL|gtk.EXPAND,                       gtk.FILL,
+            0,                         0)
+      if len(entry_list)==4:
+        self.table.attach(entry_list[3], 
+            # X direction #          # Y direction
+            2, 3,                      i, i+1,
+            gtk.FILL,                       gtk.FILL,
+            0,                         0)
+        entry_list[3].show()
+  
+  def run(self):
+    '''
+      Show the dialog and wait for input. Return the result as Dictionary 
+      and a boolen definig if the Dialog was closed or OK was pressed.
+    '''
+    result=gtk.Dialog.run(self)
+    self.collect_entries()
+    self.hide()
+    return self.values, result==1
+  
+  def collect_entries(self):
+    '''
+      Get values from all entry widgets and convert them. If conversion fails
+      don't change the values.
+    '''
+    for key, entry in self.entries.items():
+      text=entry.get_text()
+      try:
+        value=self.conversions[key](text)
+        self.values[key]=value
+      except ValueError:
+        pass
+
+#--------------- SimpleEntryDialog to get a list of values from the user ---------------
 
 #+++++++++++++++++++ FileChooserDialog with entries for width and height ++++++++++++++++
 
@@ -394,7 +492,7 @@ class PrintDatasetDialog:
     get send to the Printer.
   '''
   
-  def __init__(self, datasets, main_window, resolution=300):
+  def __init__(self, datasets, main_window, resolution=300, multiplot=False):
     '''
       Constructor setting setting the objects datasets and running the dialog
       
@@ -405,6 +503,7 @@ class PrintDatasetDialog:
     self.datasets=datasets
     self.main_window=main_window
     self.width=resolution*11.666
+    self.use_multiplot=multiplot
     self.do_print()
 
   def do_print(self):
@@ -421,7 +520,10 @@ class PrintDatasetDialog:
     terminal_items+=['crop']
     gnuplot_preferences.set_output_terminal_png=" ".join(terminal_items)
     print_op = gtk.PrintOperation()
-    print_op.set_n_pages(len(self.datasets))
+    if not self.use_multiplot:
+      print_op.set_n_pages(len(self.datasets))
+    else:
+      print_op.set_n_pages(1)
     # set landscape as default page orientation
     page_setup=gtk.PageSetup()
     page_setup.set_orientation(gtk.PAGE_ORIENTATION_LANDSCAPE)
@@ -470,8 +572,11 @@ class PrintDatasetDialog:
       @param current page number
     '''
     print "Plotting page %i/%i" % (page_nr+1, len(self.datasets))
-    dataset=self.datasets[page_nr]
-    self.plot(dataset)
+    if self.use_multiplot:
+      self.multiplot(self.datasets)
+    else:
+      dataset=self.datasets[page_nr]
+      self.plot(dataset)
     # get the cairo context to draw in
     page_setup=context.get_page_setup()
     cairo_context = context.get_cairo_context()
@@ -505,6 +610,25 @@ class PrintDatasetDialog:
                 errorbars, 
                 output_file=session.TEMP_DIR+'plot_temp.png',
                 fit_lorentz=False)
+    
+  def multiplot(self, dataset_list):
+    '''
+      Method to create one multiplot in print quality.
+    '''
+    session=self.main_window.active_session
+    session.picture_width=str(int(self.width))
+    session.picture_height=str(int(self.width/1.414))
+    window=self.main_window
+    window.plot(session,
+                [item[0] for item in dataset_list],
+                dataset_list[0][1],
+                #plotlist[0][0].short_info,
+                dataset_list.title, 
+                [item[0].short_info for item in dataset_list],
+                errorbars,
+                output_file=session.TEMP_DIR+'plot_temp.png',
+                fit_lorentz=False, 
+                sample_name=dataset_list.sample_name)
     
   def preview(self, operation, preview, context, parent):
     '''

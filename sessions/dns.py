@@ -34,7 +34,7 @@ import read_data.dns
 import config.dns
 # import gui functions for active toolkit
 from config.gui import toolkit
-try:
+try:  
   GUI=__import__( toolkit+'gui.dns', fromlist=['DNSGUI']).DNSGUI
 except ImportError: 
   class GUI: pass
@@ -686,7 +686,7 @@ class DNSSession(GenericSession, GUI):
         active_map.number=str(i)
         active_map.dns_info=scan.dns_info
         active_map.number_of_channels=(len(scan.units())-1)/2
-        active_map.short_info=" ".join([info[1](scan.dns_info[info[0]])+info[2] for info in self.SHORT_INFO])
+        active_map.short_info=str(i)+': '+" ".join([info[1](scan.dns_info[info[0]])+info[2] for info in self.SHORT_INFO])
         active_map.sample_name=self.SAMPLE_NAME
         active_map.info= "\n".join(map(lambda item: item[0]+': '+str(item[1]),
                                     sorted(scan.dns_info.items())))
@@ -1243,7 +1243,7 @@ class DNSMeasurementData(MeasurementData):
     Datatreatment is done here and additional data treatment functions should
     be put here, too.
   '''
-  SPLIT_SENSITIVITY=0.005
+  SPLIT_SENSITIVITY=0.01
   dns_info={}
   scan_line=1
   scan_line_constant=3

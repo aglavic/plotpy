@@ -18,7 +18,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta1"
+__version__ = "0.6.3.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -399,8 +399,12 @@ def create_plot_script(session,
       gnuplot_file_text+=gp.settings_3d
     splot_add='s'
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
+  output_file_prefix=os.path.normpath(output_file_prefix)
   gnuplot_file_text+='# now the plotting function\n'+splot_add+\
-        'plot "'+output_file_prefix+file_numbers[0]+'.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+        'plot "'+output_file_prefix+file_numbers[0]+'.out" u '+using_cols+\
+                datasets[0].plot_options.special_using_parameters+\
+                ' t "'+gp.titles+'" '+\
+                (datasets[0].plot_options.special_plot_parameters or plotting_param)
   gnuplot_file_text=replace_ph(session, 
                              gnuplot_file_text,
                              datasets,
@@ -412,10 +416,20 @@ def create_plot_script(session,
                              (0, 0, 0),
                              postscript_export,
                              additional_info)
-  for number in file_numbers[1:]:
+  for i, number in enumerate(file_numbers[1:]):
     if number.split('-')[1]=='0':
+      if datasets[0].zdata>=0:
+        using_cols=str(datasets[i+1].xdata+1)+':'+str(datasets[i+1].ydata+1)+':'+str(datasets[i+1].zdata+1)
+      elif with_errorbars:
+        plotting_param=gp.plotting_parameters_errorbars
+        using_cols=str(datasets[i+1].xdata+1)+':'+str(datasets[i+1].ydata+1)+':'+str(datasets[i+1].yerror+1)
+      else:
+        plotting_param=gp.plotting_parameters
+        using_cols=str(datasets[i+1].xdata+1)+':'+str(datasets[i+1].ydata+1)
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
-          '.out" u '+using_cols+' t "'+gp.titles+'" '+plotting_param
+          '.out" u '+using_cols+\
+          datasets[i+1].plot_options.special_using_parameters+\
+          ' t "'+gp.titles+'" '+(datasets[i+1].plot_options.special_plot_parameters or plotting_param)
       gnuplot_file_text=replace_ph(session, 
                                    gnuplot_file_text,
                                    datasets,

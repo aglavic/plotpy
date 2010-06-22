@@ -488,8 +488,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     else:
       zip_mds=False
       mds_name=filename+'.mds'
+    # only use mds file if it is newer than the original data and this script
     if os.path.exists(mds_name) and not self.read_directly and \
-        (os.path.getmtime(own_path)<os.path.getmtime(mds_name)):
+        (os.path.getmtime(own_path)<os.path.getmtime(mds_name)) and \
+        (os.path.getmtime(filename)<os.path.getmtime(mds_name)):
       print "Importing previously saved data from '" +mds_name + "'."
       if zip_mds:
         import gzip
@@ -530,9 +532,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
       Perform actions on every dataset that is imported.
     '''
-    dataset.logx=self.logx
-    dataset.logy=self.logy
-    dataset.logz=self.logz
+    if self.logx:
+      dataset.logx=True
+    if self.logy:
+      dataset.logy=True
+    if self.logz:
+      dataset.logz=True
 
   def __iter__(self): # see next()
     return self
