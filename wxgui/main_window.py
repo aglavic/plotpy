@@ -3425,71 +3425,70 @@ class ApplicationMainWindow( wx.Frame ):
       print 'generic.py: return from create_menubar()' 
      
   def create_toolBar(self):
-      print 'Entry create_toolBar'
-      tb = self.CreateToolBar(style=wx.TB_TEXT)
+    print 'Entry create_toolBar'
+    tb = self.CreateToolBar(style=wx.TB_TEXT)
 
 #     Action
 #      bmp = wx.ArtProvider.GetBitmap( wx.ART_GO_FORWARD )
-      id = tb.AddLabelTool( wx.ID_ANY, 'First', wx.ArtProvider.GetBitmap( wx.ART_GO_BACK, wx.ART_TOOLBAR ),
-                                   shortHelp='First Plot',
-                                   longHelp='First Plot').GetId()
-      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id)
-      self.action_dict[id] = 'First'
+    id = tb.AddLabelTool( wx.ID_ANY, 'First', wx.ArtProvider.GetBitmap( wx.ART_GO_BACK, wx.ART_TOOLBAR ),
+                                 shortHelp='First Plot',
+                                 longHelp='First Plot').GetId()
+    self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id)
+    self.action_dict[id] = 'First'
 
-      id = tb.AddLabelTool( wx.ID_BACKWARD, 'Prev', wx.ArtProvider.GetBitmap( wx.ART_GO_BACK, wx.ART_TOOLBAR ),
-                                   shortHelp='Previous Plot',
-                                   longHelp='Previous Plot').GetId()
-      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id)
-      self.action_dict[id] = 'Prev'
+    id = tb.AddLabelTool( wx.ID_BACKWARD, 'Prev', wx.ArtProvider.GetBitmap( wx.ART_GO_BACK, wx.ART_TOOLBAR ),
+                                 shortHelp='Previous Plot',
+                                 longHelp='Previous Plot').GetId()
+    self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id)
+    self.action_dict[id] = 'Prev'
 
-      id = tb.AddLabelTool( wx.ID_DOWN, 'Next', wx.ArtProvider.GetBitmap( wx.ART_GO_FORWARD, wx.ART_TOOLBAR ),
-                                   shortHelp='Next Plot',
-                                   longHelp='Next Plot').GetId()
+    id = tb.AddLabelTool( wx.ID_DOWN, 'Next', wx.ArtProvider.GetBitmap( wx.ART_GO_FORWARD, wx.ART_TOOLBAR ),
+                                 shortHelp='Next Plot',
+                                 longHelp='Next Plot').GetId()
 
-      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id)
-      self.action_dict[id] = 'Next'
+    self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id)
+    self.action_dict[id] = 'Next'
 
-      id = tb.AddLabelTool( wx.ID_ANY, 'Last',  wx.ArtProvider.GetBitmap( wx.ART_GO_FORWARD, wx.ART_TOOLBAR ),
-                                   shortHelp='Last Plot',
-                                   longHelp='Last Plot').GetId()
-      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id)
-      self.action_dict[id] = 'Last'
+    id = tb.AddLabelTool( wx.ID_ANY, 'Last',  wx.ArtProvider.GetBitmap( wx.ART_GO_FORWARD, wx.ART_TOOLBAR ),
+                                 shortHelp='Last Plot',
+                                 longHelp='Last Plot').GetId()
+    self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id)
+    self.action_dict[id] = 'Last'
 
-      tb.AddSeparator()
+    tb.AddSeparator()
 
-      id = tb.AddLabelTool( wx.ID_APPLY, 'Apply',  wx.ArtProvider.GetBitmap( wx.ART_PASTE, wx.ART_TOOLBAR ),
-                                   shortHelp='Apply current plot settings to all sequences',
-                                   longHelp='Apply current plot settings to all sequences').GetId()
-      self.Bind( wx.EVT_MENU, self.apply_to_all, id = id )
+    id = tb.AddLabelTool( wx.ID_APPLY, 'Apply',  wx.ArtProvider.GetBitmap( wx.ART_PASTE, wx.ART_TOOLBAR ),
+                                 shortHelp='Apply current plot settings to all sequences',
+                                 longHelp='Apply current plot settings to all sequences').GetId()
+    self.Bind( wx.EVT_MENU, self.apply_to_all, id = id )
 
-      id = tb.AddLabelTool( wx.ID_ANY, 'Exp. All',  wx.ArtProvider.GetBitmap( wx.ART_FILE_SAVE, wx.ART_TOOLBAR ),
-                                   shortHelp='Export all sequences',
-                                   longHelp='Export all sequences').GetId()
-      self.Bind( wx.EVT_MENU, id=id,
-                 handler=lambda evt, arg1='ExportAll': self.export_plot(evt, arg1) )
+    id = tb.AddLabelTool( wx.ID_ANY, 'Exp. All',  wx.ArtProvider.GetBitmap( wx.ART_FILE_SAVE, wx.ART_TOOLBAR ),
+                                 shortHelp='Export all sequences',
+                                 longHelp='Export all sequences').GetId()
+    self.Bind( wx.EVT_MENU, id=id,
+               handler=lambda evt, arg1='ExportAll': self.export_plot(evt, arg1) )
 
 
-      id = tb.AddLabelTool( wx.ID_ANY, 'E.Bars',  wx.ArtProvider.GetBitmap(wx.ART_CROSS_MARK, wx.ART_TOOLBAR ),
-                                   shortHelp='Toggle error bars',
-                                   longHelp='Toggle error bars').GetId()  
-      self.Bind( wx.EVT_MENU, id = id, handler=self.toggle_error_bars)
+    id = tb.AddLabelTool( wx.ID_ANY, 'E.Bars',  wx.ArtProvider.GetBitmap(wx.ART_CROSS_MARK, wx.ART_TOOLBAR ),
+                                 shortHelp='Toggle error bars',
+                                 longHelp='Toggle error bars').GetId()  
+    self.Bind( wx.EVT_MENU, id = id, handler=self.toggle_error_bars)
 
-      tb.AddSeparator()
+    tb.AddSeparator()
 
-      id = tb.AddLabelTool( wx.ID_ADD, 'Add',  wx.ArtProvider.GetBitmap( wx.ART_TICK_MARK, wx.ART_TOOLBAR ),
-                                   shortHelp='Add/Remove plot to/from multi-plot list',
-                                   longHelp='Add/Remove plot to/from multi-plot list').GetId()
-      self.Bind( wx.EVT_MENU, id = id,
-                 handler=lambda evt, arg1='AddMulti': self.add_multiplot(evt, arg1) )
+    id = tb.AddLabelTool( wx.ID_ADD, 'Add',  wx.ArtProvider.GetBitmap( wx.ART_TICK_MARK, wx.ART_TOOLBAR ),
+                                 shortHelp='Add/Remove plot to/from multi-plot list',
+                                 longHelp='Add/Remove plot to/from multi-plot list').GetId()
+    self.Bind( wx.EVT_MENU, id = id,
+               handler=lambda evt, arg1='AddMulti': self.add_multiplot(evt, arg1) )
 
-      id = tb.AddLabelTool( wx.ID_ANY, 'Multi',  wx.ArtProvider.GetBitmap( wx.ART_HELP_PAGE, wx.ART_TOOLBAR ),
-                                   shortHelp='Show multi-plot',
-                                   longHelp='Show multi-plot').GetId()
-      self.Bind( wx.EVT_MENU, id = id,
-                 handler=lambda evt, arg1='MultiPlot': self.export_plot(evt, arg1) )
+    id = tb.AddLabelTool( wx.ID_ANY, 'Multi',  wx.ArtProvider.GetBitmap( wx.ART_HELP_PAGE, wx.ART_TOOLBAR ),
+                                 shortHelp='Show multi-plot',
+                                 longHelp='Show multi-plot').GetId()
+    self.Bind( wx.EVT_MENU, id = id,
+               handler=lambda evt, arg1='MultiPlot': self.export_plot(evt, arg1) )
 
-      print 'generic.py: return from create_toolbar()' 
-
+    tb.Realize()
 
 
 

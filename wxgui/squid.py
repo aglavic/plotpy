@@ -30,11 +30,11 @@ class SquidGUI:
     title        = 'SQUID'
     menuSquid    = wx.Menu()
  
-    #id = menuSquid.Append( wx.ID_ANY, 'Diamagnetic Correction',
-      #                     'Diamagnetic Correction').GetId()
-    #act = 'SquidDia'
-    #home.Bind( wx.EVT_MENU, id= id,
-        #       handler=lambda evt, arg1=act, arg2=home, arg3=self.toggle_correction: arg3( evt, arg1, arg2) )
+    id = menuSquid.Append( wx.ID_ANY, 'Dia-/Paramagnetic Correction...',
+                           'Dia-/Paramagnetic Correction...').GetId()
+    act = 'SquidDiaPara'
+    home.Bind( wx.EVT_MENU, id= id,
+               handler=lambda evt, arg1=act, arg2=home, arg3=self.dia_para_dialog: arg3( evt, arg1, arg2) )
   
     #id = menuSquid.Append( wx.ID_ANY, 'Paramagnetic Correction',
        #                    'Paramagnetic Correction').GetId()
@@ -84,3 +84,8 @@ class SquidGUI:
 #    return string,  actions
     
   
+  def dia_para_dialog(self, event, action, window):
+    '''
+      Dialog for the dia- and paramagnetic correction.
+    '''
+    pass

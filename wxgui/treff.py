@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 '''
   Session expansion class for GUI in treff session.
 '''
