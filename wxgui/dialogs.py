@@ -1,13 +1,15 @@
 # -*- encoding: utf-8 -*-
 '''
-  Dialogs derived from wxWidgets, now only gtk.
+  Dialogs derived from wxWidgets.
 ''' 
+
+#TODO: !!!!!!!!!! Needs to be transfered to wx !!!!!!!!!
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
-import gtk
-import cairo
+import wx
 import sys
+from main_window import WXAPPLICATION
 
 #----------------------- importing modules --------------------------
 
@@ -19,7 +21,7 @@ __license__ = "None"
 __version__ = "0.7beta1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
-__status__ = "Production"
+__status__ = "Unusable"
 
 
 def connect_stdout_dialog():
@@ -40,7 +42,7 @@ def connect_stdout_dialog():
 
 #++++++++++++++++++++++++ StatusDialog to show an updated text +++++++++++++++++++++++++
  
-class StatusDialog(gtk.Dialog):
+class StatusDialog(wx.Dialog):
   '''
     A Dialog to show a changing text with scrollbar.
   '''
@@ -49,7 +51,7 @@ class StatusDialog(gtk.Dialog):
     '''
       Class constructor. Creates a Dialog window with scrollable TextView.
     '''
-    gtk.Dialog.__init__(self, title, parent, flags, buttons)
+    wx.Dialog.__init__(self, title, parent, flags, buttons)
     self.textview=gtk.TextView()
     self.buffer=self.textview.get_buffer()
     self.buffer.set_text(initial_text)
@@ -83,7 +85,7 @@ class StatusDialog(gtk.Dialog):
 
 #++++++++++++++++++++++++++ PreviewDialog to select one plot +++++++++++++++++++++++++++
 
-class PreviewDialog(gtk.Dialog):
+class PreviewDialog(wx.Dialog):
   '''
     A dialog to show a list of plot previews to give the user the possibility to
     select one or more plots.
@@ -313,7 +315,7 @@ class PreviewDialog(gtk.Dialog):
 
 #+++++++++++++++++++ FileChooserDialog with entries for width and height ++++++++++++++++
 
-class ExportFileChooserDialog(gtk.FileChooserDialog):
+class ExportFileChooserDialog(wx.FileDialog):
   '''
     A file chooser dialog with two entries for with and height of an export image.
   '''

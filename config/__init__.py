@@ -10,6 +10,19 @@
 # copy the files to our home directory and relink the module. This makes
 # user specific config files possible as well.
 import os
+import gui
+
+if gui.toolkit=='auto':
+  # try to automatically select the available toolkit (could be slower)
+  try:
+    import gtk
+    gui.toolkit='gtk'
+  except ImportError:
+    try:
+      import wx
+      gui.toolkit='wx'
+    except ImportError:
+      exit()
 
 if not os.access(__path__[0], os.W_OK):
   config_path=os.path.expanduser('~/.plotting_gui')

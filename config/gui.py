@@ -3,6 +3,9 @@
   Mostly used for the global parameter 'toolkit' which is a string
   defining the prefix for the gui package, e.g. 'gtk' for using the
   gtkgui package.
+  
+  At the moment the gtk version is much more mature and feature rich 
+  so it is recommanded to use this if possible.
 '''
 
 __author__ = "Artur Glavic"
@@ -14,7 +17,8 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-toolkit='wx'
+#toolkit='wx'
 #toolkit='gtk'
+toolkit='auto'
 
 DOWNLOAD_PAGE_URL='http://atzes.homeip.net/plotwiki/tiki-index.php?page=Download+Area'

@@ -7,6 +7,9 @@
 
 import gtk
 from diverse_classes import MultiplotList
+from sessions.reflectometer_fit.treff import *
+import config.treff
+import read_data.treff
 
 #----------------------- importing modules --------------------------
 
@@ -841,10 +844,10 @@ class TreffGUI:
     output_names=config.treff.FIT_OUTPUT_FILES
     self.export_data_and_entfile(self.TEMP_DIR, 'fit_temp.ent')
     #open a background process for the fit function
-    reflectometer_fit.functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', new_max_hr)
+    self.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', new_max_hr)
     print "PNR program started."
     if self.active_file_data.fit_object.fit!=1 and any(self.active_file_data.fit_datasets): # if this is not a fit just wait till finished
-      exec_time, stderr_value = reflectometer_fit.functions.proc.communicate()
+      exec_time, stderr_value = self.proc.communicate()
       print "PNR program finished in %.2g seconds." % float(exec_time.splitlines()[-1])
     else:
       self.open_status_dialog(window)
@@ -1009,19 +1012,19 @@ class TreffGUI:
     text_string+='\nSubstrat:\n'
     if old_fit.substrate.scatter_density_Nb!=new_fit.substrate.scatter_density_Nb:
       text_string+='\tNb\':\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
-          (old_fit.substrate.scatter_density_Nb, new_fit.substrate.scatter_density_Nb, sorted_errors[index_add+str(index)+','+str(1)])
+          (old_fit.substrate.scatter_density_Nb, new_fit.substrate.scatter_density_Nb, sorted_errors['substrate0'])
     if old_fit.substrate.scatter_density_Nb2!=new_fit.substrate.scatter_density_Nb2:
       text_string+='\tNb\'\':\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
-          (old_fit.substrate.scatter_density_Nb2, new_fit.substrate.scatter_density_Nb2, sorted_errors[index_add+str(index)+','+str(2)])
+          (old_fit.substrate.scatter_density_Nb2, new_fit.substrate.scatter_density_Nb2, sorted_errors['substrate1'])
     if old_fit.substrate.scatter_density_Np!=new_fit.substrate.scatter_density_Np:
       text_string+='\tNp:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
-          (old_fit.substrate.scatter_density_Np, new_fit.substrate.scatter_density_Np, sorted_errors[index_add+str(index)+','+str(3)])
+          (old_fit.substrate.scatter_density_Np, new_fit.substrate.scatter_density_Np, sorted_errors['substrate2'])
     if old_fit.substrate.theta!=new_fit.substrate.theta:
       text_string+='\Theta:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
-          (old_fit.substrate.theta, new_fit.substrate.theta, sorted_errors[index_add+str(index)+','+str(4)])
+          (old_fit.substrate.theta, new_fit.substrate.theta, sorted_errors['substrate3'])
     if old_fit.substrate.phi!=new_fit.substrate.phi:
       text_string+='\tPhi:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
-          (old_fit.substrate.phi, new_fit.substrate.phi, sorted_errors[index_add+str(index)+','+str(5)])
+          (old_fit.substrate.phi, new_fit.substrate.phi, sorted_errors['substrate4'])
     if old_fit.substrate.roughness!=new_fit.substrate.roughness:
       text_string+='\troughness:\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
           (old_fit.substrate.roughness, new_fit.substrate.roughness, sorted_errors['substrate5'])

@@ -474,23 +474,25 @@ class MeasurementData(object):
     data=data.transpose()[data_window].transpose()
     if only_fitted_columns:
       if zd>=0:
-        data=data[(xd, yd, zd, ed)]
+        data=data[numpy.array([xd, yd, zd, ed])]
       else:
-        data=data[(xd, yd, ed)]
+        data=data[numpy.array([xd, yd, ed])]
     split_indices=numpy.array([])
     if zd>=0:
       # crop data to prevent white holes in the plot
       if self.crop_zdata:
         absmin, absmax=self.plot_options.zrange
+        print absmin, absmax
         if absmin is None:
           absmin=numpy.nan_to_num(data[zd]).min()
         if absmax is None:
           absmax=numpy.nan_to_num(data[zd]).max()
         if self.logz:
           if not absmin > 0:
-            absmin=(numpy.abs(data[zd])).min()
+            absmin=(numpy.abs(numpy.nan_to_num(data[zd]))).min()
           if absmin==0:
             absmin=1e-10
+        print absmin, absmax
         data[zd]=numpy.where(data[zd]>=absmin, data[zd], absmin)
         data[zd]=numpy.where(data[zd]<=absmax, data[zd], absmax)
       # for large datasets just export points lying in the plotted region

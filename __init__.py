@@ -35,8 +35,6 @@ from glob import glob
 sys.path.insert(0, os.path.split(__file__)[0])
 
 # own modules
-# parent class
-from sessions.generic import GenericSession
 import config.gui
 
 # will be defined by initialize_gui_toolkit function
@@ -119,6 +117,8 @@ def initialize(arguments):
   ''' 
     initialize session and read data files 
   '''
+  # parent class
+  from sessions.generic import GenericSession
   if (len(arguments) == 0):
     # if no input parameter given, print the short help string
     print GenericSession.SHORT_HELP
@@ -155,9 +155,11 @@ def initialize_gui_toolkit():
     if toolkit in ['gtk', 'wx']:
       config.gui.toolkit=toolkit
       print "Setting GUI toolkit to %s." % toolkit
+  if config.gui.toolkit=='wx':
+    sys.argv.append('--debug')
   global gui_main, status_dialog
   gui_main=__import__( config.gui.toolkit+'gui.main_window' , fromlist=["main_window"])
-  if False and ('--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1):
+  if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
     dialogs=__import__( config.gui.toolkit+'gui.dialogs' , fromlist=["dialogs"])
     status_dialog=dialogs.connect_stdout_dialog()
   else:
@@ -194,7 +196,7 @@ def _run():
   if '--debug' in sys.argv:
     initialize_debug()
   initialize_gui_toolkit()
-  active_session=initialize(sys.argv[1:])  
+  active_session=initialize(sys.argv[1:])
   if active_session.use_gui: # start a new gui session
     plotting_session=initialize_gui(active_session, status_dialog)
     gui_main.main_loop(plotting_session)

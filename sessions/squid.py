@@ -27,10 +27,10 @@ from generic import GenericSession
 import read_data.squid
 import config.squid
 import config.diamagnetism_table
-# import gui functions for active toolkit
-from config.gui import toolkit
+# import gui functions for active config.gui.toolkit
+import config.gui
 try:
-  GUI=__import__( toolkit+'gui.squid', fromlist=['SquidGUI']).SquidGUI
+  GUI=__import__( config.gui.toolkit+'gui.squid', fromlist=['SquidGUI']).SquidGUI
 except ImportError: 
   class GUI: pass
 

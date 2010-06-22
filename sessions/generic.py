@@ -149,7 +149,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   read_directly=False # don't use pickled file, read the data diretly
   mds_create=True
   ONLY_IMPORT_MULTIFILE=False
-  DEBUG=True
+  DEBUG=False
   temp_fonts=False
   file_actions_addon={}
   #------------------ local variables -----------------

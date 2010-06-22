@@ -18,7 +18,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.6.3.2"
+__version__ = "0.7beta1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -296,6 +296,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                               [], 0, 1, 8, 6)  
   # alpha_i is used as main column for the line splitteng used for pm3d
   data_object.scan_line_constant=0
+  data_object.scan_line=1
   data_list=[]
   scan_data_list=[]
   for index, line in enumerate(data_lines):

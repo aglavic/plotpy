@@ -12,11 +12,11 @@ from scipy.special import wofz
 from math import pi, sqrt,  tanh, sin, asin
 # import own modules
 from measurement_data_structure import MeasurementData
-# import gui functions for active toolkit
-from config.gui import toolkit
+# import gui functions for active config.gui.toolkit
+import config.gui
 try:
-  FitSessionGUI=__import__( toolkit+'gui.gui_fit_data', fromlist=['FitSessionGUI']).FitSessionGUI
-  FitFunctionGUI=__import__( toolkit+'gui.gui_fit_data', fromlist=['FitFunctionGUI']).FitFunctionGUI
+  FitSessionGUI=__import__( config.gui.toolkit+'gui.gui_fit_data', fromlist=['FitSessionGUI']).FitSessionGUI
+  FitFunctionGUI=__import__( config.gui.toolkit+'gui.gui_fit_data', fromlist=['FitFunctionGUI']).FitFunctionGUI
 except ImportError: 
   class FitSessionGUI: pass
   class FitFunctionGUI: pass

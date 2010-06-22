@@ -21,10 +21,10 @@ from generic import GenericSession
 import config.kws2
 # importing data readout
 import read_data.kws2
-# import gui functions for active toolkit
-from config.gui import toolkit
+# import gui functions for active config.gui.toolkit
+import config.gui
 try:
-  GUI=__import__( toolkit+'gui.kws2', fromlist=['KWS2GUI']).KWS2GUI
+  GUI=__import__( config.gui.toolkit+'gui.kws2', fromlist=['KWS2GUI']).KWS2GUI
 except ImportError: 
   class GUI: pass
 

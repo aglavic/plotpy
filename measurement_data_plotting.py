@@ -416,20 +416,21 @@ def create_plot_script(session,
                              (0, 0, 0),
                              postscript_export,
                              additional_info)
-  for i, number in enumerate(file_numbers[1:]):
-    if number.split('-')[1]=='0':
+  for number in file_numbers[1:]:
+    i, j=(int(number.split('-')[0]), int(number.split('-')[1]))
+    if j==0:
       if datasets[0].zdata>=0:
-        using_cols=str(datasets[i+1].xdata+1)+':'+str(datasets[i+1].ydata+1)+':'+str(datasets[i+1].zdata+1)
+        using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)+':'+str(datasets[i].zdata+1)
       elif with_errorbars:
         plotting_param=gp.plotting_parameters_errorbars
-        using_cols=str(datasets[i+1].xdata+1)+':'+str(datasets[i+1].ydata+1)+':'+str(datasets[i+1].yerror+1)
+        using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)+':'+str(datasets[i].yerror+1)
       else:
         plotting_param=gp.plotting_parameters
-        using_cols=str(datasets[i+1].xdata+1)+':'+str(datasets[i+1].ydata+1)
+        using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
           '.out" u '+using_cols+\
-          datasets[i+1].plot_options.special_using_parameters+\
-          ' t "'+gp.titles+'" '+(datasets[i+1].plot_options.special_plot_parameters or plotting_param)
+          datasets[i].plot_options.special_using_parameters+\
+          ' t "'+gp.titles+'" '+(datasets[i].plot_options.special_plot_parameters or plotting_param)
       gnuplot_file_text=replace_ph(session, 
                                    gnuplot_file_text,
                                    datasets,
@@ -442,7 +443,6 @@ def create_plot_script(session,
                                    postscript_export,
                                    additional_info)
     else:
-      i, j=(int(number.split('-')[0]), int(number.split('-')[1]))
       using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
                           str(datasets[i].plot_together[j].ydata+1)#+':'+\
                           #str(datasets[i].plot_together[j].yerror+1)

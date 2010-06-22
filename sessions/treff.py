@@ -28,14 +28,14 @@ from measurement_data_structure import MeasurementData
 import read_data.treff
 import read_data.treff_addon1
 import config.treff
-# import gui functions for active toolkit
-from config.gui import toolkit
+# import gui functions for active config.gui.toolkit
+import config.gui
 try:
-  GUI=__import__( toolkit+'gui.treff', fromlist=['TreffGUI']).TreffGUI
+  GUI=__import__( config.gui.toolkit+'gui.treff', fromlist=['TreffGUI']).TreffGUI
 except ImportError: 
   class GUI: pass
 try:
-  ReflectometerFitGUI=__import__( toolkit+'gui.ReflectometerFitGUI', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
+  ReflectometerFitGUI=__import__( config.gui.toolkit+'gui.reflectometer_functions', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
 except ImportError: 
   class ReflectometerFitGUI: pass
 

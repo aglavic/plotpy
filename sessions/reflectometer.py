@@ -34,14 +34,14 @@ from reflectometer_fit.reflectometer import *
 import read_data.reflectometer
 import config.reflectometer
 from measurement_data_structure import MeasurementData
-# import gui functions for active toolkit
-from config.gui import toolkit
+# import gui functions for active config.gui.toolkit
+import config.gui
 try:
-  GUI=__import__( toolkit+'gui.reflectometer', fromlist=['ReflectometerGUI']).ReflectometerGUI
+  GUI=__import__( config.gui.toolkit+'gui.reflectometer', fromlist=['ReflectometerGUI']).ReflectometerGUI
 except ImportError: 
   class GUI: pass
 try:
-  ReflectometerFitGUI=__import__( toolkit+'gui.reflectometer_functions', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
+  ReflectometerFitGUI=__import__( config.gui.toolkit+'gui.reflectometer_functions', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
 except ImportError: 
   class ReflectometerFitGUI: pass
 

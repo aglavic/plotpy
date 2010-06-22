@@ -17,10 +17,10 @@
 from generic import GenericSession
 # importing data readout
 import read_data.in12
-# import gui functions for active toolkit
-from config.gui import toolkit
+# import gui functions for active config.gui.toolkit
+import config.gui
 try:
-  GUI=__import__( toolkit+'gui.in12', fromlist=['IN12GUI']).IN12GUI
+  GUI=__import__( config.gui.toolkit+'gui.in12', fromlist=['IN12GUI']).IN12GUI
 except ImportError: 
   class GUI: pass
 

@@ -32,10 +32,10 @@ from measurement_data_structure import MeasurementData
 # importing data readout
 import read_data.dns
 import config.dns
-# import gui functions for active toolkit
-from config.gui import toolkit
+# import gui functions for active config.gui.toolkit
+import config.gui
 try:  
-  GUI=__import__( toolkit+'gui.dns', fromlist=['DNSGUI']).DNSGUI
+  GUI=__import__( config.gui.toolkit+'gui.dns', fromlist=['DNSGUI']).DNSGUI
 except ImportError: 
   class GUI: pass
 

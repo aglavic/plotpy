@@ -25,10 +25,10 @@ from generic import GenericSession
 # importing preferences and data readout
 import read_data.circle
 import config.circle
-# import gui functions for active toolkit
-from config.gui import toolkit
+# import gui functions for active config.gui.toolkit
+import config.gui
 try:
-  GUI=__import__( toolkit+'gui.circle', fromlist=['CircleGUI']).CircleGUI
+  GUI=__import__( config.gui.toolkit+'gui.circle', fromlist=['CircleGUI']).CircleGUI
 except ImportError: 
   class GUI: pass
 

@@ -28,7 +28,7 @@ from measurement_data_structure import MeasurementData
 import measurement_data_plotting
 from config.gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
 from config import gnuplot_preferences
-from diverse_classes import PlotProfile
+from diverse_classes import PlotProfile, RedirectOutput, RedirectError
 import file_actions
 from config.gui import DOWNLOAD_PAGE_URL
 
@@ -62,70 +62,6 @@ idViewLeft          = wx.ID_HIGHEST + 20
 idViewUp            = wx.ID_HIGHEST + 21
 idViewDown          = wx.ID_HIGHEST + 22
 idViewRight         = wx.ID_HIGHEST + 23
-
-
-
-class RedirectOutput:
-  '''
-    Class to redirect all print statements to the statusbar when useing the GUI.
-  '''
-  
-  def __init__(self, plotting_session):
-    '''
-      Class constructor.
-      
-      @param plotting_session A session object derived from GenericSession.
-    '''
-    print 'generic.py: class RedirectOutput: __init__'
-
-  def write(self, string):
-    '''
-      Add content.
-      
-      @param string Output string of stdout
-    '''
-    print 'generic.py: class RedirectOutput: write'
-  
-  def flush(self):
-    '''
-      Show last content line in statusbar.
-    '''
-    print 'generic.py: class RedirectOutput: flush'
-  
-  def fileno(self):
-    return 1
-
-class RedirectError(RedirectOutput):
-  '''
-    Class to redirect all error messages to a message dialog when useing the GUI.
-    The message dialog has an option to export a bugreport, which includes the active
-    measurement to help debugging.
-  '''
-  
-  def __init__(self, plotting_session):
-    '''
-      Class constructor, as in RedirectOutput and creates the message dialog.
-    '''
-    print 'generic.py: class RedirectError: __init__'
-
-  
-  def write(self, string):
-    '''
-      Add content and show the dialog.
-      
-      @param string Output string of stderr
-    '''
-    print 'generic.py: class RedirectError: write'
-  
-  def response(self, dialog, response_id):
-    '''
-      Hide the dialog on response and export debug information if response was OK.
-      
-      @param dialog The message dialog
-      @param response_id The dialog response ID
-    '''
-    print 'generic.py: class RedirectError: response'
-
 
 class GenericGUI:
   def create_menu(self):
@@ -214,16 +150,13 @@ class ApplicationMainWindow( wx.Frame ):
 # Create statusBar
     self.create_statusBar()
 
-# Create menuBar
-    self.create_menuBar()
-
 # Create toolBar
     self.create_toolBar()
 
 
     table = wx.BoxSizer( wx.VERTICAL ) 
     self.SetSizer(table)
-
+    
     #++++++++++ create image region and image for the plot ++++++++++
     top_table = wx.BoxSizer( wx.HORIZONTAL ) 
     # first entry for sample name part of title
@@ -231,18 +164,12 @@ class ApplicationMainWindow( wx.Frame ):
     # TODO: don't lose entry when not pressing enter
 
     self.label = wx.TextCtrl(self, id=idLabel, style=wx.TE_PROCESS_ENTER)                  # style=wx.TE_PROCESS_ENTER  
-    # SetValue generates a wx.wxEVT_COMMAND_TEXT_UPDATED event
-    self.label.ChangeValue(self.measurement[self.index_mess].sample_name)
-    self.label.Bind(event=wx.EVT_TEXT_ENTER, handler=self.change )                         # Enter entry triggers change() function
 
     # second entry for additional information part of title
     self.label2 = wx.TextCtrl(self, id=idLabel2, style=wx.TE_PROCESS_ENTER)
-    self.label2.ChangeValue( self.measurement[self.index_mess].short_info )
-    self.label2.Bind(event=wx.EVT_TEXT_ENTER, handler=self.change)                         # Enter entry triggers change() function 
 
     # TODO: put this to a different location
 ##    self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
-    self.plot_options_buffer = self.measurement[self.index_mess].plot_options
 
 ##     self.plot_options_view.show()
     # attach entrys to sub table
@@ -273,7 +200,6 @@ class ApplicationMainWindow( wx.Frame ):
     bottom_table.Add(self.page_label, 0, wx.ALL|wx.CENTER, 3)
     self.plot_page_entry = wx.TextCtrl(self, wx.ID_ANY, style=wx.TE_PROCESS_ENTER)
     id = self.plot_page_entry.GetId()
-    self.plot_page_entry.SetMaxLength( len(self.measurement[-1].number) )
     self.plot_page_entry.ChangeValue( '0' )
     self.plot_page_entry.Bind(event=wx.EVT_TEXT_ENTER, handler=self.iterate_through_measurements, id=id )
     self.action_dict[id] = 'activate'
@@ -300,8 +226,6 @@ class ApplicationMainWindow( wx.Frame ):
     self.logy = wx.CheckBox(self, wx.ID_ANY, 'log y')
     self.logx.Bind(wx.EVT_CHECKBOX, handler=self.change )
     self.logy.Bind(wx.EVT_CHECKBOX, handler=self.change )
-    self.logx.SetValue(self.measurement[self.index_mess].logx)
-    self.logy.SetValue(self.measurement[self.index_mess].logy)
 
 
     bottom_table.Add(self.logx, 0, wx.ALL|wx.CENTER, 3)
@@ -323,7 +247,6 @@ class ApplicationMainWindow( wx.Frame ):
     self.z_range_label = wx.StaticText(self, wx.ID_ANY, 'z-range:')
     self.z_range_in    = wx.TextCtrl(self,   wx.ID_ANY, style=wx.TE_PROCESS_ENTER)
     self.logz          = wx.CheckBox(self, wx.ID_ANY, 'log z')
-    self.logz.SetValue(self.measurement[self.index_mess].logz)
 
     # 3d Viewpoint buttons to rotate the view
 #   buttons spaeter ersetzen durch bitmapButtons
@@ -358,8 +281,8 @@ class ApplicationMainWindow( wx.Frame ):
     self.check_add.Bind(wx.EVT_CHECKBOX, handler=self.show_add_info)
     bottom_table_2.Add(self.check_add, 0, wx.ALL|wx.CENTER, 3)
 
-#   button to open additional plot options dialog
-#   evt. ersetzen durch wx.BitmapButton, wennn bitmap vorhanden
+    #   button to open additional plot options dialog
+    #   evt. ersetzen durch wx.BitmapButton, wennn bitmap vorhanden
     self.plot_options_button = wx.Button(self, label='Add custom Gnuplot commands')
     self.plot_options_button.SetToolTip(wx.ToolTip('Add custom Gnuplot commands') )
     self.plot_options_button.Bind( event=wx.EVT_BUTTON ,handler=self.open_plot_options_window )
@@ -367,6 +290,26 @@ class ApplicationMainWindow( wx.Frame ):
 
     table.Add( bottom_table_2, 0, wx.ALL|wx.EXPAND, 3 )
 
+    # no input file selected
+    while len(self.measurement)==0:
+      self.add_file(None)
+      WXAPPLICATION.ProcessPendingEvents()
+      self.measurement=self.active_session.active_file_data
+
+
+    # Create menuBar
+    self.create_menuBar()
+
+    # entry settings
+    # SetValue generates a wx.wxEVT_COMMAND_TEXT_UPDATED event
+    self.label.ChangeValue(self.measurement[self.index_mess].sample_name)
+    self.label.Bind(event=wx.EVT_TEXT_ENTER, handler=self.change )                         # Enter entry triggers change() function
+    self.label2.ChangeValue( self.measurement[self.index_mess].short_info )
+    self.label2.Bind(event=wx.EVT_TEXT_ENTER, handler=self.change)                         # Enter entry triggers change() function 
+    self.plot_options_buffer = self.measurement[self.index_mess].plot_options
+    self.logx.SetValue(self.measurement[self.index_mess].logx)
+    self.logy.SetValue(self.measurement[self.index_mess].logy)
+    self.logz.SetValue(self.measurement[self.index_mess].logz)
 
     self.x_range_in.Disable()
     self.y_range_in.Disable()
@@ -693,9 +636,10 @@ class ApplicationMainWindow( wx.Frame ):
      self.plot_page_entry.SetValue(str(int(self.measurement[0].number)))
      self.plot_page_entry.SetMaxLength(len(self.measurement[-1].number))
      for window in self.open_windows:
-       window.Destroy()    
-     self.replot()
-     self.rebuild_menus()
+       window.Destroy() 
+     if getattr(self, 'menu_bar', False):
+       self.replot()
+       self.rebuild_menus()
      # TODO: do we need to return the file name?
      print 'return from add_file: file_names = ', file_names
      return file_names

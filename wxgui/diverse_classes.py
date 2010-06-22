@@ -3,7 +3,7 @@
 '''
 
 from config import gnuplot_preferences
-from config.gui import toolkit
+import config.gui
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
@@ -43,25 +43,7 @@ class PlotProfile:
     '''
       Save the active plot settings as a Profile.
     '''
-    print 'plot_profile.py: Entry def save toolkit = %s'%(toolkit)
-    if toolkit == 'gtk':
-
-      print 'toolkit = gtk'
-      self.additional_commands=\
-      active_class.plot_options_buffer.get_text(\
-        active_class.plot_options_buffer.get_start_iter(),\
-        active_class.plot_options_buffer.get_end_iter())
-
-    elif toolkit == 'wx':
-
-#??????????????????????????
-      print 'toolkit = wx'
-#      self.additional_commands = active_class.plot_options_buffer
-#      print 'self.additional_commands = %s'%(self.additional_commands)
-#??????????????????????????
-
-    else:
-      print 'illegal toolkit (%s)'%(toolkit)
+    print 'plot_profile.py: Entry def save config.gui.toolkit = %s'%(config.gui.toolkit)
 
     self.set_output_terminal_png=gnuplot_preferences.set_output_terminal_png
     self.set_output_terminal_ps=gnuplot_preferences.set_output_terminal_ps
@@ -149,3 +131,66 @@ class PlotProfile:
 
 
 #------------------------------ PlotProfile Class ---------------------------------------#
+
+
+class RedirectOutput:
+  '''
+    Class to redirect all print statements to the statusbar when useing the GUI.
+  '''
+  
+  def __init__(self, plotting_session):
+    '''
+      Class constructor.
+      
+      @param plotting_session A session object derived from GenericSession.
+    '''
+    print 'generic.py: class RedirectOutput: __init__'
+
+  def write(self, string):
+    '''
+      Add content.
+      
+      @param string Output string of stdout
+    '''
+    print 'generic.py: class RedirectOutput: write'
+  
+  def flush(self):
+    '''
+      Show last content line in statusbar.
+    '''
+    print 'generic.py: class RedirectOutput: flush'
+  
+  def fileno(self):
+    return 1
+
+class RedirectError(RedirectOutput):
+  '''
+    Class to redirect all error messages to a message dialog when useing the GUI.
+    The message dialog has an option to export a bugreport, which includes the active
+    measurement to help debugging.
+  '''
+  
+  def __init__(self, plotting_session):
+    '''
+      Class constructor, as in RedirectOutput and creates the message dialog.
+    '''
+    print 'generic.py: class RedirectError: __init__'
+
+  
+  def write(self, string):
+    '''
+      Add content and show the dialog.
+      
+      @param string Output string of stderr
+    '''
+    print 'generic.py: class RedirectError: write'
+  
+  def response(self, dialog, response_id):
+    '''
+      Hide the dialog on response and export debug information if response was OK.
+      
+      @param dialog The message dialog
+      @param response_id The dialog response ID
+    '''
+    print 'generic.py: class RedirectError: response'
+
