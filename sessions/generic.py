@@ -106,6 +106,8 @@ Options:
   \t-c\t\tJust convert files, do not plot anything
   \t-sep [sep]\tUse different seperator for output files (if -gs is given it is ignored)
   \t-p\t\tSend plots to printer specified in gnuplot_perferences.py
+  
+  \t-gui [tk]\tSet the gui toolkit to tk (gtk/wx)
   '''
 
   LONG_HELP_END=\
@@ -121,7 +123,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   index=0
   FILE_WILDCARDS=(('all files', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
-  COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans','-help', '-debug']
+  COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans', '-help', '-debug']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000

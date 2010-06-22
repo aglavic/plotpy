@@ -148,6 +148,13 @@ def initialize_gui_toolkit():
   '''
     Load GUI modules dependent on the toolkit.
   '''
+  if '-gui' in sys.argv:
+    idx=sys.argv.index('-gui')
+    sys.argv.pop(idx)
+    toolkit=sys.argv.pop(idx)
+    if toolkit in ['gtk', 'wx']:
+      config.gui.toolkit=toolkit
+      print "Setting GUI toolkit to %s." % toolkit
   global gui_main, status_dialog
   gui_main=__import__( config.gui.toolkit+'gui.main_window' , fromlist=["main_window"])
   if False and ('--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1):

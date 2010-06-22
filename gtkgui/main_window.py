@@ -303,7 +303,7 @@ class ApplicationMainWindow(gtk.Window):
                                                            45)) # title width
       self.label2.set_text(self.measurement[self.index_mess].short_info)
       # TODO: put this to a different location
-      self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
+      self.plot_options_buffer.set_text(str(self.measurement[self.index_mess].plot_options))
       self.logx.set_active(self.measurement[self.index_mess].logx)
       self.logy.set_active(self.measurement[self.index_mess].logy)
       self.logz.set_active(self.measurement[self.index_mess].logz)
@@ -753,18 +753,6 @@ class ApplicationMainWindow(gtk.Window):
     xin=self.x_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
     yin=self.y_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
     zin=self.z_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
-    # erase old settings
-    lines_old=self.measurement[self.index_mess].plot_options.split('\n')
-    lines_new=[]
-    for line in lines_old:
-      # remove lines, which contain scaling settings
-      if not ((' autoscale ' in line)|\
-        (' xrange ' in line)|\
-        (' yrange ' in line)|\
-        (' zrange ' in line)|\
-        (' cbrange ' in line)):
-        lines_new.append(line)
-    self.measurement[self.index_mess].plot_options="\n".join(lines_new)
     # only use settings, if they are valid numbers
     if (len(xin)==2) and\
         ((xin[0].replace('-','').replace('e','').replace('.','',1).isdigit())|\
@@ -3077,7 +3065,7 @@ class ApplicationMainWindow(gtk.Window):
       self.set_image()
       if not self.active_multiplot:
         self.measurement[self.index_mess].preview=self.image_pixbuf.scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
-    self.plot_options_buffer.set_text(self.measurement[self.index_mess].plot_options)
+    self.plot_options_buffer.set_text(str(self.measurement[self.index_mess].plot_options))
 
   def reset_statusbar(self): 
     '''
