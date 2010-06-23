@@ -22,3 +22,15 @@ __status__ = "Development"
 toolkit='auto'
 
 DOWNLOAD_PAGE_URL='http://atzes.homeip.net/plotwiki/tiki-index.php?page=Download+Area'
+
+if toolkit=='auto':
+  # try to automatically select the available toolkit (could be slower)
+  try:
+    import gtk
+    toolkit='gtk'
+  except ImportError:
+    try:
+      import wx
+      toolkit='wx'
+    except ImportError:
+      exit()

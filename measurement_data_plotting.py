@@ -388,7 +388,7 @@ def create_plot_script(session,
     gnuplot_file_text=gnuplot_file_text+'set log y\n'
   if datasets[0].logz:
     gnuplot_file_text=gnuplot_file_text+'set log z\nset log cb\n'
-  splot_add=''
+  splot_add=datasets[0].plot_options.splot
   if datasets[0].zdata>=0:
     plotting_param=gp.plotting_parameters_3d
     gnuplot_file_text+='set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\

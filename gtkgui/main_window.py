@@ -19,7 +19,7 @@ from config.gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
 import config
 from config import gnuplot_preferences
 import file_actions
-from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog
+from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, SimpleEntryDialog
 from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
 #----------------------- importing modules --------------------------
 
@@ -1568,10 +1568,13 @@ class ApplicationMainWindow(gtk.Window):
       errorbars=False
     dataset.plot_options.special_plot_parameters="w lines palette"
     dataset.plot_options.special_using_parameters=":0"   
-    dataset.plot_options.settings['cblabel']='"Pointnumber"'
+    dataset.plot_options.settings['cblabel']=['"Pointnumber"']
+    dataset.plot_options.settings['pm3d']=['map']
+    dataset.plot_options.splot='s'
     self.replot()
     dataset.plot_options.special_plot_parameters=None
     dataset.plot_options.special_using_parameters=""
+    dataset.plot_options.splot=''
     del(dataset.plot_options.settings['cblabel'])  
   
   def extract_cross_section(self, action):

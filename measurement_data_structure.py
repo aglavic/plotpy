@@ -723,6 +723,7 @@ class PlotOptions(object):
   '''
   special_plot_parameters=None
   special_using_parameters=""
+  splot=''
   
   def __init__(self, initial_text=""):
     '''

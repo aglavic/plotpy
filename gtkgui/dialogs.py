@@ -7,7 +7,7 @@
 
 import gtk
 import cairo
-import sys
+import sys, os
 
 #----------------------- importing modules --------------------------
 
@@ -90,7 +90,7 @@ class PreviewDialog(gtk.Dialog):
   '''
   main_table=None
   
-  def __init__(self, data_dict, show_previews=False, single_selection=True, **opts):
+  def __init__(self, data_dict, show_previews=False, single_selection=False, **opts):
     '''
       Constructor setting up a gtk.Dialog with a table of preview items.
     '''
@@ -162,7 +162,7 @@ class PreviewDialog(gtk.Dialog):
       return
     main_table=self.main_table
     line=self.last_line
-    label=gtk.Label(key)
+    label=gtk.Label(os.path.split(key)[1])
     table=gtk.Table(len(datalist), 2, False)
     align=gtk.Alignment(0, 0.5, 0, 0)
     align.add(table)
@@ -200,6 +200,8 @@ class PreviewDialog(gtk.Dialog):
       if self.single_selection:
         if len(self.check_boxes.values())>0:
           group=self.check_boxes.values()[0][0]
+        elif i>0:
+          group=check_boxes[0]
         else:
           group=None
         check_box=gtk.RadioButton(group=group, label="[%i] %s" % (i, dataset.short_info[:10]), use_underline=True)
@@ -277,7 +279,7 @@ class PreviewDialog(gtk.Dialog):
                                   'preview',
                                   dataset.short_info,
                                   [object.short_info for object in dataset.plot_together],
-                                  errorbars, 
+                                  main_window.errorbars, 
                                   output_file=self.preview_temp_file,
                                   fit_lorentz=False)
       buf=gtk.gdk.pixbuf_new_from_file(self.preview_temp_file).scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
@@ -607,7 +609,7 @@ class PrintDatasetDialog:
                 session.active_file_name,
                 dataset.short_info,
                 [object.short_info for object in dataset.plot_together],
-                errorbars, 
+                main_window.errorbars, 
                 output_file=session.TEMP_DIR+'plot_temp.png',
                 fit_lorentz=False)
     
@@ -637,3 +639,6 @@ class PrintDatasetDialog:
     pass
 
 #--- Printing Dialog which imports and creates PNG files for the datasets and sends it to a printer ---
+
+# import last as this uses some of the classes
+import main_window

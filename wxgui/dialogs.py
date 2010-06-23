@@ -9,7 +9,7 @@
 
 import wx
 import sys
-from main_window import WXAPPLICATION
+import main_window
 
 #----------------------- importing modules --------------------------
 
@@ -265,7 +265,7 @@ class PreviewDialog(wx.Dialog):
                                   'preview',
                                   dataset.short_info,
                                   [object.short_info for object in dataset.plot_together],
-                                  errorbars, 
+                                  main_window.errorbars, 
                                   output_file=self.preview_temp_file,
                                   fit_lorentz=False)
       buf=gtk.gdk.pixbuf_new_from_file(self.preview_temp_file).scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
@@ -504,7 +504,7 @@ class PrintDatasetDialog:
                 session.active_file_name,
                 dataset.short_info,
                 [object.short_info for object in dataset.plot_together],
-                errorbars, 
+                main_window.errorbars, 
                 output_file=session.TEMP_DIR+'plot_temp.png',
                 fit_lorentz=False)
     

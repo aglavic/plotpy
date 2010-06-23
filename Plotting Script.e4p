@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-06-20, 19:36:04 -->
+<!-- Saved: 2010-06-23, 19:48:33 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -99,6 +99,9 @@
     <Source>wxgui/gui_fit_data.py</Source>
     <Source>sessions/reflectometer_fit/reflectometer.py</Source>
     <Source>wxgui/reflectometer.py</Source>
+    <Source>read_data/treff_addon1.py</Source>
+    <Source>config/maria.py</Source>
+    <Source>sessions/reflectometer_fit/treff.py</Source>
   </Sources>
   <Forms>
   </Forms>
@@ -112,6 +115,7 @@
     <Other>/usr/share/eric/APIs/plotting.api</Other>
     <Other>install</Other>
     <Other>uninstall</Other>
+    <Other>doc</Other>
   </Others>
   <MainScript>__init__.py</MainScript>
   <Vcs>

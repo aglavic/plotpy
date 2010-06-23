@@ -467,3 +467,29 @@ class SquidGUI:
       fit_data=fit_object.functions[0][0].parameters
       extracted_data.append((i, data.get_data(0)[field_index], data.get_data(0)[temp_index], fit_data[0], fit_data[0], fit_data[1], fit_data[2]))
       self.active_file_data.append(extracted_data) 
+
+  def subtract_dataset(self, action, window):
+    '''
+      Subtract one dataset from another using interpolated values.
+    '''
+    if window.measurement[window.index_mess].zdata>=0:
+      return None
+    selection_dialog=PreviewDialog(self.file_data, 
+                                title='Select Dataset for Subtraction...', 
+                                show_previews=False, 
+                                buttons=('OK', 1, 'Cancel', 0), 
+                                parent=window, 
+                                flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+                                single_selection=True
+                                )
+    selection_dialog.set_default_size(800, 600)
+    selection_dialog.set_preview_parameters(window.plot, self, self.TEMP_DIR+'plot_temp.png')
+    result=selection_dialog.run()
+    if result==1:
+      object=selection_dialog.get_active_objects()[0]
+      dataset=window.measurement[window.index_mess]
+      newdata=self.do_subtract_dataset(dataset, object)
+      window.measurement.insert(window.index_mess+1, newdata)
+      window.index_mess+=1
+      window.replot()
+    selection_dialog.destroy()
