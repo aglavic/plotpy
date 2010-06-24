@@ -292,8 +292,11 @@ class ApplicationMainWindow( wx.Frame ):
 
     # no input file selected
     while len(self.measurement)==0:
-      self.add_file(None)
+      result=self.add_file(None)
       WXAPPLICATION.ProcessPendingEvents()
+      if not result:
+        self.main_quit()
+        return
       self.measurement=self.active_session.active_file_data
 
 
@@ -369,31 +372,33 @@ class ApplicationMainWindow( wx.Frame ):
 
 ##   #++++++++++++++++++++++++++Menu/Toolbar Events+++++++++++++++++++++++++++++++++#
   def main_quit(self, action=None):
-     '''
-       When window is closed save the settings in home folder.
-       All open dialogs are closed before exit.
-     '''
-     print 'generic.py: Entry main_quit'
-     try:
-       os.mkdir(os.path.expanduser('~')+'/.plotting_gui')
-     except OSError:
-       pass
-     # ConfigObj config structure for profiles
-     self.config_object['profiles']={}
-     for name, profile in self.profiles.items():
-       profile.write(self.config_object['profiles'])
-     del self.config_object['profiles']['default']
-     # ConfigObj Window parameters
-     self.config_object['Window']={ 
-                                    'size':     ( self.geometry[1][0], self.geometry[1][1] ),
-                                    'position': ( self.geometry[0][0], self.geometry[0][1] )
-                                   }
-     self.config_object.write()
+    '''
+      When window is closed save the settings in home folder.
+      All open dialogs are closed before exit.
+    '''
+    print 'generic.py: Entry main_quit'
+    try:
+      os.mkdir(os.path.expanduser('~')+'/.plotting_gui')
+    except OSError:
+      pass
+    try:
+      # ConfigObj config structure for profiles
+      self.config_object['profiles']={}
+      for name, profile in self.profiles.items():
+        profile.write(self.config_object['profiles'])
+      del self.config_object['profiles']['default']
+      # ConfigObj Window parameters
+      self.config_object['Window']={ 
+                                  'size':     ( self.geometry[1][0], self.geometry[1][1] ),
+                                  'position': ( self.geometry[0][0], self.geometry[0][1] )
+                                 }
+      self.config_object.write()
+    except AttributeError:
+      pass
+    for window in self.open_windows:
+      window.Destroy()
 
-     for window in self.open_windows:
-       window.Destroy()
-
-     print 'return from main quit'
+    print 'return from main quit'
 
 
   def activate_about(self, action):

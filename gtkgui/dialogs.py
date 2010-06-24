@@ -32,11 +32,11 @@ def connect_stdout_dialog():
   status_dialog.connect('response', lambda *ignore: status_dialog.hide())
   status_dialog.set_default_size(800, 600)
   status_dialog.show_all()
+  status_dialog.move(0, 0)
   status_dialog.fileno=lambda : 1
   status_dialog.flush=lambda : True
   sys.stdout=status_dialog
   return status_dialog
-
 
 #++++++++++++++++++++++++ StatusDialog to show an updated text +++++++++++++++++++++++++
  
@@ -77,7 +77,7 @@ class StatusDialog(gtk.Dialog):
       self.textview.scroll_to_mark(self.end_mark, 0.)
     while gtk.events_pending():
       gtk.main_iteration()
-
+  
 #------------------------ StatusDialog to show an updated text -------------------------
 
 

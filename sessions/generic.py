@@ -503,7 +503,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     else:
       print "Trying to import '" + filename + "'."
       datasets=self.read_file(filename)
-      if datasets!=[] and self.mds_create:
+      if datasets!=[] and datasets!='NULL' and self.mds_create:
         if zip_mds:
           import gzip
           pickling=gzip.open(mds_name, 'wb')

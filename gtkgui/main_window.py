@@ -323,7 +323,6 @@ class ApplicationMainWindow(gtk.Window):
     #-------Build widgets in table structure--------
 
     # show the window, hide advanced settings and catch resize events
-    self.show_all()
     self.x_range_in.hide()
     self.y_range_in.hide()
     self.z_range_in.hide()
@@ -349,17 +348,23 @@ class ApplicationMainWindow(gtk.Window):
     while len(self.measurement)==0:
       while gtk.events_pending():
         gtk.main_iteration(False)
-      return_status_ok=self.add_file(None)
+      return_status_ok=self.add_file(None, hide_status=False)
       if not return_status_ok:
         self.main_quit(store_config=False)
         self.destroyed_directly=True
+        if self.status_dialog:
+          bounds=self.status_dialog.buffer.get_bounds()
+          sys.__stdout__.write(self.status_dialog.buffer.get_text(*bounds))
+          sys.stdout=sys.__stdout__
+          self.status_dialog.destroy()
         return
     self.check_add.set_active(True)
     self.check_add.toggled()
     if self.status_dialog:
       self.status_dialog.hide()
 
-    #+++++++++++++ connecting events ++++++++++++++
+    #+++++++++++++ Show window and connecting events ++++++++++++++
+    self.show_all()
     self.connect("event-after", self.update_picture)
     self.connect("event-after", self.update_size)
     self.label.connect("activate",self.change) # changed entry triggers change() function 
@@ -597,7 +602,7 @@ class ApplicationMainWindow(gtk.Window):
     self.rebuild_menus()
     self.replot()
   
-  def add_file(self, action):
+  def add_file(self, action, hide_status=True):
     '''
       Import one or more new datafiles of the same type.
       
@@ -654,7 +659,8 @@ class ApplicationMainWindow(gtk.Window):
       # this can only be triggered when importing at startup
       if type(sys.stdout)!=file:
         sys.stdout.second_output=None
-        status_dialog.hide()
+        if hide_status:
+          status_dialog.hide()
       return True
     self.input_file_name=self.active_session.active_file_name
     self.index_mess=0
@@ -664,7 +670,8 @@ class ApplicationMainWindow(gtk.Window):
       window.destroy()    
     if type(sys.stdout)!=file:
       sys.stdout.second_output=None
-      status_dialog.hide()
+      if hide_status:
+        status_dialog.hide()
     self.rebuild_menus()
     self.replot()
     return True
