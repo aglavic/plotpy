@@ -8,6 +8,7 @@
 import gtk
 import cairo
 import sys, os
+from config import gnuplot_preferences
 
 #----------------------- importing modules --------------------------
 
@@ -627,7 +628,7 @@ class PrintDatasetDialog:
                 #plotlist[0][0].short_info,
                 dataset_list.title, 
                 [item[0].short_info for item in dataset_list],
-                errorbars,
+                main_window.errorbars,
                 output_file=session.TEMP_DIR+'plot_temp.png',
                 fit_lorentz=False, 
                 sample_name=dataset_list.sample_name)

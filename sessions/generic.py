@@ -335,9 +335,26 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       # for cxFreeze remove the script name from the path
       SCRIPT_PATH=os.path.split(SCRIPT_PATH)[0]
     config.gnuplot_preferences.FONT_PATH=config.gnuplot_preferences.FONT_PATH.replace('[script-path]', SCRIPT_PATH)
-    if not 'win' in sys.platform:
-      # Linux and osx case
+    if 'linux' in sys.platform:
+      # Linux case
       self.OPERATING_SYSTEM='linux'
+      self.TEMP_DIR="/tmp/"
+      self.SCRIPT_PATH=SCRIPT_PATH + '/'
+      # name of the gnuplot command under linux
+      self.GNUPLOT_COMMAND=config.gnuplot_preferences.GNUPLOT_COMMAND
+      # gnuplot term png can't handle font path longer than 64 letters, leaving 14 letters for font file name.
+      if len(config.gnuplot_preferences.FONT_PATH)>50:
+        # linking font path to tmp folder
+        try:
+          os.symlink(config.gnuplot_preferences.FONT_PATH, os.path.join(self.TEMP_DIR, 'plot_fonts'+self.OWN_PID))
+        except OSError:
+          pass
+        config.gnuplot_preferences.FONT_PATH=os.path.join(self.TEMP_DIR, 'plot_fonts'+self.OWN_PID)
+        self.temp_fonts=True
+        print 'Ende linux case'
+    elif 'darwin' in sys.platform:
+      # MacOS case
+      self.OPERATING_SYSTEM='darwin'
       self.TEMP_DIR="/tmp/"
       self.SCRIPT_PATH=SCRIPT_PATH + '/'
       # name of the gnuplot command under linux
