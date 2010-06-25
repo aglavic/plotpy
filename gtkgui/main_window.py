@@ -358,13 +358,13 @@ class ApplicationMainWindow(gtk.Window):
           sys.stdout=sys.__stdout__
           self.status_dialog.destroy()
         return
+    self.show_all()
     self.check_add.set_active(True)
     self.check_add.toggled()
     if self.status_dialog:
       self.status_dialog.hide()
 
     #+++++++++++++ Show window and connecting events ++++++++++++++
-    self.show_all()
     self.connect("event-after", self.update_picture)
     self.connect("event-after", self.update_size)
     self.label.connect("activate",self.change) # changed entry triggers change() function 
@@ -673,7 +673,8 @@ class ApplicationMainWindow(gtk.Window):
       if hide_status:
         status_dialog.hide()
     self.rebuild_menus()
-    self.replot()
+    if hide_status:
+      self.replot()
     return True
 
   def save_snapshot(self, action):
