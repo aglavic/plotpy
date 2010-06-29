@@ -606,14 +606,17 @@ class FileActions:
     output=MeasurementData(newcols, [], 0, 2, 1)
     xlist=[]
     ylist=[]
+    elist=[]
     # get only points which are not filtered
     for point in dataset:
       xlist.append(point[xindex])
       ylist.append(point[yindex])
+      elist.append(point[yerror])
     x=numpy.array(xlist)
     y=numpy.array(ylist)
-    output.data[0].values=x.tolist()
-    output.data[1].values=list(dataset.data[yerror].values)
+    error=numpy.array(elist)
+    output.data[0].values=xlist
+    output.data[1].values=elist
     # calculate smoothed data and derivatives
     for i in range(max_deriv):
       output.data[i+2].values=savitzky_golay(y, window_size, order, i).tolist()

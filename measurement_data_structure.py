@@ -108,7 +108,11 @@ class MeasurementData(object):
       
       @return numpy array of point lists
     '''
+    #try:
     data=numpy.array([col.values for col in self.data])
+    #except ValueError:
+     # min_length=min([len(col.values) for col in self.data])
+      #data=numpy.array([col.values[:min_length] for col in self.data])
     filters=self.filters
     for data_filter in filters:
       filter_column=data[data_filter[0]]
