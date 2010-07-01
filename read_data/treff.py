@@ -13,6 +13,7 @@ import numpy
 from copy import deepcopy
 from measurement_data_structure import MeasurementData
 from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, PIXEL_WIDTH, DETECTOR_PIXELS
+from zipfile import ZipFile
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
@@ -94,7 +95,6 @@ def read_data(file_name, script_path, import_images):
     return 'NULL'
   if file_name.endswith('.zip'):
     # All data is stored in one zip file, open the files in the zip file
-    from zipfile import ZipFile
     treff_zip=ZipFile(file_name)
     file_name=os.path.split(file_name[:-4])[1]
     file_handler=treff_zip.open(file_name, 'r')
@@ -193,6 +193,8 @@ def read_data(file_name, script_path, import_images):
       data_uu.short_info='++ map'
       maps.append(data_uu)
     scan_uu.short_info='++'
+    # filter 0 intensity points
+    scan_uu.filters=[(5, 0.0, 0.0, False)]    
     scans.append(scan_uu)
   if len(data_dd_lines)>0:
     print "Evaluating down-down images."
@@ -202,6 +204,8 @@ def read_data(file_name, script_path, import_images):
       data_dd.short_info='-- map'
       maps.append(data_dd)
     scan_dd.short_info='--'
+    # filter 0 intensity points
+    scan_dd.filters=[(5, 0.0, 0.0, False)]    
     scans.append(scan_dd)
   if len(data_ud_lines)>0:
     print "Evaluating up-down images."
@@ -211,6 +215,8 @@ def read_data(file_name, script_path, import_images):
       data_ud.short_info='+- map'
       maps.append(data_ud)
     scan_ud.short_info='+-'
+    # filter 0 intensity points
+    scan_ud.filters=[(5, 0.0, 0.0, False)]    
     scans.append(scan_ud)
   if len(data_du_lines)>0:
     print "Evaluating down-up images."
@@ -220,6 +226,8 @@ def read_data(file_name, script_path, import_images):
       data_du.short_info='-+ map'
       maps.append(data_du)
     scan_du.short_info='-+'
+    # filter 0 intensity points
+    scan_du.filters=[(5, 0.0, 0.0, False)]    
     scans.append(scan_du)
   if len(data_xx_lines)>0:
     print "Evaluating unpolarized images."
@@ -513,7 +521,6 @@ def read_data_maria(file_name, script_path, import_images):
     return 'NULL'
   if file_name.endswith('.zip'):
     # All data is stored in one zip file, open the files in the zip file
-    from zipfile import ZipFile
     maria_zip=ZipFile(file_name)
     file_name=os.path.split(file_name[:-4])[1]
     file_handler=treff_zip.open(file_name, 'r')
@@ -631,3 +638,31 @@ def read_data_maria(file_name, script_path, import_images):
     # this is very importent as the zip file could be damadged otherwise!
     maria_zip.close()
   return output
+
+if not getattr(ZipFile, 'open', False):
+  import zipfile
+  
+  class ZipFileWrapper:
+    '''
+      Small class bahaving as filelike object for python versions < 2.6.
+    '''
+    
+    def __init__(self, zip_object, file_name):
+      self.zip_object=zip_object
+      self.file_name=file_name
+    
+    def read(self):
+      return self.zip_object.read(self.file_name)
+    
+    def close(self):
+      pass
+    
+    def readlines(self):
+      return self.read().splitlines()
+  
+  class ZipFile(zipfile.ZipFile):
+    '''
+      Use ZipFileWrapper for open method.
+    '''
+    def open(self, file_name, ignore):
+      return ZipFileWrapper(self, file_name)

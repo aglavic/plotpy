@@ -32,7 +32,7 @@
 import sys, os
 exit=sys.exit
 from glob import glob
-sys.path.insert(0, os.path.split(__file__)[0])
+sys.path.append(os.path.split(__file__)[0])
 
 # own modules
 import config.gui

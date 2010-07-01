@@ -177,9 +177,9 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
                   ['detector', 'mrad', 1., 0, '2Θ', 'mrad'], 
                   ['detector', 'rad', 1., 0, '2Θ', 'rad'], 
                   ['detector', '°', 1., 0, '2Θ', '°'], 
-                  ['omega', 'mrad', 1., 0, 'ω', 'mrad'], 
-                  ['omega', 'rad', 1., 0, 'ω', 'rad'], 
-                  ['omega', '°', 1., 0, 'ω', '°'], 
+                  ['omega', 'mrad', 1., 0, 'Θ', 'mrad'], 
+                  ['omega', 'rad', 1., 0, 'Θ', 'rad'], 
+                  ['omega', '°', 1., 0, 'Θ', '°'], 
                   ]  
   import_images=True
   x_from=5 # fit only x regions between x_from and x_to

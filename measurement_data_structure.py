@@ -486,7 +486,6 @@ class MeasurementData(object):
       # crop data to prevent white holes in the plot
       if self.crop_zdata:
         absmin, absmax=self.plot_options.zrange
-        print absmin, absmax
         if absmin is None:
           absmin=numpy.nan_to_num(data[zd]).min()
         if absmax is None:
@@ -496,7 +495,6 @@ class MeasurementData(object):
             absmin=(numpy.abs(numpy.nan_to_num(data[zd]))).min()
           if absmin==0:
             absmin=1e-10
-        print absmin, absmax
         data[zd]=numpy.where(data[zd]>=absmin, data[zd], absmin)
         data[zd]=numpy.where(data[zd]<=absmax, data[zd], absmax)
       # for large datasets just export points lying in the plotted region
@@ -547,6 +545,7 @@ class MeasurementData(object):
       write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
     #self.write_data_matrix(write_file, data, split_indices)
     self.write_data_matrix2(write_file, data, split_indices)
+    write_file.write('\n')
     write_file.close()
     return split_indices[-1] # return the number of exported data lines
 

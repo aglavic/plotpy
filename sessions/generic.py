@@ -351,7 +351,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
           pass
         config.gnuplot_preferences.FONT_PATH=os.path.join(self.TEMP_DIR, 'plot_fonts'+self.OWN_PID)
         self.temp_fonts=True
-        print 'Ende linux case'
     elif 'darwin' in sys.platform:
       # MacOS case
       self.OPERATING_SYSTEM='darwin'

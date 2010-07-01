@@ -50,6 +50,8 @@ def read_data(file_name, DATA_COLUMNS):
       if measurement_info=='NULL':
         break
       sequence=read_data_lines(input_file_lines,measurement_info,DATA_COLUMNS)
+      # filter 0 intensity points
+      sequence.filters=[(1, 0.0, 0.0, False)]
       if sequence!='NULL':
         measurement_data.append(sequence)
       else:
