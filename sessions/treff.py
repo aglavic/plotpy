@@ -219,6 +219,7 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
       simdata.append([100, 0.1, 1, 0.01, 0.1, 1e-7, 1e-8, 1e-7, 1e-8])
       simdata.sample_name='Simulation'
       simdata.short_info='++'
+      simdata.logy=True
       spp=simdata
       smm=deepcopy(simdata)
       smm.short_info='--'
@@ -232,6 +233,8 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
     self.file_actions_addon['extract_specular_reflectivity']=self.do_extract_specular_reflectivity
     for key in self.file_data.keys():
       self.file_data[key]=FitList(self.file_data[key])
+      if key=='simulation':
+        self.file_data[key].fit_datasets=[ds for ds in self.file_data[key]]
     try:
       self.active_file_data=self.file_data[self.active_file_name]
     except KeyError:

@@ -269,6 +269,11 @@ class TreffGUI:
         object_box_2.set_active(6)
         object_box_3.set_active(7)
         object_box_4.set_active(8)
+      elif len(self.active_file_data)==4:
+        object_box_1.set_active(1)
+        object_box_2.set_active(2)
+        object_box_3.set_active(3)
+        object_box_4.set_active(4)
       else:
         object_box_1.set_active(0)
         object_box_2.set_active(0)
