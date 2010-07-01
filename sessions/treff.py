@@ -44,7 +44,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.7beta1"
+__version__ = "0.7beta2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -167,6 +167,7 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
 \t-add [file] [join]\tAdd data of file to that of the last given filename.
 \t\t\tjoin can be -1,0 and 1, meaning get data from both, or only first/second dataset
 \t\t\tif there is a conflict.
+\t-sim\t\tRun a simulation mode to use without data
 '''
   #------------------ help text strings ---------------
 
@@ -187,10 +188,11 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
   max_iter=50 # maximal iterations in fit
   max_hr=5000 # Parameter in fit_pnr_multi
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add', 'ft1', 'maria']
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add', 'ft1', 'maria', 'sim']
   MARIA=False
   replot=None 
   add_to_files={}
+  add_simdata=False
   #------------------ local variables -----------------
 
   
@@ -201,6 +203,32 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
     self.read_data=read_data.treff.read_data    
     self.RESULT_FILE=config.treff.RESULT_FILE
     GenericSession.__init__(self, arguments)
+    if self.add_simdata:
+      from copy import deepcopy
+      simdata=read_data.treff.MeasurementDataTREFF([['Θ', 'mrad'], 
+                             ['2DWindow', 'counts'], 
+                             ['DetectorTotal', 'counts'], 
+                             ['error','counts'], 
+                             ['errorTotal','counts'], 
+                             ['Intensity','counts/Monitor'], 
+                             ['error(monitor)','counts/Monitor'], 
+                             ['Intensity(time)', 'counts/s'], 
+                             ['error(time)','counts/s']], 
+                            [], 0, 5, 6)
+      simdata.append([0, 1e6, 1e6, 1e3, 1e3, 1, 1e-3, 1, 1e-3])
+      simdata.append([100, 0.1, 1, 0.01, 0.1, 1e-7, 1e-8, 1e-7, 1e-8])
+      simdata.sample_name='Simulation'
+      simdata.short_info='++'
+      spp=simdata
+      smm=deepcopy(simdata)
+      smm.short_info='--'
+      spm=deepcopy(simdata)
+      spm.short_info='+-'
+      smp=deepcopy(simdata)
+      smp.short_info='-+'
+      self.file_data['simulation']=[spp, smm, spm, smp]
+      self.active_file_data=self.file_data['simulation']
+      self.active_file_name='simulation'
     self.file_actions_addon['extract_specular_reflectivity']=self.do_extract_specular_reflectivity
     for key in self.file_data.keys():
       self.file_data[key]=FitList(self.file_data[key])
@@ -235,6 +263,8 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
       elif argument=='-no-img':
         self.import_images=False
         found=True
+      elif argument=='-sim':
+        self.add_simdata=True
       else:
         found=False
     return (found, last_argument_option)

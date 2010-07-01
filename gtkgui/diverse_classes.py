@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta1"
+__version__ = "0.7beta2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -252,4 +252,3 @@ class MultiplotList(list):
     self.title="Multiplot"
     self.sample_name=str(input_list[0][0].sample_name)
     list.__init__(self, input_list)
-
