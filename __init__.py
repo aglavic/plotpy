@@ -44,12 +44,17 @@ gui_main=None
 
 # set default encoding
 try:
-  sys.setdefaultencoding('utf8')
+  sys.setappdefaultencoding('utf8')
 except AttributeError:
   try:
-    sys.setappdefaultencoding('utf8')
+    sys.setdefaultencoding('utf8')
   except AttributeError:
-    pass
+    # TODO: try to fix unicode handling
+    # this is just a hack as wx can lead to unicode errors
+    # the site.py module removes sys.setdefaultencoding
+    # so we reload it to use the function until we get this fixed
+    reload(sys)
+    sys.setdefaultencoding('utf8')
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
