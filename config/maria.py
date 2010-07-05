@@ -7,14 +7,16 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta2"
+__version__ = "0.7beta1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
 # map of line/column indices for the detector raw data files (1024*1024 points)
 DETECTOR_PIXELS=1024
+CENTER_PIXEL=512.5
 DETECTOR_ROWS_MAP=[[j+i*DETECTOR_PIXELS for i in range(DETECTOR_PIXELS)] for j in range(DETECTOR_PIXELS)]
+PIXEL_WIDTH=-0.02
 
 COLUMNS_MAPPING={
                  'omega': 'omega', 

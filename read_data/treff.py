@@ -12,14 +12,14 @@ import math
 import numpy
 from copy import deepcopy
 from measurement_data_structure import MeasurementData
-from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, PIXEL_WIDTH, DETECTOR_PIXELS
+from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, PIXEL_WIDTH, DETECTOR_PIXELS,CENTER_PIXEL
 from zipfile import ZipFile
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.7beta2"
+__version__ = "0.7beta1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -165,7 +165,7 @@ def read_data(file_name, script_path, import_images):
         const_information[' '.join(line[0:2])]=float(line[2])
       except:
         None
-  
+        
   # devide polarization directions
   data_uu_lines=filter(lambda line: line[columns['Polarization']]=='uu', data_lines)
   data_dd_lines=filter(lambda line: line[columns['Polarization']]=='dd', data_lines)
@@ -409,13 +409,13 @@ def integrate_one_picture(img_file, line, columns, alphai, alphaf_center, calibr
   except IndexError:
     return []
   monitor=float(line[columns['Monitor']])
-  for i in range(256):
+  for i in range(len(calibration)):
     if calibration[i] <= 0 :
       continue # ignore blind spots of detector
     # convet strings into integer
     int_data=map(int, parts[i])
     img_integral=sum(int_data)
-    alphaf = alphaf_center + pixel_width * (130.8 - i)
+    alphaf = alphaf_center + pixel_width * (CENTER_PIXEL - i)
     intensity = img_integral / monitor * calibration[i]
     if intensity > 0:
       logintensity = log10(intensity)
@@ -471,7 +471,7 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
     return []
   logintensities=numpy.log10(numpy.maximum(img_intensities, 0.1)/monitor*calibration)
   errors=numpy.sqrt(img_intensities)/monitor*calibration
-  alphaf=[alphaf_center + pixel_width * (130.8 - i) for i in range(DETECTOR_PIXELS)]
+  alphaf=[alphaf_center + pixel_width * (CENTER_PIXEL - i) for i in range(DETECTOR_PIXELS)]
   for i in range(DETECTOR_PIXELS):
     if calibration[i] <= 0 :
       continue # ignore blind spots of detector
@@ -514,8 +514,8 @@ def read_data_maria(file_name, script_path, import_images):
     
     @return List of MeasurementData objects for the 2d maps and scans splitted by polarization channels
   '''
-  global DETECTOR_ROWS_MAP, DETECTOR_PIXELS
-  from config.maria import DETECTOR_ROWS_MAP, COLUMNS_MAPPING,  DETECTOR_PIXELS
+  global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL
+  from config.maria import DETECTOR_ROWS_MAP, COLUMNS_MAPPING,  DETECTOR_PIXELS, PIXEL_WIDTH,CENTER_PIXEL
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
@@ -523,7 +523,7 @@ def read_data_maria(file_name, script_path, import_images):
     # All data is stored in one zip file, open the files in the zip file
     maria_zip=ZipFile(file_name)
     file_name=os.path.split(file_name[:-4])[1]
-    file_handler=treff_zip.open(file_name, 'r')
+    file_handler=maria_zip.open(file_name, 'r')
   else:
     file_handler=open(file_name, 'r')
     maria_zip=None
@@ -560,7 +560,11 @@ def read_data_maria(file_name, script_path, import_images):
         if arguments[0] in COLUMNS_MAPPING:
           columns['Scantype']=COLUMNS_MAPPING[arguments[0]]
       break
-  
+
+  if import_images:
+    # remove .gz from image columns
+    for i, line in enumerate(data_lines):
+      data_lines[i][columns['Image']]=line[columns['Image']].replace('.gz', '')
   # devide polarization directions
   data_uu_lines=[] #filter(lambda line: line[columns['Polarization']]=='uu', data_lines)
   data_dd_lines=[] #filter(lambda line: line[columns['Polarization']]=='dd', data_lines)
@@ -619,7 +623,7 @@ def read_data_maria(file_name, script_path, import_images):
   if len(data_xx_lines)>0:
     print "Evaluating unpolarized images."
     data_xx, scan_xx=integrate_pictures(data_xx_lines, columns, const_information, 
-                                        path_name, calibration, False, maria_zip)
+                                        path_name, calibration, import_images, maria_zip)
     if len(data_xx)>0:
       data_xx.short_info='unpolarized'
       maps.append(data_xx)
@@ -627,7 +631,7 @@ def read_data_maria(file_name, script_path, import_images):
     scans.append(scan_xx)
   for mapi in maps:
     mapi.logz=True
-    mapi.plot_options='set cbrange [1e-7:]\nset zrange [1e-7:]\n'
+    mapi.plot_options='set cbrange [1e-4:]\nset zrange [1e-4:]\n'
   for scan in scans:
     scan.logy=True
   if import_images:
