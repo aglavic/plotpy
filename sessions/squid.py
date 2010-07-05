@@ -21,6 +21,7 @@
 try:
   import scipy.interpolate
 except ImportError:
+  # for py2exe fix import problem
   import scipy
   from scipy.misc.common import factorial
   scipy.factorial=factorial
