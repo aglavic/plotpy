@@ -13,6 +13,24 @@ __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
 import __init__
+import numpy
+import scipy
+import scipy.special
+import scipy.misc.common
+from scipy.misc.common import factorial
+scipy.factorial=factorial
+from scipy import factorial
+import scipy.optimize
+import scipy.special
+import scipy.interpolate
+import gtkgui.ipython_view
+import IPython
+import IPython.Extensions
+import IPython.ipapi
+import gtk
+import gtk._lazyutils
+from gtk import keysyms
+import pygame.font
 import sessions.reflectometer
 import sessions.circle
 import sessions.dns
@@ -22,18 +40,20 @@ import sessions.squid
 import sessions.treff
 import sessions.kws2
 import sessions.single_diff
-import numpy
-import scipy.optimize
-import scipy.special
-import ipython_view
-import IPython
-import IPython.Extensions
-import IPython.ipapi
-import gtk
-import gtk._lazyutils
-from gtk import keysyms
-import pygame.font
-
+import gtkgui.main_window
+import gtkgui.circle
+import gtkgui.dialogs
+import gtkgui.diverse_classes
+import gtkgui.dns
+import gtkgui.file_actions
+import gtkgui.gui_fit_data
+import gtkgui.in12
+import gtkgui.ipython_view
+import gtkgui.kws2
+import gtkgui.reflectometer
+import gtkgui.reflectometer_functions
+import gtkgui.squid
+import gtkgui.treff
 
 import IPython.Shell
 if __name__=='__main__':

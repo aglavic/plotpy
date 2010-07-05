@@ -18,7 +18,13 @@
 #                                                                                               #
 #################################################################################################
 
-import scipy.interpolate
+try:
+  import scipy.interpolate
+except ImportError:
+  import scipy
+  from scipy.misc.common import factorial
+  scipy.factorial=factorial
+  import scipy.interpolate
 import numpy
 
 # import GenericSession, which is the parent class for the SquidSession

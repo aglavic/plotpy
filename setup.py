@@ -144,7 +144,7 @@ setup(name=__name__,
       package_dir=__package_dir__, 
       package_data=__package_data__,
       requires=__requires__, #does not do anything
-      console = [ "plot.py","py2exe_imports.py" ],
+      console = [ "__init__.py","py2exe_imports.py" ],
       #windows = [ "plot.py" ],
       options = __options__, 
      )
@@ -211,6 +211,9 @@ if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
   
 # py2exe specific stuff to make it work:
 if "py2exe" in sys.argv and not py2exe_test:
+  print "\nRenaming executable"
+  os.popen('copy archiv\\__init__.exe archiv\\plot.exe')
+  os.popen('del archiv\\__init__.exe')
   print "\n*** Copying gtk stuff ***"
   from glob import glob
   try:

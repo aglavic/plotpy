@@ -32,10 +32,20 @@
 import sys, os
 exit=sys.exit
 from glob import glob
-sys.path.append(os.path.split(__file__)[0])
+#try:
+#  sys.path.append(os.path.split(__file__)[0])
+# in py2exe this creates a NameError, so skip it
+#except NameError:
+#  import plot_script.config
+#  config=plot_script.config
 
 # own modules
-import config.gui
+try:
+  import config.gui as guiconfig
+  use_package_prefix=''
+except ImportError:
+  import plot_script.config.gui as guiconfig
+  use_package_prefix='plot_script.'
 
 # will be defined by initialize_gui_toolkit function
 gui_main=None
@@ -113,7 +123,7 @@ def import_session_from_name(arguments, measurement_type):
     else:
       new_args.append(item)
   arguments=new_args
-  active_session_class = getattr(__import__('sessions.'+measurement_type[0], globals(), locals(), 
+  active_session_class = getattr(__import__(use_package_prefix+'sessions.'+measurement_type[0], globals(), locals(), 
                                       [measurement_type[1]]), measurement_type[1])
   return active_session_class(arguments)
 
@@ -158,14 +168,14 @@ def initialize_gui_toolkit():
     sys.argv.pop(idx)
     toolkit=sys.argv.pop(idx)
     if toolkit in ['gtk', 'wx']:
-      config.gui.toolkit=toolkit
+      guiconfig.toolkit=toolkit
       print "Setting GUI toolkit to %s." % toolkit
-  if config.gui.toolkit=='wx':
+  if guiconfig.toolkit=='wx':
     sys.argv.append('--debug')
   global gui_main, status_dialog
-  gui_main=__import__( config.gui.toolkit+'gui.main_window' , fromlist=["main_window"])
+  gui_main=__import__( use_package_prefix+guiconfig.toolkit+'gui.main_window' , fromlist=["main_window"])
   if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
-    dialogs=__import__( config.gui.toolkit+'gui.dialogs' , fromlist=["dialogs"])
+    dialogs=__import__( use_package_prefix+guiconfig.toolkit+'gui.dialogs' , fromlist=["dialogs"])
     status_dialog=dialogs.connect_stdout_dialog()
   else:
     status_dialog=None
