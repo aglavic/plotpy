@@ -6,6 +6,7 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
 import gtk
+import os
 from diverse_classes import MultiplotList
 from sessions.reflectometer_fit.treff import *
 import config.treff
@@ -1155,6 +1156,150 @@ set style increment user
     self.dialog_fit(action, window)
     return True
   
+  #++++++++++ GISANS functions only present in this mode +++++++
+  
+  def define_gisans_functions(self):
+    def seperate_scattering(action, window, preset=None):
+      '''
+        Add or substract measured polarizations from each other
+        to calculate e.g. coherent magnetic scattering.
+      '''
+      # build a list of MeasurementData objects in active_file_data for the polarizations
+      polarization_list=[]
+      for key, object in self.file_data.items():
+        polarization_list+=[(dataset,key) for dataset in object]
+      combine_list=[]
+      def add_object():
+        '''Subdialog to add one chanel to the separation.'''
+        add_dialog=gtk.Dialog(title='Add polarization:')
+        add_dialog.set_default_size(100,50)
+        add_dialog.add_button('OK', 1)
+        add_dialog.add_button('Cancle', 0)
+        align_table=gtk.Table(4,1,False)
+        label=gtk.Label('sign: ')
+        align_table.attach(label, 0,1, 0, 1, 0,0, 0,0);
+        sign=gtk.Entry()
+        sign.set_text('+')
+        align_table.attach(sign, 1,2, 0, 1, 0,0, 0,0);
+        multiplier=gtk.Entry()
+        multiplier.set_text('1')
+        align_table.attach(multiplier, 2,3, 0, 1, 0,0, 0,0);
+        object_box=gtk.combo_box_new_text()
+        object_box.append_text('0-('+os.path.split(polarization_list[0][1])[1]+'-'+polarization_list[0][0].short_info+')')
+        for i, object in enumerate(polarization_list[1:]):
+          object_box.append_text(str(i+1)+'-('+os.path.split(object[1])[1]+'-'+object[0].short_info+')')
+        object_box.set_active(0)
+        align_table.attach(object_box, 3,4, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0)
+        add_dialog.vbox.add(align_table)
+        add_dialog.show_all()
+        result=add_dialog.run()
+        if result==1:
+          if sign.get_text() in ['+','-', '*', '/']:
+            sign=sign.get_text()
+          else:
+            sign='+'
+          combine_list.append( (object_box.get_active(), sign, float(multiplier.get_text())) )
+          label=gtk.Label(sign+multiplier.get_text()+'*{'+object_box.get_active_text()+'}')
+          label.show()
+          function_table.attach(label, 0,1, len(combine_list)-1,len(combine_list), 0,0, 0,0)
+        add_dialog.destroy()
+      combine_dialog=gtk.Dialog(title='Combination of polarizations:')
+      combine_dialog.set_default_size(150,50)
+      combine_dialog.add_button('Add', 2)
+      combine_dialog.add_button('OK', 1)
+      combine_dialog.add_button('Cancle', 0)
+      table=gtk.Table(3,1,False)
+      input_filed=gtk.Entry()
+      input_filed.set_width_chars(4)
+      input_filed.set_text('Result')
+      table.attach(input_filed,
+                  # X direction #          # Y direction
+                  0, 1,                      0, 1,
+                  gtk.EXPAND | gtk.FILL,     0,
+                  0,                         0);
+      label=gtk.Label(" = ")
+      table.attach(label,
+                  # X direction #          # Y direction
+                  1, 2,                      0, 1,
+                  0,                         0,
+                  0,                         0);
+      function_table=gtk.Table(1,1,False)
+      table.attach(function_table,
+                  # X direction #          # Y direction
+                  2, 3,                      0, 1,
+                  gtk.EXPAND | gtk.FILL,     0,
+                  0,                         0);
+      combine_dialog.vbox.add(table)
+      combine_dialog.show_all()
+      # if a preset is used create the right list and show the function
+      if preset is None:
+        add_object()
+      else:
+        combine_list=preset
+        for i, item in enumerate(combine_list):
+          try:
+            label=gtk.Label(item[1]+str(item[2])+'*{'+str(i)+'-('+polarization_list[item[0]][0].short_info+')}')
+            label.show()
+            function_table.attach(label, 0,1, i,i+1, 0,0, 0,0)        
+          except IndexError:
+            combine_dialog.destroy()
+            return None
+      result=combine_dialog.run()
+      while result>1:
+        add_object()
+        result=combine_dialog.run()
+      if result==1:
+        self.calculate_combination(combine_list, polarization_list, input_filed.get_text())
+        window.index_mess=len(self.active_file_data)-1
+        window.replot()
+      combine_dialog.destroy()
+    
+    def calculate_combination(combine_list, polarization_list, title):
+      '''
+        Calculate a combination of polarization directions as
+        set in the combine_list.
+        
+        @param combine_layers List of how the chanels should be combined
+        @param polarization_list The chanels which will be combined
+        @param title Name of the new created chanel
+      '''
+      if combine_list[0][1] != '-':
+        result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
+      else:
+        result=-1.*combine_list[0][2]*polarization_list[combine_list[0][0]][0]
+      for object, sign, multiplier in combine_list[1:]:
+        if sign == '+':
+          result=result+multiplier*polarization_list[object][0]
+        elif sign == '*':
+          result=result*(multiplier*polarization_list[object][0])
+        elif sign == '/':
+          result=result/(multiplier*polarization_list[object][0])
+        else:
+          result=result-multiplier*polarization_list[object][0]
+        if result is None:
+          message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
+                                    message_format='You can only combine polarizations with the same number of measured points!')
+          message.run()
+          message.destroy()
+          return None
+      result.short_info=title
+      result.number=str(len(polarization_list))
+      self.active_file_data.append(result)
+    
+    self.seperate_scattering=seperate_scattering
+    self.calculate_combination=calculate_combination
+    self.old_create_menu=self.create_menu
+    def new_create_menu():
+      old_string, old_actions=self.old_create_menu()
+      new_string=old_string.replace('</menu>', '''        <menuitem action='SeperateScattering' />
+      </menu>''')
+      new_actions=old_actions+( ( "SeperateScattering", None,                             # name, stock id
+                "Seperate Scattering", None,                    # label, accelerator
+                "Calculate seperated scattering parts from polarization directions.",                                   # tooltip
+                self.seperate_scattering ), )
+      return new_string, new_actions
+    self.create_menu=new_create_menu
+    
   #----------------------- GUI functions -----------------------
 
   def add_multilayer(self, action, multilayer, dialog, window):

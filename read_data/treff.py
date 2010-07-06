@@ -12,7 +12,8 @@ import math
 import numpy
 from copy import deepcopy
 from measurement_data_structure import MeasurementData
-from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, PIXEL_WIDTH, DETECTOR_PIXELS,CENTER_PIXEL
+from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, \
+                          PIXEL_WIDTH, DETECTOR_PIXELS,CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
 from zipfile import ZipFile
 
 __author__ = "Artur Glavic"
@@ -90,6 +91,9 @@ def read_data(file_name, script_path, import_images, return_detector_images):
     
     @return List of MeasurementData objects for the 2d maps and scans splitted by polarization channels
   '''
+  # reset parameters, if maria image was imported before
+  global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, PI_4_OVER_LAMBDA
+  from config.treff import DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, PI_4_OVER_LAMBDA
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
@@ -376,9 +380,9 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     data_list+=detector_data
     if return_detector_images:
       # Create object for the detector image
-      imgobj=create_img_object(detector_image)
-      imgobj.sample_name='Detector Image '+line[columns['Image']]
-      imgobj.short_info=''
+      imgobj=create_img_object(detector_image, alphai, alphaf_center, float(line[columns['Time']]))
+      imgobj.sample_name='Detector Image '+line[columns['Image']].rsplit('.', 1)[0]
+      imgobj.short_info=line[columns['Image']].rsplit('.', 1)[1]
       imgobj.number=str(index)
       # write the data of the object to a file to save memory
       imgobj.store_data()
@@ -542,8 +546,9 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
     
     @return List of MeasurementData objects for the 2d maps and scans splitted by polarization channels
   '''
-  global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL
-  from config.maria import DETECTOR_ROWS_MAP, COLUMNS_MAPPING,  DETECTOR_PIXELS, PIXEL_WIDTH,CENTER_PIXEL
+  global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
+  from config.maria import DETECTOR_ROWS_MAP, COLUMNS_MAPPING,  DETECTOR_PIXELS, \
+                          PIXEL_WIDTH,CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
@@ -590,6 +595,11 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
         else:
           columns['Scantype']=COLUMNS_MAPPING['Time[sec]']
       break
+
+  if 'Wavelength' in columns:
+    global PI_4_OVER_LAMBDA
+    lambda_n=float(data_lines[0][columns['Wavelength']])
+    PI_4_OVER_LAMBDA=4*numpy.pi/lambda_n
 
   if import_images:
     # remove .gz from image columns
@@ -682,28 +692,39 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
   else:
     return output
 
-def create_img_object(data):
+def create_img_object(data, alphai=0., alphaf_center=0., cnt_time=1.):
   '''
     Create a KWS2MeasurementData object from an detector raw data array.
   '''
   from kws2 import KWS2MeasurementData
-  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'countss'], ['error', 'counts'], 
+  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
                            ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
-                            [], 0, 1, 3, 2)
-  pixels=len(data)
-  x_array=numpy.array([i%pixels for i in range(pixels**2)])
-  y_array=numpy.array([i/pixels for i in range(pixels**2)])
+                            [], 4, 5, 3, 2)
+  # remove colmuns not part of the detector
+  data_array=numpy.array(data)
+  first_row, last_row, first_col, last_col=DETECTOR_REGION
+  data=data_array[first_row:last_row+1, first_col:last_col+1]  
+  # get pixels per row or column of remainig data
+  x_array=numpy.arange((last_col-first_col+1)*(last_row-first_row+1))%(last_col-first_col+1)+first_col
+  z_angle=alphai + alphaf_center + PIXEL_WIDTH * (CENTER_PIXEL - x_array)
+  y_array=numpy.arange((last_col-first_col+1)*(last_row-first_row+1))/(last_col-first_col+1)+first_row
+  y_angle=PIXEL_WIDTH * (CENTER_PIXEL_Y - y_array)
+  q_y=PI_4_OVER_LAMBDA*numpy.sin(GRAD_TO_RAD*y_angle/2.)
+  q_z=PI_4_OVER_LAMBDA*numpy.sin(GRAD_TO_RAD*z_angle/2.)
   data_array=numpy.array(data).flatten()
   error_array=numpy.sqrt(data_array)
   dataobj.number_of_points=len(data_array)
   dataobj.data[0].values=x_array.tolist()
   dataobj.data[1].values=y_array.tolist()
-  dataobj.data[2].values=data_array.tolist()
-  dataobj.data[3].values=error_array.tolist()
-  dataobj.data[4].values=x_array.tolist()
-  dataobj.data[5].values=y_array.tolist()
+  dataobj.data[2].values=(data_array/cnt_time).tolist()
+  dataobj.data[3].values=(error_array/cnt_time).tolist()
+  dataobj.data[4].values=q_y.tolist()
+  dataobj.data[5].values=q_z.tolist()
   dataobj.data[6].values=data_array.tolist()
   dataobj.data[7].values=error_array.tolist()
+  min_z=numpy.where(data_array!=0, data_array/cnt_time, (data_array/cnt_time).max()).min()
+  dataobj.logz=True
+  dataobj.plot_options.zrange[0]=min_z
   return dataobj
   
 

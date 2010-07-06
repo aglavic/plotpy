@@ -242,10 +242,13 @@ class KWS2MeasurementData(HugeMD):
     '''
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
+    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    out.tmp_pickled_file=self.tmp_pickled_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)+array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2+array(other.data[3].values)**2)).tolist()
     out.data[6].values=(array(self.data[6].values)+array(other.data[6].values)).tolist()    
     out.data[7].values=(sqrt(array(self.data[7].values)**2+array(other.data[7].values)**2)).tolist()
+    out.changed_after_export=True
     return out
   
   def __sub__(self, other):
@@ -254,10 +257,13 @@ class KWS2MeasurementData(HugeMD):
     '''
     out=deepcopy(self)
     out.short_info=self.short_info+'-'+other.short_info
+    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    out.tmp_pickled_file=self.tmp_pickled_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)-array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2+array(other.data[3].values)**2)).tolist()
     out.data[6].values=(array(self.data[6].values)-array(other.data[6].values)).tolist()    
     out.data[7].values=(sqrt(array(self.data[7].values)**2+array(other.data[7].values)**2)).tolist()
+    out.changed_after_export=True
     return out
   
   def __rmul__(self, other):
@@ -265,10 +271,13 @@ class KWS2MeasurementData(HugeMD):
       Add two measurements together.
     '''
     out=deepcopy(self)
+    out.tmp_export_file=self.tmp_export_file+'_'+str(other)
+    out.tmp_pickled_file=self.tmp_pickled_file+'_'+str(other)
     out.data[2].values=(other*array(self.data[2].values)).tolist()    
     out.data[3].values=(other*array(self.data[3].values)).tolist()    
     out.data[6].values=(other*array(self.data[6].values)).tolist()    
     out.data[7].values=(other*array(self.data[7].values)).tolist()    
+    out.changed_after_export=True
     return out
   
   def __mul__(self, other):
@@ -279,12 +288,15 @@ class KWS2MeasurementData(HugeMD):
       return self.__rmul__(other)
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
+    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    out.tmp_pickled_file=self.tmp_pickled_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)*array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2*array(other.data[2].values)**2+\
                              array(other.data[3].values)**2*array(self.data[2].values)**2)).tolist()
     out.data[6].values=(array(self.data[6].values)*array(other.data[6].values)).tolist()    
     out.data[7].values=(sqrt(array(self.data[7].values)**2*array(other.data[6].values)**2+\
                              array(other.data[7].values)**2*array(self.data[6].values)**2)).tolist()
+    out.changed_after_export=True
     return out
   
   def __div__(self, other):
@@ -295,6 +307,8 @@ class KWS2MeasurementData(HugeMD):
       return self.__rmul__(1./other)
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
+    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    out.tmp_pickled_file=self.tmp_pickled_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)/array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2/array(other.data[2].values)**2+\
                              array(other.data[3].values)**2*array(self.data[2].values)**2\
@@ -303,4 +317,5 @@ class KWS2MeasurementData(HugeMD):
     out.data[7].values=(sqrt(array(self.data[7].values)**2/array(other.data[6].values)**2+\
                              array(other.data[7].values)**2*array(self.data[6].values)**2\
                              /array(other.data[6].values)**4)).tolist()
+    out.changed_after_export=True
     return out

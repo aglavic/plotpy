@@ -841,6 +841,9 @@ class HugePhysicalProperty(object, PhysicalProperty):
   values=property(get_values, set_values)
   
   def store_data(self):
+    '''
+      Store the data in a pickled file and delete the object to save memory.
+    '''
     if self._values is not None:
       dump(self._values, open(self.store_file, 'wb'), -1)
       del(self._values)

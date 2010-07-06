@@ -493,6 +493,7 @@ class ApplicationMainWindow(gtk.Window):
     # recreate the menus, if the columns for this dataset aren't the same
     self.rebuild_menus()
     self.reset_statusbar()
+      
     # plot the data
     self.replot()
 
@@ -3082,6 +3083,18 @@ class ApplicationMainWindow(gtk.Window):
         for mpi, mpname in mp:
           if self.measurement[self.index_mess] is mpi:
             logitems=mp[0][0]
+    else:
+      options=self.measurement[self.index_mess].plot_options
+      # If the dataset has ranges but the input settings are empty, fill them
+      if (self.x_range_in.get_text()=="") and ((options.xrange[0] is not None) or (options.xrange[1] is not None)):
+        range=str(options.xrange[0])+':'+str(options.xrange[1])
+        self.x_range_in.set_text(range.replace('None', ''))
+      if (self.y_range_in.get_text()=="") and ((options.yrange[0] is not None) or (options.yrange[1] is not None)):
+        range=str(options.yrange[0])+':'+str(options.yrange[1])
+        self.y_range_in.set_text(range.replace('None', ''))
+      if (self.z_range_in.get_text()=="") and ((options.zrange[0] is not None) or (options.zrange[1] is not None)):
+        range=str(options.zrange[0])+':'+str(options.zrange[1])
+        self.z_range_in.set_text(range.replace('None', ''))
     self.logx.set_active(logitems.logx)
     self.logy.set_active(logitems.logy)
     self.logz.set_active(logitems.logz)

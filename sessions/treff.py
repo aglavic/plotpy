@@ -162,7 +162,12 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
   SPECIFIC_HELP=\
 '''
 \tTREFF-Data treatment:
-\t-no-img\tOnly import the detector window data, not the 2d-maps.
+\t-no-img\t\tOnly import the detector window data, not the 2d-maps.
+\t-dimg\t\tCreate plots for all detector images. (resource consuming)
+\t-gisans\t\tEvaluate data as GISANS measurement. Adds some evaluation functions to the TREFF menu.
+\t\t\tNo αi-αf map or plot is created. This option implies -dimg and -maria.
+
+\t-maria\t\tForce read as maria file type, otherwise the datatype is set according to the file header
 
 \t-add [file] [join]\tAdd data of file to that of the last given filename.
 \t\t\tjoin can be -1,0 and 1, meaning get data from both, or only first/second dataset
@@ -194,6 +199,7 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
   replot=None 
   add_to_files={}
   add_simdata=False
+  gisans=False
   #------------------ local variables -----------------
 
   
@@ -264,6 +270,13 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
       elif argument=='-maria':
         self.maria=True
         self.read_data=read_data.treff.read_data_maria
+      elif argument=='-gisans':
+        print "Entering GISANS mode!"
+        self.maria=True
+        self.read_data=read_data.treff.read_data_maria
+        self.import_detector_images=True
+        self.gisans=True
+        self.define_gisans_functions()
       elif argument=='-no-img':
         self.import_images=False
         found=True
@@ -287,7 +300,7 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
       self.file_data[file_name+'_imgs']=[]
       for channel_images in detector_images:
         self.file_data[file_name+'_imgs']+=channel_images
-      if len(detector_images[0])==1:
+      if (len(detector_images[0])==1) or self.gisans:
         # if only one detector image is taken per channel, don't use αi-αf map and plot
         data=self.file_data[file_name+'_imgs']
         del(self.file_data[file_name+'_imgs'])
