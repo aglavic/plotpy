@@ -116,6 +116,9 @@ defined_color_patterns={
                         'BGYR': 'defined (0 "blue",85 "green", 170 "yellow",255 "red")', 
                         'Black to Yellow': 'defined (0 "black",85 "blue", 170 "red",255 "yellow")', 
                         'Gnuplot std.': 'color', 
+                        # MARIA color map from Stefan Mattauch
+                        'MARIA log': 'defined (0 0 0 0 , 2 0 1 0, 3 0 0 1, 4 1 0 0, 5 0 1 1 , 6 1 0 1, 7 1 1 0, 8 1 1 1)', 
+                        'MARIA lin': 'defined (0 1 1 1 , 2 0 1 0, 3 0 0 1, 4 1 0 0, 5 0 1 1 , 6 1 0 1, 7 1 1 0, 8 1 1 1)', 
                         'Rainbow': 'rgbformulae 22,13,-31', 
                         'Hot': 'rgbformulae 21,22,23', 
                         'Color, gray printable': 'rgbformulae 31,32,33', 

@@ -172,7 +172,7 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'), ('Zip Archives','*.zip'), ('All','*'))  
+  FILE_WILDCARDS=(('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]','*.zip'), ('All','*'))  
   TRANSFORMATIONS=[\
                   ['mrad',1/config.treff.GRAD_TO_MRAD,0,'°'],
                   ['detector', 'mrad', 1., 0, '2Θ', 'mrad'], 
@@ -183,12 +183,13 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
                   ['omega', '°', 1., 0, 'Θ', '°'], 
                   ]  
   import_images=True
+  import_detector_images=False
   x_from=5 # fit only x regions between x_from and x_to
   x_to=''
   max_iter=50 # maximal iterations in fit
   max_hr=5000 # Parameter in fit_pnr_multi
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add', 'ft1', 'maria', 'sim']
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add', 'ft1', 'maria', 'dimg', 'sim']
   MARIA=False
   replot=None 
   add_to_files={}
@@ -266,6 +267,9 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
       elif argument=='-no-img':
         self.import_images=False
         found=True
+      elif argument=='-dimg':
+        self.import_detector_images=True
+        found=True
       elif argument=='-sim':
         self.add_simdata=True
       else:
@@ -277,11 +281,20 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
     '''
       Function to read data files.
     '''
-    data=self.read_data(file_name, self.SCRIPT_PATH, self.import_images)
+    data=self.read_data(file_name, self.SCRIPT_PATH, self.import_images, self.import_detector_images)
+    if self.import_detector_images:
+      data, detector_images=data
+      self.file_data[file_name+'_imgs']=[]
+      for channel_images in detector_images:
+        self.file_data[file_name+'_imgs']+=channel_images
+      if len(detector_images[0])==1:
+        # if only one detector image is taken per channel, don't use αi-αf map and plot
+        data=self.file_data[file_name+'_imgs']
+        del(self.file_data[file_name+'_imgs'])
     if file_name in self.add_to_files:
       for name in self.add_to_files[file_name]:
         print "Trying to import for adding '%s'" % name
-        add_data=self.read_data(name, self.SCRIPT_PATH, self.import_images)
+        add_data=self.read_data(name, self.SCRIPT_PATH, self.import_images, self.import_detector_images)
         for i, dataset in enumerate(data):
           print "Adding dataset %i from '%s'" %(i, name)
           data[i]=dataset.join(add_data[i])

@@ -73,8 +73,8 @@ Data columns and unit transformations are defined in config.squid.py.
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('SQUID (.dat/.raw)','*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]'), 
-                  ('gziped SQUID (.dat.gz/.raw.gz)','*.[Dd][Aa][Tt].gz', '*.[Rr][Aa][Ww].gz'), ('All', '*'))
+  FILE_WILDCARDS=(('SQUID (.dat/.raw)','*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]','*.[Dd][Aa][Tt].gz', '*.[Rr][Aa][Ww].gz'), 
+                  ('All', '*'))
   # options:
   dia_mag_correct=0. # diamagnetic correction factor
   dia_calc=[False, '', 0.0] # chemical formular and mass to calculate the correction

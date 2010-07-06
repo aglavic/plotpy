@@ -7,8 +7,10 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 from sys import hexversion
+import os
+from shutil import copyfile
 from copy import deepcopy
-
+from cPickle import load, dump
 import numpy
 
 __author__ = "Artur Glavic"
@@ -19,6 +21,8 @@ __version__ = "0.7beta2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
+
+hmd_file_number=0
 
 #++++++++++++++++++++++++++++++++++++++MeasurementData-Class+++++++++++++++++++++++++++++++++++++++++++++++++++++#
 class MeasurementData(object):
@@ -76,7 +80,7 @@ class MeasurementData(object):
     self._plot_options=PlotOptions()
     self.data=[]
     for column in columns: # create Property for every column
-      self.data.append(PysicalProperty(column[0],column[1]))
+      self.data.append(PhysicalProperty(column[0],column[1]))
     self.xdata=x
     self.ydata=y
     self.zdata=zdata
@@ -87,7 +91,7 @@ class MeasurementData(object):
     self.yerror=yerror
     self.const_data=[]
     for con in const: # create const_data column,Property for every const
-      self.const_data.append([con[0],PysicalProperty(self.data[con[0]].dimension,self.data[con[0]].unit)])
+      self.const_data.append([con[0],PhysicalProperty(self.data[con[0]].dimension,self.data[con[0]].unit)])
       self.const_data[-1][1].append(con[1])
     self.plot_together=[self] # list of datasets, which will be plotted together
     self.fit_object=None
@@ -213,7 +217,7 @@ class MeasurementData(object):
       self.data.append(deepcopy(column))
       return True
     else:
-      col=PysicalProperty(dimension, unit)
+      col=PhysicalProperty(dimension, unit)
       col.values=list(column)
       self.data.append(col)
       return True
@@ -498,21 +502,21 @@ class MeasurementData(object):
         data[zd]=numpy.where(data[zd]>=absmin, data[zd], absmin)
         data[zd]=numpy.where(data[zd]<=absmax, data[zd], absmax)
       # for large datasets just export points lying in the plotted region
-      if len(data[0])>10000:
-        xrange=self.plot_options.xrange
-        yrange=self.plot_options.yrange
-        if xrange[0] is not None:
-          indices=numpy.where(data[xd]>=xrange[0])[0]
-          data=data.transpose()[indices].transpose()
-        if xrange[1] is not None:
-          indices=numpy.where(data[xd]<=xrange[1])[0]
-          data=data.transpose()[indices].transpose()
-        if yrange[0] is not None:
-          indices=numpy.where(data[yd]>=yrange[0])[0]
-          data=data.transpose()[indices].transpose()
-        if yrange[1] is not None:
-          indices=numpy.where(data[yd]<=yrange[1])[0]
-          data=data.transpose()[indices].transpose()
+      #if len(data[0])>10000:
+        #xrange=self.plot_options.xrange
+        #yrange=self.plot_options.yrange
+        #if xrange[0] is not None:
+          #indices=numpy.where(data[xd]>=xrange[0])[0]
+          #data=data.transpose()[indices].transpose()
+        #if xrange[1] is not None:
+          #indices=numpy.where(data[xd]<=xrange[1])[0]
+          #data=data.transpose()[indices].transpose()
+        #if yrange[0] is not None:
+          #indices=numpy.where(data[yd]>=yrange[0])[0]
+          #data=data.transpose()[indices].transpose()
+        #if yrange[1] is not None:
+          #indices=numpy.where(data[yd]<=yrange[1])[0]
+          #data=data.transpose()[indices].transpose()
       # get the best way to sort and split the data for gnuplot
       if self.scan_line_constant<0:
         x_sort_indices=self.rough_sort(data[xd], data[yd], SPLIT_SENSITIVITY)
@@ -629,8 +633,109 @@ class MeasurementData(object):
 
 
 #--------------------------------------MeasurementData-Class-----------------------------------------------------#
-      
-class PysicalProperty:
+
+#++++++++++++++++++++++++++++++++++++++    HugeMD-Class     +++++++++++++++++++++++++++++++++++++++++++++++++++++#
+
+class HugeMD(MeasurementData):
+  '''
+    For huge datasets (50 000 points +) this datastructure uses a arbitrary temporary file to sotre exported data.
+    The data is only reexported after a change or changes to the filters.
+  '''
+  
+  changed_after_export=True
+  tmp_export_file=''
+  tmp_pickled_file=''
+  _last_datapoint=None
+  _filters=[]
+  _data=[]
+  
+  # When filters have changed the data has to be reexported
+  def get_filters(self):
+    return self._filters
+  def set_filters(self, value):
+    self.changed_after_export=True
+    self._filters=value    
+  filters=property(get_filters, set_filters)
+  
+  # since these objects can store a lot of data (Several MB per object) it is a huge memory saving
+  # to pickle the data and unpickle it when it is needed
+  
+  def get_data_object(self):
+    return self._data
+  def set_data_object(self, object):
+    self._data=object
+    self.store_data()
+  
+  data=property(get_data_object, set_data_object)
+  
+  def store_data(self):
+    '''
+      Pickle the data in this object to save memory.
+    '''
+    self._last_datapoint=MeasurementData.last(self)
+    for i, d in enumerate(self._data):
+      if type(d) is not HugePhysicalProperty:
+        self._data[i]=HugePhysicalProperty(d, self.tmp_pickled_file+'_'+str(i)+'.pkl')
+        del(d)
+        d=self._data[i]
+      d.store_data()
+  
+  def last(self):
+    if self._last_datapoint:
+      return self._last_datapoint
+    else:
+      return MeasurementData.last(self)
+  
+  def __init__(self, *args, **opts):
+    from tempfile import gettempdir, gettempprefix
+    global hmd_file_number
+    self.tmp_export_file=os.path.join(gettempdir(), gettempprefix()+ '_HMD_'+ str(hmd_file_number)+ '.tmp')
+    self.tmp_pickled_file=os.path.join(gettempdir(), gettempprefix()+ '_HMD_'+ str(hmd_file_number))
+    hmd_file_number+=1
+    MeasurementData.__init__(self, *args, **opts)
+  
+  def process_function(self, function):
+    '''
+      Wrapper to MeasurementData.process_function which sets the data to be reexported after change.
+    '''
+    self.changed_after_export=True
+    output=MeasurementData.process_function(self, function)
+    self.store_data()
+    return output
+  
+  def unit_trans(self, unit_list):
+    '''
+      Wrapper to MeasurementData.unit_trans which sets the data to be reexported after change.
+    '''
+    self.changed_after_export=True
+    output=MeasurementData.unit_trans(self, unit_list)
+    self.store_data()
+    return output
+    
+  def unit_trans_one(self, col, unit_lit):
+    '''
+      Wrapper to MeasurementData.unit_trans_one which sets the data to be reexported after change.
+    '''
+    self.unit_trans_one=True
+    output=MeasurementData.unit_trans_one(self, col, unit_lit)
+    self.store_data()
+    return output
+  
+  def export(self,file_name,print_info=True,seperator=' ',xfrom=None,xto=None, only_fitted_columns=False): 
+    if self.changed_after_export or self.plot_options.zrange!=self.last_export_zrange:
+      print "Exporting large dataset, please stay patient"
+      self.last_export_output=self.do_export(self.tmp_export_file, print_info, seperator, xfrom, xto, only_fitted_columns)
+      self.changed_after_export=False
+      self.last_export_zrange=self.plot_options.zrange
+      self.store_data()
+    copyfile(self.tmp_export_file,  file_name)
+    return self.last_export_output
+  
+  do_export=MeasurementData.export
+
+#--------------------------------------    HugeMD-Class     -----------------------------------------------------#
+
+class PhysicalProperty:
   '''
     Class for any physical property. Stores the data, unit and dimension
     to make unit transformations possible.
@@ -719,6 +824,38 @@ class PysicalProperty:
     if to_index==None:
       to_index=len(self)-1
     return min([self.values[i] for i in range(from_index,to_index)])
+
+class HugePhysicalProperty(object, PhysicalProperty):
+  '''
+    PhysicalProperty which can write data to a pickled file if it is not accessed.
+  '''
+  _values=None
+  store_file=''
+  
+  def get_values(self):
+    if self._values is None:
+      self._values=load(open(self.store_file, 'rb'))
+    return self._values
+  def set_values(self, values):
+    self._values=values
+  values=property(get_values, set_values)
+  
+  def store_data(self):
+    if self._values is not None:
+      dump(self._values, open(self.store_file, 'wb'), -1)
+      del(self._values)
+      self._values=None
+  
+  def __init__(self, physprop_in, storage):
+    '''
+      Class constructor.
+    '''
+    self.values=physprop_in.values
+    self.index=physprop_in.index
+    self.unit=physprop_in.unit
+    self.dimension=physprop_in.dimension
+    self.store_file=storage
+
 
 class PlotOptions(object):
   '''

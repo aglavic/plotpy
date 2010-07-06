@@ -11,7 +11,7 @@ from copy import deepcopy
 from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where
 from configobj import ConfigObj
 from glob import glob
-from measurement_data_structure import MeasurementData
+from measurement_data_structure import MeasurementData, HugeMD
 import config.kws2
 import config.gnuplot_preferences
 
@@ -232,7 +232,7 @@ def read_cmb_file(file_name):
   return [dataobj]
   
 
-class KWS2MeasurementData(MeasurementData):
+class KWS2MeasurementData(HugeMD):
   '''
     Class implementing additions for KWS2 data objects.
   '''

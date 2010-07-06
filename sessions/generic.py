@@ -121,7 +121,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   active_file_data=None # pointer for the data of the current file
   active_file_name='' # the name of the current file
   index=0
-  FILE_WILDCARDS=(('all files', '*')) # wildcards for the file open dialog of the GUI
+  FILE_WILDCARDS=(('All', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
   COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans', '-help', '-debug']
   # options:

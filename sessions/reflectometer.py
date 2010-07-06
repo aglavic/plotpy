@@ -86,7 +86,7 @@ class ReflectometerSession(GenericSession, GUI, ReflectometerFitGUI):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('reflectometer (.UXD)','*.[Uu][Xx][Dd]'), ('gziped (.UXD.gz)','*.[Uu][Xx][Dd].gz'), ('All','*'))  
+  FILE_WILDCARDS=(('reflectometer (.UXD)','*.[Uu][Xx][Dd]','*.[Uu][Xx][Dd].gz'), ('All','*'))  
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['fit', 'ref']
   #options:
   show_counts=False # dont convert to conts/s

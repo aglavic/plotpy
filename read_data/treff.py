@@ -80,7 +80,7 @@ class MeasurementDataTREFF(MeasurementData):
       new.append(point)
     return new
 
-def read_data(file_name, script_path, import_images):
+def read_data(file_name, script_path, import_images, return_detector_images):
   '''
     Read the data of a treff raw data file, integrate the corresponding .img files.
     
@@ -110,6 +110,12 @@ def read_data(file_name, script_path, import_images):
   lines_columns=map(str.split, lines)
   comments=map(string_or_float, lines_columns)
   headers=filter(lambda i: not comments[lines_columns.index(i)], lines_columns)
+  for hl in headers:
+    if len(hl)>0 and hl[0]=='#Scan':
+      print "\tdetected as MARIA file..."
+      if os.path.exists(file_name+'.zip'):
+        file_name=file_name+'.zip'
+      return read_data_maria(file_name, script_path, import_images, return_detector_images)
   data_lines=filter(lambda i: comments[lines_columns.index(i)], lines_columns)
   # define the data columns
   columns_line=headers[2]
@@ -185,10 +191,11 @@ def read_data(file_name, script_path, import_images):
   #++++++++++++ evaluating images and creating data objects ++++++++++++
   maps=[]
   scans=[]
+  detector_images=[]
   if len(data_uu_lines)>0:
     print "Evaluating up-up images."
-    data_uu, scan_uu=integrate_pictures(data_uu_lines, columns, const_information, 
-                                        path_name, calibration, import_images, treff_zip)
+    data_uu, scan_uu, detector_image_uu=integrate_pictures(data_uu_lines, columns, const_information, 
+                                        path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_uu)>0:
       data_uu.short_info='++ map'
       maps.append(data_uu)
@@ -196,10 +203,11 @@ def read_data(file_name, script_path, import_images):
     # filter 0 intensity points
     scan_uu.filters=[(5, 0.0, 0.0, False)]    
     scans.append(scan_uu)
+    detector_images.append(detector_image_uu)
   if len(data_dd_lines)>0:
     print "Evaluating down-down images."
-    data_dd, scan_dd=integrate_pictures(data_dd_lines, columns, const_information, 
-                                        path_name, calibration, import_images, treff_zip)
+    data_dd, scan_dd, detector_image_dd=integrate_pictures(data_dd_lines, columns, const_information, 
+                                        path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_dd)>0:
       data_dd.short_info='-- map'
       maps.append(data_dd)
@@ -207,10 +215,11 @@ def read_data(file_name, script_path, import_images):
     # filter 0 intensity points
     scan_dd.filters=[(5, 0.0, 0.0, False)]    
     scans.append(scan_dd)
+    detector_images.append(detector_image_dd)
   if len(data_ud_lines)>0:
     print "Evaluating up-down images."
-    data_ud, scan_ud=integrate_pictures(data_ud_lines, columns, const_information, 
-                                        path_name, calibration, import_images, treff_zip)
+    data_ud, scan_ud, detector_image_ud=integrate_pictures(data_ud_lines, columns, const_information, 
+                                        path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_ud)>0:
       data_ud.short_info='+- map'
       maps.append(data_ud)
@@ -218,10 +227,11 @@ def read_data(file_name, script_path, import_images):
     # filter 0 intensity points
     scan_ud.filters=[(5, 0.0, 0.0, False)]    
     scans.append(scan_ud)
+    detector_images.append(detector_image_ud)
   if len(data_du_lines)>0:
     print "Evaluating down-up images."
-    data_du, scan_du=integrate_pictures(data_du_lines, columns, const_information, 
-                                        path_name, calibration, import_images, treff_zip)
+    data_du, scan_du, detector_image_du=integrate_pictures(data_du_lines, columns, const_information, 
+                                        path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_du)>0:
       data_du.short_info='-+ map'
       maps.append(data_du)
@@ -229,15 +239,17 @@ def read_data(file_name, script_path, import_images):
     # filter 0 intensity points
     scan_du.filters=[(5, 0.0, 0.0, False)]    
     scans.append(scan_du)
+    detector_images.append(detector_image_du)
   if len(data_xx_lines)>0:
     print "Evaluating unpolarized images."
-    data_xx, scan_xx=integrate_pictures(data_xx_lines, columns, const_information, 
-                                        path_name, calibration, import_images, treff_zip)
+    data_xx, scan_xx, detector_image_xx=integrate_pictures(data_xx_lines, columns, const_information, 
+                                        path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_xx)>0:
       data_xx.short_info='unpolarized'
       maps.append(data_xx)
     scan_xx.short_info='unpolarized'
     scans.append(scan_xx)
+    detector_images.append(detector_image_xx)
   for mapi in maps:
     mapi.logz=True
     mapi.plot_options='set cbrange [1e-7:]\nset zrange [1e-7:]\n'
@@ -250,7 +262,10 @@ def read_data(file_name, script_path, import_images):
   if treff_zip:
     # this is very importent as the zip file could be damadged otherwise!
     treff_zip.close()
-  return output
+  if return_detector_images:
+    return output, detector_images
+  else:
+    return output
 
 def string_or_float(string_line):
   '''
@@ -265,7 +280,8 @@ def string_or_float(string_line):
   except ValueError:
     return False
 
-def integrate_pictures(data_lines, columns, const_information, data_path, calibration, import_images, treff_zip=None):
+def integrate_pictures(data_lines, columns, const_information, data_path, calibration, 
+                       import_images, treff_zip=None, return_detector_images=False):
   '''
     Integrate detector rows of the image files corresponding to one polarization direction.
     This function is tuned quite much for fast readout, so some parts are a bit tricky.
@@ -280,6 +296,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     
     @return MeasurementData objects for the map and the scan for this polarization channel
   '''
+  detector_images=[]
   sqrt=math.sqrt
   # create the data object
   scan_data_object=MeasurementDataTREFF([[columns['Scantype'], 'mrad'], 
@@ -319,7 +336,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                       line[columns['Monitor']], 
                                       line[columns['Time']], 
                                       line[columns['Time']])))
-    if not import_images:
+    if not (import_images  or return_detector_images):
       continue
     if treff_zip and line[columns['Image']] in treff_zip.namelist():
       # use data inside ziped file
@@ -355,7 +372,18 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     else:
       alphaf_center = const_information['detector'] - alphai
     # integrate the image
-    data_list+=integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, calibration, PIXEL_WIDTH)
+    detector_data, detector_image=integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, calibration, PIXEL_WIDTH)
+    data_list+=detector_data
+    if return_detector_images:
+      # Create object for the detector image
+      imgobj=create_img_object(detector_image)
+      imgobj.sample_name='Detector Image '+line[columns['Image']]
+      imgobj.short_info=''
+      imgobj.number=str(index)
+      # write the data of the object to a file to save memory
+      imgobj.store_data()
+      del(detector_image)
+      detector_images.append(imgobj)
     #data_list+=integrate_one_picture(img_file, line, columns, alphai, alphaf_center, calibration, PIXEL_WIDTH)
   if import_images:  
     data_append=data_object.append
@@ -373,7 +401,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     point[8]=point[3]/point[8]
   map(sqrt_34_gtm, scan_data_list)
   map(scan_data_append, scan_data_list)
-  return data_object, scan_data_object
+  return data_object, scan_data_object, detector_images
 
 def integrate_one_picture(img_file, line, columns, alphai, alphaf_center, calibration, pixel_width):
   '''
@@ -432,7 +460,7 @@ def integrate_one_picture(img_file, line, columns, alphai, alphaf_center, calibr
                     intensity, 
                     logintensity, 
                     error))
-  return data_list
+  return data_list, img_data
 
 def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, calibration, pixel_width):
   '''
@@ -485,7 +513,7 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
                     intensities[i], 
                     logintensities[i], 
                     errors[i]))
-  return data_list
+  return data_list, img_data
 
 def read_simulation(file_name):
   '''
@@ -504,7 +532,7 @@ def read_simulation(file_name):
       data.append(point)
   return data
 
-def read_data_maria(file_name, script_path, import_images):
+def read_data_maria(file_name, script_path, import_images, return_detector_images):
   '''
     Read the data of a maria raw data file, integrate the corresponding .img files.
     
@@ -559,6 +587,8 @@ def read_data_maria(file_name, script_path, import_images):
       else:
         if arguments[0] in COLUMNS_MAPPING:
           columns['Scantype']=COLUMNS_MAPPING[arguments[0]]
+        else:
+          columns['Scantype']=COLUMNS_MAPPING['Time[sec]']
       break
 
   if import_images:
@@ -584,51 +614,57 @@ def read_data_maria(file_name, script_path, import_images):
   #++++++++++++ evaluating images and creating data objects ++++++++++++
   maps=[]
   scans=[]
+  detector_images=[]
   if len(data_uu_lines)>0:
     print "Evaluating up-up images."
-    data_uu, scan_uu=integrate_pictures(data_uu_lines, columns, const_information, 
-                                        path_name, calibration, import_images, maria_zip)
+    data_uu, scan_uu, detector_image_uu=integrate_pictures(data_uu_lines, columns, const_information, 
+                                        path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_uu)>0:
       data_uu.short_info='++ map'
       maps.append(data_uu)
     scan_uu.short_info='++'
     scans.append(scan_uu)
+    detector_images.append(detector_image_uu)
   if len(data_dd_lines)>0:
     print "Evaluating down-down images."
-    data_dd, scan_dd=integrate_pictures(data_dd_lines, columns, const_information, 
-                                        path_name, calibration, import_images, maria_zip)
+    data_dd, scan_dd, detector_image_dd=integrate_pictures(data_dd_lines, columns, const_information, 
+                                        path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_dd)>0:
       data_dd.short_info='-- map'
       maps.append(data_dd)
     scan_dd.short_info='--'
     scans.append(scan_dd)
+    detector_images.append(detector_image_dd)
   if len(data_ud_lines)>0:
     print "Evaluating up-down images."
-    data_ud, scan_ud=integrate_pictures(data_ud_lines, columns, const_information, 
-                                        path_name, calibration, import_images, maria_zip)
+    data_ud, scan_ud, detector_image_ud=integrate_pictures(data_ud_lines, columns, const_information, 
+                                        path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_ud)>0:
       data_ud.short_info='+- map'
       maps.append(data_ud)
     scan_ud.short_info='+-'
     scans.append(scan_ud)
+    detector_images.append(detector_image_ud)
   if len(data_du_lines)>0:
     print "Evaluating down-up images."
-    data_du, scan_du=integrate_pictures(data_du_lines, columns, const_information, 
-                                        path_name, calibration, import_images, maria_zip)
+    data_du, scan_du, detector_image_du=integrate_pictures(data_du_lines, columns, const_information, 
+                                        path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_du)>0:
       data_du.short_info='-+ map'
       maps.append(data_du)
     scan_du.short_info='-+'
     scans.append(scan_du)
+    detector_images.append(detector_image_du)
   if len(data_xx_lines)>0:
     print "Evaluating unpolarized images."
-    data_xx, scan_xx=integrate_pictures(data_xx_lines, columns, const_information, 
-                                        path_name, calibration, import_images, maria_zip)
+    data_xx, scan_xx, detector_image_xx=integrate_pictures(data_xx_lines, columns, const_information, 
+                                        path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_xx)>0:
       data_xx.short_info='unpolarized'
       maps.append(data_xx)
     scan_xx.short_info='unpolarized'
     scans.append(scan_xx)
+    detector_images.append(detector_image_xx)
   for mapi in maps:
     mapi.logz=True
     mapi.plot_options='set cbrange [1e-4:]\nset zrange [1e-4:]\n'
@@ -641,7 +677,36 @@ def read_data_maria(file_name, script_path, import_images):
   if maria_zip:
     # this is very importent as the zip file could be damadged otherwise!
     maria_zip.close()
-  return output
+  if return_detector_images:
+    return output, detector_images
+  else:
+    return output
+
+def create_img_object(data):
+  '''
+    Create a KWS2MeasurementData object from an detector raw data array.
+  '''
+  from kws2 import KWS2MeasurementData
+  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'countss'], ['error', 'counts'], 
+                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+                            [], 0, 1, 3, 2)
+  pixels=len(data)
+  x_array=numpy.array([i%pixels for i in range(pixels**2)])
+  y_array=numpy.array([i/pixels for i in range(pixels**2)])
+  data_array=numpy.array(data).flatten()
+  error_array=numpy.sqrt(data_array)
+  dataobj.number_of_points=len(data_array)
+  dataobj.data[0].values=x_array.tolist()
+  dataobj.data[1].values=y_array.tolist()
+  dataobj.data[2].values=data_array.tolist()
+  dataobj.data[3].values=error_array.tolist()
+  dataobj.data[4].values=x_array.tolist()
+  dataobj.data[5].values=y_array.tolist()
+  dataobj.data[6].values=data_array.tolist()
+  dataobj.data[7].values=error_array.tolist()
+  return dataobj
+  
+
 
 if not getattr(ZipFile, 'open', False):
   import zipfile

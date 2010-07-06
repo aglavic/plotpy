@@ -181,7 +181,7 @@ class DNSSession(GenericSession, GUI):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('All','*'), ('DNS (.d_dat)', '*.d_dat'), ('gziped DNS (.d_dat.gz)', '*.d_dat.gz'))
+  FILE_WILDCARDS=(('DNS (.d_dat)', '*.d_dat', '*.d_dat.gz'), ('All','*'))
 
   TRANSFORMATIONS=[\
   ]  

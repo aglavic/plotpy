@@ -45,7 +45,7 @@ class IN12Session(GenericSession, GUI):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('All','*'), ('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]'), ('gziped', '*.gz'))
+  FILE_WILDCARDS=(('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]', '*.gz'), ('All','*'))
   mds_create=False
 
 #  TRANSFORMATIONS=[\
