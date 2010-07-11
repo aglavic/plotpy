@@ -276,6 +276,8 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
         self.read_data=read_data.treff.read_data_maria
         self.import_detector_images=True
         self.gisans=True
+        self.mds_create=False
+        self.read_directly=True
         self.define_gisans_functions()
       elif argument=='-no-img':
         self.import_images=False
@@ -283,6 +285,8 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
       elif argument=='-dimg':
         self.import_detector_images=True
         found=True
+        self.mds_create=False
+        self.read_directly=True
       elif argument=='-sim':
         self.add_simdata=True
       else:

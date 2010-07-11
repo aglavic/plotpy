@@ -12,6 +12,7 @@ from shutil import copyfile
 from copy import deepcopy
 from cPickle import load, dump
 import numpy
+from tempfile import gettempdir
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
@@ -23,6 +24,7 @@ __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
 hmd_file_number=0
+TEMP_DIR=gettempdir()
 
 #++++++++++++++++++++++++++++++++++++++MeasurementData-Class+++++++++++++++++++++++++++++++++++++++++++++++++++++#
 class MeasurementData(object):
@@ -644,7 +646,6 @@ class HugeMD(MeasurementData):
   
   changed_after_export=True
   tmp_export_file=''
-  tmp_pickled_file=''
   _last_datapoint=None
   _filters=[]
   _data=[]
@@ -675,7 +676,7 @@ class HugeMD(MeasurementData):
     self._last_datapoint=MeasurementData.last(self)
     for i, d in enumerate(self._data):
       if type(d) is not HugePhysicalProperty:
-        self._data[i]=HugePhysicalProperty(d, self.tmp_pickled_file+'_'+str(i)+'.pkl')
+        self._data[i]=HugePhysicalProperty(d)
         del(d)
         d=self._data[i]
       d.store_data()
@@ -687,13 +688,38 @@ class HugeMD(MeasurementData):
       return MeasurementData.last(self)
   
   def __init__(self, *args, **opts):
-    from tempfile import gettempdir, gettempprefix
     global hmd_file_number
-    self.tmp_export_file=os.path.join(gettempdir(), gettempprefix()+ '_HMD_'+ str(hmd_file_number)+ '.tmp')
-    self.tmp_pickled_file=os.path.join(gettempdir(), gettempprefix()+ '_HMD_'+ str(hmd_file_number))
+    self.tmp_export_file=os.path.join(TEMP_DIR, 'HMD_'+ str(hmd_file_number)+ '.tmp')
     hmd_file_number+=1
     MeasurementData.__init__(self, *args, **opts)
   
+  def __getstate__(self):
+    '''
+      Define how the class is pickled and copied.
+    '''
+    self.changed_after_export=True
+    return MeasurementData.__getstate__(self)
+ 
+  def __setstate__(self, state):
+    '''
+      Unpickling the object will set a new temp file name.
+    '''
+    self.__dict__=state
+    global hmd_file_number
+    self.tmp_export_file=os.path.join(TEMP_DIR, 'HMD_'+ str(hmd_file_number)+ '.tmp')
+    hmd_file_number+=1
+
+  def __del__(self):
+    '''
+      Cleanup after delition of this object.
+    '''
+    tmp_export_file=self.tmp_export_file
+    del self.__dict__
+    try:
+      os.remove(tmp_export_file)
+    except OSError:
+      pass
+
   def process_function(self, function):
     '''
       Wrapper to MeasurementData.process_function which sets the data to be reexported after change.
@@ -849,7 +875,7 @@ class HugePhysicalProperty(object, PhysicalProperty):
       del(self._values)
       self._values=None
   
-  def __init__(self, physprop_in, storage):
+  def __init__(self, physprop_in):
     '''
       Class constructor.
     '''
@@ -857,8 +883,32 @@ class HugePhysicalProperty(object, PhysicalProperty):
     self.index=physprop_in.index
     self.unit=physprop_in.unit
     self.dimension=physprop_in.dimension
-    self.store_file=storage
-
+    global hmd_file_number
+    self.store_file=os.path.join(TEMP_DIR, 'HMD_'+ str(hmd_file_number)+'.pkl')
+    hmd_file_number+=1
+  
+  def __getstate__(self):
+    '''
+      What to do when pickling the data.
+    '''
+    # restore the dataset
+    self.values
+    return self.__dict__
+  
+  def __setstate__(self, state):
+    self.__dict__=state
+    #assign a new temp file name
+    global hmd_file_number
+    self.store_file=os.path.join(TEMP_DIR, 'HMD_'+ str(hmd_file_number)+'.pkl') 
+    hmd_file_number+=1
+  
+  def __del__(self):
+    '''
+      Clean up temporary file after delition.
+    '''
+    store_file=self.store_file
+    del self.__dict__
+    os.remove(store_file)
 
 class PlotOptions(object):
   '''

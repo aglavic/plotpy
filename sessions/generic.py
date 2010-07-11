@@ -27,7 +27,7 @@ import math
 from time import sleep
 import subprocess
 from cPickle import load, dump
-from measurement_data_structure import MeasurementData
+import measurement_data_structure
 import measurement_data_plotting
 import config.gnuplot_preferences
 import config.transformations
@@ -379,10 +379,11 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         return string.replace('\\','\\\\').replace('\\\\\n','\\\n').replace('\\\\\\\\', '\\\\')
       self.replace_systemdependent=replace_systemdependent
     self.TEMP_DIR=self.TEMP_DIR+'plottingscript-'+self.OWN_PID+os.sep
+    measurement_data_structure.TEMP_DIR=self.TEMP_DIR
     try:
       os.mkdir(self.TEMP_DIR) # create the temporal directory
     except OSError:
-      pass
+      print "Warning: Temporary directory already exists!"
 
   def os_cleanup(self):
     '''
@@ -422,7 +423,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
           continue
         if (dataset==None and len(line.split())>=2):
           columns=[('col-'+str(number), '') for number in range(len(line.split()))]
-          dataset=MeasurementData(columns,[], 0, 1, 2)
+          dataset=measurement_data_structure.MeasurementData(columns,[], 0, 1, 2)
           try: # only import numbers
             dataset.append([float(number) for number in line.split()])
           except ValueError:

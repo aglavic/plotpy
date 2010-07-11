@@ -209,7 +209,9 @@ class RedirectError(RedirectOutput):
     while '\n' in self.content:
       self.content.remove('\n')
     message_text='An unexpected error has occured:\n'
-    message_text+='\n'.join(self.content)
+    if len(self.content)>15:
+      message_text+='... '
+    message_text+='\n'.join(self.content[-15:])
     message_text+='\n\nDo you want to create a debug logfile?'
     # < signs can cause an gtk.Warning message because they get confused with markup tags
     message_text=message_text.replace('<', '[').replace('>', ']')
