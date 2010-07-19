@@ -9,6 +9,8 @@ from dialogs import SimpleEntryDialog
 from diverse_classes import MultiplotList
 import gtk
 
+import config.dns
+
 #----------------------- importing modules --------------------------
 
 

@@ -6,7 +6,7 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
 import gtk
-import sys
+import sys, os
 
 from config import gnuplot_preferences
 
@@ -242,6 +242,7 @@ class RedirectError(RedirectOutput):
     self.message_pending=False
     import time
     import gzip 
+    from glob import glob
     from cPickle import dumps
     if response_id==-5:
       debug_log=gzip.open('debug.log.gz', 'w')
@@ -249,6 +250,9 @@ class RedirectError(RedirectOutput):
       debug_log.write('# The script has been started with the options:\n %s \n' % ' ; '.join(sys.argv))
       debug_log.write('\n# Error Messages: \n\n')
       debug_log.write('\n'.join(self.content))
+      debug_log.write('\n\n# Content of the Temporary Folder: \n')
+      tempfiles=glob(os.path.join(self.plotting_session.active_session.TEMP_DIR, '*'))
+      debug_log.write(' ; '.join(tempfiles))
       debug_log.write('\n\n#-----------------------------start of pickled datasets-----------------------\n')
       try:
         dumpstring=dumps(self.plotting_session.active_session.active_file_data)
@@ -259,8 +263,15 @@ class RedirectError(RedirectOutput):
           dumpstring='Object not Pickable: %s' % errorcode
       debug_log.write(dumpstring)
       debug_log.write('\n#-----------------------------end of pickled datasets-----------------------\n')
+      for tempfile in tempfiles:
+        debug_log.write('\n#-----------------------------start of tempfile %s------------\n' % tempfile)
+        try:
+          debug_log.write(open(tempfile, 'r').read())
+        except:
+          pass
+        debug_log.write('\n#-----------------------------end of tempfile %s------------\n' % tempfile)
       debug_log.close()
-      msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log has been created.\n\n"+\
+      msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log.gz has been created.\n\n"+\
         "Please upload it to the bugreport forum at\n\nhttp://atzes.homeip.net/plotwiki\n\nwith some additional information.")
       msg.run()
       msg.destroy()

@@ -69,6 +69,7 @@ class ApplicationMainWindow(gtk.Window):
       @param parant Parent window.
       @param script_suf Suffix for script file name.
     '''
+    self.active_session=active_session # session object passed by plot.py
     if not active_session.DEBUG:
       # redirect script output to session objects
       active_session.stdout=RedirectOutput(self)
@@ -85,7 +86,6 @@ class ApplicationMainWindow(gtk.Window):
     self.set_file_type=output_file_name.rsplit('.',1)[1] # export file type
     self.measurement=active_session.active_file_data # active data file measurements
     self.input_file_name=active_session.active_file_name # name of source data file
-    self.active_session=active_session # session object passed by plot.py
     self.script_suf=script_suf # suffix for script mode gnuplot input data
     self.index_mess=0 # which data sequence is plotted at the moment
     self.multiplot=[] # list for sequences combined in multiplot
