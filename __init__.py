@@ -39,7 +39,9 @@ except NameError:
   pass
 
 # own modules
-import config.gui
+# when installed as module the direct import of config.gui results in a different module object than import from other files
+import sessions.generic
+config=sessions.generic.config
 
 # will be defined by initialize_gui_toolkit function
 gui_main=None
