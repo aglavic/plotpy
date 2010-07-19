@@ -33,7 +33,7 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-class IN12Session(GenericSession, GUI):
+class IN12Session(GUI, GenericSession):
   '''
     Class to handle in12 data sessions
   '''

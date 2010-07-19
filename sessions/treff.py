@@ -60,6 +60,7 @@ class FitList(list):
     self.fit_object_history=[]
     self.fit_object_future=[]
     self.fit_datasets=[None, None, None, None] # a list of datasets used for fit [++,--,+-,-+]
+ 
 
 def calc_intensities(R, P):
   '''
@@ -154,7 +155,7 @@ def seperate_scattering(datasets, P):
   output.append(R['-+']*normalization_factor)
   return output
 
-class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
+class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
   '''
     Class to handle treff data sessions
   '''
@@ -267,6 +268,7 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
           found=False
       elif argument=='-ft1':
         self.read_data=read_data.treff_addon1.read_data
+        self.mds_create=False
       elif argument=='-maria':
         self.maria=True
         self.read_data=read_data.treff.read_data_maria
@@ -481,8 +483,8 @@ class TreffSession(GenericSession, GUI, ReflectometerFitGUI):
         call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
       subprocess.call(call_params, shell=False)
       print 'Compiled'
-    process = subprocess.Popen([exe, file_ent, str(self.max_iter)], 
-                        shell=False, 
+    process = subprocess.Popen([exe + ' ' + file_ent + ' ' + str(self.max_iter)], 
+                        shell=True, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         cwd=self.TEMP_DIR

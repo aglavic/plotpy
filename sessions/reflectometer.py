@@ -66,7 +66,7 @@ class FitList(list):
     self.fit_object_history=[]
     self.fit_object_future=[]
 
-class ReflectometerSession(GenericSession, GUI, ReflectometerFitGUI):
+class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
   '''
     Class to handle reflectometer data sessions
   '''

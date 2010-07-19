@@ -44,6 +44,11 @@ function illu(theta)
   real*8 illu,illu_max
   real*8 l
 
+  if (s2.ge.10.d0) then
+    illu=1.d0
+    goto 10
+  endif
+  
   l=d1-d2
   d=d2
 

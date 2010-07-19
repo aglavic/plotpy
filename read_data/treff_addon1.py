@@ -7,6 +7,7 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 import os
+from glob import glob
 import numpy as np
 from measurement_data_structure import MeasurementData
 from config.treff import GRAD_TO_MRAD, GRAD_TO_RAD
@@ -20,20 +21,27 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-PI_4_OVER_LAMBDA=np.pi*4./1.5
+PI_4_OVER_LAMBDA=np.pi*4./4.73
 
-def read_data(file_name, script_path, import_images):
+def read_data(file_name, script_path, import_images, return_detector_images):
   '''
     Read the data and return the measurements.
   '''
+  file_names=glob(file_name+'*.txt')
   output=[]
-  dataset1=MeasurementData([['q', 'Å^{-1}'], ['I', 'counts'], ['dI', 'counts']], [], 0, 1, 2)
-  dataset1.append([0.5, 2000, np.sqrt(2000)])
-  dataset1.append([1, 200, np.sqrt(200)])
-  dataset1.append([1.5, 20, np.sqrt(20)])
-  dataset1.sample_name='Test'
-  dataset1.logy=True
-  dataset1.short_info='not set'
-  dataset1.unit_trans([['q', 'Å^{-1}', 1000/PI_4_OVER_LAMBDA, 0, 'Θ', 'mrad']])
-  output.append(dataset1)
+  for name in file_names:
+    print "Reading %s" % name
+    file_data=open(name, 'r').read()
+    lines=file_data.splitlines()
+    lines=filter(lambda line: not (line.startswith('#') or line.strip()==''), lines)
+    floats=map(lambda line: map(float, line.split()),  lines)
+    floats=filter(lambda line: line[1]!=0., floats)
+    dataset=MeasurementData([['q', 'Å^{-1}'], ['I', 'a.u.'], ['dI', 'a.u.']], [], 0, 1, 2)
+    map(dataset.append, floats)
+    dataset.sample_name=name
+    dataset.logy=True
+    dataset.short_info=''
+    # (from dim, from unit, multiplier, offset, to dim, to unit)
+    dataset.unit_trans([['q', 'Å^{-1}', 1000./PI_4_OVER_LAMBDA, 0., 'Θ', 'mrad']])
+    output.append(dataset)
   return output

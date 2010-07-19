@@ -41,7 +41,7 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-class CircleSession(GenericSession, GUI):
+class CircleSession(GUI, GenericSession):
   '''
     Class to handle 4 circle data sessions
   '''

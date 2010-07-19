@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-06-23, 19:48:33 -->
+<!-- Saved: 2010-07-17, 11:38:20 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -64,7 +64,6 @@
     <Source>read_data/kws2.py</Source>
     <Source>config/kws2.py</Source>
     <Source>plotting_debug.py</Source>
-    <Source>sessions/single_diff.py</Source>
     <Source>__init__.py</Source>
     <Source>config/gui.py</Source>
     <Source>configobj.py</Source>
@@ -102,6 +101,9 @@
     <Source>read_data/treff_addon1.py</Source>
     <Source>config/maria.py</Source>
     <Source>sessions/reflectometer_fit/treff.py</Source>
+    <Source>sessions/templates.py</Source>
+    <Source>config/templates.py</Source>
+    <Source>config/default_template.py</Source>
   </Sources>
   <Forms>
   </Forms>

@@ -47,7 +47,14 @@ __status__ = "Production"
 if hex(sys.hexversion)<'0x2050000':
   exit=sys.exit
 
-class GenericSession:
+# import gui functions for active config.gui.toolkit
+import config.gui
+try:
+  GUI=__import__( config.gui.toolkit+'gui.generic', fromlist=['GenericGUI']).GenericGUI
+except ImportError: 
+  class GUI: pass
+
+class GenericSession(GUI):
   '''
     This is the class valid the whole session to read the files 
     and store the measurement data objects.
@@ -123,7 +130,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   index=0
   FILE_WILDCARDS=(('All', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
-  COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 'no-trans', '-help', '-debug']
+  COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 
+                        'template','no-trans', '-help', '-debug']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -255,6 +263,14 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
             last_argument_option=[False,'']
           elif last_argument_option[1]=='i':
             self.seq_inc=int(argument)
+            last_argument_option=[False,'']
+          elif last_argument_option[1]=='template':
+            import templates
+            #self.user_template=argument
+            print "Using template %s." % argument
+            self.read_file=templates.DataImportTemplate(argument)
+            # reset the addfile function to the standard
+            self.add_file=lambda *args, **opts: GenericSession.add_file(self, *args, **opts)
             last_argument_option=[False,'']
           else:
             found_add, last_argument_option=self.read_argument_add(argument,  last_argument_option, input_file_names)

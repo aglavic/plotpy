@@ -129,7 +129,7 @@ def correct_flipping_ratio(flipping_ratio, pp_data, pm_data,
   return nsf_scattering*total, sf_scattering*total, False
 
 
-class DNSSession(GenericSession, GUI):
+class DNSSession(GUI, GenericSession):
   '''
     Class to handle dns data sessions
   '''

@@ -854,7 +854,11 @@ class TreffGUI:
     print "PNR program started."
     if self.active_file_data.fit_object.fit!=1 and any(self.active_file_data.fit_datasets): # if this is not a fit just wait till finished
       exec_time, stderr_value = self.proc.communicate()
-      print "PNR program finished in %.2g seconds." % float(exec_time.splitlines()[-1])
+      try:
+        print "PNR program finished in %.2g seconds." % float(exec_time.splitlines()[-1])
+      except IndexError:
+        if exec_time.strip()!='' or stderr_value.strip()!='':
+          raise RuntimeError, 'PNR program finished with error message:\n%s' % (exec_time+' '+stderr_value)
     else:
       self.open_status_dialog(window)
     first=True
@@ -862,11 +866,14 @@ class TreffGUI:
     for i, dataset in enumerate(self.active_file_data.fit_datasets):
       if dataset:
         # if data for the channel was selected combine data and fit together
-        simu=read_data.treff.read_simulation(self.TEMP_DIR + output_names[i])
-        simu.number='sim_'+dataset.number
-        simu.short_info='simulation '+names[i]
-        simu.sample_name=dataset.sample_name
-        dataset.plot_together=[dataset, simu]
+        try:
+          simu=read_data.treff.read_simulation(self.TEMP_DIR + output_names[i])
+          simu.number='sim_'+dataset.number
+          simu.short_info='simulation '+names[i]
+          simu.sample_name=dataset.sample_name
+          dataset.plot_together=[dataset, simu]
+        except IOError:
+          raise RuntimeError, 'PNR program finished without creating data, program output:\n%s' % (exec_time+' '+stderr_value)
         if first:
           dataset.plot_options+='''
 set style line 2 lc 1

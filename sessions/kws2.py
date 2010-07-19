@@ -37,7 +37,7 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-class KWS2Session(GenericSession, GUI):
+class KWS2Session(GUI, GenericSession):
   '''
     Class to handle in12 data sessions
   '''

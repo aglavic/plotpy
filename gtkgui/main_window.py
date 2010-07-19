@@ -69,6 +69,13 @@ class ApplicationMainWindow(gtk.Window):
       @param parant Parent window.
       @param script_suf Suffix for script file name.
     '''
+    if not active_session.DEBUG:
+      # redirect script output to session objects
+      active_session.stdout=RedirectOutput(self)
+      active_session.stderr=RedirectError(self)
+      sys.stdout=active_session.stdout
+      sys.stderr=active_session.stderr
+
     global errorbars
     # TODO: remove global errorbars variable and put in session or m_d_structure
     #+++++++++++++++++ set class variables ++++++++++++++++++
@@ -337,13 +344,6 @@ class ApplicationMainWindow(gtk.Window):
     self.view_up.hide()
     self.view_down.hide()
     self.view_right.hide()
-
-    if not self.active_session.DEBUG:
-      # redirect script output to session objects
-      self.active_session.stdout=RedirectOutput(self)
-      self.active_session.stderr=RedirectError(self)
-      sys.stdout=self.active_session.stdout
-      sys.stderr=self.active_session.stderr
 
     while len(self.measurement)==0:
       while gtk.events_pending():

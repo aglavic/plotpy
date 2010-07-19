@@ -51,7 +51,7 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-class SquidSession(GenericSession, GUI):
+class SquidSession(GUI, GenericSession):
   '''
     Class to handle squid data sessions
   '''

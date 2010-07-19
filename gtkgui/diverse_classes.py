@@ -6,6 +6,7 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
 import gtk
+import sys
 
 from config import gnuplot_preferences
 
@@ -187,6 +188,7 @@ class RedirectError(RedirectOutput):
     The message dialog has an option to export a bugreport, which includes the active
     measurement to help debugging.
   '''
+  message_pending=False
   
   def __init__(self, plotting_session):
     '''
@@ -197,6 +199,9 @@ class RedirectError(RedirectOutput):
                                       message_format='Errorbox')
     self.messagebox.connect('response', self.response)
     self.messagebox.set_title('Unecpected Error!')
+    # make sure all error messages get reported if the program exits
+    import atexit
+    atexit.register(self.flush)
   
   def write(self, string):
     '''
@@ -215,9 +220,17 @@ class RedirectError(RedirectOutput):
     message_text+='\n\nDo you want to create a debug logfile?'
     # < signs can cause an gtk.Warning message because they get confused with markup tags
     message_text=message_text.replace('<', '[').replace('>', ']')
-    self.messagebox.set_markup(unicode(message_text, 'utf-8', 'ignore'))
+    self.messagebox.set_markup(message_text)
     self.messagebox.show_all()
+    self.message_pending=True
   
+  def flush(self):
+    '''
+      Make sure the dialog is shown and it is waited for response before the program exits/continues.
+    '''
+    if self.message_pending:
+      self.messagebox.run()
+
   def response(self, dialog, response_id):
     '''
       Hide the dialog on response and export debug information if response was OK.
@@ -226,19 +239,29 @@ class RedirectError(RedirectOutput):
       @param response_id The dialog response ID
     '''
     self.messagebox.hide()
+    self.message_pending=False
     import time
+    import gzip 
     from cPickle import dumps
     if response_id==-5:
-      debug_log=open('debug.log', 'w')
+      debug_log=gzip.open('debug.log.gz', 'w')
       debug_log.write('# This is a debug log file created by plot.py\n# The following error(s) have occured at %s.\n' % time.strftime('%m/%d/%y %H:%M:%S', time.localtime()))
       debug_log.write('# The script has been started with the options:\n %s \n' % ' ; '.join(sys.argv))
       debug_log.write('\n# Error Messages: \n\n')
       debug_log.write('\n'.join(self.content))
       debug_log.write('\n\n#-----------------------------start of pickled datasets-----------------------\n')
-      debug_log.write(dumps(self.plotting_session.active_session.active_file_data))
+      try:
+        dumpstring=dumps(self.plotting_session.active_session.active_file_data)
+      except TypeError:
+        try:
+          dumpstring=dumps([item for item in self.plotting_session.active_session.active_file_data])
+        except TypeError, errorcode:
+          dumpstring='Object not Pickable: %s' % errorcode
+      debug_log.write(dumpstring)
       debug_log.write('\n#-----------------------------end of pickled datasets-----------------------\n')
       debug_log.close()
-      msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log has been created.\n\nPlease upload it to the bugreport forum at\n\nhttp://atzes.homeip.net/plotwiki\n\nwith some additional information.\nFor larger files, please use zip or gzip first.")
+      msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log has been created.\n\n"+\
+        "Please upload it to the bugreport forum at\n\nhttp://atzes.homeip.net/plotwiki\n\nwith some additional information.")
       msg.run()
       msg.destroy()
     else:
