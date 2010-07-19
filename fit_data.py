@@ -204,6 +204,8 @@ class FitSum(FitFunction):
     Fit the Sum of two FitFunctions.
   '''
   
+  func_len=(None, None)
+  
   def __init__(self, func1,  func2):
     '''
       Construct a sum of two functions to use for fit.
@@ -222,11 +224,14 @@ class FitSum(FitFunction):
     for i in range(len(func2.parameters)):
       function_text=function_text.replace(func2.parameter_names[i], func2.parameter_names[i]+'2')
     self.fit_function_text+=' + ' + function_text
-    self.fit_function = lambda p, x: \
-        func1.fit_function(p[0:len(func1.parameters)], x) + \
-        func2.fit_function(p[len(func1.parameters):], x)
+    self.func_len = (len(func1.parameters), len(func2.parameters))
     self.origin=(func1, func2)
 
+  def fit_function(self, p, x):
+    func1=self.origin[0].fit_function
+    func2=self.origin[1].fit_function
+    len1, len2=self.func_len
+    return func1(p[0:len1], x) + func2(p[len1:], x)
   
   def set_parameters(self, new_params):
     '''

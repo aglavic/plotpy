@@ -626,7 +626,7 @@ class ApplicationMainWindow(gtk.Window):
     response = file_dialog.run()
     if response == gtk.RESPONSE_OK:
       self.active_folder=file_dialog.get_current_folder()
-      file_names=file_dialog.get_filenames()
+      file_names=map(lambda name: unicode(name, 'utf-8'), file_dialog.get_filenames())
     elif response == gtk.RESPONSE_CANCEL:
       file_dialog.destroy()
       return False
@@ -704,7 +704,7 @@ class ApplicationMainWindow(gtk.Window):
       response = file_dialog.run()
       if response == gtk.RESPONSE_OK:
         self.active_folder=file_dialog.get_current_folder()
-        name=file_dialog.get_filenames()[0]
+        name=unicode(file_dialog.get_filenames()[0], 'utf-8')
         if not name.endswith(".mdd"):
           name+=".mdd"
       elif response == gtk.RESPONSE_CANCEL:
@@ -739,9 +739,9 @@ class ApplicationMainWindow(gtk.Window):
       response = file_dialog.run()
       if response == gtk.RESPONSE_OK:
         self.active_folder=file_dialog.get_current_folder()
-        name=file_dialog.get_filenames()[0]
-        if not name.endswith(".mdd"):
-          name+=".mdd"
+        name=unicode(file_dialog.get_filenames()[0], 'utf-8')
+        if not name.endswith(u".mdd"):
+          name+=u".mdd"
       elif response == gtk.RESPONSE_CANCEL:
         file_dialog.destroy()
         return False
@@ -2393,8 +2393,8 @@ class ApplicationMainWindow(gtk.Window):
       if response != gtk.RESPONSE_OK:
         file_dialog.destroy()
         return None
-      self.active_folder=file_dialog.get_current_folder()
-      common_folder, common_file_prefix=os.path.split(file_dialog.get_filename().rsplit('.gp', 1)[0])
+      self.active_folder=unicode(file_dialog.get_current_folder(), 'utf-8')
+      common_folder, common_file_prefix=os.path.split(unicode(file_dialog.get_filename().rsplit('.gp', 1)[0], 'utf-8'))
       if ps_box.get_active():
         picture_type='.ps'
       else:
@@ -2493,7 +2493,7 @@ class ApplicationMainWindow(gtk.Window):
           if response == gtk.RESPONSE_OK:
             self.active_folder=file_dialog.get_current_folder()
             self.active_session.picture_width, self.active_session.picture_height=file_dialog.get_with_height()
-            multi_file_name=file_dialog.get_filename()
+            multi_file_name=unicode(file_dialog.get_filename(), 'utf-8')
           file_dialog.destroy()
           if response != gtk.RESPONSE_OK:
             return
@@ -2537,9 +2537,9 @@ class ApplicationMainWindow(gtk.Window):
         file_dialog.show_all()
         response = file_dialog.run()
         if response == gtk.RESPONSE_OK:
-          self.active_folder=file_dialog.get_current_folder()
+          self.active_folder=unicode(file_dialog.get_current_folder(), 'utf-8')
           self.active_session.picture_width, self.active_session.picture_height=file_dialog.get_with_height()
-          new_name=file_dialog.get_filename()
+          new_name=unicode(file_dialog.get_filename(), 'utf-8')
         elif response == gtk.RESPONSE_CANCEL:
           file_dialog.destroy()
           return False
