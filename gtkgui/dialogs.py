@@ -73,6 +73,17 @@ class StatusDialog(gtk.Dialog):
     # if the scrollbar is below 98% it is set to be at the bottom.
     adj=self.scrollwidget.get_vadjustment()
     end_visible= ((adj.value + adj.page_size) >= adj.upper*0.98)
+    # scroll back if text containes backspace characters
+    if u'\b' in utext:
+      back_split_utext=utext.split(u'\b')
+      for utext in back_split_utext[:-1]:
+        self.buffer.insert(self.end_iter, utext)
+        # remove one character
+        iter1=self.end_iter
+        iter2=iter1.copy()
+        iter2.backward_char()
+        self.buffer.delete(iter2, iter1)
+      utext=back_split_utext[-1]
     self.buffer.insert(self.end_iter, utext)
     if end_visible:
       self.textview.scroll_to_mark(self.end_mark, 0.)

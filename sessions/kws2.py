@@ -49,7 +49,7 @@ class KWS2Session(GUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('KWS2', '*.DAT', '*.DAT.gz'), ('All','*'))
+  FILE_WILDCARDS=(('KWS2', '*.DAT', '*.DAT.gz', '*.cmb', '*.cmb.gz', '*.edf', '*.edf.gz'), ('All','*'))
   mds_create=False
   read_directly=True
 

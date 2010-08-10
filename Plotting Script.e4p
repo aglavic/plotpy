@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-07-19, 10:45:38 -->
+<!-- Saved: 2010-08-08, 23:10:30 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -105,6 +105,8 @@
     <Source>config/templates.py</Source>
     <Source>config/default_template.py</Source>
     <Source>gtkgui/generic.py</Source>
+    <Source>measurement_data_functions.c</Source>
+    <Source>measurement_data_functions.h</Source>
   </Sources>
   <Forms>
   </Forms>

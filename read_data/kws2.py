@@ -6,7 +6,7 @@
 '''
 
 # Pleas do not make any changes here unless you know what you are doing.
-import os
+import os, sys
 from copy import deepcopy
 from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where
 from configobj import ConfigObj
@@ -24,8 +24,11 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
+# plack times speed of light
+h_c=1.239842E4 #eV⋅Å
 detector_sensitivities={}
 background_data={}
+imported_edfs=[]
 
 def read_data(file_name):
   '''
@@ -38,10 +41,15 @@ def read_data(file_name):
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
-  if file_name.endswith('.cmb'):
+  if file_name.endswith('.cmb') or file_name.endswith('.cmb.gz'):
     #config.gnuplot_preferences.plotting_parameters_3d='w points palette pt 5'
     config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 5,5', '')
     return read_cmb_file(file_name)
+  elif file_name.endswith('.edf') or file_name.endswith('.edf.gz'):
+    # Read .edf GISAXS data (Soleil)
+    #config.gnuplot_preferences.plotting_parameters_3d='w points palette pt 5'
+    config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 5,5', '')
+    return read_edf_file(file_name)
   folder, rel_file_name=os.path.split(os.path.realpath(file_name))
   setups=ConfigObj(os.path.join(folder, 'kws2_setup.ini'), unrepr=True)
   for key, value in setups.items():
@@ -176,15 +184,21 @@ def read_cmb_file(file_name):
   '''
   background=2.
   countingtime=1.
-  detector_distance=1.
+  detector_distance=1435. #mm
+  pixelsize_x= 0.2171 #mm
+  pixelsize_y= 0.2071 #mm
   sample_name=''
-  center_x=384.
+  center_x=345.
   center_y=498.5
-  q_window=[-0.1, 0.1, -0.02, 0.1]
+  q_window=[-0.2, 0.2, -0.05, 0.35]
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
                            ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
-  file_handler=open(file_name, 'rb')
+  if file_name.endswith('.gz'):
+    import gzip
+    file_handler=gzip.open(file_name, 'rb')
+  else:
+    file_handler=open(file_name, 'rb')
   header=file_handler.read(256)
   file_handler.read(256)
   import array as array_module
@@ -195,8 +209,8 @@ def read_cmb_file(file_name):
   for line in lines:
     if line.startswith('#sca'):
       countingtime=float(line.split()[1])
-    elif line.startswith('#dst'):
-      detector_distance=float(line.split()[1])
+    #elif line.startswith('#dst'):
+    #  detector_distance=float(line.split()[1])
     elif line.startswith('#txt'):
       sample_name+=" ".join(line.split()[1:])
   data_array=array(data_array)
@@ -207,9 +221,9 @@ def read_cmb_file(file_name):
   corrected_error=error_array/countingtime
   lambda_x=1.54
   qy_array=4.*pi/lambda_x*\
-           sin(arctan((y_array-center_y)*0.0001/detector_distance/2.))
+           sin(arctan((y_array-center_y)*pixelsize_y/detector_distance/2.))
   qz_array=4.*pi/lambda_x*\
-           sin(arctan((z_array-center_x)*0.0001/detector_distance/2.))
+           sin(arctan((z_array-center_x)*pixelsize_x/detector_distance/2.))
   data=array([y_array, z_array, corrected_data, corrected_error, qy_array, qz_array, 
               data_array, error_array, \
               (qy_array<q_window[0])+(qy_array>q_window[1])+\
@@ -230,7 +244,152 @@ def read_cmb_file(file_name):
   dataobj.scan_line=1
   dataobj.scan_line_constant=0
   return [dataobj]
+ 
+def read_edf_file(file_name):
+  '''
+    Read the binary .edf (european data format) file including header.
+    The data is taken from many pictures and summed up. To prevent double
+    import the file names already used are stored in a global list.
+  '''
+  # get a list of files, which belong together
+  file_prefix, file_ending=file_name.split('_im_')
+  file_postfix=file_ending.split('.', 1)[1] # remove number
+  if file_prefix in imported_edfs:
+    return 'NULL'
+  imported_edfs.append(file_prefix)
+  file_list=glob(file_prefix+'_im_'+'*')
+  file_list.sort()
+  q_window=[0., 0.2, 0., 0.2]
+  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
+                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+                            [], 4, 5, 3, 2)
+  folder, rel_file_name=os.path.split(os.path.realpath(file_name))
+  setups=ConfigObj(os.path.join(folder, 'kws2_setup.ini'), unrepr=True)
+  for key, value in setups.items():
+    if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
+      setup=value
+  #if setup['DETECTOR_SENSITIVITY'] and not setup['DETECTOR_SENSITIVITY'] in detector_sensitivities:
+  #  read_sensitivities(folder, setup['DETECTOR_SENSITIVITY'])
+  #if setup['BACKGROUND'] and not setup['BACKGROUND'] in detector_sensitivities:
+  #  read_background(folder, setup['BACKGROUND'])
   
+  # Get header information from the first file
+  file_name=file_list[0]
+  sys.stdout.write('\tFile 1/%i' % len(file_list))
+  sys.stdout.flush()
+  if file_name.endswith('.gz'):
+    import gzip
+    file_handler=gzip.open(file_name, 'rb')
+  else:
+    file_handler=open(file_name, 'rb')
+  header_settings, header_info=read_edf_header(file_handler)
+  if setup['CENTER_X']:
+    center_x=setup['CENTER_X']
+  else:
+    center_x=header_info['pixel_x']
+  if setup['CENTER_Y']:
+    center_y=setup['CENTER_Y']
+  else:
+    center_y=header_info['pixel_y']
+  import array as array_module
+  input_array=array_module.array('H')
+  #data_array.fromfile(file_handler, header_info['xdim']*header_info['ydim'])
+  input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
+  file_handler.close()
+  data_array=array(input_array)
+  # import all other files and add them together
+  for i, file_name in enumerate(file_list[1:]):
+    sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i' % (i+2, len(file_list)))
+    sys.stdout.flush()
+    if file_name.endswith('.gz'):
+      import gzip
+      file_handler=gzip.open(file_name, 'rb')
+    else:
+      file_handler=open(file_name, 'rb')
+    header_settings_tmp, header_info_tmp=read_edf_header(file_handler)
+    input_array=array_module.array('H')
+    #data_array.fromfile(file_handler, header_info['xdim']*header_info['ydim'])
+    input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
+    file_handler.close()
+    # add the collected data to the already imported
+    data_array+=array(input_array)
+    header_info['time']+=header_info_tmp['time']
+  sys.stdout.write('\b'*(len(str(i+2))+len(str(len(file_list))))+'\breadout complete!\n')
+  sys.stdout.flush()
+  y_array=linspace(0, header_info['xdim']**2-1, header_info['xdim']**2)%header_info['ydim']
+  z_array=linspace(0, header_info['ydim']**2-1, header_info['ydim']**2)//header_info['ydim']
+  error_array=sqrt(data_array)
+  corrected_data=data_array/header_info['time']
+  corrected_error=error_array/header_info['time']
+  qy_array=4.*pi/header_info['lambda_γ']*\
+           sin(arctan((y_array-center_x)*header_info['pixelsize_x']/header_info['detector_distance']/2.))
+  qz_array=-4.*pi/header_info['lambda_γ']*\
+           sin(arctan((z_array-center_y)*header_info['pixelsize_y']/header_info['detector_distance']/2.))
+  data=array([y_array, z_array, corrected_data, corrected_error, qy_array, qz_array, 
+              data_array, error_array, \
+              (qy_array<q_window[0])+(qy_array>q_window[1])+\
+              (qz_array<q_window[2])+(qz_array>q_window[3])+(data_array==0)])
+  use_indices=where(data[8]==0)[0]
+  filtered_data=data.transpose()[use_indices].transpose()
+  dataobj.number_of_points=len(use_indices)
+  dataobj.data[0].values=filtered_data[0].tolist()
+  dataobj.data[1].values=filtered_data[1].tolist()
+  dataobj.data[2].values=filtered_data[2].tolist()
+  dataobj.data[3].values=filtered_data[3].tolist()
+  dataobj.data[4].values=filtered_data[4].tolist()
+  dataobj.data[5].values=filtered_data[5].tolist()
+  dataobj.data[6].values=filtered_data[6].tolist()
+  dataobj.data[7].values=filtered_data[7].tolist()
+  dataobj.sample_name=header_info['sample_name']
+  dataobj.info="#"+"\n#".join([item[1] for item in sorted(header_settings.items())])
+  dataobj.scan_line=1
+  dataobj.scan_line_constant=0
+  dataobj.logz=True
+  print "\tImport complete, ignoring file names belonging to the same series."
+  return [dataobj]  
+
+def read_edf_header(file_handler):
+  '''
+    Read the header of an edf file from an open file object.
+  '''
+  line=file_handler.readline()
+  settings={}
+  # Set standart values which are overwritten if found in the header
+  info={
+      'lambda_γ': 1.54, 
+      'xdim': 1024, 
+      'ydim': 1024, 
+      'sample_name': '', 
+      'time': 1., 
+      'pixel_x': 512.5, 
+      'pixelsize_x': 0.0914, 
+      'pixel_y': 512.5, 
+      'pixelsize_y': 0.0914, 
+      'detector_distance': 1000., 
+      }
+  while '}' not in line:
+    if "=" in line:
+      key, value= line.split('=', 1)
+      key=key.strip()
+      value=value.strip().rstrip(';').strip()
+      settings[key]=value
+    line=file_handler.readline()
+  
+  # Read some settings
+  if 'Dim_1' in settings:
+    info['xdim']=int(settings['Dim_1'])
+  if 'Dim_2' in settings:
+    info['ydim']=int(settings['Dim_2'])
+  if 'Distance_sample-detector' in settings:
+    info['detector_distance']=float(settings['Distance_sample-detector'].rstrip('mm'))
+  if 'Monochromator_energy' in settings:
+    energy=float(settings['Monochromator_energy'].rstrip('keV'))*1000.
+    info['lambda_γ']= h_c/energy
+  if 'Sample_comments' in settings:
+    info['sample_name']=settings['Sample_comments']
+  if 'Exposure_time' in settings:
+    info['time']=float(settings['Exposure_time'].rstrip('ms'))/1000.
+  return settings, info
 
 class KWS2MeasurementData(HugeMD):
   '''
@@ -243,7 +402,6 @@ class KWS2MeasurementData(HugeMD):
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
     out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
-    out.tmp_pickled_file=self.tmp_pickled_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)+array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2+array(other.data[3].values)**2)).tolist()
     out.data[6].values=(array(self.data[6].values)+array(other.data[6].values)).tolist()    
@@ -258,7 +416,6 @@ class KWS2MeasurementData(HugeMD):
     out=deepcopy(self)
     out.short_info=self.short_info+'-'+other.short_info
     out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
-    out.tmp_pickled_file=self.tmp_pickled_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)-array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2+array(other.data[3].values)**2)).tolist()
     out.data[6].values=(array(self.data[6].values)-array(other.data[6].values)).tolist()    
@@ -272,7 +429,6 @@ class KWS2MeasurementData(HugeMD):
     '''
     out=deepcopy(self)
     out.tmp_export_file=self.tmp_export_file+'_'+str(other)
-    out.tmp_pickled_file=self.tmp_pickled_file+'_'+str(other)
     out.data[2].values=(other*array(self.data[2].values)).tolist()    
     out.data[3].values=(other*array(self.data[3].values)).tolist()    
     out.data[6].values=(other*array(self.data[6].values)).tolist()    
@@ -289,7 +445,6 @@ class KWS2MeasurementData(HugeMD):
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
     out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
-    out.tmp_pickled_file=self.tmp_pickled_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)*array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2*array(other.data[2].values)**2+\
                              array(other.data[3].values)**2*array(self.data[2].values)**2)).tolist()
@@ -308,7 +463,6 @@ class KWS2MeasurementData(HugeMD):
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
     out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
-    out.tmp_pickled_file=self.tmp_pickled_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)/array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2/array(other.data[2].values)**2+\
                              array(other.data[3].values)**2*array(self.data[2].values)**2\

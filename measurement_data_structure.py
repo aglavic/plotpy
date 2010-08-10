@@ -544,20 +544,23 @@ class MeasurementData(object):
     # write data to file
     write_file=open(file_name,'w')
     if print_info:
-      write_file.write('# exportet dataset from measurement_data_structure.py\n# Sample: '+self.sample_name+'\n#\n# other informations:\n#'+self.info.replace('\n','\n#'))
+      write_file.write('# exportet dataset from measurement_data_structure.py\n# Sample: '+self.sample_name+\
+                       '\n#\n# other informations:\n#'+self.info.replace('\n','\n#'))
       columns=''
       for i in range(len(self.data)):
         columns=columns+' '+self.dimensions()[i]+'['+self.units()[i]+']'
       write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
     #self.write_data_matrix(write_file, data, split_indices)
-    self.write_data_matrix2(write_file, data, split_indices)
+    # Convert the data from matrix format to a string which can be written to a file
+    data_string=self.string_from_data_matrix(seperator, data, split_indices)
+    write_file.write(data_string)
     write_file.write('\n')
     write_file.close()
     return split_indices[-1] # return the number of exported data lines
 
   def rough_sort(self, ds1, ds2, sensitivity):
     '''
-      Return the sorting index from a first and second column ignoring small
+      Return the sorting indices from a first and second column ignoring small
       differences.
     '''
     srt_run1=numpy.lexsort(keys=(ds2, ds1))
@@ -572,30 +575,30 @@ class MeasurementData(object):
     srt_run2=numpy.lexsort(keys=(ds2, ds1))
     return srt_run2
 
-  def write_data_matrix(self, write_file, data, split_indices, seperator=" "):
+  def string_from_data_matrix(self, seperator, data, split_indices):
     '''
-      Write a given matrix of data to a file object.
-    '''
-    
-    numpy.savetxt(write_file, data[:split_indices[0]], fmt='%g', delimiter=seperator)
-    write_file.write('\n')
-    for i, split_i in enumerate(split_indices[1:]):
-      numpy.savetxt(write_file, data[split_indices[i]:split_i], fmt='%.6g', delimiter=seperator)
-      write_file.write('\n')
-
-  def write_data_matrix2(self, write_file, data, split_indices):
-    '''
-      Write a given matrix of data to a file object.
+      Create a string that can be written to a file from a given data matrix.
+      The function may look quite strange because of a lot of optimization,
+      thus the result is almost as fast as c-code (faster if the c-code is not optimized).
+      
+      @param seperator A string to seperate each data value.
+      @param data A matrix of data points
+      @param split_indices Index of the points where empty lines should be added
+      
+      @return A string with the data.
     '''
     lines, cols=data.shape
-    # convert data to a log 1d array
+    # convert data to a long 1d array
     data=numpy.nan_to_num(data.reshape(lines*cols))
-    output_line=("%g "*cols)[:-1]
+    # create the format string for one line of data
+    output_line=(("%g"+seperator)*cols)[:-len(seperator)]
+    # join format string line by line
     output_list=["\n".join([output_line for j in range(split_indices[0])])]
     for i, split_i in enumerate(split_indices[1:]):
       output_list.append("\n".join([output_line for j in range(split_i-split_indices[i])]))
+    # insert the values in the given format
     output=("\n\n".join(output_list)) % tuple(data)
-    write_file.write(output)
+    return output
 
   def max(self,xstart=None,xstop=None): 
     '''

@@ -6,7 +6,7 @@
 
 import sys, os
 exit=sys.exit
-from distutils.core import setup
+from distutils.core import setup, Extension
 from glob import glob
 import subprocess
 
@@ -35,6 +35,12 @@ __requires__=['pygtk', 'gobject', 'numpy', 'scipy']
 
 __options__={ "py2exe": {"includes": "numpy,scipy,gtk,pango,cairo,pangocairo,atk,gobject",
                              }}
+
+# extensions modules written in C
+#mdf_module = Extension('plot_script.measurement_data_functions',
+#                      sources = ['measurement_data_functions.c'], 
+#                      include_dirs = ['/usr/lib/python2.6/dist-packages/numpy/core/include/numpy'])
+__extensions_modules__=[]#[mdf_module]
 
 script_files=['scripts/prd', 'scripts/psd', 'scripts/p4d', 'scripts/dnsplot', 'scripts/treffplot', 'scripts/pin12', 
               'scripts/plot_SQUID_data', 'scripts/plot_4circle_data', 'scripts/plot_reflectometer_data']
@@ -140,6 +146,7 @@ setup(name=__name__,
       url=__url__,
       scripts=__scripts__, 
       py_modules=__py_modules__, 
+      ext_modules=__extensions_modules__, 
       packages=__packages__, 
       package_dir=__package_dir__, 
       package_data=__package_data__,
