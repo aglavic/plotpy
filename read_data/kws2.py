@@ -293,7 +293,7 @@ def read_edf_file(file_name):
     center_y=header_info['pixel_y']
   import array as array_module
   input_array=array_module.array('H')
-  #data_array.fromfile(file_handler, header_info['xdim']*header_info['ydim'])
+  #data_array.fromfile(file_handler, header_info['xdim']*header_info['ydim']) # deosn't work with gzip
   input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
   file_handler.close()
   data_array=array(input_array)
@@ -308,7 +308,7 @@ def read_edf_file(file_name):
       file_handler=open(file_name, 'rb')
     header_settings_tmp, header_info_tmp=read_edf_header(file_handler)
     input_array=array_module.array('H')
-    #data_array.fromfile(file_handler, header_info['xdim']*header_info['ydim'])
+    #data_array.fromfile(file_handler, header_info['xdim']*header_info['ydim']) # deosn't work with gzip
     input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
     file_handler.close()
     # add the collected data to the already imported
@@ -316,6 +316,7 @@ def read_edf_file(file_name):
     header_info['time']+=header_info_tmp['time']
   sys.stdout.write('\b'*(len(str(i+2))+len(str(len(file_list))))+'\breadout complete!\n')
   sys.stdout.flush()
+  # define other quantities for the input data
   y_array=linspace(0, header_info['xdim']**2-1, header_info['xdim']**2)%header_info['ydim']
   z_array=linspace(0, header_info['ydim']**2-1, header_info['ydim']**2)//header_info['ydim']
   error_array=sqrt(data_array)
