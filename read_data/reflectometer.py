@@ -10,6 +10,7 @@ import os
 import sys
 import math
 import measurement_data_structure
+import codecs
 from copy import deepcopy
 from numpy import array
 from numpy import sqrt
@@ -43,16 +44,17 @@ def read_data(file_name, DATA_COLUMNS):
       file_handler=gzip.open(file_name, 'r')
     else:
       file_handler=open(file_name, 'r')
-    input_file_lines=file_handler.readlines()
+    file_string=file_handler.read()
+    input_file_lines=codecs.decode(file_string, "ISO 8859-15", 'ignore').splitlines()
     file_handler.close()
     while len(input_file_lines)>0:
       measurement_info=read_header(input_file_lines)
       if measurement_info=='NULL':
-        break
+        return 'NULL'
       sequence=read_data_lines(input_file_lines,measurement_info,DATA_COLUMNS)
-      # filter 0 intensity points
-      sequence.filters=[(1, 0.0, 0.0, False)]
       if sequence!='NULL':
+        # filter 0 intensity points
+        sequence.filters=[(1, 0.0, 0.0, False)]
         measurement_data.append(sequence)
       else:
         return 'NULL'
@@ -74,6 +76,9 @@ def read_header(input_file_lines):
     line=input_file_lines.pop(0)
     if ('COUNTS' in line):
       scantype=line[1:-1].rstrip('\r\n')
+      # remove comment lines
+      while ";" in input_file_lines[0]:
+        line=input_file_lines.pop(0)
       return [output,scantype]
     else:
       output=output+line.rstrip('\n').rstrip('\r').lstrip('_').lstrip(';')+'\n'
@@ -89,12 +94,21 @@ def read_data_lines(input_file_lines,info,DATA_COLUMNS):
   output=[] #initialise data array containing data objects
   data_info=''
   scantype=None
+  count_time=1.
   for line in info[0].splitlines():
     setting=line.split('=')
     if setting[0]=='SAMPLE':
       sample_name=setting[1].rstrip('\n')
-    if setting[0]=='DRIVE':
-      scantype=setting[1].strip("'")
+    elif setting[0].strip()=='DRIVE':
+      scantype=setting[1].strip("'").strip()
+    elif setting[0].strip()=='STEPTIME':
+      count_time=float(setting[1])
+    # Definitions for locked-coupled scans
+    elif setting[0].strip()=='START':
+      i=0
+      start_angle=float(setting[1])
+    elif setting[0].strip()=='STEPSIZE':
+      increment_angle=float(setting[1])
     data_info=data_info+line+'\n'
   if scantype==None:
     print "Wrong file type, no 'DRIVE' defined in header!"
@@ -105,7 +119,10 @@ def read_data_lines(input_file_lines,info,DATA_COLUMNS):
   while len(input_file_lines)>0: # append data from one sequence to the object or create new object for the next sequence
     line=input_file_lines.pop(0)
     next_data=read_data_line(line)
-    if next_data!='NULL':
+    if len(next_data)==2 and next_data!='NULL':
+      data.append((start_angle+i*increment_angle, next_data[0], next_data[1]))
+      i+=1
+    elif next_data!='NULL':
       data.append(next_data)
     else:
       return data
@@ -119,8 +136,10 @@ def read_data_line(input_file_line):
     return 'NULL'
   else:
     line=input_file_line.strip().split()
-    if len(line)<2:
+    if len(line)==0:
       return 'NULL'
+    elif len(line)==1:
+      return [float(line[0]), math.sqrt(abs(float(line[0])))]
     return [float(line[0]),float(line[1]),math.sqrt(abs(float(line[1])))]
 
 def read_simulation(file_name):

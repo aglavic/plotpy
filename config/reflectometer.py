@@ -23,16 +23,16 @@ TRANSFORMATIONS_CONST=[]
 # Select the read parameters and mapping to columns as well as dimensions and units 
 #  (every measurement file the positions have to start with 0 and have no holes in between
 # [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
-DATA_COLUMNS={\
-'THETA':['Θ','°']\
-,'2THETA':['2Θ','°']\
-,'PHI':['φ','°']\
-,'COUPLED':['2Θ','°']\
-,'COUNTS':['Intensity','counts']\
-,'STEPTIME':['Time per Step','s']\
-,'AUX1':['z','mm']
-,'AUX3':['KEC','mm']
-}
+DATA_COLUMNS={
+            'THETA':        ['Θ','°']
+            ,'2THETA':      ['2Θ','°']
+            ,'PHI':         ['φ','°']
+            ,'COUPLED':     ['2Θ','°']
+            ,'COUNTS':      ['Intensity','counts']
+            ,'STEPTIME':    ['Time per Step','s']
+            ,'AUX1':        ['z','mm']
+            ,'AUX3':        ['KEC','mm']
+            }
 
 # how to call the fit-script
 FIT_SCRIPT_COMMAND='fit-script'
