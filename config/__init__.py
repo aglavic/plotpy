@@ -44,7 +44,8 @@ if not os.access(__path__[0], os.W_OK):
                        'reflectometer', 
                        'scattering_length_table', 
                        'squid', 
-                       'transformations', 
+                       'templates', 
+                       'transformations',
                        'treff', 
                        ]
     for package in subpackage_items:
