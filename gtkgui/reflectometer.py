@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta3"
+__version__ = "0.7beta4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -682,7 +682,7 @@ class ReflectometerGUI:
       # convert x values from angle to q
     dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
                       ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
-    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, ' ', xfrom=self.x_from, xto=self.x_to)
+    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', print_info=False, only_fitted_columns=True, xfrom=self.x_from, xto=self.x_to)
     self.active_file_data.fit_object.number_of_points=data_lines
     self.active_file_data.fit_object.set_fit_constrains()
     # create the .ent file
@@ -781,7 +781,7 @@ class ReflectometerGUI:
     #----------------File selection dialog-------------------#
     file_prefix=file_name.rsplit('.ent', 1)[0]
     dataset=self.active_file_data[window.index_mess]
-    data_lines=dataset.export(file_prefix+'.res', False, ' ', xfrom=self.x_from, xto=self.x_to)
+    data_lines=dataset.export(file_prefix+'.res', print_info=False,  only_fitted_columns=True, xfrom=self.x_from, xto=self.x_to)
     self.active_file_data.fit_object.number_of_points=data_lines
     self.active_file_data.fit_object.set_fit_constrains()
     # create the .ent file

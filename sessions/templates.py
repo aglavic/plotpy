@@ -7,7 +7,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta3"
+__version__ = "0.7beta4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -17,6 +17,7 @@ import os
 import measurement_data_structure
 import config.templates
 import numpy as np
+MeasurementDataClass=measurement_data_structure.MeasurementData
 
 class DataImportTemplate(object):
   '''
@@ -34,7 +35,7 @@ class DataImportTemplate(object):
       template_code=compile(template_file.read(), template_name+'.py', 'exec')
       template_file.close()
       self.compile_template(template_code)
-      self.MeasurementData=measurement_data_structure.MeasurementData
+      self.MeasurementData=MeasurementDataClass
     except IOError:
       print "Template file %s not found" % os.path.join(config.templates.TEMPLATE_DIRECTORY,  template_name + '.py')
       return None

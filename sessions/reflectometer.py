@@ -32,6 +32,9 @@ from generic import GenericSession
 from reflectometer_fit.reflectometer import *
 # importing preferences and data readout
 import read_data.reflectometer
+# use own datastructure also for templates
+import sessions.templates
+sessions.templates.MeasurementDataClass=read_data.reflectometer.MeasurementData
 import config.reflectometer
 from measurement_data_structure import MeasurementData
 # import gui functions for active config.gui.toolkit
@@ -49,7 +52,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta3"
+__version__ = "0.7beta4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -282,7 +285,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       try to fit the scaling factor before the total reflection angle
     '''
     self.active_file_data.fit_object.fit=1
-    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, ' ', xfrom=0.005,xto=self.find_total_reflection(dataset))
+    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, only_fitted_columns=True, xfrom=0.005,xto=self.find_total_reflection(dataset))
     self.active_file_data.fit_object.set_fit_parameters(scaling=True) # fit only scaling factor
     self.active_file_data.fit_object.number_of_points=data_lines
     # create the .ent file
@@ -308,7 +311,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
         layer_dict[i]=[3]
       else:
         layer_dict[i]=[[3] for j in range(len(layer.layers))]
-    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, ' ', xfrom=self.find_total_reflection(dataset))
+    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', print_info=False, only_fitted_columns=True, xfrom=self.find_total_reflection(dataset))
     self.active_file_data.fit_object.set_fit_parameters(layer_params=layer_dict, substrate_params=[2]) # set all roughnesses to be fit
     self.active_file_data.fit_object.number_of_points=data_lines
     # create the .ent file
@@ -376,7 +379,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     #----- Try to refine the scaling factorn and roughnesses -----
     #+++++++ create final input file and make a simulation +++++++
       # write data into files with sequence numbers in format ok for fit.f90    
-    data_lines=dataset.export(export_file_prefix+'.res',False,' ') 
+    data_lines=dataset.export(export_file_prefix+'.res',print_info=False, only_fitted_columns=True) 
     self.active_file_data.fit_object.number_of_points=data_lines
     self.active_file_data.fit_object.set_fit_parameters(background=True)
     ent_file=open(export_file_prefix+'.ent', 'w')
