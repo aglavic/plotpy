@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 '''
   Session expansion class for GUI in reflectometer session.
 '''
@@ -35,7 +36,7 @@ class ReflectometerGUI:
   '''
   
   def __init__(self):
-    self.fit_object=RefFitParameters() # create a new empty RefFitParameters object
+    self.active_file_data.fit_object=RefFitParameters() # create a new empty RefFitParameters object
 
   
   def create_menu(self, home):
@@ -99,9 +100,9 @@ class ReflectometerGUI:
     '''
       create a dialog window for the fit options
     '''
-    if self.fit_object.layers==[]:
-      self.fit_object.append_layer('Unknown', 10., 5.)
-      self.fit_object.append_substrate('Unknown', 5.)
+    if self.active_file_data.fit_object.layers==[]:
+      self.active_file_data.fit_object.append_layer('Unknown', 10., 5.)
+      self.active_file_data.fit_object.append_substrate('Unknown', 5.)
     layer_options={}
     layer_index=0
     layer_params={}
@@ -130,7 +131,7 @@ class ReflectometerGUI:
     sw.SetScrollRate(10, 10 )
 
     #layer parameters
-    for layer in self.fit_object.layers:
+    for layer in self.active_file_data.fit_object.layers:
       layer_options[layer_index]=self.create_layer_options(layer, layer_index, layer_params, dialog, window, sw)
       layer_index+=1
 
@@ -148,7 +149,7 @@ class ReflectometerGUI:
 
     energy = wx.TextCtrl( sw, wx.ID_ANY, style=wx.TE_PROCESS_ENTER )
     energy.SetMaxLength( 10 )
-    energy.SetValue( str(self.fit_object.radiation[0]) )
+    energy.SetValue( str(self.active_file_data.fit_object.radiation[0]) )
     align_table.Add( energy, 0, flag=wx.CENTER|wx.EXPAND|wx.ALL, border=5 )
 
     # activating the input will apply the settings, too
@@ -192,7 +193,7 @@ class ReflectometerGUI:
         table.Add(layer_options[i], flag=wx.CENTER|wx.EXPAND|wx.ALL, border=5)
 
     # substrate parameters
-    substrat_options=self.create_layer_options(self.fit_object.substrate, 0, fit_params, dialog, window, sw, substrate=True)
+    substrat_options=self.create_layer_options(self.active_file_data.fit_object.substrate, 0, fit_params, dialog, window, sw, substrate=True)
     table.Add(substrat_options, flag=wx.CENTER|wx.EXPAND|wx.ALL, border=5 )
     vbox.Add(table, 0, wx.ALL|wx.EXPAND, 5 )
 
@@ -210,7 +211,7 @@ class ReflectometerGUI:
 
     background = wx.TextCtrl( sw, wx.ID_ANY, style=wx.TE_PROCESS_ENTER )
     background.SetMaxLength(10)
-    background.SetValue( str(self.fit_object.background) )
+    background.SetValue( str(self.active_file_data.fit_object.background) )
     align_table.Add( background, wx.GBPosition(0,1), flag=wx.CENTER|wx.EXPAND|wx.ALL, border=5 )
     background.Bind(event=wx.EVT_TEXT_ENTER, 
                    handler=lambda evt, arg1=dialog, 
@@ -223,7 +224,7 @@ class ReflectometerGUI:
 
     resolution = wx.TextCtrl( sw, wx.ID_ANY, style=wx.TE_PROCESS_ENTER )
     resolution.SetMaxLength(10)
-    resolution.SetValue( str(self.fit_object.resolution) )
+    resolution.SetValue( str(self.active_file_data.fit_object.resolution) )
     align_table.Add( resolution, wx.GBPosition(0,3), flag=wx.CENTER|wx.EXPAND|wx.ALL, border=5 )
     resolution.Bind(event=wx.EVT_TEXT_ENTER, 
                    handler=lambda evt, arg1=dialog, 
@@ -237,7 +238,7 @@ class ReflectometerGUI:
 
     scaling_factor = wx.TextCtrl( sw, wx.ID_ANY, style=wx.TE_PROCESS_ENTER )
     scaling_factor.SetMaxLength(10)
-    scaling_factor.SetValue( str(self.fit_object.scaling_factor) )
+    scaling_factor.SetValue( str(self.active_file_data.fit_object.scaling_factor) )
     align_table.Add( scaling_factor, wx.GBPosition(1,1), flag=wx.CENTER|wx.EXPAND|wx.ALL, border=5 )
     scaling_factor.Bind(event=wx.EVT_TEXT_ENTER, 
                    handler=lambda evt, arg1=dialog, 
@@ -250,7 +251,7 @@ class ReflectometerGUI:
 
     theta_max = wx.TextCtrl( sw, wx.ID_ANY, style=wx.TE_PROCESS_ENTER )
     theta_max.SetMaxLength(10)
-    theta_max.SetValue( str(self.fit_object.theta_max) )
+    theta_max.SetValue( str(self.active_file_data.fit_object.theta_max) )
     align_table.Add( theta_max, wx.GBPosition(1,3), flag=wx.CENTER|wx.EXPAND|wx.ALL, border=5 )
     theta_max.Bind(event=wx.EVT_TEXT_ENTER, 
                    handler=lambda evt, arg1=dialog, 
@@ -276,13 +277,13 @@ class ReflectometerGUI:
 
 
 
-    if self.fit_object_history!=[]:
-      history_back = wx.Button(sw, wx.ID_ANY,label='Undo (%i)' % len(self.fit_object_history), style=wx.BU_EXACTFIT)
+    if self.active_file_data.fit_object_history!=[]:
+      history_back = wx.Button(sw, wx.ID_ANY,label='Undo (%i)' % len(self.active_file_data.fit_object_history), style=wx.BU_EXACTFIT)
       history_back.Bind(event=wx.EVT_BUTTON, handler=lambda evt,arg1=True, arg2=dialog, arg3=window,
                                              func=self.fit_history: func(evt, arg1, arg2, arg30 ) )
       align_table.Add(history_back, wx.GBPosition(6,2), wx.EXPAND, 3)
-    if self.fit_object_future!=[]:
-      history_forward = wx.Button(sw, wx.ID_ANY, label='Redo (%i)' % len(self.fit_object_future), style=wx.BU_EXACTFIT)
+    if self.active_file_data.fit_object_future!=[]:
+      history_forward = wx.Button(sw, wx.ID_ANY, label='Redo (%i)' % len(self.active_file_data.fit_object_future), style=wx.BU_EXACTFIT)
       history_forward.Bind(event=wx.EVT_BUTTON, handler=lambda evt, arg1=False, arg2=dialog, arg3=window,
                                                 func=self.fit_history: func( evt, arg1, arg2, arg3) )
       align_table.Add(history_forward, wx.GBPosition(6,3), wx.EXPAND, 3 )
@@ -435,7 +436,7 @@ class ReflectometerGUI:
       SL_selector = wx.ComboBox( home, style=wx.CB_READONLY, size=wx.Size(75,30)  )
       SL_selector.Append('SL')
       SL_selector.SetSelection(0)
-      for i, SL in enumerate(self.fit_object.SCATTERING_LENGTH_DENSITIES.items()):
+      for i, SL in enumerate(self.active_file_data.fit_object.SCATTERING_LENGTH_DENSITIES.items()):
         SL_selector.Append(SL[0])
         if layer.delta==SL[1][0] and layer.d_over_b==SL[1][1]:
           SL_selector.set_active(i+1)
@@ -532,11 +533,11 @@ class ReflectometerGUI:
     '''
     if response>=5:
       try:
-        self.fit_object.radiation[0]   = float(parameters_list[0].GetValue())
-        self.fit_object.background     = float(parameters_list[1].GetValue())
-        self.fit_object.resolution     = float(parameters_list[2].GetValue())
-        self.fit_object.scaling_factor = float(parameters_list[3].GetValue())
-        self.fit_object.theta_max      = float(parameters_list[4].GetValue())
+        self.active_file_data.fit_object.radiation[0]   = float(parameters_list[0].GetValue())
+        self.active_file_data.fit_object.background     = float(parameters_list[1].GetValue())
+        self.active_file_data.fit_object.resolution     = float(parameters_list[2].GetValue())
+        self.active_file_data.fit_object.scaling_factor = float(parameters_list[3].GetValue())
+        self.active_file_data.fit_object.theta_max      = float(parameters_list[4].GetValue())
       except ValueError:
         None
       try:
@@ -547,7 +548,7 @@ class ReflectometerGUI:
         self.x_to=float(parameters_list[6].GetValue())
       except ValueError:
         self.x_to=None
-      self.fit_object.set_fit_parameters(layer_params=fit_list[0], substrate_params=map(lambda x: x-1, fit_list[1][0]), \
+      self.active_file_data.fit_object.set_fit_parameters(layer_params=fit_list[0], substrate_params=map(lambda x: x-1, fit_list[1][0]), \
                                          background=fit_list[1]['background'], \
                                          resolution=fit_list[1]['resolution'], \
                                          scaling=fit_list[1]['scaling'])
@@ -556,28 +557,28 @@ class ReflectometerGUI:
       except ValueError:
         self.max_iter=50
       if fit_list[1]['actually'] and response==5:
-        self.fit_object.fit=1
+        self.active_file_data.fit_object.fit=1
       if response==7:
         self.user_constraint_dialog(dialog, window)
         return None
       self.dialog_fit(action, window)
       # read fit parameters from file and create new object, if process is killed ignore
-      if fit_list[1]['actually'] and response==5 and self.fit_object.fit==1: 
-        parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref', self.fit_object)
-        new_fit=self.fit_object.copy()
+      if fit_list[1]['actually'] and response==5 and self.active_file_data.fit_object.fit==1: 
+        parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref', self.active_file_data.fit_object)
+        new_fit=self.active_file_data.fit_object.copy()
         new_fit.get_parameters(parameters)
         sorted_errors=new_fit.get_errors(errors)
         self.show_result_window(dialog, window, new_fit, sorted_errors)
       os.remove(self.TEMP_DIR+'fit_temp.ref')
-      self.fit_object.fit=0
+      self.active_file_data.fit_object.fit=0
     elif response==3: # new layer
       new_layer=RefLayerParam()
-      self.fit_object.layers.append(new_layer)
+      self.active_file_data.fit_object.layers.append(new_layer)
       self.rebuild_dialog(dialog, window)
     elif response==4: # new multilayer
       multilayer=RefMultilayerParam()
       multilayer.layers.append(RefLayerParam())
-      self.fit_object.layers.append(multilayer)
+      self.active_file_data.fit_object.layers.append(multilayer)
       self.rebuild_dialog(dialog, window)
 
   def show_result_window(self, dialog, window, new_fit, sorted_errors):
@@ -595,7 +596,7 @@ class ReflectometerGUI:
 
         results.EndModal( ret )
 
-    old_fit=self.fit_object
+    old_fit=self.active_file_data.fit_object
 
     results = wx.Dialog(dialog, wx.ID_ANY, title='Fit results:',  size=(500,450),
                               style=wx.RESIZE_BORDER|wx.DEFAULT_DIALOG_STYLE)
@@ -697,12 +698,12 @@ class ReflectometerGUI:
       # convert x values from angle to q
     dataset.unit_trans([['Theta', '\302\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
                       ['2 Theta', '\302\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])    
-    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, ' ', xfrom=self.x_from, xto=self.x_to)
-    self.fit_object.number_of_points=data_lines
-    self.fit_object.set_fit_constrains()
+    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', print_info=False, only_fitted_columns=True, xfrom=self.x_from, xto=self.x_to)
+    self.active_file_data.fit_object.number_of_points=data_lines
+    self.active_file_data.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
-    ent_file.write(self.fit_object.get_ent_str()+'\n')
+    ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
     ent_file.close()
     #open a background process for the fit function
 
@@ -711,15 +712,48 @@ class ReflectometerGUI:
 #     8.Juni 2010
 #     Name wie in treff.py: reflectometer_fit.functions ersetzt durch refl_fit_functions
 #     refl_fit_functions.proc
-    refl_fit_functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',self.max_iter)
+    refl_fit_functions.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', 
+                                                    self.TEMP_DIR+'fit_temp',self.max_iter)
 
 
     print "fit.f90 program started."
-    if self.fit_object.fit!=1: # if this is not a fit just wait till finished
+    if self.active_file_data.fit_object.fit!=1: # if this is not a fit just wait till finished
 #######      exec_time, stderr_value = reflectometer_fit.functions.proc.communicate()
 #     8.Juni 2010
 #     Name wie in treff.py: reflectometer_fit.functions ersetzt durch refl_fit_functions
       exec_time, stderr_value = refl_fit_functions.proc.communicate()
+      print "fit.f90 program finished in %.2g seconds." % float(exec_time.splitlines()[-1])
+    else:
+      self.open_status_dialog(window)
+    simu=read_data.reflectometer.read_simulation(self.TEMP_DIR+'fit_temp.sim')
+    simu.number='sim_'+dataset.number
+    simu.short_info='simulation'
+    simu.sample_name=dataset.sample_name
+    dataset.plot_together=[dataset, simu]
+    window.replot()
+
+  def dialog_fit(self, action, window):
+    '''
+      function invoked when apply button is pressed
+      fits with the new parameters
+    '''
+    dataset=window.measurement[window.index_mess]
+      # convert x values from angle to q
+    dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
+                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
+    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', print_info=False, only_fitted_columns=True, xfrom=self.x_from, xto=self.x_to)
+    self.active_file_data.fit_object.number_of_points=data_lines
+    self.active_file_data.fit_object.set_fit_constrains()
+    # create the .ent file
+    ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
+    ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
+    ent_file.close()
+    #open a background process for the fit function
+    self.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', 
+                                      self.TEMP_DIR+'fit_temp',self.max_iter)
+    print "fit.f90 program started."
+    if self.active_file_data.fit_object.fit!=1: # if this is not a fit just wait till finished
+      exec_time, stderr_value = self.proc.communicate()
       print "fit.f90 program finished in %.2g seconds." % float(exec_time.splitlines()[-1])
     else:
       self.open_status_dialog(window)
@@ -737,7 +771,7 @@ class ReflectometerGUI:
     '''
     name=layer.SL_selector.get_active_text()
     try:
-      SL=self.fit_object.SCATTERING_LENGTH_DENSITIES[name]
+      SL=self.active_file_data.fit_object.SCATTERING_LENGTH_DENSITIES[name]
       layer.name=name
       delta.set_text(str(SL[0]))
       d_over_b.set_text(str(SL[1]))
@@ -773,8 +807,8 @@ class ReflectometerGUI:
  
 
     #----------------File selection dialog-------------------#
-    self.fit_object=RefFitParameters()
-    self.fit_object.read_params_from_file(file_name)
+    self.active_file_data.fit_object=RefFitParameters()
+    self.active_file_data.fit_object.read_params_from_file(file_name)
     self.dialog_fit(action, window)
     return True
   
@@ -812,11 +846,11 @@ class ReflectometerGUI:
     file_prefix=file_name.rsplit('.ent', 1)[0]
     dataset=self.active_file_data[window.index_mess]
     data_lines=dataset.export(file_prefix+'.res', False, ' ', xfrom=self.x_from, xto=self.x_to)
-    self.fit_object.number_of_points=data_lines
-    self.fit_object.set_fit_constrains()
+    self.active_file_data.fit_object.number_of_points=data_lines
+    self.active_file_data.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(file_prefix+'.ent', 'w')
-    ent_file.write(self.fit_object.get_ent_str(use_roughness_gradient=False)+'\n')
+    ent_file.write(self.active_file_data.fit_object.get_ent_str(use_roughness_gradient=False)+'\n')
     ent_file.close()
     self.call_fit_program(file_prefix+'.ent', file_prefix+'.res', file_prefix, 50, exe=file_prefix+'.o')
     script_file=open(file_prefix+'_run.sh', 'w')
