@@ -13,6 +13,8 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
+# TODO: Check for fortran-compiler to be installed
+
 # import buildin modules
 import os
 import sys

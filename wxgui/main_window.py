@@ -41,9 +41,10 @@ from MyClasses import MyMessageDialog
 
 __author__     = "Artur Glavic"
 __copyright__  = "Copyright 2008-2010"
-__credits__    = []
+__credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
+              'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__    = "None"
-__version__    = "0.7beta1"
+__version__    = "0.7beta4"
 __maintainer__ = "Artur Glavic"
 __email__      = "a.glavic@fz-juelich.de"
 __status__     = "Development"
@@ -420,7 +421,7 @@ class ApplicationMainWindow( wx.Frame ):
      about_info = wx.AboutDialogInfo()
      about_info.SetName( 'Plotting GUI' )
      about_info.SetVersion( 'v%s'%__version__ )
-     about_info.SetDevelopers( ['Artur Glavic'] )
+     about_info.SetDevelopers( [__author__]+__credits__ )
      about_info.SetCopyright( '\302\251 Copyright 2008-2010 Artur Glavic\n a.glavic@fz-juelich.de' )
      about_info.SetWebSite("http://www.fz-juelich.de/iff/Glavic_A/")
      dialog = wx.AboutBox( about_info )
