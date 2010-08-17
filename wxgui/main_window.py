@@ -751,70 +751,42 @@ class ApplicationMainWindow( wx.Frame ):
     self.replot()
 
   def change_range(self,action):
-     '''
-       Change plotting range according to textinput.
-     '''
-     print 'generic.py: Entry change_range'
-     # set the font size
-     try:
-       self.active_session.font_size = float(self.font_size.GetValue())
-       self.replot()
-     except ValueError:
-       self.active_session.font_size=24.
-       self.font_size.SetValue('24')
-       self.replot()
-     # get selected ranges
-     xin = self.x_range_in.GetValue().lstrip('[').rstrip(']').split(':',1)
-     yin = self.y_range_in.GetValue().lstrip('[').rstrip(']').split(':',1)
-     zin = self.z_range_in.GetValue().lstrip('[').rstrip(']').split(':',1)
-     # erase old settings
-     lines_old=self.measurement[self.index_mess].plot_options.split('\n')
-     lines_new=[]
-     for line in lines_old:
-       # remove lines, which contain scaling settings
-       if not ((' autoscale ' in line)|\
-         (' xrange ' in line)|\
-         (' yrange ' in line)|\
-         (' zrange ' in line)|\
-         (' cbrange ' in line)):
-         lines_new.append(line)
-     self.measurement[self.index_mess].plot_options="\n".join(lines_new)
-     # only use settings, if they are valid numbers
-     if (len(xin)==2) and\
-         ((xin[0].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-           (xin[0]==''))&\
-         ((xin[1].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-         (xin[1]=='')):
-       self.x_range='set xrange ['+str(xin[0])+':'+str(xin[1])+']'
-     else:
-       self.x_range='set autoscale x'
-       self.x_range_in.SetValue('')
-     if (len(yin)==2) and\
-         ((yin[0].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-           (yin[0]==''))&\
-         ((yin[1].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-         (yin[1]=='')):
-       self.y_range='set yrange ['+str(yin[0])+':'+str(yin[1])+']'
-     else:
-       self.y_range='set autoscale y'
-       self.y_range_in.SetValue('')
-     if (len(zin)==2) and\
-         ((zin[0].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-           (zin[0]==''))&\
-         ((zin[1].replace('-','').replace('e','').replace('.','',1).isdigit())|\
-         (zin[1]=='')):
-       self.z_range='set zrange ['+str(zin[0])+':'+str(zin[1])+']\nset cbrange ['+str(zin[0])+':'+str(zin[1])+']'
-     else:
-       self.z_range='set autoscale z\nset autoscale cb'
-       self.z_range_in.SetValue('')
-     # add the ranges to the plot options
-     self.measurement[self.index_mess].plot_options=self.measurement[self.index_mess].plot_options+\
-     self.x_range+\
-     '\n'+self.y_range+\
-     '\n'+self.z_range+'\n'
-     self.replot()                                   # plot with new settings
-
-
+    '''
+    Change plotting range according to textinput.
+    '''
+    print 'generic.py: Entry change_range'
+    # set the font size
+    try:
+      self.active_session.font_size = float(self.font_size.GetValue())
+      self.replot()
+    except ValueError:
+      self.active_session.font_size=24.
+      self.font_size.SetValue('24')
+      self.replot()
+    # get selected ranges
+    xin = self.x_range_in.GetValue().lstrip('[').rstrip(']').split(':',1)
+    yin = self.y_range_in.GetValue().lstrip('[').rstrip(']').split(':',1)
+    zin = self.z_range_in.GetValue().lstrip('[').rstrip(']').split(':',1)
+    # erase old settings
+    plot_options=self.measurement[self.index_mess].plot_options
+    if self.active_multiplot:
+      for mp in self.multiplot:
+        for mpi, mpname in mp:
+          if self.measurement[self.index_mess] is mpi:
+            plot_options=mp[0][0].plot_options
+    if len(xin)==2:
+      plot_options.xrange=xin
+    else:
+      plot_options.xrange=[None, None]
+    if len(yin)==2:
+      plot_options.yrange=yin
+    else:
+      plot_options.yrange=[None, None]
+    if len(zin)==2:
+      plot_options.zrange=zin
+    else:
+      plot_options.zrange=[None, None]
+    self.replot() # plot with new settings
 
   def open_plot_options_window(self,action):
      '''
@@ -844,7 +816,7 @@ class ApplicationMainWindow( wx.Frame ):
      table.Add( label2, 0, wx.ALIGN_CENTER, 3)
 
      self.terminal_ps = wx.TextCtrl( self.dialog )
-     self.terminal_ps.SetLabel( gnuplot_preferences.set_output_terminal_ps )
+     self.terminal_ps.ChangeValue( gnuplot_preferences.set_output_terminal_ps )
      table.Add( self.terminal_ps, 0, wx.EXPAND, 3 )
 
      # x-,y- and z-label
@@ -852,17 +824,18 @@ class ApplicationMainWindow( wx.Frame ):
      xlabel       = wx.StaticText( self.dialog )
      self.x_label = wx.TextCtrl( self.dialog )
      xlabel.SetLabel( 'x-label:' )
-     self.x_label.SetLabel( gnuplot_preferences.x_label )
+     self.x_label.ChangeValue( gnuplot_preferences.x_label )
 
      ylabel       = wx.StaticText( self.dialog )
      self.y_label = wx.TextCtrl( self.dialog )
      ylabel.SetLabel( 'y-label:' )
-     self.y_label.SetLabel( gnuplot_preferences.y_label )
+     self.y_label.ChangeValue( gnuplot_preferences.y_label )
 
      zlabel       = wx.StaticText( self.dialog )
      self.z_label = wx.TextCtrl( self.dialog )
      zlabel.SetLabel( 'z-label:' )
-     self.z_label.SetLabel( gnuplot_preferences.z_label )
+     self.z_label.ChangeValue
+     ( gnuplot_preferences.z_label )
 
      hbox.Add( xlabel,       0,  wx.ALL|wx.CENTER,    3 )
      hbox.Add( self.x_label, 1, wx.EXPAND|wx.CENTER, 3 )
@@ -878,7 +851,7 @@ class ApplicationMainWindow( wx.Frame ):
      label3 = wx.StaticText(self.dialog )
      label3.SetLabel('Parameters for normal plot:' )
      self.plotting_parameters = wx.TextCtrl( self.dialog )
-     self.plotting_parameters.SetLabel(gnuplot_preferences.plotting_parameters )
+     self.plotting_parameters.ChangeValue(gnuplot_preferences.plotting_parameters )
      table.Add( label3, 0, wx.ALL|wx.CENTER, 3 )
      table.Add( self.plotting_parameters, 0, wx.EXPAND|wx.CENTER, 3 )
 
@@ -886,7 +859,7 @@ class ApplicationMainWindow( wx.Frame ):
      label4 = wx.StaticText( self.dialog )
      label4.SetLabel( 'Parameters for plot with errorbars:' )
      self.plotting_parameters_errorbars = wx.TextCtrl( self.dialog )
-     self.plotting_parameters_errorbars.SetLabel( gnuplot_preferences.plotting_parameters_errorbars )
+     self.plotting_parameters_errorbars.ChangeValue( gnuplot_preferences.plotting_parameters_errorbars )
      table.Add( label4, 0, wx.ALL|wx.CENTER, 3 )
      table.Add( self.plotting_parameters_errorbars, 0, wx.EXPAND|wx.CENTER, 3 )
 
@@ -898,14 +871,14 @@ class ApplicationMainWindow( wx.Frame ):
      box3d   = wx.BoxSizer( wx.HORIZONTAL )
 
      self.plotting_parameters_3d = wx.TextCtrl( self.dialog )
-     self.plotting_parameters_3d.SetLabel( gnuplot_preferences.plotting_parameters_3d )
+     self.plotting_parameters_3d.ChangeValue( gnuplot_preferences.plotting_parameters_3d )
      box3d.Add( self.plotting_parameters_3d, 1, wx.ALL, 3 )
 
      box3dr   = wx.BoxSizer( wx.VERTICAL )
      self.plotting_settings_3d    = wx.TextCtrl( self.dialog, wx.ID_ANY, style=wx.TE_MULTILINE )
      self.plotting_settings_3dmap = wx.TextCtrl( self.dialog, wx.ID_ANY, style=wx.TE_MULTILINE )
-     self.plotting_settings_3d.SetLabel( gnuplot_preferences.settings_3d )
-     self.plotting_settings_3dmap.SetLabel( gnuplot_preferences.settings_3dmap )
+     self.plotting_settings_3d.ChangeValue( gnuplot_preferences.settings_3d )
+     self.plotting_settings_3dmap.ChangeValue( gnuplot_preferences.settings_3dmap )
      box3dr.Add( self.plotting_settings_3d,    1, wx.ALL|wx.EXPAND, 3 )
      box3dr.Add( self.plotting_settings_3dmap, 1, wx.ALL|wx.EXPAND, 3 )
      box3d.Add( box3dr, 1, wx.ALL, 3 )
@@ -936,7 +909,7 @@ class ApplicationMainWindow( wx.Frame ):
      add_button.Bind( wx.EVT_BUTTON, handler= self.change_plot_options )
      self.dialog.Bind( wx.EVT_CLOSE, handler=self.close_plot_options_window )
 
-     self.dialog.ShowModal(  )
+     self.dialog.Show(  )
      self.plot_options_window_open = True
      
 
