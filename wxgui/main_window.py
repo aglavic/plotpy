@@ -31,6 +31,8 @@ from config import gnuplot_preferences
 from diverse_classes import PlotProfile, RedirectOutput, RedirectError
 import file_actions
 from config.gui import DOWNLOAD_PAGE_URL
+from dialogs import SimpleEntryDialog, PreviewDialog, StatusDialog, ExportFileChooserDialog
+from PrintDatasetDialog import PrintDatasetDialog
 
 
 from MyClasses import MyMessageDialog
@@ -39,10 +41,9 @@ from MyClasses import MyMessageDialog
 
 __author__     = "Artur Glavic"
 __copyright__  = "Copyright 2008-2010"
-__credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
-              'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
+__credits__    = []
 __license__    = "None"
-__version__    = "0.7beta4"
+__version__    = "0.7beta1"
 __maintainer__ = "Artur Glavic"
 __email__      = "a.glavic@fz-juelich.de"
 __status__     = "Development"
@@ -56,6 +57,7 @@ def main_loop(session):
 idShowConfigPath    = wx.ID_HIGHEST + 1
 idOpenConsole       = wx.ID_HIGHEST + 2
 idShowPlotParameter = wx.ID_HIGHEST + 3
+idShowImportInfo    = wx.ID_HIGHEST + 4
 
 idLabel             = wx.ID_HIGHEST + 10
 idLabel2            = wx.ID_HIGHEST + 11
@@ -80,7 +82,15 @@ class ApplicationMainWindow( wx.Frame ):
     Everything the GUI does is in this Class.
   '''
   
-  active_plot_geometry=(800, 600)
+  status_dialog = None
+  garbage       = []
+
+  def get_active_dataset(self):
+    return self.measurement[self.index_mess]
+
+  active_dataset       = property(get_active_dataset)
+  geometry             = ((0,0), (800,600))
+  active_plot_geometry = (780, 550)
   
   #+++++++++++++++++++++++++++++++Window Constructor+++++++++++++++++++++++++++++++++++++#
   def __init__(self, active_session, parent=None, script_suf='', status_dialog=None):
@@ -119,8 +129,9 @@ class ApplicationMainWindow( wx.Frame ):
     self.active_multiplot         = False
     self.plot_options_window_open = False                     # is the dialog window for the plot options active?
     self.bmp             = wx.EmptyBitmap(100,100)
-    errorbars                     = False                     # show errorbars?
-    self.file_actions=file_actions.FileActions(self)
+    errorbars            = False                              # show errorbars?
+    self.active_folder   = os.path.realpath('.')              # For file dialogs to stay in the active directory
+    self.file_actions    = file_actions.FileActions(self)
     if active_session.gnuplot_script:                         # define the plotting function depending on script mode flag
       self.plot = self.splot
     else:
@@ -453,6 +464,16 @@ class ApplicationMainWindow( wx.Frame ):
      # plot the data
      self.replot()
 
+  def remove_active_plot(self, action):
+    '''
+      Remove the active plot from this session.
+    '''
+    if len(self.measurement)>1:
+      self.garbage.append(self.measurement.pop(self.index_mess))
+      self.file_actions.activate_action('iterate_through_measurements', 'Prev')
+      self.replot()
+      print "Plot removed."
+
 
   def change(self, event):
      '''
@@ -642,7 +663,9 @@ class ApplicationMainWindow( wx.Frame ):
      self.plot_page_entry.SetValue(str(int(self.measurement[0].number)))
      self.plot_page_entry.SetMaxLength(len(self.measurement[-1].number))
      for window in self.open_windows:
-       window.Destroy() 
+       window.Destroy()
+
+       
      if getattr(self, 'menu_bar', False):
        self.replot()
        self.rebuild_menus()
@@ -651,7 +674,81 @@ class ApplicationMainWindow( wx.Frame ):
      return file_names
 
 
+  def save_snapshot(self, action, action_name):
+    '''
+      Save a snapshot of the active work.
+    '''
+    print 'main_window.py: entry save_snapshot action_name = ', action_name
+      
+    if action_name == 'SaveSnapshot':
+      name = None
+    else:
+      #++++++++++++++++File selection dialog+++++++++++++++++++#
+      file_dialog = wx.FileDialog(self, message='Save Snapshot to File...',
+                                  style = wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT|wx.FD_CHANGE_DIR )
 
+      file_dialog.SetDirectory(self.active_folder)
+      if sys.platform == 'darwin':
+        file_dialog.SetPath(self.active_session.active_file_name+'.mdd')
+      else:
+        file_dialog.SetFilename(self.active_session.active_file_name+'.mdd')
+        
+      filter  = ''
+      filter += 'Snapshots (*.mdd)|*.mdd'
+      filter += '|All files|*'
+      file_dialog.SetWildcard( filter )
+
+      response = file_dialog.ShowModal()
+      if response == wx.ID_OK:
+        self.active_folder = file_dialog.GetDirectory()
+        name               = file_dialog.GetPath()
+        if not name.endswith(".mdd"):
+          name += ".mdd"
+      elif response == wx.ID_CANCEL:
+        file_dialog.Destroy()
+        return False
+      file_dialog.Destroy()
+      #----------------File selection dialog-------------------#
+
+
+
+    self.active_session.store_snapshot(name)
+  
+  def load_snapshot(self, action, action_name):
+    '''
+      Load a snapshot of earlier work.
+    '''
+    print 'main_window.py: entry load_snapshot action_name = ', action_name
+
+
+    if action_name == 'LoadSnapshot':
+      name = None
+    else:
+      #++++++++++++++++File selection dialog+++++++++++++++++++#
+      file_dialog = wx.FileDialog(self, message='Load Snapshot from File...',
+                                  style = wx.FD_OPEN|wx.FD_FILE_MUST_EXIST|wx.FD_CHANGE_DIR )
+      file_dialog.SetDirectory(self.active_folder)
+      filter  = ''
+      filter += 'Snapshots (*.mdd)|*.mdd'
+      filter += '|All files|*'
+      file_dialog.SetWildcard( filter )
+
+      response = file_dialog.ShowModal()
+      if response == wx.ID_OK:
+        self.active_folder = file_dialog.GetDirectory()
+        name = file_dialog.GetPath()
+        if not name.endswith(".mdd"):
+          name+=".mdd"
+      elif response == wx.ID_CANCEL:
+        file_dialog.Destroy()
+        return False
+      file_dialog.Destroy()
+      #----------------File selection dialog-------------------#
+
+
+    self.active_session.reload_snapshot( name )
+    self.measurement = self.active_session.active_file_data
+    self.replot()
 
   def change_range(self,action):
      '''
@@ -1003,7 +1100,6 @@ class ApplicationMainWindow( wx.Frame ):
      sBoxSizer = wx.StaticBoxSizer( sBox, wx.VERTICAL )
      sw = wx.TextCtrl( param_dialog, wx.ID_ANY, style=wx.ALIGN_LEFT|wx.TE_MULTILINE|wx.TE_READONLY, size=(500,300) )
      sw.SetValue( plot_text )
-#     sw.SetValue( plot_text )
      table.Add(sBoxSizer, 0, wx.ALL|wx.EXPAND, 0)
      sBoxSizer.Add( sw, 0, wx.ALIGN_LEFT|wx.EXPAND )
 
@@ -1026,6 +1122,17 @@ class ApplicationMainWindow( wx.Frame ):
 ##     param_dialog.connect("destroy", lambda *w: self.open_windows.remove(param_dialog))  
      param_dialog.ShowModal()  
      print 'generic.py: Return from show_last_plot_params'
+
+
+  def show_status_dialog(self, action ):
+      '''
+        Show the dialog which holds the file import informations.
+      '''
+      print 'main_window.py: Entry show_status_dialog'
+      if self.status_dialog:
+        self.status_dialog.show_all()
+        
+
 
   def change_data_filter(self,action):
      '''
@@ -1449,8 +1556,49 @@ class ApplicationMainWindow( wx.Frame ):
      self.replot()      
 
 
- 
+  def savitzky_golay( self, action ):
+    '''
+     Filter the dataset with Savitzky_Golay filter.
+    '''
+    print 'main_window.py: Entry savitzky_golay'
+    parameters, result=SimpleEntryDialog(None, 'Savitzky Golay Filter...', 
+                         (('Window Size', 5, int), ('Polynomial Order', 2, int),
+                         ('Maximal Derivative', 1, int))).run()
+#   Rueckgabewert result ist True oder False
 
+    if parameters['Polynomial Order']>parameters['Window Size']-2:
+      parameters['Polynomial Order']=parameters['Window Size']-2
+    if parameters['Maximal Derivative']+1>parameters['Polynomial Order']:
+      parameters['Maximal Derivative']=parameters['Polynomial Order']-1
+    if result:
+      # create a new dataset with the smoothed data and all derivatives till the selected order
+      self.file_actions.activate_action('savitzky_golay', 
+                        parameters['Window Size'], 
+                        parameters['Polynomial Order'], 
+                        parameters['Maximal Derivative']+1)
+      self.rebuild_menus()
+      self.replot()
+
+  def colorcode_points( self, action ):
+    '''
+     Show points colorcoded by their number.
+    '''
+    print 'main_window.py: Entry colorcode_points'
+    global errorbars
+    dataset=self.measurement[self.index_mess]
+    if errorbars:
+      errorbars=False
+    dataset.plot_options.special_plot_parameters="w lines palette"
+    dataset.plot_options.special_using_parameters=":0"   
+    dataset.plot_options.settings['cblabel']=['"Pointnumber"']
+    dataset.plot_options.settings['pm3d']=['map']
+    dataset.plot_options.splot='s'
+    self.replot()
+    dataset.plot_options.special_plot_parameters=None
+    dataset.plot_options.special_using_parameters=""
+    dataset.plot_options.splot=''
+    del(dataset.plot_options.settings['cblabel'])  
+  
 
   
   def extract_cross_section(self, action):
@@ -1816,6 +1964,12 @@ class ApplicationMainWindow( wx.Frame ):
      if (action_name == 'AddAll')&(len(self.measurement)<40): # dont autoadd more than 40
        for i in range(len(self.measurement)):
          self.do_add_multiplot(i)
+     elif (action_name == 'ClearMultiplot'):
+       self.multiplot = []
+       self.active_multiplot = False
+       self.replot()
+       print 'Multiplots cleared.'
+       self.multi_list.SetValue(' Multiplot List: \n' )
      else:
        self.do_add_multiplot(self.index_mess)
 
@@ -1880,236 +2034,523 @@ class ApplicationMainWindow( wx.Frame ):
      self.replot()
      self.statusbar.PushStatusText('Show errorbars='+str(errorbars), 0)
 
-  def export_plot(self, action, action_name): 
-     '''
-       Function for every export action. 
-       Export is made as .png or .ps depending on the selected file name.
-       Save is made as gnuplot file and output files.
-     '''
-     print 'generic.py: Entry export_plot: action_name = ',action_name
-     global errorbars
-     self.active_session.picture_width='1600'
-     self.active_session.picture_height='1200'
-     if action_name == 'MultiPlot':
-       self.active_multiplot=not self.active_multiplot
-       return self.replot()
+##   def export_plot(self, action, action_name): 
+##      '''
+##        Function for every export action. 
+##        Export is made as .png or .ps depending on the selected file name.
+##        Save is made as gnuplot file and output files.
+##      '''
+##      print 'generic.py: Entry export_plot: action_name = ',action_name
+##      global errorbars
+##      self.active_session.picture_width='1600'
+##      self.active_session.picture_height='1200'
+##      if action_name == 'MultiPlot':
+##        if len(self.multiplot)>0:
+##          self.active_multiplot=not self.active_multiplot
+##        else:
+##          self.active_multiplot = False
+         
+##        return self.replot()
 
-     if action_name == 'SaveGPL':
-       #++++++++++++++++File selection dialog+++++++++++++++++++#
-       file_dialog = wx.FileDialog(self, message='Save Gnuplot(.gp) and Datafiles(.out) ...',
-                                    style=wx.FD_SAVE |wx.FD_OVERWRITE_PROMPT )
-       if self.active_multiplot:
-         file_dialog.SetFilename(self.active_session.active_file_name + '_multi_')
-       else:
-         file_dialog.SetFilename(self.active_session.active_file_name + '_')
+##      if action_name == 'SaveGPL':
+##        #++++++++++++++++File selection dialog+++++++++++++++++++#
+##        file_dialog = wx.FileDialog(self, message='Save Gnuplot(.gp) and Datafiles(.out) ...',
+##                                     style=wx.FD_SAVE |wx.FD_OVERWRITE_PROMPT )
+##        if self.active_multiplot:
+##          file_dialog.SetFilename(self.active_session.active_file_name + '_multi_')
+##        else:
+##          file_dialog.SetFilename(self.active_session.active_file_name + '_')
 
-       # create the filters in the file selection dialog
-       filter = ''
-       filter += 'Gnuplot (*.gp)|*.gp'
-       filter += '|All Files|*.*'
-       file_dialog.SetWildcard( filter )
+##        # create the filters in the file selection dialog
+##        filter = ''
+##        filter += 'Gnuplot (*.gp)|*.gp'
+##        filter += '|All Files|*.*'
+##        file_dialog.SetWildcard( filter )
 
-       response = file_dialog.ShowModal()
-       if response != wx.ID_OK:
-         file_dialog.Destroy()
-         return None
+##        response = file_dialog.ShowModal()
+##        if response != wx.ID_OK:
+##          file_dialog.Destroy()
+##          return None
 
-       common_file_prefix = file_dialog.GetFilename().rsplit('.gp', 1)[0]
-       print 'common_file_prefix = ', common_file_prefix
-       file_dialog.Destroy()
-       if self.active_multiplot:
-         for plotlist in self.multiplot:
-           itemlist=[item[0] for item in plotlist]
-           if self.measurement[self.index_mess] in itemlist:
-             plot_text=measurement_data_plotting.create_plot_script(
-                                           self.active_session, 
-                                           [item[0] for item in plotlist], 
-                                           common_file_prefix, 
-                                           '', 
-                                           plotlist[0][0].short_info, 
-                                           [item[0].short_info for item in plotlist], 
-                                           errorbars,
-                                           common_file_prefix + '.png',
-                                           fit_lorentz=False, 
-                                           output_file_prefix=common_file_prefix)
-         file_numbers=[]
-         for j, dataset in enumerate(itemlist):
-           for i, attachedset in enumerate(dataset.plot_together):
-             file_numbers.append(str(j)+'-'+str(i))
-             attachedset.export(common_file_prefix+str(j)+'-'+str(i)+'.out')
-       else:
-         plot_text=measurement_data_plotting.create_plot_script(
-                            self.active_session, 
-                            [self.measurement[self.index_mess]],
-                            common_file_prefix, 
-                            '', 
-                            self.measurement[self.index_mess].short_info,
-                            [object.short_info for object in self.measurement[self.index_mess].plot_together],
-                            errorbars, 
-                            output_file=common_file_prefix + '.png',
-                            fit_lorentz=False, 
-                            output_file_prefix=common_file_prefix)
-         file_numbers=[]
-         j=0
-         dataset=self.measurement[self.index_mess]
-         for i, attachedset in enumerate(dataset.plot_together):
-           file_numbers.append(str(j)+'-'+str(i))
-           attachedset.export(common_file_prefix+str(j)+'-'+str(i)+'.out')
+##        self.active_folder = file_dialog.GetDirectory()
+##        common_folder, common_file_prefix = os.path.split(file_dialog.GetFilename().rsplit('.gp', 1)[0] )
+##        print 'common_file_prefix = ', common_file_prefix
+##        file_dialog.Destroy()
+##        if self.active_multiplot:
+##          for plotlist in self.multiplot:
+##            itemlist=[item[0] for item in plotlist]
+##            if self.measurement[self.index_mess] in itemlist:
+##              plot_text=measurement_data_plotting.create_plot_script(
+##                                            self.active_session, 
+##                                            [item[0] for item in plotlist], 
+##                                            common_file_prefix, 
+##                                            '', 
+##                                            plotlist[0][0].short_info, 
+##                                            [item[0].short_info for item in plotlist], 
+##                                            errorbars,
+##                                            common_file_prefix + '.png',
+##                                            fit_lorentz=False, 
+##                                            output_file_prefix=common_file_prefix)
+##          file_numbers=[]
+##          for j, dataset in enumerate(itemlist):
+##            for i, attachedset in enumerate(dataset.plot_together):
+##              file_numbers.append(str(j)+'-'+str(i))
+##              attachedset.export(common_file_prefix+str(j)+'-'+str(i)+'.out')
+##        else:
+##          plot_text=measurement_data_plotting.create_plot_script(
+##                             self.active_session, 
+##                             [self.measurement[self.index_mess]],
+##                             common_file_prefix, 
+##                             '', 
+##                             self.measurement[self.index_mess].short_info,
+##                             [object.short_info for object in self.measurement[self.index_mess].plot_together],
+##                             errorbars, 
+##                             output_file=common_file_prefix + '.png',
+##                             fit_lorentz=False, 
+##                             output_file_prefix=common_file_prefix)
+##          file_numbers=[]
+##          j=0
+##          dataset=self.measurement[self.index_mess]
+##          for i, attachedset in enumerate(dataset.plot_together):
+##            file_numbers.append(str(j)+'-'+str(i))
+##            attachedset.export(common_file_prefix+str(j)+'-'+str(i)+'.out')
 
-       open(common_file_prefix+'.gp', 'w').write(plot_text+'\n')
-       #----------------File selection dialog-------------------#   
+##        open(common_file_prefix+'.gp', 'w').write(plot_text+'\n')
+##        #----------------File selection dialog-------------------#   
    
-     elif action_name == 'ExportAll':
-       for dataset in self.measurement:
-         self.last_plot_text=self.plot(self.active_session, 
-                                       dataset.plot_together,
-                                       self.input_file_name,
-                                       dataset.short_info,
-                                       [object.short_info for object in dataset.plot_together],
-                                       errorbars,
-                                       fit_lorentz=False)
-         self.reset_statusbar()
-         self.statusbar.PushStatusText('Export plot number '+dataset.number+'... Done!', 0)
+##      elif action_name == 'ExportAll':
+##        for dataset in self.measurement:
+##          self.last_plot_text=self.plot(self.active_session, 
+##                                        dataset.plot_together,
+##                                        self.input_file_name,
+##                                        dataset.short_info,
+##                                        [object.short_info for object in dataset.plot_together],
+##                                        errorbars,
+##                                        fit_lorentz=False)
+##          self.reset_statusbar()
+##          self.statusbar.PushStatusText('Export plot number '+dataset.number+'... Done!', 0)
 
-     elif action_name == 'MultiPlotExport':
-       for plotlist in self.multiplot:
-         #++++++++++++++++File selection dialog+++++++++++++++++++#
+##      elif action_name == 'MultiPlotExport':
+##        for plotlist in self.multiplot:
+##          #++++++++++++++++File selection dialog+++++++++++++++++++#
 
-         file_dialog = wx.FileDialog(self, message='Export multi-plot as ...',
-                                      style=wx.FD_SAVE |wx.FD_OVERWRITE_PROMPT )
-         file_dialog.SetFilename(self.input_file_name + '_multi_'+ \
-                                 plotlist[0][0].number + '.' + self.set_file_type)
-
-
-         # create the filters in the file selection dialog
-         filter = ''
-         filter += 'Images (png/ps)|*.png;*.ps'
-         filter += '|All Files|*.*'
-         file_dialog.SetWildcard( filter )
-
-         # show multiplot on screen before the file is actually selected
-         self.last_plot_text=self.plot(self.active_session, 
-                                       [item[0] for item in plotlist], 
-                                       plotlist[0][1], 
-                                       plotlist[0][0].short_info, 
-                                       [item[0].short_info for item in plotlist], 
-                                       errorbars,
-                                       self.active_session.TEMP_DIR+'plot_temp.png',
-                                       fit_lorentz=False)     
-         self.label.set_width_chars(len('Multiplot title')+5)
-         self.label.set_text('Multiplot title')
-         self.set_image()
-
-         response = file_dialog.ShowModal()
-         if response == wx.ID_OK:
-           multi_file_name=file_dialog.get_filename()
-           self.last_plot_text=self.plot(self.active_session, 
-                                         [item[0] for item in plotlist], 
-                                         plotlist[0][1], 
-                                         plotlist[0][0].short_info, 
-                                         [item[0].short_info for item in plotlist], 
-                                         errorbars,
-                                         multi_file_name,
-                                         fit_lorentz=False)
-           # give user information in Statusbar
-           self.reset_statusbar()
-           self.statusbar.PushStatusText('Export multi-plot ' + multi_file_name + '... Done!', 0)
-         file_dialog.destroy()
-         #----------------File selection dialog-------------------#
-
-     else:
-       new_name=output_file_name
-
-       if action_name == 'ExportAs':
-         #++++++++++++++++File selection dialog+++++++++++++++++++#
-         file_dialog = wx.FileDialog(self, message='Export plot as ...',
-                                     style=wx.FD_SAVE |wx.FD_OVERWRITE_PROMPT )
-         file_dialog.SetFilename(self.input_file_name+'_'+ self.measurement[self.index_mess].number+'.'+self.set_file_type)
-
-         # create the filters in the file selection dialog
-         filter = ''
-         filter += 'Images (png/ps)|*.png;*.ps'
-         filter += '|All Files|*.*'
-         file_dialog.SetWildcard( filter )
-
-         response = file_dialog.ShowModal()
-         if response == wx.ID_OK:
-           new_name = file_dialog.GetFilename()
-         elif response == wx.ID_CANCEL:
-           file_dialog.Destroy()
-           return False
-
-         file_dialog.Destroy()
-       #----------------File selection dialog-------------------#
+##          file_dialog = wx.FileDialog(self, message='Export multi-plot as ...',
+##                                       style=wx.FD_SAVE |wx.FD_OVERWRITE_PROMPT )
+##          file_dialog.SetFilename(self.input_file_name + '_multi_'+ \
+##                                  plotlist[0][0].number + '.' + self.set_file_type)
 
 
-       self.last_plot_text=self.plot(self.active_session, 
-                                     [self.measurement[self.index_mess]], 
-                                     self.input_file_name, 
-                                     self.measurement[self.index_mess].short_info,
-                                     [object.short_info for object in self.measurement[self.index_mess].plot_together],
-                                     errorbars,
-                                     new_name,
-                                     fit_lorentz=False)
-       self.reset_statusbar()
-       self.statusbar.PushStatusText('Export plot number '+self.measurement[self.index_mess].number+'... Done!',0)
+##          # create the filters in the file selection dialog
+##          filter = ''
+##          filter += 'Images (png/ps)|*.png;*.ps'
+##          filter += '|All Files|*.*'
+##          file_dialog.SetWildcard( filter )
 
-  def print_plot(self,action, action_name): 
-     '''
-       Send plot to printer, can also print every plot.
-     '''
-     global errorbars
-     print 'generic.py: Entry print_plot: action_name =  ',action_name
-     print "os.popen2(PRINT_COMMAND+self.active_session.TEMP_DIR+'plot_temp.ps') = ",PRINT_COMMAND+self.active_session.TEMP_DIR+'plot_temp.ps'
-     if action_name == 'Print':
-       term='postscript landscape enhanced colour'
-       self.last_plot_text=self.plot(self.active_session, 
-                                     [self.measurement[self.index_mess]],
-                                     self.input_file_name, 
-                                     self.measurement[self.index_mess].short_info,
-                                     [object.short_info for object in self.measurement[self.index_mess].plot_together],
-                                     errorbars, 
-                                     output_file=self.active_session.TEMP_DIR+'plot_temp.ps',
-                                     fit_lorentz=False)
-       self.reset_statusbar()
-       self.statusbar.PushStatusText('Printed with: '+PRINT_COMMAND, 0)
-       os.popen2(PRINT_COMMAND+self.active_session.TEMP_DIR+'plot_temp.ps')
+##          # show multiplot on screen before the file is actually selected
+##          self.last_plot_text=self.plot(self.active_session, 
+##                                        [item[0] for item in plotlist], 
+##                                        plotlist[0][1], 
+##                                        plotlist[0][0].short_info, 
+##                                        [item[0].short_info for item in plotlist], 
+##                                        errorbars,
+##                                        self.active_session.TEMP_DIR+'plot_temp.png',
+##                                        fit_lorentz=False)     
+##          self.label.set_width_chars(len('Multiplot title')+5)
+##          self.label.set_text('Multiplot title')
+##          self.set_image()
 
-     elif action_name == 'PrintAll':
-       term='postscript landscape enhanced colour'
-       print_string=PRINT_COMMAND
-       for dataset in self.measurement: # combine all plot files in one print statement
-         self.last_plot_text=self.plot(self.active_session, 
-                                       [dataset],
-                                       self.input_file_name,
-                                       dataset.short_info,
-                                       [object.short_info for object in self.measurement[self.index_mess].plot_together],
-                                       errorbars, 
-                                       output_file=self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps',
-                                       fit_lorentz=False)
-         print_string=print_string+self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps '
+##          response = file_dialog.ShowModal()
+##          if response == wx.ID_OK:
+##            multi_file_name=file_dialog.get_filename()
+##            self.last_plot_text=self.plot(self.active_session, 
+##                                          [item[0] for item in plotlist], 
+##                                          plotlist[0][1], 
+##                                          plotlist[0][0].short_info, 
+##                                          [item[0].short_info for item in plotlist], 
+##                                          errorbars,
+##                                          multi_file_name,
+##                                          fit_lorentz=False)
+##            # give user information in Statusbar
+##            self.reset_statusbar()
+##            self.statusbar.PushStatusText('Export multi-plot ' + multi_file_name + '... Done!', 0)
+##          file_dialog.destroy()
+##          #----------------File selection dialog-------------------#
 
-       self.reset_statusbar()
-       self.statusbar.PushStatusText('Printed with: '+PRINT_COMMAND, 0)
-       os.popen2(print_string)
+##      else:
+##        new_name=output_file_name
 
-     # TODO: In the future, setting up propper printing dialog here:
-     #operation=gtk.PrintOperation()
-     #operation.set_job_name('Print SQUID Data Nr.'+str(self.index_mess))
-     #operation.set_n_pages(1)
-     #response=operation.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG)
-     #if response == gtk.PRINT_OPERATION_RESULT_ERROR:
-     #   error_dialog = gtk.MessageDialog(parent,
-     #                                    gtk.DIALOG_DESTROY_WITH_PARENT,
-     #                                    gtk.MESSAGE_ERROR,
-     #                                     gtk.BUTTONS_CLOSE,
-     #                                     "Error printing file:\n")
-     #   error_dialog.connect("response", lambda w,id: w.destroy())
-     #   error_dialog.show()
-     #elif response == gtk.PRINT_OPERATION_RESULT_APPLY:
-     #    settings = operation.get_print_settings()
+##        if action_name == 'ExportAs':
+##          #++++++++++++++++File selection dialog+++++++++++++++++++#
+##          file_dialog = wx.FileDialog(self, message='Export plot as ...',
+##                                      style=wx.FD_SAVE |wx.FD_OVERWRITE_PROMPT )
+##          file_dialog.SetFilename(self.input_file_name+'_'+ self.measurement[self.index_mess].number+'.'+self.set_file_type)
+
+##          # create the filters in the file selection dialog
+##          filter = ''
+##          filter += 'Images (png/ps)|*.png;*.ps'
+##          filter += '|All Files|*.*'
+##          file_dialog.SetWildcard( filter )
+
+##          response = file_dialog.ShowModal()
+##          if response == wx.ID_OK:
+##            new_name = file_dialog.GetFilename()
+##          elif response == wx.ID_CANCEL:
+##            file_dialog.Destroy()
+##            return False
+
+##          file_dialog.Destroy()
+##        #----------------File selection dialog-------------------#
 
 
+##        self.last_plot_text=self.plot(self.active_session, 
+##                                      [self.measurement[self.index_mess]], 
+##                                      self.input_file_name, 
+##                                      self.measurement[self.index_mess].short_info,
+##                                      [object.short_info for object in self.measurement[self.index_mess].plot_together],
+##                                      errorbars,
+##                                      new_name,
+##                                      fit_lorentz=False)
+##        self.reset_statusbar()
+##        self.statusbar.PushStatusText('Export plot number '+self.measurement[self.index_mess].number+'... Done!',0)
+
+  def export_plot(self,action, action_name): 
+    '''
+      Function for every export action. 
+      Export is made as .png or .ps depending on the selected file name.
+      Save is made as gnuplot file and output files.
+    '''
+    global errorbars
+    self.active_session.picture_width='1600'
+    self.active_session.picture_height='1200'
+    if action_name == 'MultiPlot':
+      if len(self.multiplot)>0:
+        self.active_multiplot=not self.active_multiplot
+      else:
+        self.active_multiplot=False
+      return self.replot()
+    if action_name == 'SaveGPL':
+      #++++++++++++++++File selection dialog+++++++++++++++++++#
+      file_dialog = wx.FileDialog(self, message='Save Gnuplot(.gp) and Datafiles(.out)...',
+                                        style=wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT )
+
+      file_dialog.set_current_folder(self.active_folder)
+      if self.active_multiplot:
+        file_dialog.set_current_name(os.path.split(self.active_session.active_file_name + '_multi_')[1])
+      else:
+        file_dialog.set_current_name(os.path.split(self.active_session.active_file_name + '_')[1])
+      # create the filters in the file selection dialog
+      filter = ''
+      filter += 'Gnuplot (*.gp)|*.gp'
+      filter += '|All Files|*.*'
+      file_dialog.SetWildcard( filter )
+
+      # add to checkboxes if the picture should be created and if it should be .ps
+#
+#   Gesonderter Dialog wg. width und height
+#
+      ps_dialog = wx.Dialog(None, wx.ID_ANY, title='Picture as Postscript',
+                            style=wx.RESIZE_BORDER|wx.DEFAULT_DIALOG_STYLE)
+      ps_sizer = wx.BoxSizer( wx.VERTICAL )
+      ps_box   = wx.CheckBox(ps_dialog, wx.ID_ANY, label='Picture as Postscript')
+      ps_sizer.Add( ps_box, 0, wx.EXPAND|wx.ALL, border=3 )
+      pic_box  = wx.CheckBox( ps_dialog, wx.ID_ANY, label='Also create Picture' )
+      ps_box.SetValue( True )
+      pic_box.SetValue( True )
+      ps_dialog.SetSizerAndFit( ps_sizer )
+      ps_dialog.ShowModal()
+      ps_box_val  = ps_box.GetValue()
+      pic_box_val = pic_box.GetValue()
+      ps_dialog.Destroy()
+      
+##       ps_box=gtk.CheckButton('Picture as Postscript', True)
+##       ps_box.show()
+##       pic_box=gtk.CheckButton('Also create Picture', True)
+##       pic_box.set_active(True)
+##       pic_box.show()
+##       file_dialog.vbox.get_children()[-1].pack_start(ps_box, False)
+##       file_dialog.vbox.get_children()[-1].pack_start(pic_box, False)
+##       file_dialog.vbox.get_children()[-1].reorder_child(ps_box, 0)
+##       file_dialog.vbox.get_children()[-1].reorder_child(pic_box, 0)
+#
+#   Ende Gesonderter Dialog wg. width und height
+#
+
+      response = file_dialog.ShowModal()
+      if response != wx.ID_OK:
+        file_dialog.Destroy()
+        return None
+      
+      self.active_folder = file_dialog.GetDirectory()
+      print 'main_window.py: export_plot self.active_folder = ',self.active_folder
+      common_folder, common_file_prefix=os.path.split(file_dialog.GetFilename().rsplit('.gp', 1)[0])
+      if ps_box_val:
+         picture_type='.ps'
+      else:
+         picture_type='.png'
+      
+      file_dialog.Destroy()
+      if self.active_multiplot:
+        for plotlist in self.multiplot:
+          itemlist=[item[0] for item in plotlist]
+          if self.measurement[self.index_mess] in itemlist:
+            plot_text=measurement_data_plotting.create_plot_script(
+                                          self.active_session, 
+                                          [item[0] for item in plotlist], 
+                                          common_file_prefix, 
+                                          '', 
+                                          plotlist.title, 
+                                          [item[0].short_info for item in plotlist], 
+                                          errorbars,
+                                          common_file_prefix + picture_type,
+                                          fit_lorentz=False, 
+                                          output_file_prefix=common_file_prefix, 
+                                          sample_name=plotlist.sample_name)
+        file_numbers=[]
+        for j, dataset in enumerate(itemlist):
+          for i, attachedset in enumerate(dataset.plot_together):
+            file_numbers.append(str(j)+'-'+str(i))
+            attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
+      else:
+        plot_text=measurement_data_plotting.create_plot_script(
+                           self.active_session, 
+                           [self.measurement[self.index_mess]],
+                           common_file_prefix, 
+                           '', 
+                           self.measurement[self.index_mess].short_info,
+                           [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                           errorbars, 
+                           output_file=common_file_prefix + picture_type,
+                           fit_lorentz=False, 
+                           output_file_prefix=common_file_prefix)
+        file_numbers=[]
+        j=0
+        dataset=self.measurement[self.index_mess]
+        for i, attachedset in enumerate(dataset.plot_together):
+          file_numbers.append(str(j)+'-'+str(i))
+          attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
+      write_file=open(os.path.join(common_folder, common_file_prefix+'.gp'), 'w')
+      write_file.write(plot_text+'\n')
+      write_file.close()
+      if pic_box_val:
+        proc=subprocess.Popen([self.active_session.GNUPLOT_COMMAND, 
+                         common_file_prefix+'.gp'], 
+                        shell=False, 
+                        stderr=subprocess.PIPE,
+                        stdout=subprocess.PIPE, 
+                        stdin=subprocess.PIPE, 
+                        cwd=common_folder
+                        )
+      #----------------File selection dialog-------------------#      
+    elif action_name == 'ExportAll':
+      for dataset in self.measurement:
+        self.last_plot_text=self.plot(self.active_session, 
+                                      dataset.plot_together,
+                                      self.input_file_name,
+                                      dataset.short_info,
+                                      [object.short_info for object in dataset.plot_together],
+                                      errorbars,
+                                      fit_lorentz=False)
+        self.reset_statusbar()
+        print 'Export plot number '+dataset.number+'... Done!'
+    elif self.active_multiplot:
+      for plotlist in self.multiplot:
+        if not self.measurement[self.index_mess] in [item[0] for item in plotlist]:
+          continue
+        multi_file_name=plotlist[0][1] + '_multi_'+ plotlist[0][0].number + '.' + self.set_file_type
+        if action_name == 'ExportAs':
+          #++++++++++++++++File selection dialog+++++++++++++++++++#
+          file_dialog=ExportFileChooserDialog(self.active_session.picture_width, 
+                                            self.active_session.picture_height, 
+                                            title='Export multi-plot as...')
+
+          file_dialog.SetFilename(os.path.split(plotlist[0][1] + '_multi_'+ \
+                                       plotlist[0][0].number + '.' + self.set_file_type)[1])
+          file_dialog.SetDirectory(self.active_folder)
+          # create the filters in the file selection dialog
+          filter = ''
+          filter += 'Images (png/ps)|*.png;*.ps'
+          filter += '|All Files|*.*'
+          file_dialog.SetWildcard(filter)
+          response = file_dialog.ShowModal()
+          if response == wx.ID_OK:
+            self.active_folder = file_dialog.GetDirectory()
+            self.active_session.picture_width, self.active_session.picture_height=file_dialog.get_with_height()
+            multi_file_name = file_dialog.GetFilename()
+          file_dialog.Destroy()
+          if response != wx.ID_OK:
+            return
+          #----------------File selection dialog-------------------#
+        self.last_plot_text=self.plot(self.active_session, 
+                                      [item[0] for item in plotlist], 
+                                      plotlist[0][1], 
+                                      #plotlist[0][0].short_info, 
+                                      plotlist.title, 
+                                      [item[0].short_info for item in plotlist], 
+                                      errorbars,
+                                      multi_file_name,
+                                      fit_lorentz=False, 
+                                      sample_name=plotlist.sample_name)     
+        # give user information in Statusbar
+        self.reset_statusbar()
+        print 'Export multi-plot ' + multi_file_name + '... Done!'
+    else:
+      new_name=output_file_name
+      if action_name == 'ExportAs':
+        #++++++++++++++++File selection dialog+++++++++++++++++++#
+        file_dialog = ExportFileChooserDialog(self.active_session.picture_width, 
+                                            self.active_session.picture_height, 
+                                            title='Export plot as...')
+        file_dialog.SetFilename(os.path.split(
+                      self.input_file_name+'_'+ self.measurement[self.index_mess].number+'.'+self.set_file_type)[1])
+        file_dialog.SetDirectory(self.active_folder)
+        filter = ''
+        filter += 'Images (png/ps)|*png;*.ps'
+        filter += '|All Files|*.*'
+        file_dialog.SetWildcard(filter)
+        # get hbox widget for the entries
+        response = file_dialog.ShowModal()
+        if response == wx.ID_OK:
+          self.active_folder = file_dialog.GetDirectory()
+          self.active_session.picture_width, self.active_session.picture_height=file_dialog.get_with_height()
+          new_name = file_dialog.GetFilename()
+        elif response == wx.ID_CANCEL:
+          file_dialog.Destroy()
+          return False
+        file_dialog.Destroy()
+        #----------------File selection dialog-------------------#
+      self.last_plot_text=self.plot(self.active_session, 
+                                    [self.measurement[self.index_mess]], 
+                                    self.input_file_name, 
+                                    self.measurement[self.index_mess].short_info,
+                                    [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                                    errorbars,
+                                    new_name,
+                                    fit_lorentz=False)
+      self.reset_statusbar()
+      print 'Export plot number '+self.measurement[self.index_mess].number+'... Done!'
+
+##   def print_plot(self,action, action_name): 
+##      '''
+##        Send plot to printer, can also print every plot.
+##      '''
+##      global errorbars
+##      print 'generic.py: Entry print_plot: action_name =  ',action_name
+##      print "os.popen2(PRINT_COMMAND+self.active_session.TEMP_DIR+'plot_temp.ps') = ",PRINT_COMMAND+self.active_session.TEMP_DIR+'plot_temp.ps'
+##      if action_name == 'Print':
+##        term='postscript landscape enhanced colour'
+##        self.last_plot_text=self.plot(self.active_session, 
+##                                      [self.measurement[self.index_mess]],
+##                                      self.input_file_name, 
+##                                      self.measurement[self.index_mess].short_info,
+##                                      [object.short_info for object in self.measurement[self.index_mess].plot_together],
+##                                      errorbars, 
+##                                      output_file=self.active_session.TEMP_DIR+'plot_temp.ps',
+##                                      fit_lorentz=False)
+##        self.reset_statusbar()
+##        self.statusbar.PushStatusText('Printed with: '+PRINT_COMMAND, 0)
+##        os.popen2(PRINT_COMMAND+self.active_session.TEMP_DIR+'plot_temp.ps')
+
+##      elif action_name == 'PrintAll':
+##        term='postscript landscape enhanced colour'
+##        print_string=PRINT_COMMAND
+##        for dataset in self.measurement: # combine all plot files in one print statement
+##          self.last_plot_text=self.plot(self.active_session, 
+##                                        [dataset],
+##                                        self.input_file_name,
+##                                        dataset.short_info,
+##                                        [object.short_info for object in self.measurement[self.index_mess].plot_together],
+##                                        errorbars, 
+##                                        output_file=self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps',
+##                                        fit_lorentz=False)
+##          print_string=print_string+self.active_session.TEMP_DIR+'plot_temp_'+dataset.number+'.ps '
+
+##        self.reset_statusbar()
+##        self.statusbar.PushStatusText('Printed with: '+PRINT_COMMAND, 0)
+##        os.popen2(print_string)
+
+##      # TODO: In the future, setting up propper printing dialog here:
+##      #operation=gtk.PrintOperation()
+##      #operation.set_job_name('Print SQUID Data Nr.'+str(self.index_mess))
+##      #operation.set_n_pages(1)
+##      #response=operation.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG)
+##      #if response == gtk.PRINT_OPERATION_RESULT_ERROR:
+##      #   error_dialog = gtk.MessageDialog(parent,
+##      #                                    gtk.DIALOG_DESTROY_WITH_PARENT,
+##      #                                    gtk.MESSAGE_ERROR,
+##      #                                     gtk.BUTTONS_CLOSE,
+##      #                                     "Error printing file:\n")
+##      #   error_dialog.connect("response", lambda w,id: w.destroy())
+##      #   error_dialog.show()
+##      #elif response == gtk.PRINT_OPERATION_RESULT_APPLY:
+##      #    settings = operation.get_print_settings()
+
+  def print_plot(self, action, action_name):
+    '''
+     Dummy function for systems not supported for printing.
+    '''
+    message = wx.MessageDialog(self, 
+                                  'Sorry, Printing is not supported!',
+                                  'Information',
+                                  wx.OK|wx.ICON_INFORMATION|wx.STAY_ON_TOP)
+    message.ShowModal()
+    message.Destroy()
+
+  def print_plot_dialog( self, action, action_name ):
+
+    print 'mainw_window.py: Entry print_plot_dialog: action_name           = ', action_name
+    print 'mainw_window.py: Entry print_plot_dialog: self.active_multiplot = ', self.active_multiplot
+
+    prt      = wx.Printer(  )
+    if action_name == 'PrintAll':
+
+      dialog = PreviewDialog(self, self.active_session.file_data,
+                             title='Select Plots for Printing...',
+                             buttons=('OK', 1, 'Cancel', 0),
+                             style = wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.STAY_ON_TOP
+                             )
+      dialog.SetSize( wx.Size(800,600) )
+      dialog.set_preview_parameters( self.plot, self.active_session,
+                                     self.active_session.TEMP_DIR+'plot_temp.png' )
+      result = dialog.run()
+      print 'main_window.py: print_plot_dialog Preview result = ', result
+      if result == 1:
+        plot_list = dialog.get_active_objects()
+        dialog.Destroy()
+        prt_out = PrintDatasetDialog( plot_list, self )
+        print  'nach prt_out =', prt_out
+        rc      = prt.Print( self, prt_out, True )
+        print 'rc = ', rc
+      else:
+        dialog.Destroy()
+
+    else:                                    # else if action_name
+
+      if self.active_multiplot:
+         print 'self.active_multiplot  ist true'
+         for plotlist in self.multiplot:
+            itemlist = [item[0] for item in plotlist]
+            if self.measurement[self.index_mess] in itemlist:
+               prt_out = PrintDatasetDialog( plotlist, self,  multiplot=True )
+               rc      = prt.Print( self, prt_out, True )
+               print 'rc = ', rc
+
+      else:                                  # else self.active.multi_plot
+         print 'self.active_multiplot  ist false'
+         measurements = [self.measurement[self.index_mess]]
+         prt_out  = PrintDatasetDialog( measurements, self) 
+         print 'vor prt.Print'
+         rc = prt.Print( self, prt_out, True )
+         print 'rc = ', rc
+         last_err = prt.GetLastError()
+         print 'last_err             = ', last_err
+         print 'wx.PRINTER_NO_ERROR  = ',wx.PRINTER_NO_ERROR
+         print 'wx.PRINTER_CANCELLED = ',wx.PRINTER_CANCELLED
+         print 'wx.PRINTER_ERROR     = ',wx.PRINTER_ERROR
+
+  #=============================
+  print_plot = print_plot_dialog
+  #=============================
+    
   def run_action_makro(self, action):
      '''
        Execute a list of actions as a makro.
@@ -2406,7 +2847,8 @@ class ApplicationMainWindow( wx.Frame ):
 
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
-             with_errorbars, output_file=gnuplot_preferences.output_file_name, fit_lorentz=False):
+             with_errorbars, output_file=gnuplot_preferences.output_file_name, fit_lorentz=False,
+             sample_name=None, show_persistent=False):
      '''
        Plot via script file instead of using python gnuplot pipeing.
 44      
@@ -2421,7 +2863,54 @@ class ApplicationMainWindow( wx.Frame ):
                                                           names,
                                                           with_errorbars,
                                                           output_file,
-                                                          fit_lorentz=False)
+                                                          fit_lorentz=False,
+                                                          sample_name=sample_name,
+                                                          show_persistent=show_persistent)
+
+
+
+  def plot_persistent(self, action=None):
+    '''
+      Open a persistent gnuplot window.
+    '''
+    print 'main_window.py: Entry plot_persistent'
+    global errorbars
+    i=0
+    if self.active_multiplot:
+      for plotlist in self.multiplot:
+        itemlist=[item[0] for item in plotlist]
+        if self.measurement[self.index_mess] in itemlist:
+          self.last_plot_text=self.plot(self.active_session,
+                                        [item[0] for item in plotlist],
+                                        plotlist[0][1],
+                                        #plotlist[0][0].short_info,
+                                        plotlist.title, 
+                                        [item[0].short_info for item in plotlist],
+                                        errorbars,
+                                        self.active_session.TEMP_DIR+'plot_temp.png',
+                                        fit_lorentz=False, 
+                                        sample_name=plotlist.sample_name, 
+                                        show_persistent=True)
+    else:
+      self.label.SetMaxLength(min(len(self.measurement[self.index_mess].sample_name)+5, 
+                                                          45))
+      self.label.SetValue(self.measurement[self.index_mess].sample_name)
+      self.label2.SetMaxLength(min(len(self.measurement[self.index_mess].short_info)+5, 
+                                                           45))
+      self.label2.SetValue(self.measurement[self.index_mess].short_info)
+      self.last_plot_text=self.plot(self.active_session,
+                                  [self.measurement[self.index_mess]],
+                                  self.input_file_name,
+                                  self.measurement[self.index_mess].short_info,
+                                  [object.short_info for object in self.measurement[self.index_mess].plot_together],
+                                  errorbars, 
+                                  output_file=self.active_session.TEMP_DIR+'plot_temp.png',
+                                  fit_lorentz=False, 
+                                  show_persistent=True)
+    if self.last_plot_text!='':
+      print 'Gnuplot error!'
+      self.show_last_plot_params(None)
+
 
   def replot(self, action=None): 
      '''
@@ -2490,7 +2979,7 @@ class ApplicationMainWindow( wx.Frame ):
      '''
        Clear the statusbar.
      '''
-     self.statusbar.PopStatusText(0)
+     self.statusbar.PopStatusText( )
      self.statusbar.PushStatusText('',0)
 
 ##   #--------------Functions for displaying graphs plotting and status infos---------------#
@@ -2873,7 +3362,7 @@ class ApplicationMainWindow( wx.Frame ):
 #   4. Bindings neu bilden 
 #   5. neu ids und action in action_dict eintragen
 
-    title = 'Change active file'
+    title = 'Change'
     pos   = self.menu_bar.FindMenu( title )
 
     if pos != wx.NOT_FOUND:
@@ -2896,92 +3385,103 @@ class ApplicationMainWindow( wx.Frame ):
       wxm.Destroy()
 
     else:
-      print '!!!!!!!!!!! menubar item not found !!!!!!!!!!'
+      print '!!!!!!!!!!! menubar item Change not found !!!!!!!!!!'
 
-#   update menu 'x-axes'
-    title = '&x-axes'
-    pos   = self.menu_bar.FindMenu( title )
-    if pos != wx.NOT_FOUND:
+#   update submenu '&Axes' in menu '&View'
+    title1 = '&View'
+    title2 = '&Axes'
+    axesFound  = self.menu_bar.FindMenuItem( title1, title2 )
+    print 'found = ', axesFound
 
-      id_list =  [item.GetId() for item in self.menuXAxes.GetMenuItems()]
-      print 'id_list = ', id_list
-      print 'self.action_dict = ',self.action_dict
-      for item in id_list:
-        print 'del item ',item
-        del self.action_dict[item]
+    
+    if axesFound != wx.NOT_FOUND:
 
-      self.menuXAxes = wx.Menu()
-      id = self.menuXAxes.Append(wx.ID_ANY, 'Point Number', 'Point Number').GetId()
-      self.Bind(wx.EVT_MENU, self.change, id=id)
-      self.action_dict[id] = 'x-number'
-      print 'append item ',id
+#     update submenu 'x-axes' in menu '&View->Axes'
+      title = '&x-axes'
+      pos   = self.menuAxes.FindItem( title )
+      print 'pos x axes = ', pos
+      if pos != wx.NOT_FOUND:
 
-      for dimension in self.measurement[self.index_mess].dimensions():
+        id_list =  [item.GetId() for item in self.menuXAxes.GetMenuItems()]
+        print 'id_list = ', id_list
+        print 'self.action_dict = ',self.action_dict
+        for item in id_list:
+          print 'del item ',item
+          del self.action_dict[item]
+          self.menuXAxes.Delete( item)
+        
+        id = self.menuXAxes.Append(wx.ID_ANY, 'Point Number', 'Point Number').GetId()
+        self.Bind(wx.EVT_MENU, self.change, id=id)
+        self.action_dict[id] = 'x-number'
+        print 'append item ',id
+
+        for dimension in self.measurement[self.index_mess].dimensions():
           output = dimension
           id = self.menuXAxes.Append( wx.ID_ANY, output, output ).GetId()
           self.Bind(wx.EVT_MENU, self.change, id=id)
           self.action_dict[id] = 'x-'+output
           print 'append item ',id
 
-      wxm = self.menu_bar.Replace(pos, self.menuXAxes, title )
-      wxm.Destroy()
-
-    else:
-      print '!!!!!!!!!!! menubar item not found !!!!!!!!!!'
+#        self.menuXAxes.Append( wx.ID_ANY, 'X Aenderungstest ', 'jjj' )
 
 
-#   update menu 'y-axes'
-    title = '&y-axes'
-    pos  = self.menu_bar.FindMenu( title )
-    if pos != wx.NOT_FOUND:
+      else:
+        print '!!!!!!!!!!! menubar item x-axes not found !!!!!!!!!!'
 
-      id_list =  [item.GetId() for item in self.menuYAxes.GetMenuItems()]
-      print 'id_list = ', id_list
-      for item in id_list:
-        print 'del item ',item
-        del self.action_dict[item]
 
-      self.menuYAxes = wx.Menu()
-      id = self.menuYAxes.Append(wx.ID_ANY, 'Point Number', 'Point Number').GetId()
-      self.Bind(wx.EVT_MENU, self.change, id=id)
-      self.action_dict[id] = 'x-number'
-      print 'append item ',id
+#     update submenu 'y-axes' in menu '&View->Axes'
 
-      for dimension in self.measurement[self.index_mess].dimensions():
+      title = '&y-axes'
+      pos   = self.menuAxes.FindItem( title )
+      if pos != wx.NOT_FOUND:
+
+        id_list =  [item.GetId() for item in self.menuYAxes.GetMenuItems()]
+        print 'id_list = ', id_list
+        for item in id_list:
+          print 'del item ',item
+          del self.action_dict[item]
+          self.menuYAxes.Delete( item)
+
+        id = self.menuYAxes.Append(wx.ID_ANY, 'Point Number', 'Point Number').GetId()
+        self.Bind(wx.EVT_MENU, self.change, id=id)
+        self.action_dict[id] = 'x-number'
+        print 'append item ',id
+
+        for dimension in self.measurement[self.index_mess].dimensions():
           output = dimension
           id = self.menuYAxes.Append( wx.ID_ANY, output, output ).GetId()
           self.Bind(wx.EVT_MENU, self.change, id=id)
           self.action_dict[id] = 'y-'+output
           print 'append item ',id
 
-      wxm = self.menu_bar.Replace(pos, self.menuYAxes, title )
-      wxm.Destroy()
+#        self.menuYAxes.Append( wx.ID_ANY, 'Y Aenderungstest ', 'jjj' )
 
-    else:
-      print '!!!!!!!!!!! item not found !!!!!!!!!!'
+      else:
+        print '!!!!!!!!!!! menu item y-axes not found !!!!!!!!!!'
 
 
-#   update menu 'z-axes'
-    title = '&z-axes'
-    pos   = self.menu_bar.FindMenu( title )
-    if pos != wx.NOT_FOUND:
+#     update submenu 'z-axes' in menu '&View->Axes'
 
-      id_list =  [item.GetId() for item in self.menuZAxes.GetMenuItems()]
-      print 'id_list = ', id_list
-      for item in id_list:
-        print 'del item ',item
-        del self.action_dict[item]
+      title = '&z-axes'
+      pos   = self.menuAxes.FindItem( title )
+      if pos != wx.NOT_FOUND:
 
-      self.menuZAxes = wx.Menu()
-      id = self.menuZAxes.Append(wx.ID_ANY, 'Point Number',
+        id_list =  [item.GetId() for item in self.menuZAxes.GetMenuItems()]
+        print 'id_list = ', id_list
+        for item in id_list:
+          print 'del item ',item
+          del self.action_dict[item]
+          self.menuZAxes.Delete( item)
+
+        id = self.menuZAxes.Append(wx.ID_ANY, 'Point Number',
                            'Point Number').GetId()
-      self.Bind( wx.EVT_MENU, self.change, id=id )
-      self.action_dict[id] = 'z-number'
-      print 'append item ',id
-      if self.measurement[self.index_mess].zdata<0:
-         self.menuZAxes.Enable(id, False)
+        self.Bind( wx.EVT_MENU, self.change, id=id )
+        self.action_dict[id] = 'z-number'
+        print 'append item ',id
+        if self.measurement[self.index_mess].zdata<0:
+           self.menuZAxes.Enable(id, False)
 
-      for dimension in self.measurement[self.index_mess].dimensions():
+        for dimension in self.measurement[self.index_mess].dimensions():
           output = dimension
           id = self.menuZAxes.Append(wx.ID_ANY, output, 
                               output).GetId()
@@ -2992,26 +3492,27 @@ class ApplicationMainWindow( wx.Frame ):
 
           print 'append item ',id
 
-      wxm = self.menu_bar.Replace(pos, self.menuZAxes, title )
-      wxm.Destroy()
-
-    else:
-      print '!!!!!!!!!!! menubar item not found !!!!!!!!!!'
+#        self.menuZAxes.Append( wx.ID_ANY, 'Z Aenderungstest ', 'jjj' )
 
 
-#   update menu 'y-error'
-    title = 'y-&error'
-    pos  = self.menu_bar.FindMenu( title )
-    if pos != wx.NOT_FOUND:
+      else:
+        print '!!!!!!!!!!! menubar item z-axes not found !!!!!!!!!!'
 
-      id_list =  [item.GetId() for item in self.menuYError.GetMenuItems()]
-      print 'id_list = ', id_list
-      for item in id_list:
-        print 'del item ',item
-        del self.action_dict[item]
 
-      self.menuYError = wx.Menu()
-      for dimension in self.measurement[self.index_mess].dimensions():
+#     update submenu 'y-&error' in menu '&View->Axes'
+
+      title = 'y-&error'
+      pos   = self.menuAxes.FindItem( title )
+      if pos != wx.NOT_FOUND:
+
+        id_list =  [item.GetId() for item in self.menuYError.GetMenuItems()]
+        print 'id_list = ', id_list
+        for item in id_list:
+          print 'del item ',item
+          del self.action_dict[item]
+          self.menuYError.Delete( item)
+
+        for dimension in self.measurement[self.index_mess].dimensions():
           output = dimension
           id = self.menuYError.Append(wx.ID_ANY, output, 
                               output).GetId()
@@ -3019,37 +3520,44 @@ class ApplicationMainWindow( wx.Frame ):
           self.action_dict[id] = 'dy-'+output
           print 'append item ',id
 
-      wxm = self.menu_bar.Replace(pos, self.menuYError, title )
-      wxm.Destroy()
+#        self.menuYError.Append( wx.ID_ANY, 'error Aenderungstest ', 'jjj' )
+
+      else:
+        print '!!!!!!!!!!! menubar item y-error not found !!!!!!!!!!'
+
+#     Ende  if axesFound != wx.NOT_FOUND:
+
+#   update Submenu 'Profiles' in 'View
+    title1 = '&View'
+    title2 = '&Profiles'
+    found  = self.menu_bar.FindMenuItem( title1, title2 )
+    print 'found = ', found
+
+    if found != wx.NOT_FOUND:
+        id_list =  [item.GetId() for item in self.menuProfile.GetMenuItems()]
+        print 'id_list = ', id_list
+        for item in id_list:
+          print 'del item ',item
+          self.menuProfile.Delete( item)
+
+        if pos != wx.NOT_FOUND:
+ 
+          self.menuProfile.AppendSeparator()
+          id = self.menuProfile.Append(wx.ID_ANY, 'Save Profile',
+                                        'Save Profile').GetId()
+          self.Bind(wx.EVT_MENU, self.save_profile, id=id)
+
+          id = self.menuProfile.Append(wx.ID_ANY, 'Delete Profile',
+                                        'Delete Profile').GetId()
+          self.Bind(wx.EVT_MENU, self.delete_profile, id=id)
+
+          for name in sorted(self.profiles.items()):
+            id = self.menuProfile.Insert(0, wx.ID_ANY, name[0] )
 
     else:
-      print '!!!!!!!!!!! menubar item not found !!!!!!!!!!'
+      print '!!!!!!!!!!! menub Profiles in View not found !!!!!!!!!!'
 
-
-#   update menu 'Profiles'
-    title = '&Profiles'
-    pos   = self.menu_bar.FindMenu( title )
-    if pos != wx.NOT_FOUND:
-
-      self.menuProfile = wx.Menu()
-      self.menuProfile.AppendSeparator()
-      id = self.menuProfile.Append(wx.ID_ANY, 'Save Profile',
-                                    'Save Profile').GetId()
-      self.Bind(wx.EVT_MENU, self.save_profile, id=id)
-
-      id = self.menuProfile.Append(wx.ID_ANY, 'Delete Profile',
-                                    'Delete Profile').GetId()
-      self.Bind(wx.EVT_MENU, self.delete_profile, id=id)
-
-      for name in sorted(self.profiles.items()):
-          id = self.menuProfile.Insert(0, wx.ID_ANY, name[0] )
-
-      wxm = self.menu_bar.Replace(pos, self.menuProfile, title )
-      wxm.Destroy()
-
-    else:
-      print '!!!!!!!!!!! menubar item not found !!!!!!!!!!'
-
+#     Ende  if found != wx.NOT_FOUND:
 #   next menu item ...
 
 
@@ -3069,6 +3577,7 @@ class ApplicationMainWindow( wx.Frame ):
   def create_statusBar(self):
       print 'Entry create_statusBar'
       self.statusbar = self.CreateStatusBar()
+      self.statusbar.PushStatusText('')            # wg. MAC: sonst Fehler bei reset_statusbar
 
   def create_menuBar(self):
       print 'Entry create_menuBar'
@@ -3078,24 +3587,47 @@ class ApplicationMainWindow( wx.Frame ):
 #     File Menu
       menuFile = wx.Menu()
 #                                               Dieser text erscheint in derr statusBar
-      menuFile.Append(wx.ID_OPEN, '&Open file', 'Open a file') 
+      menuFile.Append(wx.ID_OPEN, '&Open file\tCtrl-O', 'Open a file') 
       self.Bind(wx.EVT_MENU, self.add_file, id=wx.ID_OPEN )
 
 
-      id = menuFile.Append(wx.ID_ANY, '&Save this dataset (.out)...',
+      id = menuFile.Append(wx.ID_ANY, '&Save this dataset (.out)...\tCtrl-S',
                                   'Save this dataset as *.out' ).GetId()
       self.Bind( wx.EVT_MENU, id=id,
                  handler=lambda evt, arg1='SaveGPL': 
                          self.export_plot(evt, arg1) )
+      
+      # submenu Snapshots
+      menuSnapshot = wx.Menu()
+
+      id = menuSnapshot.Append( wx.ID_SAVE, 'Save Snapshot\tShift+Ctrl+S', 'Save Snapshot ...').GetId()
+      self.Bind( wx.EVT_MENU, id = id,
+                 handler = lambda evt, arg1='SaveSnapshot':
+                           self.save_snapshot(evt, arg1 ) )
+      id = menuSnapshot.Append( wx.ID_ANY, 'Save Snapshot As', 'Save Snapshot as...').GetId()
+      self.Bind( wx.EVT_MENU, id = id,
+                 handler = lambda evt, arg1='SaveSnapshotAs':
+                           self.save_snapshot(evt, arg1 ) )
+      id = menuSnapshot.Append( wx.ID_ANY, 'Load Snapshot\tShift+Ctrl+O', 'Load Snapshot ...').GetId()
+      self.Bind( wx.EVT_MENU, id = id,
+                 handler = lambda evt, arg1='LoadSnapshot':
+                           self.load_snapshot(evt, arg1 ) )
+      id = menuSnapshot.Append( wx.ID_ANY, 'Load Snapshot From\tCtrl+O', 'Load Snapshot from...').GetId()
+      self.Bind( wx.EVT_MENU, id = id,
+                 handler = lambda evt, arg1='LoadSnapshotFrom':
+                           self.load_snapshot(evt, arg1 ) )
+        
+      menuFile.AppendSubMenu(menuSnapshot, 'Snapshots', 'Save/Load snapshots ...')
+
 
       menuFile.AppendSeparator()
-      id = menuFile.Append(wx.ID_ANY, '&Export (.png)',
+      id = menuFile.Append(wx.ID_ANY, '&Export (.png)\tCtrl+E',
                                   'Export as *.png').GetId()
       self.Bind( wx.EVT_MENU, id = id,
                  handler=lambda evt, arg1='Export':
                          self.export_plot(evt, arg1) )
 
-      id = menuFile.Append(wx.ID_ANY, 'E&xport As (.png/.ps)',
+      id = menuFile.Append(wx.ID_ANY, 'E&xport As (.png/.ps)\tShift+Ctrl+E',
                                   'Export as *.png or *.ps').GetId()
       self.Bind( wx.EVT_MENU, id = id,
                  handler=lambda evt, arg1='ExportAs':
@@ -3116,113 +3648,44 @@ class ApplicationMainWindow( wx.Frame ):
 
       menuFile.AppendSeparator()
 
-      id = menuFile.Append(wx.ID_PRINT, '&Print...',
+      id = menuFile.Append(wx.ID_PRINT, '&Print...\tCtrl+P',
                                    'Print').GetId()
       self.Bind( wx.EVT_MENU, id=id,
                  handler=lambda evt, arg1='Print': 
                          self.print_plot(evt, arg1) )
 
-      id = menuFile.Append(wx.ID_ANY, 'Print All Plots...',
+      id = menuFile.Append(wx.ID_ANY, 'Print Selection ...\tShift+Ctrl+P',
                                     'Print all plots' ).GetId()
       self.Bind( wx.EVT_MENU, id=id,
                  handler=lambda evt, arg1='PrintAll': 
                          self.print_plot(evt, arg1) )
 
       menuFile.AppendSeparator()
-      menuFile.Append(wx.ID_EXIT, '&Quit', 'Quit this program')
+      menuFile.Append(wx.ID_EXIT, '&Quit\tCtrl+Q', 'Quit this program')
       self.Bind(wx.EVT_MENU, self.OnExit,   id=wx.ID_EXIT )
 
       mb.Append(menuFile, '&File')
 
 
-#     Action Menu
-#     Stichwort "stock items"
-      menuAction = wx.Menu()
+#     change active File
+      self.menuChangeActFile = wx.Menu()
+      for i, name in enumerate( [object[0] for object in sorted(self.active_session.file_data.items())] ):
+#          output = unicode(name, 'utf-8' )
+          output = name
+          id = self.menuChangeActFile.Append( wx.ID_ANY, output, output ).GetId()
+          self.Bind(wx.EVT_MENU, self.change_active_file, id=id)
+          self.action_dict[id] = 'File-'+str(i)
 
-      menuAction.Append( wx.ID_FORWARD, '&Next',
-                                     'Next')   
-      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=wx.ID_FORWARD )
-      self.action_dict[wx.ID_FORWARD] = 'Next'
-
-      menuAction.Append( wx.ID_BACKWARD, 'Prev', 
-                                   'Previous')
-      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=wx.ID_BACKWARD )
-      self.action_dict[wx.ID_BACKWARD] = 'Prev'
-
-      id = menuAction.Append( wx.ID_ANY, '&First', 
-                                     'First').GetId()
-      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id )
-      self.action_dict[id] = 'First'
-
-      id = menuAction.Append( wx.ID_ANY, 'Last', 
-                                   'Last').GetId()
-      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id )
-      self.action_dict[id] = 'Last'
-
-      menuAction.AppendSeparator()
-
-      id = menuAction.Append(wx.ID_ADD, '&Add', 
-                                   'Add' ).GetId()
-      self.Bind( wx.EVT_MENU, id = id,
-                 handler=lambda evt, arg1='AddMulti': self.add_multiplot(evt, arg1) )
-
-      id = menuAction.Append(wx.ID_ANY, 'Add all to Multiplot', 
-                                   'Add all to Multiplot' ).GetId()
-      self.Bind( wx.EVT_MENU, id = id,
-                 handler=lambda evt, arg1='AddAll': self.add_multiplot(evt, arg1) )
- 
-      menuAction.AppendSeparator()
-
-      id = menuAction.Append(wx.ID_ANY, '&Fit data...', 
-                                   'Fit data' ).GetId()
-      self.Bind( wx.EVT_MENU, self.fit_dialog, id=id)
+      mb.Append(self.menuChangeActFile, 'Change' )
 
 
-      menuAction.AppendSeparator()
-      id = menuAction.Append( wx.ID_ANY, 'Filter the data points', 
-                             'Filter the data points' ).GetId()
-      self.Bind( wx.EVT_MENU, self.change_data_filter , id=id)
- 
-      id = menuAction.Append(wx.ID_ANY, 'Transform the Units/Dimensions',
-                                   'Transform the Units/Dimensions' ).GetId()
-      self.Bind( wx.EVT_MENU, self.unit_transformation, id=id )
+#     View Menu
+      self.menuView = wx.Menu()
 
+#     Axes Sub-Menu
+      self.menuAxes = wx.Menu()
 
-      if self.measurement[self.index_mess].zdata>0:
-        #3D
-        id = menuAction.Append( wx.ID_ANY, 'Cross-Section',
-                                           'Cross section').GetId()
-        self.Bind( wx.EVT_MENU, self.extract_cross_section, id=id)
-        id = menuAction.Append( wx.ID_ANY, 'Color Pattern ...',
-                                           'color pattern').GetId()
-        self.Bind( wx.EVT_MENU, self.change_color_pattern, id=id)
-
-      else:
-        # 2D
-        id = menuAction.Append(wx.ID_ANY, 'Combine points',
-                                   'Combine points').GetId()
-        self.Bind( wx.EVT_MENU, self.combine_data_points, id=id)
-
-
-      menuAction.AppendSeparator()
-      menuAction.Append(idShowPlotParameter, 'Show plot parameters',
-                                   'Show plot parameters' )
-      wx.EVT_MENU( self, idShowPlotParameter, self.show_last_plot_params )
-
-
-
-      id = menuAction.Append(wx.ID_ANY, 'Run Makro...',
-                                   'Run Makro' ).GetId()
-      self.Bind( wx.EVT_MENU, id=id,
-                              handler=self.run_action_makro )
-      id = menuAction.Append(wx.ID_ANY, 'Run Last Makro',
-                                   'Run Last Makro' ).GetId()
-      self.Bind( wx.EVT_MENU, id=id,
-                              handler=self.run_last_action_makro )
-
-      mb.Append(menuAction, 'A&ction')
-
-#     x-axes Menu
+#     x-axes Sub-Menu
       self.menuXAxes = wx.Menu()
       id = self.menuXAxes.Append(wx.ID_ANY, 'Point Number',
                            'Point Number').GetId()
@@ -3237,9 +3700,10 @@ class ApplicationMainWindow( wx.Frame ):
           self.Bind( wx.EVT_MENU, self.change, id=id )
           self.action_dict[id] = 'x-'+output
 
-      mb.Append(self.menuXAxes, '&x-axes')
+      self.menuAxes.AppendSubMenu(self.menuXAxes, '&x-axes' )
        
-#     y-axes Menu
+
+#     y-axes Sub-Menu
       self.menuYAxes = wx.Menu()
 
       id = self.menuYAxes.Append(wx.ID_ANY, 'Point Number',
@@ -3254,9 +3718,9 @@ class ApplicationMainWindow( wx.Frame ):
           self.Bind( wx.EVT_MENU, self.change, id=id )
           self.action_dict[id] = 'y-'+output
 
-      mb.Append(self.menuYAxes, '&y-axes')
+      self.menuAxes.AppendSubMenu(self.menuYAxes, '&y-axes' )
 
-#     z-axis Menu
+#     z-axis Sub-Menu
       self.menuZAxes = wx.Menu()
       id = self.menuZAxes.Append(wx.ID_ANY, 'Point Number',
                            'Point Number').GetId()
@@ -3273,11 +3737,10 @@ class ApplicationMainWindow( wx.Frame ):
           self.action_dict[id] = 'z-'+output
           if self.measurement[self.index_mess].zdata<0:
              self.menuZAxes.Enable(id, False)
-      mb.Append(self.menuZAxes, '&z-axes')
+      self.menuAxes.AppendSubMenu(self.menuZAxes, '&z-axes')
+    
 
-
-
-#     y-error Menu
+#     y-error Sub-Menu
       self.menuYError = wx.Menu()
 
       for dimension in self.measurement[self.index_mess].dimensions():
@@ -3287,10 +3750,12 @@ class ApplicationMainWindow( wx.Frame ):
           self.Bind( wx.EVT_MENU, self.change, id=id )
           self.action_dict[id] = 'dy-'+output
 
-      mb.Append(self.menuYError, 'y-&error')
+      self.menuAxes.AppendSubMenu(self.menuYError, 'y-&error')
+
+      self.menuView.AppendSubMenu(self.menuAxes, '&Axes')
 
  
-#     profiles Menu
+#     profiles Sub-Menu
       self.menuProfile = wx.Menu()
       
       self.menuProfile.AppendSeparator()
@@ -3305,18 +3770,164 @@ class ApplicationMainWindow( wx.Frame ):
       for name in sorted(self.profiles.items()):
           id = self.menuProfile.Insert(0, wx.ID_ANY, name[0] )
 
-      mb.Append(self.menuProfile, '&Profiles' )
+      self.menuView.AppendSubMenu(self.menuProfile, '&Profiles' )
 
-#     change active File
-      self.menuChangeActFile = wx.Menu()
-      for i, name in enumerate( [object[0] for object in sorted(self.active_session.file_data.items())] ):
-#          output = unicode(name, 'utf-8' )
-          output = name
-          id = self.menuChangeActFile.Append( wx.ID_ANY, output, output ).GetId()
-          self.Bind(wx.EVT_MENU, self.change_active_file, id=id)
-          self.action_dict[id] = 'File-'+str(i)
+#     Color pattern
+      id = self.menuView.Append( wx.ID_ANY, 'Color Pattern ...',
+                                          'color pattern').GetId()
+      self.Bind( wx.EVT_MENU, self.change_color_pattern, id=id)
 
-      mb.Append(self.menuChangeActFile, 'Change active file' )
+      self.menuView.AppendSeparator()
+
+
+      self.menuView.Append( wx.ID_FORWARD, '&Next\tCtrl+N',
+                                     'Next')   
+      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=wx.ID_FORWARD )
+      self.action_dict[wx.ID_FORWARD] = 'Next'
+
+      self.menuView.Append( wx.ID_BACKWARD, 'Prev\tCtrl+B', 
+                                   'Previous')
+      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=wx.ID_BACKWARD )
+      self.action_dict[wx.ID_BACKWARD] = 'Prev'
+
+      id = self.menuView.Append( wx.ID_ANY, '&First\tShift+Ctrl+B', 
+                                     'First').GetId()
+      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id )
+      self.action_dict[id] = 'First'
+
+      id = self.menuView.Append( wx.ID_ANY, 'Last\tShift+Ctrl+N', 
+                                   'Last').GetId()
+      self.Bind( wx.EVT_MENU, self.iterate_through_measurements, id=id )
+      self.action_dict[id] = 'Last'
+
+
+      self.menuView.AppendSeparator()
+
+
+      id = self.menuView.Append(wx.ID_ADD, '&Add\tAlt+A', 
+                                   'Add' ).GetId()
+      self.Bind( wx.EVT_MENU, id = id,
+                 handler=lambda evt, arg1='AddMulti': self.add_multiplot(evt, arg1) )
+
+      id = self.menuView.Append(wx.ID_ANY, 'Add all to Multiplot\tShift+Alt+A', 
+                                   'Add all to Multiplot' ).GetId()
+      self.Bind( wx.EVT_MENU, id = id,
+                 handler=lambda evt, arg1='AddAll': self.add_multiplot(evt, arg1) )
+
+
+      id = self.menuView.Append(wx.ID_ANY, 'Clear Multiplot List', 
+                                   'Clear Multiplot List ...' ).GetId()
+      self.Bind( wx.EVT_MENU, id = id,
+                 handler=lambda evt, arg1='ClearMultiplot': self.add_multiplot(evt, arg1) )
+
+      self.menuView.AppendSeparator()
+
+      self.menuView.Append(idShowPlotParameter, 'Show plot parameters',
+                                   'Show plot parameters' )
+      wx.EVT_MENU( self, idShowPlotParameter, self.show_last_plot_params )
+      
+      self.menuView.Append(idShowImportInfo, 'Show File Import Informations',
+                                   'Show file import informations' )
+      wx.EVT_MENU( self, idShowImportInfo, self.show_status_dialog )
+
+
+
+      mb.Append(self.menuView, '&View')
+
+
+#     Data treatment Menu
+      menuDataTreatment = wx.Menu()
+      
+
+#++++++++++++++ create session specific menu ++++++++
+#     z.B. SQUID Menu
+
+      home = self
+      specific_menu_items = self.active_session.create_menu( home )
+
+      print 'specific_menu_items = ',specific_menu_items
+      print 'len specific_menu_items = ',len(specific_menu_items)
+      for j, item in enumerate(specific_menu_items):
+          nitems = item[0].GetMenuItemCount()
+          print 'nitems = ', nitems
+          print 'item[0] = ', item[0]
+          print 'item[1] = ', item[1]
+          if nitems>=0:
+            menuDataTreatment.AppendSubMenu( item[0],item[1])
+
+
+#-------------- create session specific menu --------
+      id = menuDataTreatment.Append(wx.ID_ANY, '&Fit data...\tCtrl+F', 
+                                   'Fit data' ).GetId()
+      self.Bind( wx.EVT_MENU, self.fit_dialog, id=id)
+
+      menuDataTreatment.AppendSeparator()
+
+      id = menuDataTreatment.Append( wx.ID_ANY, 'Filter the data points', 
+                             'Filter the data points' ).GetId()
+      self.Bind( wx.EVT_MENU, self.change_data_filter , id=id)
+      id = menuDataTreatment.Append(wx.ID_ANY, 'Transform the Units/Dimensions',
+                                   'Transform the Units/Dimensions' ).GetId()
+      self.Bind( wx.EVT_MENU, self.unit_transformation, id=id )
+      
+      menuDataTreatment.AppendSeparator()
+
+
+      if self.measurement[self.index_mess].zdata>0:
+        #3D
+        id = menuDataTreatment.Append( wx.ID_ANY, 'Cross-Section',
+                                           'Cross section').GetId()
+        self.Bind( wx.EVT_MENU, self.extract_cross_section, id=id)
+
+      else:
+        # 2D
+        id = menuDataTreatment.Append(wx.ID_ANY, 'Combine points',
+                                   'Combine points').GetId()
+        self.Bind( wx.EVT_MENU, self.combine_data_points, id=id)
+
+      id = menuDataTreatment.Append(wx.ID_ANY, 'Savitzky Golay Filtering',
+                                    'Savitzky Golay filtering').GetId()
+      self.Bind(wx.EVT_MENU, self.savitzky_golay, id = id)
+
+      id = menuDataTreatment.Append(wx.ID_ANY, 'Show Colorcoded Points',
+                                    'Show colorcoded points').GetId()
+      self.Bind(wx.EVT_MENU, self.colorcode_points, id = id)
+
+      menuDataTreatment.AppendSeparator()
+
+      id = menuDataTreatment.Append( wx.ID_ANY, 'Remove the active Plot (no way back!)',
+                                     'Remove the active plot').GetId()
+      self.Bind( wx.EVT_MENU, self.remove_active_plot, id=id )
+
+      mb.Append(menuDataTreatment, '&Data treatment')
+
+#     Extras Menu
+#     Stichwort "stock items"
+      menuExtras = wx.Menu()
+
+      id = menuExtras.Append(wx.ID_ANY, 'Run Makro...',
+                                   'Run Makro' ).GetId()
+      self.Bind( wx.EVT_MENU, id=id,
+                              handler=self.run_action_makro )
+      id = menuExtras.Append(wx.ID_ANY, 'Run Last Makro\tCtrl+M',
+                                   'Run Last Makro' ).GetId()
+      self.Bind( wx.EVT_MENU, id=id,
+                              handler=self.run_last_action_makro )
+      
+      id = menuExtras.Append( wx.ID_ANY, 'Action History',
+                                  'Action History').GetId()
+      self.Bind( wx.EVT_MENU, id=id, handler=self.action_history)
+
+
+      menuExtras.Append( idOpenConsole, 'Open IPython Console',
+                                  'Open IPython Console')
+      wx.EVT_MENU( self, idOpenConsole,       self.open_ipy_console )
+
+      mb.Append(menuExtras, '&Extras')
+
+
+
+
 
 
 #     help Menu
@@ -3330,36 +3941,9 @@ class ApplicationMainWindow( wx.Frame ):
                                     'About')
       wx.EVT_MENU( self, wx.ID_ABOUT,  self.activate_about )
 
-      id = menuHelp.Append( wx.ID_ANY, 'Action History',
-                                  'Action History').GetId()
-      self.Bind( wx.EVT_MENU, id=id, handler=self.action_history)
-
-
-      menuHelp.Append( idOpenConsole, 'Open IPython Console',
-                                  'Open IPython Console')
-      wx.EVT_MENU( self, idOpenConsole,       self.open_ipy_console )
 
       mb.Append(menuHelp, '&Help' )
 
-
-
-#++++++++++++++ create session specific menu ++++++++
-#     z.B. SQUID Menu
-
-      home = self
-      specific_menu_items = self.active_session.create_menu( home )
-
-      print 'specific_menu_items = ',specific_menu_items
-      print 'len specific_menu_items = ',len(specific_menu_items)
-      for j, item in enumerate(specific_menu_items):
-          nitems = item[0].GetMenuItemCount()
-          print 'nitems = ', nitems
-          if nitems>=0:
-            c = mb.GetMenuCount()
-            mb.Insert(c-1, item[0], item[1] )
-
-
-#-------------- create session specific menu --------
 
 
 #    event binding (2 Moeglichhkeiten)
@@ -3426,7 +4010,7 @@ class ApplicationMainWindow( wx.Frame ):
 
     tb.AddSeparator()
 
-    id = tb.AddLabelTool( wx.ID_ADD, 'Add',  wx.ArtProvider.GetBitmap( wx.ART_TICK_MARK, wx.ART_TOOLBAR ),
+    id = tb.AddLabelTool( wx.ID_ADD, 'Add',  wx.ArtProvider.GetBitmap( wx.ART_ADD_BOOKMARK, wx.ART_TOOLBAR ),
                                  shortHelp='Add/Remove plot to/from multi-plot list',
                                  longHelp='Add/Remove plot to/from multi-plot list').GetId()
     self.Bind( wx.EVT_MENU, id = id,
@@ -3437,6 +4021,27 @@ class ApplicationMainWindow( wx.Frame ):
                                  longHelp='Show multi-plot').GetId()
     self.Bind( wx.EVT_MENU, id = id,
                handler=lambda evt, arg1='MultiPlot': self.export_plot(evt, arg1) )
+
+    tb.AddSeparator()
+
+    id = tb.AddLabelTool( wx.ID_ANY, 'Save Snapshot', wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE, wx.ART_TOOLBAR),
+                          shortHelp='save snapshot',
+                          longHelp='save snapshot..').GetId()
+    self.Bind( wx.EVT_MENU, id = id,
+               handler=lambda evt, arg1='SaveSnapshot': self.save_snapshot(evt, arg1) )
+    
+    id = tb.AddLabelTool( wx.ID_ANY, 'Load Snapshot', wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR),
+                          shortHelp='load snapshot',
+                          longHelp='load snapshot..').GetId()
+    self.Bind( wx.EVT_MENU, id = id,
+               handler=lambda evt, arg1='LoadSnapshot': self.load_snapshot(evt, arg1) )
+
+    tb.AddSeparator()
+    
+    id = tb.AddLabelTool( wx.ID_ANY, 'Open Persistent\nGnuplot Window', wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR),
+                          shortHelp='',
+                          longHelp='').GetId()
+    self.Bind( wx.EVT_MENU, id = id,  handler=self.plot_persistent )
 
     tb.Realize()
 

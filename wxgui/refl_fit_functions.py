@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 '''
   Functions for reflectometer and treff sessions to work with fortran fit program. 
   They only work if imported inside a plotting session and are expanded with specific functions in the
@@ -10,14 +9,15 @@ import os
 import sys
 import math
 import subprocess
-import gtk
+#import gtk
+import wx
 import time
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2009"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta4"
+__version__ = "0.7a"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -66,6 +66,8 @@ def rebuild_dialog(self, dialog, window):
   position = dialog.GetPosition()
   size     = dialog.GetSize()
   dialog.Destroy()
+  print 'refl_fit_functions.py: entry rebuild_dialog position = ', position
+  print 'refl_fit_functions.py: entry rebuild_dialog size     = ', size
   self.fit_window(None, window, position=position, size=size)
 
 def delete_layer(self, action, layer, dialog, window):
@@ -227,93 +229,146 @@ def user_constraint_dialog(self, fit_dialog, window):
     with the possiblilty to add custom constraints by the user.
     A second window shows the .ent file for the parameter list.
   '''
-  from pango import FontDescription
+#  from pango import FontDescription
+  print 'refl_fit_functions.py: entry user_constraint_dialog'
   # create the constraints list
   self.fit_object.set_fit_constrains()
-  constraint_dialog=gtk.Dialog(title='Add constraints:', parent=fit_dialog, 
-                               flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
-                               buttons=('Add constraint', 2, 'OK', 1, 'Cancel', 0))
-  parameter_dilog=gtk.Dialog(title='Fit parameters:', parent=constraint_dialog, 
-                             flags=gtk.DIALOG_DESTROY_WITH_PARENT)
-  # move to better usable positions
-  parameter_dilog.set_default_size(600, 400)
-  parameter_dilog.move(0, 0)
-  constraint_dialog.set_default_size(400, 50)
-  constraint_dialog.move(600, 0)
-  parameter_text=gtk.TextView()
-  parameter_text.get_buffer().set_text(self.fit_object.get_ent_str())
-  # set monospace fonts for better readability
-  parameter_text.modify_font(FontDescription("mono"))
-  sw=gtk.ScrolledWindow()
-  sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-  sw.add(parameter_text)
-  parameter_dilog.vbox.add(sw)
-  parameter_dilog.show_all()
-  # remove User Constrints from the list
+
+  constraint_dialog = wx.Dialog(fit_dialog, wx.ID_ANY, title='Add constraints:', size=(400,200),
+                              style=wx.RESIZE_BORDER|wx.DEFAULT_DIALOG_STYLE)
+  parameter_dialog  = wx.Dialog(constraint_dialog, wx.ID_ANY, title='Fit parameters:',  size=(500,600),
+                              style=wx.RESIZE_BORDER|wx.DEFAULT_DIALOG_STYLE)
+  parameter_dialog.Move( wx.Point(0, 0) )
+  constraint_dialog.Move( wx.Point(600, 0) )
+  constraint_dialog.vbox = wx.BoxSizer( wx.VERTICAL )
+  constraint_dialog.SetSizer( constraint_dialog.vbox )
+
+  butBox      = wx.StaticBox(constraint_dialog, wx.ID_ANY, style=wx.BORDER_DOUBLE|wx.BORDER_RAISED)
+  butBoxSizer = wx.StaticBoxSizer(butBox, wx.HORIZONTAL)
+  butAdd      = wx.Button(constraint_dialog, wx.ID_ANY, label='Add constraints' )            # 2
+  butOk       = wx.Button(constraint_dialog, wx.ID_ANY, label='OK' )                         # 1
+  butCancel   = wx.Button(constraint_dialog, wx.ID_ANY, label='Cancel' )                     # 0
+
+  butBoxSizer.Add( butAdd,    1, wx.EXPAND|wx.ALL, 3)
+  butBoxSizer.Add( butOk,     1, wx.EXPAND|wx.ALL, 3)
+  butBoxSizer.Add( butCancel, 1, wx.EXPAND|wx.ALL, 3)
+
+  butAdd.Bind(   event=wx.EVT_BUTTON, handler=lambda evt, arg1=2, arg2=constraint_dialog, arg3=fit_dialog,
+                 func=self.user_constraint_response: func( evt, arg1, arg2, arg3 ) )
+  butOk.Bind(    event=wx.EVT_BUTTON, handler=lambda evt, arg1=1, arg2=constraint_dialog, arg3=fit_dialog,
+                 func=self.user_constraint_response: func( evt, arg1, arg2, arg3 ) )
+  butCancel.Bind(    event=wx.EVT_BUTTON, handler=lambda evt, arg1=1, arg2=constraint_dialog, arg3=fit_dialog,
+                 func=self.user_constraint_response: func( evt, arg1, arg2, arg3 ) )
+
+  constraint_dialog.vbox.Add(butBoxSizer, 0, wx.EXPAND|wx.ALL, 10)
+  print 'constraint_dialog = ',constraint_dialog
+  print 'constraint_dialog.vbox = ',constraint_dialog.vbox
+
+
+  parameter_text = wx.TextCtrl( parameter_dialog, wx.ID_ANY, style=wx.TE_MULTILINE)
+  parameter_text.SetValue( self.fit_object.get_ent_str() )
+  parameter_dialog.Show()
+
+  constraint_dialog.Show()
+  print ' GetSize   = ', constraint_dialog.vbox.GetSize()
+#  print 'constraints_dialog returns ', self.ret_code
+
+  # remove User Constraints from the list
   for cons in self.fit_object.user_constraints:
     try:
       self.fit_object.constrains.remove(cons)
     except ValueError:
       continue
   for constraint in self.fit_object.constrains:
-    text=gtk.Label()
-    text.set_markup(str(constraint))
-    constraint_dialog.vbox.pack_start(text, expand=False)
+    text = wx.StaticText(constraint_dialog, wx.ID_ANY, label=str(constraint) )
+    constraint_dialog.vbox.Add( text, 0, wx.EXPAND|wxx.ALL, 3)
+#    constraint_dialog.vbox.pack_start(text, expand=False)
+
+  print 'self.fit_object.user_constraints: ',self.fit_object.user_constraints
+
   for user_con in self.fit_object.user_constraints:
-    table=gtk.Table(4, 1, False)
-    text=gtk.Label()
-    text.set_markup('[')
-    table.attach(text, 0, 1, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
-    entry=gtk.Entry()
-    entry.set_width_chars(30)
-    entry.set_text(str(user_con)[1:-1])
-    table.attach(entry, 1, 2, 0, 1, gtk.FILL|gtk.EXPAND, gtk.FILL, 0, 0)
-    text=gtk.Label()
-    text.set_markup(']')
-    table.attach(text, 2, 3, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
-    del_button=gtk.Button(label='del')
-    del_button.connect('clicked', lambda act, tab, box: box.remove(tab), 
-                       table, constraint_dialog.vbox)
-    table.attach(del_button, 3, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
-    table.show_all()
-    constraint_dialog.vbox.pack_end(table)    
-  constraint_dialog.show_all()
-  constraint_dialog.connect("response", self.user_constraint_response, constraint_dialog, fit_dialog)
+    table = wx.BoxSizer( wx.HORIZONTAL )
+    text  = wx.StaticText( constraint_dialog, wx.ID_ANY, label='[' )
+    table.Add(text, 0, wx.CENTER|wx.EXPAND|wx.ALL, 1 )
+    entry = wx.TextCtrl( constraint_dialog, wx.ID_ANY, label=str(user_con)[1:-1] )
+    entry.SetMaxLength(30)
+    table.Add(entry, 1, wx.CENTER|wx.EXPAND|wx.ALL, 1)
+    text =  wx.StaticText( constraint_dialog, wx.ID_ANY, label=']' )
+    table.Add(text, 0, wx.CENTER|wx.EXPAND|wx.ALL, 1 )
+    del_button = wx.Button( constraint_dialog, wx.ID_ANY, label='del', flog=wx.BU_EXACTFIT )
+    table.Add(del_button, 0, wx.ALL|wx.CENTER, 1 )
+
+    constraint_dialog.vbox.Add( table, 0, wx.ALL|wx.EXPAND|wx.CENTER, 3 )
+
+###    del_button.connect('clicked', lambda act, tab, box: box.remove(tab), 
+###                       table, constraint_dialog.vbox)
+#    table.show_all()
+#    constraint_dialog.vbox.pack_end(table)    
+
+
 
 def user_constraint_response(self, action, response, dialog, fit_dialog):
   '''
     Response to the user_constraint_dialog actions.
   '''
+  print 'refl_fit_functions.py: entry user_constraint_response: response      = ',response
+  def del_button_clicked( evt, box, tab):
+    print 'Entry del Button clicked'
+    print 'evt = ', evt
+    print 'tab = ', tab
+    print 'box = ', box
+
+#   siehe manPage wxSizer::Remove  NB
+#    for child in tab.GetChildren():
+#        cw = child.GetWindow() 
+#        rc = tab.Detach( cw )
+#        cw.Destroy()  
+#    oder einfacher:
+
+    tab.Clear(True)
+
+    rc = box.Remove(tab)
+    box.Layout()
+
+
+
   if response==2:
-    table=gtk.Table(4, 1, False)
-    text=gtk.Label()
-    text.set_markup('[')
-    table.attach(text, 0, 1, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
-    entry=gtk.Entry()
-    entry.set_width_chars(30)
-    table.attach(entry, 1, 2, 0, 1, gtk.FILL|gtk.EXPAND, gtk.FILL, 0, 0)
-    text=gtk.Label()
-    text.set_markup(']')
-    table.attach(text, 2, 3, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
-    del_button=gtk.Button(label='del')
-    del_button.connect('clicked', lambda act, tab, box: box.remove(tab), table, dialog.vbox)
-    table.attach(del_button, 3, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
-    table.show_all()
-    dialog.vbox.pack_end(table)
+
+    table = wx.BoxSizer( wx.HORIZONTAL )
+    print 'table = ', table
+    print 'table childs = ', table.GetChildren()
+    text  = wx.StaticText( dialog, label='[' )
+    table.Add( text, 0, wx.CENTER|wx.EXPAND, 3)
+    entry = wx.TextCtrl( dialog, wx.ID_ANY, style=wx.TE_PROCESS_ENTER )
+    entry.SetMaxLength( 30 )
+    table.Add( entry, 1, wx.CENTER|wx.EXPAND, 3 )
+    text  = wx.StaticText( dialog, label=']' )
+    table.Add( text, 0, wx.CENTER|wx.EXPAND, 3)
+    del_button = wx.Button( dialog, wx.ID_ANY, label='del', style=wx.BU_EXACTFIT )
+    table.Add( del_button, 0, wx.CENTER|wx.EXPAND, 3)
+    dialog.vbox.Prepend( table, 0, wx.CENTER|wx.EXPAND, 3 )
+    dialog.vbox.Layout()
+
+    del_button.Bind(event=wx.EVT_BUTTON, handler=lambda evt, tab=table, box=dialog.vbox: del_button_clicked(evt, box, tab) )
+    
+
+
   if response==1:
     self.fit_object.user_constraints=[]
-    objects=dialog.vbox.get_children()
+    objects = dialog.vbox.GetChildren()
+    print 'objects = ', objects
     for object in objects:
-      if type(object) is gtk.Table:
-        for widget in object.get_children():
-          if type(widget) is gtk.Entry:
+      if type(object) is wx.BoxSizer:
+        for widget in object.GetChildren():
+          if type(widget) is wx.TextCtrl:
             try:
-              self.fit_object.user_constraints.append(map(int, widget.get_text().split(',')))
+              self.fit_object.user_constraints.append(map(int, widget.GetValue().split(',')))
             except ValueError:
               continue
-    fit_dialog.response(5)
+    fit_dialog.SetReturnCode(5)
+
   if response!=2:
-    dialog.destroy()
+    dialog.Destroy()
   
 #----------------------- GUI functions -----------------------
 

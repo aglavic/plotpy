@@ -21,7 +21,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta4"
+__version__ = "0.7beta1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -1149,30 +1149,30 @@ class TreffGUI:
         dataset.plot_together=[dataset, simu]
         if first:
           dataset.plot_options+='''
-          set style line 2 lc 1
-          set style line 3 lc 2
-          set style line 4 lc 2
-          set style line 5 lc 3
-          set style line 6 lc 3
-          set style line 7 lc 4
-          set style line 8 lc 4
-          set style increment user
-          '''
+set style line 2 lc 1
+set style line 3 lc 2
+set style line 4 lc 2
+set style line 5 lc 3
+set style line 6 lc 3
+set style line 7 lc 4
+set style line 8 lc 4
+set style increment user
+'''
           first=False
         else:
           dataset.plot_options+='''
-          set style line 1 lc %i
-          set style line 2 lc %i
-          set style increment user
-          ''' % (i+1, i+1)
+set style line 1 lc %i
+set style line 2 lc %i
+set style increment user
+''' % (i+1, i+1)
       elif self.fit_object.simulate_all_channels:
         simu=read_data.treff.read_simulation(self.TEMP_DIR + output_names[i])
         simu.number='%i' % i
         simu.short_info='simulation '+names[i]
         simu.plot_options+='''
-          set style line 1 lc %i
-          set style increment user
-          ''' % (i+1)
+set style line 1 lc %i
+set style increment user
+''' % (i+1)
         simu.logy=True
         free_sims.append(simu)
     # create a multiplot with all datasets
@@ -1189,15 +1189,15 @@ class TreffGUI:
         window.measurement=self.active_file_data
         window.input_file_name='Simulations'
         free_sims[0].plot_options+='''
-          set style line 2 lc 1
-          set style line 3 lc 2
-          set style line 4 lc 2
-          set style line 5 lc 3
-          set style line 6 lc 3
-          set style line 7 lc 4
-          set style line 8 lc 4
-          set style increment user
-          '''
+set style line 2 lc 1
+set style line 3 lc 2
+set style line 4 lc 2
+set style line 5 lc 3
+set style line 6 lc 3
+set style line 7 lc 4
+set style line 8 lc 4
+set style increment user
+'''
     for sim in free_sims:
       # add simulations without dataset to the multiplot
       window.multiplot[0].append((sim, sim.short_info))
