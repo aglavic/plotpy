@@ -2737,6 +2737,7 @@ class ApplicationMainWindow(gtk.Window):
       which has direct access to all important objects.
     '''
     from ipython_view import IPythonView
+    import measurement_data_structure
     import pango
     import sys
     import numpy
@@ -2752,27 +2753,33 @@ class ApplicationMainWindow(gtk.Window):
     sw.set_policy(gtk.POLICY_AUTOMATIC,gtk.POLICY_AUTOMATIC)
     ipview = IPythonView("""    This is an interactive IPython session with direct access to the program.
     You have the whole python functionality and can interact with the programs objects.
+    You can use tab-completion and inspect any object (get help) by writing "object?".
 
     Functions:
       replot \tFunction to replot the dataset
       dataset \tFunction to get the active MeasurementData object
-      get_xyz \tReturn 3 numpy arrays of the x,y and z columns from the active dataset
-      get_all \tReturn all data columns of the active dataset
-      new_xyz \tCreate a new plot with changed columns, takes three lists or 
+      getxyz \tReturn 3 PhysicalProperty instances of the x,y and z columns 
+              \tfrom the active dataset
+      getall \tReturn all data columns of the active dataset
+      newxyz \tCreate a new plot with changed columns, takes three lists or 
               \tarrays as input. For line plots the last parameter is 'None'.
-      new_all \tCreate a new plot from a list of all data columns, the list 
+      newall \tCreate a new plot from a list of all data columns, the list 
               \thas to have the same length as returned by get_all
 
     Objects:
       session \tThe active session containing the data objects and settings
+              \tAll imported data can be accessed via the session.file_data dictionary
+              \tThe data for the selected file is in session.active_file_data
       plot_gui \tThe window object with all window related funcitons
       self \t\tThe IPythonView object.
     Modules:
       np \tNumpy
       sp \tScipy
+      mds \tMeasurement_data_strunctur module with PhysicalProperty, MeasurementData
+          \tand other data treatment Classes.
 
     Remark: This functionality is mainly for developers. If you are a user experienced
-            in python it is recommanded to use the get_... and new_... functions.\n\n""")
+            in python it is recommanded to use the get... and new... functions.\n\n""")
     ipview.modify_font(pango.FontDescription(FONT))
     ipview.set_wrap_mode(gtk.WRAP_CHAR)
     sys.stderr=ipview
@@ -2788,49 +2795,56 @@ class ApplicationMainWindow(gtk.Window):
     y=self.get_active_dataset().data[self.get_active_dataset().ydata].values
     z=self.get_active_dataset().data[self.get_active_dataset().zdata].values
     # create functions for the use with ipython
-    def get_xyz():
+    def getxyz():
       # returns numpy arrays of x,y and z
       d=self.get_active_dataset()
       xi=d.xdata
       yi=d.ydata
       zi=d.zdata
-      x=numpy.array(d.data[xi].values)
-      y=numpy.array(d.data[yi].values)
       if zi>=0:
-        z=numpy.array(d.data[zi].values)
+        z=d.data[zi]
       else:
         z=None
-      return x, y, z
-    def get_all():
+      return d.data[xi], d.data[yi], z
+    def getall():
       # returns a list of all columns as nump arrays
-      d=self.get_active_dataset()
-      units=d.units()
-      dims=d.dimensions()
-      data_list=[numpy.array(item.values) for item in d.data]
-      print "Returning columns: [" +\
-          ",\n                    ".join(["%2i: %s [%s]" % (i, dims[i], units[i]) for i in range(len(units)) ]) +"]"
-      return data_list
-    def new_xyz(x, y, z=None):
+      return self.get_active_dataset().data
+    def newxyz(x, y, z=None):
       # create new plot of changed x,y and z columns
       d=self.get_active_dataset()
       xi=d.xdata
       yi=d.ydata
       zi=d.zdata
       newd=deepcopy(d)
-      newd.data[xi].values=list(x)
+      if type(x) is measurement_data_structure.PhysicalProperty:
+        newd.data[xi]=x
+      else:
+        newd.data[xi].values=list(x)
       newd.data[yi].values=list(y)
+      if type(y) is measurement_data_structure.PhysicalProperty:
+        newd.data[yi]=y
+      else:
+        newd.data[yi].values=list(y)
       if zi>0:
-        newd.data[zi].values=list(z)
+        if type(z) is measurement_data_structure.PhysicalProperty:
+          newd.data[zi]=z
+        else:
+          newd.data[zi].values=list(z)
       newd.short_info+=" processed"
       self.measurement.append(newd)
       self.index_mess=len(self.measurement)-1
       self.replot()
-    def new_all(new_list):
+    def newall(new_list):
+      length=len(new_list[0])
+      if not (all(map(lambda item: type(item) is measurement_data_structure.PhysicalProperty, new_list)) and\
+        all(map(lambda item: len(item)==length, new_list))):
+        raise TypeError, 'Input should be list of PhysicalProperty instances with the same length'
       # create a new plot from all columns
       d=self.get_active_dataset()
       newd=deepcopy(d)
-      for i, col in enumerate(newd.data):
-        col.values=list(new_list[i])
+      if len(new_list)!=len(d.data):
+        raise ValueError, 'Column number should be %i' % len(d.data)
+      newd.data=new_list
       newd.short_info+=" processed"
       self.measurement.append(newd)
       self.index_mess=len(self.measurement)-1
@@ -2843,12 +2857,13 @@ class ApplicationMainWindow(gtk.Window):
                        'self': ipview, 
                        'dataset': self.get_active_dataset, 
                        'replot': self.replot, 
-                       'get_xyz': get_xyz, 
-                       'new_xyz': new_xyz, 
-                       'get_all': get_all, 
-                       'new_all': new_all, 
+                       'getxyz': getxyz, 
+                       'newxyz': newxyz, 
+                       'getall': getall, 
+                       'newall': newall, 
                        'np': numpy, 
                        'sp': scipy, 
+                       'mds': measurement_data_structure, 
                        })
 
   #--------------------------Menu/Toolbar Events---------------------------------#

@@ -13,6 +13,7 @@ from copy import deepcopy
 from cPickle import load, dump
 import numpy
 from tempfile import gettempdir
+from config.transformations import known_unit_transformations
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
@@ -29,10 +30,33 @@ TEMP_DIR=gettempdir()
 #++++++++++++++++++++++++++++++++++++++MeasurementData-Class+++++++++++++++++++++++++++++++++++++++++++++++++++++#
 class MeasurementData(object):
   '''
-    The main class for the data storage. Stores the data as a list of
-    PhysicalProperty objects. Sample name and measurement informations
-    are stored as well as plot options and columns which have to stay
-    constant in one sequence.
+    The main class for the data storage. Stores the data as a list of PhysicalProperty objects. 
+    Sample name and measurement informations are stored as well as plot options and columns 
+    which have to stay constant in one sequence.
+    
+    Main Attributes:
+      number_of_points          Number of datapoints stored in the class
+      data                      List of PhysicalProperty instances for every data column
+      [x,y,z]data/.yerror       Indices of the plotted columns in the .data list. 
+                                If z=-1 the plot is 2d
+      log[x,y,z]                Boolean defining the logarithmic scale plotting of the columns
+      crop_zdata                Boolean to set z data to be croped when the zrange is smaller 
+                                than the datarange. For plot to be without empty spots
+      short_info                Second part of the plot title and name of line in multiplot
+      sample_name               First part of the plot title.
+      filters                   List of filters which are applied to the dataset before export 
+                                for plotting.
+      plot_options              PlotOptions object storing the visualization options
+    
+    Main Methods:
+      append                    Append a datapoint at the end of the dataset
+      append_column             Add a new datacolumn to the object
+      dimensions                Return the dimensions of all columns
+      export                    Export the data to a file
+      process_function          Call a function for all data of the object, e.g. square the y data
+      sort                      Sort the datapoints for one column
+      unit_trans                Transform units
+      units                     Return the units of all columns
   '''
   number_of_points=0 #count number of stored data-points
   index=0
@@ -764,12 +788,29 @@ class HugeMD(MeasurementData):
 
 #--------------------------------------    HugeMD-Class     -----------------------------------------------------#
 
-class PhysicalProperty:
+class PhysicalProperty(object):
   '''
     Class for any physical property. Stores the data, unit and dimension
-    to make unit transformations possible.
+    to make unit transformations possible. Can be used with numpy functions.
+    
+    Attributes:
+      dimension  String for the dimension of the instance
+      unit       String for the unit of the instance
+    
+    Hints:
+      PhysicalProperty can be used with different convenience operators/functions,
+      for a PhysicalProperty 'P' these are e.g.:
+      
+      P % [unit]                  Transform the instance to the unit
+      P % ([name], [mul], [add])  Transform the instance to [name] using the multiplyer [mul]
+                                  and adding [add]
+      P // [dim]                  Get P with different dimension name [dim]
+      P // ([dim], [unit])        Get P with different dimension and unit name
+      
+      Additionally PhysicalProperty instances can be used like numpy arrays in functions
+      and with respect to slicing. Addition and subtraction is unit dependent and angular
+      functions only take angles as input.
   '''
-  index=0
   values=[]
   unit=''
   dimension=''
@@ -777,25 +818,21 @@ class PhysicalProperty:
   def __init__(self, dimension_in, unit_in):
     '''
       Class constructor.
+      
+      @param dimension_in String with the dimensions for that instance
+      @param unit_in String with unit for that instance
     '''
     self.values=[]
-    self.index=0
     self.unit=unit_in
     self.dimension=dimension_in
 
   def __iter__(self): # see next()
-    return self
- 
-  def next(self): 
     '''
       Function to iterate through the data-points, object can be used in "for bla in data:".
     '''
-    if self.index == len(self.values):
-      self.index=0
-      raise StopIteration
-    self.index=self.index+1
-    return self.values[self.index-1]
-
+    for value in self.values:
+      yield value
+ 
   def __len__(self): 
     '''
       len(PhysicalProperty) returns number of Datapoints.
@@ -853,8 +890,329 @@ class PhysicalProperty:
     if to_index==None:
       to_index=len(self)-1
     return min([self.values[i] for i in range(from_index,to_index)])
+  
+  def __repr__(self):
+    '''
+      Return a string representation of the data.
+    '''
+    output='PhysicalProperty(['
+    if len(self.values)<10:
+      sval=map(str, self.values)
+      output+=", ".join(sval)
+    else:
+      sval=map(str, self.values[:5])
+      output+=", ".join(sval)
+      output+=" ... "
+      sval=map(str, self.values[-5:])
+      output+=", ".join(sval)
+    output+="],\n\t\tdimension='%s', unit='%s', length=%i)" % (self.dimension, self.unit,  len(self.values))
+    return output
 
-class HugePhysicalProperty(object, PhysicalProperty):
+  def __str__(self):
+    '''
+      Return the values as string.
+    '''
+    output='['
+    if len(self.values)<10:
+      sval=map(str, self.values)
+      output+=", ".join(sval)
+    else:
+      sval=map(str, self.values[:5])
+      output+=", ".join(sval)
+      output+=" ... "
+      sval=map(str, self.values[-5:])
+      output+=", ".join(sval)
+    output+="]"
+    return output
+
+  def __getitem__(self, index):
+    '''
+      Return the data at a specific index.
+    '''
+    return numpy.array(self.values)[index]
+  
+  def __array_wrap__(self, out_arr, context=None):
+    '''
+      Function that get's called by numpy ufunct functions after they get
+      called with one instance from this class. Makes PhysicalProperty objects
+      usable with all standart numpy functions.
+      
+      @return PhysicalProperty object with values as result from the function
+    '''
+    output=deepcopy(self)
+    output.values=out_arr.tolist()
+    if context:
+      # make sure angular dependent functions are called with radian unit
+      if context[0].__name__ in angle_functions:
+        if self.unit!='rad':
+          try:
+            output_new=self%'rad'
+          except ValueError:
+            raise ValueError, 'Input to function %s needs to be an angle' % context[0].__name__
+        else:
+          output_new=self
+        output.unit=''
+        output.values=context[0](output_new[:]).tolist()
+      # make sure inverse angular functions get called with dimensioinless input
+      elif context[0].__name__.startswith('arc'):
+        if self.unit=='':
+          output.unit='rad'
+        else:
+          raise ValueError, "Input to function %s needs to have empty unit" % context[0].__name__
+      output.dimension=context[0].__name__ + '(' + self.dimension + ')'
+    return output
+  
+  def __add__(self, other):
+    '''
+      Define addition of two PhysicalProperty instances.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if type(self)==type(other):
+      if self.unit != other.unit:
+        try:
+          other=other%self.unit
+        except ValueError:
+          raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
+      output=deepcopy(self)
+      if self.dimension!=other.dimension:
+        output.dimension=self.dimension + '+' + other.dimension
+      output.values=(self[:]+other[:]).tolist()
+    elif type(other) in (float, int):
+      output=deepcopy(self)
+      output.values=(self[:]+other).tolist()  
+    else:
+      output=numpy.add(self, other)
+      output.dimension=self.dimension
+    return output
+  
+  def __radd__(self, other):
+    '''
+      Define addition of a PhysicalProperty with another type.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if type(other) in (float, int):
+      output=deepcopy(self)
+      output.values=(self[:]+other).tolist()  
+    else:
+      output=numpy.add(self, other)
+      output.dimension=self.dimension
+    return output
+  
+  def __sub__(self, other):
+    '''
+      Define subtraction of two PhysicalProperty instances.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if type(self)==type(other):
+      if self.unit != other.unit:
+        try:
+          other=other%self.unit
+        except ValueError:
+          raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
+      output=deepcopy(self)
+      if self.dimension != other.dimension:
+        output.dimension=self.dimension + '-' + other.dimension
+      output.values=(self[:]-other[:]).tolist()
+    elif type(other) in (float, int):
+      output=deepcopy(self)
+      output.values=(self[:]-other).tolist()  
+    else:
+      output=numpy.subtract(self, other)
+      output.dimension=self.dimension
+    return output
+  
+  def __rsub__(self, other):
+    '''
+      Define subtraction of a PhysicalProperty from another type.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if type(other) in (float, int):
+      output=deepcopy(self)
+      output.values=(other-self[:]).tolist()  
+    else:
+      output=numpy.subtract(other, self)
+      output.dimension=self.dimension
+    return output
+
+  def __mul__(self, other):
+    '''
+      Define multiplication of two PhysicalProperty instances.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if type(self)==type(other):
+      output=deepcopy(self)
+      if self.dimension!=other.dimension:
+        output.dimension=self.dimension + '*' + other.dimension
+      if self.unit!=other.unit and self.unit!='' and other.unit!='':
+        output.unit=self.unit + '*' + other.unit
+      elif self.unit!='':
+        output.unit=self.unit + '^2'
+      output.values=(self[:]*other[:]).tolist()
+    elif type(other) in (float, int):
+      output=deepcopy(self)
+      output.values=(self[:]*other).tolist()  
+    else:
+      output=numpy.multiply(self, other)
+      output.dimension=self.dimension
+    return output
+  
+  def __rmul__(self, other):
+    '''
+      Define multiplication of a PhysicalProperty with another type.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if type(other) in (float, int):
+      output=deepcopy(self)
+      output.values=(other*self[:]).tolist()  
+    else:
+      output=numpy.multiply(self, other)
+      output.dimension=self.dimension
+    return output
+
+  def __div__(self, other):
+    '''
+      Define division of two PhysicalProperty instances.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if type(self)==type(other):
+      output=deepcopy(self)
+      if self.dimension!=other.dimension:
+        output.dimension=self.dimension + '/' + other.dimension
+      if self.unit!=other.unit:
+        output.unit=self.unit + '/' + other.unit
+      else:
+        output.unit=''
+      output.values=(self[:]/other[:]).tolist()
+    elif type(other) in (float, int):
+      output=deepcopy(self)
+      output.values=(self[:]/other).tolist()  
+    else:
+      output=numpy.divide(self, other)
+      output.dimension=self.dimension
+    return output
+  
+  def __rdiv__(self, other):
+    '''
+      Define division of a PhysicalProperty from another type.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if type(other) in (float, int):
+      output=deepcopy(self)
+      output.dimension=self.dimension+'^{-1}'
+      if self.unit!='':
+        output.unit=self.unit+'^{-1}'
+      output.values=(other/self[:]).tolist()  
+    else:
+      output=numpy.divide(other, self)
+      output.dimension=self.dimension
+      if self.unit!='':
+        output.unit=self.unit+'^{-1}'
+    return output
+
+  def __pow__(self, to_power):
+    '''
+      Define calculation of PhysicalProperty instance to a specified power.
+      
+      @return New instance of PhysicalProperty
+    '''
+    output=deepcopy(self)
+    output.dimension=self.dimension+'^%s' % str(to_power)
+    if self.unit!='':
+      output.unit=self.unit+'^%s' % str(to_power)
+    output.values=(self[:]**to_power).tolist()
+    return output
+
+  def __floordiv__(self, new_dim_unit):
+    '''
+      Convenience method to easily get the same PhysicalProperty with another dimension or
+      dimension and unit. Examples:
+      pp // 'new' -> a copy of the PhysicalProperty with the new dimension 'new'
+      pp // ('length','m') -> a copy of the PhysicalProperty with the new dimension 'length' and the unit 'm'
+      
+      @return New object instance.
+    '''
+    output=deepcopy(self)
+    if type(new_dim_unit) is str:
+      output.dimension=new_dim_unit
+      return output
+    else:
+      if getattr(new_dim_unit, '__iter__', False) and len(new_dim_unit)>=2 and \
+          type(new_dim_unit[0]) is str and type(new_dim_unit[1]) is str:
+        output.dimension=new_dim_unit[0]
+        output.unit=new_dim_unit[1]
+        return output
+      else:
+        raise ValueError, '// only defined with str or iterable object of at least two strings'
+  
+  def __mod__(self, conversion):
+    '''
+      Convenience method to easily get the same PhysicalProperty with a converted unit. Examples:
+      pp % 'm' -> a copy of the PhysicalProperty with the unit converted to m
+      pp % ('m', 1.32, -0.2) -> a copy of the PhysicalProperty with the unit converted to 'm' 
+                                multiplying by 1.32 and subtracting 0.2
+      
+      @return New object instance.    
+    '''
+    output=deepcopy(self)
+    if type(conversion) is str:
+      if (self.unit, conversion) in known_transformations:
+        output.unit=conversion
+        multiplyer, addition=known_transformations[(self.unit, conversion)]
+        output.values=(multiplyer*output[:]+addition).tolist()
+        return output
+      else:
+        raise ValueError, "Automatic conversion not implemented for '%s'->'%s'." % (self.unit, conversion)
+    else:
+      if getattr(conversion, '__iter__', False) and len(conversion)>=3 and \
+          type(conversion[0]) is str and type(conversion[1]) in (float, int) and type(conversion[2]) in (float, int):
+        output.unit=conversion[0]
+        output.values=(conversion[1]*output[:]+conversion[2]).tolist()
+        return output
+      else:
+        raise ValueError, '% only defined with str or iterable object of at least one string and two floats/ints'
+
+def calculate_transformations(transformations):
+  '''
+    Use a dictionary of unit transformations to calculate
+    all combinations of the transformations inside.
+  '''
+  output=deepcopy(transformations)
+  keys=transformations.keys()
+  # calculate inverse transformations
+  for key in keys:
+    if len(transformations[key])==2:
+      output[(key[1], key[0])]=(1./transformations[key][0], -(transformations[key][1]/transformations[key][0]))
+    else:
+      output[(key[1], key[0])]=(1./transformations[key][0], -(transformations[key][1]/transformations[key][0]), 
+                              transformations[key][3], transformations[key][2])
+  # calculate transformations over two or more units.
+  done=False
+  while not done:
+    # while there are still transformations changed, try to find new ones.
+    done=True
+    for key in output.keys():
+      for key2 in output.keys():
+        if key[1] == key2[0] and key[0] != key2[1] and (key[0], key2[1]) not in output and\
+              len(output[key])==2 and len(output[key2])==2:
+          done=False
+          output[(key[0], key2[1])]=(output[key][0]*output[key2][0], output[key2][0]*output[key][1]+output[key2][1])
+          output[(key2[1], key[0])]=(1./output[(key[0], key2[1])][0], -(output[(key[0], key2[1])][1]/output[(key[0], key2[1])][0]))
+  return output
+
+# Dictionary of transformations from one unit to another
+known_transformations=calculate_transformations(known_unit_transformations)
+# List of ufunc functions which need an angle as input
+angle_functions=( 'sin', 'cos', 'tan', 'sec', 'sinh', 'cosh', 'tanh', 'sech' )
+
+class HugePhysicalProperty(PhysicalProperty):
   '''
     PhysicalProperty which can write data to a pickled file if it is not accessed.
   '''
@@ -883,7 +1241,6 @@ class HugePhysicalProperty(object, PhysicalProperty):
       Class constructor.
     '''
     self.values=physprop_in.values
-    self.index=physprop_in.index
     self.unit=physprop_in.unit
     self.dimension=physprop_in.dimension
     global hmd_file_number

@@ -14,6 +14,28 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
+# define transformations that can be used to convert units
+known_unit_transformations={
+                            # angle
+                            ('rad', 'mrad'): (1.e3, 0.), 
+                            ('rad', '°'): (180./pi,0.), 
+                            # length
+                            ('Å', 'nm'): (1.e-1, 0.), 
+                            ('nm', 'µm'): (1.e-3, 0.), 
+                            ('µm', 'mm'): (1.e-3, 0.), 
+                            ('mm', 'm'): (1.e-3, 0.), 
+                            # temperature
+                            ('K', '°C'): (1., -273.15), 
+                            # time
+                            ('d', 'h'): (24., 0.), 
+                            ('min', 'h'): (1./60., 0.), 
+                            ('s', 'min'): (1./60., 0.), 
+                            ('s', 'ms'): (1.e3, 0.), 
+                            # magnetism
+                            ('emu', 'A·m²'): (1.e-3, 0.), 
+                            ('Oe', 'T'): (1.e-4, 0., 'H', 'μ_0·H')
+                            }
+
 known_transformations=[
                       # magnetism
                       ['H','Oe',1e-4,0,'µ_0·H','T'],

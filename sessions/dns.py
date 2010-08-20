@@ -1242,7 +1242,10 @@ class DNSMeasurementData(MeasurementData):
     Class derived from MeasurementData to be more suitable for DNS measurements.
     Datatreatment is done here and additional data treatment functions should
     be put here, too.
+    
+  Doc of MeasurementData:
   '''
+  __doc__+=MeasurementData.__doc__
   SPLIT_SENSITIVITY=0.01
   dns_info={}
   scan_line=1
