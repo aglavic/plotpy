@@ -7,7 +7,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = ["Esther Pfuhl", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.7beta4"
+__version__ = "0.7beta5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -41,7 +41,11 @@ SCATTERING_LENGTH_DENSITIES={
     'TbMnO3': [19.339, 8.6],
     'LaCoO3': [21.801, 7.7804],
     'YAlO3': [15.923, 31.0272],
+    'BaTiO3': [16.78458, 9.22838],
+    'EuTiO3': [17.71187, 7.31787],
     'SrTiO3': [15.01150, 22.03151],
+    'DyScO3': [17.53474, 8.75332],
+    'GdScO3': [17.02964, 6.70421],
     'LSMO 0.1':[16.27891, 15.80883],
     'LSMO 0.5':[17.62232, 10.90424],
     'LSMO 0.6':[17.74971, 10.18752],

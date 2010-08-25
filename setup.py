@@ -17,7 +17,7 @@ __name__='Plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __license__ = "None"
-__version__ = "0.7beta4"
+__version__ = "0.7beta5"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://atzes.homeip.net/plotwiki"
@@ -30,10 +30,15 @@ __packages__=['plot_script', 'plot_script.config', 'plot_script.read_data', 'plo
             'plot_script.sessions.reflectometer_fit', 'plot_script.wxgui', 'plot_script.gtkgui']
 __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90', 
                             'fit/pnr_multi/*.f90', 'fonts/*.ttf', 'logo.png'], 
+                  'plot_script': ['doc/*.html'], 
                     }
+__data_files__=[('doc', glob('doc/*.html'))]
 __requires__=['pygtk', 'gobject', 'numpy', 'scipy']
 
 __options__={ "py2exe": {"includes": "numpy,scipy,gtk,pango,cairo,pangocairo,atk,gobject",
+                         "optimize": 2, 
+                         "skip_archive": True, 
+                         
                              }}
 
 # extensions modules written in C
@@ -150,6 +155,7 @@ setup(name=__name__,
       packages=__packages__, 
       package_dir=__package_dir__, 
       package_data=__package_data__,
+      data_files=__data_files__, 
       requires=__requires__, #does not do anything
       console = [ "__init__.py","py2exe_imports.py" ],
       #windows = [ "plot.py" ],

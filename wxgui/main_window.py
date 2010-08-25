@@ -31,7 +31,7 @@ from config import gnuplot_preferences
 from diverse_classes import PlotProfile, RedirectOutput, RedirectError
 import file_actions
 from config.gui import DOWNLOAD_PAGE_URL
-from dialogs import SimpleEntryDialog, PreviewDialog, StatusDialog, ExportFileChooserDialog
+from wxgui.dialogs import SimpleEntryDialog, PreviewDialog, StatusDialog, ExportFileChooserDialog
 from PrintDatasetDialog import PrintDatasetDialog
 
 
@@ -44,7 +44,7 @@ __copyright__  = "Copyright 2008-2010"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__    = "None"
-__version__    = "0.7beta4"
+__version__    = "0.7beta5"
 __maintainer__ = "Artur Glavic"
 __email__      = "a.glavic@fz-juelich.de"
 __status__     = "Development"

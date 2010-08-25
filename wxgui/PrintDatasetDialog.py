@@ -1,7 +1,17 @@
+# -*- encoding: utf-8 -*-
 #!/usr/local/bin/python
 
 import wx
-import main_window
+
+__author__     = "Artur Glavic"
+__copyright__  = "Copyright 2008-2010"
+__credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
+              'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
+__license__    = "None"
+__version__    = "0.7beta5"
+__maintainer__ = "Artur Glavic"
+__email__      = "a.glavic@fz-juelich.de"
+__status__     = "Development"
 
 class PrintDatasetDialog( wx.Printout ):
 #
@@ -182,3 +192,5 @@ class PrintDatasetDialog( wx.Printout ):
           
     
 
+
+import main_window

@@ -29,7 +29,7 @@ __copyright__ = "Copyright 2008-2010"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7beta4"
+__version__ = "0.7beta5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -2765,13 +2765,12 @@ class ApplicationMainWindow(gtk.Window):
               \tarrays as input. For line plots the last parameter is 'None'.
       newall \tCreate a new plot from a list of all data columns, the list 
               \thas to have the same length as returned by get_all
-
+      apihelp \tOpen the api reference manual
     Objects:
       session \tThe active session containing the data objects and settings
               \tAll imported data can be accessed via the session.file_data dictionary
               \tThe data for the selected file is in session.active_file_data
       plot_gui \tThe window object with all window related funcitons
-      self \t\tThe IPythonView object.
     Modules:
       np \tNumpy
       sp \tScipy
@@ -2849,7 +2848,6 @@ class ApplicationMainWindow(gtk.Window):
       self.measurement.append(newd)
       self.index_mess=len(self.measurement)-1
       self.replot()
-      
     # add variables to ipython namespace
     ipview.updateNamespace({
                        'session': self.active_session, 
@@ -2864,6 +2862,7 @@ class ApplicationMainWindow(gtk.Window):
                        'np': numpy, 
                        'sp': scipy, 
                        'mds': measurement_data_structure, 
+                       'apihelp': apihelp, 
                        })
 
   #--------------------------Menu/Toolbar Events---------------------------------#
@@ -3375,6 +3374,8 @@ class ApplicationMainWindow(gtk.Window):
       <separator name='static13'/>
       <menu action='HelpMenu'>
         <menuitem action='ShowConfigPath'/>
+        <menuitem action='APIReference'/>
+      <separator name='help1'/>
         <menuitem action='About'/>
         '''
     if self.active_session.DEBUG:
@@ -3472,6 +3473,10 @@ class ApplicationMainWindow(gtk.Window):
         "About", None,                    # label, accelerator
         "About",                                   # tooltip
         self.activate_about ),
+      ( "APIReference", None,                             # name, stock id
+        "API Reference...", None,                    # label, accelerator
+        "Open API reference manual in a webbrowser",                                   # tooltip
+        apihelp ),
       ( "ShowConfigPath", None,                             # name, stock id
         "Show Config Path...", None,                    # label, accelerator
         "Show Configfile Path",                                   # tooltip
@@ -3622,3 +3627,17 @@ class ApplicationMainWindow(gtk.Window):
   #---------------------Functions responsible for menus and toolbar----------------------#
 
 #------------------------- ApplicationMainWindow Class ----------------------------------#
+
+def apihelp(*ignore):
+  '''
+    Open the API reference manual in a webbrowser.
+    
+    @return Return value of webbrowser.open
+  '''
+  import webbrowser
+  help_file=os.path.join(
+                os.path.split(measurement_data_plotting.__file__)[0]
+                              , 'doc'
+                              , 'index-plot_script.html'
+                              )
+  return webbrowser.open(help_file)

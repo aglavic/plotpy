@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-08-08, 23:10:30 -->
+<!-- Saved: 2010-08-25, 16:36:44 -->
 <!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
   <ProgLanguage mixed="0">Python</ProgLanguage>
   <ProjectType>Other</ProjectType>
   <Description>This is a Plotting script using gnuplot with a GUI.</Description>
-  <Version>0.7a</Version>
+  <Version>0.7beta5</Version>
   <Author>Artur Glavic</Author>
   <Email>a.glavic@fz-juelich.de</Email>
   <Sources>
@@ -107,6 +107,8 @@
     <Source>gtkgui/generic.py</Source>
     <Source>measurement_data_functions.c</Source>
     <Source>measurement_data_functions.h</Source>
+    <Source>wxgui/PrintDatasetDialog.py</Source>
+    <Source>aptdoc.css</Source>
   </Sources>
   <Forms>
   </Forms>
@@ -286,6 +288,12 @@
         </key>
         <value>
           <dict>
+            <key>
+              <string>cssFile</string>
+            </key>
+            <value>
+              <unicode>aptdoc.css</unicode>
+            </value>
             <key>
               <string>ignoreDirectories</string>
             </key>
