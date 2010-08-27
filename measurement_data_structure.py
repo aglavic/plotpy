@@ -182,7 +182,9 @@ class MeasurementData(object):
     '''
       MeasurementData[index] returns one datapoint.
     '''
-    return self.get_data(index)
+    data=numpy.array([col.values for col in self.data])
+    return data.transpose()[index].tolist()
+    #return self.get_data(index)
   
   def __getslice__(self, start, end):
     '''

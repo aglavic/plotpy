@@ -137,13 +137,47 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
     return "NULL"
   count=1
   columns=[]
-# define which columns contain the relevant data
+  # define which columns contain the relevant data
   for item in line:
     count=count+1
     for mapping in COLUMNS_MAPPING:
       if item==mapping[0]:
         columns.append([count-2,mapping[1],mapping[2]])
     columns.sort(key=lambda x:x[1])
+  # Find the columns of the types which can be used with this measurement.
+  # The columns can be given by index or name, if the name is not present
+  # the type is ignored.
+  applicable_types=[]
+  column_names=[col[2][0] for col in columns]
+  for type_i in MEASUREMENT_TYPES:
+    if (type_i[1] in column_names or type(type_i[1]) is int) and \
+       (type_i[2] in column_names or type(type_i[2]) is int) and \
+       (type_i[3] in column_names or type(type_i[3]) is int):
+      use_indices=[]
+      for col in type_i[1:4]:
+        if type(col) is int:
+          use_indices.append(col)
+        else:
+          use_indices.append(column_names.index(col))
+      useable=True
+      const_col_indices=[]
+      for const_col in type_i[0]:
+        if const_col[0] in column_names:
+          const_col_indices.append((column_names.index(const_col[0]), const_col[1]))
+        elif type(const_col[0]) is int:
+          const_col_indices.append(const_col)
+        else:
+          useable=False
+          break
+      if not useable:
+        continue
+      applicable_types.append([
+                               const_col_indices, 
+                               use_indices[0], 
+                               use_indices[1], 
+                               use_indices[2], 
+                               type_i[4], 
+                               ])
   not_found=True
   while not_found:
     try:
@@ -154,7 +188,7 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
       print "No valid data in file."
       return 'NULL'
     if (data_1!='NULL')&(data_2!='NULL'):
-      for type_i in MEASUREMENT_TYPES:
+      for type_i in applicable_types:
         if not_found and check_type(data_1,data_2,type_i):
           data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
           data.append(data_1)
@@ -192,7 +226,7 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
         next_data_2=read_data_line(input_file_lines[i+1],columns)
         if next_data_2 != 'NULL':
           not_found=True
-          for type_i in MEASUREMENT_TYPES:
+          for type_i in applicable_types:
             if check_type(next_data,next_data_2,type_i)&not_found:
               data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
               data.plot_options=type_i[4]

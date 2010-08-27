@@ -3635,8 +3635,10 @@ def apihelp(*ignore):
     @return Return value of webbrowser.open
   '''
   import webbrowser
+  # get the path of the program
+  file_path=os.path.split(measurement_data_plotting.__file__)[0].split("library.zip")[0]
   help_file=os.path.join(
-                os.path.split(measurement_data_plotting.__file__)[0]
+                              file_path
                               , 'doc'
                               , 'index-plot_script.html'
                               )

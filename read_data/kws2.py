@@ -257,7 +257,7 @@ def read_edf_file(file_name):
   if file_prefix in imported_edfs:
     return 'NULL'
   imported_edfs.append(file_prefix)
-  file_list=glob(file_prefix+'_im_'+'*')
+  file_list=glob(file_prefix+'_im_'+'*'+'.edf')+glob(file_prefix+'_im_'+'*'+'.edf.gz')
   file_list.sort()
   q_window=[0., 0.2, 0., 0.2]
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
@@ -296,7 +296,7 @@ def read_edf_file(file_name):
   #data_array.fromfile(file_handler, header_info['xdim']*header_info['ydim']) # deosn't work with gzip
   input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
   file_handler.close()
-  data_array=array(input_array)
+  data_arrays=[(array(input_array), header_info['time'])]
   # import all other files and add them together
   for i, file_name in enumerate(file_list[1:]):
     sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i' % (i+2, len(file_list)))
@@ -312,42 +312,94 @@ def read_edf_file(file_name):
     input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
     file_handler.close()
     # add the collected data to the already imported
-    data_array+=array(input_array)
-    header_info['time']+=header_info_tmp['time']
+    data_arrays.append((array(input_array), header_info_tmp['time']))
   sys.stdout.write('\b'*(len(str(i+2))+len(str(len(file_list))))+'\breadout complete!\n')
   sys.stdout.flush()
+  sys.stdout.write('\tData Processing 1/%i' % len(file_list))
+  sys.stdout.flush()
   # define other quantities for the input data
-  y_array=linspace(0, header_info['xdim']**2-1, header_info['xdim']**2)%header_info['ydim']
-  z_array=linspace(0, header_info['ydim']**2-1, header_info['ydim']**2)//header_info['ydim']
-  error_array=sqrt(data_array)
-  corrected_data=data_array/header_info['time']
-  corrected_error=error_array/header_info['time']
+  x_array=linspace(0, header_info['xdim']**2-1, header_info['xdim']**2)%header_info['ydim']
+  y_array=linspace(0, header_info['ydim']**2-1, header_info['ydim']**2)//header_info['ydim']
+  error_array=sqrt(data_arrays[0][0])
+  corrected_data_array=data_arrays[0][0]/data_arrays[0][1]
+  corrected_error_array=error_array/data_arrays[0][1]
   qy_array=4.*pi/header_info['lambda_γ']*\
-           sin(arctan((y_array-center_x)*header_info['pixelsize_x']/header_info['detector_distance']/2.))
+           sin(arctan((x_array-center_x)*header_info['pixelsize_x']/header_info['detector_distance']/2.))
   qz_array=-4.*pi/header_info['lambda_γ']*\
-           sin(arctan((z_array-center_y)*header_info['pixelsize_y']/header_info['detector_distance']/2.))
-  data=array([y_array, z_array, corrected_data, corrected_error, qy_array, qz_array, 
-              data_array, error_array, \
-              (qy_array<q_window[0])+(qy_array>q_window[1])+\
-              (qz_array<q_window[2])+(qz_array>q_window[3])+(data_array==0)])
-  use_indices=where(data[8]==0)[0]
-  filtered_data=data.transpose()[use_indices].transpose()
+           sin(arctan((y_array-center_y)*header_info['pixelsize_y']/header_info['detector_distance']/2.))
+  use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
+              (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
   dataobj.number_of_points=len(use_indices)
-  dataobj.data[0].values=filtered_data[0].tolist()
-  dataobj.data[1].values=filtered_data[1].tolist()
-  dataobj.data[2].values=filtered_data[2].tolist()
-  dataobj.data[3].values=filtered_data[3].tolist()
-  dataobj.data[4].values=filtered_data[4].tolist()
-  dataobj.data[5].values=filtered_data[5].tolist()
-  dataobj.data[6].values=filtered_data[6].tolist()
-  dataobj.data[7].values=filtered_data[7].tolist()
+  dataobj.data[0].values=x_array[use_indices].tolist()
+  dataobj.data[1].values=y_array[use_indices].tolist()
+  dataobj.data[2].values=corrected_data_array[use_indices].tolist()
+  dataobj.data[3].values=corrected_error_array[use_indices].tolist()
+  dataobj.data[4].values=qy_array[use_indices].tolist()
+  dataobj.data[5].values=qz_array[use_indices].tolist()
+  dataobj.data[6].values=data_arrays[0][0][use_indices].tolist()
+  dataobj.data[7].values=error_array[use_indices].tolist()
   dataobj.sample_name=header_info['sample_name']
   dataobj.info="#"+"\n#".join([item[1] for item in sorted(header_settings.items())])
+  dataobj.short_info="Frame 1"
   dataobj.scan_line=1
   dataobj.scan_line_constant=0
   dataobj.logz=True
+  output=[dataobj]
+  sumdata=data_arrays[0][0][use_indices]
+  sumtime=data_arrays[0][1]
+  # Process all datasets
+  for i, data_time in enumerate(data_arrays[1:]):
+    data, time=data_time
+    sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i' % (i+2, len(file_list)))
+    sys.stdout.flush()
+    addobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
+                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+                            [], 4, 5, 3, 2)
+    addobj.short_info="Frame %i" % (i+2)
+    addobj.number_of_points=len(use_indices)
+    addobj.sample_name=header_info['sample_name']
+    addobj.info="#"+"\n#".join([item[1] for item in sorted(header_settings.items())])
+    addobj.scan_line=1
+    addobj.scan_line_constant=0
+    addobj.logz=True
+    addobj.data[0]=dataobj.data[0]
+    addobj.data[1]=dataobj.data[1]
+    addobj.data[4]=dataobj.data[4]
+    addobj.data[5]=dataobj.data[5]
+    data=data[use_indices]
+    error_array=sqrt(data)
+    addobj.data[2].values=(data/time).tolist()
+    addobj.data[3].values=(error_array/time).tolist()
+    addobj.data[6].values=data.tolist()
+    addobj.data[7].values=error_array.tolist()
+    output.append(addobj)
+    sumdata+=data
+    sumtime+=time
+  sys.stdout.write('\b'*(2*len(str(len(file_list)+1)))+'complete!\n')
+  sys.stdout.flush()
+  # process the sum of datasets
+  sumobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
+                         ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+                          [], 4, 5, 3, 2)
+  sumobj.short_info="Sum of all Frames"
+  sumobj.number_of_points=len(use_indices)
+  sumobj.sample_name=header_info['sample_name']
+  sumobj.info="#"+"\n#".join([item[1] for item in sorted(header_settings.items())])
+  sumobj.scan_line=1
+  sumobj.scan_line_constant=0
+  sumobj.logz=True
+  sumobj.data[0]=dataobj.data[0]
+  sumobj.data[1]=dataobj.data[1]
+  sumobj.data[4]=dataobj.data[4]
+  sumobj.data[5]=dataobj.data[5]
+  sumerror=sqrt(sumdata)
+  sumobj.data[2].values=(sumdata/sumtime).tolist()
+  sumobj.data[3].values=(sumerror/sumtime).tolist()
+  sumobj.data[6].values=sumdata.tolist()
+  sumobj.data[7].values=sumerror.tolist()
+  output.insert(0, sumobj)
   print "\tImport complete, ignoring file names belonging to the same series."
-  return [dataobj]  
+  return output
 
 def read_edf_header(file_handler):
   '''

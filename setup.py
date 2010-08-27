@@ -35,10 +35,10 @@ __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat
 __data_files__=[('doc', glob('doc/*.html'))]
 __requires__=['pygtk', 'gobject', 'numpy', 'scipy']
 
-__options__={ "py2exe": {"includes": "numpy,scipy,gtk,pango,cairo,pangocairo,atk,gobject",
+__options__={ "py2exe": {"includes": "numpy, pango, cairo, pangocairo, atk, gobject",
                          "optimize": 2, 
-                         "skip_archive": True, 
-                         
+                         #"skip_archive": True, # setting not to move compiled code into library.zip file
+                         'packages':'encodings, gtk, sessions, read_data, gtkgui, scipy, IPython',
                              }}
 
 # extensions modules written in C
@@ -142,7 +142,8 @@ if 'install' in sys.argv:
     if answer!='y':
       exit()
 
-# Run the setup command with the selected parameters
+
+#### Run the setup command with the selected parameters ####
 setup(name=__name__,
       version=__version__,
       description=__description__,
@@ -157,8 +158,8 @@ setup(name=__name__,
       package_data=__package_data__,
       data_files=__data_files__, 
       requires=__requires__, #does not do anything
-      console = [ "__init__.py","py2exe_imports.py" ],
-      #windows = [ "plot.py" ],
+      console = [ "__init__.py"], # set the executable for py2exe
+      #windows = [ "__init__.py" ],
       options = __options__, 
      )
 
@@ -224,32 +225,38 @@ if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
   
 # py2exe specific stuff to make it work:
 if "py2exe" in sys.argv and not py2exe_test:
+  def xcopy_to_folder(from_folder, to_folder):
+    dest=os.path.join('archiv', to_folder)
+    if getattr(from_folder, '__iter__', False):
+      src=os.path.join(*from_folder)
+    else:
+      src=from_folder
+    print "Copy %s to %s..." % (src, dest)
+    try:
+      os.mkdir(os.path.join('archiv', to_folder))
+    except OSError:
+      print "\tDirectory %s already exists." % dest
+    try:
+      handle=os.popen('xcopy %s %s /y /e' % (src, dest))
+      files=len(handle.read().splitlines())
+      print "\t%i Files" % files
+    except:
+      print "\tSkipped because of errors!" % src
   print "\nRenaming executable"
   os.popen('copy archiv\\__init__.exe archiv\\plot.exe')
   os.popen('del archiv\\__init__.exe')
   print "\n*** Copying gtk stuff ***"
+  for src, dest in [
+                    ('c:\\gtk\\etc', 'etc'), 
+                    ('c:\\gtk\\share\\*.none', 'share'), 
+                    ('c:\\gtk\\share\\locale', 'share\\locale'), 
+                    ('c:\\gtk\\share\\themes', 'share\\themes'), 
+                    ('c:\\gtk\\lib', 'lib'), 
+                    ('c:\\gnuplot', 'gnuplot'), 
+                    ('config', 'config'), 
+                    ]:
+    xcopy_to_folder(src, dest)
   from glob import glob
-  try:
-    os.mkdir('archiv\\etc')
-    os.mkdir('archiv\\share')
-    os.mkdir('archiv\\lib')
-    os.mkdir('archiv\\gnuplot')
-    os.mkdir('archiv\\config')
-  except:
-    print "Directories already exist."
-  try:
-    handle=os.popen('xcopy c:\\gtk\\etc archiv\\etc /y /e')
-    print handle.read()
-    handle=os.popen('xcopy c:\\gtk\\share archiv\\share /y /e')
-    print handle.read()
-    handle=os.popen('xcopy c:\\gtk\\lib archiv\\lib /y /e')
-    print handle.read()
-    handle=os.popen('xcopy c:\\gnuplot archiv\\gnuplot /y /e')
-    print handle.read()
-    handle=os.popen('xcopy config archiv\\config /y /e')
-    print handle.read()
-  except:
-    print "Problem with copy"
   for script_file in glob('scripts\\*.bat'):
     sf=open(script_file, 'r').read()
     open(os.path.join('archiv', os.path.split(script_file)[1]), 'w').write(sf.replace('plot.py', 'plot'))

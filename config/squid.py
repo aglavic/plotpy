@@ -44,6 +44,10 @@ COLUMNS_MAPPING=[\
 # AC dat file
 ,["m' (emu)",3,['M_{ac}','emu']]\
 ,["m' Scan Std Dev",4,['delta_M','emu']]\
+# Torque magnetometer
+,['Torque (Nm)',3,['Torque','Nm']]\
+,['Torque Std. Dev. (Nm)',4,['δTorque','Nm']]\
+,["Sample Position (deg)", 5, ['φ', '°']]\
 # AC PPMS dat file
 ,["M' (emu)",7,["M\\047{ac}",'emu']]\
 ,["M'' (emu)",8,["M\\047\\047_{ac}",'emu']]\
@@ -74,11 +78,13 @@ COLUMNS_MAPPING=[\
 # Diviations are only compared with last datapoint, so slow increases won't trigger a new sequence.
 MEASUREMENT_TYPES=[\
 # raw data, sequence have same time stamp, temperature should be shown for every sequence (div=300K always true)
-[[[2,300.],[0,1.]],3,4,4,''],\
+[[['T',300.],['time',1.]], 3, 4, 4,''],\
+# phi scan of e.g. torque magnetometer
+[[['T',0.25],['H',1.]], 'φ', 3, 4,''],\
 # MvsT, H is constant
-[[[1,1.]],2,3,4,''],\
+[[['H',1.]],2,3,4,''],\
 # MvsH T is constant
-[[[2,0.25]],1,3,4,'']\
+[[['T',0.25]],1,3,4,'']\
 ]
 
 # Split sequences after readout [list_for_scantype, split_by, split_sensitivity]

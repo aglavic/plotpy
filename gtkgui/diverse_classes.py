@@ -195,7 +195,8 @@ class RedirectError(RedirectOutput):
       Class constructor, as in RedirectOutput and creates the message dialog.
     '''
     RedirectOutput.__init__(self, plotting_session)
-    self.messagebox=gtk.MessageDialog(parent=None, flags=0, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK_CANCEL, 
+    self.messagebox=gtk.MessageDialog(parent=None, flags=0, type=gtk.MESSAGE_ERROR, 
+                                      buttons=gtk.BUTTONS_OK_CANCEL,
                                       message_format='Errorbox')
     self.messagebox.connect('response', self.response)
     self.messagebox.set_title('Unecpected Error!')
@@ -214,9 +215,11 @@ class RedirectError(RedirectOutput):
     while '\n' in self.content:
       self.content.remove('\n')
     message_text='An unexpected error has occured:\n'
-    if len(self.content)>15:
+    message_add='\n'.join(self.content)
+    # Maximum length is 15 lines and 100 chars per line
+    if len(message_add.splitlines())>15:
       message_text+='... '
-    message_text+='\n'.join(self.content[-15:])
+    message_text+="\n".join(map(lambda line: line[:100], message_add.splitlines()[-15:]))
     message_text+='\n\nDo you want to create a debug logfile?'
     # < signs can cause an gtk.Warning message because they get confused with markup tags
     message_text=message_text.replace('<', '[').replace('>', ']')
