@@ -80,7 +80,7 @@ MEASUREMENT_TYPES=[\
 # raw data, sequence have same time stamp, temperature should be shown for every sequence (div=300K always true)
 [[['T',300.],['time',1.]], 3, 4, 4,''],\
 # phi scan of e.g. torque magnetometer
-[[['T',0.25],['H',1.]], 'φ', 3, 4,''],\
+[[['T', 300.]], 2, 'Torque', 'δTorque',''],\
 # MvsT, H is constant
 [[['H',1.]],2,3,4,''],\
 # MvsH T is constant
@@ -91,6 +91,7 @@ MEASUREMENT_TYPES=[\
 SPLIT_AFTER=[
              ["M\\047{ac}",'Frequency', 5.], 
              ["T",'DIRECTION', 0.25], 
+             ["T",'φ', 2.], 
              ]
 
 # permanent datafilters applied, a list of

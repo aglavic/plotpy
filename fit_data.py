@@ -142,11 +142,11 @@ class FitFunction(FitFunctionGUI):
       if (len(y) > len(parameters)) and cov_x is not None:
         if dataset_yerror:
           s_sq = (numpy.array(self.residuals(new_function_parameters, y, x, dy))**2).sum()/\
-                                           (len(y)-len(parameters))        
+                                           (len(y)-len(self.refine_parameters))        
           s_sq /= ((1./numpy.array(dy))**2).sum()
         else:
           s_sq = (numpy.array(self.residuals(new_function_parameters, y, x))**2).sum()/\
-                                           (len(y)-len(parameters))        
+                                           (len(y)-len(self.refine_parameters))        
         cov = cov_x * s_sq
     cov_out=[]
     for i in range(len(self.parameters)):
@@ -197,7 +197,11 @@ class FitFunction(FitFunctionGUI):
       y= map((lambda x_i: self.fit_function(self.parameters, x_i)), xint)
     return xint, y
   
-
+  def __call__(self, x):
+    '''
+      Calling the object returns the y values corresponding to the given x values.
+    '''
+    return self.simulate(x, 1)[1]
 
 class FitSum(FitFunction):
   '''
@@ -320,6 +324,25 @@ class FitQuadratic(FitFunction):
       Constructor setting the initial values of the parameters.
     '''
     self.parameters=[1, 0, 0]
+    FitFunction.__init__(self, initial_parameters)
+
+class FitSinus(FitFunction):
+  '''
+    Fit a sinus function.
+  '''
+  
+  # define class variables.
+  name="Sinus"
+  parameters=[1, numpy.pi*2,  0.,  0.]
+  parameter_names=['a', 'ω_0','φ_0', 'c']
+  fit_function=lambda self, p, x: p[0] * numpy.sin(numpy.array(x) * p[1] - p[2]) + p[3]
+  fit_function_text='a*sin(ω_0·x-φ_0)+c'
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1., numpy.pi*2, 0., 0.]
     FitFunction.__init__(self, initial_parameters)
 
 class FitExponential(FitFunction):
@@ -1077,6 +1100,7 @@ class FitSession(FitSessionGUI):
                        FitLinear.name: FitLinear, 
                        #FitDiamagnetism.name: FitDiamagnetism, 
                        FitQuadratic.name: FitQuadratic, 
+                       FitSinus.name: FitSinus, 
                        FitExponential.name: FitExponential, 
                        FitGaussian.name: FitGaussian, 
                        FitVoigt.name: FitVoigt, 
@@ -1093,7 +1117,6 @@ class FitSession(FitSessionGUI):
       Constructor creating pointer to the dataset.
       
       @param dataset A MeasurementData object
-      @param file_actions FileActions object to use      
     '''
     self.functions=[] # a list of sequences (FitFunction, fit, plot, ignore errors) to be used
     self.data=dataset
