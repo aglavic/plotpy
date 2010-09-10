@@ -37,7 +37,7 @@ __requires__=['pygtk', 'gobject', 'numpy', 'scipy']
 
 __options__={ "py2exe": {"includes": "numpy, pango, cairo, pangocairo, atk, gobject",
                          "optimize": 2, 
-                         #"skip_archive": True, # setting not to move compiled code into library.zip file
+                         "skip_archive": True, # setting not to move compiled code into library.zip file
                          'packages':'encodings, gtk, sessions, read_data, gtkgui, scipy, IPython',
                              }}
 

@@ -1245,7 +1245,10 @@ class DNSMeasurementData(MeasurementData):
     
   Doc of MeasurementData:
   '''
-  __doc__+=MeasurementData.__doc__
+  try:
+    __doc__+=MeasurementData.__doc__
+  except:
+    pass
   SPLIT_SENSITIVITY=0.01
   dns_info={}
   scan_line=1
