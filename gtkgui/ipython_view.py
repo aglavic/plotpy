@@ -39,11 +39,11 @@ ansi_colors =  {'0;30': 'Black',
                 '1;30': 'DarkGray',
                 '1;31': 'DarkRed',
                 '1;32': 'SeaGreen',
-                '1;33': 'Yellow',
+                '1;33': 'Blue',
                 '1;34': 'LightBlue',
                 '1;35': 'MediumPurple',
                 '1;36': 'LightCyan',
-                '1;37': 'White'}
+                '1;37': 'Black'}
 
 class IterableIPShell:
   def __init__(self,argv=None,user_ns=None,user_global_ns=None,

@@ -2748,7 +2748,7 @@ class ApplicationMainWindow(gtk.Window):
     oldstd=[sys.stdout, sys.stderr]
 
     ipython_dialog= gtk.Dialog(title="IPython Console", parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
-    ipython_dialog.set_size_request(750,550)
+    ipython_dialog.set_size_request(750,600)
     ipython_dialog.set_resizable(True)
     sw = gtk.ScrolledWindow()
     sw.set_policy(gtk.POLICY_AUTOMATIC,gtk.POLICY_AUTOMATIC)
@@ -2766,6 +2766,8 @@ class ApplicationMainWindow(gtk.Window):
               \tarrays as input. For line plots the last parameter is 'None'.
       newall \tCreate a new plot from a list of all data columns, the list 
               \thas to have the same length as returned by get_all
+      mapdata \tApply a function to all datasets in the active file data
+      mapall  \tApply a function to all datasets from all files
       apihelp \tOpen the api reference manual
     Objects:
       session \tThe active session containing the data objects and settings
@@ -2785,9 +2787,10 @@ class ApplicationMainWindow(gtk.Window):
     sys.stderr=ipview
     sw.add(ipview)
     ipython_dialog.vbox.add(sw)
-    ipview.modify_base('normal', gtk.gdk.Color('#000'))
-    ipview.modify_text('normal', gtk.gdk.Color('#fff'))
-    ipview.modify_cursor(gtk.gdk.Color('#aaa'), None)
+    # Change the color sceme to have a black background
+    #ipview.modify_base('normal', gtk.gdk.Color('#000'))
+    #ipview.modify_text('normal', gtk.gdk.Color('#fff'))
+    #ipview.modify_cursor(gtk.gdk.Color('#aaa'), None)
     ipython_dialog.show_all()
     ipython_dialog.connect('delete_event',lambda x,y:False)
     def reset(action):
@@ -2835,6 +2838,7 @@ class ApplicationMainWindow(gtk.Window):
       self.index_mess=len(self.measurement)-1
       self.replot()
     def newall(new_list):
+      # create a new plot from a list of given columns
       length=len(new_list[0])
       if not (all(map(lambda item: type(item) is measurement_data_structure.PhysicalProperty, new_list)) and\
         all(map(lambda item: len(item)==length, new_list))):
@@ -2849,6 +2853,20 @@ class ApplicationMainWindow(gtk.Window):
       self.measurement.append(newd)
       self.index_mess=len(self.measurement)-1
       self.replot()
+    def mapdata(function):
+      # apply a given function to all datasets of the active file
+      output=[]
+      for dataset in self.measurement:
+        output.append(function(dataset))
+      return output
+    def mapall(function):
+      # apply a given function to all datasets of all files
+      output={}
+      for key, datasets in self.active_session.file_data.items():
+        output[key]=[]
+        for dataset in datasets:
+          output[key].append(function(dataset))
+      return output
     # add variables to ipython namespace
     ipview.updateNamespace({
                        'session': self.active_session, 
@@ -2860,6 +2878,8 @@ class ApplicationMainWindow(gtk.Window):
                        'newxyz': newxyz, 
                        'getall': getall, 
                        'newall': newall, 
+                       'mapdata': mapdata, 
+                       'mapall': mapall, 
                        'np': numpy, 
                        'sp': scipy, 
                        'mds': measurement_data_structure, 
