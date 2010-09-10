@@ -2745,6 +2745,7 @@ class ApplicationMainWindow(gtk.Window):
     from copy import deepcopy
 
     FONT = "Mono 8"
+    oldstd=[sys.stdout, sys.stderr]
 
     ipython_dialog= gtk.Dialog(title="IPython Console", parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
     ipython_dialog.set_size_request(750,550)
@@ -2784,15 +2785,15 @@ class ApplicationMainWindow(gtk.Window):
     sys.stderr=ipview
     sw.add(ipview)
     ipython_dialog.vbox.add(sw)
+    ipview.modify_base('normal', gtk.gdk.Color('#000'))
+    ipview.modify_text('normal', gtk.gdk.Color('#fff'))
+    ipview.modify_cursor(gtk.gdk.Color('#aaa'), None)
     ipython_dialog.show_all()
     ipython_dialog.connect('delete_event',lambda x,y:False)
     def reset(action):
-      sys.stdout=sys.__stdout__
-      sys.stderr=sys.__stderr__
+      sys.stdout=oldstd[0]
+      sys.stderr=oldstd[1]
     ipython_dialog.connect('destroy', reset)
-    x=self.get_active_dataset().data[self.get_active_dataset().xdata].values
-    y=self.get_active_dataset().data[self.get_active_dataset().ydata].values
-    z=self.get_active_dataset().data[self.get_active_dataset().zdata].values
     # create functions for the use with ipython
     def getxyz():
       # returns numpy arrays of x,y and z
@@ -3594,7 +3595,7 @@ class ApplicationMainWindow(gtk.Window):
         "Export Multi-plots",                                    # tooltip
         self.export_plot),
       ( "OpenConsole", None,                    # name, stock id
-        "Open IPython Console", None,                     # label, accelerator
+        "Open IPython Console", "<control>I",                     # label, accelerator
         None,                                    # tooltip
         self.open_ipy_console),
       ( "ShowPersistent", gtk.STOCK_FULLSCREEN,                    # name, stock id

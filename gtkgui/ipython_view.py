@@ -248,7 +248,6 @@ class ConsoleView(gtk.TextView):
     elif insert_iter.compare(selection_iter) > 0:
       self.text_buffer.move_mark(selection_mark, start_iter)
 
-
 class IPythonView(ConsoleView, IterableIPShell):
   def __init__(self, intro_text=""):
     ConsoleView.__init__(self)

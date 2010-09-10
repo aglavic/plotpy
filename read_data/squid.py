@@ -282,8 +282,9 @@ def split_after_read(dataset, split):
   from copy import deepcopy
   output=[]
   dims=dataset.dimensions()
+  dims.append('DIRECTION')
   # only split if the right measurement is presen (e.g. frequency only for AC)
-  if split[0] not in dims:
+  if split[0] not in dims or split[1] not in dims:
       return [dataset]
   if split[1]!='DIRECTION':
     split_col=dims.index(split[1])

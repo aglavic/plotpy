@@ -201,7 +201,11 @@ class FitFunction(FitFunctionGUI):
     '''
       Calling the object returns the y values corresponding to the given x values.
     '''
-    return self.simulate(x, 1)[1]
+    x=numpy.array(x)
+    try:
+      return self.fit_function(self.parameters, x)
+    except TypeError:
+      return map((lambda x_i: self.fit_function(self.parameters, x_i)), x)
 
 class FitSum(FitFunction):
   '''
@@ -1121,6 +1125,14 @@ class FitSession(FitSessionGUI):
     self.functions=[] # a list of sequences (FitFunction, fit, plot, ignore errors) to be used
     self.data=dataset
     self.show_covariance=False
+
+  def __getitem__(self, item):
+    '''
+      Return the fit object at position item.
+      
+      @return FitData object or derived class
+    '''
+    return self.functions[item][0]
 
   def add_function(self, function_name):
     '''
