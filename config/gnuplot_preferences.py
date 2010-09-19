@@ -11,7 +11,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta5"
+__version__ = "0.7beta6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -77,6 +77,9 @@ set_output_terminal_ps='postscript landscape enhanced colour "Arial" 16 solid lw
 # terminal for external gnuplot window
 if "linux" in platform:
   set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\
+                          '" 16'
+elif "darwin" in platform:
+  set_output_terminal_wxt='aqua enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\
                           '" 16'
 else:
   set_output_terminal_wxt='windows enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\

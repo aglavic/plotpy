@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta5"
+__version__ = "0.7beta6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -259,7 +259,7 @@ def read_edf_file(file_name):
   imported_edfs.append(file_prefix)
   file_list=glob(file_prefix+'_im_'+'*'+'.edf')+glob(file_prefix+'_im_'+'*'+'.edf.gz')
   file_list.sort()
-  q_window=[0., 0.2, 0., 0.2]
+  q_window=[0., 0.4, 0., 0.4]
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
                            ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
@@ -347,32 +347,36 @@ def read_edf_file(file_name):
   output=[dataobj]
   sumdata=data_arrays[0][0][use_indices]
   sumtime=data_arrays[0][1]
+  tmpa=data_arrays.pop(0)
+  del(tmpa)
   # Process all datasets
-  for i, data_time in enumerate(data_arrays[1:]):
-    data, time=data_time
+  for i in range(len(data_arrays)):
+    data_seq=data_arrays.pop(0)
+    data, time=data_seq
+    data=data[use_indices]
     sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i' % (i+2, len(file_list)))
     sys.stdout.flush()
-    addobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
-                            [], 4, 5, 3, 2)
-    addobj.short_info="Frame %i" % (i+2)
-    addobj.number_of_points=len(use_indices)
-    addobj.sample_name=header_info['sample_name']
-    addobj.info="#"+"\n#".join([item[1] for item in sorted(header_settings.items())])
-    addobj.scan_line=1
-    addobj.scan_line_constant=0
-    addobj.logz=True
-    addobj.data[0]=dataobj.data[0]
-    addobj.data[1]=dataobj.data[1]
-    addobj.data[4]=dataobj.data[4]
-    addobj.data[5]=dataobj.data[5]
-    data=data[use_indices]
-    error_array=sqrt(data)
-    addobj.data[2].values=(data/time).tolist()
-    addobj.data[3].values=(error_array/time).tolist()
-    addobj.data[6].values=data.tolist()
-    addobj.data[7].values=error_array.tolist()
-    output.append(addobj)
+    if i%10==0:
+      addobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
+                             ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+                              [], 4, 5, 3, 2)
+      addobj.short_info="Frame %i" % (i+2)
+      addobj.number_of_points=len(use_indices)
+      addobj.sample_name=header_info['sample_name']
+      addobj.info="#"+"\n#".join([item[1] for item in sorted(header_settings.items())])
+      addobj.scan_line=1
+      addobj.scan_line_constant=0
+      addobj.logz=True
+      addobj.data[0]=dataobj.data[0]
+      addobj.data[1]=dataobj.data[1]
+      addobj.data[4]=dataobj.data[4]
+      addobj.data[5]=dataobj.data[5]
+      error_array=sqrt(data)
+      addobj.data[2].values=(data/time).tolist()
+      addobj.data[3].values=(error_array/time).tolist()
+      addobj.data[6].values=data.tolist()
+      addobj.data[7].values=error_array.tolist()
+      output.append(addobj)
     sumdata+=data
     sumtime+=time
   sys.stdout.write('\b'*(2*len(str(len(file_list)+1)))+'complete!\n')
@@ -409,16 +413,16 @@ def read_edf_header(file_handler):
   settings={}
   # Set standart values which are overwritten if found in the header
   info={
-      'lambda_γ': 1.54, 
+      'lambda_γ': 1.771, 
       'xdim': 1024, 
       'ydim': 1024, 
       'sample_name': '', 
       'time': 1., 
       'pixel_x': 512.5, 
-      'pixelsize_x': 0.0914, 
+      'pixelsize_x': 0.0815,#0.0914, 
       'pixel_y': 512.5, 
-      'pixelsize_y': 0.0914, 
-      'detector_distance': 1000., 
+      'pixelsize_y': 0.0815,#0.0914, 
+      'detector_distance': 102., 
       }
   while '}' not in line:
     if "=" in line:

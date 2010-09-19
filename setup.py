@@ -2,10 +2,20 @@
 '''
   Script used for setup and installation purpose. 
   If all works the right way this should test the system environment for all dependencies and create source and binary distributions.
+  
+  The script can create exe stand alone programs under windows, but py2app doesn't word until now.
 '''
 
 import sys, os
 exit=sys.exit
+
+try:
+  # Use easy setup to ensure dependencies
+  import ez_setup
+  ez_setup.use_setuptools()
+except ImportError:
+  pass
+
 from distutils.core import setup, Extension
 from glob import glob
 import subprocess
@@ -17,7 +27,7 @@ __name__='Plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __license__ = "None"
-__version__ = "0.7beta5"
+__version__ = "0.7beta6"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://atzes.homeip.net/plotwiki"
@@ -25,7 +35,7 @@ __description__='''Program to plot measured data with Gnuplot. Provides a GUI in
 
 __scripts__=['plot.py']
 __py_modules__=[]
-__package_dir__={'plot_script': ''}
+__package_dir__={'plot_script': '.'}
 __packages__=['plot_script', 'plot_script.config', 'plot_script.read_data', 'plot_script.sessions', 
             'plot_script.sessions.reflectometer_fit', 'plot_script.wxgui', 'plot_script.gtkgui']
 __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90', 
@@ -34,12 +44,27 @@ __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat
                     }
 __data_files__=[('doc', glob('doc/*.html'))]
 __requires__=['pygtk', 'gobject', 'numpy', 'scipy']
-
-__options__={ "py2exe": {"includes": "numpy, pango, cairo, pangocairo, atk, gobject",
+__setup_requires__=[]
+if "py2app" in sys.argv:
+  import py2app
+  __packages__.remove('plot_script.gtkgui')
+  #__data_files__+=[('../Frameworks', glob('/usr/lib/libwx_mac*'))]
+  __options__={ "py2app": {
+                         "includes": "numpy", 
                          "optimize": 2, 
-                         "skip_archive": True, # setting not to move compiled code into library.zip file
-                         'packages':'encodings, gtk, sessions, read_data, gtkgui, scipy, IPython',
-                             }}
+                         "packages": "encodings, wx, scipy, IPython, sessions, read_data, wxgui, config", 
+                         "resources": "doc/*.html", 
+                         "argv_emulation": True,
+                         }, 
+              } 
+
+__options__={ "py2exe": {
+                          "includes": "numpy, pango, cairo, pangocairo, atk, gobject",
+                          "optimize": 2, 
+                          "skip_archive": True, # setting not to move compiled code into library.zip file
+                          'packages':'encodings, gtk, sessions, read_data, gtkgui, scipy, IPython',
+                             }, 
+                             }
 
 # extensions modules written in C
 #mdf_module = Extension('plot_script.measurement_data_functions',
@@ -158,6 +183,8 @@ setup(name=__name__,
       package_data=__package_data__,
       data_files=__data_files__, 
       requires=__requires__, #does not do anything
+      app=["__init__.py"],  # set the executable for py2app
+      setup_requires=__setup_requires__, 
       console = [ "__init__.py"], # set the executable for py2exe
       #windows = [ "__init__.py" ],
       options = __options__, 

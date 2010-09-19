@@ -44,7 +44,7 @@ __copyright__  = "Copyright 2008-2010"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__    = "None"
-__version__    = "0.7beta5"
+__version__    = "0.7beta6"
 __maintainer__ = "Artur Glavic"
 __email__      = "a.glavic@fz-juelich.de"
 __status__     = "Development"
@@ -2609,50 +2609,158 @@ class ApplicationMainWindow( wx.Frame ):
 
 
   def open_ipy_console(self, action):
-     '''
-       In debug mode this opens a window with an IPython console,
-       which has direct access to all important objects.
-     '''
-     import sys
-     print 'generic.py: Entry open_ipy_console'
+    '''
+      In debug mode this opens a window with an IPython console,
+      which has direct access to all important objects.
+    '''
+    import sys
+    import measurement_data_structure
+    import numpy
+    import scipy
+    from copy import deepcopy
 
 
-     ipython_dialog= wx.Dialog(self, wx.ID_ANY, title="IPython Console",
-                                     size  = wx.Size(750,550),
-                                     style = wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.STAY_ON_TOP )
+    ipython_dialog= wx.Dialog(self, wx.ID_ANY, title="IPython Console",
+                               size  = wx.Size(750,550),
+                               style = wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.STAY_ON_TOP )
 
-     vbox = wx.BoxSizer(wx.VERTICAL)
-     ipython_dialog.SetSizer( vbox )
+    vbox = wx.BoxSizer(wx.VERTICAL)
+    ipython_dialog.SetSizer( vbox )
 
-     ipview = IPython.gui.wx.ipython_view.IPShellWidget( ipython_dialog , 
-              intro="""      This is an interactive IPython session with direct access to the program.
-      You have the whole python functionality and can interact with the programs objects.
+    ipview = IPython.gui.wx.ipython_view.IPShellWidget( ipython_dialog , 
+        intro="""    This is an interactive IPython session with direct access to the program.
+    You have the whole python functionality and can interact with the programs objects.
+    You can use tab-completion and inspect any object (get help) by writing "object?".
 
-      Objects:
+    Functions:
+      replot \tFunction to replot the dataset
+      dataset \tFunction to get the active MeasurementData object
+      getxyz \tReturn 3 PhysicalProperty instances of the x,y and z columns 
+              \tfrom the active dataset
+      getall \tReturn all data columns of the active dataset
+      newxyz \tCreate a new plot with changed columns, takes three lists or 
+              \tarrays as input. For line plots the last parameter is 'None'.
+      newall \tCreate a new plot from a list of all data columns, the list 
+              \thas to have the same length as returned by get_all
+      mapdata \tApply a function to all datasets in the active file data
+      mapall  \tApply a function to all datasets from all files
+      apihelp \tOpen the api reference manual
+    Objects:
       session \tThe active session containing the data objects and settings
+              \tAll imported data can be accessed via the session.file_data dictionary
+              \tThe data for the selected file is in session.active_file_data
       plot_gui \tThe window object with all window related funcitons
-      self \t\tThe IPythonView object.\n""")
-     vbox.Add(ipview ,1, wx.EXPAND )
+    Modules:
+      np \tNumpy
+      sp \tScipy
+      mds \tMeasurement_data_strunctur module with PhysicalProperty, MeasurementData
+          \tand other data treatment Classes.
 
-     ipython_dialog.Show(True)
+    Remark: This functionality is mainly for developers. If you are a user experienced
+            in python it is recommanded to use the get... and new... functions.\n\n""")
+    vbox.Add(ipview ,1, wx.EXPAND )
+
+    ipython_dialog.Show(True)
 
 
 
-     def reset(action):
-       print 'generic.py: Entry reset'
-       sys.stdout=sys.__stdout__
-       sys.stderr=sys.__stderr__
-       ipython_dialog.Destroy()
+    def reset(action):
+      print 'generic.py: Entry reset'
+      sys.stdout=sys.__stdout__
+      sys.stderr=sys.__stderr__
+      ipython_dialog.Destroy()
 
-     ipython_dialog.Bind( wx.EVT_CLOSE, handler=reset )
+    ipython_dialog.Bind( wx.EVT_CLOSE, handler=reset )
 
+    # create functions for the use with ipython
+    def getxyz():
+      # returns numpy arrays of x,y and z
+      d=self.get_active_dataset()
+      xi=d.xdata
+      yi=d.ydata
+      zi=d.zdata
+      if zi>=0:
+        z=d.data[zi]
+      else:
+        z=None
+      return d.data[xi], d.data[yi], z
+    def getall():
+      # returns a list of all columns as nump arrays
+      return self.get_active_dataset().data
+    def newxyz(x, y, z=None):
+      # create new plot of changed x,y and z columns
+      d=self.get_active_dataset()
+      xi=d.xdata
+      yi=d.ydata
+      zi=d.zdata
+      newd=deepcopy(d)
+      if type(x) is measurement_data_structure.PhysicalProperty:
+        newd.data[xi]=x
+      else:
+        newd.data[xi].values=list(x)
+      newd.data[yi].values=list(y)
+      if type(y) is measurement_data_structure.PhysicalProperty:
+        newd.data[yi]=y
+      else:
+        newd.data[yi].values=list(y)
+      if zi>0:
+        if type(z) is measurement_data_structure.PhysicalProperty:
+          newd.data[zi]=z
+        else:
+          newd.data[zi].values=list(z)
+      newd.short_info+=" processed"
+      self.measurement.append(newd)
+      self.index_mess=len(self.measurement)-1
+      self.replot()
+    def newall(new_list):
+      # create a new plot from a list of given columns
+      length=len(new_list[0])
+      if not (all(map(lambda item: type(item) is measurement_data_structure.PhysicalProperty, new_list)) and\
+        all(map(lambda item: len(item)==length, new_list))):
+        raise TypeError, 'Input should be list of PhysicalProperty instances with the same length'
+      # create a new plot from all columns
+      d=self.get_active_dataset()
+      newd=deepcopy(d)
+      if len(new_list)!=len(d.data):
+        raise ValueError, 'Column number should be %i' % len(d.data)
+      newd.data=new_list
+      newd.short_info+=" processed"
+      self.measurement.append(newd)
+      self.index_mess=len(self.measurement)-1
+      self.replot()
+    def mapdata(function):
+      # apply a given function to all datasets of the active file
+      output=[]
+      for dataset in self.measurement:
+        output.append(function(dataset))
+      return output
+    def mapall(function):
+      # apply a given function to all datasets of all files
+      output={}
+      for key, datasets in self.active_session.file_data.items():
+        output[key]=[]
+        for dataset in datasets:
+          output[key].append(function(dataset))
+      return output
     
-     # add variables to ipython namespace
-     print 'update namespace'
-     ipview.IP.update_namespace({
-                        'session': self.active_session, 
-                        'plot_gui': self, 
-                        'self': ipview, 
+    # add variables to ipython namespace
+    print 'update namespace'
+    ipview.IP.update_namespace({
+                       'session': self.active_session, 
+                       'plot_gui': self, 
+                       'self': ipview, 
+                       'dataset': self.get_active_dataset, 
+                       'replot': self.replot, 
+                       'getxyz': getxyz, 
+                       'newxyz': newxyz, 
+                       'getall': getall, 
+                       'newall': newall, 
+                       'mapdata': mapdata, 
+                       'mapall': mapall, 
+                       'np': numpy, 
+                       'sp': scipy, 
+                       'mds': measurement_data_structure, 
+                       'apihelp': apihelp, 
                         })
 
 ##   #--------------------------Menu/Toolbar Events---------------------------------#
@@ -4022,3 +4130,19 @@ class ApplicationMainWindow( wx.Frame ):
 
 
 #------------------------- ApplicationMainWindow Class ----------------------------------#
+
+def apihelp(*ignore):
+  '''
+    Open the API reference manual in a webbrowser.
+    
+    @return Return value of webbrowser.open
+  '''
+  import webbrowser
+  # get the path of the program
+  file_path=os.path.split(measurement_data_plotting.__file__)[0].split("library.zip")[0]
+  help_file=os.path.join(
+                              file_path
+                              , 'doc'
+                              , 'index-plot_script.html'
+                              )
+  return webbrowser.open(help_file)

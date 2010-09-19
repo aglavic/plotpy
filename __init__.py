@@ -66,7 +66,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7beta5"
+__version__ = "0.7beta6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -169,7 +169,6 @@ def initialize_gui_toolkit():
   if config.gui.toolkit=='wx':
     sys.argv.append('--debug')
   global gui_main, status_dialog
-  import gtkgui
   gui_main=__import__( config.gui.toolkit+'gui.main_window' , fromlist=["main_window"])
   if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
     dialogs=__import__( config.gui.toolkit+'gui.dialogs' , fromlist=["dialogs"])
