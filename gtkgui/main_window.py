@@ -2248,24 +2248,28 @@ class ApplicationMainWindow(gtk.Window):
     use_data=self.measurement[self.index_mess]
     use_dim=use_data.dimensions()
     use_maxcol=max([use_data.xdata, use_data.ydata, use_data.zdata, use_data.yerror])
-    for dataset in self.measurement:
-      dim=dataset.dimensions()
-      # skip datasets which dont have enough columns
-      if len(dim)<use_maxcol:
-        continue
-      # skip datasets which are 2d when this is 3d or vice vercer
-      if (dataset.zdata<0) and (use_data.zdata>=0):
-        continue
-      dataset.xdata=use_data.xdata
-      dataset.ydata=use_data.ydata
-      dataset.zdata=use_data.zdata
-      dataset.yerror=use_data.yerror
-      dataset.logx=use_data.logx
-      dataset.logy=use_data.logy
-      dataset.logz=use_data.logz
-      dataset.plot_options=use_data.plot_options
-      self.reset_statusbar()
-      print 'Applied settings to all Plots!'
+    selection_dialog=PreviewDialog(self.active_session.file_data, buttons=('Apply', 0, 'Cancel', 1))
+    selection_dialog.set_default_size(800, 600)
+    if selection_dialog.run()==0:
+      for dataset in selection_dialog.get_active_objects():
+        dim=dataset.dimensions()
+        # skip datasets which dont have enough columns
+        if len(dim)<use_maxcol:
+          continue
+        # skip datasets which are 2d when this is 3d or vice vercer
+        if (dataset.zdata<0) and (use_data.zdata>=0):
+          continue
+        dataset.xdata=use_data.xdata
+        dataset.ydata=use_data.ydata
+        dataset.zdata=use_data.zdata
+        dataset.yerror=use_data.yerror
+        dataset.logx=use_data.logx
+        dataset.logy=use_data.logy
+        dataset.logz=use_data.logz
+        dataset.plot_options=use_data.plot_options
+        self.reset_statusbar()
+        print 'Applied settings to all Plots!'
+    selection_dialog.destroy()
 
   def add_multiplot(self,action): 
     '''

@@ -474,15 +474,17 @@ class FileActions:
     for i in range(int(max_r/dr)+1):
       r=i*dr
       x_val=(i+0.5)*dr
-      y_vals=[]
-      dy_vals=[]
-      for i, dist in enumerate(dist_r):
-        if dist>=x_val and dist<x_val+dr:
-          y_vals.append(values[i])
-          dy_vals.append(errors[i])
+      #y_vals=[]
+      indices=numpy.where((dist_r>=x_val)*(dist_r<x_val+dr))[0]
+      y_vals=values[indices]
+      dy_vals=errors[indices]
+      #for i, dist in enumerate(dist_r):
+      #  if dist>=x_val and dist<x_val+dr:
+      #    y_vals.append(values[i])
+      #    dy_vals.append(errors[i])
       if len(y_vals)>0:
-        y_val=sum(y_vals)/float(len(y_vals))
-        dy_val=sqrt( (array(dy_vals)**2).sum()) /float(len(y_vals))
+        y_val=y_vals.sum()/float(len(y_vals))
+        dy_val=sqrt( (dy_vals**2).sum()) /float(len(y_vals))
         output.append( (x_val, y_val, dy_val) )
     if len(output)==0:
       return None

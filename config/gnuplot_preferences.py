@@ -122,6 +122,7 @@ defined_color_patterns={
                         # MARIA color map from Stefan Mattauch
                         'MARIA log': 'defined (0 0 0 0 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1)', 
                         'MARIA lin': 'defined (0 1 1 1 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1)', 
+                        'fit2d': 'defined (0 "#000000", 1 "#0000d1", 2 "#c3c3ff", 3 "#9ee246", 4 "#fdfe78", 5.5 "#cc8800", 6.5 "#dc3ef7", 7.5 "#ffffff")', 
                         'Rainbow': 'rgbformulae 22,13,-31', 
                         'Hot': 'rgbformulae 21,22,23', 
                         'Color, gray printable': 'rgbformulae 31,32,33', 

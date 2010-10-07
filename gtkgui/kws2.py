@@ -137,20 +137,25 @@ class KWS2GUI:
     '''
     # Create XML for squid menu
     string='''
-      <menu action='KWS2'>
+      <menu action='GISAS'>
         <menuitem action='SeperateScattering' />
+        <menuitem action='AutoBackground' />
       </menu>
     '''
     # Create actions for the menu
     actions=(
-            ( "KWS2", None,                             # name, stock id
-                "KWS2", None,                    # label, accelerator
+            ( "GISAS", None,                             # name, stock id
+                "GISAS", None,                    # label, accelerator
                 None,                                   # tooltip
                 None ),
             ( "SeperateScattering", None,                             # name, stock id
                 "Seperate Scattering", None,                    # label, accelerator
                 "Calculate seperated scattering parts from polarization directions.",                                   # tooltip
                 self.seperate_scattering ),
+            ( "AutoBackground", None,                             # name, stock id
+                "Automatically Subtract Background", None,                    # label, accelerator
+                "",                                   # tooltip
+                self.do_autosubtract_background ),
                 )
     return string,  actions
 
@@ -280,3 +285,7 @@ class KWS2GUI:
     result.short_info=title
     result.number=str(len(polarization_list))
     self.active_file_data.append(result)
+
+  def do_autosubtract_background(self, action, window):
+    self.autosubtract_background(self.active_file_data[window.index_mess])
+    window.replot()

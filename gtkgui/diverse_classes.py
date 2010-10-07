@@ -159,7 +159,7 @@ class RedirectOutput(object):
       
       @param string Output string of stdout
     '''
-    string=string.replace('\b', '')
+    #string=string.replace('\b', '')
     if self.second_output:
       self.second_output.write(string)
     self.content+=string.splitlines()

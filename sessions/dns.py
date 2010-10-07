@@ -1550,7 +1550,7 @@ class DNSMeasurementData(MeasurementData):
         Defines how two objects of this class should be add with '+'.
       '''
       if len(self) != len(other):
-        return None
+        raise ValueError, 'Can only add datasets with the same length.'
       # create a new instance of the class
       from copy import deepcopy
       result=deepcopy(self)
@@ -1567,7 +1567,7 @@ class DNSMeasurementData(MeasurementData):
         Defines how two objects of this class should be subtracted with '-'.
       '''
       if len(self) != len(other):
-        return None
+        raise ValueError, 'Can only subtract datasets with the same length.'
       # create a new instance of the class
       from copy import deepcopy
       result=deepcopy(self)
@@ -1584,7 +1584,7 @@ class DNSMeasurementData(MeasurementData):
         Multiply the data by data of a different dataset.
       '''
       if len(self) != len(other):
-        return None
+        raise ValueError, 'Can only multiply datasets with the same length.'
       # create a new instance of the class
       from copy import deepcopy
       result=deepcopy(self)
@@ -1603,7 +1603,7 @@ class DNSMeasurementData(MeasurementData):
         Divide the data by data of a different dataset.
       '''
       if len(self) != len(other):
-        return None
+        raise ValueError, 'Can only divide datasets with the same length.'
       # create a new instance of the class
       from copy import deepcopy
       result=deepcopy(self)

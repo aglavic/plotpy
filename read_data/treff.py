@@ -114,6 +114,7 @@ def read_data(file_name, script_path, import_images, return_detector_images):
   lines_columns=map(str.split, lines)
   comments=map(string_or_float, lines_columns)
   headers=filter(lambda i: not comments[lines_columns.index(i)], lines_columns)
+  footers=headers[comments.index(True):]
   for hl in headers:
     if len(hl)>0 and hl[0]=='#Scan':
       print "\tdetected as MARIA file..."
@@ -266,6 +267,10 @@ def read_data(file_name, script_path, import_images, return_detector_images):
   if treff_zip:
     # this is very importent as the zip file could be damadged otherwise!
     treff_zip.close()
+  info_list=filter(lambda item: item.strip()!='', map(" ".join, footers))
+  info_string="\n".join(info_list)
+  for dataset in output:
+    dataset.info=info_string
   if return_detector_images:
     return output, detector_images
   else:

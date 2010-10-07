@@ -94,12 +94,14 @@ def read_scan_header(input_file_lines):
     elif (line[0:2]=='#S'):
       output=line.replace('#S', 'Scan: ').rstrip('\n')
     elif output:
-      if line[0:2] in ['#G', '#P', '#N']:
+      if line[0:3] in ['#N ','#G0', '#G2','#G3','#G4']:
         continue
       else:
         info=line.rstrip('\n').replace('#D', 'Date: ')
         info=info.replace('#T', 'Counting time: ')
         info=info.replace('#Q', 'Q at start: ')
+        info=info.replace('#P0', 'Angles at start: ')
+        info=info.replace('#G1', 'Lattice parameters at start: ')
         output+='\n'+info
   return None
 

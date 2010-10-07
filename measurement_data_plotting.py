@@ -209,10 +209,13 @@ def gnuplot_plot_script(session,
   else:
     tmp_name='tmp_data_'
     output_file_prefix=session.TEMP_DIR+tmp_name
-  for j, dataset in enumerate(datasets):
-    for i, attachedset in enumerate(dataset.plot_together):
-      file_numbers.append(str(j)+'-'+str(i))
-      attachedset.export(output_file_prefix+str(j)+'-'+str(i)+'.out')
+  if len(datasets)==1 and getattr(datasets[0], 'is_matrix_data', False):
+    datasets[0].export_matrix(output_file_prefix+str(0)+'-'+str(0)+'.bin')
+  else:
+    for j, dataset in enumerate(datasets):
+      for i, attachedset in enumerate(dataset.plot_together):
+        file_numbers.append(str(j)+'-'+str(i))
+        attachedset.export(output_file_prefix+str(j)+'-'+str(i)+'.out')
   if not sample_name:
     sample_name=datasets[0].sample_name
   if output_file.rsplit('.',1)[1]=='ps':
@@ -264,7 +267,7 @@ def gnuplot_plot_script(session,
     else:
       output = proc.communicate()
   except:
-    print "\n!Problem communicating with Gnuplot, please check your system settings!"
+    print "\n!Problem commuself.data[self.zdata][:].tolist()nicating with Gnuplot, please check your system settings!"
     print "Gnuplot command used: %s\n" % session.GNUPLOT_COMMAND
     return "\n!Problem communicating with Gnuplot, please check your system settings!"
   try:
@@ -400,6 +403,18 @@ def create_plot_script(session,
     splot_add='s'
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
   output_file_prefix=os.path.normpath(output_file_prefix)
+  if len(datasets)==1 and getattr(datasets[0], 'is_matrix_data', False):
+    return replace_ph(session, 
+                       gnuplot_file_text+plot_matrix(datasets[0], output_file_prefix+file_numbers[0]+'.bin'),
+                       datasets,
+                       file_name_prefix,
+                       file_numbers, 
+                       title,
+                       names,
+                       sample_name,
+                       (0, 0, 0),
+                       postscript_export,
+                       additional_info)
   gnuplot_file_text+='# now the plotting function\n'+splot_add+\
         'plot "'+output_file_prefix+file_numbers[0]+'.out" u '+using_cols+\
                 datasets[0].plot_options.special_using_parameters+\
@@ -460,6 +475,9 @@ def create_plot_script(session,
                                    postscript_export,
                                    additional_info)
   return gnuplot_file_text
+
+def plot_matrix(dataset, file_name):
+  return 'plot "%s" binary format="%%float" u 1:2:3 w image\n' % (file_name, )
 
 def postscript_replace(string):
   '''

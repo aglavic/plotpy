@@ -44,7 +44,8 @@ class KWS2Session(GUI, GenericSession):
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
 '''
-\tKWS2-Data treatment:
+\tGISAS-Data treatment:
+\t\t-all-frames
 '''
   #------------------ help text strings ---------------
 
@@ -56,7 +57,7 @@ class KWS2Session(GUI, GenericSession):
 #  TRANSFORMATIONS=[\
 #  ['','',1,0,'',''],\
 #  ]  
-#  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+[]  
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['-all-frames']  
   #------------------ local variables -----------------
 
   
@@ -66,21 +67,21 @@ class KWS2Session(GUI, GenericSession):
     '''
     GenericSession.__init__(self, arguments)
   
-#  def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
-#    '''
-#      additional command line arguments for squid sessions
-#    '''
-#    found=True
-#    if (argument[0]=='-') or last_argument_option[0]:
-#      # Cases of arguments:
-#      if last_argument_option[0]:
-#        found=False
-#      elif argument=='-no-img':
-#        self.import_images=False
-#        found=True
-#      else:
-#        found=False
-#    return (found, last_argument_option)
+  def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
+    '''
+      additional command line arguments for squid sessions
+    '''
+    found=True
+    if (argument[0]=='-') or last_argument_option[0]:
+      # Cases of arguments:
+      if last_argument_option[0]:
+        found=False
+      elif argument=='-all-frames':
+        read_data.kws2.import_subframes=True
+        found=True
+      else:
+        found=False
+    return (found, last_argument_option)
 
 
   def read_file(self, file_name):
@@ -97,5 +98,19 @@ class KWS2Session(GUI, GenericSession):
     if not found:
       self.new_configuration(setups, rel_file, folder)
     return read_data.kws2.read_data(file_name)
+
+  def autosubtract_background(self, dataset, fraction=10.):
+    z=dataset.data[dataset.zdata]
+    zarray=z[:]
+    length=len(zarray)
+    # get maximal power of 10 for the background
+    max_index=map(lambda i: ((zarray<10**i).sum()>length/fraction), range(1,10)).index(True)
+    rough_background=10**(max_index)*(map(lambda i: ((zarray<(10**(max_index)*i)).sum())>length/fraction, 
+                                          range(2,11)).index(True)+1)
+    fine_background=rough_background+10**(max_index-1)*(map(lambda i: (zarray<(rough_background+10**(max_index-1)*i)).sum()>length/fraction, 
+                                                        range(1,11)).index(True)+1)
+    z.values=zarray-fine_background
+    dataset.plot_options.zrange=(1.,None)
+    print "Subtracted %f background" % fine_background    
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++

@@ -314,7 +314,7 @@ class PreviewDialog(gtk.Dialog):
 
   def get_active_objects(self):
     '''
-      Return a list of data object for which the chackbox is set.
+      Return a list of data object for which the checkbox is set.
     '''
     active_dict=self.get_active_keys()
     data_dict=self.data_dict

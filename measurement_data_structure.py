@@ -678,6 +678,7 @@ class HugeMD(MeasurementData):
   _last_datapoint=None
   _filters=[]
   _data=[]
+  is_matrix_data=True
   
   # When filters have changed the data has to be reexported
   def get_filters(self):
@@ -785,6 +786,18 @@ class HugeMD(MeasurementData):
       self.store_data()
     copyfile(self.tmp_export_file,  file_name)
     return self.last_export_output
+  
+  def export_matrix(self, file_name):
+    '''
+      Quick export only the z values as binary file.
+    '''
+    import array
+    a=array.array('f')
+    # Create data as list of x1,y1,z1,x2,y2,z2...,xn,yn,zn
+    xyz=numpy.array([self.data[self.xdata][:], self.data[self.ydata][:], self.data[self.zdata][:]]).transpose()
+    a.fromlist(xyz.flatten().tolist())
+    a.tofile(open(file_name, 'wb'))
+    
   
   do_export=MeasurementData.export
 
