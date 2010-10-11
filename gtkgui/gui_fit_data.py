@@ -170,13 +170,13 @@ class FitSessionGUI:
     del_button=gtk.Button(label='DEL')
     table.attach(del_button, 12, 13, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
     del_button.connect('clicked', self.del_function_dialog, function, dialog, window)
+    # entries for the x range this function is fitted in
     entries.append(gtk.Entry())
     entries[len(function.parameters)].set_width_chars(8)
-    # entries for the x range this function is fitted in
     if function.x_from is not None:
       entries[len(function.parameters)].set_text("%.6g" % function.x_from)
     else:
-      entries[len(function.parameters)].set_text("{from}")      
+      entries[len(function.parameters)].set_text("{x-from}")      
     table.attach(entries[len(function.parameters)], 13, 14, 0, 1, 
                              gtk.EXPAND, gtk.EXPAND, 0, 0)
     entries.append(gtk.Entry())
@@ -184,9 +184,27 @@ class FitSessionGUI:
     if function.x_to is not None:
       entries[len(function.parameters)+1].set_text("%.6g" % function.x_to)
     else:
-      entries[len(function.parameters)+1].set_text("{to}")
+      entries[len(function.parameters)+1].set_text("{x-to}")
     table.attach(entries[len(function.parameters)+1], 14,15, 0, 1, 
                              gtk.EXPAND, gtk.EXPAND, 0, 0)
+    if function.is_3d:
+      # entries for the y range this function is fitted in
+      entries.append(gtk.Entry())
+      entries[len(function.parameters)+2].set_width_chars(8)
+      if function.y_from is not None:
+        entries[len(function.parameters)+2].set_text("%.6g" % function.y_from)
+      else:
+        entries[len(function.parameters)+2].set_text("{y-from}")      
+      table.attach(entries[len(function.parameters)+2], 13, 14, 1, 2, 
+                               gtk.EXPAND, gtk.EXPAND, 0, 0)
+      entries.append(gtk.Entry())
+      entries[len(function.parameters)+3].set_width_chars(8)
+      if function.y_to is not None:
+        entries[len(function.parameters)+3].set_text("%.6g" % function.y_to)
+      else:
+        entries[len(function.parameters)+3].set_text("{y-to}")
+      table.attach(entries[len(function.parameters)+3], 14,15, 1, 2, 
+                               gtk.EXPAND, gtk.EXPAND, 0, 0)
     return table, entries
 
   def add_function_dialog(self, action, name, dialog, window):
@@ -226,11 +244,21 @@ class FitSessionGUI:
       @param func_index List index of the function to be altered
       @param values List of values for the parameters to be set
     '''
-    for j, value in enumerate(values[0:-3]):
-      self.functions[func_index][0].parameters[j]=value
-    self.functions[func_index][0].x_from=values[-3]
-    self.functions[func_index][0].x_to=values[-2]
-    self.functions[func_index][0].fit_function_text=values[-1]
+    function=self.functions[func_index][0]
+    if function.is_3d:
+      for j, value in enumerate(values[0:-5]):
+        function.parameters[j]=value
+      function.x_from=values[-5]
+      function.x_to=values[-4]
+      function.y_from=values[-3]
+      function.y_to=values[-2]
+      function.fit_function_text=values[-1]
+    else:
+      for j, value in enumerate(values[0:-3]):
+        function.parameters[j]=value
+      function.x_from=values[-3]
+      function.x_to=values[-2]
+      function.fit_function_text=values[-1]
   
   def fit_from_dialog(self, action, entries, dialog, window):
     '''
@@ -252,11 +280,20 @@ class FitSessionGUI:
     for i, function in enumerate(self.functions):
       # Set all function parameters according to the entries
       values=[]
-      for entry in entries[i][:-4]:
-        values.append(get_entry_values(entry))
-      values.append(get_entry_values(entries[i][-4], if_not=None))
-      values.append(get_entry_values(entries[i][-3], if_not=None))
-      values.append(entries[i][-2].get_text())
+      if function[0].is_3d:
+        for entry in entries[i][:-6]:
+          values.append(get_entry_values(entry))
+        values.append(get_entry_values(entries[i][-6], if_not=None))
+        values.append(get_entry_values(entries[i][-5], if_not=None))
+        values.append(get_entry_values(entries[i][-4], if_not=None))
+        values.append(get_entry_values(entries[i][-3], if_not=None))
+        values.append(entries[i][-2].get_text())        
+      else:
+        for entry in entries[i][:-4]:
+          values.append(get_entry_values(entry))
+        values.append(get_entry_values(entries[i][-4], if_not=None))
+        values.append(get_entry_values(entries[i][-3], if_not=None))
+        values.append(entries[i][-2].get_text())
       window.file_actions.activate_action('set_function_parameters', i, values)
     covariance_matices=window.file_actions.activate_action('fit_functions')
     window.file_actions.activate_action('simmulate_functions')

@@ -45,6 +45,7 @@ class FitFunction(FitFunctionGUI):
   fit_function_text='f(x)'
   x_from=None
   x_to=None
+  is_3d=False
   
   def __init__(self, initial_parameters):
     '''
@@ -260,7 +261,213 @@ class FitSum(FitFunction):
     else:
       self.origin[1].toggle_refine_parameter(action, index-len(self.origin[0].parameters))
 
-#+++++++++++++++++++++++++++++++++ Define common functions for fits +++++++++++++++++++++++++++++++++
+class FitFunction3D(FitFunctionGUI):
+  '''
+    Root class for fittable functions with x,y and z data. Parant of all other functions.
+  '''
+  
+  # define class variables, will be overwritten from childs.
+  name="Unnamed"
+  parameters=[]
+  parameter_names=[]
+  parameters_history=None
+  parameters_covariance=None
+  fit_function=lambda self, p, x, y: 0.
+  fit_function_text='f(x,y)'
+  x_from=None
+  x_to=None
+  y_from=None
+  y_to=None
+  is_3d=True
+  
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    if len(self.parameters)==len(initial_parameters):
+      self.parameters=initial_parameters
+    self.refine_parameters=range(len(self.parameters))
+
+
+  def residuals(self, params, z, y, x, zerror=None):
+    '''
+      Function used by leastsq to compute the difference between the simulation and data.
+      For normal functions this is just the difference between y and simulation(x) but
+      can be overwritten e.g. to increase speed or fit to log(x).
+      If the dataset has yerror values they are used as weight.
+      
+      @param params Parameters for the function in this iteration
+      @param z List of z values measured
+      @param y List of y values for the measured points
+      @param x List of x values for the measured points
+      @param yerror List of error values for the y values or None if the fit is not weighted
+      
+      @return Residuals (meaning the value to be minimized) of the fit function and the measured data
+    '''
+    # function is called len(x) times, this is just to speed up the lookup procedure
+    function=self.fit_function
+    function_parameters=[]
+    for i in range(len(self.parameters)):
+      if i in self.refine_parameters:
+        function_parameters.append(params[self.refine_parameters.index(i)])
+      else:
+        function_parameters.append(self.parameters[i])
+    if zerror==None: # is error list given?
+      # if function is defined for arrays (e.g. numpy) use this functionality
+      try:
+        err=function(function_parameters, x, y)-z
+      except TypeError:
+        # x and y are lists and the function is only defined for one point.
+        err=map(lambda x_i, y_i, z_i: function(function_parameters, x_i, y_i)-z_i, zip(x, y, z))
+      return err
+    else:
+      # if function is defined for arrays (e.g. numpy) use this functionality
+      try:
+        err=(function(function_parameters, x, y)-z)/zerror
+      except TypeError:
+        # x and y are lists and the function is only defined for one point.
+        err= map((lambda x_i, y_i, z_i, zerror_i: (function(function_parameters, x_i, y_i)-z_i)/zerror_i), zip(x, y, z, zerror))
+      return err      
+  
+  def refine(self,  dataset_x,  dataset_y, dataset_z, dataset_zerror=None):
+    '''
+      Do the least square refinement to the given dataset. If the fit converges
+      the new parameters are stored.
+      
+      @param dataset_x list of x values from the dataset
+      @param dataset_y list of y values from the dataset
+      @param dataset_z list of z values from the dataset
+      @param dataset_zerror list of errors from the dataset or None for no weighting
+      
+      @return The message string of leastsq and the covariance matrix
+    '''
+    parameters=[self.parameters[i] for i in self.refine_parameters]
+    x=numpy.array(dataset_x[:])
+    y=numpy.array(dataset_y[:])
+    z=numpy.array(dataset_z[:])
+    if dataset_zerror is not None:
+      dz=numpy.array(dataset_zerror[:])
+    else:
+      dz=None
+    # only refine inside the selected region
+    x_from=self.x_from
+    x_to=self.x_to
+    if x_from is None:
+      x_from=x.min()
+    if x_to is None:
+      x_to=x.max()
+    y_from=self.y_from
+    y_to=self.y_to
+    if y_from is None:
+      y_from=y.min()
+    if y_to is None:
+      y_to=y.max()
+    filter1=numpy.where((x>=x_from)*(x<=x_to))[0]
+    x=x[filter1]
+    y=y[filter1]
+    z=z[filter1]
+    if dz is not None:
+      dz=dz[filter1]
+    filter2=numpy.where((y>=y_from)*(y<=y_to))[0]
+    x=x[filter2]
+    y=y[filter2]
+    z=z[filter2]
+    if dz is not None:
+      dz=dz[filter2]
+    if dz is None:
+      fit_args=(z, y, x)
+    else:
+      fit_args=(z, y, x, dz)  
+    new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=fit_args, full_output=1)
+    # if the fit converged use the new parameters and store the old ones in the history variable.
+    cov=cov_x
+    if ier in [1, 2, 3, 4]:
+      if len(parameters)==1:
+        new_function_parameters=list(self.parameters)
+        new_function_parameters[self.refine_parameters[0]]=new_params
+      else:
+        new_function_parameters=[]
+        for i in range(len(self.parameters)):
+          if i in self.refine_parameters:
+            new_function_parameters.append(new_params[self.refine_parameters.index(i)])
+          else:
+            new_function_parameters.append(self.parameters[i])      
+      self.set_parameters(new_function_parameters)
+    # calculate the covariance matrix from cov_x, see scipy.optimize.leastsq help for details.
+      if (len(z) > len(parameters)) and cov_x is not None:
+        if dataset_zerror:
+          s_sq = (numpy.array(self.residuals(new_function_parameters, z, y, x, dz))**2).sum()/\
+                                           (len(z)-len(self.refine_parameters))        
+          s_sq /= ((1./numpy.array(dz))**2).sum()
+        else:
+          s_sq = (numpy.array(self.residuals(new_function_parameters, z, y, x))**2).sum()/\
+                                           (len(z)-len(self.refine_parameters))        
+        cov = cov_x * s_sq
+    cov_out=[]
+    for i in range(len(self.parameters)):
+      cov_out.append([])
+      for j in range(len(self.parameters)):
+        if (cov is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
+          cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
+        else:
+          cov_out[i].append(0.)
+    return mesg, cov_out
+
+  def set_parameters(self, new_params):
+    '''
+      Set new parameters and store old ones in history.
+      
+      @param new_params List of new parameters
+    '''
+    self.parameters_history=self.parameters
+    self.parameters=list(new_params)
+
+  def toggle_refine_parameter(self, action, index):
+    '''
+      Add or remove a parameter index to the list of refined parameters for the fit.
+    '''
+    if index in self.refine_parameters:
+      self.refine_parameters.remove(index)
+    else:
+      self.refine_parameters.append(index)
+  
+  def simulate(self, y, x):
+    '''
+      Calculate the function for the active parameters for x values and some values
+      in between.
+      
+      @param x List of x values to calculate the function for
+      @param interpolate Number of points to interpolate in between the x values
+    
+      @return simulated y-values for a list of giver x-values.
+    '''
+    try:
+      x=numpy.array(x[:])
+      y=numpy.array(y[:])
+    except TypeError:
+      pass
+    try:
+      z=list(self.fit_function(self.parameters, x, y))
+    except TypeError:
+      # x is list and the function is only defined for one point.
+      z= map((lambda x_i, y_i: self.fit_function(self.parameters, x_i, y_i)), zip(x, y))
+    return x, y, z
+  
+  def __call__(self, x, y):
+    '''
+      Calling the object returns the y values corresponding to the given x values.
+    '''
+    try:
+      x=numpy.array(x[:])
+      y=numpy.array(y[:])
+    except TypeError:
+      pass
+    try:
+      return self.fit_function(self.parameters, x, y)
+    except TypeError:
+      return map((lambda x_i, y_i: self.fit_function(self.parameters, x_i, y_i)), zip(x, y))
+
+#+++++++++++++++++++++++++++++++++ Define common functions for 2d fits +++++++++++++++++++++++++++++++++
 
 class FitLinear(FitFunction):
   '''
@@ -1089,7 +1296,92 @@ class FitBrillouineB(FitFunction):
                               numpy.array([p[5] for i in range(len(x))]))
 
 
-#--------------------------------- Define common functions for fits ---------------------------------
+#--------------------------------- Define common functions for 2d fits ---------------------------------
+
+#+++++++++++++++++++++++++++++++++ Define common functions for 3d fits +++++++++++++++++++++++++++++++++
+class FitGaussian3D(FitFunction3D):
+  '''
+    Fit a gaussian function of x and y.
+  '''
+  
+  # define class variables.
+  name="Gaussian"
+  parameters=[1., 0., 0., 0.1, 0.1, 0., 0.]
+  parameter_names=['A', 'x_0', 'y_0', 'sigma_x', 'sigma_y', 'tilt', 'C']
+  fit_function_text='A*exp(-0.5*(x-x_0)/sigma)+C'
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1., 0., 0., 0.1, 0.1, 0., 0.]
+    FitFunction3D.__init__(self, initial_parameters)
+  
+  def fit_function(self, p, x, y):
+    A=p[0]
+    x0=p[1]
+    y0=p[2]
+    sx=p[3]
+    sy=p[4]
+    tb=numpy.sin(p[5])
+    ta=numpy.cos(p[5])
+    C=p[6]
+    xdist=(numpy.array(x)-x0)
+    ydist=(numpy.array(y)-y0)
+    xdif=xdist*ta+ydist*tb
+    ydif=ydist*ta+xdist*tb
+    exp=numpy.exp
+    return A * exp(-0.5*((xdif/sx)**2+((ydif/sy)**2))) + C
+
+class FitVoigt3D(FitFunction3D):
+  '''
+    Fit a voigt function using the representation as real part of the complex error function.
+  '''
+  
+  # define class variables.
+  name="Voigt"
+  parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0., 0.]
+  parameter_names=['I', 'x_0', 'y_0', 'gamma', 'sigma_x', 'sigma_y', 'tilt','C']
+  fit_function_text='I*Re(w(z))/Re(w(z_0))+C; w=(x-x_0)/sigma/sqrt(2)'
+  sqrt2=numpy.sqrt(2)
+  sqrt2pi=numpy.sqrt(2*numpy.pi)
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0., 0]
+    FitFunction3D.__init__(self, initial_parameters)
+  
+  def fit_function(self, p, x, y):
+    '''
+      Return the 2d Voigt profile of x and y.
+      It is calculated using the complex error function,
+      see Wikipedia articel on Voigt-profile for the details.
+    '''
+    x=numpy.float64(numpy.array(x))
+    y=numpy.float64(numpy.array(y))
+    p=numpy.float64(numpy.array(p))
+    I=p[0]
+    x0=p[1]
+    y0=p[2]
+    gamma=p[3]
+    sx=p[4]
+    sy=p[5]
+    tb=numpy.sin(p[6])
+    ta=numpy.cos(p[6])
+    xdist=(numpy.array(x)-x0)
+    ydist=(numpy.array(y)-y0)
+    xdif=xdist*ta+ydist*tb
+    ydif=ydist*ta+xdist*tb    
+    c=p[7]
+    z1=(xdif + (abs(gamma)*1j)) / abs(sx)/self.sqrt2
+    z2=(ydif + (abs(gamma)*1j)) / abs(sy)/self.sqrt2
+    z01=(0. + (abs(gamma)*1j)) / abs(sx)/self.sqrt2
+    z02=(0. + (abs(gamma)*1j)) / abs(sy)/self.sqrt2
+    value=I * (wofz(z1).real / wofz(z01).real)*(wofz(z2).real / wofz(z02).real)+ c
+    return value
+#--------------------------------- Define common functions for 3d fits ---------------------------------
 
 class FitSession(FitSessionGUI):
   '''
@@ -1100,7 +1392,7 @@ class FitSession(FitSessionGUI):
   # class variables
   data=None
   # a dictionary of known fit functions
-  available_functions={
+  available_functions_2d={
                        FitLinear.name: FitLinear, 
                        #FitDiamagnetism.name: FitDiamagnetism, 
                        FitQuadratic.name: FitQuadratic, 
@@ -1115,6 +1407,10 @@ class FitSession(FitSessionGUI):
                        FitBrillouineT.name: FitBrillouineT, 
                        FitCuK.name: FitCuK, 
                        }
+  available_functions_3d={
+                       FitGaussian3D.name: FitGaussian3D, 
+                       FitVoigt3D.name: FitVoigt3D, 
+                          }
   
   def __init__(self,  dataset):
     '''
@@ -1124,6 +1420,12 @@ class FitSession(FitSessionGUI):
     '''
     self.functions=[] # a list of sequences (FitFunction, fit, plot, ignore errors) to be used
     self.data=dataset
+    if dataset.zdata<0:
+      self.available_functions=self.available_functions_2d
+    else:
+      self.available_functions=self.available_functions_3d
+      self.fit=self.fit3d
+      self.simulate=self.simulate3d
     self.show_covariance=False
 
   def __getitem__(self, item):
@@ -1198,6 +1500,43 @@ class FitSession(FitSessionGUI):
       else:
         covariance_matices.append([[None]])
     return covariance_matices
+
+  def fit3d(self):
+    '''
+      Fit all funcions in the list where the fit parameter is set to True.
+      
+      @return The covariance matrices of the fits or [[None]]
+    '''
+    if (self.data.yerror>=0) and (self.data.yerror!=self.data.zdata)\
+        and (self.data.yerror!=self.data.xdata) and (self.data.yerror!=self.data.ydata):
+      data=self.data.list_err()
+      data_x=[d[0] for d in data]
+      data_y=[d[1] for d in data]
+      data_z=[d[2] for d in data]
+      data_zerror=[d[3] for d in data]
+    else:
+      data=self.data.list()
+      data_x=[d[0] for d in data]
+      data_y=[d[1] for d in data]
+      data_z=[d[2] for d in data]
+      data_zerror=None
+    covariance_matices=[]
+    for function in self.functions:
+      if function[1]:
+        if not function[3]:
+          mesg, cov_out=function[0].refine(data_x, data_y, data_z, data_zerror)
+        else:
+          mesg, cov_out=function[0].refine(data_x, data_y, data_z, None)
+        covariance_matices.append(cov_out)
+      else:
+        covariance_matices.append([[None]])
+    return covariance_matices
+
+  def simulate3d(self):
+    '''
+      Create MeasurementData objects for every FitFunction.
+    '''
+    pass
 
   def simulate(self):
     '''

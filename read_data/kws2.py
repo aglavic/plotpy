@@ -14,6 +14,8 @@ from glob import glob
 from measurement_data_structure import MeasurementData, HugeMD
 import config.kws2
 import config.gnuplot_preferences
+import array as array_module
+import gzip
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
@@ -62,7 +64,6 @@ def read_data(file_name):
     read_background(folder, setup['BACKGROUND'])
   if file_name.endswith('.gz'):
     # use gziped data format
-    import gzip
     file_handler=gzip.open(file_name, 'r')
   else:
     file_handler=open(file_name, 'r')
@@ -142,7 +143,6 @@ def read_sensitivities(folder, name):
   file_name=os.path.join(folder, name)
   if file_name.endswith('.gz'):
     # use gziped data format
-    import gzip
     file_handler=gzip.open(file_name, 'r')
   else:
     file_handler=open(file_name, 'r')
@@ -165,7 +165,6 @@ def read_background(folder, name):
   file_name=os.path.join(folder, name)
   if file_name.endswith('.gz'):
     # use gziped data format
-    import gzip
     file_handler=gzip.open(file_name, 'r')
   else:
     file_handler=open(file_name, 'r')
@@ -196,13 +195,11 @@ def read_cmb_file(file_name):
                            ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
   if file_name.endswith('.gz'):
-    import gzip
     file_handler=gzip.open(file_name, 'rb')
   else:
     file_handler=open(file_name, 'rb')
   header=file_handler.read(256)
   file_handler.read(256)
-  import array as array_module
   data_array=array_module.array('i')
   data_array.fromfile(file_handler, 1024**2)
   # read additional info from end of file
@@ -252,44 +249,34 @@ def read_edf_file(file_name):
     The data is taken from many pictures and summed up. To prevent double
     import the file names already used are stored in a global list.
   '''
-  # get a list of files, which belong together
-  file_prefix, file_ending=file_name.split('_im_')
-  file_postfix=file_ending.split('.', 1)[1] # remove number
-  if file_prefix in imported_edfs:
-    return 'NULL'
-  imported_edfs.append(file_prefix)
-  file_list=glob(file_prefix+'_im_'+'*'+'.edf')+glob(file_prefix+'_im_'+'*'+'.edf.gz')
-  file_list.sort()
-  q_window=[-0.9, 0.9, -0.9, 0.9]
-  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
-                            [], 4, 5, 3, 2)
   folder, rel_file_name=os.path.split(os.path.realpath(file_name))
   setups=ConfigObj(os.path.join(folder, 'kws2_setup.ini'), unrepr=True)
   for key, value in setups.items():
     if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
       setup=value
-  #if setup['DETECTOR_SENSITIVITY'] and not setup['DETECTOR_SENSITIVITY'] in detector_sensitivities:
-  #  read_sensitivities(folder, setup['DETECTOR_SENSITIVITY'])
-  #if setup['BACKGROUND'] and not setup['BACKGROUND'] in detector_sensitivities:
-  #  read_background(folder, setup['BACKGROUND'])
   
-  # Get header information from the first file
+  q_window=[-0.9, 0.9, -0.9, 0.9]
+  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
+                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+                            [], 4, 5, 3, 2)
+  # Get header information
   if setup['BACKGROUND']:
     if not setup['BACKGROUND'] in background_data:
       read_background_edf(setup['BACKGROUND'])
     background_array=background_data[setup['BACKGROUND']]
   else:
     background_array=None
-  file_name=file_list[0]
-  sys.stdout.write('\tReading file 1/%i' % len(file_list))
-  sys.stdout.flush()
-  if file_name.endswith('.gz'):
-    import gzip
-    file_handler=gzip.open(file_name, 'rb')
+
+  if import_subframes:
+    input_array, header_settings, header_info=import_edf_file(file_name)
   else:
-    file_handler=open(file_name, 'rb')
-  header_settings, header_info=read_edf_header(file_handler)
+    # get a list of files, which belong together
+    file_prefix, file_ending=file_name.split('_im_')
+    file_postfix=file_ending.split('.', 1)[1] # remove number
+    if file_prefix in imported_edfs:
+      return 'NULL'
+    input_array, header_settings, header_info=import_edf_set(file_name)
+
   if setup['CENTER_X']:
     center_x=setup['CENTER_X']
   else:
@@ -298,42 +285,18 @@ def read_edf_file(file_name):
     center_y=setup['CENTER_Y']
   else:
     center_y=header_info['pixel_y']
-  import array as array_module
-  input_array=array_module.array('H')
-  #data_array.fromfile(file_handler, header_info['xdim']*header_info['ydim']) # deosn't work with gzip
-  input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
-  file_handler.close()
-  data_arrays=[[array(input_array), header_info['time']]]
+  countingtime=header_info['time']
+  # subtract background
   if setup['BACKGROUND']:
-    data_arrays[-1][0]-=background_array*data_arrays[-1][1]
-  # import all other files and add them together
-  for i, file_name in enumerate(file_list[1:]):
-    sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i' % (i+2, len(file_list)))
-    sys.stdout.flush()
-    if file_name.endswith('.gz'):
-      import gzip
-      file_handler=gzip.open(file_name, 'rb')
-    else:
-      file_handler=open(file_name, 'rb')
-    header_settings_tmp, header_info_tmp=read_edf_header(file_handler)
-    input_array=array_module.array('H')
-    #data_array.fromfile(file_handler, header_info['xdim']*header_info['ydim']) # deosn't work with gzip
-    input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
-    file_handler.close()
-    # add the collected data to the already imported
-    data_arrays.append([array(input_array), header_info_tmp['time']])
-    if setup['BACKGROUND']:
-      data_arrays[-1][0]-=background_array*data_arrays[-1][1]
-  sys.stdout.write('\b'*(len(str(i+2))+len(str(len(file_list))))+'\breadout complete!\n')
-  sys.stdout.flush()
-  sys.stdout.write('\tData Processing 1/%i' % len(file_list))
+    input_array-=background_array*countingtime
+  sys.stdout.write('\tData Processing ...')
   sys.stdout.flush()
   # define other quantities for the input data
   x_array=linspace(0, header_info['xdim']**2-1, header_info['xdim']**2)%header_info['ydim']
   y_array=linspace(0, header_info['ydim']**2-1, header_info['ydim']**2)//header_info['ydim']
-  error_array=sqrt(data_arrays[0][0])
-  corrected_data_array=data_arrays[0][0]/data_arrays[0][1]
-  corrected_error_array=error_array/data_arrays[0][1]
+  error_array=sqrt(input_array)
+  corrected_data_array=input_array/countingtime
+  corrected_error_array=error_array/countingtime
   qy_array=4.*pi/header_info['lambda_γ']*\
            sin(arctan((x_array-center_x)*header_info['pixelsize_x']/header_info['detector_distance']/2.))
   qz_array=-4.*pi/header_info['lambda_γ']*\
@@ -347,77 +310,57 @@ def read_edf_file(file_name):
   dataobj.data[3].values=corrected_error_array[use_indices].tolist()
   dataobj.data[4].values=qy_array[use_indices].tolist()
   dataobj.data[5].values=qz_array[use_indices].tolist()
-  dataobj.data[6].values=data_arrays[0][0][use_indices].tolist()
+  dataobj.data[6].values=input_array[use_indices].tolist()
   dataobj.data[7].values=error_array[use_indices].tolist()
   dataobj.sample_name=header_info['sample_name']
   dataobj.info="#"+"\n#".join([item[1] for item in sorted(header_settings.items())])
-  dataobj.short_info="Frame 1"
+  if import_subframes:
+    dataobj.short_info=""
+  else:
+    dataobj.short_info="Sum of frames"
   dataobj.scan_line=1
   dataobj.scan_line_constant=0
   dataobj.logz=True
-  output=[]
-  if import_subframes:
-    output.append(dataobj)
-  sumdata=data_arrays[0][0][use_indices]
-  sumtime=data_arrays[0][1]
-  tmpa=data_arrays.pop(0)
-  del(tmpa)
-  # Process all datasets
-  for i in range(len(data_arrays)):
-    data_seq=data_arrays.pop(0)
-    data, time=data_seq
-    data=data[use_indices]
+  sys.stdout.write('\b'*3+'complete!\n')
+  sys.stdout.flush()
+  if not import_subframes:
+    print "\tImport complete, ignoring file names belonging to the same series."
+  return [dataobj]
+
+def import_edf_set(file_name):
+  '''
+    Read a complete set of data and sum the files together.
+    
+    @return array of sum of the data and changed header settings.
+  '''
+  # get a list of files, which belong together
+  file_prefix, file_ending=file_name.split('_im_')
+  file_postfix=file_ending.split('.', 1)[1] # remove number
+  if file_prefix in imported_edfs:
+    return 'NULL'
+  imported_edfs.append(file_prefix)
+  file_list=glob(file_prefix+'_im_'+'*'+'.edf')+glob(file_prefix+'_im_'+'*'+'.edf.gz')
+  file_list.sort()
+  if file_prefix+'_im_full.edf' in file_list:
+    return import_edf_file(file_prefix+'_im_full.edf')
+  file_name=file_list[0]
+  sys.stdout.write('\tReading file 1/%i' % len(file_list))
+  sys.stdout.flush()
+  input_array, header_settings, header_info=import_edf_file(file_name)
+
+  # import all other files and add them together
+  for i, file_name in enumerate(file_list[1:]):
     sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i' % (i+2, len(file_list)))
     sys.stdout.flush()
-    if import_subframes:
-      addobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                             ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
-                              [], 4, 5, 3, 2)
-      addobj.short_info="Frame %i" % (i+2)
-      addobj.number_of_points=len(use_indices)
-      addobj.sample_name=header_info['sample_name']
-      addobj.info="#"+"\n#".join([item[1] for item in sorted(header_settings.items())])
-      addobj.scan_line=1
-      addobj.scan_line_constant=0
-      addobj.logz=True
-      addobj.data[0]=dataobj.data[0]
-      addobj.data[1]=dataobj.data[1]
-      addobj.data[4]=dataobj.data[4]
-      addobj.data[5]=dataobj.data[5]
-      error_array=sqrt(data)
-      addobj.data[2].values=(data/time).tolist()
-      addobj.data[3].values=(error_array/time).tolist()
-      addobj.data[6].values=data.tolist()
-      addobj.data[7].values=error_array.tolist()
-      output.append(addobj)
-    sumdata+=data
-    sumtime+=time
-  sys.stdout.write('\b'*(2*len(str(len(file_list)+1))+1)+'complete!\n')
+    input_array_tmp, header_settings_tmp, header_info_tmp=import_edf_file(file_name)
+    # add the collected data to the already imported
+    input_array+=input_array_tmp
+    header_info['time']+=header_info_tmp['time']
+  sys.stdout.write('\b'*(len(str(i+2))+len(str(len(file_list))))+'\breadout complete, writing sum to %s!\n' % (file_prefix+'_im_full.edf'))
   sys.stdout.flush()
-  # process the sum of datasets
-  sumobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                         ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
-                          [], 4, 5, 3, 2)
-  sumobj.short_info="Sum of all Frames"
-  sumobj.number_of_points=len(use_indices)
-  sumobj.sample_name=header_info['sample_name']
-  sumobj.info="#"+"\n#".join([item[1] for item in sorted(header_settings.items())])
-  sumobj.scan_line=1
-  sumobj.scan_line_constant=0
-  sumobj.logz=True
-  sumobj.data[0]=dataobj.data[0]
-  sumobj.data[1]=dataobj.data[1]
-  sumobj.data[4]=dataobj.data[4]
-  sumobj.data[5]=dataobj.data[5]
-  sumerror=sqrt(sumdata)
-  sumobj.data[2].values=(sumdata/sumtime).tolist()
-  sumobj.data[3].values=(sumerror/sumtime).tolist()
-  sumobj.data[6].values=sumdata.tolist()
-  sumobj.data[7].values=sumerror.tolist()
-  output.insert(0, sumobj)
-  print "\tImport complete, ignoring file names belonging to the same series."
-  return output
-
+  write_edf_file(file_prefix, input_array, header_info['time'])
+  return input_array, header_settings, header_info
+  
 def read_background_edf(background_file_name):
   '''
     Read the binary .edf (european data format) file including header.
@@ -430,7 +373,6 @@ def read_background_edf(background_file_name):
   sys.stdout.write('\tReading background file 1/%i' % len(file_list))
   sys.stdout.flush()
   if file_name.endswith('.gz'):
-    import gzip
     file_handler=gzip.open(file_name, 'rb')
   else:
     file_handler=open(file_name, 'rb')
@@ -447,7 +389,6 @@ def read_background_edf(background_file_name):
     sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i' % (i+2, len(file_list)))
     sys.stdout.flush()
     if file_name.endswith('.gz'):
-      import gzip
       file_handler=gzip.open(file_name, 'rb')
     else:
       file_handler=open(file_name, 'rb')
@@ -462,12 +403,12 @@ def read_background_edf(background_file_name):
   sys.stdout.write('\b'*(len(str(i+2))+len(str(len(file_list))))+'\breadout complete!\n')
   sys.stdout.flush()
 
-
 def read_edf_header(file_handler):
   '''
     Read the header of an edf file from an open file object.
   '''
   line=file_handler.readline()
+  header_lines=[]
   settings={}
   # Set standart values which are overwritten if found in the header
   info={
@@ -488,8 +429,9 @@ def read_edf_header(file_handler):
       key=key.strip()
       value=value.strip().rstrip(';').strip()
       settings[key]=value
+    header_lines.append(line)
     line=file_handler.readline()
-  
+  header_lines.append(line)
   # Read some settings
   if 'Dim_1' in settings:
     info['xdim']=int(settings['Dim_1'])
@@ -504,7 +446,59 @@ def read_edf_header(file_handler):
     info['sample_name']=settings['Sample_comments']
   if 'Exposure_time' in settings:
     info['time']=float(settings['Exposure_time'].rstrip('ms'))/1000.
-  return settings, info
+  return settings, info, header_lines
+
+def import_edf_file(file_name):
+  '''
+    Read the header and data from one edf file.
+    
+    @return array of the data and the header string.
+  '''
+  #  check if file is in gzip format
+  if file_name.endswith('.gz'):
+    file_handler=gzip.open(file_name, 'rb')
+  else:
+    file_handler=open(file_name, 'rb')
+  # read file header information
+  header_settings, header_info, header_lines=read_edf_header(file_handler)
+  if header_settings['DataType']=='UnsignedShort':
+    # load data as binary integer values
+    input_array=array_module.array('H')
+    input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
+  elif header_settings['DataType']=='UnsignedInteger':
+    # load data as binary integer values
+    input_array=array_module.array('I')
+    input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*4))
+  else:
+    raise IOError, 'Unknown data format in header: %s' % header_settings['DataType']
+  file_handler.close()
+  return array(input_array), header_settings, header_info
+
+def write_edf_file(file_prefix, data, countingtime):
+  '''
+    Write a new edf file for sumed up data.
+  '''
+  file_list=glob(file_prefix+'_im_'+'*'+'.edf')+glob(file_prefix+'_im_'+'*'+'.edf.gz')
+  file_list.sort()
+  if file_list[0].endswith('.gz'):
+    file_handler=gzip.open(file_list[0], 'rb')
+  else:
+    file_handler=open(file_list[0], 'rb')
+  old_file_parts=read_edf_header(file_handler)
+  file_handler.close()
+  write_file=open(file_prefix+'_im_full.edf', 'wb')
+  for header_line in old_file_parts[2]:
+    if 'Exposure_time' in header_line:
+      write_file.write("Exposure_time = %fms ;\n" % countingtime)
+    elif 'DataType' in header_line:
+      write_file.write("DataType = UnsignedInteger ;\n")
+    else:
+      write_file.write(header_line)
+  output_array=array_module.array('I')
+  int_data=map(int, data.tolist())
+  output_array.fromlist(int_data)
+  output_array.tofile(write_file)
+  write_file.close()  
 
 class KWS2MeasurementData(HugeMD):
   '''
