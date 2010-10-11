@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=Plot.py (Soleil(single))
+Name[de]=Plot.py (Soleil(einzel))
+Comment=Plotting and manipulating grazing incidence data from Soleil (single picture)
+Comment[de]=Plottet und verarbeitet Messdaten aus Soleil (Einzelbild)
+GenericName=Plot.py
+Terminal=false
+Icon=/usr/local/lib/python2.6/dist-packages/config/logo.png
+Type=Application
+Exec=/usr/local/bin/plot.py gisas -all-frames
+Categories=GTK;GNOME;Science;
+X-KDE-StartupNotify=true

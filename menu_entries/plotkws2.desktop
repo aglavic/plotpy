@@ -1,14 +1,13 @@
 [Desktop Entry]
-Encoding=UTF-8
-Name=Plot.py (KWS2 Session)
-Name[de]=Plot.py (KWS2 Sitzung)
-Version=0.6.3
-Comment=Plotting and manipulating KWS2 data
-Comment[de]=Plottet und verarbeitet Messdaten der KWS2
+Version=1.0
+Name=Plot.py (KWS2/Riso/Soleil(sum))
+Name[de]=Plot.py (KWS2/Riso/Soleil(summe))
+Comment=Plotting and manipulating grazing incidence data
+Comment[de]=Plottet und verarbeitet Messdaten verschiedener kleinwinkel Experimente
 GenericName=Plot.py
 Terminal=false
 Icon=/usr/local/lib/python2.6/dist-packages/config/logo.png
 Type=Application
-Exec=/usr/local/bin/plot.py kws2
-Categories=GTK;GNOME;Utility;Science;
+Exec=/usr/local/bin/plot.py gisas
+Categories=GTK;GNOME;Science;
 X-KDE-StartupNotify=true

@@ -100,6 +100,7 @@ def read_data(file_name, script_path, import_images, return_detector_images):
   if file_name.endswith('.zip'):
     # All data is stored in one zip file, open the files in the zip file
     treff_zip=ZipFile(file_name)
+    realfile_name=file_name
     file_name=os.path.split(file_name[:-4])[1]
     file_handler=treff_zip.open(file_name, 'r')
   else:
@@ -117,9 +118,9 @@ def read_data(file_name, script_path, import_images, return_detector_images):
   footers=headers[comments.index(True):]
   for hl in headers:
     if len(hl)>0 and hl[0]=='#Scan':
-      print "\tdetected as MARIA file..."
-      if os.path.exists(file_name+'.zip'):
-        file_name=file_name+'.zip'
+      print "\tdetected as MARIA file."
+      if treff_zip is not None:
+        file_name=realfile_name
       return read_data_maria(file_name, script_path, import_images, return_detector_images)
   data_lines=filter(lambda i: comments[lines_columns.index(i)], lines_columns)
   # define the data columns
@@ -198,7 +199,7 @@ def read_data(file_name, script_path, import_images, return_detector_images):
   scans=[]
   detector_images=[]
   if len(data_uu_lines)>0:
-    print "Evaluating up-up images."
+    print "\tEvaluating up-up images."
     data_uu, scan_uu, detector_image_uu=integrate_pictures(data_uu_lines, columns, const_information, 
                                         path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_uu)>0:
@@ -210,7 +211,7 @@ def read_data(file_name, script_path, import_images, return_detector_images):
     scans.append(scan_uu)
     detector_images.append(detector_image_uu)
   if len(data_dd_lines)>0:
-    print "Evaluating down-down images."
+    print "\tEvaluating down-down images."
     data_dd, scan_dd, detector_image_dd=integrate_pictures(data_dd_lines, columns, const_information, 
                                         path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_dd)>0:
@@ -222,7 +223,7 @@ def read_data(file_name, script_path, import_images, return_detector_images):
     scans.append(scan_dd)
     detector_images.append(detector_image_dd)
   if len(data_ud_lines)>0:
-    print "Evaluating up-down images."
+    print "\tEvaluating up-down images."
     data_ud, scan_ud, detector_image_ud=integrate_pictures(data_ud_lines, columns, const_information, 
                                         path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_ud)>0:
@@ -234,7 +235,7 @@ def read_data(file_name, script_path, import_images, return_detector_images):
     scans.append(scan_ud)
     detector_images.append(detector_image_ud)
   if len(data_du_lines)>0:
-    print "Evaluating down-up images."
+    print "\tEvaluating down-up images."
     data_du, scan_du, detector_image_du=integrate_pictures(data_du_lines, columns, const_information, 
                                         path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_du)>0:
@@ -246,7 +247,7 @@ def read_data(file_name, script_path, import_images, return_detector_images):
     scans.append(scan_du)
     detector_images.append(detector_image_du)
   if len(data_xx_lines)>0:
-    print "Evaluating unpolarized images."
+    print "\tEvaluating unpolarized images."
     data_xx, scan_xx, detector_image_xx=integrate_pictures(data_xx_lines, columns, const_information, 
                                         path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_xx)>0:
@@ -631,7 +632,7 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
   scans=[]
   detector_images=[]
   if len(data_uu_lines)>0:
-    print "Evaluating up-up images."
+    print "\tEvaluating up-up images."
     data_uu, scan_uu, detector_image_uu=integrate_pictures(data_uu_lines, columns, const_information, 
                                         path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_uu)>0:
@@ -641,7 +642,7 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
     scans.append(scan_uu)
     detector_images.append(detector_image_uu)
   if len(data_dd_lines)>0:
-    print "Evaluating down-down images."
+    print "\tEvaluating down-down images."
     data_dd, scan_dd, detector_image_dd=integrate_pictures(data_dd_lines, columns, const_information, 
                                         path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_dd)>0:
@@ -651,7 +652,7 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
     scans.append(scan_dd)
     detector_images.append(detector_image_dd)
   if len(data_ud_lines)>0:
-    print "Evaluating up-down images."
+    print "\tEvaluating up-down images."
     data_ud, scan_ud, detector_image_ud=integrate_pictures(data_ud_lines, columns, const_information, 
                                         path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_ud)>0:
@@ -661,7 +662,7 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
     scans.append(scan_ud)
     detector_images.append(detector_image_ud)
   if len(data_du_lines)>0:
-    print "Evaluating down-up images."
+    print "\tEvaluating down-up images."
     data_du, scan_du, detector_image_du=integrate_pictures(data_du_lines, columns, const_information, 
                                         path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_du)>0:
@@ -671,7 +672,7 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
     scans.append(scan_du)
     detector_images.append(detector_image_du)
   if len(data_xx_lines)>0:
-    print "Evaluating unpolarized images."
+    print "\tEvaluating unpolarized images."
     data_xx, scan_xx, detector_image_xx=integrate_pictures(data_xx_lines, columns, const_information, 
                                         path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_xx)>0:

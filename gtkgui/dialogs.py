@@ -368,7 +368,7 @@ class SimpleEntryDialog(gtk.Dialog):
       Append labels and entries to the main table and the objects dictionaries and show them. 
     '''
     for i, entry_list in enumerate(entries):
-      if len(entry_list)<3 and len(entry_list)>4:
+      if len(entry_list)<3 or len(entry_list)>4:
         raise ValueError, "All entries have to be tuples with 3 or 4 items"
       key=entry_list[0]
       label=gtk.Label(key + ': ')

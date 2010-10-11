@@ -182,6 +182,8 @@ def read_cmb_file(file_name):
   '''
     Read the binary .cmb file format.
   '''
+  sys.stdout.write( "\tReading...\n")
+  sys.stdout.flush()
   background=2.
   countingtime=1.
   detector_distance=1435. #mm
@@ -211,6 +213,8 @@ def read_cmb_file(file_name):
     #  detector_distance=float(line.split()[1])
     elif line.startswith('#txt'):
       sample_name+=" ".join(line.split()[1:])
+  sys.stdout.write( "\b\b\b done!\n\tProcessing...")
+  sys.stdout.flush()
   data_array=array(data_array)
   z_array=linspace(0, 1024**2-1, 1024**2)%1024
   y_array=linspace(0, 1024**2-1, 1024**2)//1024
@@ -222,25 +226,25 @@ def read_cmb_file(file_name):
            sin(arctan((y_array-center_y)*pixelsize_y/detector_distance/2.))
   qz_array=4.*pi/lambda_x*\
            sin(arctan((z_array-center_x)*pixelsize_x/detector_distance/2.))
-  data=array([y_array, z_array, corrected_data, corrected_error, qy_array, qz_array, 
-              data_array, error_array, \
-              (qy_array<q_window[0])+(qy_array>q_window[1])+\
-              (qz_array<q_window[2])+(qz_array>q_window[3])]).transpose()
-  data_lines=[data_line[:8] for data_line in data if not data_line[8]]
-  #dataobj.number_of_points=1024**2
-  #dataobj.data[0].values=y_array.tolist()
-  #dataobj.data[1].values=z_array.tolist()
-  #dataobj.data[2].values=corrected_data.tolist()
-  #dataobj.data[3].values=corrected_error.tolist()
-  #dataobj.data[4].values=qy_array.tolist()
-  #dataobj.data[5].values=qz_array.tolist()
-  #dataobj.data[6].values=data_array.tolist()
-  #dataobj.data[7].values=error_array.tolist()
-  for data_line in data_lines:
-    dataobj.append(data_line)
+
+  use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
+              (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
+  dataobj.number_of_points=len(use_indices)
+  dataobj.data[0].values=y_array[use_indices].tolist()
+  dataobj.data[1].values=z_array[use_indices].tolist()
+  dataobj.data[2].values=corrected_data[use_indices].tolist()
+  dataobj.data[3].values=corrected_error[use_indices].tolist()
+  dataobj.data[4].values=qy_array[use_indices].tolist()
+  dataobj.data[5].values=qz_array[use_indices].tolist()
+  dataobj.data[6].values=data_array[use_indices].tolist()
+  dataobj.data[7].values=error_array[use_indices].tolist()
+
   dataobj.sample_name=sample_name
   dataobj.scan_line=1
   dataobj.scan_line_constant=0
+  dataobj.logz=True
+  sys.stdout.write( "\b\b\b done!\n")
+  sys.stdout.flush()
   return [dataobj]
  
 def read_edf_file(file_name):

@@ -10,6 +10,7 @@ import gtk
 from glob import glob
 # own modules
 import config.kws2
+from dialogs import SimpleEntryDialog
 
 #----------------------- importing modules --------------------------
 
@@ -287,5 +288,11 @@ class KWS2GUI:
     self.active_file_data.append(result)
 
   def do_autosubtract_background(self, action, window):
-    self.autosubtract_background(self.active_file_data[window.index_mess])
-    window.replot()
+    fraction_entry=SimpleEntryDialog('Enter Background Fraction...', [('Fraction (1/x)', 5., float)])
+    values, ok=fraction_entry.run()
+    fraction_entry.destroy()
+    if ok:
+      bg_fraction=values['Fraction (1/x)']
+      bg=self.autosubtract_background(self.active_file_data[window.index_mess], bg_fraction)
+      window.replot()
+      print "%i background subtracted" % bg

@@ -50,7 +50,7 @@ class KWS2Session(GUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('KWS2', '*.DAT', '*.DAT.gz', '*.cmb', '*.cmb.gz', '*.edf', '*.edf.gz'), ('All','*'))
+  FILE_WILDCARDS=(('GISAS', '*.DAT', '*.DAT.gz', '*.cmb', '*.cmb.gz', '*.edf', '*.edf.gz'), ('All','*'))
   mds_create=False
   read_directly=True
 
@@ -99,7 +99,7 @@ class KWS2Session(GUI, GenericSession):
       self.new_configuration(setups, rel_file, folder)
     return read_data.kws2.read_data(file_name)
 
-  def autosubtract_background(self, dataset, fraction=10.):
+  def autosubtract_background(self, dataset, fraction=5.):
     z=dataset.data[dataset.zdata]
     zarray=z[:]
     length=len(zarray)
@@ -111,6 +111,6 @@ class KWS2Session(GUI, GenericSession):
                                                         range(1,11)).index(True)+1)
     z.values=zarray-fine_background
     dataset.plot_options.zrange=(1.,None)
-    print "Subtracted %f background" % fine_background    
+    return fine_background
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++

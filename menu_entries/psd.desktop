@@ -1,14 +1,13 @@
 [Desktop Entry]
-Encoding=UTF-8
-Name=Plot.py (SQUID Session)
-Name[de]=Plot.py (SQUID Sitzung)
-Version=0.6.3
-Comment=Plotting and manipulating SQUID and PPMS data
-Comment[de]=Plottet und verarbeitet Messdaten des SQUID und PPMS
+Version=1.0
+Name=Plot.py (SQUID/PPMS Session)
+Name[de]=Plot.py (SQUID/PPMS Sitzung)
+Comment=Plotting and manipulating QuantumDesign SQUID and PPMS data
+Comment[de]=Plottet und verarbeitet Messdaten des QuantumDesign SQUID und PPMS
 GenericName=Plot.py
 Terminal=false
 Icon=/usr/local/lib/python2.6/dist-packages/config/logo.png
 Type=Application
 Exec=/usr/local/bin/plot.py squid
-Categories=GTK;GNOME;Utility;Science;
+Categories=GTK;GNOME;Science;
 X-KDE-StartupNotify=true

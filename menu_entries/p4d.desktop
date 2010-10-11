@@ -1,8 +1,7 @@
 [Desktop Entry]
-Encoding=UTF-8
+Version=1.0
 Name=Plot.py (4-Circle Session)
-Name=Plot.py (4-Kreiser Sitzung)
-Version=0.6.3
+Name[de]=Plot.py (4-Kreiser Sitzung)
 Comment=Plotting and manipulating 4circle data
 Comment[de]=Plottet und verarbeitet Messdaten des 4-Kreis Diffraktometers
 GenericName=Plot.py
@@ -10,5 +9,5 @@ Terminal=false
 Icon=/usr/local/lib/python2.6/dist-packages/config/logo.png
 Type=Application
 Exec=/usr/local/bin/plot.py 4circle
-Categories=GTK;GNOME;Utility;Science;
+Categories=GTK;GNOME;Science;
 X-KDE-StartupNotify=true

@@ -1328,8 +1328,8 @@ class FitGaussian3D(FitFunction3D):
     C=p[6]
     xdist=(numpy.array(x)-x0)
     ydist=(numpy.array(y)-y0)
-    xdif=xdist*ta+ydist*tb
-    ydif=ydist*ta+xdist*tb
+    xdif=xdist*ta-ydist*tb
+    ydif=xdist*tb+ydist*ta
     exp=numpy.exp
     return A * exp(-0.5*((xdif/sx)**2+((ydif/sy)**2))) + C
 
@@ -1339,9 +1339,9 @@ class FitVoigt3D(FitFunction3D):
   '''
   
   # define class variables.
-  name="Voigt"
-  parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0., 0.]
-  parameter_names=['I', 'x_0', 'y_0', 'gamma', 'sigma_x', 'sigma_y', 'tilt','C']
+  name="Psd. Voigt"
+  parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0., 0.5, 0.]
+  parameter_names=['I', 'x_0', 'y_0', 'gamma', 'sigma_x', 'sigma_y', 'tilt', 'eta','C']
   fit_function_text='I*Re(w(z))/Re(w(z_0))+C; w=(x-x_0)/sigma/sqrt(2)'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
@@ -1350,7 +1350,7 @@ class FitVoigt3D(FitFunction3D):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0., 0]
+    self.parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0., 0.5, 0]
     FitFunction3D.__init__(self, initial_parameters)
   
   def fit_function(self, p, x, y):
@@ -1372,14 +1372,13 @@ class FitVoigt3D(FitFunction3D):
     ta=numpy.cos(p[6])
     xdist=(numpy.array(x)-x0)
     ydist=(numpy.array(y)-y0)
-    xdif=xdist*ta+ydist*tb
-    ydif=ydist*ta+xdist*tb    
-    c=p[7]
-    z1=(xdif + (abs(gamma)*1j)) / abs(sx)/self.sqrt2
-    z2=(ydif + (abs(gamma)*1j)) / abs(sy)/self.sqrt2
-    z01=(0. + (abs(gamma)*1j)) / abs(sx)/self.sqrt2
-    z02=(0. + (abs(gamma)*1j)) / abs(sy)/self.sqrt2
-    value=I * (wofz(z1).real / wofz(z01).real)*(wofz(z2).real / wofz(z02).real)+ c
+    xdif=numpy.abs(xdist*ta-ydist*tb)
+    ydif=numpy.abs(ydist*ta+xdist*tb)
+    eta=p [7]
+    c=p[8]
+    G=numpy.exp(-numpy.log(2)*((xdif/sx)**2+(ydif/sy)**2))
+    L=1./(1.+(xdif**2+ydif**2)/gamma**2)
+    value = I * ((1.-eta)*G+eta*L) + c
     return value
 #--------------------------------- Define common functions for 3d fits ---------------------------------
 

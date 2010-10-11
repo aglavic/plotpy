@@ -1,14 +1,13 @@
 [Desktop Entry]
-Encoding=UTF-8
-Name=Plot.py (TREFF Session)
-Name[de]=Plot.py (TREFF Sitzung)
-Version=0.6.3
-Comment=Plotting and manipulating TREFF data
-Comment[de]=Plottet und verarbeitet Messdaten von TREFF
+Version=1.0
+Name=Plot.py (TREFF/MARIA-reflectometry Session)
+Name[de]=Plot.py (TREFF/MARIA-Reflektometrie Sitzung)
+Comment=Plotting and manipulating QuantumDesign SQUID and PPMS data
+Comment[de]=Plottet und verarbeitet Messdaten des QuantumDesign SQUID und PPMS
 GenericName=Plot.py
 Terminal=false
 Icon=/usr/local/lib/python2.6/dist-packages/config/logo.png
 Type=Application
 Exec=/usr/local/bin/plot.py treff
-Categories=GTK;GNOME;Utility;Science;
+Categories=GTK;GNOME;Science;
 X-KDE-StartupNotify=true
