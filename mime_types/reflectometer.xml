@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+   <mime-type type="text/refl">
+     <comment>D8 Reflectometer data files</comment>
+     <glob pattern="*.uxd"/>
+     <glob pattern="*.UXD"/>
+     <glob pattern="*.uxd.gz"/>
+     <glob pattern="*.UXD.gz"/>
+   </mime-type>
+</mime-info>

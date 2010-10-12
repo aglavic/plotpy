@@ -1,6 +1,6 @@
 recursive-include doc *.html
 include config/fit/fit.f90
-include config/logo.*
+include config/logo*.*
 recursive-include config/fit/pnr_multi *.f90
 recursive-include config/fonts *.ttf
 recursive-include config *.dat squid_calibration

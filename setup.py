@@ -39,7 +39,7 @@ __package_dir__={'plot_script': '.'}
 __packages__=['plot_script', 'plot_script.config', 'plot_script.read_data', 'plot_script.sessions', 
             'plot_script.sessions.reflectometer_fit', 'plot_script.wxgui', 'plot_script.gtkgui']
 __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90', 
-                            'fit/pnr_multi/*.f90', 'fonts/*.ttf', 'logo.png'], 
+                            'fit/pnr_multi/*.f90', 'fonts/*.ttf', 'logo*.png'], 
                   'plot_script': ['doc/*.html'], 
                     }
 __data_files__=[('doc', glob('doc/*.html'))]
@@ -208,10 +208,27 @@ if ('bdist' in sys.argv):
                    shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
   subprocess.Popen(['cp']+glob('../menu_entries/*.desktop')+[__name__+'-'+__version__+'.orig/usr/share/applications/'], 
                    shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  # creating mime types
+  os.mkdir(__name__+'-'+__version__+'/usr/share/mime/')
+  os.mkdir(__name__+'-'+__version__+'/usr/share/mime/packages/')
+  os.mkdir(__name__+'-'+__version__+'.orig/usr/share/mime/')
+  os.mkdir(__name__+'-'+__version__+'.orig/usr/share/mime/packages/')
+  subprocess.Popen(['cp']+ glob('../mime_types/*.xml')+[__name__+'-'+__version__+'/usr/share/mime/packages/'], 
+                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['cp']+glob('../mime_types/*.xml')+[__name__+'-'+__version__+'.orig/usr/share/mime/packages/'], 
+                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
   os.chdir(__name__+'-'+__version__)
+  # debian control file
   deb_con=open('debian/control', 'w')
   deb_con.write(open('../../deb_control', 'r').read())
   deb_con.close()
+  # post install and remove scripts (e.g. adding mime types)
+  deb_tmp=open('debian/postinst', 'w')
+  deb_tmp.write(open('../../deb_postinst', 'r').read())
+  deb_tmp.close()
+  deb_tmp=open('debian/postrm', 'w')
+  deb_tmp.write(open('../../deb_postrm', 'r').read())
+  deb_tmp.close()
   print "Packaging for debian..."
   subprocess.Popen(['dpkg-buildpackage', '-i', '-I', '-rfakeroot'], shell=False, 
                    stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()

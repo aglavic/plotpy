@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+   <mime-type type="text/gisas">
+     <comment>Grazing incidence scattering data</comment>
+     <glob pattern="*.edf"/>
+     <glob pattern="*.edf.gz"/>
+     <glob pattern="*.cmb"/>
+     <glob pattern="*.cmb.gz"/>
+   </mime-type>
+</mime-info>
