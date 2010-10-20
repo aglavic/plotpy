@@ -578,6 +578,8 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
   data_lines=filter(lambda i: comments[lines_columns.index(i)], lines_columns)
   # define the data columns
   columns={}
+  if headers[-1][0][0]=='#':
+    headers[-1].insert(1, headers[-1][0][1:])
   columns_line=headers[-1][1:]
   for i, column in enumerate(columns_line):
     column_name=column.rsplit('[', 1)[0]
@@ -610,13 +612,20 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
   if import_images:
     # remove .gz from image columns
     for i, line in enumerate(data_lines):
-      data_lines[i][columns['Image']]=line[columns['Image']].replace('.gz', '')
+      data_lines[i][columns['Image']]=os.path.split(line[columns['Image']])[1].replace('.gz', '')
   # devide polarization directions
-  data_uu_lines=[] #filter(lambda line: line[columns['Polarization']]=='uu', data_lines)
-  data_dd_lines=[] #filter(lambda line: line[columns['Polarization']]=='dd', data_lines)
-  data_ud_lines=[] #filter(lambda line: line[columns['Polarization']]=='ud', data_lines)
-  data_du_lines=[] #filter(lambda line: line[columns['Polarization']]=='du', data_lines)
-  data_xx_lines=data_lines
+  try:
+    data_uu_lines=filter(lambda line: line[columns['PolarizerFlipped']]=='0' and line[columns['AnalyzerFlipped']]=='0', data_lines)
+    data_dd_lines=filter(lambda line: line[columns['PolarizerFlipped']]=='1' and line[columns['AnalyzerFlipped']]=='1', data_lines)
+    data_ud_lines=filter(lambda line: line[columns['PolarizerFlipped']]=='0' and line[columns['AnalyzerFlipped']]=='1', data_lines)
+    data_du_lines=filter(lambda line: line[columns['PolarizerFlipped']]=='1' and line[columns['AnalyzerFlipped']]=='0', data_lines)
+    data_xx_lines=[]
+  except:
+    data_uu_lines=[]
+    data_dd_lines=[]
+    data_ud_lines=[]
+    data_du_lines=[]
+    data_xx_lines=data_lines
   # import calibration from file, need to get this as relative path
   # cali_file=script_path+'config/treff_calibration.dat'
   # cali_open=open(cali_file, 'r')
@@ -640,6 +649,8 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
       maps.append(data_uu)
     scan_uu.short_info='++'
     scans.append(scan_uu)
+    for image in detector_image_uu:
+      image.short_info+=' - ++'
     detector_images.append(detector_image_uu)
   if len(data_dd_lines)>0:
     print "\tEvaluating down-down images."
@@ -650,6 +661,8 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
       maps.append(data_dd)
     scan_dd.short_info='--'
     scans.append(scan_dd)
+    for image in detector_image_dd:
+      image.short_info+=' - --'
     detector_images.append(detector_image_dd)
   if len(data_ud_lines)>0:
     print "\tEvaluating up-down images."
@@ -660,6 +673,8 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
       maps.append(data_ud)
     scan_ud.short_info='+-'
     scans.append(scan_ud)
+    for image in detector_image_ud:
+      image.short_info+=' - +-'
     detector_images.append(detector_image_ud)
   if len(data_du_lines)>0:
     print "\tEvaluating down-up images."
@@ -670,6 +685,8 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
       maps.append(data_du)
     scan_du.short_info='-+'
     scans.append(scan_du)
+    for image in detector_image_du:
+      image.short_info+=' - -+'
     detector_images.append(detector_image_du)
   if len(data_xx_lines)>0:
     print "\tEvaluating unpolarized images."

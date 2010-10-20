@@ -39,4 +39,15 @@ COLUMNS_MAPPING={
                  'tz': 'Position_z', 
                  'Time[sec]': 'Time',
                  'selector': 'Wavelength', 
-                 }
+                 'selector[Angstr.]': 'Wavelength', 
+                 'pflipper[]': 'PolarizerFlipped', 
+                 'aflipper[]': 'AnalyzerFlipped',                  
+                      # New Names
+                 'Monitor1[counts]': 'Monitor', 
+                 'ROI1[counts]': '2DWindow', 
+                 'omega[deg]': 'omega', 
+                 'detarm[deg]':'detector', 
+                 'Coinc[counts]':'DetectorTotal', 
+                 'image_file[]': 'Image', 
+                 'tx[mm]': 'Position_x', 
+}

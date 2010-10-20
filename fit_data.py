@@ -1167,27 +1167,27 @@ class FitSQUIDSignal(FitFunction):
     self.parameters=[1., 3., 1., 0., 0.]
     FitFunction.__init__(self, initial_parameters)
 
-class FitBrillouineT(FitFunction):
+class FitFerromagnetic(FitFunction):
   '''
     Fit a Brillouine's function for the magnetic behaviour of a ferromagnet
     against temperature.
   '''
   
   # define class variables.
-  name="Brillouine(T)"
-  parameters=[1.e7, 1., 1., 4.19e16, 1.e-1, 1e-5]
-  parameter_names=['lambda', 'S', 'L', 'N', 'B', 'StartValue']
-  fit_function_text='Parameters (T): lambda; S; L; N'
-  muB=9.27e-24 # mu_Bohr
-  kB=1.38e-23  # k_Boltzmann
+  name="Ferromagnetic Orderparameter"
+  parameters=[1.e16, 1., 2., 0.1, 1., 1e-5]
+  parameter_names=['N', 'J', 'g', 'H', 'lambda',  'StartValue']
+  fit_function_text='Parameters: N, J, g, H, lambda, StartValue'
+  muB=9.27e-24 # [A·m²] mu_Bohr
+  kB=1.38e-20  # [gm²/Ks²] k_Boltzmann
 
   def __init__(self, initial_parameters):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1.5e8, 1., 1.,4.19e16, 1.e-1, 1e-5]
+    self.parameters=[1.e16, 1., 2., 0.1, 1., 1e-5]
     FitFunction.__init__(self, initial_parameters)
-    self.refine_parameters=range(4)
+    self.refine_parameters=[0, 1, 2]
   
   def simulate(self, x, ignore=None):
     return FitFunction.simulate(self, x, interpolate=1)
@@ -1208,28 +1208,37 @@ class FitBrillouineT(FitFunction):
 
   def brillouine(self, p, M, T):
     '''
-      Brillouine function which M=...(M) => 0=...(M)-M which
+      Brillouine function whith M=Ms*B_J(y) which
       has to be solved for specific parameters.
     '''
-    S=abs(p[1])
-    L=abs(p[2])
-    J=max(S+L, 0.01) # Prevent zero division error
-    g=1.5+ (S*(S+1.)-L*(L+1.))/(2.*J*(J+1.))
-    d=(2.*J+1.)/(2.*J)
-    c=g*self.muB*J/self.kB
-    Ms=g*J*self.muB*p[3]
-    B=p[4]
-    return d/numpy.tanh(d*c*(p[0]*M/T+B/T))-(d-1)/numpy.tanh((d-1)*c*(p[0]*M/T+B/T))-M/Ms
-  
-  def fit_function(self, p, x):
+    N=p[0]
+    J=p[1]
+    g=p[2]
+    B=p[3]/1.2566e-3
+    lambda_M=p[4]*M
+    muB=self.muB
+    kB=self.kB
+    Ms=N*g*muB*J
+    y=(g*muB*J*(B+lambda_M))/(kB*T)
+    return Ms*B_J(p, y)
+
+  def fit_function(self, p, T):
     '''
       Return the brillouine function of T.
     '''
-#    out=[]
-#    for i,  xi in enumerate(x):
-#      out.append(fsolve(lambda item: self.brillouine(p, item, xi), 1e-6))
-    return fsolve(lambda item: self.brillouine(p, item, numpy.array(x)), 
-            numpy.array([p[5] for i in range(len(x))]))
+    T=numpy.array(T)
+    M=numpy.array([p[5] for i in range(len(T))])
+    M, info, ier, mesg=fsolve(lambda Mi: Mi-self.brillouine(p, Mi, T), M, full_output=True)
+    self.last_mesg=mesg
+    return M
+
+def B_J(p, x):
+  '''
+    Brillouine function of x.
+  '''
+  J=p[1]
+  coth=lambda x: 1./numpy.tanh(x)
+  return numpy.nan_to_num((2.*J+1.)/(2.*J)*coth((2.*J+1.)/(2.*J)*x) - 1./(2.*J)*coth(1./(2.*J)*x) )
 
 class FitBrillouineB(FitFunction):
   '''
@@ -1239,61 +1248,116 @@ class FitBrillouineB(FitFunction):
   
   # define class variables.
   name="Brillouine(B)"
-  parameters=[1.e7, 1., 1., 4.19e16, 300., 1e-5]
-  parameter_names=['lambda', 'S', 'L', 'N', 'T', 'StartValue']
-  fit_function_text='Parameters (B): lambda; S; L; N'
-  muB=9.27e-24 # mu_Bohr
-  kB=1.38e-23  # k_Boltzmann
+  parameters=[1e16, 2, 2, 300]
+  parameter_names=['N', 'J', 'g', 'T']
+  fit_function_text='Parameters (B): N; g; J; T'
+  muB=9.27e-24 # [A·m²] mu_Bohr
+  kB=1.38e-20  # [gm²/Ks²] k_Boltzmann
 
   def __init__(self, initial_parameters):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1.5e8, 1., 1.,4.19e16, 300., 1e-5]
+    self.parameters=[1e16, 2, 2, 300]
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(4)
   
-  def simulate(self, x, ignore=None):
-    return FitFunction.simulate(self, x, interpolate=1)
+  #def simulate(self, x, ignore=None):
+  #  return FitFunction.simulate(self, x, interpolate=1)
   
-  def residuals(self, params, y, x, yerror=None):
-    '''
-      As the fit with fsolve is quite slow we tell the user about
-      the state of the fit.
-    '''
-    err=FitFunction.residuals(self, params, y, x, yerror=None)
-    print "End of function call %i, chi is now %.6g" % (self.iteration, sum(err))
-    self.iteration+=1
-    return err
+  #def residuals(self, params, y, x, yerror=None):
+  #  '''
+  #    As the fit with fsolve is quite slow we tell the user about
+  #    the state of the fit.
+  #  '''
+  #  err=FitFunction.residuals(self, params, y, x, yerror=None)
+  #  print "End of function call %i, chi is now %.6g" % (self.iteration, sum(err))
+  #  self.iteration+=1
+  #  return err
   
-  def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
-    self.iteration=1
-    return FitFunction.refine(self,  dataset_x,  dataset_y, dataset_yerror=None)
+  #def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
+  #  self.iteration=1
+  #  return FitFunction.refine(self,  dataset_x,  dataset_y, dataset_yerror=None)
 
-  def brillouine(self, p, M, B):
+  def brillouine(self, p, B):
     '''
-      Brillouine function which M=...(M) => 0=...(M)-M which
-      has to be solved for specific parameters.
+      Brillouine function of B.
     '''
-    S=abs(p[1])
-    L=abs(p[2])
-    J=S+L
-    g=1.5+ (S*(S+1.)-L*(L+1.))/(2.*J*(J+1.))
-    d=(2.*J+1.)/(2.*J)
-    c=g*self.muB*J/self.kB
-    Ms=g*J*self.muB*p[3]
-    T=p[4]
-    return d/numpy.tanh(d*c*(p[0]*M/T+B/T))-(d-1)/numpy.tanh((d-1)*c*(p[0]*M/T+B/T))-M/Ms
+    N=p[0]
+    J=p[1]
+    g=p[2]
+    T=p[3]
+    muB=self.muB
+    kB=self.kB
+    x=(g*muB*J*B)/(kB*T)
+    return N*g*muB*J*B_J(p, x)
   
-  def fit_function(self, p, x):
+  def fit_function(self, p, B):
     '''
       Return the brillouine function of B.
     '''
 #    out=[]
 #    for i,  xi in enumerate(x):
 #      out.append(fsolve(lambda item: self.brillouine(p, item, xi), 1e-6))
-    return fsolve(lambda item: self.brillouine(p, item, numpy.array(x)), 
-                              numpy.array([p[5] for i in range(len(x))]))
+    return self.brillouine(p, numpy.array(B)/1.2566e-3)
+
+class FitBrillouineT(FitFunction):
+  '''
+    Fit a Brillouine's function for the magnetic behaviour of a ferromagnet
+    against field.
+  '''
+  
+  # define class variables.
+  name="Brillouine(T)"
+  parameters=[1e16, 2, 2, 0.1, 0.]
+  parameter_names=['N', 'J', 'g', 'B', 'D']
+  fit_function_text='Parameters (T): N; g; J; B'
+  muB=9.27e-24 # [A·m²] mu_Bohr
+  kB=1.38e-20  # [gm²/Ks²] k_Boltzmann
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1e16, 2, 2, 0.1, 0.]
+    FitFunction.__init__(self, initial_parameters)
+    self.refine_parameters=range(5)
+  
+  #def simulate(self, x, ignore=None):
+  #  return FitFunction.simulate(self, x, interpolate=1)
+  
+  #def residuals(self, params, y, x, yerror=None):
+  #  '''
+  #    As the fit with fsolve is quite slow we tell the user about
+  #    the state of the fit.
+  #  '''
+  #  err=FitFunction.residuals(self, params, y, x, yerror=None)
+  #  print "End of function call %i, chi is now %.6g" % (self.iteration, sum(err))
+  #  self.iteration+=1
+  #  return err
+  
+  #def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
+  #  self.iteration=1
+  #  return FitFunction.refine(self,  dataset_x,  dataset_y, dataset_yerror=None)
+
+  def brillouine(self, p, T):
+    '''
+      Brillouine function of B.
+    '''
+    N=p[0]
+    J=p[1]
+    g=p[2]
+    B=p[3]/1.2566e-3
+    muB=self.muB
+    kB=self.kB
+    x=(g*muB*J*B)/(kB*T)
+    return N*g*muB*J*B_J(p, x)
+  
+  def fit_function(self, p, T):
+    '''
+      Return the brillouine function of B.
+    '''
+    return self.brillouine(p, numpy.array(T))+p[4]
 
 
 #--------------------------------- Define common functions for 2d fits ---------------------------------
@@ -1402,8 +1466,9 @@ class FitSession(FitSessionGUI):
                        FitOneOverX.name: FitOneOverX, 
                        FitLorentzian.name: FitLorentzian, 
                        FitSQUIDSignal.name: FitSQUIDSignal, 
-                       #FitBrillouineB.name: FitBrillouineB, 
+                       FitBrillouineB.name: FitBrillouineB, 
                        FitBrillouineT.name: FitBrillouineT, 
+                       FitFerromagnetic.name: FitFerromagnetic, 
                        FitCuK.name: FitCuK, 
                        }
   available_functions_3d={
