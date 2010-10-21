@@ -630,37 +630,29 @@ class MeasurementData(object):
     '''
       Returns x and y value of point with maximum x.
     '''
-    if xstart==None:
-      xstart=self.data[self.xdata].min()
-    if xstop==None:
-      xstop=self.data[self.xdata].max()
-    from_index=0
-    to_index=len(self)-1
-    for i,value in enumerate(self.data[self.xdata].values):
-      if value<=xstart:
-        from_index=i
-      if self.data[self.xdata].values[-1-i]>=xstop:
-        to_index=len(self)-1-i
-    max_point=self.data[self.ydata].values.index(self.data[self.ydata].max(from_index,to_index))
+    x=self.data[self.xdata][:]
+    y=self.data[self.ydata][:]
+    if xstart is None:
+      xstart=x.min()
+    if xstop is None:
+      xstop=x.max()
+    indices=numpy.where((x>=xstart)*(x<=xstop))[0]
+    max_point=self.data[self.ydata].values.index(y[indices].max())
     return [self.data[self.xdata].values[max_point],self.data[self.ydata].values[max_point]]
 
   def min(self,xstart=None,xstop=None): 
     '''
       Returns x and y value of point with minimum x.
     '''
-    if xstart==None:
-      xstart=self.data[self.xdata].min()
-    if xstop==None:
-      xstop=self.data[self.xdata].max()
-    from_index=0
-    to_index=len(self)-1
-    for i,value in enumerate(self.data[self.xdata].values):
-      if value<=xstart:
-        from_index=i
-      if self.data[self.xdata].values[-1-i]>=xstop:
-        to_index=len(self)-1-i
-    max_point=self.data[self.ydata].values.index(self.data[self.ydata].min(from_index,to_index))
-    return [self.data[self.xdata].values[max_point],self.data[self.ydata].values[max_point]]
+    x=self.data[self.xdata][:]
+    y=self.data[self.ydata][:]
+    if xstart is None:
+      xstart=x.min()
+    if xstop is None:
+      xstop=x.max()
+    indices=numpy.where((x>=xstart)*(x<=xstop))[0]
+    min_point=self.data[self.ydata].values.index(y[indices].min())
+    return [self.data[self.xdata].values[min_point],self.data[self.ydata].values[min_point]]
 
 
 #--------------------------------------MeasurementData-Class-----------------------------------------------------#
@@ -865,10 +857,9 @@ class PhysicalProperty(object):
       Transform one unit to another. transfere variable is of type [from,b,a,to].
     '''
     if transfere[0]==self.unit: # only transform if right 'from' parameter
-      new_values=[]
-      for value in self.values:
-        new_values.append(value*transfere[1]+transfere[2])
-      self.values=new_values
+      old_values=numpy.array(self.values)
+      new_values=old_values*transfere[1]+transfere[2]
+      self.values=new_values.tolist()
       self.unit=transfere[3]
       return True
     else:
@@ -880,31 +871,26 @@ class PhysicalProperty(object):
       [from_dim,from_unit,b,a,to_dim,to_unit].
     '''
     if len(transfere)>0 and (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right 'from_dim' and 'from_unit'
-      new_values=[]
-      for value in self.values:
-        new_values.append(value*transfere[2]+transfere[3])
-      self.values=new_values
+      old_values=numpy.array(self.values)
+      new_values=old_values*transfere[2]+transfere[3]
+      self.values=new_values.tolist()
       self.unit=transfere[5]
       self.dimension=transfere[4]
       return True
     else:
       return False
 
-  def max(self,from_index=0,to_index=None):
+  def max(self,from_index=None,to_index=None):
     '''
       Return maximum value in data.
     '''
-    if to_index==None:
-      to_index=len(self)-1
-    return max([self.values[i] for i in range(from_index,to_index)])
+    return max(self.values[from_index:to_index])
 
-  def min(self,from_index=0,to_index=None):
+  def min(self,from_index=None,to_index=None):
     '''
       Return minimum value in data.
     '''
-    if to_index==None:
-      to_index=len(self)-1
-    return min([self.values[i] for i in range(from_index,to_index)])
+    return max(self.values[from_index:to_index])
   
   def __repr__(self):
     '''
@@ -1246,6 +1232,7 @@ class HugePhysicalProperty(PhysicalProperty):
     '''
       Store the data in a pickled file and delete the object to save memory.
     '''
+    pass
     if self._values is not None:
       dump(self._values, open(self.store_file, 'wb'), -1)
       del(self._values)

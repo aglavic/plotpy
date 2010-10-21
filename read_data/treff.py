@@ -578,7 +578,7 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
   data_lines=filter(lambda i: comments[lines_columns.index(i)], lines_columns)
   # define the data columns
   columns={}
-  if headers[-1][0][0]=='#':
+  if headers[-1][0][0]=='#' and headers[-1][0].strip()!='#':
     headers[-1].insert(1, headers[-1][0][1:])
   columns_line=headers[-1][1:]
   for i, column in enumerate(columns_line):
@@ -612,7 +612,10 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
   if import_images:
     # remove .gz from image columns
     for i, line in enumerate(data_lines):
-      data_lines[i][columns['Image']]=os.path.split(line[columns['Image']])[1].replace('.gz', '')
+      try:
+        data_lines[i][columns['Image']]=os.path.split(line[columns['Image']])[1].replace('.gz', '')
+      except IndexError:
+        data_lines[i][columns['Image']]=line[columns['Image']].replace('.gz', '')
   # devide polarization directions
   try:
     data_uu_lines=filter(lambda line: line[columns['PolarizerFlipped']]=='0' and line[columns['AnalyzerFlipped']]=='0', data_lines)
