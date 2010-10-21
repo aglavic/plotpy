@@ -282,7 +282,6 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
         self.gisans=True
         self.mds_create=False
         self.read_directly=True
-        self.define_gisans_functions()
       elif argument=='-no-img':
         self.import_images=False
         found=True
@@ -306,7 +305,11 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     if self.import_detector_images:
       data, detector_images=data
       self.file_data[file_name+'_imgs']=[]
+      i=0
       for channel_images in detector_images:
+        for image in channel_images:
+          image.number=str(i)
+          i+=1
         self.file_data[file_name+'_imgs']+=channel_images
       if (len(detector_images[0])==1) or self.gisans:
         # if only one detector image is taken per channel, don't use αi-αf map and plot
