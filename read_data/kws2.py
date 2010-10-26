@@ -494,7 +494,7 @@ def write_edf_file(file_prefix, data, countingtime):
   write_file=open(file_prefix+'_im_full.edf', 'wb')
   for header_line in old_file_parts[2]:
     if 'Exposure_time' in header_line:
-      write_file.write("Exposure_time = %fms ;\n" % countingtime)
+      write_file.write("Exposure_time = %fms ;\n" % (countingtime*1000.))
     elif 'DataType' in header_line:
       write_file.write("DataType = SignedInteger ;\n")
     else:
