@@ -12,6 +12,7 @@ from sessions.reflectometer_fit.treff import *
 from read_data.kws2 import KWS2MeasurementData
 import config.treff
 import read_data.treff
+from dialogs import SimpleEntryDialog
 
 #----------------------- importing modules --------------------------
 
@@ -34,10 +35,11 @@ class TreffGUI:
     '''
       create a specifig menu for the TREFF session
     '''
-    if type(self.active_file_data[0]) is KWS2MeasurementData:
+    if len(self.active_file_data)>0 and type(self.active_file_data[0]) is KWS2MeasurementData:
       string='''
         <menu action='GISANSMenu'>
           <menuitem action='SeperateScattering'/>
+          <menuitem action='SmoothData'/>
         </menu>
       '''
     else:
@@ -85,6 +87,10 @@ class TreffGUI:
                 "Seperate Scattering", None,                    # label, accelerator
                 "Calculate seperated scattering parts from polarization directions.",                                   # tooltip
                 self.seperate_scattering ),
+            ( "SmoothData", None,                             # name, stock id
+                "Gaussian Smoothing...", None,                    # label, accelerator
+                "Calculate convolution of data with gaussian.",                                   # tooltip
+                self.smooth_dataset_dialog ),
              )
     return string,  actions
 
@@ -1328,4 +1334,19 @@ set style increment user
     simu.sample_name=dataset.sample_name
     dataset.plot_together=[dataset, simu]
     window.replot()  
+  
+  def smooth_dataset_dialog(self, session, window):
+    '''
+      Smooth the dataset with a gaussian.
+    '''
+    parameters, result=SimpleEntryDialog('Gaussian Smoothing...', 
+                         (('Size [pix]', 5, int),('Size-y [pix]', 'None', str)) ).run()
+    if result:
+      try:
+        size_y=int(parameters['Size-y [pix]'])
+        self.smooth_dataset(window.measurement[window.index_mess], parameters['Size [pix]'], size_y)
+      except ValueError:
+        self.smooth_dataset(window.measurement[window.index_mess], parameters['Size [pix]'], None)
+      window.replot()
+      print "Smoothed with %i pixel filter size." % parameters['Size [pix]']
     

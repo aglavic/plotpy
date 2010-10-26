@@ -46,6 +46,10 @@ config=sessions.generic.config
 # will be defined by initialize_gui_toolkit function
 gui_main=None
 
+#+++++++++++++ Limit Memory Usage ++++++++++++++
+#import resource
+#resource.setrlimit(resource.RLIMIT_AS, (2*1024**3,2*1024**3))
+
 #----------------------- importing modules --------------------------
 
 # set default encoding

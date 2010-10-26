@@ -496,6 +496,40 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
                         )
     return process
 
+  def smooth_dataset(self, dataset, kernel_size, kernel_size_y=None):
+    '''
+      Smoothe a dataset using the convolution with a gaussian kernel function.
+      At the moment only for detector images (rectangular, equally spaced lattice)
+    '''
+    x=dataset.data[dataset.xdata][:]
+    y=dataset.data[dataset.ydata][:]
+    I=dataset.data[dataset.zdata][:].reshape(numpy.sqrt(len(x)), numpy.sqrt(len(x)))
+    Ismooth=self.blur_image(I, kernel_size, kernel_size_y)
+    dataset.data[dataset.zdata].values=Ismooth.flatten().tolist()
+  
+  def gauss_kern(self, size, size_y=None):
+    """ 
+      Function from scipy cookbook (www.scipy.org/Cookbook/SiognalSmooth)
+      Returns a normalized 2D gauss kernel array for convolutions 
+    """
+    if size_y is None:
+      size_y=size
+    x, y = numpy.mgrid[-size:size+1, -size_y:size_y+1]
+    g = numpy.exp(-(x**2/float(size)+y**2/float(size_y)))
+    return g / g.sum()
+
+  def blur_image(self, I, n, n_y=None) :
+    """ 
+      Function from scipy cookbook (www.scipy.org/Cookbook/SiognalSmooth)
+      blurs the image by convolving with a gaussian kernel of typical
+      size n.
+    """
+    from scipy import signal
+    g = self.gauss_kern(n, n_y)
+    improc = signal.convolve(I,g, mode='same')
+    return improc
+
+
 class TreffFitParameters(FitParameters):
   '''
     Class to store the parameters of a simulation or fit from the fit.f90 program.
@@ -1036,7 +1070,7 @@ class TreffFitParameters(FitParameters):
     self.polarization_parameters[1]=0.951
     self.polarization_parameters[2]=1.0
     self.polarization_parameters[3]=1.0
-
+  
 class TreffLayerParam(LayerParam):
   '''
     class for one layer data

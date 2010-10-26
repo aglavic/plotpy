@@ -25,6 +25,8 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
+MARIA_REDUCE_RESOLUTION=False
+
 class MeasurementDataTREFF(MeasurementData):
   '''
     Treff measurement data class, defining functions
