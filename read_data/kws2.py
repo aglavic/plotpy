@@ -54,7 +54,7 @@ def read_data(file_name):
     config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 5,5', '')
     return read_edf_file(file_name)
   folder, rel_file_name=os.path.split(os.path.realpath(file_name))
-  setups=ConfigObj(os.path.join(folder, 'kws2_setup.ini'), unrepr=True)
+  setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
   for key, value in setups.items():
     if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
       setup=value
@@ -254,7 +254,7 @@ def read_edf_file(file_name):
     import the file names already used are stored in a global list.
   '''
   folder, rel_file_name=os.path.split(os.path.realpath(file_name))
-  setups=ConfigObj(os.path.join(folder, 'kws2_setup.ini'), unrepr=True)
+  setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
   for key, value in setups.items():
     if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
       setup=value
@@ -302,9 +302,9 @@ def read_edf_file(file_name):
   corrected_data_array=input_array/countingtime
   corrected_error_array=error_array/countingtime
   qy_array=4.*pi/header_info['lambda_γ']*\
-           sin(arctan((x_array-center_x)*header_info['pixelsize_x']/header_info['detector_distance']/2.))
+           sin(arctan((x_array-center_x)*header_info['pixelsize_x']/setup['DETECTOR_DISTANCE']/2.))
   qz_array=-4.*pi/header_info['lambda_γ']*\
-           sin(arctan((y_array-center_y)*header_info['pixelsize_y']/header_info['detector_distance']/2.))
+           sin(arctan((y_array-center_y)*header_info['pixelsize_y']/setup['DETECTOR_DISTANCE']/2.))
   use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
               (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
   dataobj.number_of_points=len(use_indices)
@@ -422,9 +422,9 @@ def read_edf_header(file_handler):
       'sample_name': '', 
       'time': 1., 
       'pixel_x': 512.5, 
-      'pixelsize_x': 0.0815,#0.0914, 
+      'pixelsize_x': 0.16696,#0.0914, 
       'pixel_y': 512.5, 
-      'pixelsize_y': 0.0815,#0.0914, 
+      'pixelsize_y': 0.16696,#0.0914, 
       'detector_distance': 102., 
       }
   while '}' not in line:
@@ -469,9 +469,10 @@ def import_edf_file(file_name):
     # load data as binary integer values
     input_array=array_module.array('H')
     input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
-  elif header_settings['DataType']=='UnsignedInteger':
+    input_array=array(input_array)-200
+  elif header_settings['DataType']=='SignedInteger':
     # load data as binary integer values
-    input_array=array_module.array('I')
+    input_array=array_module.array('i')
     input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*4))
   else:
     raise IOError, 'Unknown data format in header: %s' % header_settings['DataType']
@@ -495,10 +496,10 @@ def write_edf_file(file_prefix, data, countingtime):
     if 'Exposure_time' in header_line:
       write_file.write("Exposure_time = %fms ;\n" % countingtime)
     elif 'DataType' in header_line:
-      write_file.write("DataType = UnsignedInteger ;\n")
+      write_file.write("DataType = SignedInteger ;\n")
     else:
       write_file.write(header_line)
-  output_array=array_module.array('I')
+  output_array=array_module.array('i')
   int_data=map(int, data.tolist())
   output_array.fromlist(int_data)
   output_array.tofile(write_file)

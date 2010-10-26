@@ -89,7 +89,7 @@ class KWS2Session(GUI, GenericSession):
       Function to read data files.
     '''
     folder, rel_file=os.path.split(os.path.realpath(file_name))
-    setups=ConfigObj(os.path.join(folder, 'kws2_setup.ini'), unrepr=True)
+    setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
     setups.indent_type='\t'
     found=False
     for key, value in setups.items():
