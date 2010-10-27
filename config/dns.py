@@ -24,8 +24,10 @@ LAMBDA_NEUTRON=None
 VANADIUM_FILE=None
 SETUP_DIRECTORYS=['.'] # directories to look for the calibration files
 NICR_FILE_WILDCARDS=[('', 'nicr.d_dat'), ('', 'NiCr.d_dat'), ('', 'nicr.d_dat.gz'), ('', 'NiCr.d_dat.gz')] # nicr files start, end string
-BACKGROUND_WILDCARDS=[('', 'leer.d_dat'), ('', 'back.d_dat'), ('', 'leer.d_dat.gz'), ('', 'back.d_dat.gz')]  # background file start, end string
-VANADIUM_WILDCARDS=[('', 'vana.d_dat'), ('', 'Vana.d_dat'), ('', 'vana.d_dat.gz'), ('', 'Vana.d_dat.gz')] # vanadium file start, end string
+BACKGROUND_WILDCARDS=[('', 'leer.d_dat'), ('', 'back.d_dat'), ('', 'leer.d_dat.gz'), ('', 'back.d_dat.gz'), 
+                      ('','_background')]  # background file start, end string
+VANADIUM_WILDCARDS=[('', 'vana.d_dat'), ('', 'Vana.d_dat'), ('', 'vana.d_dat.gz'), ('', 'Vana.d_dat.gz'), 
+                    ('', '_vanadium')] # vanadium file start, end string
 
 ALWAYS_FULLAUTO=False
 FULLAUTO_TEMP_SENSITIVITY=5.

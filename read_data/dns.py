@@ -8,6 +8,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import os
 from math import sqrt
+import numpy
 from measurement_data_structure import MeasurementData
 import config.dns
 from config.dns import *
@@ -82,7 +83,6 @@ def read_data(file_name, print_comments=True):
       print "Wrong file type! Doesn't contain dns header information."
     return 'NULL'
   
-
 def read_header(file_handler): 
   ''' 
     Read file header information.
@@ -149,3 +149,108 @@ def read_detector_data(file_handler,detectors,time_channels):
         break
     line=file_handler.readline()
   return data
+
+def read_data_d7(file_name, print_comments=True):
+  '''
+    Read the data of a d7 data file.
+    
+    @return List of MeasurementData objects with the data from file_name
+  '''
+  if not os.path.exists(file_name): # Test if the file exists
+    if print_comments:
+      print "File does not exist."
+    return 'NULL'
+  if file_name.endswith('.gz'):
+    # use gziped data format
+    import gzip
+    file_handler=gzip.open(file_name, 'r')
+  else:
+    file_handler=open(file_name, 'r')
+  # read header to test if this is a d7 data file
+  if file_handler.readline().strip()=='RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR': 
+    comments, head_info, data_string=file_handler.read().split(
+                            'IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII')
+    # Read additional information from the header
+    add_info=evaluate_header_d7(comments, head_info)
+    # extract counts from datastring
+    counts=map(float, data_string.split())
+    counts=[numpy.array(counts[i*132:(i+1)*132]) for i in range(len(counts)/132)]
+    sort_indices=numpy.argsort(add_info['detector_angles'])
+    detector_angles=numpy.array(add_info['detector_angles'])[sort_indices].tolist()
+    add_info['detector_angles']=True
+    add_info['detector_bank_2T']=detector_angles[0]
+    # create objects
+    datasets=[]
+    for i, counts_array in enumerate(counts):
+      measurement_data=MeasurementData([ ['Detector', ''], 
+                                       ['Channel_0', 'counts/'+SCALE_BY[1]], 
+                                       ['Error_Ch_0', 'counts/'+SCALE_BY[1]], 
+                                       ['Detectorbank', '°'],
+                                       ], [],0,1,2,zdata=-1)
+      measurement_data.number_of_points=132
+      counts_array=counts_array[sort_indices]
+      error_array=numpy.sqrt(counts_array)
+      counts_array/=add_info[SCALE_BY[0]+'[%i]' % i]
+      error_array/=add_info[SCALE_BY[0]+'[%i]' % i]
+      measurement_data.data[3].values=list(detector_angles)
+      measurement_data.data[1].values=counts_array.tolist()
+      measurement_data.data[2].values=error_array.tolist()
+      measurement_data.data[0].values=range(132)
+      measurement_data.dns_info=dict(add_info)
+      measurement_data.dns_info.update({
+                                    'flipper': i%2, 
+                                    'flipper_compensation': 0., 
+                                    'C_a': i//2, 
+                                    'C_b': i//2, 
+                                    'C_c': i//2, 
+                                    'C_z': i//2, 
+                                  })
+      measurement_data.sample_name=file_name+'[%i]' %i
+      measurement_data.info="\n".join(map(lambda item: item[0]+': '+str(item[1]),
+                                    sorted(add_info.items())))      
+      datasets.append(measurement_data)
+    return datasets
+  else: # not dns data
+    if print_comments:
+      print "Wrong file type! Doesn't contain dns header information."
+    return 'NULL'
+
+def evaluate_header_d7(comments, head_info):
+  '''
+    Reads sample name and additional information as temperature and omega position 
+    from d7 file header information.
+    
+    @return Dictionary of the read information.
+  '''
+  add_info={}
+  header_blocks=head_info.split('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')
+  # extract the two data blocks
+  header_blocks_data=[header_blocks[1].split('\n', 5)[5], 
+          header_blocks[2].split(
+            'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS')[0].split('\n', 5)[5]]
+  header_blocks_data[0]=map(float, header_blocks_data[0].split())
+  header_blocks_data[1]=map(float, header_blocks_data[1].split())
+  # extract important information
+  add_info['lambda_n']=header_blocks_data[0][0]
+  add_info['detector_angles']=header_blocks_data[0][6:138]
+  add_info['omega']=header_blocks_data[0][168]
+  add_info['field']=header_blocks_data[1][6]
+  add_info['temperature']=header_blocks_data[1][5]
+  add_info['time[0]']=header_blocks_data[1][14]/1000.
+  add_info['time[1]']=header_blocks_data[1][24]/1000.
+  add_info['time[2]']=header_blocks_data[1][34]/1000.
+  add_info['time[3]']=header_blocks_data[1][44]/1000.
+  add_info['time[4]']=header_blocks_data[1][54]/1000.
+  add_info['time[5]']=header_blocks_data[1][64]/1000.
+  add_info['monitor[0]']=header_blocks_data[1][16]
+  add_info['monitor[1]']=header_blocks_data[1][26]
+  add_info['monitor[2]']=header_blocks_data[1][36]
+  add_info['monitor[3]']=header_blocks_data[1][46]
+  add_info['monitor[4]']=header_blocks_data[1][56]
+  add_info['monitor[5]']=header_blocks_data[1][66]
+  # evaluate comments
+  true_comments=comments.split(
+                 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')[2].split('\n', 2)[2]
+  add_info['full comment']=true_comments
+  add_info['sample_name']=true_comments.splitlines()[5].strip()
+  return add_info

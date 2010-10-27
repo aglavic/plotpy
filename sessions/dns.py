@@ -188,7 +188,7 @@ class DNSSession(GUI, GenericSession):
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'b', 'bg', 'bs', 'fr', 'v', 'vana', 'files', 
                                                           'sample', 'setup', 'cz', 'time', 'flipper', 'monitor', 
                                                           'powder', 'xyz', 'sep-nonmag', 'split', 'fullauto', 
-                                                          'dx', 'dy', 'nx', 'ny'] 
+                                                          'dx', 'dy', 'nx', 'ny', 'd7'] 
   file_options={'default': ['', 0, 1, [0, -1], ''],  # (prefix, omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[] # A list of all filenames to be imported
@@ -545,6 +545,10 @@ class DNSSession(GUI, GenericSession):
         self.AUTO_BACKGROUND=True
       elif argument=='-v':
         self.AUTO_VANADIUM=True
+      elif argument=='-d7':
+        self.read_files=self.read_files_d7
+        self.read_vana_bg_nicr_files=self.read_vana_bg_nicr_files_d7
+        self.read_bg_file=self.read_bg_file_d7
       elif argument=='-time':
         self.SHORT_INFO=[('time', lambda time: 'with t='+str(time), 's')]
       elif argument=='-powder':
@@ -641,6 +645,54 @@ class DNSSession(GUI, GenericSession):
     self.create_maps(file)
     return None
   
+  def read_files_d7(self, file):
+    '''
+      Function to read data files for one D7 measurement. 
+      The files are split by their prefixes.
+      
+      @param file Sequence with the options for the file import
+    '''
+    # read the options for this sequence of files
+    prefix=self.file_options[file][0]
+    omega_offset=self.file_options[file][1]
+    increment=self.file_options[file][2]
+    num_range=self.file_options[file][3]
+    postfix=self.file_options[file][4]
+    # split folder and filename of prefix
+    file_split=prefix.rsplit(os.sep, 1)
+    if len(file_split)==1:
+      folder='.'
+      fileprefix=file_split[0]
+    else:
+      folder, fileprefix=file_split
+    # create a list of all files starting with the fileprefix and ending with postfix
+    file_list=[lfile for lfile in os.listdir(folder) if lfile.startswith(fileprefix) and lfile.endswith(postfix)]
+    if len(file_list)==0:
+      return None
+    file_list.sort()
+    # Read the raw data
+    self.file_data[file+'|raw_data']=[]
+    print "Reading files %s{num}%s with num from %i to %i." % (prefix, postfix, num_range[0], num_range[1])
+    for file_name in file_list:
+      # get integer number of the file, catch errors form wrong file selection
+      try:
+        active_number=int(os.path.join(folder, file_name).rsplit(postfix)[0].split(prefix, 1)[1])
+      except ValueError:
+        continue
+      i=1
+      if (active_number>=num_range[0]) and (active_number<=num_range[1] or num_range[1]==-1):
+        # read the datafile into a MeasurementData object.
+        datasets=read_data.dns.read_data_d7(os.path.join(folder, file_name))
+        if i==1:
+          self.file_options[file][2]=len(datasets)
+        for dataset in datasets:
+          dataset.number=str(i)
+          i+=1
+        self.file_data[file+'|raw_data']+=datasets
+    print "\tRead, creating map."
+    self.create_maps(file)
+    return None
+  
   def create_maps(self, file):
     '''
       Crates a MeasurementData object which can be used to
@@ -659,14 +711,29 @@ class DNSSession(GUI, GenericSession):
     increment=self.file_options[file][2]
     num_range=self.file_options[file][3]
     postfix=self.file_options[file][4]
-    # Functoin used to append data to the object
-    def append_to_map(point):
-      return [detector_bank_2T, 
-              round(omega-omega_offset-detector_bank_2T, 1), 
-              round(omega-detector_bank_2T, 1), 
-              point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE-detector_bank_2T, 
-              point[0]
-              ]+point[1:]+point[1:]+[0, 0, i]
+    if 'detector_angles' in scans[0].dns_info:
+      # Functoin used to append data to the object
+      def append_to_map(point):
+        return [detector_bank_2T, 
+                round(omega-omega_offset, 1), 
+                round(omega, 1), 
+                point[3], 
+                point[0], 
+                point[1], 
+                point[2], 
+                point[0], 
+                point[1], 
+                point[2], 
+                0, 0, i]
+    else:
+      # Functoin used to append data to the object
+      def append_to_map(point):
+        return [detector_bank_2T, 
+                round(omega-omega_offset-detector_bank_2T, 1), 
+                round(omega-detector_bank_2T, 1), 
+                point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE-detector_bank_2T, 
+                point[0]
+                ]+point[1:]+point[1:]+[0, 0, i]
     # go through every raw data object.
     for i, scan in enumerate(scans):
       if i<increment:
@@ -674,7 +741,7 @@ class DNSSession(GUI, GenericSession):
           channels=['x', 'x', 'y', 'y', 'z', 'z']
           scan.dns_info['pol_channel']=channels[i]
         # Create the objects for every polarization chanel
-        columns=[['Detectorbank', '°'], ['ω', '°'], ['ω-RAW', '°'], 
+        columns=[['DetectorbankAngle', '°'], ['ω', '°'], ['ω-RAW', '°'], 
                  ['2Θ', '°'], ['Detector', '']]+\
                  [[scan.dimensions()[j], scan.units()[j]] for j in range(1, len(scan.units()))]+\
                  [['I_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
@@ -687,7 +754,10 @@ class DNSSession(GUI, GenericSession):
         active_map.dns_info=scan.dns_info
         active_map.number_of_channels=(len(scan.units())-1)/2
         active_map.short_info=str(i)+': '+" ".join([info[1](scan.dns_info[info[0]])+info[2] for info in self.SHORT_INFO])
-        active_map.sample_name=self.SAMPLE_NAME
+        if 'sample_name' in scan.dns_info:
+          active_map.sample_name=scan.dns_info['sample_name']
+        else:
+          active_map.sample_name=self.SAMPLE_NAME
         active_map.info= "\n".join(map(lambda item: item[0]+': '+str(item[1]),
                                     sorted(scan.dns_info.items())))
       # add the data
@@ -1126,6 +1196,150 @@ class DNSSession(GUI, GenericSession):
         os.remove(os.path.join(directorys[-1], file_name))
       os.rmdir(directorys[-1])      
 
+  def read_vana_bg_nicr_files_d7(self):
+    '''
+      Read all NiCr, background and vanadium files in the chosen directorys and zipfile and correct NiCr for backgound.
+      This is used for d7 datasets.
+    '''
+    directorys=config.dns.SETUP_DIRECTORYS
+    # if set, unzip the zipfile with the setup data
+    if self.CORRECTION_ZIP:
+      import zipfile
+      try:
+        zf=zipfile.ZipFile(self.CORRECTION_ZIP, 'r')
+        directorys.append(os.path.join(self.TEMP_DIR, 'setup'))
+        os.mkdir(directorys[-1])
+        print "Extracting ziped setup data %s." % self.CORRECTION_ZIP
+        for ziped_file in zf.filelist:
+          name=os.path.split(ziped_file.filename)[1]
+          file=open(os.path.join(directorys[-1], name), 'w')
+          file.write(zf.read(ziped_file.filename))
+          file.close()
+      except IOError:
+        print "No zip file %s." % self.CORRECTION_ZIP
+    file_list=[]
+    # create a list of all files in the setup directorys
+    for directory in directorys:
+      try:
+        dir_list=sorted(os.listdir(directory))
+        file_list+=[os.path.join(directory, name) for name in dir_list]
+      except OSError:
+        pass
+    nicr_files=[]
+    bg_files=[]
+    vana_files=[]
+    # filter the file names by the wildcards set in config.dns
+    for wildcard in config.dns.NICR_FILE_WILDCARDS:
+      nicr_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
+                             file_list)))
+    for wildcard in config.dns.BACKGROUND_WILDCARDS:
+      bg_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
+                             file_list)))
+    for wildcard in config.dns.VANADIUM_WILDCARDS:
+      vana_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
+                             file_list)))
+    # a dictionary with the detector bank helmholz parameters is used to store the NiCr data
+    nicr_data={}
+    vana_data=None
+    # read all nicr files
+    for file_name in nicr_files:
+      datasets=read_data.dns.read_data(file_name)
+      for dataset in datasets:
+        dataset.name=os.path.split(file_name)[1]
+        detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
+        flip=round(float(dataset.dns_info['flipper']), 2)
+        flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+        c_a=round(float(dataset.dns_info['C_a']), 2)
+        c_b=round(float(dataset.dns_info['C_b']), 2)
+        c_c=round(float(dataset.dns_info['C_c']), 2)
+        c_z=round(float(dataset.dns_info['C_z']), 2)
+        nicr_data[(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)]=dataset
+    # read all background files
+    bg_data=self.system_bg
+    for bg_file in bg_files:
+      self.read_bg_file(bg_file, bg_data)
+    self.system_bg=bg_data
+    # correct the background of the nicr data
+    bg_corrected_data={}
+    if use_numpy:
+      def subtract_background(point):
+        bg=background_data.data
+        point[1]-=array(bg[1].values)
+        point[2]=sqrt(point[2]**2+array(bg[2].values)**2)
+        return point
+    else:
+      def subtract_background(point):
+        index=background_data.data[0].values.index(point[0])
+        bg=background_data.get_data(index)
+        point[1]-=bg[1]
+        point[2]=sqrt(point[2]**2+bg[2]**2)
+        return point      
+    for key, data in nicr_data.items():
+      if key[1:] in bg_data:
+        background_data_list=bg_data[key[1:]]
+        background_data_list.sort(lambda b1, b2: cmp(b1.dns_info['detector_bank_2T'], 
+                                                     b2.dns_info['detector_bank_2T']))
+        background_data_angles=[b.dns_info['detector_bank_2T'] for b in background_data_list]
+        i=0
+        angle=data.dns_info['detector_bank_2T']
+        while background_data_angles[i]<=angle:
+          if i+1<len(background_data_list):
+            i+=1
+          else:
+            break
+        if  background_data_angles[i]-angle < angle-background_data_angles[i-1] or i==0:
+          background_data=background_data_list[i]
+        else:
+          background_data=background_data_list[i-1]
+        data.process_function(subtract_background)
+        data.name+='-'+background_data.name
+        bg_corrected_data[key]=data
+    self.bg_corrected_nicr_data=bg_corrected_data
+    for file_name in vana_files:
+      datasets=read_data.dns.read_data_d7(file_name)
+      for dataset in datasets:
+        if vana_data:
+          detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
+          flip=round(float(dataset.dns_info['flipper']), 2)
+          flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+          c_a=round(float(dataset.dns_info['C_a']), 2)
+          c_b=round(float(dataset.dns_info['C_b']), 2)
+          c_c=round(float(dataset.dns_info['C_c']), 2)
+          c_z=round(float(dataset.dns_info['C_z']), 2)
+          key=(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)
+          if key in bg_data:
+            # subtract backgound from vanadium if suitable is found.
+            background_data=bg_data[key]
+            dataset.process_function(subtract_background)
+          for i, data in enumerate(dataset):
+            vana_data.data[1].values[i]+=data[1]
+            vana_data.data[2].values[i]=sqrt((vana_data.data[2].values[i]**2+data[2]**2)/2.)
+          vana_data.name+='+'+file_name
+        else:
+          vana_data=dataset
+          vana_data.name=file_name
+          detector=round(float(vana_data.dns_info['detector_bank_2T']), 0)
+          flip=round(float(vana_data.dns_info['flipper']), 2)
+          flip_cmp=round(float(vana_data.dns_info['flipper_compensation']), 2)
+          c_a=round(float(vana_data.dns_info['C_a']), 2)
+          c_b=round(float(vana_data.dns_info['C_b']), 2)
+          c_c=round(float(vana_data.dns_info['C_c']), 2)
+          c_z=round(float(vana_data.dns_info['C_z']), 2)
+          key=(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)
+          if key in bg_data:
+            # subtract backgound from vanadium if suitable is found.
+            background_data=bg_data[key]
+            vana_data.process_function(subtract_background)
+    self.system_vana=vana_data
+    if directorys[-1]==os.path.join(self.TEMP_DIR, 'setup'):
+      # remove files
+      for file_name in os.listdir(directorys[-1]):
+        os.remove(os.path.join(directorys[-1], file_name))
+      os.rmdir(directorys[-1])      
+
   def read_bg_file(self, bg_file, bg_data):
     '''
       Read one background file and add it to a dictionary.
@@ -1158,6 +1372,41 @@ class DNSSession(GUI, GenericSession):
       bg_data[key].append(dataset)
     else:
       bg_data[key]=[dataset]
+    return True
+  
+  def read_bg_file_d7(self, bg_file, bg_data):
+    '''
+      Read one background file and add it to a dictionary.
+      The dictionary keys correspond to the flipper and helmholz
+      coil currents.
+      
+      @param bg_file File name to read from
+      @param bg_data The dictionary to write to
+    '''
+    datasets=read_data.dns.read_data_d7(bg_file)
+    if datasets=='NULL':
+      # if there was a problem in the file return False
+      return False
+    for dataset in datasets:
+      if self.BACKGROUND_SCALING!=1.:
+        def scale_background(point):
+          out=[point[0]]
+          for pi in point[1:]:
+            out.append(pi*self.BACKGROUND_SCALING)
+          return out
+        dataset.process_function(scale_background)
+      dataset.name=os.path.split(bg_file)[1]
+      flip=round(float(dataset.dns_info['flipper']), 2)
+      flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
+      c_a=round(float(dataset.dns_info['C_a']), 2)
+      c_b=round(float(dataset.dns_info['C_b']), 2)
+      c_c=round(float(dataset.dns_info['C_c']), 2)
+      c_z=round(float(dataset.dns_info['C_z']), 2)
+      key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
+      if key in bg_data:
+        bg_data[key].append(dataset)
+      else:
+        bg_data[key]=[dataset]
     return True
   
   def correct_flipping_ratio(self, scattering_propability=0.1):
@@ -1501,7 +1750,10 @@ class DNSMeasurementData(MeasurementData):
       detector_positions=point[0]
       detectors=point[4]
       bg_items=[background_data[det_pos] for det_pos in detector_positions]
-      bg_columns=[[] for i in range(len(background_data.values()[0].data)-1)]
+      if 'detector_angles' in background_data.values()[0].dns_info:
+        bg_columns=[[] , []]
+      else:
+        bg_columns=[[] for i in range(len(background_data.values()[0].data)-1)]
       for i, detector in enumerate(detectors):
         bg_data=bg_items[i].data
         for j, column in enumerate(bg_columns):
