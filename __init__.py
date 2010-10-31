@@ -47,8 +47,8 @@ config=sessions.generic.config
 gui_main=None
 
 #+++++++++++++ Limit Memory Usage ++++++++++++++
-#import resource
-#resource.setrlimit(resource.RLIMIT_AS, (2*1024**3,2*1024**3))
+import resource
+resource.setrlimit(resource.RLIMIT_AS, (2*1024**3,2*1024**3))
 
 #----------------------- importing modules --------------------------
 

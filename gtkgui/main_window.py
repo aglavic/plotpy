@@ -2058,6 +2058,33 @@ class ApplicationMainWindow(gtk.Window):
     dialog.show_all()
     dialog.connect('response', lambda *ignore: dialog.destroy())
 
+  def interpolate_and_smooth_dialog(self, action):
+    '''
+      Dialog to select the options for interpolation and smoothing of 2d-data
+      into a regular grid.
+    '''
+    parameters, result=SimpleEntryDialog('Interpolate to regular grid and smooth data...', 
+                         (('x-from', 0, float), 
+                         ('x-to', 1, float), 
+                         ('x-steps', 50, int), 
+                         ('σ-x', 0.01, float), 
+                         ('y-from', 0, float), 
+                         ('y-to', 1, float), 
+                         ('y-steps', 50, int), 
+                         ('σ-y', 0.01, float), 
+                         )).run()
+    if result==1:
+      self.file_actions.activate_action('interpolate_and_smooth', 
+                      parameters['σ-x'], 
+                      parameters['σ-y'], 
+                      parameters['x-from'], 
+                      parameters['x-to'], 
+                      parameters['x-steps'], 
+                      parameters['y-from'], 
+                      parameters['y-to'], 
+                      parameters['y-steps'], 
+                      )
+
   def get_position_selection(self, action, int_points, position_table):
     '''
       Return selection entries for x,y positions.
@@ -2148,8 +2175,6 @@ class ApplicationMainWindow(gtk.Window):
                                         gnuplot_preferences.defined_color_patterns[pattern_names[pattern_box.get_active()]])
     cps_dialog.destroy()
     self.replot()
-
-
 
   def fit_dialog(self,action, size=(800, 250), position=None):
     '''
@@ -3388,6 +3413,7 @@ class ApplicationMainWindow(gtk.Window):
           <menuitem action='CrossSection'/>
           <menuitem action='RadialIntegration'/>
           <menuitem action='IntegrateIntensities'/>
+          <menuitem action='InterpolateSmooth'/>
           </placeholder>        
           <placeholder name='y-actions'/>'''
       else:
@@ -3566,6 +3592,10 @@ class ApplicationMainWindow(gtk.Window):
         "Cross-Section...", None,                     # label, accelerator
         None,                                    # tooltip
         self.extract_cross_section),
+      ( "InterpolateSmooth", None,                    # name, stock id
+        "Interpolate to regular grid...", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.interpolate_and_smooth_dialog),
       ( "RadialIntegration", None,                    # name, stock id
         "Calculate Radial Integration...", None,                     # label, accelerator
         None,                                    # tooltip
