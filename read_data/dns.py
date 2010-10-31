@@ -174,11 +174,12 @@ def read_data_d7(file_name, print_comments=True):
     add_info=evaluate_header_d7(comments, head_info)
     # extract counts from datastring
     counts=map(float, data_string.split())
-    counts=[numpy.array(counts[i*132:(i+1)*132]) for i in range(len(counts)/132)]
-    sort_indices=numpy.argsort(add_info['detector_angles'])
-    detector_angles=numpy.array(add_info['detector_angles'])[sort_indices].tolist()
-    add_info['detector_angles']=True
-    add_info['detector_bank_2T']=detector_angles[0]
+    counts=[counts[i*132:(i+1)*132] for i in range(len(counts)/132)]
+    #counts=map(lambda count: numpy.array(list(reversed(count))), counts)
+    counts=map(lambda count: numpy.array((count[88:132]+count[44:88]+count[0:44])), counts)
+    detector_angles=(add_info['detector_bank_2T']-numpy.array(D7_DETECTOR_MAP[0])).tolist()+\
+                    (add_info['detector_bank_2T[1]']-numpy.array(D7_DETECTOR_MAP[0])).tolist()+\
+                    (add_info['detector_bank_2T[2]']-numpy.array(D7_DETECTOR_MAP[0])).tolist()
     # create objects
     datasets=[]
     for i, counts_array in enumerate(counts):
@@ -188,7 +189,6 @@ def read_data_d7(file_name, print_comments=True):
                                        ['Detectorbank', '°'],
                                        ], [],0,1,2,zdata=-1)
       measurement_data.number_of_points=132
-      counts_array=counts_array[sort_indices]
       error_array=numpy.sqrt(counts_array)
       counts_array/=add_info[SCALE_BY[0]+'[%i]' % i]
       error_array/=add_info[SCALE_BY[0]+'[%i]' % i]
@@ -197,13 +197,14 @@ def read_data_d7(file_name, print_comments=True):
       measurement_data.data[2].values=error_array.tolist()
       measurement_data.data[0].values=range(132)
       measurement_data.dns_info=dict(add_info)
+      measurement_data.dns_info[SCALE_BY[0]]=add_info[SCALE_BY[0]+'[%i]' % i]
       measurement_data.dns_info.update({
-                                    'flipper': i%2, 
-                                    'flipper_compensation': 0., 
-                                    'C_a': i//2, 
-                                    'C_b': i//2, 
-                                    'C_c': i//2, 
-                                    'C_z': i//2, 
+                                    'flipper': add_info['currents[%i]' % i][0], 
+                                    'flipper_compensation': add_info['currents[%i]' % i][1], 
+                                    'C_a': add_info['currents[%i]' % i][2], 
+                                    'C_b': add_info['currents[%i]' % i][3], 
+                                    'C_c': add_info['currents[%i]' % i][4], 
+                                    'C_z': add_info['currents[%i]' % i][5], 
                                   })
       measurement_data.sample_name=file_name+'[%i]' %i
       measurement_data.info="\n".join(map(lambda item: item[0]+': '+str(item[1]),
@@ -232,16 +233,26 @@ def evaluate_header_d7(comments, head_info):
   header_blocks_data[1]=map(float, header_blocks_data[1].split())
   # extract important information
   add_info['lambda_n']=header_blocks_data[0][0]
-  add_info['detector_angles']=header_blocks_data[0][6:138]
-  add_info['omega']=header_blocks_data[0][168]
+  add_info['detector_angles']=True
+  add_info['detector_bank_2T']=header_blocks_data[0][164]
+  add_info['detector_bank_2T[1]']=header_blocks_data[0][165]
+  add_info['detector_bank_2T[2]']=header_blocks_data[0][166]
+  #add_info['detector_bank_2T[3]']=header_blocks_data[0][167]
+  add_info['omega']=-header_blocks_data[0][162]
   add_info['field']=header_blocks_data[1][6]
   add_info['temperature']=header_blocks_data[1][5]
-  add_info['time[0]']=header_blocks_data[1][14]/1000.
-  add_info['time[1]']=header_blocks_data[1][24]/1000.
-  add_info['time[2]']=header_blocks_data[1][34]/1000.
-  add_info['time[3]']=header_blocks_data[1][44]/1000.
-  add_info['time[4]']=header_blocks_data[1][54]/1000.
-  add_info['time[5]']=header_blocks_data[1][64]/1000.
+  add_info['currents[0]']=header_blocks_data[1][8:14]
+  add_info['currents[1]']=header_blocks_data[1][18:24]
+  add_info['currents[2]']=header_blocks_data[1][28:34]
+  add_info['currents[3]']=header_blocks_data[1][38:44]
+  add_info['currents[4]']=header_blocks_data[1][48:54]
+  add_info['currents[5]']=header_blocks_data[1][58:64]
+  add_info['time[0]']=header_blocks_data[1][14]/100.
+  add_info['time[1]']=header_blocks_data[1][24]/100.
+  add_info['time[2]']=header_blocks_data[1][34]/100.
+  add_info['time[3]']=header_blocks_data[1][44]/100.
+  add_info['time[4]']=header_blocks_data[1][54]/100.
+  add_info['time[5]']=header_blocks_data[1][64]/100.
   add_info['monitor[0]']=header_blocks_data[1][16]
   add_info['monitor[1]']=header_blocks_data[1][26]
   add_info['monitor[2]']=header_blocks_data[1][36]
@@ -254,3 +265,49 @@ def evaluate_header_d7(comments, head_info):
   add_info['full comment']=true_comments
   add_info['sample_name']=true_comments.splitlines()[5].strip()
   return add_info
+
+def read_vana_d7(file_name, print_comments=True):
+  '''
+    Readan already corrected vanadium data file from D7.
+    
+    @return List of MeasurementData objects with the data from file_name
+  '''
+  if not os.path.exists(file_name): # Test if the file exists
+    if print_comments:
+      print "File does not exist."
+    return 'NULL'
+  if file_name.endswith('.gz'):
+    # use gziped data format
+    import gzip
+    file_handler=gzip.open(file_name, 'r')
+  else:
+    file_handler=open(file_name, 'r')
+  # read header to test if this is a d7 data file
+  text=file_handler.read()
+  if text.startswith('Vanadium Intensities'):
+    data=text.splitlines()[2:]
+    data_items=map(str.split, data)
+    def get_data(splitted_line):
+      detector=int(splitted_line[0])-1
+      intensity=float(splitted_line[2])
+      dintensity=float(splitted_line[3])
+      return [detector, intensity, dintensity]
+    measurement_data=MeasurementData([ ['Detector', ''], 
+                                       ['Channel_0', 'counts/'+SCALE_BY[1]], 
+                                       ['Error_Ch_0', 'counts/'+SCALE_BY[1]], 
+                                       ], [],0,1,2,zdata=-1)
+    map(lambda splitted_line: measurement_data.append(get_data(splitted_line)), data_items[88:])
+    map(lambda splitted_line: measurement_data.append(get_data(splitted_line)), data_items[44:88])
+    map(lambda splitted_line: measurement_data.append(get_data(splitted_line)), data_items[:44])
+    measurement_data.dns_info={
+                    'detector_bank_2T': 0, 
+                    'flipper': 0, 
+                    'flipper_compensation': 99., 
+                    'C_a': 0, 
+                    'C_b': 0, 
+                    'C_c': 0, 
+                    'C_z': 0, 
+                               }
+    return measurement_data
+  else:
+    return 'NULL'

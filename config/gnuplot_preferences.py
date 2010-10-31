@@ -126,6 +126,7 @@ defined_color_patterns={
                         'Rainbow': 'rgbformulae 22,13,-31', 
                         'Hot': 'rgbformulae 21,22,23', 
                         'Color, gray printable': 'rgbformulae 31,32,33', 
+                        '+ and - peaks': 'defined (0 0 0 0.5, 1 0 0 1, 5 1 1 1, 9 1 0 0, 10 0.5 0 0)', 
                         }
 # title for a curve
 titles='[titles_add]'

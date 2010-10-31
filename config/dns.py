@@ -20,14 +20,25 @@ FIRST_DETECTOR_ANGLE=0.0
 START_WITH_DETECTOR=4
 NUMBER_OF_DETECTORS=24
 DETECTOR_ANGULAR_INCREMENT=5.
+# Mapping the detector numbers of D7 to their angular offset from the bank center
+D7_DETECTOR_MAP=[
+                 [(i%2)*(-1.0068*(i+1)+21.762)+((i+1)%2)*(-0.99642*(i+1)+21.326) for i in range(44)], 
+                 [(i%2)*(-0.99234*(i+1)+22.728)+((i+1)%2)*(-0.9939*(i+1)+22.397) for i in range(44)], 
+                 [(i%2)*(-0.9886*(i+1)+26.452)+((i+1)%2)*(-0.99863*(i+1)+26.511) for i in range(44)], 
+                 # trying old one
+                 #[(i%2)*(-1.0204*(i+1)+23.905)+((i+1)%2)*(-0.9955*(i+1)+23.377) for i in range(44)], 
+                 #[(i%2)*(-0.99762*(i+1)+20.566)+((i+1)%2)*(-0.99237*(i+1)+20.75) for i in range(44)], 
+                 #[(i%2)*(-0.99383*(i+1)+19.192)+((i+1)%2)*(-1.0035*(i+1)+19.827) for i in range(44)], 
+                 ]
 LAMBDA_NEUTRON=None
 VANADIUM_FILE=None
 SETUP_DIRECTORYS=['.'] # directories to look for the calibration files
-NICR_FILE_WILDCARDS=[('', 'nicr.d_dat'), ('', 'NiCr.d_dat'), ('', 'nicr.d_dat.gz'), ('', 'NiCr.d_dat.gz')] # nicr files start, end string
+NICR_FILE_WILDCARDS=[('', 'nicr.d_dat'), ('', 'NiCr.d_dat'), ('', 'nicr.d_dat.gz'), ('', 'NiCr.d_dat.gz'), 
+                     ('','_silica.d7')] # nicr files start, end string
 BACKGROUND_WILDCARDS=[('', 'leer.d_dat'), ('', 'back.d_dat'), ('', 'leer.d_dat.gz'), ('', 'back.d_dat.gz'), 
-                      ('','_background')]  # background file start, end string
+                      ('','_back.d7')]  # background file start, end string
 VANADIUM_WILDCARDS=[('', 'vana.d_dat'), ('', 'Vana.d_dat'), ('', 'vana.d_dat.gz'), ('', 'Vana.d_dat.gz'), 
-                    ('', '_vanadium')] # vanadium file start, end string
+                    ('vanadium_', '.dat'), ('', '_vana.d7')] # vanadium file start, end string
 
 ALWAYS_FULLAUTO=False
 FULLAUTO_TEMP_SENSITIVITY=5.

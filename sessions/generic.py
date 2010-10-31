@@ -702,3 +702,9 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
     self.file_data[self.active_file_name]=dump_obj
     self.active_file_data=self.file_data[self.active_file_name]
+  
+  def get_active_file_info(self):
+    '''
+      Return a string with information about the active file.
+    '''
+    return "Data read from %s.\n" % (self.active_file_name)

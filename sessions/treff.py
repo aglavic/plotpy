@@ -504,31 +504,30 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     x=dataset.data[dataset.xdata][:]
     y=dataset.data[dataset.ydata][:]
     I=dataset.data[dataset.zdata][:].reshape(numpy.sqrt(len(x)), numpy.sqrt(len(x)))
-    Ismooth=self.blur_image(I, kernel_size, kernel_size_y)
+    Ismooth=blur_image(I, kernel_size, kernel_size_y)
     dataset.data[dataset.zdata].values=Ismooth.flatten().tolist()
-  
-  def gauss_kern(self, size, size_y=None):
-    """ 
-      Function from scipy cookbook (www.scipy.org/Cookbook/SiognalSmooth)
-      Returns a normalized 2D gauss kernel array for convolutions 
-    """
-    if size_y is None:
-      size_y=size
-    x, y = numpy.mgrid[-size:size+1, -size_y:size_y+1]
-    g = numpy.exp(-(x**2/float(size)+y**2/float(size_y)))
-    return g / g.sum()
 
-  def blur_image(self, I, n, n_y=None) :
-    """ 
-      Function from scipy cookbook (www.scipy.org/Cookbook/SiognalSmooth)
-      blurs the image by convolving with a gaussian kernel of typical
-      size n.
-    """
-    from scipy import signal
-    g = self.gauss_kern(n, n_y)
-    improc = signal.convolve(I,g, mode='same')
-    return improc
+def gauss_kern(size, size_y=None):
+  """ 
+    Function from scipy cookbook (www.scipy.org/Cookbook/SiognalSmooth)
+    Returns a normalized 2D gauss kernel array for convolutions 
+  """
+  if size_y is None:
+    size_y=size
+  x, y = numpy.mgrid[-size:size+1, -size_y:size_y+1]
+  g = numpy.exp(-(x**2/float(size)+y**2/float(size_y)))
+  return g / g.sum()
 
+def blur_image(I, n, n_y=None) :
+  """ 
+    Function from scipy cookbook (www.scipy.org/Cookbook/SiognalSmooth)
+    blurs the image by convolving with a gaussian kernel of typical
+    size n.
+  """
+  from scipy import signal
+  g = gauss_kern(n, n_y)
+  improc = signal.convolve(I,g, mode='same')
+  return improc
 
 class TreffFitParameters(FitParameters):
   '''

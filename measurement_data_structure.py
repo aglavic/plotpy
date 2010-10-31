@@ -214,6 +214,13 @@ class MeasurementData(object):
 
   plot_options=property(get_plot_options, set_plot_options)
 
+  def get_info(self):
+    '''
+      Return a string containing some information about the data stored
+      in this object.
+    '''
+    return "Dataset containing %i points.\n\nInformation read from header:\n%s" % (self.number_of_points, self.info)
+
   def append(self, point):
     '''
       Add a point to this sequence.
@@ -890,7 +897,7 @@ class PhysicalProperty(object):
     '''
       Return minimum value in data.
     '''
-    return max(self.values[from_index:to_index])
+    return min(self.values[from_index:to_index])
   
   def __repr__(self):
     '''

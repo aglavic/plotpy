@@ -222,8 +222,19 @@ class ApplicationMainWindow(gtk.Window):
     self.multi_list.set_markup(' Multiplot List: ')
     align = gtk.Alignment(0, 0.05, 1, 0) # align top
     align.add(self.multi_list)
-    # put multiplot list right from the picture, expand only in y
+    # put multiplot list
     self.frame1.append_page(align, gtk.Label("Multiplot List"))
+    # Create region for Dataset Info
+    self.info_label = gtk.Label();
+    self.info_label.set_markup('')
+    sw=gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add_with_viewport(self.info_label)
+    # put Dataset Info
+    self.frame1.append_page(sw, gtk.Label("Dataset Info"))
 
     #++++++++++ Create additional setting input for the plot ++++++++++
     align_table = gtk.Table(12, 2, False)
@@ -3194,6 +3205,7 @@ class ApplicationMainWindow(gtk.Window):
       if not self.active_multiplot:
         self.measurement[self.index_mess].preview=self.image_pixbuf.scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
     self.plot_options_buffer.set_text(str(self.measurement[self.index_mess].plot_options))
+    self.info_label.set_markup(self.active_session.get_active_file_info()+self.measurement[self.index_mess].get_info())
 
   def reset_statusbar(self): 
     '''

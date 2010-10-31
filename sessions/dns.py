@@ -19,12 +19,8 @@ import sys
 from glob import glob
 exit=sys.exit
 # if possible use the numpy functions as they work with complete arrays
-try:
-  from numpy import pi, cos, sin, sqrt, array
-  use_numpy=True
-except ImportError:
-  from math import pi, cos, sin, sqrt
-  use_numpy=False
+from numpy import pi, cos, sin, sqrt, array, where, nan_to_num, maximum
+use_numpy=True
 
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
@@ -181,13 +177,13 @@ class DNSSession(GUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('DNS', '*.d_dat', '*.d_dat.gz'), ('All','*'))
+  FILE_WILDCARDS=(('DNS', '*.d_dat', '*.d_dat.gz'), ('D7', '*.d7', '*.d7.gz'), ('All','*'))
 
   TRANSFORMATIONS=[\
   ]  
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'b', 'bg', 'bs', 'fr', 'v', 'vana', 'files', 
                                                           'sample', 'setup', 'cz', 'time', 'flipper', 'monitor', 
-                                                          'powder', 'xyz', 'sep-nonmag', 'split', 'fullauto', 
+                                                          'powder', 'xyz', 'sep-nonmag', 'split', 'fullauto', 'sum', 
                                                           'dx', 'dy', 'nx', 'ny', 'd7'] 
   file_options={'default': ['', 0, 1, [0, -1], ''],  # (prefix, omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
@@ -206,6 +202,7 @@ class DNSSession(GUI, GenericSession):
   CORRECTION_ZIP=None
   CORRECT_FLIPPING=False # try automatic flipping-rato correction
   SCATTERING_PROPABILITY=0.0 # scattering_propability used for automatic flipping-ratio correction
+  COMBINE_SAME_OMEGA_TTH=False # sum up files with same omega and tth values
   SHORT_INFO=[('temperature', lambda temp: 'at T='+str(temp), 'K')] # For the plots this is used to creat the short info
   SAMPLE_NAME='' # Name of the Sample for the data objects
   POWDER_DATA=False # If powder data is to be evaluated this is True.
@@ -219,6 +216,7 @@ class DNSSession(GUI, GenericSession):
   TRANSFORM_Q=False
   XYZ_POL=False
   SEPARATE_NONMAG=False
+  D7_IMPORT=False
   #------------------ local variables -----------------
 
   
@@ -237,7 +235,7 @@ class DNSSession(GUI, GenericSession):
     if names==None: # read_arguments returns none, if help option is set
       print self.LONG_HELP + self.SPECIFIC_HELP + self.LONG_HELP_END
       exit()
-    elif (len(self.prefixes) < 1) and (len(names)<1) and not self.FULLAUTO: # show help, if there is no file in the list
+    elif (len(self.prefixes) < 1) and (len(names)<1) and not self.FULLAUTO and not self.D7_IMPORT: # show help, if there is no file in the list
       print self.SHORT_HELP
       exit()
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
@@ -253,11 +251,15 @@ class DNSSession(GUI, GenericSession):
     self.read_vana_bg_nicr_files() # read NiCr files for flipping-ratio correction
     self.try_import_externals()
     if self.BACKGROUND_FILES:
+      self.BACKGROUND_FILES.sort()
+      print "Reading user set background files %s-%s" % (self.BACKGROUND_FILES[0], self.BACKGROUND_FILES[-1])
       # read all background files supplied by the user with the -bg option
       # every dataset will be corrected by the user bg files and if no
       # fitting user bg file is found the system background files
       for bg_file in self.BACKGROUND_FILES:
         self.read_bg_file(bg_file, self.user_bg)
+      for key, value in self.user_bg.items():
+        self.user_bg[key]=self.sum_same_tth(value)
     names.sort()
     self.set_transformations()
     config.transformations.known_transformations+=self.TRANSFORMATIONS
@@ -271,14 +273,18 @@ class DNSSession(GUI, GenericSession):
       # for every measured sequence read the datafiles and create a map/lineplot.
       self.read_files(prefix)
     
-    if len(self.prefixes) == 0: # show help, if there is no valid file in the list
+    if len(self.prefixes) == 0 and not self.D7_IMPORT: # show help, if there is no valid file in the list
       print "No valid datafile found!"
       print self.SHORT_HELP
       exit()
-    # set the first measurement as active
-    self.active_file_data=self.file_data[self.prefixes[0]]
-    self.active_file_name=self.prefixes[0]
-    self.INIT_COMPLETE=True
+    if len(self.prefixes)>0:
+      # set the first measurement as active
+      self.active_file_data=self.file_data[self.prefixes[0]]
+      self.active_file_name=self.prefixes[0]
+      self.INIT_COMPLETE=True
+    else:
+      self.active_file_data=[]
+      self.active_file_name=''
   
   def initialize_fullauto(self, names):
     '''
@@ -430,10 +436,26 @@ class DNSSession(GUI, GenericSession):
           self.SPLIT=float(argument)
           last_argument_option=[False,'']
         elif last_argument_option[1]=='bg':
-          if not self.BACKGROUND_FILES:
-            self.BACKGROUND_FILES=[argument]
+          if ',' in argument:
+            name_from, name_to=argument.split(',', 1)
+            all_names=glob(os.path.join(
+                           os.path.split(name_from)[0], 
+                           '*'))
+            all_names.sort()
+            try:
+              idx_from=all_names.index(name_from)
+              idx_to=all_names.index(name_to)
+              if not self.BACKGROUND_FILES:
+                self.BACKGROUND_FILES=all_names[idx_from:idx_to+1]
+              else:
+                self.BACKGROUND_FILES+=all_names[idx_from:idx_to+1]
+            except IndexError:
+              pass
           else:
-            self.BACKGROUND_FILES.append(argument)
+            if not self.BACKGROUND_FILES:
+              self.BACKGROUND_FILES=[argument]
+            else:
+              self.BACKGROUND_FILES.append(argument)
           last_argument_option=[False,'']
         elif last_argument_option[1]=='bs':
           self.BACKGROUND_SCALING=float(argument)
@@ -543,9 +565,12 @@ class DNSSession(GUI, GenericSession):
         self.FULLAUTO=not self.FULLAUTO
       elif argument=='-b':
         self.AUTO_BACKGROUND=True
+      elif argument=='-sum':
+        self.COMBINE_SAME_OMEGA_TTH=True
       elif argument=='-v':
         self.AUTO_VANADIUM=True
       elif argument=='-d7':
+        self.D7_IMPORT=True
         self.read_files=self.read_files_d7
         self.read_vana_bg_nicr_files=self.read_vana_bg_nicr_files_d7
         self.read_bg_file=self.read_bg_file_d7
@@ -693,6 +718,96 @@ class DNSSession(GUI, GenericSession):
     self.create_maps(file)
     return None
   
+  def get_active_file_info(self):
+    '''
+      Replacement of generic info function, more specific to dns imports.
+    '''
+    if self.active_file_name.endswith('|raw_data'):
+      return "Raw data file.\n"
+    else:
+      name=self.active_file_name
+      if name in self.file_options:
+        opts=self.file_options[name]
+        leni=len(str(opts[3][1]))
+        return "Data read from files %s-%s.\n\tOmega-Offset: %.2f\n\tNumber of Polarization Channels: %i\n" % (
+                              opts[0]+("%%0%ii" % leni) % opts[3][0] + opts[4], 
+                              opts[0]+"%i" % opts[3][1] + opts[4], 
+                              opts[1], 
+                              opts[2]
+                              )
+      else:
+        return "%s: \n" % (self.active_file_name )
+  
+  def sum_same_omega_tth(self, scans):
+    '''
+      Find scan files with same omega and tth value and sum them up.
+    '''
+    from copy import deepcopy
+    print '\tSumming up files with same positions [ω,2θ]'
+    scandict={}
+    for scan in scans:
+      key=(scan.dns_info['omega'], scan.dns_info['detector_bank_2T'], 
+           scan.dns_info['C_a'], scan.dns_info['C_b'], scan.dns_info['C_c'], 
+           scan.dns_info['flipper'], scan.dns_info['flipper_compensation'])
+      if key in scandict:
+        scandict[key].append(scan)
+      else:
+        scandict[key]=[scan]
+    outscans=[]
+    scale=config.dns.SCALE_BY[0]
+    for key, value in sorted(scandict.items()):
+      if len(value)==1:
+        outscans.append(value[0])
+      else:
+        joint=deepcopy(value[0])
+        # unscale the counts
+        joint.data[1].values=(joint.data[1][:]*joint.dns_info[scale]).tolist()        
+        # square the errors
+        joint.data[2].values=((joint.data[2][:]*joint.dns_info[scale])**2).tolist()
+        time=joint.dns_info[scale]
+        for add in value[1:]:
+          joint.data[1]+=(add.data[1][:]*add.dns_info[scale])
+          joint.data[2]+=(add.data[2][:]*add.dns_info[scale])**2
+          time+=add.dns_info[scale]
+          if getattr(joint, 'name', False):
+            joint.name+='+'+add.name
+        joint.data[1]/=time
+        joint.data[2].values=(sqrt(joint.data[2][:])/time).tolist()
+        outscans.append(joint)
+    return outscans
+
+  def sum_same_tth(self, scans):
+    '''
+      Find scan files with same omega and tth value and sum them up.
+    '''
+    from copy import deepcopy
+    scandict={}
+    for scan in scans:
+      key=(scan.dns_info['detector_bank_2T'], 
+           scan.dns_info['C_a'], scan.dns_info['C_b'], scan.dns_info['C_c'], 
+           scan.dns_info['flipper'], scan.dns_info['flipper_compensation'])
+      if key in scandict:
+        scandict[key].append(scan)
+      else:
+        scandict[key]=[scan]
+    outscans=[]
+    for key, value in sorted(scandict.items()):
+      if len(value)==1:
+        outscans.append(value[0])
+      else:
+        joint=deepcopy(value[0])
+        # square the errors
+        joint.data[2].values=(joint.data[2][:]**2).tolist()
+        for add in value[1:]:
+          joint.data[1]+=add.data[1]
+          joint.data[2]+=add.data[2][:]**2
+          if getattr(joint, 'name', False):
+            joint.name+='+'+add.name
+        joint.data[1]/=len(value)
+        joint.data[2].values=(sqrt(joint.data[2][:])/len(value)).tolist()
+        outscans.append(joint)
+    return outscans
+
   def create_maps(self, file):
     '''
       Crates a MeasurementData object which can be used to
@@ -721,7 +836,6 @@ class DNSSession(GUI, GenericSession):
                 point[0], 
                 point[1], 
                 point[2], 
-                point[0], 
                 point[1], 
                 point[2], 
                 0, 0, i]
@@ -734,6 +848,8 @@ class DNSSession(GUI, GenericSession):
                 point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE-detector_bank_2T, 
                 point[0]
                 ]+point[1:]+point[1:]+[0, 0, i]
+    if self.COMBINE_SAME_OMEGA_TTH:
+      scans=self.sum_same_omega_tth(scans)
     # go through every raw data object.
     for i, scan in enumerate(scans):
       if i<increment:
@@ -741,13 +857,17 @@ class DNSSession(GUI, GenericSession):
           channels=['x', 'x', 'y', 'y', 'z', 'z']
           scan.dns_info['pol_channel']=channels[i]
         # Create the objects for every polarization chanel
+        if 'detector_angles' in scans[0].dns_info:
+          sub=2
+        else:
+          sub=1
         columns=[['DetectorbankAngle', '°'], ['ω', '°'], ['ω-RAW', '°'], 
                  ['2Θ', '°'], ['Detector', '']]+\
-                 [[scan.dimensions()[j], scan.units()[j]] for j in range(1, len(scan.units()))]+\
-                 [['I_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
-                 [['error_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-1)/2)]+\
+                 [[scan.dimensions()[j], scan.units()[j]] for j in range(1, len(scan.units())+1-sub)]+\
+                 [['I_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-sub)/2)]+\
+                 [['error_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-sub)/2)]+\
                  [['q_x', 'Å^{-1}'], ['q_y', 'Å^{-1}'], ['Filenumber', '']]
-        self.file_data[file].append(DNSMeasurementData(columns, [], 1, 3, (len(scan.units())-1)/2+5, zdata=5))
+        self.file_data[file].append(DNSMeasurementData(columns, [], 1, 3, (len(scan.units())-sub)/2+5, zdata=5))
         # set some parameters for the object
         active_map=self.file_data[file][i]
         active_map.number=str(i)
@@ -765,6 +885,7 @@ class DNSSession(GUI, GenericSession):
       detector_bank_2T=scan.dns_info['detector_bank_2T']
       omega=scan.dns_info['omega']
       map(self.file_data[file][i%increment].append, map(append_to_map, data))
+      #append_combine_data()
     # perform calculations
     self.active_file_data=self.file_data[file]
     if self.CORRECT_FLIPPING:
@@ -952,7 +1073,8 @@ class DNSSession(GUI, GenericSession):
       @param names A list of file names to process
     '''
     names.sort()
-    names=filter(lambda item: item.endswith('.d_dat') or item.endswith('.d_dat.gz'), names)
+    names=filter(lambda item: item.endswith('.d_dat') or item.endswith('.d_dat.gz')\
+                  or item.endswith('.d7') or item.endswith('.d7.gz'), names)
     def split_prefix_postfix(name):
       '''Split a file name for a string prefix,postfix and a number in the middle.'''
       pre_index=max(0, name.rfind(os.sep))
@@ -1189,6 +1311,11 @@ class DNSSession(GUI, GenericSession):
           # subtract backgound from vanadium if suitable is found.
           background_data=bg_data[key]
           vana_data.process_function(subtract_background)
+    if vana_data:
+      # normalize the vanadium data to stay in the same intensity region
+      scale=vana_data.data[1][:].sum()/len(vana_data)
+      vana_data.data[1]/=scale
+      vana_data.data[2]/=scale
     self.system_vana=vana_data
     if directorys[-1]==os.path.join(self.TEMP_DIR, 'setup'):
       # remove files
@@ -1246,7 +1373,7 @@ class DNSSession(GUI, GenericSession):
     vana_data=None
     # read all nicr files
     for file_name in nicr_files:
-      datasets=read_data.dns.read_data(file_name)
+      datasets=read_data.dns.read_data_d7(file_name)
       for dataset in datasets:
         dataset.name=os.path.split(file_name)[1]
         detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
@@ -1260,7 +1387,9 @@ class DNSSession(GUI, GenericSession):
     # read all background files
     bg_data=self.system_bg
     for bg_file in bg_files:
-      self.read_bg_file(bg_file, bg_data)
+      self.read_bg_file_d7(bg_file, bg_data)
+    for key in bg_data.keys():
+      bg_data[key]=self.sum_same_tth(bg_data[key])
     self.system_bg=bg_data
     # correct the background of the nicr data
     bg_corrected_data={}
@@ -1299,7 +1428,10 @@ class DNSSession(GUI, GenericSession):
         bg_corrected_data[key]=data
     self.bg_corrected_nicr_data=bg_corrected_data
     for file_name in vana_files:
-      datasets=read_data.dns.read_data_d7(file_name)
+      if file_name.endswith('.d7'):
+        datasets=read_data.dns.read_data_d7(file_name)
+      else:
+        datasets=[read_data.dns.read_vana_d7(file_name)]
       for dataset in datasets:
         if vana_data:
           detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
@@ -1333,6 +1465,10 @@ class DNSSession(GUI, GenericSession):
             # subtract backgound from vanadium if suitable is found.
             background_data=bg_data[key]
             vana_data.process_function(subtract_background)
+    if vana_data:
+      scale=vana_data.data[1][:].sum()/len(vana_data)
+      vana_data.data[1]/=scale
+      vana_data.data[2]/=scale
     self.system_vana=vana_data
     if directorys[-1]==os.path.join(self.TEMP_DIR, 'setup'):
       # remove files
@@ -1459,7 +1595,7 @@ class DNSSession(GUI, GenericSession):
     if use_numpy:
       def calc_flipping_ratio(point):
         pp=item[1][1].data
-        point[1]/=array(pp[1].values)
+        point[1]/=maximum(nan_to_num(array(pp[1].values)), abs(array(pp[2].values)))
         point[2]*=0.
         return point
     else:
@@ -1481,9 +1617,10 @@ class DNSSession(GUI, GenericSession):
         data_flippingratio[key]=(flipping_ratio, item[0][2], item[1][2])
     for item in data_flippingratio.values():
       # assign nicr to the chanels
-      item[1].flipping_correction=(True, item[0], item[2])
+      one_first=self.active_file_data.index(item[1])<self.active_file_data.index(item[2])
+      item[1].flipping_correction=(not one_first, item[0], item[2])
       item[1].scattering_propability=scattering_propability
-      item[2].flipping_correction=(False, item[0], item[1])
+      item[2].flipping_correction=(one_first, item[0], item[1])
       item[2].scattering_propability=scattering_propability
   
 class DNSMeasurementData(MeasurementData):
@@ -1510,6 +1647,31 @@ class DNSMeasurementData(MeasurementData):
   # [SF-Chanel?, nicr-data, other_DNSMeasurement]
   flipping_correction=None 
   scattering_propability=0.1
+  
+  def get_info(self):
+    '''
+      Replacement of the general get_info function.
+    '''
+    outstring=""
+    if self.background_data is not None:
+      outstring+="Background files used for detector bank positions:\n"
+      for key, value in sorted(self.background_data.items()):
+        outstring+="\t%.2f:\t%s\n" % (key, value.name)
+    if self.vanadium_data is not None:
+      outstring+="Vanadium files used for detector sensitivity correctio:\n"
+      names=self.vanadium_data.name.split('+')
+      for i, name in enumerate(names):
+        outstring+="\t%s" % (name)
+        if (i%5)==4 and i!=(len(names)-1):
+          outstring+="\n"
+      outstring+="\n"
+    if self.flipping_correction is not None:
+      outstring+="Flippng ratio correction has been made with:\n"
+      outstring+="\tScattering propability: %.1f%%\n" % (self.scattering_propability*100.)
+      outstring+="\tFile used: %s\n" % self.flipping_correction[1].name
+    outstring+="\n\nHeader information read from first file:\n"
+    outstring+=self.info
+    return outstring
   
   def prepare_powder_data(self):
     '''
@@ -1666,15 +1828,23 @@ class DNSMeasurementData(MeasurementData):
       sys.stdout.flush()
       other.process_function(other.correct_vanadium)
     if self.zdata>-1:
-      self.data[7].dimension='I_0^+'
-      other.data[7].dimension='I_0^-'
+      if self.dns_info['flipper']==0.:
+        self.data[7].dimension='I_0^+'
+        other.data[7].dimension='I_0^-'
+      else:
+        self.data[7].dimension='I_0^-'
+        other.data[7].dimension='I_0^+'
       self.zdata=self.number_of_channels*2+5
       self.yerror=self.number_of_channels*3+5
       other.zdata=other.number_of_channels*2+5
       other.yerror=other.number_of_channels*3+5
     else:
-      self.data[7].dimension='I_0^+'
-      other.data[7].dimension='I_0^-'
+      if self.dns_info['flipper']==0.:
+        self.data[7].dimension='I_0^+'
+        other.data[7].dimension='I_0^-'
+      else:
+        self.data[7].dimension='I_0^-'
+        other.data[7].dimension='I_0^+'
       self.ydata=self.number_of_channels*2+5
       self.yerror=self.number_of_channels*3+5
       other.ydata=other.number_of_channels*2+5
