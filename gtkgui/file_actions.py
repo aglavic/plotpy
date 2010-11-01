@@ -4,6 +4,7 @@
 '''
 
 import numpy
+from copy import deepcopy
 from configobj import ConfigObj
 from measurement_data_structure import MeasurementData
 
@@ -51,6 +52,7 @@ class FileActions:
                   'integrate_intensities': self.integrate_intensities, 
                   'savitzky_golay': self.get_savitzky_golay, 
                   'interpolate_and_smooth': self.do_interpolate_and_smooth, 
+                  'rebin_2d': self.do_rebin_2d, 
                   }
     # add session specific functions
     for key, item in window.active_session.file_actions_addon.items():
@@ -196,7 +198,7 @@ class FileActions:
       See calculate_savitzky_golay.
     '''
     data=self.window.measurement[self.window.index_mess]
-    sg_object=self.calculate_savitzky_golay(data, window_size, order, max_deriv)
+    sg_object=calculate_savitzky_golay(data, window_size, order, max_deriv)
     if sg_object is None:
       return False
     sg_object.number=data.number
@@ -367,20 +369,54 @@ class FileActions:
     self.window.rebuild_menus()
 
   
-  def do_interpolate_and_smooth(self, sigma_x, sigma_y, xfrom, xto, xsteps, yfrom, yto, ysteps):
+  def do_interpolate_and_smooth(self, sigma_x, sigma_y, xfrom, xto, xsteps, yfrom, yto, ysteps, do_append=True):
     '''
       Interpolate the active dataset to a regular grid including smoothing using given parameters.
     '''
+    # If no step numbers are given use sigma as step width
+    if xsteps is None:
+      xsteps=(xto-xfrom)/(sigma_x)
+    if ysteps is None:
+      ysteps=(yto-yfrom)/(sigma_y)
     dataset=self.window.measurement[self.window.index_mess]
     xi, yi=numpy.meshgrid( numpy.linspace(xfrom, xto, xsteps), numpy.linspace(yfrom, yto, ysteps))
     grid_xy=numpy.array([xi.flatten(), yi.flatten()]).transpose().tolist()
     print "Start interpolation."
-    interpolated_dataset=self.interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_xy, use_matrix_data_output=False)
+    interpolated_dataset=interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_xy, use_matrix_data_output=False)
+    interpolated_dataset.sample_name=dataset.sample_name
     interpolated_dataset.short_info=dataset.short_info+' - interpolated on (%i,%i)-grid' % (xsteps, ysteps)
-    
-    self.window.measurement.insert(self.window.index_mess+1, interpolated_dataset)
-    self.window.index_mess+=1
-    self.window.replot()
+    interpolated_dataset.plot_options=deepcopy(dataset.plot_options)
+    interpolated_dataset.logx=dataset.logx
+    interpolated_dataset.logy=dataset.logy
+    interpolated_dataset.logz=dataset.logz
+    if do_append:
+      self.window.measurement.append(interpolated_dataset)
+      self.window.index_mess=len(self.window.measurement)-1
+    else:
+      self.window.measurement.insert(self.window.index_mess+1, interpolated_dataset)
+      self.window.index_mess+=1
+
+  def do_rebin_2d(self, join_pixels_x, join_pixels_y=None, do_append=True):
+    '''
+      Interpolate the active dataset to a regular grid including smoothing using given parameters.
+    '''
+    dataset=self.window.measurement[self.window.index_mess]
+    if join_pixels_y is None:
+      join_pixels_y=join_pixels_x
+    print "Start rebinning."
+    rebinned_dataset=rebin_2d(dataset, join_pixels_x, join_pixels_y=join_pixels_y, use_matrix_data_output=dataset.is_matrix_data)
+    rebinned_dataset.sample_name=dataset.sample_name
+    rebinned_dataset.short_info=dataset.short_info+' - rebinned by %i,%i' % (join_pixels_x, join_pixels_y)
+    rebinned_dataset.plot_options=deepcopy(dataset.plot_options)
+    rebinned_dataset.logx=dataset.logx
+    rebinned_dataset.logy=dataset.logy
+    rebinned_dataset.logz=dataset.logz
+    if do_append:
+      self.window.measurement.append(rebinned_dataset)
+      self.window.index_mess=len(self.window.measurement)-1
+    else:
+      self.window.measurement.insert(self.window.index_mess+1, rebinned_dataset)
+      self.window.index_mess+=1
 
   #----------- The performable actions --------------------
 
@@ -510,7 +546,7 @@ class FileActions:
   
   def sort_and_bin(self, data, binning, gauss_weighting=False, sigma_gauss=1e10, bin_distance=None):
     '''
-      Sort a dataset and bin the datapoints together. Gaussian weighting is possible and
+      Sort a dataset and bin the datapoints together. Gaussian weighting if possible and
       errors are calculated.
       
       @param data A list of datapoints consisting of (x0, x1, x2, y, dy, weighting)
@@ -635,110 +671,213 @@ class FileActions:
     output_data.number_of_points=len(xout)
     return output_data
     
-  def interpolate_and_smooth(self, dataset, sigma_x, sigma_y, grid_xy, use_matrix_data_output=False):
-    '''
-      Fill a grid with datapoints from another grid, weighting the points with a gaussian up to a distance of
-      3*sigma.
-      
-      @param dataset MeasurementData object to be used as source_synopsis
-      @param sigma_x Sigma for the gaussian weighting in x direction
-      @param sigmy_y Sigma for the gaussian weighting in y direction
-      @param grid_xy List of (x,y) tuples for the new grid
-      
-      @return MeasurementData or KWS2MeasurementData object with the rebinned data
-    '''
-    gauss_factor_x=-0.5/sigma_x**2
-    gauss_factor_y=-0.5/sigma_y**2
-    exp=numpy.exp
-    sqrt=numpy.sqrt
-    where=numpy.where
-    # get the data
-    x=dataset.data[dataset.xdata][:]
-    y=dataset.data[dataset.ydata][:]
-    z=numpy.nan_to_num(dataset.data[dataset.zdata][:])
-    # interpolate the square of the errors
-    dzq=numpy.nan_to_num(dataset.data[dataset.yerror][:]**2)
-    zout=[]
-    dzout=[]
-    dims=dataset.dimensions()
-    units=dataset.units()
-    cols=[(dims[dataset.xdata], units[dataset.xdata]), 
-          (dims[dataset.ydata], units[dataset.ydata]), 
-          (dims[dataset.zdata], units[dataset.zdata]), 
-          (dims[dataset.yerror], units[dataset.yerror])]
-    if use_matrix_data_output:
-      from read_data.kws2 import KWS2MeasurementData
-      output_data=KWS2MeasurementData(cols, [], 0,1,3,2)
-      output_data.is_matrix_data=True
-    else:
-      output_data=MeasurementData(cols, [], 0,1,3,2)
-    def calc_point(xiyi):
-      xi, yi=xiyi
-      distances_x=abs(x-xi)
-      distances_y=abs(y-yi)
-      indices=where((distances_x<3.*sigma_x) * (distances_y<3.*sigma_y))[0]
-      if len(indices)==0:
-        output_data.append([xi, yi, 0., 1.])
-        return
-      factors=exp(distances_x[indices]**2*gauss_factor_x + distances_y[indices]**2*gauss_factor_y)
-      scale=1./factors.sum()
-      zi=(z[indices]*factors).sum()*scale
-      dzi=sqrt((dzq[indices]*factors).sum())*scale
-      output_data.append([xi, yi, zi, dzi])
-    map(calc_point, grid_xy)
-    return output_data
+def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_xy, use_matrix_data_output=False):
+  '''
+    Fill a grid with datapoints from another grid, weighting the points with a gaussian up to a distance of
+    3*sigma.
+    
+    @param dataset MeasurementData object to be used as source_synopsis
+    @param sigma_x Sigma for the gaussian weighting in x direction
+    @param sigmy_y Sigma for the gaussian weighting in y direction
+    @param grid_xy List of (x,y) tuples for the new grid
+    
+    @return MeasurementData or KWS2MeasurementData object with the rebinned data
+  '''
+  if dataset.zdata<0:
+    raise ValueError, 'Dataset needs to be 3 dimensional for interpolation'    
+  gauss_factor_x=-0.5/sigma_x**2
+  gauss_factor_y=-0.5/sigma_y**2
+  three_sigma_x=3.*sigma_x
+  three_sigma_y=3.*sigma_y
+  exp=numpy.exp
+  sqrt=numpy.sqrt
+  where=numpy.where
+  # get the data
+  data=dataset.get_filtered_data_matrix()
+  x=data[dataset.xdata]
+  y=data[dataset.ydata]
+  z=data[dataset.zdata]
+  z=where(numpy.isinf(z), 0., numpy.nan_to_num(z))
+  # interpolate the square of the errors
+  dzq=data[dataset.yerror]**2
+  dzq=where(numpy.isinf(dzq), 0., numpy.nan_to_num(dzq))
+  zout=[]
+  dzout=[]
+  dims=dataset.dimensions()
+  units=dataset.units()
+  cols=[(dims[dataset.xdata], units[dataset.xdata]), 
+        (dims[dataset.ydata], units[dataset.ydata]), 
+        (dims[dataset.zdata], units[dataset.zdata]), 
+        (dims[dataset.yerror], units[dataset.yerror])]
+  if use_matrix_data_output:
+    from read_data.kws2 import KWS2MeasurementData
+    output_data=KWS2MeasurementData(cols, [], 0,1,3,2)
+    output_data.is_matrix_data=True
+  else:
+    output_data=MeasurementData(cols, [], 0,1,3,2)
+  def calc_point(xiyi):
+    xi, yi=xiyi
+    distances_x=abs(x-xi)
+    indices=where(distances_x<three_sigma_x)[0]
+    distances_y=abs(y[indices]-yi)
+    sub_indices=where(distances_y<three_sigma_y)[0]
+    indices=indices[sub_indices]
+    if len(indices)==0:
+      output_data.append([xi, yi, 0., 1.])
+      return
+    factors=exp(distances_x[indices]**2*gauss_factor_x + distances_y[sub_indices]**2*gauss_factor_y)
+    scale=1./factors.sum()
+    zi=(z[indices]*factors).sum()*scale
+    dzi=sqrt((dzq[indices]*factors).sum())*scale
+    output_data.append([xi, yi, zi, dzi])
+  map(calc_point, grid_xy)
+  return output_data
 
+def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=False):
+  '''
+    Rebin data on a regular grid by summing up pixels in x and y direction.
+    
+    @param dataset MeasurementData object as source
+    @param join_pixels_x Number of pixels to sum together in x direction
+    @param join_pixels_y Number of pixels to sum together in y direction, if None use x
+    
+    @return New MeasurementData object with the rebinned data
+  '''
+  if join_pixels_y is None:
+    join_pixels_y=join_pixels_x
+  if dataset.zdata<0:
+    raise ValueError, 'Dataset needs to be 3 dimensional for interpolation'
+  # get the data
+  x=dataset.data[dataset.xdata][:]
+  y=dataset.data[dataset.ydata][:]
+  z=dataset.data[dataset.zdata][:]
+  dzq=dataset.data[dataset.yerror][:]**2
+  # create new object
+  dims=dataset.dimensions()
+  units=dataset.units()
+  cols=[(dims[dataset.xdata], units[dataset.xdata]), 
+        (dims[dataset.ydata], units[dataset.ydata]), 
+        (dims[dataset.zdata], units[dataset.zdata]), 
+        (dims[dataset.yerror], units[dataset.yerror])]
+  if use_matrix_data_output:
+    from read_data.kws2 import KWS2MeasurementData
+    output_data=KWS2MeasurementData(cols, [], 0,1,3,2)
+    output_data.is_matrix_data=True
+  else:
+    output_data=MeasurementData(cols, [], 0,1,3,2)
+  # Get indices to sort the data for x and y ascending
+  #sort_idx_x=numpy.argsort(x)
+  #sort_idx_y=numpy.argsort(y[sort_idx_x])
+  #sort_idx_xy=sort_idx_x[sort_idx_y]
+  # sort the data
+  #x=x[sort_idx_xy]
+  #y=y[sort_idx_xy]
+  #z=z[sort_idx_xy]
+  #dzq=dzq[sort_idx_xy]
+  # get x and y pixels
+  swapped=False
+  try:
+    x0=x[0]
+    len_x=x[1:].tolist().index(x0)+1
+    if len_x==1:
+      tmpy=x
+      x=y
+      y=tmpy
+      x0=x[0]
+      tmpy=join_pixels_x
+      join_pixels_x=join_pixels_y
+      join_pixels_y=tmpy
+      len_x=x[1:].tolist().index(x0)+1 
+      swapped=True
+  except ValueError:
+    raise ValueError, "Can only rebin regular grid, no second item for x=%f found" % x0
+  if (len(x)%len_x)!=0:
+    raise ValueError, "Can only rebin regular grid, no integer number of points for grid width %i found" % len_x
+  len_y=len(x)//len_x
+  new_len_x=len_x//join_pixels_x
+  new_len_y=len_x//join_pixels_y
+  # create empty arrays for the new data
+  newx=numpy.zeros(new_len_x*new_len_y)
+  newy=numpy.zeros(new_len_x*new_len_y)
+  newz=numpy.zeros(new_len_x*new_len_y)
+  newdzq=numpy.zeros(new_len_x*new_len_y)
+  # Create an index map for items which are not summed together
+  line_index=numpy.array([i*join_pixels_x for i in range(new_len_x)])
+  full_index=numpy.array([i*len_x*join_pixels_y+line_index for i in range(new_len_y)]).flatten()
+  # add data from neighboring pixels
+  for i in range(join_pixels_x):
+    for j in range(join_pixels_y):
+      newx+=x[full_index+i+len_x*j]
+      newy+=y[full_index+i+len_x*j]
+      newz+=z[full_index+i+len_x*j]
+      newdzq+=dzq[full_index+i+len_x*j]
+  # normalize by nuber of joint pixels
+  newx/=join_pixels_x*join_pixels_y
+  newy/=join_pixels_x*join_pixels_y
+  newz/=join_pixels_x*join_pixels_y
+  newdzq/=join_pixels_x*join_pixels_y
+  newdz=numpy.sqrt(newdzq)
+  # place the new data in the output object
+  if swapped:
+    output_data.data[1].values=newx.tolist()
+    output_data.data[0].values=newy.tolist()
+  else:
+    output_data.data[0].values=newx.tolist()
+    output_data.data[1].values=newy.tolist()
+  output_data.data[2].values=newz.tolist()
+  output_data.data[3].values=newdz.tolist()
+  return output_data
+
+def calculate_savitzky_golay(dataset, window_size, order, max_deriv):
+  '''
+    Calculate smoothed dataset with savitzky golay filter up do a maximal derivative.
+    
+    @param dataset The dataset to use for the data
+    @param window_size Size of the filter window in points
+    @param order Order of polynomials to be used for the filtering
+    @param max_deriv maximal derivative to be calculated
+    
+    @return a dataset containing the smoothed data and it's derivatives.
+  '''
+  if dataset.zdata>=0:
+    return None
+  units=dataset.units()
+  dims=dataset.dimensions()
+  xindex=dataset.xdata
+  yindex=dataset.ydata
+  yerror=dataset.yerror
+  newcols=[[dims[xindex], units[xindex]], [dims[yerror], units[yerror]], 
+                              ['smoothed '+dims[yindex], units[yindex]]
+                                                       ]
+  max_deriv=min(order, max_deriv)
+  for i in range(1, max_deriv):
+    if i>1:
+      newcols.append([dims[yindex]+("\\047"*i), units[yindex]+'/'+units[xindex]+'^%i'%i])
+    else:
+      newcols.append([dims[yindex]+"\\047", units[yindex]+'/'+units[xindex]])
+  output=MeasurementData(newcols, [], 0, 2, 1)
+  xlist=[]
+  ylist=[]
+  elist=[]
+  # get only points which are not filtered
+  for point in dataset:
+    xlist.append(point[xindex])
+    ylist.append(point[yindex])
+    elist.append(point[yerror])
+  x=numpy.array(xlist)
+  y=numpy.array(ylist)
+  error=numpy.array(elist)
+  output.data[0].values=xlist
+  output.data[1].values=elist
+  # calculate smoothed data and derivatives
+  for i in range(max_deriv):
+    output.data[i+2].values=savitzky_golay(y, window_size, order, i).tolist()
+  output.number_of_points=len(x)
+  output.short_info=dataset.short_info+' filtered with savitzky golay'
+  output.sample_name=dataset.sample_name
+  return output
 
   #-------- Functions not directly called as actions ------
-
-  def calculate_savitzky_golay(self, dataset, window_size, order, max_deriv):
-    '''
-      Calculate smoothed dataset with savitzky golay filter up do a maximal derivative.
-      
-      @param dataset The dataset to use for the data
-      @param window_size Size of the filter window in points
-      @param order Order of polynomials to be used for the filtering
-      @param max_deriv maximal derivative to be calculated
-      
-      @return a dataset containing the smoothed data and it's derivatives.
-    '''
-    if dataset.zdata>=0:
-      return None
-    units=dataset.units()
-    dims=dataset.dimensions()
-    xindex=dataset.xdata
-    yindex=dataset.ydata
-    yerror=dataset.yerror
-    newcols=[[dims[xindex], units[xindex]], [dims[yerror], units[yerror]], 
-                                ['smoothed '+dims[yindex], units[yindex]]
-                                                         ]
-    max_deriv=min(order, max_deriv)
-    for i in range(1, max_deriv):
-      if i>1:
-        newcols.append([dims[yindex]+("\\047"*i), units[yindex]+'/'+units[xindex]+'^%i'%i])
-      else:
-        newcols.append([dims[yindex]+"\\047", units[yindex]+'/'+units[xindex]])
-    output=MeasurementData(newcols, [], 0, 2, 1)
-    xlist=[]
-    ylist=[]
-    elist=[]
-    # get only points which are not filtered
-    for point in dataset:
-      xlist.append(point[xindex])
-      ylist.append(point[yindex])
-      elist.append(point[yerror])
-    x=numpy.array(xlist)
-    y=numpy.array(ylist)
-    error=numpy.array(elist)
-    output.data[0].values=xlist
-    output.data[1].values=elist
-    # calculate smoothed data and derivatives
-    for i in range(max_deriv):
-      output.data[i+2].values=savitzky_golay(y, window_size, order, i).tolist()
-    output.number_of_points=len(x)
-    output.short_info=dataset.short_info+' filtered with savitzky golay'
-    output.sample_name=dataset.sample_name
-    return output
 
 
 class MakroRepr:

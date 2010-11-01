@@ -1278,8 +1278,9 @@ class DNSSession(GUI, GenericSession):
         bg_corrected_data[key]=data
     self.bg_corrected_nicr_data=bg_corrected_data
     for file_name in vana_files:
+      dataset=read_data.dns.read_data(file_name)
+      bgs=False
       if vana_data:
-        dataset=read_data.dns.read_data(file_name)
         detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
         flip=round(float(dataset.dns_info['flipper']), 2)
         flip_cmp=round(float(dataset.dns_info['flipper_compensation']), 2)
@@ -1287,18 +1288,22 @@ class DNSSession(GUI, GenericSession):
         c_b=round(float(dataset.dns_info['C_b']), 2)
         c_c=round(float(dataset.dns_info['C_c']), 2)
         c_z=round(float(dataset.dns_info['C_z']), 2)
-        key=(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)
+        key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
+        vana_data.name+='+'+os.path.split(file_name)[1]
         if key in bg_data:
+          detectors=map(lambda bg: round(bg.dns_info['detector_bank_2T'], 0), bg_data[key])
           # subtract backgound from vanadium if suitable is found.
-          background_data=bg_data[key]
-          dataset.process_function(subtract_background)
+          if detector in detectors:
+            backgound_data=bg_data[key][detectors.index(detector)]
+            dataset.process_function(subtract_background)
+            vana_data.name+='-'+backgound_data.name.replace('+', '-')
+            bgs=True
         for i, data in enumerate(dataset):
           vana_data.data[1].values[i]+=data[1]
           vana_data.data[2].values[i]=sqrt((vana_data.data[2].values[i]**2+data[2]**2)/2.)
-        vana_data.name+='+'+file_name
       else:
-        vana_data=read_data.dns.read_data(file_name)
-        vana_data.name=file_name
+        vana_data=dataset
+        vana_data.name=os.path.split(file_name)[1]
         detector=round(float(vana_data.dns_info['detector_bank_2T']), 0)
         flip=round(float(vana_data.dns_info['flipper']), 2)
         flip_cmp=round(float(vana_data.dns_info['flipper_compensation']), 2)
@@ -1306,11 +1311,17 @@ class DNSSession(GUI, GenericSession):
         c_b=round(float(vana_data.dns_info['C_b']), 2)
         c_c=round(float(vana_data.dns_info['C_c']), 2)
         c_z=round(float(vana_data.dns_info['C_z']), 2)
-        key=(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)
+        key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
         if key in bg_data:
+          detectors=map(lambda bg: round(bg.dns_info['detector_bank_2T'], 0), bg_data[key])
           # subtract backgound from vanadium if suitable is found.
-          background_data=bg_data[key]
-          vana_data.process_function(subtract_background)
+          if detector in detectors:
+            backgound_data=bg_data[key][detectors.index(detector)]
+            vana_data.process_function(subtract_background)
+            vana_data.name+='-'+backgound_data.name.replace('+', '-')
+            bgs=True
+      if not bgs and self.AUTO_VANADIUM:
+        print "No backgound data for file %s, vanadium correction will not be correct." % file_name
     if vana_data:
       # normalize the vanadium data to stay in the same intensity region
       scale=vana_data.data[1][:].sum()/len(vana_data)
@@ -1426,6 +1437,9 @@ class DNSSession(GUI, GenericSession):
         data.process_function(subtract_background)
         data.name+='-'+background_data.name
         bg_corrected_data[key]=data
+      elif self.CORRECT_FLIPPING:
+        print "No background data for file %s found, flipping ration correction not correct." % data.name
+        bg_corrected_data[key]=data        
     self.bg_corrected_nicr_data=bg_corrected_data
     for file_name in vana_files:
       if file_name.endswith('.d7'):
@@ -1433,6 +1447,7 @@ class DNSSession(GUI, GenericSession):
       else:
         datasets=[read_data.dns.read_vana_d7(file_name)]
       for dataset in datasets:
+        bgs=False
         if vana_data:
           detector=round(float(dataset.dns_info['detector_bank_2T']), 0)
           flip=round(float(dataset.dns_info['flipper']), 2)
@@ -1441,18 +1456,22 @@ class DNSSession(GUI, GenericSession):
           c_b=round(float(dataset.dns_info['C_b']), 2)
           c_c=round(float(dataset.dns_info['C_c']), 2)
           c_z=round(float(dataset.dns_info['C_z']), 2)
-          key=(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)
+          key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
+          vana_data.name+='+'+os.path.split(file_name)[1]
           if key in bg_data:
+            detectors=map(lambda bg: round(bg.dns_info['detector_bank_2T'], 0), bg_data[key])
             # subtract backgound from vanadium if suitable is found.
-            background_data=bg_data[key]
-            dataset.process_function(subtract_background)
+            if detector in detectors:
+              backgound_data=bg_data[key][detectors.index(detector)]
+              dataset.process_function(subtract_background)
+              vana_data.name+='-'+backgound_data.name.replace('+', '-')
+              bgs=True
           for i, data in enumerate(dataset):
             vana_data.data[1].values[i]+=data[1]
             vana_data.data[2].values[i]=sqrt((vana_data.data[2].values[i]**2+data[2]**2)/2.)
-          vana_data.name+='+'+file_name
         else:
           vana_data=dataset
-          vana_data.name=file_name
+          vana_data.name=os.path.split(file_name)[1]
           detector=round(float(vana_data.dns_info['detector_bank_2T']), 0)
           flip=round(float(vana_data.dns_info['flipper']), 2)
           flip_cmp=round(float(vana_data.dns_info['flipper_compensation']), 2)
@@ -1460,11 +1479,17 @@ class DNSSession(GUI, GenericSession):
           c_b=round(float(vana_data.dns_info['C_b']), 2)
           c_c=round(float(vana_data.dns_info['C_c']), 2)
           c_z=round(float(vana_data.dns_info['C_z']), 2)
-          key=(detector, flip, flip_cmp, c_a, c_b, c_c, c_z)
+          key=(flip, flip_cmp, c_a, c_b, c_c, c_z)
           if key in bg_data:
+            detectors=map(lambda bg: round(bg.dns_info['detector_bank_2T'], 0), bg_data[key])
             # subtract backgound from vanadium if suitable is found.
-            background_data=bg_data[key]
-            vana_data.process_function(subtract_background)
+            if detector in detectors:
+              backgound_data=bg_data[key][detectors.index(detector)]
+              vana_data.process_function(subtract_background)
+              vana_data.name+='-'+backgound_data.name.replace('+', '-')
+              bgs=True
+        if not bgs and self.AUTO_VANADIUM:
+          print "No backgound data for file %s, vanadium correction will not be correct." % file_name
     if vana_data:
       scale=vana_data.data[1][:].sum()/len(vana_data)
       vana_data.data[1]/=scale

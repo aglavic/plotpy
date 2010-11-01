@@ -169,6 +169,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
 \t-dimg\t\tCreate plots for all detector images. (resource consuming)
 \t-gisans\t\tEvaluate data as GISANS measurement. Adds some evaluation functions to the TREFF menu.
 \t\t\tNo αi-αf map or plot is created. This option implies -dimg and -maria.
+\t-bin [i]\t\tIn GISANS mode rebin the detector image by a factor of i (e.g. 2x2 pixels together)
 
 \t-maria\t\tForce read as maria file type, otherwise the datatype is set according to the file header
 
@@ -197,12 +198,13 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
   max_iter=50 # maximal iterations in fit
   max_hr=5000 # Parameter in fit_pnr_multi
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add', 'ft1', 'maria', 'dimg', 'sim']
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add', 'ft1', 'maria', 'dimg', 'sim', 'bin']
   MARIA=False
   replot=None 
   add_to_files={}
   add_simdata=False
   gisans=False
+  rebinning=None
   #------------------ local variables -----------------
 
   
@@ -266,6 +268,9 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
             else:
               self.add_to_files[input_file_names[-1]]=[argument]
           last_argument_option=[False,'']            
+        elif last_argument_option[1]=='bin':
+          self.rebinning=int(argument)
+          last_argument_option=[False,'']            
         else:
           found=False
       elif argument=='-ft1':
@@ -306,11 +311,21 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       data, detector_images=data
       self.file_data[file_name+'_imgs']=[]
       i=0
+      if self.rebinning:
+        print "\tRebinning detector images %ix%i" % (self.rebinning, self.rebinning)
       for channel_images in detector_images:
         for image in channel_images:
           image.number=str(i)
           i+=1
-        self.file_data[file_name+'_imgs']+=channel_images
+          if self.rebinning:
+            from gtkgui.file_actions import rebin_2d
+            rebinned=rebin_2d(image, self.rebinning)
+            rebinned.short_info=image.short_info
+            rebinned.sample_name=image.sample_name
+            rebinned.logz=image.logz
+            rebinned.plot_options=image.plot_options
+            image=rebinned
+          self.file_data[file_name+'_imgs'].append(image)
       if (len(detector_images[0])==1) or self.gisans:
         # if only one detector image is taken per channel, don't use αi-αf map and plot
         data=self.file_data[file_name+'_imgs']

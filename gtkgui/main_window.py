@@ -2063,14 +2063,19 @@ class ApplicationMainWindow(gtk.Window):
       Dialog to select the options for interpolation and smoothing of 2d-data
       into a regular grid.
     '''
+    def int_or_none(input):
+      try:
+        return int(input)
+      except ValueError:
+        return None
     parameters, result=SimpleEntryDialog('Interpolate to regular grid and smooth data...', 
                          (('x-from', 0, float), 
                          ('x-to', 1, float), 
-                         ('x-steps', 50, int), 
+                         ('x-steps', '{auto}', int_or_none), 
                          ('σ-x', 0.01, float), 
                          ('y-from', 0, float), 
                          ('y-to', 1, float), 
-                         ('y-steps', 50, int), 
+                         ('y-steps', '{auto}', int_or_none), 
                          ('σ-y', 0.01, float), 
                          )).run()
     if result==1:
@@ -2084,6 +2089,28 @@ class ApplicationMainWindow(gtk.Window):
                       parameters['y-to'], 
                       parameters['y-steps'], 
                       )
+      self.replot()
+
+  def rebin_3d_data_dialog(self, action):
+    '''
+      Dialog to select the options for interpolation and smoothing of 2d-data
+      into a regular grid.
+    '''
+    def int_or_none(input):
+      try:
+        return int(input)
+      except ValueError:
+        return None
+    parameters, result=SimpleEntryDialog('Rebin regular gridded data...', 
+                         (('x-steps', 2, int), 
+                         ('y-steps', '{same as x}', int_or_none), 
+                         )).run()
+    if result==1:
+      self.file_actions.activate_action('rebin_2d', 
+                      parameters['x-steps'], 
+                      parameters['y-steps'], 
+                      )
+      self.replot()
 
   def get_position_selection(self, action, int_points, position_table):
     '''
@@ -3230,7 +3257,10 @@ class ApplicationMainWindow(gtk.Window):
       if not self.active_multiplot:
         self.measurement[self.index_mess].preview=self.image_pixbuf.scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
     self.plot_options_buffer.set_text(str(self.measurement[self.index_mess].plot_options))
-    self.info_label.set_markup(self.active_session.get_active_file_info()+self.measurement[self.index_mess].get_info())
+    try:
+      self.info_label.set_markup(self.active_session.get_active_file_info()+self.measurement[self.index_mess].get_info())
+    except:
+      self.info_label.set_markup('Could not read object information.')
 
   def reset_statusbar(self): 
     '''
@@ -3413,7 +3443,9 @@ class ApplicationMainWindow(gtk.Window):
           <menuitem action='CrossSection'/>
           <menuitem action='RadialIntegration'/>
           <menuitem action='IntegrateIntensities'/>
+          <separator name='z-sep1'/>
           <menuitem action='InterpolateSmooth'/>
+          <menuitem action='RebinData'/>
           </placeholder>        
           <placeholder name='y-actions'/>'''
       else:
@@ -3593,9 +3625,13 @@ class ApplicationMainWindow(gtk.Window):
         None,                                    # tooltip
         self.extract_cross_section),
       ( "InterpolateSmooth", None,                    # name, stock id
-        "Interpolate to regular grid...", None,                     # label, accelerator
+        "Interpolate to regular grid...", "<control>G",                     # label, accelerator
         None,                                    # tooltip
         self.interpolate_and_smooth_dialog),
+      ( "RebinData", None,                    # name, stock id
+        "Rebin data...", "<control><shift>G",                     # label, accelerator
+        None,                                    # tooltip
+        self.rebin_3d_data_dialog),
       ( "RadialIntegration", None,                    # name, stock id
         "Calculate Radial Integration...", None,                     # label, accelerator
         None,                                    # tooltip
