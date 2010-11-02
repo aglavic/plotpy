@@ -178,8 +178,8 @@ def read_data_d7(file_name, print_comments=True):
     #counts=map(lambda count: numpy.array(list(reversed(count))), counts)
     counts=map(lambda count: numpy.array((count[88:132]+count[44:88]+count[0:44])), counts)
     detector_angles=(add_info['detector_bank_2T']-numpy.array(D7_DETECTOR_MAP[0])).tolist()+\
-                    (add_info['detector_bank_2T[1]']-numpy.array(D7_DETECTOR_MAP[0])).tolist()+\
-                    (add_info['detector_bank_2T[2]']-numpy.array(D7_DETECTOR_MAP[0])).tolist()
+                    (add_info['detector_bank_2T[1]']-numpy.array(D7_DETECTOR_MAP[1])).tolist()+\
+                    (add_info['detector_bank_2T[2]']-numpy.array(D7_DETECTOR_MAP[2])).tolist()
     # create objects
     datasets=[]
     for i, counts_array in enumerate(counts):

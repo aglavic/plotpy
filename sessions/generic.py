@@ -98,6 +98,7 @@ Options:
 \t-logy\t\tPlot logarithmic in y
 \t-logz\t\tPlot logarithmic in z
 \t-scp\t\tUse script mode, no GUI will be shown
+\t-mpl\t\tEXPERIMENTAL - Use matplot lib widget for plotting
 
 \tGeneral Data treatment:
 \t-no-trans\tdon't make a unit transformation
@@ -131,7 +132,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   FILE_WILDCARDS=(('All', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
   COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 
-                        'template','no-trans', '-help', '-debug', 'startuppath']
+                        'template','no-trans', '-help', '-debug', 'startuppath', 'mpl']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -156,6 +157,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   TRANSFORMATIONS=[] # a list of unit TRANSFORMATIONS, that will be performed on the data
   read_directly=False # don't use pickled file, read the data diretly
   mds_create=True
+  USE_MATPLOTLIB=False
   ONLY_IMPORT_MULTIFILE=False
   DEBUG=False
   temp_fonts=False
@@ -308,6 +310,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
           self.logz=True
         elif argument=='-p':
           self.print_plot=True
+        elif argument=='-mpl':
+          self.USE_MATPLOTLIB=True
         elif argument=='-scp':
           self.use_gui=False
         elif argument=='-no-trans':

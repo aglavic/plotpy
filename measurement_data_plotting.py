@@ -493,3 +493,116 @@ def further_replacement(string):
     String replacements done last, for example when an Item has empty unit replace [] with nothing.
   '''
   return string.replace('[]','')
+
+def mpl_plot(session,  
+            datasets,
+            file_name_prefix, 
+            title,
+            names,
+            with_errorbars,
+            output_file=gnuplot_preferences.output_file_name,
+            additional_info='',
+            fit_lorentz=False, 
+            sample_name=None, 
+            show_persistent=False): 
+  '''
+    Plot the data using a matplotlib plotting object.
+  '''
+  from matplotlib import pyplot
+  from matplotlib import mlab
+  import numpy
+  gp=gnuplot_preferences
+  # delete plotting area
+  plot=session.mpl_plot
+  figure=session.mpl_widget.figure
+  figure.set_axes([figure.axes[0]])
+  figure.subplots_adjust()
+  plot.clear()
+  # define global plot options
+  def prereplace(string):
+    return replace_ph(session, 
+                     string,
+                     datasets,
+                     file_name_prefix, 
+                     range(len(datasets)), 
+                     title,
+                     names,
+                     first.sample_name,
+                     (0, 0, 0))
+  first=datasets[0]
+  ix=first.xdata
+  iy=first.ydata
+  global_options=datasets[0].plot_options
+  if not getattr(global_options, 'colormap', False):
+    global_options.colormap='gist_rainbow'
+  plot.set_xlabel("$"+prereplace(gp.x_label).replace('Å','A')+"$")
+  plot.set_ylabel("$"+prereplace(gp.y_label).replace('Å','A')+"$")
+  plot.set_title(prereplace(gp.plot_title))
+  if first.logx:
+    plot.set_xscale('log')
+  else:
+    plot.set_xscale('linear')
+  if first.logy:
+    plot.set_yscale('log')
+  else:
+    plot.set_yscale('linear')
+  
+  zplot=False
+  # plot the datasets
+  for dataset in datasets:
+    data=dataset.get_filtered_data_matrix()
+    x=data[dataset.xdata]
+    y=data[dataset.ydata]
+    label=dataset.short_info
+    if dataset.zdata<0:
+      plot.plot(x, y, 
+                label=label)
+    else:
+      zplot=True
+      z=data[dataset.zdata]
+      try:
+        len_x=x[1:].tolist().index(x[0])+1
+        if len_x==1:
+          len_y=y[1:].tolist().index(y[0])+1
+          len_x=len(x)//len_y
+        else:
+          len_y=len(x)//len_x
+        if len_x<100 or len_y <100:
+          raise RuntimeError, "Only to get in the except block."
+        x=x.reshape(len_x, len_y)
+        y=y.reshape(len_x, len_y)
+        z=z.reshape(len_x, len_y)
+      except:
+        xi=numpy.linspace(x.min(), x.max(), max(min(numpy.sqrt(len(z))*3, 1000), numpy.sqrt(len(z)), 200))
+        yi=numpy.linspace(y.min(), y.max(), max(min(numpy.sqrt(len(z))*3, 1000), numpy.sqrt(len(z)), 200))
+        X, Y=numpy.meshgrid(xi, yi)
+        Z=mlab.griddata(x, y, z, X, Y)   
+        x=X
+        y=Y
+        z=Z
+      if first.logz:
+        if global_options.zrange[0]>0:
+          z=numpy.maximum(z, global_options.zrange[0])
+        z=mlab.ma.masked_where(z<=0, z)
+        import matplotlib.colors
+        norm=matplotlib.colors.LogNorm()
+      else:
+        norm=None
+      pm=plot.pcolormesh(x, y, z, 
+                      vmin=global_options.zrange[0], vmax=global_options.zrange[1], 
+                      norm=norm,
+                      cmap = pyplot.get_cmap(global_options.colormap)
+                      )
+  
+  # options which need to be set after plotting
+  if len(datasets)>1:
+    plot.legend()
+  plot.set_xlim(global_options.xrange[0], global_options.xrange[1])
+  plot.set_ylim(global_options.yrange[0], global_options.yrange[1])
+  plot.set_ylim(global_options.yrange[0], global_options.yrange[1])
+  if zplot:
+    figure.colorbar(pm)
+
+  # redraw image
+  session.mpl_widget.draw_idle()
+  return ""

@@ -317,7 +317,7 @@ def read_edf_file(file_name):
   dataobj.data[6].values=input_array[use_indices].tolist()
   dataobj.data[7].values=error_array[use_indices].tolist()
   dataobj.sample_name=header_info['sample_name']
-  dataobj.info="#"+"\n#".join([item[1] for item in sorted(header_settings.items())])
+  dataobj.info="\n".join([item[0]+': '+item[1] for item in sorted(header_settings.items())])
   if import_subframes:
     dataobj.short_info=""
   else:

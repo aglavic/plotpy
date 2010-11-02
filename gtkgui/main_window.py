@@ -204,11 +204,13 @@ class ApplicationMainWindow(gtk.Window):
     align = gtk.Alignment(0.5, 0.5, 1, 1)
     align.add(self.frame1)
     # image object for the plots
-    # TODO: Reconsider image resizing.
-    self.image = gtk.Image()    
-    self.image_shown=False # variable to decrease changes in picture size
-    self.image.set_size_request(0, 0)
-    self.image_do_resize=False
+    if active_session.USE_MATPLOTLIB:
+      self.initialize_matplotlib()
+    else:
+      self.image = gtk.Image()    
+      self.image_shown=False # variable to decrease changes in picture size
+      self.image.set_size_request(0, 0)
+      self.image_do_resize=False
     self.frame1.append_page(self.image, gtk.Label("Plot"))
     table.attach(align,
         # X direction           Y direction
@@ -451,6 +453,8 @@ class ApplicationMainWindow(gtk.Window):
       self.config_object.write()
     for window in self.open_windows:
       window.destroy()
+    if getattr(self, 'active_ipython', False):
+      self.active_ipython.destroy()
     try:
       # if the windows is destoryed before the main loop has started.
       self.destroy()
@@ -1122,7 +1126,7 @@ class ApplicationMainWindow(gtk.Window):
     # scrollbars.
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
     text_filed=gtk.Label()
-    text_filed.set_markup(plot_text)
+    text_filed.set_markup(plot_text.replace('<', '[').replace('>', ']'))
     sw.add_with_viewport(text_filed) # add textbuffer view widget
     table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0);
     # errors of the last plot
@@ -2810,11 +2814,18 @@ class ApplicationMainWindow(gtk.Window):
     import numpy
     import scipy
     from copy import deepcopy
+    
+    if getattr(self, 'active_ipython', False):
+      # if there is already an ipython console, show it and exit
+      self.active_ipython.deiconify()
+      self.active_ipython.present()
+      return
 
     FONT = "Mono 8"
     oldstd=[sys.stdout, sys.stderr]
 
-    ipython_dialog= gtk.Dialog(title="IPython Console", parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
+    ipython_dialog= gtk.Dialog(title="Plotting GUI - IPython Console")
+    self.active_ipython=ipython_dialog
     ipython_dialog.set_size_request(750,600)
     ipython_dialog.set_resizable(True)
     sw = gtk.ScrolledWindow()
@@ -2854,7 +2865,7 @@ class ApplicationMainWindow(gtk.Window):
     sys.stderr=ipview
     sw.add(ipview)
     ipython_dialog.vbox.add(sw)
-    # Change the color sceme to have a black background
+    # Change the color scheme to have a black background
     #ipview.modify_base('normal', gtk.gdk.Color('#000'))
     #ipview.modify_text('normal', gtk.gdk.Color('#fff'))
     #ipview.modify_cursor(gtk.gdk.Color('#aaa'), None)
@@ -2863,6 +2874,7 @@ class ApplicationMainWindow(gtk.Window):
     def reset(action):
       sys.stdout=oldstd[0]
       sys.stderr=oldstd[1]
+      self.active_ipython=None
     ipython_dialog.connect('destroy', reset)
     # create functions for the use with ipython
     def getxyz():
@@ -3257,10 +3269,8 @@ class ApplicationMainWindow(gtk.Window):
       if not self.active_multiplot:
         self.measurement[self.index_mess].preview=self.image_pixbuf.scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
     self.plot_options_buffer.set_text(str(self.measurement[self.index_mess].plot_options))
-    try:
-      self.info_label.set_markup(self.active_session.get_active_file_info()+self.measurement[self.index_mess].get_info())
-    except:
-      self.info_label.set_markup('Could not read object information.')
+    text=self.active_session.get_active_file_info()+self.measurement[self.index_mess].get_info()
+    self.info_label.set_markup(text.replace('<', '[').replace('>', ']'))
 
   def reset_statusbar(self): 
     '''
@@ -3728,6 +3738,56 @@ class ApplicationMainWindow(gtk.Window):
 
     
   #---------------------Functions responsible for menus and toolbar----------------------#
+  
+  #+++++++++ EXPERIMENTAL: usage of matplotlib widget for plotting ++++++++++++++++++++++#
+  
+  def initialize_matplotlib(self):
+    '''
+      Import and prepare everything for the use of matplotlib plotting widget.
+    '''
+    # supress the warning of matplotlib that configobj is already imported
+    import warnings
+    original_filters = warnings.filters[:]
+    # Ignore warnings.
+    warnings.simplefilter("ignore")
+    try:
+      # tell matplotlib to use gtk backend
+      import matplotlib
+      matplotlib.use('GTK')
+      
+      # import widget stuff
+      from matplotlib.figure import Figure
+      from matplotlib.axes import Subplot
+      from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
+      from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTKAgg as NavigationToolbar
+      from matplotlib.widgets import SpanSelector
+      # also toolbar throws warning
+      figure=Figure()
+      plot=figure.add_subplot(111)
+      self.active_session.mpl_plot=plot
+      mpl_widget=FigureCanvas(figure)
+      self.active_session.mpl_widget=mpl_widget
+      toolbar=NavigationToolbar(mpl_widget, self)
+    except ImportError:
+      raise ImportError, "Matplotlib is not installed."
+    finally:
+      # Restore the list of warning filters.
+      warnings.filters = original_filters      
+    vbox=gtk.VBox()
+    vbox.pack_start(mpl_widget, expand=True, fill=True, padding=0)
+    vbox.pack_end(toolbar, expand=False, fill=True, padding=0)
+    self.image=vbox
+    # redefine functions to be used with mpl
+    self.plot=measurement_data_plotting.mpl_plot
+    def do_nothing(*ignore):
+      pass
+    self.set_image=do_nothing
+    self.update_picture=do_nothing
+    self.update_size=do_nothing
+    self.image_pixbuf=gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB,False,8,1,1)
+    self.image_do_resize=False
+  
+  #--------- EXPERIMENTAL: usage of matplotlib widget for plotting ----------------------#
 
 #------------------------- ApplicationMainWindow Class ----------------------------------#
 

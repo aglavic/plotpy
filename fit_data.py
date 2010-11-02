@@ -544,16 +544,16 @@ class FitSinus(FitFunction):
   
   # define class variables.
   name="Sinus"
-  parameters=[1, numpy.pi*2,  0.,  0.]
+  parameters=[1., 1.,  0.,  0.]
   parameter_names=['a', 'ω_0','φ_0', 'c']
-  fit_function=lambda self, p, x: p[0] * numpy.sin(numpy.array(x) * p[1] - p[2]) + p[3]
+  fit_function=lambda self, p, x: p[0] * numpy.sin((numpy.array(x) * p[1] - p[2])*numpy.pi/180.) + p[3]
   fit_function_text='a*sin(ω_0·x-φ_0)+c'
 
   def __init__(self, initial_parameters):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1., numpy.pi*2, 0., 0.]
+    self.parameters=[1., 1., 0., 0.]
     FitFunction.__init__(self, initial_parameters)
 
 class FitExponential(FitFunction):

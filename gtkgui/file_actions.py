@@ -379,10 +379,10 @@ class FileActions:
     if ysteps is None:
       ysteps=(yto-yfrom)/(sigma_y)
     dataset=self.window.measurement[self.window.index_mess]
-    xi, yi=numpy.meshgrid( numpy.linspace(xfrom, xto, xsteps), numpy.linspace(yfrom, yto, ysteps))
-    grid_xy=numpy.array([xi.flatten(), yi.flatten()]).transpose().tolist()
+    grid_x=numpy.linspace(xfrom, xto, xsteps)
+    grid_y=numpy.linspace(yfrom, yto, ysteps)
     print "Start interpolation."
-    interpolated_dataset=interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_xy, use_matrix_data_output=False)
+    interpolated_dataset=interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix_data_output=False)
     interpolated_dataset.sample_name=dataset.sample_name
     interpolated_dataset.short_info=dataset.short_info+' - interpolated on (%i,%i)-grid' % (xsteps, ysteps)
     interpolated_dataset.plot_options=deepcopy(dataset.plot_options)
@@ -404,7 +404,8 @@ class FileActions:
     if join_pixels_y is None:
       join_pixels_y=join_pixels_x
     print "Start rebinning."
-    rebinned_dataset=rebin_2d(dataset, join_pixels_x, join_pixels_y=join_pixels_y, use_matrix_data_output=dataset.is_matrix_data)
+    rebinned_dataset=rebin_2d(dataset, join_pixels_x, join_pixels_y=join_pixels_y, 
+                              use_matrix_data_output=getattr(dataset, 'is_matrix_data', False))
     rebinned_dataset.sample_name=dataset.sample_name
     rebinned_dataset.short_info=dataset.short_info+' - rebinned by %i,%i' % (join_pixels_x, join_pixels_y)
     rebinned_dataset.plot_options=deepcopy(dataset.plot_options)
@@ -671,7 +672,7 @@ class FileActions:
     output_data.number_of_points=len(xout)
     return output_data
     
-def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_xy, use_matrix_data_output=False):
+def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix_data_output=False, fill_value=(0., 1.)):
   '''
     Fill a grid with datapoints from another grid, weighting the points with a gaussian up to a distance of
     3*sigma.
@@ -715,22 +716,28 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_xy, use_matrix_data_o
     output_data.is_matrix_data=True
   else:
     output_data=MeasurementData(cols, [], 0,1,3,2)
-  def calc_point(xiyi):
-    xi, yi=xiyi
+  # Go through the new grid point by point and search for datapoints close to the new grid points
+  for xi in grid_x:
     distances_x=abs(x-xi)
-    indices=where(distances_x<three_sigma_x)[0]
-    distances_y=abs(y[indices]-yi)
-    sub_indices=where(distances_y<three_sigma_y)[0]
-    indices=indices[sub_indices]
-    if len(indices)==0:
-      output_data.append([xi, yi, 0., 1.])
-      return
-    factors=exp(distances_x[indices]**2*gauss_factor_x + distances_y[sub_indices]**2*gauss_factor_y)
-    scale=1./factors.sum()
-    zi=(z[indices]*factors).sum()*scale
-    dzi=sqrt((dzq[indices]*factors).sum())*scale
-    output_data.append([xi, yi, zi, dzi])
-  map(calc_point, grid_xy)
+    indices_x=where(distances_x<three_sigma_x)[0]
+    if len(indices_x)==0:
+      # fill grid at points not in old grid
+      for yi in grid_y:
+        output_data.append([xi, yi, fill_value[0], fill_value[1]])
+      continue
+    for yi in grid_y:
+      distances_y=abs(y[indices_x]-yi)
+      sub_indices=where(distances_y<three_sigma_y)[0]
+      indices=indices_x[sub_indices]
+      if len(indices)==0:
+        # fill grid at points not in old grid
+        output_data.append([xi, yi, fill_value[0], fill_value[1]])
+        continue
+      factors=exp(distances_x[indices]**2*gauss_factor_x + distances_y[sub_indices]**2*gauss_factor_y)
+      scale=1./factors.sum()
+      zi=(z[indices]*factors).sum()*scale
+      dzi=sqrt((dzq[indices]*factors).sum())*scale
+      output_data.append([xi, yi, zi, dzi])
   return output_data
 
 def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=False):

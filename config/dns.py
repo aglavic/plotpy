@@ -22,9 +22,12 @@ NUMBER_OF_DETECTORS=24
 DETECTOR_ANGULAR_INCREMENT=5.
 # Mapping the detector numbers of D7 to their angular offset from the bank center
 D7_DETECTOR_MAP=[
-                 [(i%2)*(-1.0068*(i+1)+21.762)+((i+1)%2)*(-0.99642*(i+1)+21.326) for i in range(44)], 
-                 [(i%2)*(-0.99234*(i+1)+22.728)+((i+1)%2)*(-0.9939*(i+1)+22.397) for i in range(44)], 
+                 # Relative detector positions for first Bank (Bank 4)
                  [(i%2)*(-0.9886*(i+1)+26.452)+((i+1)%2)*(-0.99863*(i+1)+26.511) for i in range(44)], 
+                 # Relative detector positions for second Bank (Bank 3)
+                 [(i%2)*(-0.99234*(i+1)+22.728)+((i+1)%2)*(-0.9939*(i+1)+22.397) for i in range(44)], 
+                 # Relative detector positions for third Bank (Bank 2)
+                 [(i%2)*(-1.0068*(i+1)+21.762)+((i+1)%2)*(-0.99642*(i+1)+21.326) for i in range(44)], 
                  # trying old one
                  #[(i%2)*(-1.0204*(i+1)+23.905)+((i+1)%2)*(-0.9955*(i+1)+23.377) for i in range(44)], 
                  #[(i%2)*(-0.99762*(i+1)+20.566)+((i+1)%2)*(-0.99237*(i+1)+20.75) for i in range(44)], 
