@@ -510,6 +510,7 @@ def mpl_plot(session,
   '''
   from matplotlib import pyplot
   from matplotlib import mlab
+  import matplotlib.colors
   import numpy
   gp=gnuplot_preferences
   # delete plotting area
@@ -534,7 +535,35 @@ def mpl_plot(session,
   iy=first.ydata
   global_options=datasets[0].plot_options
   if not getattr(global_options, 'colormap', False):
-    global_options.colormap='gist_rainbow'
+    cmap={
+            'red': [
+                    (0., 0., 0.), 
+                    (0.2, 0., 0.), 
+                    (0.4, 1., 1.), 
+                    (0.6, 1., 1.), 
+                    (0.8, 0.5, 0.5), 
+                    (1.0, 0., 0.), 
+                    ], 
+          'green': [
+                    (0., 0., 0.), 
+                    (0.2, 1., 1.), 
+                    (0.4, 1., 1.), 
+                    (0.6, 0., 0.), 
+                    (0.8, 0., 0.), 
+                    (1.0, 0., 0.), 
+                    ], 
+           'blue': [
+                    (0., 1., 1.), 
+                    (0.2, 0., 0.), 
+                    (0.4, 0., 0.), 
+                    (0.6, 0., 0.), 
+                    (0.8, 0.5, 0.5), 
+                    (1.0, 0., 0.), 
+                    ]         
+          }
+    colormap=matplotlib.colors.LinearSegmentedColormap('default', cmap, N=512)
+    pyplot.register_cmap(name='default', cmap=colormap)
+    global_options.colormap='default'
   plot.set_xlabel("$"+prereplace(gp.x_label).replace('Å','A')+"$")
   plot.set_ylabel("$"+prereplace(gp.y_label).replace('Å','A')+"$")
   plot.set_title(prereplace(gp.plot_title))
@@ -555,8 +584,18 @@ def mpl_plot(session,
     y=data[dataset.ydata]
     label=dataset.short_info
     if dataset.zdata<0:
-      plot.plot(x, y, 
-                label=label)
+      if with_errorbars:
+        dy=data[dataset.yerror]
+        plot.errorbar(x, y, yerr=dy, label=label)
+      else:
+        plot.plot(x, y, label=label)
+      # plot additional data e.g. fits
+      for adddata in dataset.plot_together[1:]:
+        data=adddata.get_filtered_data_matrix()
+        x=data[adddata.xdata]
+        y=data[adddata.ydata]
+        plot.plot(x, y, label=label)   
+    # 3d Plot
     else:
       zplot=True
       z=data[dataset.zdata]
@@ -573,8 +612,8 @@ def mpl_plot(session,
         y=y.reshape(len_x, len_y)
         z=z.reshape(len_x, len_y)
       except:
-        xi=numpy.linspace(x.min(), x.max(), max(min(numpy.sqrt(len(z))*3, 1000), numpy.sqrt(len(z)), 200))
-        yi=numpy.linspace(y.min(), y.max(), max(min(numpy.sqrt(len(z))*3, 1000), numpy.sqrt(len(z)), 200))
+        xi=numpy.linspace(x.min(), x.max(), max(min(numpy.sqrt(len(z))*2, 1000), numpy.sqrt(len(z)), 200))
+        yi=numpy.linspace(y.min(), y.max(), max(min(numpy.sqrt(len(z))*2, 1000), numpy.sqrt(len(z)), 200))
         X, Y=numpy.meshgrid(xi, yi)
         Z=mlab.griddata(x, y, z, X, Y)   
         x=X
@@ -584,7 +623,6 @@ def mpl_plot(session,
         if global_options.zrange[0]>0:
           z=numpy.maximum(z, global_options.zrange[0])
         z=mlab.ma.masked_where(z<=0, z)
-        import matplotlib.colors
         norm=matplotlib.colors.LogNorm()
       else:
         norm=None

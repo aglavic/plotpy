@@ -104,21 +104,21 @@ settings_3d=\
 '''set style line 100 lt 6 lw 2
 set pm3d hidden3d 100
 set ticslevel 0.05
-set palette defined (0 "blue",50 "green", 100 "yellow",200 "red",255 "purple")
+set palette defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")
 '''
 settings_3dmap=\
 '''set pm3d map interpolate 5,5
 set ticslevel 0.05
-set palette defined (0 "blue",50 "green", 80 "yellow",150 "red",200 "purple", 255 "black")
+set palette defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")
 set size square
 '''
 defined_color_patterns={
-                        'Default': 'defined (0 "blue",50 "green", 80 "yellow",150 "red",200 "purple", 255 "black")', 
-                        'Black to Red': 'defined (0 "black",50 "purple", 80 "blue",150 "green",200 "yellow", 255 "red")', 
+                        'Default': 'defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")', 
+                        'Black to Red': 'defined (0 "black", 1 "purple", 2 "blue", 3 "green", 4 "yellow",  5 "red")', 
                         'Grey Scale': 'gray', 
-                        'BGYR': 'defined (0 "blue",85 "green", 170 "yellow",255 "red")', 
-                        'Black to Yellow': 'defined (0 "black",85 "blue", 170 "red",255 "yellow")', 
-                        'Gnuplot std.': 'color', 
+                        'Blue,Green,Yellow,Red': 'defined (0 "blue",1 "green", 2 "yellow",3 "red")', 
+                        'Black to Yellow': 'defined (0 "black",1 "blue", 2 "red",3 "yellow")', 
+                        'Gnuplot std.': 'rgbformulae 7,5,15', 
                         # MARIA color map from Stefan Mattauch
                         'MARIA log': 'defined (0 0 0 0 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1)', 
                         'MARIA lin': 'defined (0 1 1 1 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1)', 

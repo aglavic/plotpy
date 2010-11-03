@@ -2191,21 +2191,74 @@ class ApplicationMainWindow(gtk.Window):
       The colorpatterns are defined in config.gnuplot_preferences.
     '''
     pattern_names=sorted(gnuplot_preferences.defined_color_patterns.keys())
-    cps_dialog=gtk.Dialog(title='Select new color pattern:')
+    # get active name
+    active_pattern='default'
+    for pattern in pattern_names:
+      if gnuplot_preferences.defined_color_patterns[pattern] in gnuplot_preferences.settings_3dmap:
+        active_pattern=pattern
+    # plot available colormaps
+    gptext="""# Script to plot colormaps with gnuplot
+unset xtics
+unset ytics
+unset colorbox
+set lmargin at screen 0.
+set rmargin at screen 1.
+set pm3d map
+set term jpeg size 400,%i font "%s"
+set output "%s"
+set multiplot layout %i,1
+    """ % (
+           (len(pattern_names)*30), 
+           os.path.join(gnuplot_preferences.FONT_PATH, 'Arial.ttf'), 
+           os.path.join(self.active_session.TEMP_DIR, 'colormap.jpg'), 
+           len(pattern_names), 
+           )
+    portions=1./len(pattern_names)
+    for i, pattern in enumerate(pattern_names):
+      gptext+='set tmargin at screen %f\nset bmargin at screen %f\n' % (1.-i*portions, 1.-(i+1.)*portions)
+      gptext+='set label 1 "%s" at 50,1. center front\nset palette %s\nsplot [0:100][0:2] x w pm3d t ""\n' % (
+                                  pattern, 
+                                  gnuplot_preferences.defined_color_patterns[pattern])
+    gptext+='unset multiplot\n'
+    open(os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp'), 'w').write(gptext)
+    subprocess.call([gnuplot_preferences.GNUPLOT_COMMAND, os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp')])
     pattern_box=gtk.combo_box_new_text()
     # drop down menu for the pattern selection
     for pattern in pattern_names:
       pattern_box.append_text(pattern)
     pattern_box.show_all()
-    cps_dialog.vbox.add(pattern_box)
+    cps_dialog=gtk.Dialog(title='Select new color pattern:')
+    cps_dialog.set_default_size(400, 400)
+    cps_dialog.vbox.pack_start(pattern_box, False)
+    pixbuf=gtk.gdk.pixbuf_new_from_file(os.path.join(self.active_session.TEMP_DIR, 'colormap.jpg'))
+    image=gtk.Image()
+    image.set_from_pixbuf(pixbuf)
+    image.show()
+    sw = gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+    sw.add_with_viewport(image)
+    sw.show()
+    cps_dialog.vbox.pack_end(sw, True)
     cps_dialog.add_button('OK', 1)
+    cps_dialog.add_button('Apply', 2)
     cps_dialog.add_button('Cancel', 0)
     result=cps_dialog.run()
-    if result==1:
+    while result>0:
       self.file_actions.activate_action('change_color_pattern', 
-                                        gnuplot_preferences.defined_color_patterns[pattern_names[pattern_box.get_active()]])
+              gnuplot_preferences.defined_color_patterns[pattern_names[pattern_box.get_active()]])
+      self.replot()
+      if result==1:
+        break
+      result=cps_dialog.run()
+    # reset colorscale if cancel was pressed
+    if result==0:
+      self.file_actions.activate_action('change_color_pattern', 
+              gnuplot_preferences.defined_color_patterns[active_pattern])     
+      self.replot()
     cps_dialog.destroy()
-    self.replot()
 
   def fit_dialog(self,action, size=(800, 250), position=None):
     '''
@@ -3776,6 +3829,7 @@ class ApplicationMainWindow(gtk.Window):
     vbox=gtk.VBox()
     vbox.pack_start(mpl_widget, expand=True, fill=True, padding=0)
     vbox.pack_end(toolbar, expand=False, fill=True, padding=0)
+    
     self.image=vbox
     # redefine functions to be used with mpl
     self.plot=measurement_data_plotting.mpl_plot
