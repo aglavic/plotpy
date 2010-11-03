@@ -127,6 +127,27 @@ class LogFunction(object):
     logger.debug(write_string)
     return self.function(*params, **opts)
 
+def single_call_log(function, class_name):
+  def tmpfunc(*params, **options):
+    logger.debug(class_name+'('+str(params)+str(options)+')')
+    return function(*params, **options)
+  return tmpfunc
+
+def create_log_class(old_class):
+  '''
+    Create a new class where all method calls are logged.
+    
+    Uses online attribute lookup to create a function which loggs the function inputs.
+  '''
+  class OutputClass(old_class, object):
+    def __getattribute__(self, attribute):
+      if 'method' in str(type(old_class.__getattribute__(self, attribute))):
+        return single_call_log(old_class.__getattribute__(self, attribute), old_class.__name__+'.'+attribute)
+      else:
+        return old_class.__getattribute__(self, attribute)
+      
+  return OutputClass
+
 class LogClass:
   '''
     Class that creates instances of other classes with logging possibilities.
@@ -136,42 +157,44 @@ class LogClass:
     '''
       Store the old class in this object
     '''
-    self.old_class=old_class
-    logger.debug('Logging Class %s' % old_class.__module__+'.'+old_class.__name__)
-    logging.disable(logging.INFO)
-    for arg in dir(old_class):
-      if arg not in ['__call__','__class__']:
-        if type(getattr(old_class, arg))==type(self.__call__):
-          setattr(self, arg, LogFunction(getattr(old_class,arg), overwrite_name=repr(old_class)+'.'+arg))
-    logging.disable(None)
-  
-  def __call__(self, *params, **opts):
-    '''
-      Call the class constructor and log the call.
-    '''
-    write_string=self.old_class.__name__+'.__init__(self, '
-    # add parameter information
-    i=0
-    for i, param in enumerate(params):
-      if i!=0:
-        write_string+=", "
-      write_string+=repr(param)
-    # add optional parameter informations
-    for j, item in enumerate(opts.items()):
-      if j+i!=0:
-        write_string+=", "
-      write_string+=item[0] + "=" + repr(item[1])
-    # write the function call
-    write_string+=") -> "
-    new_class=self.old_class(*params, **opts)
-    logger.debug(write_string+repr(new_class))
-    logging.disable(logging.INFO)
-    for arg in dir(new_class):
-      if arg not in ['__init__','__class__']:
-        if type(getattr(new_class, arg))==type(self.__call__):
-          setattr(new_class, arg, LogFunction(getattr(new_class,arg), overwrite_name=repr(new_class)+'.'+arg))
-    logging.disable(None)
-    return new_class
+    #self.old_class=old_class
+    #self.old_class_functions=[]
+    #class_name=old_class.__name__
+    #logger.debug('Logging Class %s' % old_class.__module__+'.'+old_class.__name__)
+    #logging.disable(logging.INFO)
+    #keys=old_class.__dict__.keys()
+    #for item in keys:
+      #if item.startswith('_'):
+        #keys.remove(item)
+    #for key in keys:
+      #if 'instancemethod' in str(type(getattr(old_class, key))):
+        #method=getattr(old_class, key)
+        #setattr(old_class, key, LogFunction(method, overwrite_name=class_name+'.'+method.__name__))
+      #else:
+        #pass
+    #logging.disable(None)
+  #
+  #def __call__(self, *params, **opts):
+    #'''
+      #Call the class constructor and log the call.
+    #'''
+    #write_string=self.old_class.__name__+'.__init__(self, '
+    ## add parameter information
+    #i=0
+    #for i, param in enumerate(params):
+      #if i!=0:
+        #write_string+=", "
+      #write_string+=repr(param)
+    ## add optional parameter informations
+    #for j, item in enumerate(opts.items()):
+      #if j+i!=0:
+        #write_string+=", "
+      #write_string+=item[0] + "=" + repr(item[1])
+    ## write the function call
+    #write_string+=") -> "
+    #new_class=self.old_class(*params, **opts)
+    #logger.debug(write_string+repr(new_class))
+    #return new_class
 
 class EmptyClass:
   pass
@@ -185,16 +208,24 @@ def logon(module):
   # get all functions/build-in-function of the module not starting with underscore
   modfunctions=filter(lambda key: type(getattr(module, key)) in [type(logon), type(getattr)] and not key.startswith('_'),
                       module.__dict__.keys())
-  modclasses=filter(lambda key: 'class' in str(type(getattr(module, key))) and not key.startswith('_'),
+  modclasses=filter(lambda key: ('class' in str(type(getattr(module, key))) or \
+                                "'type'" in str(type(getattr(module, key)))) and not key.startswith('_'),
                       module.__dict__.keys())
-  for function in modfunctions:
-    # replace the function by a WriteFunction object
-    setattr(module, function, LogFunction( getattr(module, function) ))
-  for cls in modclasses:
-    
-    setattr(module, cls, LogClass(getattr(module, cls)))
+  for function_name in modfunctions:
+    # get the function
+    function=getattr(module, function_name)
+    # replace the function by a LogFunction object
+    # only replace if the function is originally defined in this module
+    if function.__module__==module.__name__:
+      setattr(module, function_name, LogFunction( function ))
+  for cls_name in modclasses:
+    cls=getattr(module, cls_name)
+    # replace the class by a LogClass object
+    # only replace if the function is originally defined in this module
+    if cls.__module__==module.__name__:
+      setattr(module, cls_name, create_log_class(cls))
 
-def initialize(log_file, level='INFO'):
+def initialize(log_file, level='INFO', modules=[]):
   '''
     Start logging of all modules of the plot-script.
   '''
@@ -217,21 +248,13 @@ def initialize(log_file, level='INFO'):
   sys.stdout=RedirectOutput(sys.stdout, logger.info)
   sys.stderr=RedirectOutput(sys.stderr, logger.error, connect_on_keyword=[('Warning', logger.warning)])
   if level==logging.DEBUG:
-    # In complete debug mode all function calls get logged
+    # In complete debug mode function calls of defined modules get logged, too
     logger.debug("Beginning initialize logging for all modules...")
     sys.exc_clear=LogFunction(sys.exc_clear)
-    base_files=glob(os.path.join(os.path.split(os.path.realpath(__file__))[0], '*.py'))
-    package_files=glob(os.path.join(os.path.split(os.path.realpath(__file__))[0], '*/*.py'))
-    base_modules=map(lambda item: os.path.split(item)[1].replace('.py', ''), base_files)
-    base_modules.remove('plotting_debug')
-    base_modules.remove('setup')  
-    base_modules.remove('py2exe_imports')  
-    base_modules.remove('configobj')
-    package_modules=map(lambda item: (os.path.split(os.path.split(item)[0])[1], os.path.split(item)[1].replace('.py', ''))
-                        , package_files)
-    for item in package_modules:
-      if not item[1]=='__init__':
-        logon(__import__(item[0]+'.'+item[1], globals(), locals(), [item[1]]))
-    for module in base_modules:
-      logon(__import__(module, globals(), locals()))
+    for module in modules:
+      if len(module.split('.'))>1:
+        imported_module=__import__(module, globals(), locals(), fromlist=(module.split('.')[-1]))
+      else:
+        imported_module=__import__(module, globals(), locals())
+      logon(imported_module)
     logger.debug("... ready initializing the debug system.")

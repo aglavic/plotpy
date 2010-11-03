@@ -47,24 +47,24 @@ config=sessions.generic.config
 gui_main=None
 
 #+++++++++++++ Limit Memory Usage ++++++++++++++
-import resource
-resource.setrlimit(resource.RLIMIT_AS, (2*1024**3,2*1024**3))
+if not "--nolimit" in sys.argv:
+  import resource
+  # Maximum memeroy usage is MiB, otherwise the program could cause
+  # the system to hang do to excessive swap memory access
+  resource.setrlimit(resource.RLIMIT_AS, (2*1024**3,2*1024**3))
 
 #----------------------- importing modules --------------------------
 
 # set default encoding
 try:
-  sys.setappdefaultencoding('utf8')
+  # TODO: try to fix unicode handling
+  # this is just a hack as wx can lead to unicode errors
+  # the site.py module removes sys.setdefaultencoding
+  # so we reload it to use the function until we get this fixed
+  reload(sys)
+  sys.setdefaultencoding('utf8')
 except AttributeError:
-  try:
-    sys.setdefaultencoding('utf8')
-  except AttributeError:
-    # TODO: try to fix unicode handling
-    # this is just a hack as wx can lead to unicode errors
-    # the site.py module removes sys.setdefaultencoding
-    # so we reload it to use the function until we get this fixed
-    reload(sys)
-    sys.setdefaultencoding('utf8')
+  sys.setappdefaultencoding('utf8')
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
@@ -198,12 +198,13 @@ def initialize_debug(log_file='debug.log'):
     Initialize logging and output for debug mode.
   '''
   import plotting_debug
-  if '--logall' in sys.argv:
-    level='DEBUG'
-    sys.argv.remove('--logall')
+  if '--logmodules' in sys.argv:
+    idx=sys.argv.index('--logmodules')
+    modules=sys.argv[idx+1:]
+    plotting_debug.initialize(log_file, level='DEBUG', modules=modules)
+    sys.argv=sys.argv[:idx]
   else:
-    level='INFO'
-  plotting_debug.initialize(log_file, level)
+    plotting_debug.initialize(log_file, level='INFO')
   
 def _run():
   '''

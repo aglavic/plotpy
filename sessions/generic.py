@@ -102,6 +102,15 @@ Options:
 
 \tGeneral Data treatment:
 \t-no-trans\tdon't make a unit transformation
+
+\tAdvanced settings:
+\t--nolimit\tDon't limit the amount of memory consumed by the program so there will not be a MemoryError 
+\t\t\t(be carefull, can lead to a non responsive system for operations causing to high memory usage)
+\t--debug\t\tDon't redirect the output to any GUI windows but show it on the command line, writes additional 
+\t\t\tinformation to a log file.
+\t--logmodules\t\tIn debug mode also logg all modules listed after this options (so the options should be 
+\t\t\at the end of the input line
+
 """ % (__version__, __email__)
   # TODO: implement these settings
   '''    from cPickle import load, dump
@@ -132,7 +141,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   FILE_WILDCARDS=(('All', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
   COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 
-                        'template','no-trans', '-help', '-debug', 'startuppath', 'mpl']
+                        'template','no-trans', '-help', '-debug', '-nolimit', 'startuppath', 'mpl',]
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
