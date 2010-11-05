@@ -509,6 +509,7 @@ class KWS2MeasurementData(HugeMD):
   '''
     Class implementing additions for KWS2 data objects.
   '''
+  
   def __add__(self, other):
     '''
       Add two measurements together.

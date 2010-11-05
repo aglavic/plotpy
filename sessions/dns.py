@@ -19,7 +19,7 @@ import sys
 from glob import glob
 exit=sys.exit
 # if possible use the numpy functions as they work with complete arrays
-from numpy import pi, cos, sin, sqrt, array, where, nan_to_num, maximum
+from numpy import pi, cos, sin, sqrt, array, where, nan_to_num, maximum, zeros
 use_numpy=True
 
 # import GenericSession, which is the parent class for the squid_session
@@ -1484,9 +1484,9 @@ class DNSSession(GUI, GenericSession):
             detectors=map(lambda bg: round(bg.dns_info['detector_bank_2T'], 0), bg_data[key])
             # subtract backgound from vanadium if suitable is found.
             if detector in detectors:
-              backgound_data=bg_data[key][detectors.index(detector)]
+              background_data=bg_data[key][detectors.index(detector)]
               vana_data.process_function(subtract_background)
-              vana_data.name+='-'+backgound_data.name.replace('+', '-')
+              vana_data.name+='-'+background_data.name.replace('+', '-')
               bgs=True
         if not bgs and self.AUTO_VANADIUM:
           print "No backgound data for file %s, vanadium correction will not be correct." % file_name
@@ -1737,8 +1737,8 @@ class DNSMeasurementData(MeasurementData):
       qx_index=len(self.units())-3
       qy_index=qx_index+1
       lambda_n=self.dns_info['lambda_n']
-      two_pi_over_lambda=2*pi/lambda_n
-      grad_to_rad=pi/180.
+      two_pi_over_lambda=2.*pi/lambda_n
+      grad_to_rad=1.#pi/180.
       # calculation of the wavevector, also works with arrays
       def angle_to_wavevector(point):
         output=point
@@ -1923,8 +1923,10 @@ class DNSMeasurementData(MeasurementData):
     '''
     nc=self.number_of_channels
     for i in range(nc):
-      point[i+2*nc+5]=point[i+5]
-      point[i+3*nc+5]=point[i+nc+5]
+      point[i+2*nc+5]=point[i+5][:]
+      point[i+3*nc+5]=point[i+nc+5][:]
+      point[i+2*nc+5].dimension='I_%i' % i
+      point[i+3*nc+5].dimension='Error_%i' % i
     return point
   
   if use_numpy:
@@ -1944,26 +1946,30 @@ class DNSMeasurementData(MeasurementData):
       background_data=self.background_data
       detector_positions=point[0]
       detectors=point[4]
-      bg_items=[background_data[det_pos] for det_pos in detector_positions]
-      if 'detector_angles' in background_data.values()[0].dns_info:
-        bg_columns=[[] , []]
-      else:
-        bg_columns=[[] for i in range(len(background_data.values()[0].data)-1)]
-      for i, detector in enumerate(detectors):
-        bg_data=bg_items[i].data
-        for j, column in enumerate(bg_columns):
-          column.append(bg_data[j+1].values[bg_data[0].values.index(detector)])
-      bg=map(array, bg_columns)
-#      bg_lists={}
-#      for key,  background in self.background_data.items:
-#        bg_list[key]=map(lambda column: column.values, background.data)
-#      # search the indices for the detectors
-#      bg_indices=map(lambda detector: (point[0], bg_lists[point[0]][0].index(detector)), point[4])
-#      # create a list of arrays with the corresponding intensities        
-#      bg=map(lambda column: array(map(lambda index: column[index], bg_indices)), bg_lists[1:])
+      #bg_items=[background_data[det_pos] for det_pos in detector_positions]
+      bg=[zeros(len(detector_positions)) for i in range(nc*2)]
+      for key, value in background_data.items():
+        first_det=value.data[0][0]
+        indices=where(detector_positions==key)[0]
+        detector_indices=(detectors[indices]-first_det).astype(int)
+        for i in range(nc*2):
+          bg[i][indices]=value.data[i+1][detector_indices]
+      #  print indices
+      #  bg_items[indices]=background_data[key]
+      #if 'detector_angles' in background_data.values()[0].dns_info:
+      #  bg_columns=[[] , []]
+      #else:
+      #  bg_columns=[[] for i in range(len(background_data.values()[0].data)-1)]
+      #for i, detector in enumerate(detectors):
+      #  bg_data=bg_items[i].data
+      #  for j, column in enumerate(bg_columns):
+      #    column.append(bg_data[j+1].values[bg_data[0].values.index(detector)])
+      #bg=map(array, bg_columns)
       for i in range(nc):
         point[i+2*nc+5]=point[i+5]-bg[i]
         point[i+3*nc+5]=sqrt(point[i+nc+5]**2 + bg[i+nc]**2)
+        point[i+2*nc+5].dimension='I_%i' % i
+        point[i+3*nc+5].dimension='Error_%i' % i
       return point
     
     def correct_vanadium(self, point):

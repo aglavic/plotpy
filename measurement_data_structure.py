@@ -230,10 +230,10 @@ class MeasurementData(object):
       @return The added point or 'NULL' if an error has occured
     '''
     data=self.data # speedup data_lookup
-    append_fast=list.append
+    append_fast=PhysicalProperty.append
     if len(point)==len(data):
       for i,val in enumerate(point):
-        append_fast(data[i].values, val)
+        append_fast(data[i], val)
       self.number_of_points+=1
       return point
     else:
@@ -263,14 +263,69 @@ class MeasurementData(object):
       
       @return List of values at this index
     '''
-    return [value.values[count] for value in self.data]
+    return [value[count] for value in self.data]
 
   def set_data(self,point,count): 
     '''
       Set data point at position count.
     '''
     for value in self.data:
-      value.values[count]=point[self.data.index(value)]
+      value[count]=point[self.data.index(value)]
+
+  def _get_x(self):
+    '''
+      Get the data for column x
+    '''
+    return self.data[self.xdata]
+  
+  def _set_x(self, item):
+    '''
+      Set the data for column x
+    '''
+    if len(item)!=len(self):
+      raise ValueError, "shape mismatch: x needs to have %i items" % len(self)
+    if hasattr(item, 'unit') and hasattr(item, 'dimension'):
+      self.data[self.xdata]=item
+    else:
+      self.data[self.xdata][:]=item
+
+  def _get_y(self):
+    '''
+      Get the data for column y
+    '''
+    return self.data[self.ydata]
+  
+  def _set_y(self, item):
+    '''
+      Set the data for column y
+    '''
+    if len(item)!=len(self):
+      raise ValueError, "shape mismatch: y needs to have %i items" % len(self)
+    if hasattr(item, 'unit') and hasattr(item, 'dimension'):
+      self.data[self.ydata]=item
+    else:
+      self.data[self.ydata][:]=item
+
+  def _get_z(self):
+    '''
+      Get the data for column z
+    '''
+    return self.data[self.zdata]
+  
+  def _set_z(self, item):
+    '''
+      Set the data for column z
+    '''
+    if len(item)!=len(self):
+      raise ValueError, "shape mismatch: z needs to have %i items" % len(self)
+    if hasattr(item, 'unit') and hasattr(item, 'dimension'):
+      self.data[self.zdata]=item
+    else:
+      self.data[self.zdata][:]=item
+
+  x=property(_get_x, _set_x)
+  y=property(_get_y, _set_y)
+  z=property(_get_z, _set_z)
 
   def list(self): 
     '''
@@ -468,15 +523,20 @@ class MeasurementData(object):
       @return Last point after function execution
     '''
     try:
-      arrays=[]
-      for column in self.data:
-        array=numpy.array(column.values)
-        arrays.append(array)
-      processed_arrays=function(arrays)
-      for i, array in enumerate(processed_arrays):
-        self.data[i].values=list(array)
-    except: # if the function does not work with arrays the conventional method is used.
-      self.process_function_nonumpy(function)
+      #arrays=[]
+      #for column in self.data:
+        #array=numpy.array(column.values)
+        #arrays.append(array)
+      processed_data=function(self.data)
+      self.data=processed_data
+      #for i, array in enumerate(self.data):
+       # self.data[i].values=list(array)
+    except (TypeError, 
+            ValueError, 
+            IndexError, 
+            ZeroDivisionError), error: # if the function does not work with arrays the conventional method is used.
+     raise ValueError, "could not process function: %s" % error
+      #self.process_function_nonumpy(function)
     return self.last()
 
   def sort(self, column=None):
@@ -1082,6 +1142,12 @@ class PhysicalProperty(object):
       output=numpy.multiply(self, other)
       output.dimension=self.dimension
     return output
+  
+  def __neg__(self):
+    '''
+      Define the unary - operator.
+    '''
+    return -1.*self
 
   def __div__(self, other):
     '''
@@ -1418,3 +1484,389 @@ class PlotOptions(object):
   xrange=property(get_xrange, set_xrange)
   yrange=property(get_yrange, set_yrange)
   zrange=property(get_zrange, set_zrange)
+
+
+derivatives={# derivatives to numpy base functions for error propagation
+             numpy.sin.__str__(): numpy.cos, 
+             numpy.cos.__str__(): lambda input: -numpy.sin(input), 
+             numpy.exp.__str__(): numpy.exp, 
+             numpy.square.__str__(): lambda input: 2.*input , 
+             numpy.sqrt.__str__(): lambda input: 1./(2.*numpy.sqrt(input)), 
+             
+             # functions with two parameters
+             numpy.add.__str__(): ( lambda input1, input2: 1., lambda input1, input2: 1. ), 
+             numpy.subtract.__str__(): ( lambda input1, input2: 1., lambda input1, input2: 1. ), 
+             numpy.multiply.__str__(): ( lambda input1, input2: input2, lambda input1, input2: input1), 
+             numpy.divide.__str__(): ( lambda input1, input2: 1./input2 , lambda input1, input2: -input1/input2**2)
+             }
+
+class LinkedList(list):
+  '''
+    A list which is linked to a PhysicalProperty so every change to the list
+    data will also be made for the PhysicalProperty.
+  '''
+  link=None
+  
+  def __init__(self, data):
+    list.__init__(self, data)
+    self.link=data
+  
+  def __setitem__(self, index, item):
+    list.__setitem__(self, index, item)
+    self.link.__setitem__(index, item)
+  
+  def __setslice__(self, i, j, items):
+    list.__setslice__(self, i, j, items)
+    self.link.__setslice__(i, j, items)
+  
+  def append(self, item):
+    list.append(self, item)
+    self.link.append(item)
+  
+  def __iadd__(self, other):
+    list.__iadd__(self, other)
+    self.link.values=self
+    return self
+
+class PhysicalProperty(numpy.ndarray):
+  '''
+    Class for any physical property. Stores the data, unit and dimension
+    to make unit transformations possible. Can be used with numpy functions.
+    
+    Attributes:
+      dimension  String for the dimension of the instance
+      unit       String for the unit of the instance
+    
+    Hints:
+      PhysicalProperty can be used with different convenience operators/functions,
+      for a PhysicalProperty 'P' these are e.g.:
+      
+      P % [unit]                  Transform the instance to the unit
+      P % ([name], [mul], [add])  Transform the instance to [name] using the multiplyer [mul]
+                                  and adding [add]
+      P // [dim]                  Get P with different dimension name [dim]
+      P // ([dim], [unit])        Get P with different dimension and unit name
+      
+      Additionally PhysicalProperty instances can be used like numpy arrays in functions
+      and with respect to slicing. Addition and subtraction is unit dependent and angular
+      functions only take angles as input.
+  '''
+  unit=''
+  dimension=''
+  # if defined this is the error value of the property
+  # the error will be automatically propagated when functions
+  # get called with instances of this class
+  error=None
+  unit_save=True # if true changes units after arithmetic operation and checks if correct
+
+  def __new__(subtype, dimension_in, unit_in, input_data=[], input_error=None, unit_save=True):
+    '''
+      Class constructor when explcidly called.
+      
+      @param dimension_in String with the dimensions for that instance
+      @param unit_in String with unit for that instance
+    '''
+    obj=numpy.ndarray.__new__(subtype, len(input_data))
+    obj.unit=unit_in
+    obj.dimension=dimension_in
+    obj.unit_save=True
+    if input_error is not None:
+      if len(input_error)!=len(input_data):
+        raise ValueError, 'shape mismatch: error and data have different lengths'
+      obj.error=numpy.array(input_error)
+    obj.__setslice__(0, len(input_data), input_data)
+    return obj
+  
+  def __array_finalize__(self, obj):
+    self.unit=getattr(obj, 'unit', "")
+    self.dimension=getattr(obj, 'dimension', "")
+    #self._length=self.__len__()
+    
+  def append(self, item):
+    '''
+      Append an item to the end of the data, if the array is to small it is enlarged.
+    '''
+    if self.has_error:
+      if hasattr(item, '__iter__') and len(item)==2:
+        length=self.__len__()
+        self.resize(length+1, refcheck=False)
+        self.__setitem__(length, item[0])
+        self.error.resize(length+1, refcheck=False)
+        self.error.__setitem__(length, item[1])
+      else:
+        raise ValueError, "you need to supply an error value for this instance"
+    else:
+      length=self.__len__()
+      self.resize(length+1, refcheck=False)
+      self.__setitem__(length, item)
+  
+  def __repr__(self):
+    '''
+      Return a string representation of the data.
+    '''
+    output='PhysicalProperty(['
+    if len(self)<10:
+      sval=map(str, self)
+      output+=", ".join(sval)
+    else:
+      sval=map(str, self[:5])
+      output+=", ".join(sval)
+      output+=" ... "
+      sval=map(str, self[-5:])
+      output+=", ".join(sval)
+    if self.has_error:
+      output+="],\tdimension='%s', unit='%s', length=%i, avg.error=%f)" % (self.dimension, self.unit,  
+                                                                            len(self), self.error.mean())
+    else:
+      output+="],\tdimension='%s', unit='%s', length=%i)" % (self.dimension, self.unit,  len(self))
+    return output
+
+  def __str__(self):
+    '''
+      Return the values as string.
+    '''
+    output='['
+    if len(self)<10:
+      sval=map(str, self)
+      output+=", ".join(sval)
+    else:
+      sval=map(str, self[:5])
+      output+=", ".join(sval)
+      output+=" ... "
+      sval=map(str, self[-5:])
+      output+=", ".join(sval)
+    output+="]"
+    return output
+  
+  def _get_values(self):
+    '''
+      Wrapper to simulate the old .values list
+    '''
+    return LinkedList(self)
+  
+  def _set_values(self, values):
+    self.resize(len(values), refcheck=False)
+    self.__setslice__(0, len(values), values)
+    if self.has_error and len(self.error)!=len(self):
+      # remove the error values, if the number of items differs
+      self.error=None
+  
+  def _get_has_error(self):
+    return (self._error is not None)
+  
+  def _get_error(self):
+    return self._error
+  
+  def _set_error(self, value):
+    assert len(value)==len(self), "Error needs to have %i values" % len(self)
+    self._error=numpy.array(value)
+  
+  values=property(_get_values, _set_values)
+  has_error=property(_get_has_error)
+  error=property(_get_error, _set_error)
+
+  def unit_trans(self,transfere): 
+    '''
+      Transform one unit to another. transfere variable is of type [from,b,a,to].
+    '''
+    if transfere[0]==self.unit: # only transform if right 'from' parameter
+      self.unit=transfere[3]
+      self*=transfere[1]
+      self+=transfere[2]
+      return True
+    else:
+      return False
+
+  def dim_unit_trans(self,transfere): 
+    '''
+      Transform dimension and unit to another. Variable transfere is of type
+      [from_dim,from_unit,b,a,to_dim,to_unit].
+    '''
+    if len(transfere)>0 and (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right 'from_dim' and 'from_unit'
+      self.unit=transfere[5]
+      self.dimension=transfere[4]
+      self*=transfere[2]
+      self+=transfere[3]
+      return True
+    else:
+      return False
+
+  def __array_wrap__(self, out_arr, context=None):
+    '''
+      Function that get's called by numpy ufunct functions after they get
+      called with one instance from this class. Makes PhysicalProperty objects
+      usable with all standart numpy functions.
+      
+      @return PhysicalProperty object with values as result from the function
+    '''
+    out_arr=out_arr.view(type(self))
+    if self.has_error and context is not None:
+      out_arr=self._propagate_errors(out_arr, context)
+    out_arr.unit=self.unit
+    out_arr.dimension=self.dimension
+    if context:
+      ## make sure angular dependent functions are called with radian unit
+      if context[0].__name__ in angle_functions:
+        if self.unit!='rad':
+          try:
+            out_arr=context[0](self%'rad')
+          except ValueError:
+            raise ValueError, 'Input to function %s needs to be an angle' % context[0].__name__
+        out_arr.unit=''
+      ## make sure inverse angular functions get called with dimensioinless input
+      elif context[0].__name__.startswith('arc'):
+        if self.unit=='':
+          out_arr.unit='rad'
+        else:
+          raise ValueError, "Input to function %s needs to have empty unit" % context[0].__name__
+    return out_arr
+
+  def _propagate_errors(self, out_arr, context):
+    '''
+      Calculate the errorpropatation after a function has been processed.
+    '''
+    if len(context[1])==1:
+      # only a function of one parameter
+      out_arr.error=abs(derivatives[context[0].__str__()](self.view(numpy.ndarray))*self.error)
+    else:
+      # a function of two patameters
+      if context[1][0] is self:
+        # the first patameter is self
+        other=context[1][1]
+        # if both arguments to ufunc have an error value
+        if getattr(context[1][1], 'error', None) is not None:
+          out_arr.error=numpy.sqrt(
+                        (derivatives[context[0].__str__()][0](self.view(numpy.ndarray), 
+                                                              other.view(numpy.ndarray))*self.error)**2+\
+                        (derivatives[context[0].__str__()][1](self.view(numpy.ndarray), 
+                                                              other.view(numpy.ndarray))*other.error)**2
+                                  )
+        # only the first argument has an error value
+        else:
+          out_arr.error=abs(derivatives[context[0].__str__()][0](self.view(numpy.ndarray), numpy.array(other))*self.error)
+      else:
+        # the second argument is self, so the first is no PhysicalProperty instance
+        out_arr.error=abs(derivatives[context[0].__str__()][1](numpy.array(context[1][0]), self.view(numpy.ndarray))*self.error)
+    return out_arr
+
+  def __add__(self, other):
+    '''
+      Define addition of two PhysicalProperty instances.
+      Checking if the unit of both is the same otherwise
+      try to convert the second argument to the same unit.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if hasattr(other, 'unit'):
+      if self.unit != other.unit:
+        try:
+          other=other%self.unit
+        except ValueError:
+          raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
+    output=numpy.ndarray.__add__(self, other)
+    return output
+
+  def __sub__(self, other):
+    '''
+      Define addition of two PhysicalProperty instances.
+      Checking if the unit of both is the same otherwise
+      try to convert the second argument to the same unit.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if hasattr(other, 'unit'):
+      if self.unit != other.unit:
+        try:
+          other=other%self.unit
+        except ValueError:
+          raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
+    output=numpy.ndarray.__sub__(self, other)
+    return output
+
+  def __mul__(self, other):
+    '''
+      Define multiplication of two PhysicalProperty instances.
+      Changes the unit of the resulting object if both objects have a unit.
+      
+      @return New instance of PhysicalProperty
+    '''
+    output=numpy.ndarray.__mul__(self, other)
+    if hasattr(other, 'unit'):
+      if self.unit!=other.unit and self.unit!='' and other.unit!='':
+        output.unit=self.unit + '*' + other.unit
+      elif self.unit==other.unit:
+        output.unit=self.unit + '^2'
+    return output
+
+  def __div__(self, other):
+    '''
+      Define division of two PhysicalProperty instances.
+      
+      @return New instance of PhysicalProperty
+    '''
+    output=numpy.ndarray.__div__(self, other)
+    if hasattr(other, 'unit'):
+      if self.unit!=other.unit and self.unit!='' and other.unit!='':
+        output.unit=self.unit + '/' + other.unit
+      elif self.unit==other.unit:
+        output.unit=''
+    return output
+
+  def __pow__(self, to_power):
+    '''
+      Define calculation of PhysicalProperty instance to a specified power.
+      
+      @return New instance of PhysicalProperty
+    '''
+    output=numpy.ndarray.__pow__(self, to_power)
+    if self.unit!='':
+      output.unit=self.unit+'^%s' % str(to_power)
+    return output
+
+  def __floordiv__(self, new_dim_unit):
+    '''
+      Convenience method to easily get the same PhysicalProperty with another dimension or
+      dimension and unit. Examples:
+      pp // 'new' -> a copy of the PhysicalProperty with the new dimension 'new'
+      pp // ('length','m') -> a copy of the PhysicalProperty with the new dimension 'length' and the unit 'm'
+      
+      @return New object instance.
+    '''
+    output=deepcopy(self)
+    if type(new_dim_unit) is str:
+      output.dimension=new_dim_unit
+      return output
+    else:
+      if getattr(new_dim_unit, '__iter__', False) and len(new_dim_unit)>=2 and \
+          type(new_dim_unit[0]) is str and type(new_dim_unit[1]) is str:
+        output.dimension=new_dim_unit[0]
+        output.unit=new_dim_unit[1]
+        return output
+      else:
+        raise ValueError, '// only defined with str or iterable object of at least two strings'
+  
+  def __mod__(self, conversion):
+    '''
+      Convenience method to easily get the same PhysicalProperty with a converted unit. Examples:
+      pp % 'm' -> a copy of the PhysicalProperty with the unit converted to m
+      pp % ('m', 1.32, -0.2) -> a copy of the PhysicalProperty with the unit converted to 'm' 
+                                multiplying by 1.32 and subtracting 0.2
+      
+      @return New object instance.    
+    '''
+    output=deepcopy(self)
+    if type(conversion) is str:
+      if (self.unit, conversion) in known_transformations:
+        multiplyer, addition=known_transformations[(self.unit, conversion)]
+        output.unit_trans([self.unit, multiplyer, addition, conversion])
+        return output
+      else:
+        raise ValueError, "Automatic conversion not implemented for '%s'->'%s'." % (self.unit, conversion)
+    else:
+      if getattr(conversion, '__iter__', False) and len(conversion)>=3 and \
+          type(conversion[0]) is str and type(conversion[1]) in (float, int) and type(conversion[2]) in (float, int):
+        output.unit_trans([self.unit, conversion[1], conversion[2], conversion[0]])
+        return output
+      else:
+        raise ValueError, '% only defined with str or iterable object of at least one string and two floats/ints'
+
