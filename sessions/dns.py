@@ -797,7 +797,7 @@ class DNSSession(GUI, GenericSession):
       else:
         joint=deepcopy(value[0])
         # square the errors
-        joint.data[2].values=(joint.data[2][:]**2).tolist()
+        joint.data[2]**=2
         for add in value[1:]:
           joint.data[1]+=add.data[1]
           joint.data[2]+=add.data[2][:]**2

@@ -310,18 +310,24 @@ class MeasurementData(object):
     '''
       Get the data for column z
     '''
-    return self.data[self.zdata]
+    if self.zdata>=0:
+      return self.data[self.zdata]
+    else:
+      return None
   
   def _set_z(self, item):
     '''
       Set the data for column z
     '''
-    if len(item)!=len(self):
-      raise ValueError, "shape mismatch: z needs to have %i items" % len(self)
-    if hasattr(item, 'unit') and hasattr(item, 'dimension'):
-      self.data[self.zdata]=item
+    if self.zdata>=0:
+      if len(item)!=len(self):
+        raise ValueError, "shape mismatch: z needs to have %i items" % len(self)
+      if hasattr(item, 'unit') and hasattr(item, 'dimension'):
+        self.data[self.zdata]=item
+      else:
+        self.data[self.zdata][:]=item
     else:
-      self.data[self.zdata][:]=item
+      raise IndexError, "z-index not defined, can't set z data"
 
   x=property(_get_x, _set_x)
   y=property(_get_y, _set_y)
@@ -409,7 +415,7 @@ class MeasurementData(object):
     '''
       Return units of all columns.
     '''
-    return [value.unit for value in self.data]
+    return [str(value.unit) for value in self.data]
 
   def dimensions(self): 
     '''
@@ -421,19 +427,19 @@ class MeasurementData(object):
     '''
       Get unit of xcolumn.
     '''
-    return self.units()[self.xdata]
+    return str(self.units()[self.xdata])
 
   def yunit(self): 
     '''
       Get unit of ycolumn.
     '''
-    return self.units()[self.ydata]
+    return str(self.units()[self.ydata])
 
   def zunit(self): 
     '''
       Get unit of ycolumn.
     '''
-    return self.units()[self.zdata]
+    return str(self.units()[self.zdata])
 
   def xdim(self): 
     '''
@@ -1489,7 +1495,12 @@ class PlotOptions(object):
 derivatives={# derivatives to numpy base functions for error propagation
              numpy.sin.__str__(): numpy.cos, 
              numpy.cos.__str__(): lambda input: -numpy.sin(input), 
+             numpy.tan.__str__(): lambda input: 1./numpy.cos(input)**2, 
              numpy.exp.__str__(): numpy.exp, 
+             numpy.arcsin.__str__(): lambda input: 1./(1.-input**2)**0.5, 
+             numpy.arccos.__str__(): lambda input: -1./(1.-input**2)**0.5, 
+             numpy.arctan.__str__(): lambda input: 1./(1.+input**2),
+             numpy.log.__str__(): lambda input: 1./input,
              numpy.square.__str__(): lambda input: 2.*input , 
              numpy.sqrt.__str__(): lambda input: 1./(2.*numpy.sqrt(input)), 
              
@@ -1497,7 +1508,9 @@ derivatives={# derivatives to numpy base functions for error propagation
              numpy.add.__str__(): ( lambda input1, input2: 1., lambda input1, input2: 1. ), 
              numpy.subtract.__str__(): ( lambda input1, input2: 1., lambda input1, input2: 1. ), 
              numpy.multiply.__str__(): ( lambda input1, input2: input2, lambda input1, input2: input1), 
-             numpy.divide.__str__(): ( lambda input1, input2: 1./input2 , lambda input1, input2: -input1/input2**2)
+             numpy.divide.__str__(): ( lambda input1, input2: 1./input2 , lambda input1, input2: -input1/input2**2), 
+             numpy.power.__str__(): ( lambda input1, input2: input2*input1**(input2-1), 
+                                     lambda input1, input2: numpy.log(input1)*input1**input2), 
              }
 
 class LinkedList(list):
@@ -1527,6 +1540,406 @@ class LinkedList(list):
     list.__iadd__(self, other)
     self.link.values=self
     return self
+  
+class PhysicalUnit(object):
+  '''
+    Object to store physical units. Implements combining units and exponential of units.
+  '''
+  
+  def __init__(self, entry_str):
+    '''
+      Create the object data from an input string.
+      The input string should be of the form n1*n2*n3/d1*d2*d3 where n are units in the 
+      nummerator and d units in the denominator.
+    '''
+    if type(entry_str) not in [str, PhysicalUnit]:
+      raise ValueError, 'can only construc unit from string or other PhysicalUnit'
+    object.__init__(self)
+    if type(entry_str) is PhysicalUnit:
+      self._unit_parts=deepcopy(entry_str._unit_parts)
+    else:
+      if len(entry_str.split('/'))>2:
+        raise ValueError, 'the format of the input string should be n1*n2*n3/d1*d2*d3'
+      self._unit_parts={}
+      begin=0
+      nummerator=True
+      for i in range(1, len(entry_str)):
+        if entry_str[i] in ['*', '/']:
+          pass
+        elif entry_str[i:i+2] == '·':
+          # unicode items have to bytes
+          pass
+        else:
+          continue
+        new_region=entry_str[begin:i]
+        pow_idx=new_region.find('^')
+        if pow_idx==-1:
+          new_unit=new_region
+          new_power=1.
+        else:
+          new_unit=new_region[:pow_idx]
+          new_power=float(new_region[pow_idx+1:].strip('{}'))
+        if not nummerator:
+          new_power=-new_power
+        begin=i+1
+        if new_unit in self._unit_parts:
+          self._unit_parts[new_unit]+=new_power
+        else:
+          self._unit_parts[new_unit]=new_power
+        if entry_str[i] == '/':
+          nummerator=False
+        if entry_str[i:i+2] == '·':
+          begin+=1
+      new_region=entry_str[begin:]
+      pow_idx=new_region.find('^')
+      if pow_idx==-1:
+        new_unit=new_region
+        new_power=1.
+      else:
+        new_unit=new_region[:pow_idx]
+        new_power=float(new_region[pow_idx+1:].strip('{}'))
+      if not nummerator:
+        new_power=-new_power
+      if new_unit in self._unit_parts:
+        self._unit_parts[new_unit]+=new_power
+      else:
+        self._unit_parts[new_unit]=new_power
+    if '1' in self._unit_parts:
+      del(self._unit_parts['1'])
+    if '' in self._unit_parts:
+      del(self._unit_parts[''])
+
+  
+  def __str__(self):
+    '''
+      Construct a combined string for the unit.
+    '''
+    items=self._unit_parts.items()
+    nummerator=[item for item in items if item[1]>0.]
+    denominator=[item for item in items if item[1]<0.]
+    nummerator.sort()
+    denominator.sort()
+    output_str=""
+    if len(nummerator)==0 and len(denominator)==0:
+      return '1'
+    first=True
+    for name, exponent in nummerator:
+      if not first:
+        output_str+='·'
+      else:
+        first=False
+      if exponent==1.:
+        output_str+=name
+      else:
+        if len("%g" % exponent)==1:
+          output_str+="%s^%g" % (name, exponent)
+        else:
+          output_str+="%s^{%g}" % (name, exponent)
+    if len(denominator)>0 and len(nummerator)!=0:
+      output_str+='/'
+      swap_exponen=-1.
+    else:
+      swap_exponen=1.
+    if len(denominator)>1:
+      output_str+='('
+    first=True
+    for name, exponent in denominator:
+      if not first:
+        output_str+='·'
+      else:
+        first=False
+      if (swap_exponen*exponent)==1.:
+        output_str+=name
+      else:
+        if len("%g" % (swap_exponen*exponent))==1:
+          output_str+="%s^%g" % (name,  (swap_exponen*exponent))
+        else:
+          output_str+="%s^{%g}" % (name,  (swap_exponen*exponent))
+    if len(denominator)>1:
+      output_str+=')'
+    return output_str
+  
+  def __repr__(self):
+    return "<PhysicalUnit '%s'>" % self.__str__()
+  
+  def __add__(self, other):
+    '''
+      Implements adding a string to a unit.
+    '''
+    if type(other) is str:
+      return self.__str__()+other
+    else:
+      raise TypeError, "unsupported operand type(s) for +: 'PhysicalUnit' and '%s'" % type(other).__name__
+  
+  def __radd__(self, other):
+    '''
+      Implements adding a unit to a string.
+    '''
+    if type(other) is str:
+      return other+self.__str__()
+    else:
+      raise TypeError, "unsupported operand type(s) for +: 'PhysicalUnit' and '%s'" % type(other).__name__
+
+  def __mul__(self, other):
+    '''
+      Implement multiplying units.
+    '''
+    if type(other) is str:
+      other=PhysicalUnit(other)
+    out=deepcopy(self)
+    unit_parts=out._unit_parts
+    unit_parts_other=other._unit_parts
+    for key, value in unit_parts_other.items():
+      if key in unit_parts:
+        unit_parts[key]+=value
+      else:
+        unit_parts[key]=value
+    return out
+  
+  def __rmul__(self, other):
+    return self*other
+  
+  def __div__(self, other):
+    '''
+      Implement dividing units.
+    '''
+    if type(other) is str:
+      other=PhysicalUnit(other)
+    return self*other**-1.
+  
+  def __rdiv__(self, other):
+    if other==1:
+      other='1'
+    return other*self**-1
+  
+  def __pow__(self, exponent):
+    '''
+      Implementing unit to the power of exponent.
+    '''
+    out=deepcopy(self)
+    unit_parts=out._unit_parts
+    for key, value in unit_parts.items():
+      unit_parts[key]=value*exponent
+    return out
+  
+  def __eq__(self, other):
+    if type(other) is str:
+      other=PhysicalUnit(other)
+    return self._unit_parts==other._unit_parts
+  
+  def __ne__(self, other):
+    if type(other) is str:
+      other=PhysicalUnit(other)
+    return self._unit_parts!=other._unit_parts   
+  
+  def __hash__(self):
+    '''
+      Defines the hash index for e.g. dict usage.
+    '''
+    return self.__str__().__hash__()
+
+class PhysicalConstant(numpy.ndarray):
+  '''
+    Class to store physical constants. Adds a unit, symbol/name and discription to
+    the float value.
+    Quite similar to PhysicalProperty but only as scalar.
+  '''
+  
+  def __new__(subtype, value, unit, symbol='', discription=''):
+    obj=numpy.ndarray.__new__(subtype, 1, dtype=numpy.float32)
+    obj.__setitem__(0, value)
+    obj.unit=PhysicalUnit(unit)
+    obj.symbol=symbol
+    obj.discription=discription
+    return obj
+  
+  def _get_unit(self):
+    return self._unit
+  
+  def _set_unit(self, unit):
+    self._unit=PhysicalUnit(unit)
+  
+  unit=property(_get_unit, _set_unit)
+  
+  def __array_finalize__(self, obj):
+    self.unit=getattr(obj, 'unit', PhysicalUnit(''))
+    self.symbol=getattr(obj, 'symbol', '')
+    self.discription=getattr(obj, 'discription', '')
+  
+  def __str__(self):
+    if self.symbol!='':
+      return self.symbol
+    else:
+      return str(self[0])+' '+self.unit
+
+  def __repr__(self):
+    if self.symbol:
+      pre=self.symbol+'='
+    else:
+      pre=''
+    if self.discription!='':
+      return pre+str(self[0])+' '+self.unit +' - '+self.discription
+    else:
+      return pre+str(self[0])+' '+self.unit
+
+  def __array_wrap__(self, out_const, context=None):
+    '''
+      Function that get's called by numpy ufunct functions after they get
+      called with one instance from this class. Makes PhysicalConstant objects
+      usable with all standart numpy functions.
+      
+      @return PhysicalConstant object with values as result from the function
+    '''
+    out_const=out_const.view(type(self))
+    return out_const
+  
+  def unit_trans(self,transfere): 
+    '''
+      Transform one unit to another. transfere variable is of type [from,b,a,to].
+    '''
+    if transfere[0]==self.unit: # only transform if right 'from' parameter
+      output=self*transfere[1]+transfere[2]
+      output.unit=PhysicalUnit(transfere[3])
+      return output
+    else:
+      return None
+
+  def __mod__(self, conversion):
+    '''
+      Convenience method to easily get the same PhysicalProperty with a converted unit. Examples:
+      pp % 'm' -> a copy of the PhysicalProperty with the unit converted to m
+      pp % ('m', 1.32, -0.2) -> a copy of the PhysicalProperty with the unit converted to 'm' 
+                                multiplying by 1.32 and subtracting 0.2
+      
+      @return New object instance.    
+    '''
+    if type(conversion) in [str, PhysicalUnit]:
+      if (self.unit, conversion) in known_transformations:
+        multiplyer, addition=known_transformations[(self.unit, conversion)]
+        output=self.unit_trans([self.unit, multiplyer, addition, conversion])
+        return output
+      else:
+        raise ValueError, "Automatic conversion not implemented for '%s'->'%s'." % (self.unit, conversion)
+    else:
+      if getattr(conversion, '__iter__', False) and len(conversion)>=3 and \
+          type(conversion[0]) in [str, PhysicalUnit] and type(conversion[1]) in (float, int) and type(conversion[2]) in (float, int):
+        output=self.unit_trans([self.unit, conversion[1], conversion[2], conversion[0]])
+        return output
+      else:
+        raise ValueError, '% only defined with str or iterable object of at least one string and two floats/ints'
+
+  def __add__(self, other):
+    '''
+      Define addition of two PhysicalProperty instances.
+      Checking if the unit of both is the same otherwise
+      try to convert the second argument to the same unit.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if hasattr(other, 'dimension'):
+      # if other is PhysicalProperty or derived use it's function
+      return other._radd__(self)
+    if hasattr(other, 'unit'):
+      if self.unit != other.unit:
+        try:
+          other=other%self.unit
+        except ValueError:
+          raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
+    output=numpy.ndarray.__add__(self, other)
+    output.unit=self.unit
+    return output
+    
+  def _radd__(self, other):
+    return self+other
+
+  def __sub__(self, other):
+    '''
+      Define subtraction of two PhysicalProperty instances.
+      Checking if the unit of both is the same otherwise
+      try to convert the second argument to the same unit.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if hasattr(other, 'dimension'):
+      # if other is PhysicalProperty or derived use it's function
+      return other.__rsub__(self)
+    if hasattr(other, 'unit'):
+      if self.unit != other.unit:
+        try:
+          other=other%self.unit
+        except ValueError:
+          raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
+    output=numpy.ndarray.__sub__(self, other)
+    output.unit=self.unit
+    return output
+  
+  def __rsub__(self, other):
+    return -self+other
+
+  def __mul__(self, other):
+    '''
+      Define multiplication of two PhysicalProperty instances.
+      Changes the unit of the resulting object if both objects have a unit.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if hasattr(other, 'dimension'):
+      # if other is PhysicalProperty or derived use it's function
+      return other.__rmul__(self)
+    output=numpy.ndarray.__mul__(self, other)
+    if hasattr(other, 'unit'):
+      output.unit=self.unit * other.unit
+    else:
+      output.unit=self.unit
+    return output
+  
+  def __rmul__(self, other):
+    return self*other
+
+  def __div__(self, other):
+    '''
+      Define division of two PhysicalProperty instances.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if hasattr(other, 'dimension'):
+      # if other is PhysicalProperty or derived use it's function
+      return other.__rdiv__(self)
+    output=numpy.ndarray.__div__(self, other)
+    if hasattr(other, 'unit'):
+      output.unit=self.unit / other.unit
+    else:
+      output.unit=self.unit
+    return output
+
+  def __rdiv__(self, other):
+    '''
+      Define division of other object by PhysicalProperty instances.
+      
+      @return New instance of PhysicalProperty
+    '''
+    output=numpy.ndarray.__rdiv__(self, other)
+    if hasattr(other, 'unit'):
+      output.unit=other.unit / self.unit
+    else:
+      output.unit=self.unit**-1
+    return output
+
+  def __pow__(self, to_power):
+    '''
+      Define calculation of PhysicalProperty instance to a specified power.
+      
+      @return New instance of PhysicalProperty
+    '''
+    output=numpy.ndarray.__pow__(self, to_power)
+    output.unit=self.unit**to_power
+    return output
+
+  def __iadd__(self, other): raise NotImplementedError, "you can't modify physical constants"
+  def __isub__(self, other): raise NotImplementedError, "you can't modify physical constants"
+  def __imul__(self, other): raise NotImplementedError, "you can't modify physical constants"
+  def __idiv__(self, other): raise NotImplementedError, "you can't modify physical constants"
+  def __ipow__(self, to_power): raise NotImplementedError, "you can't modify physical constants"
 
 class PhysicalProperty(numpy.ndarray):
   '''
@@ -1551,12 +1964,11 @@ class PhysicalProperty(numpy.ndarray):
       and with respect to slicing. Addition and subtraction is unit dependent and angular
       functions only take angles as input.
   '''
-  unit=''
   dimension=''
   # if defined this is the error value of the property
   # the error will be automatically propagated when functions
   # get called with instances of this class
-  error=None
+  _error=None
   unit_save=True # if true changes units after arithmetic operation and checks if correct
 
   def __new__(subtype, dimension_in, unit_in, input_data=[], input_error=None, unit_save=True):
@@ -1566,21 +1978,21 @@ class PhysicalProperty(numpy.ndarray):
       @param dimension_in String with the dimensions for that instance
       @param unit_in String with unit for that instance
     '''
-    obj=numpy.ndarray.__new__(subtype, len(input_data))
-    obj.unit=unit_in
+    obj=numpy.ndarray.__new__(subtype, len(input_data), dtype=numpy.float32)
+    obj.unit=PhysicalUnit(unit_in)
     obj.dimension=dimension_in
     obj.unit_save=True
     if input_error is not None:
       if len(input_error)!=len(input_data):
         raise ValueError, 'shape mismatch: error and data have different lengths'
-      obj.error=numpy.array(input_error)
+      obj.error=numpy.array(input_error, dtype=numpy.float32)
     obj.__setslice__(0, len(input_data), input_data)
     return obj
   
   def __array_finalize__(self, obj):
-    self.unit=getattr(obj, 'unit', "")
+    self.unit=getattr(obj, 'unit', PhysicalUnit(''))
     self.dimension=getattr(obj, 'dimension', "")
-    #self._length=self.__len__()
+    self._error=getattr(obj, '_error', None)
     
   def append(self, item):
     '''
@@ -1661,16 +2073,23 @@ class PhysicalProperty(numpy.ndarray):
     assert len(value)==len(self), "Error needs to have %i values" % len(self)
     self._error=numpy.array(value)
   
+  def _get_unit(self):
+    return self._unit
+  
+  def _set_unit(self, unit):
+    self._unit=PhysicalUnit(unit)
+  
   values=property(_get_values, _set_values)
   has_error=property(_get_has_error)
   error=property(_get_error, _set_error)
+  unit=property(_get_unit, _set_unit)
 
   def unit_trans(self,transfere): 
     '''
       Transform one unit to another. transfere variable is of type [from,b,a,to].
     '''
     if transfere[0]==self.unit: # only transform if right 'from' parameter
-      self.unit=transfere[3]
+      self.unit=PhysicalUnit(transfere[3])
       self*=transfere[1]
       self+=transfere[2]
       return True
@@ -1683,7 +2102,7 @@ class PhysicalProperty(numpy.ndarray):
       [from_dim,from_unit,b,a,to_dim,to_unit].
     '''
     if len(transfere)>0 and (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right 'from_dim' and 'from_unit'
-      self.unit=transfere[5]
+      self.unit=PhysicalUnit(transfere[5])
       self.dimension=transfere[4]
       self*=transfere[2]
       self+=transfere[3]
@@ -1712,41 +2131,49 @@ class PhysicalProperty(numpy.ndarray):
             out_arr=context[0](self%'rad')
           except ValueError:
             raise ValueError, 'Input to function %s needs to be an angle' % context[0].__name__
-        out_arr.unit=''
+        out_arr.unit=PhysicalUnit('')
       ## make sure inverse angular functions get called with dimensioinless input
       elif context[0].__name__.startswith('arc'):
         if self.unit=='':
-          out_arr.unit='rad'
+          out_arr.unit=PhysicalUnit('rad')
         else:
           raise ValueError, "Input to function %s needs to have empty unit" % context[0].__name__
+      elif context[0] in [numpy.exp, numpy.log]:
+        if self.unit!='':
+          raise ValueError, "Input to function %s needs to have empty unit" % context[0].__name__
+      elif context[0] is numpy.sqrt:
+        out_arr.unit**=0.5
     return out_arr
 
   def _propagate_errors(self, out_arr, context):
     '''
       Calculate the errorpropatation after a function has been processed.
     '''
-    if len(context[1])==1:
-      # only a function of one parameter
-      out_arr.error=abs(derivatives[context[0].__str__()](self.view(numpy.ndarray))*self.error)
-    else:
-      # a function of two patameters
-      if context[1][0] is self:
-        # the first patameter is self
-        other=context[1][1]
-        # if both arguments to ufunc have an error value
-        if getattr(context[1][1], 'error', None) is not None:
-          out_arr.error=numpy.sqrt(
-                        (derivatives[context[0].__str__()][0](self.view(numpy.ndarray), 
-                                                              other.view(numpy.ndarray))*self.error)**2+\
-                        (derivatives[context[0].__str__()][1](self.view(numpy.ndarray), 
-                                                              other.view(numpy.ndarray))*other.error)**2
-                                  )
-        # only the first argument has an error value
-        else:
-          out_arr.error=abs(derivatives[context[0].__str__()][0](self.view(numpy.ndarray), numpy.array(other))*self.error)
+    try:
+      if len(context[1])==1:
+        # only a function of one parameter
+        out_arr.error=abs(derivatives[context[0].__str__()](self.view(numpy.ndarray))*self.error)
       else:
-        # the second argument is self, so the first is no PhysicalProperty instance
-        out_arr.error=abs(derivatives[context[0].__str__()][1](numpy.array(context[1][0]), self.view(numpy.ndarray))*self.error)
+        # a function of two patameters
+        if context[1][0] is self:
+          # the first patameter is self
+          other=context[1][1]
+          # if both arguments to ufunc have an error value
+          if getattr(context[1][1], 'error', None) is not None:
+            out_arr.error=numpy.sqrt(
+                          (derivatives[context[0].__str__()][0](self.view(numpy.ndarray), 
+                                                                other.view(numpy.ndarray))*self.error)**2+\
+                          (derivatives[context[0].__str__()][1](self.view(numpy.ndarray), 
+                                                                other.view(numpy.ndarray))*other.error)**2
+                                    )
+          # only the first argument has an error value
+          else:
+            out_arr.error=abs(derivatives[context[0].__str__()][0](self.view(numpy.ndarray), numpy.array(other))*self.error)
+        else:
+          # the second argument is self, so the first is no PhysicalProperty instance
+          out_arr.error=abs(derivatives[context[0].__str__()][1](numpy.array(context[1][0]), self.view(numpy.ndarray))*self.error)
+    except KeyError:
+      raise NotImplementedError, "no derivative defined for function '%s'" % context[0].__name__
     return out_arr
 
   def __add__(self, other):
@@ -1765,8 +2192,8 @@ class PhysicalProperty(numpy.ndarray):
           raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
     output=numpy.ndarray.__add__(self, other)
     return output
-
-  def __sub__(self, other):
+  
+  def __iadd__(self, other):
     '''
       Define addition of two PhysicalProperty instances.
       Checking if the unit of both is the same otherwise
@@ -1780,8 +2207,46 @@ class PhysicalProperty(numpy.ndarray):
           other=other%self.unit
         except ValueError:
           raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
+    return numpy.ndarray.__iadd__(self, other)
+  
+  def _radd__(self, other):
+    return self+other
+
+  def __sub__(self, other):
+    '''
+      Define subtraction of two PhysicalProperty instances.
+      Checking if the unit of both is the same otherwise
+      try to convert the second argument to the same unit.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if hasattr(other, 'unit'):
+      if self.unit != other.unit:
+        try:
+          other=other%self.unit
+        except ValueError:
+          raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
     output=numpy.ndarray.__sub__(self, other)
     return output
+  
+  def __isub__(self, other):
+    '''
+      Define subtraction of two PhysicalProperty instances.
+      Checking if the unit of both is the same otherwise
+      try to convert the second argument to the same unit.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if hasattr(other, 'unit'):
+      if self.unit != other.unit:
+        try:
+          other=other%self.unit
+        except ValueError:
+          raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
+    return numpy.ndarray.__isub__(self, other)
+  
+  def __rsub__(self, other):
+    return -self+other
 
   def __mul__(self, other):
     '''
@@ -1792,11 +2257,22 @@ class PhysicalProperty(numpy.ndarray):
     '''
     output=numpy.ndarray.__mul__(self, other)
     if hasattr(other, 'unit'):
-      if self.unit!=other.unit and self.unit!='' and other.unit!='':
-        output.unit=self.unit + '*' + other.unit
-      elif self.unit==other.unit:
-        output.unit=self.unit + '^2'
+      output.unit=self.unit * other.unit
     return output
+  
+  def __imul__(self, other):
+    '''
+      Define multiplication of two PhysicalProperty instances.
+      Changes the unit of the resulting object if both objects have a unit.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if hasattr(other, 'unit'):
+      self.unit*=other.unit
+    return numpy.ndarray.__imul__(self, other)
+  
+  def __rmul__(self, other):
+    return self*other
 
   def __div__(self, other):
     '''
@@ -1806,10 +2282,30 @@ class PhysicalProperty(numpy.ndarray):
     '''
     output=numpy.ndarray.__div__(self, other)
     if hasattr(other, 'unit'):
-      if self.unit!=other.unit and self.unit!='' and other.unit!='':
-        output.unit=self.unit + '/' + other.unit
-      elif self.unit==other.unit:
-        output.unit=''
+      output.unit=self.unit / other.unit
+    return output
+
+  def __idiv__(self, other):
+    '''
+      Define division of two PhysicalProperty instances.
+      
+      @return New instance of PhysicalProperty
+    '''
+    if hasattr(other, 'unit'):
+      self.unit/=other.unit
+    return numpy.ndarray.__idiv__(self, other)
+
+  def __rdiv__(self, other):
+    '''
+      Define division of other object by PhysicalProperty instances.
+      
+      @return New instance of PhysicalProperty
+    '''
+    output=numpy.ndarray.__rdiv__(self, other)
+    if hasattr(other, 'unit'):
+      output.unit=other.unit / self.unit
+    else:
+      output.unit=self.unit**-1
     return output
 
   def __pow__(self, to_power):
@@ -1819,9 +2315,17 @@ class PhysicalProperty(numpy.ndarray):
       @return New instance of PhysicalProperty
     '''
     output=numpy.ndarray.__pow__(self, to_power)
-    if self.unit!='':
-      output.unit=self.unit+'^%s' % str(to_power)
+    output.unit=self.unit**to_power
     return output
+
+  def __ipow__(self, to_power):
+    '''
+      Define calculation of this PhysicalProperty instance to a specified power.
+      
+      @return This instance of PhysicalProperty altered
+    '''
+    self.unit**=to_power
+    return numpy.ndarray.__ipow__(self, to_power)
 
   def __floordiv__(self, new_dim_unit):
     '''
@@ -1840,7 +2344,7 @@ class PhysicalProperty(numpy.ndarray):
       if getattr(new_dim_unit, '__iter__', False) and len(new_dim_unit)>=2 and \
           type(new_dim_unit[0]) is str and type(new_dim_unit[1]) is str:
         output.dimension=new_dim_unit[0]
-        output.unit=new_dim_unit[1]
+        output.unit=PhysicalUnit(new_dim_unit[1])
         return output
       else:
         raise ValueError, '// only defined with str or iterable object of at least two strings'
@@ -1870,3 +2374,20 @@ class PhysicalProperty(numpy.ndarray):
       else:
         raise ValueError, '% only defined with str or iterable object of at least one string and two floats/ints'
 
+  def min(self):
+    '''
+      Get minimal value as PhysicalConstant object.
+    '''
+    return PhysicalConstant(numpy.ndarray.min(self), self.unit)
+  
+  def max(self):
+    '''
+      Get maximal value as PhysicalConstant object.
+    '''
+    return PhysicalConstant(numpy.ndarray.max(self), self.unit)
+  
+  def mean(self):
+    '''
+      Get mean value as PhysicalConstant object.
+    '''
+    return PhysicalConstant(numpy.ndarray.mean(self), self.unit)

@@ -32,14 +32,14 @@ known_unit_transformations={
                             ('s', 'min'): (1./60., 0.), 
                             ('s', 'ms'): (1.e3, 0.), 
                             # magnetism
-                            ('emu', 'A·m²'): (1.e-3, 0.), 
+                            ('emu', 'A·m^2'): (1.e-3, 0.), 
                             ('Oe', 'T'): (1.e-4, 0., 'H', 'μ_0·H')
                             }
 
 known_transformations=[
                       # magnetism
                       ['H','Oe',1e-4,0,'µ_0·H','T'],
-                      ['emu',1e-3,0,'A·m²'],
+                      ['emu',1e-3,0,'A·m^2'],
                       # time
                       ['h', 24, 0, 'd'], 
                       ['min',1./60,0,'h'], 

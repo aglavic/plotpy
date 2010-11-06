@@ -75,7 +75,7 @@ class SquidGUI:
     if 'T' in units:
       dia*=1e4
       para*=1e4
-    if 'A·m²' in units:
+    if 'A·m^2' in units:
       dia/=1e3
       para/=1e3
     dialog=gtk.Dialog(title="Enter diamagnetic and paramagnetic correction factors:", 
@@ -166,7 +166,7 @@ class SquidGUI:
       if 'T' in units:
         dia*=1e4
         para*=1e4
-      if 'A·m²' in units:
+      if 'A·m^2' in units:
         dia/=1e3
         para/=1e3
       self.dia_para_correction(window.measurement[window.index_mess], 
@@ -214,7 +214,7 @@ class SquidGUI:
       if 'T' in units:
         dia/=1e4
         para/=1e4
-      if 'A·m²' in units:
+      if 'A·m^2' in units:
         dia*=1e3
         para*=1e3      
       self.dia_mag_correct=dia
@@ -235,7 +235,7 @@ class SquidGUI:
     if 'T' in units:
       dia*=1e4
       para*=1e4
-    if 'A·m²' in units:
+    if 'A·m^2' in units:
       dia/=1e3
       para/=1e3
     dialog=gtk.Dialog(title="Enter diamagnetic and paramagnetic correction factors:", 
@@ -326,7 +326,7 @@ class SquidGUI:
       if 'T' in units:
         dia*=1e4
         para*=1e4
-      if 'A·m²' in units:
+      if 'A·m^2' in units:
         dia/=1e3
         para/=1e3
       self.dia_para_correction(window.measurement[window.index_mess], 
@@ -374,7 +374,7 @@ class SquidGUI:
       if 'T' in units:
         dia/=1e4
         para/=1e4
-      if 'A·m²' in units:
+      if 'A·m^2' in units:
         dia*=1e3
         para*=1e3      
       self.dia_mag_correct=dia
@@ -393,7 +393,7 @@ class SquidGUI:
       if 'T' in units:
         self.dia_mag_correct*=1e4
         self.para[0]*=1e4
-      if 'A·m²' in units:
+      if 'A·m^2' in units:
         self.dia_mag_correct/=1e3
         self.para[0]/=1e3
       if name=='SquidDia':
@@ -414,7 +414,7 @@ class SquidGUI:
       if 'T' in units:
         self.dia_mag_correct/=1e4
         self.para[0]/=1e4
-      if 'A·m²' in units:
+      if 'A·m^2' in units:
         self.dia_mag_correct*=1e3
         self.para[0]*=1e3
     window.replot()
