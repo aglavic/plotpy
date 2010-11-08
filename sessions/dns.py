@@ -761,18 +761,20 @@ class DNSSession(GUI, GenericSession):
       else:
         joint=deepcopy(value[0])
         # unscale the counts
-        joint.data[1].values=(joint.data[1][:]*joint.dns_info[scale]).tolist()        
+        joint.data[1]*=joint.dns_info[scale]
         # square the errors
-        joint.data[2].values=((joint.data[2][:]*joint.dns_info[scale])**2).tolist()
+        joint.data[2]*=joint.dns_info[scale]
+        joint.data[2]**=2
         time=joint.dns_info[scale]
         for add in value[1:]:
-          joint.data[1]+=(add.data[1][:]*add.dns_info[scale])
-          joint.data[2]+=(add.data[2][:]*add.dns_info[scale])**2
+          joint.data[1]+=(add.data[1]*add.dns_info[scale])
+          joint.data[2]+=(add.data[2]*add.dns_info[scale])**2
           time+=add.dns_info[scale]
           if getattr(joint, 'name', False):
             joint.name+='+'+add.name
         joint.data[1]/=time
-        joint.data[2].values=(sqrt(joint.data[2][:])/time).tolist()
+        joint.data[2]/=time
+        joint.data[2]**=0.5
         outscans.append(joint)
     return outscans
 
@@ -800,11 +802,12 @@ class DNSSession(GUI, GenericSession):
         joint.data[2]**=2
         for add in value[1:]:
           joint.data[1]+=add.data[1]
-          joint.data[2]+=add.data[2][:]**2
+          joint.data[2]+=add.data[2]**2
           if getattr(joint, 'name', False):
             joint.name+='+'+add.name
         joint.data[1]/=len(value)
-        joint.data[2].values=(sqrt(joint.data[2][:])/len(value)).tolist()
+        joint.data[2]/=len(value)
+        joint.data[2]**=0.5
         outscans.append(joint)
     return outscans
 
@@ -1243,19 +1246,11 @@ class DNSSession(GUI, GenericSession):
     self.system_bg=bg_data
     # correct the background of the nicr data
     bg_corrected_data={}
-    if use_numpy:
-      def subtract_background(point):
-        bg=background_data.data
-        point[1]-=array(bg[1].values)
-        point[2]=sqrt(point[2]**2+array(bg[2].values)**2)
-        return point
-    else:
-      def subtract_background(point):
-        index=background_data.data[0].values.index(point[0])
-        bg=background_data.get_data(index)
-        point[1]-=bg[1]
-        point[2]=sqrt(point[2]**2+bg[2]**2)
-        return point      
+    def subtract_background(point):
+      bg=background_data.data
+      point[1]-=bg[1]
+      point[2]=sqrt(point[2]**2+bg[2]**2)
+      return point
     for key, data in nicr_data.items():
       if key[1:] in bg_data:
         background_data_list=bg_data[key[1:]]
@@ -1617,19 +1612,11 @@ class DNSSession(GUI, GenericSession):
         print "\tNo NiCr data file found at detector bank=%g for helmholz currents (a,b,c,z):%.2f,%.2f,%.2f,%.2f" % ( 
                                             detector, c_a, c_b, c_c, c_z)
     # calculate flipping-ration from nicr data
-    if use_numpy:
-      def calc_flipping_ratio(point):
-        pp=item[1][1].data
-        point[1]/=maximum(nan_to_num(array(pp[1].values)), abs(array(pp[2].values)))
-        point[2]*=0.
-        return point
-    else:
-      def calc_flipping_ratio(point):
-        index=item[1][1].data[0].values.index(point[0])
-        pp=item[1][1].get_data(index)
-        point[1]/=pp[1]
-        point[2]=0.
-        return point     
+    def calc_flipping_ratio(point):
+      pp=item[1][1].data
+      point[1]/=maximum(nan_to_num(array(pp[1].values)), abs(array(pp[2].values)))
+      point[2]*=0.
+      return point
     from copy import deepcopy
     data_flippingratio={}
     for key, item in data_nicr.items():
@@ -1984,15 +1971,17 @@ class DNSMeasurementData(MeasurementData):
       nc=self.number_of_channels
       # find the background for the right detector
       # create a list of all columns in the background file
-      vn_lists=map(lambda column: column.values, self.vanadium_data.data)
+      vn_list=self.vanadium_data.data
       # search the indices for the detectors
       if self.vanadium_correct_by_detector:
-        vn_indices=map(lambda detector: vn_lists[0].index(detector), point[4])
+        # the detector minus the first detector name is the index
+        vn_indices=(point[4]-vn_list[0][0]).astype(int)
       else:
-        vn_indices=map(lambda tth: vn_lists[0].index([item for item in vn_lists[0] if item<=tth][-1]), point[3])        
+        # get indices for tth values
+        vn_indices=array(map(lambda tth: vn_lists[0].index([item for item in vn_lists[0] if item<=tth][-1]), point[3])).astype(int)
       # create a list of arrays with the corresponding intensities
-      vn=array(map(lambda index: vn_lists[1][index], vn_indices))
-      errvn=array(map(lambda index: vn_lists[2][index], vn_indices))
+      vn=vn_list[1][vn_indices]
+      errvn=vn_list[2][vn_indices]
       for i in range(nc):
         point[i+2*nc+5]/=vn
         point[i+3*nc+5]=self.error_propagation_quotient([point[i+2*nc+5], point[i+3*nc+5]],[vn, errvn])

@@ -65,7 +65,7 @@ class MeasurementData(object):
   # for plotting the measurement select x and y data
   xdata=0
   ydata=0
-  yerror=0
+  _yerror=-1
   zdata=-1
   # Logarithmic scale plotting
   logx=False
@@ -86,11 +86,17 @@ class MeasurementData(object):
              # ( column , from , to , include )
   SPLIT_SENSITIVITY=0.01
 
-  def __init__(self, columns, const,x,y,yerror,zdata=-1): 
+  def __init__(self, columns=[], const=[],x=0,y=1,yerror=-1,zdata=-1): 
     '''
       Constructor for the class.
       If the values are not reinitialized we get problems
       with the creation of objects with the same variable name.
+      
+      There are two standart ways of creating these object:
+        - creating a complete set of columns with empty PhysicalProperty object and
+          appending each point to that object (slow, for small amount of data (e.g. <10000))
+        - creating an empty instance with MeasurementData() and appending each column as
+          PhysicalProperty object
       
       @param columns List of columns [(Unit, Dim), ...] in this object
       @param const List of constant colums for a sequence
@@ -114,7 +120,7 @@ class MeasurementData(object):
     self.view_z=0
     self.logx=False
     self.logy=False
-    self.yerror=yerror
+    self._yerror=yerror
     self.const_data=[]
     for con in const: # create const_data column,Property for every const
       self.const_data.append([con[0],PhysicalProperty(self.data[con[0]].dimension,self.data[con[0]].unit)])
@@ -139,7 +145,7 @@ class MeasurementData(object):
       @return numpy array of point lists
     '''
     #try:
-    data=numpy.array([col.values for col in self.data])
+    data=numpy.array(self.data+[item.error for item in self.data if item.has_error])#numpy.array([col.values for col in self.data])
     #except ValueError:
      # min_length=min([len(col.values) for col in self.data])
       #data=numpy.array([col.values[:min_length] for col in self.data])
@@ -199,9 +205,9 @@ class MeasurementData(object):
     region=range(start, end)
     return [point for i, point in enumerate(self) if i in region]
 
-  def get_plot_options(self): return self._plot_options
+  def _get_plot_options(self): return self._plot_options
   
-  def set_plot_options(self, input):
+  def _set_plot_options(self, input):
     '''
       Set the PlotOptions object from a string or item input.
     '''
@@ -212,7 +218,34 @@ class MeasurementData(object):
     else:
       raise TypeError, "plot_options has to be of type PlotOptions or String"
 
-  plot_options=property(get_plot_options, set_plot_options)
+  def _get_error(self):
+    '''
+      Implement the possibility to ither define the error as extra column or property
+      of y/z data.
+    '''
+    if self._yerror>=0:
+      return self._yerror
+    else:
+      if self.zdata<0:
+        if self.y.has_error:
+          outidx=len(self.data)
+          outidx+=len([1 for item in self.data[:self.ydata] if item.has_error])
+          return outidx
+        else:
+          return self.ydata
+      else:
+        if self.z.has_error:
+          outidx=len(self.data)
+          outidx+=len([1 for item in self.data[:self.zdata] if item.has_error])
+          return outidx
+        else:
+          return self.zdata
+  
+  def _set_error(self, index):
+    self._yerror=index
+
+  plot_options=property(_get_plot_options, _set_plot_options)
+  yerror=property(_get_error, _set_error)  
 
   def get_info(self):
     '''
@@ -246,16 +279,13 @@ class MeasurementData(object):
       of it is used, otherwise a new PhysicalProperty object
       is created with the column data.
     '''
-    if len(column)!=len(self):
-      return False
-    if getattr(column, "unit", False) and getattr(column, "dimension", False):
-      self.data.append(deepcopy(column))
-      return True
+    if len(self.data)!=0 and len(column)!=len(self):
+      raise ValueError, 'Collumn to append has to be of size %i' % len(self)
+    if hasattr(column, 'dimension'):
+      self.data.append(column)
     else:
-      col=PhysicalProperty(dimension, unit)
-      col.values=list(column)
+      col=PhysicalProperty(dimension, unit, column)
       self.data.append(col)
-      return True
 
   def get_data(self,count): 
     '''
@@ -415,13 +445,13 @@ class MeasurementData(object):
     '''
       Return units of all columns.
     '''
-    return [str(value.unit) for value in self.data]
+    return [str(value.unit) for value in self.data]+[str(value.unit) for value in self.data if value.has_error]
 
   def dimensions(self): 
     '''
       Return dimensions of all columns-
     '''
-    return [value.dimension for value in self.data]
+    return [str(value.dimension) for value in self.data]+['δ'+value.dimension for value in self.data if value.has_error]
 
   def xunit(self): 
     '''
@@ -1621,7 +1651,7 @@ class PhysicalUnit(object):
     denominator.sort()
     output_str=""
     if len(nummerator)==0 and len(denominator)==0:
-      return '1'
+      return ''
     first=True
     for name, exponent in nummerator:
       if not first:
@@ -1737,6 +1767,58 @@ class PhysicalUnit(object):
       Defines the hash index for e.g. dict usage.
     '''
     return self.__str__().__hash__()
+  
+  def get_transformation(self, conversion):
+    '''
+      Try to calculate a transformation to a given unit.
+    '''
+    conversion=PhysicalUnit(conversion)
+    if (self, conversion) in known_transformations:
+      # if complete conversion in the list, use it
+      return [self, known_transformations[(self, conversion)][0], 
+                    known_transformations[(self, conversion)][1], conversion]
+    output=[self, 1., 0., conversion]
+    # go through each partial unit of the conversion
+    # and check if it is the same in this unit
+    # or if it can be transformed
+    own_parts=self._unit_parts
+    found_keys=[]
+    # try to extract conversions for all parts of the unit
+    for key, value in conversion._unit_parts.items():
+      if key in own_parts:
+        if value==own_parts[key]:
+          found_keys.append(key)
+        else:
+          raise ValueError, "conversion from '%s'->'%s' is impossible" % (self, conversion)
+      else:
+        found=False
+        for own_key in own_parts.keys():
+          if (own_key, key) in known_transformations:
+            if not own_parts[own_key]==value:
+              raise ValueError, "conversion from '%s'->'%s' is impossible" % (self, conversion)
+            found=True
+            # get base unit conversion
+            multiplyer, addition=known_transformations[(own_key, key)]
+            # calculate conversion for unit^value
+            if addition==0:
+              multiplyer**=value
+            # for integer values it is also possible to calculate with offset
+            elif value==1.:
+              pass
+            elif value==-1.:
+              pass
+            else:
+              raise ValueError, "automatic conversion not implemented for '%s'->'%s' because of unit offset." % (self, conversion)
+            output[1]*=multiplyer
+            output[2]=output[2]*multiplyer+addition
+        if not found:
+          raise ValueError, "automatic conversion not implemented for '%s'->'%s'." % (self, conversion)
+        else:
+          found_keys.append(own_key)
+    if len(found_keys)!=len(own_parts.keys()):
+      raise ValueError, "automatic conversion not implemented for '%s'->'%s'." % (self, conversion)
+    return output
+  
 
 class PhysicalConstant(numpy.ndarray):
   '''
@@ -1945,10 +2027,12 @@ class PhysicalProperty(numpy.ndarray):
   '''
     Class for any physical property. Stores the data, unit and dimension
     to make unit transformations possible. Can be used with numpy functions.
+    Error values are stored and propagated in arithmetric operations.
     
     Attributes:
       dimension  String for the dimension of the instance
-      unit       String for the unit of the instance
+      unit       PhysicalUnit object
+      error      Error value as array
     
     Hints:
       PhysicalProperty can be used with different convenience operators/functions,
@@ -2018,16 +2102,16 @@ class PhysicalProperty(numpy.ndarray):
     '''
     output='PhysicalProperty(['
     if len(self)<10:
-      sval=map(str, self)
+      sval=map(str, self.view(numpy.ndarray))
       output+=", ".join(sval)
     else:
-      sval=map(str, self[:5])
+      sval=map(str, self[:5].view(numpy.ndarray))
       output+=", ".join(sval)
       output+=" ... "
-      sval=map(str, self[-5:])
+      sval=map(str, self[-5:].view(numpy.ndarray))
       output+=", ".join(sval)
     if self.has_error:
-      output+="],\tdimension='%s', unit='%s', length=%i, avg.error=%f)" % (self.dimension, self.unit,  
+      output+="],\tdimension='%s', unit='%s', length=%i, avg.error=%g)" % (self.dimension, self.unit,  
                                                                             len(self), self.error.mean())
     else:
       output+="],\tdimension='%s', unit='%s', length=%i)" % (self.dimension, self.unit,  len(self))
@@ -2039,13 +2123,13 @@ class PhysicalProperty(numpy.ndarray):
     '''
     output='['
     if len(self)<10:
-      sval=map(str, self)
+      sval=map(str, self.view(numpy.ndarray))
       output+=", ".join(sval)
     else:
-      sval=map(str, self[:5])
+      sval=map(str, self[:5].view(numpy.ndarray))
       output+=", ".join(sval)
       output+=" ... "
-      sval=map(str, self[-5:])
+      sval=map(str, self[-5:].view(numpy.ndarray))
       output+=", ".join(sval)
     output+="]"
     return output
@@ -2054,7 +2138,7 @@ class PhysicalProperty(numpy.ndarray):
     '''
       Wrapper to simulate the old .values list
     '''
-    return LinkedList(self)
+    return LinkedList(self.view(numpy.ndarray))
   
   def _set_values(self, values):
     self.resize(len(values), refcheck=False)
@@ -2090,6 +2174,8 @@ class PhysicalProperty(numpy.ndarray):
     '''
     if transfere[0]==self.unit: # only transform if right 'from' parameter
       self.unit=PhysicalUnit(transfere[3])
+      if self.has_error:
+        self._error*=transfere[1]
       self*=transfere[1]
       self+=transfere[2]
       return True
@@ -2104,6 +2190,8 @@ class PhysicalProperty(numpy.ndarray):
     if len(transfere)>0 and (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right 'from_dim' and 'from_unit'
       self.unit=PhysicalUnit(transfere[5])
       self.dimension=transfere[4]
+      if self.has_error:
+        self._error*=transfere[2]
       self*=transfere[2]
       self+=transfere[3]
       return True
@@ -2145,6 +2233,47 @@ class PhysicalProperty(numpy.ndarray):
         out_arr.unit**=0.5
     return out_arr
 
+  def __getitem__(self, item):
+    '''
+      Get an item of the object.
+    '''
+    output=numpy.ndarray.__getitem__(self, item).view(type(self))
+    if not hasattr(output, 'dimension'):
+      # create array object from scalars
+      output=numpy.array([output]).view(type(self))
+    output.unit=self.unit
+    output.dimension=self.dimension
+    if self.has_error:
+      output._error=self._error.__getitem__(item)
+    return output
+
+  def __getslice__(self, i, j):
+    '''
+      Get an item of the object.
+    '''
+    output=numpy.ndarray.__getslice__(self, i, j).view(type(self))
+    output.unit=self.unit
+    output.dimension=self.dimension
+    if self.has_error:
+      output._error=self._error.__getslice__(i, j)
+    return output
+
+  def __setitem__(self, i, item):
+    '''
+      Set an item of the object. If input and self has an error set this, too.
+    '''
+    numpy.ndarray.__setitem__(self, i, item)
+    if hasattr(item, 'dimension') and (self.has_error and item.has_error):
+      self._error.__setitem__(i, item.error)
+    
+  def __setslice__(self, i, j, items):
+    '''
+      Define a slice from i to j. If input and self has an error set this, too.
+    '''
+    numpy.ndarray.__setslice__(self, i, j, items)
+    if hasattr(items, 'dimension') and (self.has_error and items.has_error):
+      self._error.__setslice__(i, j, items.error)
+
   def _propagate_errors(self, out_arr, context):
     '''
       Calculate the errorpropatation after a function has been processed.
@@ -2175,6 +2304,12 @@ class PhysicalProperty(numpy.ndarray):
     except KeyError:
       raise NotImplementedError, "no derivative defined for function '%s'" % context[0].__name__
     return out_arr
+  
+  def __neg__(self):
+    '''
+      Define -self
+    '''
+    return -1.*self
 
   def __add__(self, other):
     '''
@@ -2359,13 +2494,9 @@ class PhysicalProperty(numpy.ndarray):
       @return New object instance.    
     '''
     output=deepcopy(self)
-    if type(conversion) is str:
-      if (self.unit, conversion) in known_transformations:
-        multiplyer, addition=known_transformations[(self.unit, conversion)]
-        output.unit_trans([self.unit, multiplyer, addition, conversion])
-        return output
-      else:
-        raise ValueError, "Automatic conversion not implemented for '%s'->'%s'." % (self.unit, conversion)
+    if type(conversion) in [str, PhysicalUnit]:
+      output.unit_trans(self.unit.get_transformation(conversion))
+      return output
     else:
       if getattr(conversion, '__iter__', False) and len(conversion)>=3 and \
           type(conversion[0]) is str and type(conversion[1]) in (float, int) and type(conversion[2]) in (float, int):
@@ -2376,18 +2507,66 @@ class PhysicalProperty(numpy.ndarray):
 
   def min(self):
     '''
-      Get minimal value as PhysicalConstant object.
+      Get minimal value as PhysicalProperty object.
     '''
-    return PhysicalConstant(numpy.ndarray.min(self), self.unit)
+    if self.has_error:
+      index=numpy.argmin(self)
+      return self[index]
+    else:
+      return PhysicalProperty('min('+self.dimension+')', self.unit, [numpy.ndarray.min(self)])
   
   def max(self):
     '''
-      Get maximal value as PhysicalConstant object.
+      Get maximal value as PhysicalProperty object.
     '''
-    return PhysicalConstant(numpy.ndarray.max(self), self.unit)
+    if self.has_error:
+      index=numpy.argmax(self)
+      return self[index]
+    else:
+      return PhysicalProperty('max('+self.dimension+')', self.unit, [numpy.ndarray.max(self)])
   
   def mean(self):
     '''
-      Get mean value as PhysicalConstant object.
+      Get (weighted) mean value as PhysicalProperty object.
     '''
-    return PhysicalConstant(numpy.ndarray.mean(self), self.unit)
+    if self.has_error:
+      # if the object has an error value calculate the weighted mean
+      data=self.view(numpy.ndarray)
+      error=self._error
+      over_error_sum=(1./error**2).sum()
+      weighted_mean_data=(data/error**2).sum()/over_error_sum
+      weighted_mean_error=numpy.sqrt(1./over_error_sum)
+      return PhysicalProperty('mean('+self.dimension+')', self.unit, 
+                              [weighted_mean_data], [weighted_mean_error])
+    else:
+      return PhysicalProperty('mean('+self.dimension+')', self.unit, [numpy.ndarray.mean(self)])
+
+  def sum(self):
+    '''
+      Get the sum of value as PhysicalProperty object.
+    '''
+    if self.has_error:
+      # if the object has an error value calculate the weighted mean
+      output_error=numpy.sqrt((self._error**2).sum())
+      return PhysicalProperty('sum('+self.dimension+')', self.unit, 
+                              [numpy.ndarray.sum(self)], [output_error])      
+    else:
+      return PhysicalProperty('sum('+self.dimension+')', self.unit, [numpy.ndarray.sum(self)])
+
+################### define some common physical constants
+
+constants={
+           #
+           'h': PhysicalConstant(6.6260693E-31, 'g·m^2/s', 'h', 'plancks constant'), 
+           'hbar': PhysicalConstant(1.0545717E-31, 'g⋅m^2/s', 'hbar', 'plancks constant over 2π'), 
+           'c': PhysicalConstant(2.9979246E8, 'm/s', 'c', 'speed of light'), 
+           #
+           'µ_0': PhysicalConstant(1.2566371E-3, 'g⋅m/A^2·s^2', 'µ_0', 'magnetic constant'), 
+           'µ_B': PhysicalConstant(9.2740095E-24 , 'A⋅m^2', 'µ_B', 'Bohr magneton'), 
+           #
+           'r_B': PhysicalConstant(5.291772E-11 , 'm', 'r_B', 'Bohr radius'), 
+           'r_e': PhysicalConstant(2.81794E-15 , 'm', 'r_e', 'Classical electron radius'), 
+           #
+           'm_n': PhysicalConstant(1.67493E-24 , 'g', 'm_n', 'Neutron mass'), 
+           'm_e': PhysicalConstant(9.1094E-28  , 'g', 'm_e', 'Electron mass'), 
+           }
