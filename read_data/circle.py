@@ -159,14 +159,14 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
   if data_1 and data_2:
     for type_i in MEASUREMENT_TYPES:
         if check_type(data_1,data_2,type_i)&not_found:
-          columns.append([0,len(columns),['delta intensity','counts']])
-          data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
+          data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],-1)
           data.append(data_1)
           data.plot_options=type_i[4]
           if len(type_i)>5:
-            data.zdata=type_i[5]
+            data.zdata=len(columns)-1
+          else:
+            data.ydata=len(columns)-1
           not_found=False
-          columns.pop(-1)
   else:
     return 'NULL'
   try: # if no sequence of set types is found return null
@@ -200,12 +200,12 @@ def read_data_line(input_file_lines,columns):
     line=input_file_lines.pop(0).split()
     values=[]
     if len(line)>=len(columns):
-      for column in columns:
+      for column in columns[:-1]:
         if line[column[0]]=='':
           values.append(0.)
         else:
           values.append(float(line[column[0]]))
-      values.append(max(math.sqrt(float(line[-1])),1))
+      values.append((float(line[-1]), max(math.sqrt(float(line[-1])),1)))
       return values
     else:
       return None
@@ -226,12 +226,12 @@ def read_data_last_line(input_file_lines,columns):
       line=input_file_lines[i].split()
       values=[]
       if len(line)>=len(columns):
-        for column in columns:
+        for column in columns[:-1]:
           if line[column[0]]=='':
             values.append(0.)
           else:
             values.append(float(line[column[0]]))
-        values.append(max(math.sqrt(float(line[-1])),1))
+        values.append((float(line[-1]), max(math.sqrt(float(line[-1])),1)))
         return values
       else:
         return None

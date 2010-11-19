@@ -39,8 +39,8 @@ COLUMNS_MAPPING=[\
 ,['Field (Oe)',1,['H','Oe']]\
 ,['Temperature (K)',2,['T','K']]\
 # RSO dat file
-,['Long Moment (emu)',3,['M_{rso}','emu']]\
-,['Long Scan Std Dev',4,['delta_M','emu']]\
+,['Long Moment (emu)',3,['M_{rso}','emu'], 'Long Scan Std Dev']\
+#,['Long Scan Std Dev',4,['delta_M','emu']]\
 # AC dat file
 ,["m' (emu)",3,['M_{ac}','emu']]\
 ,["m' Scan Std Dev",4,['delta_M','emu']]\

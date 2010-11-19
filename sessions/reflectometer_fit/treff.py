@@ -370,7 +370,6 @@ class TreffFitParameters(FitParameters):
     new_fit=FitParameters.copy(self, TreffFitParameters())
     new_fit.wavelength=copy(self.wavelength)
     new_fit.input_file_names=copy(self.input_file_names)
-    new_fit.number_of_points=copy(self.number_of_points)
     new_fit.slits=copy(self.slits)
     new_fit.sample_length=self.sample_length
     new_fit.distances=copy(self.distances)

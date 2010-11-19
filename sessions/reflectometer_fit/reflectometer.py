@@ -237,7 +237,6 @@ class RefFitParameters(FitParameters):
     from copy import deepcopy as copy
     new_fit=FitParameters.copy(self, RefFitParameters())
     new_fit.radiation=copy(self.radiation)
-    new_fit.number_of_points=self.number_of_points
     new_fit.resolution=self.resolution
     new_fit.theta_max=self.theta_max
     return new_fit

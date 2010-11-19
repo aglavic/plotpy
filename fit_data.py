@@ -108,19 +108,24 @@ class FitFunction(FitFunctionGUI):
     '''
     parameters=[self.parameters[i] for i in self.refine_parameters]
     # only refine inside the selected region
-    x=[]
-    y=[]
-    dy=[]
+    x=numpy.array(dataset_x).astype(numpy.float64)
+    y=numpy.array(dataset_y).astype(numpy.float64)
+    if dataset_yerror is not None:
+      dy=numpy.array(dataset_yerror).astype(numpy.float64)
+    else:
+      dy=None
     x_from=self.x_from
     x_to=self.x_to
-    for i,x_i in enumerate(dataset_x):
-      if ((x_from is None) or (x_i >= x_from)) and\
-         ((x_to is None) or (x_i <= x_to)):
-        x.append(x_i)
-        y.append(dataset_y[i])
-        if not dataset_yerror is None:
-          dy.append(dataset_yerror[i])
-    if dataset_yerror is None:
+    if x_from is None:
+      x_from=x.min()
+    if x_to is None:
+      x_to=x.max()
+    filter=numpy.where((x>=x_from)*(x<=x_to))[0]
+    x=x[filter]
+    y=y[filter]
+    if dy is not None:
+      dy=dy[filter]
+    if dy is None:
       fit_args=(y, x)
     else:
       fit_args=(y, x, dy)
@@ -312,7 +317,7 @@ class FitFunction3D(FitFunctionGUI):
         function_parameters.append(params[self.refine_parameters.index(i)])
       else:
         function_parameters.append(self.parameters[i])
-    if zerror==None: # is error list given?
+    if zerror is None: # is error list given?
       # if function is defined for arrays (e.g. numpy) use this functionality
       try:
         err=function(function_parameters, x, y)-z
@@ -342,11 +347,11 @@ class FitFunction3D(FitFunctionGUI):
       @return The message string of leastsq and the covariance matrix
     '''
     parameters=[self.parameters[i] for i in self.refine_parameters]
-    x=numpy.array(dataset_x[:])
-    y=numpy.array(dataset_y[:])
-    z=numpy.array(dataset_z[:])
+    x=numpy.array(dataset_x).astype(numpy.float64)
+    y=numpy.array(dataset_y).astype(numpy.float64)
+    z=numpy.array(dataset_z).astype(numpy.float64)
     if dataset_zerror is not None:
-      dz=numpy.array(dataset_zerror[:])
+      dz=numpy.array(dataset_zerror).astype(numpy.float64)
     else:
       dz=None
     # only refine inside the selected region
@@ -397,7 +402,7 @@ class FitFunction3D(FitFunctionGUI):
       if (len(z) > len(parameters)) and cov_x is not None:
         if dataset_zerror:
           s_sq = (numpy.array(self.residuals(new_function_parameters, z, y, x, dz))**2).sum()/\
-                                           (len(z)-len(self.refine_parameters))        
+                                           (len(z)-len(self.refine_parameters))
           s_sq /= ((1./numpy.array(dz))**2).sum()
         else:
           s_sq = (numpy.array(self.residuals(new_function_parameters, z, y, x))**2).sum()/\
@@ -1397,7 +1402,7 @@ class FitGaussian3D(FitFunction3D):
     exp=numpy.exp
     return A * exp(-0.5*((xdif/sx)**2+((ydif/sy)**2))) + C
 
-class FitVoigt3D(FitFunction3D):
+class FitPsdVoigt3D(FitFunction3D):
   '''
     Fit a voigt function using the representation as real part of the complex error function.
   '''
@@ -1444,6 +1449,269 @@ class FitVoigt3D(FitFunction3D):
     L=1./(1.+(xdif**2+ydif**2)/gamma**2)
     value = I * ((1.-eta)*G+eta*L) + c
     return value
+
+class FitLorentzian3D(FitFunction3D):
+  '''
+    Fit a voigt function using the representation as real part of the complex error function.
+  '''
+  
+  # define class variables.
+  name="Lorentzian"
+  parameters=[1, 0, 0, 0.01, 0.01, 0., 0.]
+  parameter_names=['I', 'x_0', 'y_0', 'gamma_x', 'gamma_y', 'tilt','C']
+  fit_function_text='Lorentzian'
+  sqrt2=numpy.sqrt(2)
+  sqrt2pi=numpy.sqrt(2*numpy.pi)
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1, 0, 0, 0.01, 0.01, 0., 0.]
+    FitFunction3D.__init__(self, initial_parameters)
+  
+  def fit_function(self, p, x, y):
+    '''
+      Return the 2d Voigt profile of x and y.
+      It is calculated using the complex error function,
+      see Wikipedia articel on Voigt-profile for the details.
+    '''
+    x=numpy.float64(numpy.array(x))
+    y=numpy.float64(numpy.array(y))
+    p=numpy.float64(numpy.array(p))
+    I=p[0]
+    x0=p[1]
+    y0=p[2]
+    gamma_x=p[3]
+    gamma_y=p[4]
+    tb=numpy.sin(p[5])
+    ta=numpy.cos(p[5])
+    xdist=(numpy.array(x)-x0)
+    ydist=(numpy.array(y)-y0)
+    xdif=numpy.abs(xdist*ta-ydist*tb)
+    ydif=numpy.abs(ydist*ta+xdist*tb)
+    c=p[6]
+    L=1./(1.+(xdif/gamma_x)**2+(ydif/gamma_y)**2)
+    value = I * L + c
+    return value
+
+class FitVoigt3D(FitFunction3D):
+  '''
+    Fit a voigt function using the representation as real part of the complex error function.
+  '''
+  
+  # define class variables.
+  name="Voigt"
+  parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0.01, 0.]
+  parameter_names=['I', 'x_0', 'y_0', 'gamma_x', 'gamma_y', 'sigma_x','sigma_y','C']
+  fit_function_text='Voigt'
+  sqrt2=numpy.sqrt(2)
+  sqrt2pi=numpy.sqrt(2*numpy.pi)
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0.01, 0.]
+    FitFunction3D.__init__(self, initial_parameters)
+    global signal
+    from scipy import signal
+  
+  def fit_function(self, p, x, y):
+    '''
+      Return the 2d Voigt profile of x and y.
+      It is calculated using the complex error function,
+      see Wikipedia articel on Voigt-profile for the details.
+    '''
+    if x[1]!=x[0]:
+      numx=list(x)[1:].index(x[0])+1
+      numy=len(x)//numx
+    else:
+      numy=list(y)[1:].index(y[0])+1
+      numx=len(y)//numy
+    x=numpy.float32(numpy.array(x)).reshape(numy, numx)
+    y=numpy.float32(numpy.array(y)).reshape(numy, numx)
+    I=p[0]
+    x0=p[1]
+    y0=p[2]
+    gamma_x=p[3]
+    gamma_y=p[4]
+    sigma_x=p[5]
+    sigma_y=p[6]
+    xdist=x-x0
+    ydist=y-y0
+    c=p[7]
+    L=1./(1.+((x-x0)/gamma_x)**2+((y-y0)/gamma_y)**2)
+    G=numpy.exp(-0.5*(((x-x.mean())/sigma_x)**2+((y-y.mean())/sigma_y)**2))/(sigma_x*sigma_y*2.*numpy.pi)
+    # convolute gauss and Lorentzian part using fft method
+    V=signal.fftconvolve(L, G, mode='same')
+    value = I * V + c
+    return value.flatten()
+
+class FitLattice3D(FitFunction3D):
+  '''
+    No Comment, yet.
+  '''
+  
+  # define class variables.
+  name="GISAXS"
+  parameters=[1.5e-5, 3e-6, 3e-5, 0.066, 0.025, 60., 43.8, 0.0025, 0.008, 0.0009, 0.00015, 20., 0.0077, 0.0063]
+  parameter_names=['I_B', 'I_R', 'I_Y', 'a*', 'c*', 'α', 'R', 'gamma_x', 'gamma_y','sigma_x','sigma_y','C', 'k_i', 'k_c']
+  fit_function_text='GISAXS'
+  
+  structurefactors={
+                    (1, 0, 1): 1., 
+                    }
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1.5e-5, 3e-6, 3e-5, 0.066, 0.025, 60., 43.8, 0.0025, 0.008, 0.0009, 0.00015, 20., 0.0077, 0.0063]
+    FitFunction3D.__init__(self, initial_parameters)
+    global signal
+    from scipy import signal
+  
+  def S(self, q, R):
+    '''
+      Form factor of a solid sphere.
+    '''
+    qR=q*R
+    return 4./3.*numpy.pi*R**3*3.*(numpy.sin(qR)- qR*numpy.cos(qR))/(qR)**3
+
+  def Lorentz(self, x0, y0, gamma_x, gamma_y, x, y):
+    '''
+      Lorentzian at x0,y0 with gamma_x and gamma_y.
+    '''
+    xdist=(numpy.array(x)-x0)
+    ydist=(numpy.array(y)-y0)
+    L=1./(1.+(xdist/gamma_x)**2+(ydist/gamma_y)**2)
+    return L
+
+  def Lorentz1d(self, x0, gamma_x, x):
+    '''
+      Lorentzian at x0 with gamma_x.
+    '''
+    xdist=(numpy.array(x)-x0)
+    L=1./(1.+(xdist/gamma_x)**2)
+    return L
+
+  def Gaussian(self, x, y, sigma_x, sigma_y):
+    '''
+      Calculate a gaussian resolution function centered for the given range.
+    '''
+    G=numpy.exp(-0.5*(((x-x.mean())/sigma_x)**2+((y-y.mean())/sigma_y)**2))
+    return G/G.sum()
+
+  def fit_function(self, p, x, y):
+    '''
+      Calculate lorentzian for all peak positions and sum them together, 
+      scaling using the form factor.
+    '''
+    I_B=p[0]
+    I_R=p[1]
+    I_Y=p[2]
+    if x[1]!=x[0]:
+      numx=list(x)[1:].index(x[0])+1
+      numy=len(x)//numx
+    else:
+      numy=list(y)[1:].index(y[0])+1
+      numx=len(y)//numy
+    x=numpy.float32(numpy.array(x)).reshape(numy, numx)
+    y=numpy.float32(numpy.array(y)).reshape(numy, numx)
+    astar=p[3]
+    cstar=p[4]
+    alpha=p[5]
+    sina=numpy.sin(alpha*numpy.pi/180.)
+    cosa=numpy.cos(alpha*numpy.pi/180.)
+    R=p[6]
+    gamma_x=p[7]
+    gamma_y=p[8]
+    sigma_x=p[9]
+    sigma_y=p[10]
+    C=p[11]
+    ki=p[12]
+    kc=p[13]
+    # peaks from Born approximation
+    born=numpy.zeros_like(x)
+    for hkl, scaling in self.structurefactors.items():
+      # calculate x0 from hk
+      Qy=astar*numpy.sqrt( ( hkl[0] + cosa*hkl[1])**2 + (sina*hkl[1])**2 )
+      # qz with refraction
+      Qz=cstar*hkl[2]#ki+numpy.sqrt( kc**2 + (cstar*hkl[2] - numpy.sqrt(ki**2-kc**2))**2 )
+      born+=scaling*self.Lorentz(Qy, Qz, gamma_x, gamma_y, x, y)
+    q=numpy.sqrt(x**2+y**2)
+    #q=numpy.sqrt(x**2+ ( numpy.sqrt(numpy.abs((y-ki)**2-kc**2 )) + numpy.sqrt(ki**2-kc**2) )**2 )
+    born*=I_B*self.S(q, R)**2
+    born=numpy.where((y>(ki-kc)), born, 0.)
+    # peaks from scattering after reflection
+    refl=numpy.zeros_like(x)
+    for hkl, scaling in self.structurefactors.items():
+      # calculate x0 from hk
+      Qy=astar*numpy.sqrt( ( hkl[0] + cosa*hkl[1])**2 + (sina*hkl[1])**2 )
+      # qz with reflection,refraction
+      Qz=ki+numpy.sqrt( kc**2 + (cstar*hkl[2] + numpy.sqrt(ki**2-kc**2))**2 )
+      refl+=scaling*self.Lorentz(Qy, Qz, gamma_x, gamma_y, x, y)
+    q=numpy.sqrt(x**2+ ( numpy.sqrt(numpy.abs((y-ki)**2-kc**2 )) - numpy.sqrt(ki**2-kc**2) )**2 )
+    refl*=I_R*self.S(q, R)**2
+    # peaks of Yoneda-line
+    yoneda=numpy.zeros_like(x)
+    Qz_y=ki+kc
+    for hkl, scaling in self.structurefactors.items():
+      if hkl[2]!=0 or (hkl[0]==0 and hkl[1]==0):
+        continue
+      # calculate x0 from hk
+      Qy=astar*numpy.sqrt( ( hkl[0] + cosa*hkl[1])**2 + (sina*hkl[1])**2 )
+      yoneda+=scaling*self.Lorentz(Qy, Qz_y, gamma_x, sigma_y/2., x, y)
+    q=numpy.sqrt(x**2)
+    yoneda*=I_Y*self.S(q, R)**2
+    # Introduce a lorentzian factor for the difference of Qx from 0
+    #Qx=(2.*ki-y)*(2.*ki)/(2.*numpy.pi/1.77)
+    #Lx=self.Lorentz1d(0.,  gamma_x, Qx)
+    #born*=Lx
+    #refl*=Lx
+    # convolute the simulation with the resolution function
+    G=self.Gaussian(x, y, sigma_x, sigma_y)
+    I=signal.fftconvolve(born+refl+yoneda, G, mode='same')
+    return I.flatten() + C
+
+  def residuals(self, params, z, y, x, zerror=None):
+    '''
+      Function used by leastsq to compute the difference between the simulation and data.
+      For normal functions this is just the difference between y and simulation(x) but
+      can be overwritten e.g. to increase speed or fit to log(x).
+      If the dataset has yerror values they are used as weight.
+      
+      @param params Parameters for the function in this iteration
+      @param z List of z values measured
+      @param y List of y values for the measured points
+      @param x List of x values for the measured points
+      @param yerror List of error values for the y values or None if the fit is not weighted
+      
+      @return Residuals (meaning the value to be minimized) of the fit function and the measured data
+    '''
+    nonzero=numpy.where(z!=0)[0]
+    usex=numpy.array(x[nonzero])
+    usey=numpy.array(y[nonzero])
+    usez=numpy.array(z[nonzero])
+    # function is called len(x) times, this is just to speed up the lookup procedure
+    function=self.fit_function
+    function_parameters=[]
+    for i in range(len(self.parameters)):
+      if i in self.refine_parameters:
+        function_parameters.append(params[self.refine_parameters.index(i)])
+      else:
+        function_parameters.append(self.parameters[i])
+    if zerror==None: # is error list given?
+      # if function is defined for arrays (e.g. numpy) use this functionality
+      err=numpy.log(function(function_parameters, usex, usey))-numpy.log(usez)
+      return numpy.nan_to_num(err)
+    else:
+      # if function is defined for arrays (e.g. numpy) use this functionality
+      err=numpy.log(function(function_parameters, usex, usey))-numpy.log(usez)
+      return numpy.nan_to_num(err)
+  
+
 #--------------------------------- Define common functions for 3d fits ---------------------------------
 
 class FitSession(FitSessionGUI):
@@ -1473,7 +1741,10 @@ class FitSession(FitSessionGUI):
                        }
   available_functions_3d={
                        FitGaussian3D.name: FitGaussian3D, 
+                       FitPsdVoigt3D.name: FitPsdVoigt3D, 
                        FitVoigt3D.name: FitVoigt3D, 
+                       FitLorentzian3D.name: FitLorentzian3D, 
+                       FitLattice3D.name: FitLattice3D, 
                           }
   
   def __init__(self,  dataset):

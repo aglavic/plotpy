@@ -287,7 +287,6 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     self.active_file_data.fit_object.fit=1
     data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, only_fitted_columns=True, xfrom=0.005,xto=self.find_total_reflection(dataset))
     self.active_file_data.fit_object.set_fit_parameters(scaling=True) # fit only scaling factor
-    self.active_file_data.fit_object.number_of_points=data_lines
     # create the .ent file
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
@@ -313,7 +312,6 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
         layer_dict[i]=[[3] for j in range(len(layer.layers))]
     data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', print_info=False, only_fitted_columns=True, xfrom=self.find_total_reflection(dataset))
     self.active_file_data.fit_object.set_fit_parameters(layer_params=layer_dict, substrate_params=[2]) # set all roughnesses to be fit
-    self.active_file_data.fit_object.number_of_points=data_lines
     # create the .ent file
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
@@ -380,7 +378,6 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     #+++++++ create final input file and make a simulation +++++++
       # write data into files with sequence numbers in format ok for fit.f90    
     data_lines=dataset.export(export_file_prefix+'.res',print_info=False, only_fitted_columns=True) 
-    self.active_file_data.fit_object.number_of_points=data_lines
     self.active_file_data.fit_object.set_fit_parameters(background=True)
     ent_file=open(export_file_prefix+'.ent', 'w')
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')

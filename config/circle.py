@@ -21,18 +21,18 @@ TRANSFORMATIONS_CONST=[]
 #  (every measurement file the positions have to start with 0 and have no holes in between
 # [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
 COLUMNS_MAPPING=[\
-['Two Theta',7,['2Θ','°']]\
-,['Theta',7,['Θ','°']]\
-,['Chi',7,['χ','°']]\
-,['Phi',7,['φ','°']]\
-,["Phi'",7,["φ_{calc}",'°']]\
+['Two Theta',6,['2Θ','°']]\
+,['Theta',6,['Θ','°']]\
+,['Chi',6,['χ','°']]\
+,['Phi',6,['φ','°']]\
+,["Phi'",6,["φ_{calc}",'°']]\
 ,['H',0,['h','']]\
 ,['K',1,['k','']]\
 ,['L',2,['l','']]\
 ,['Epoch',3,['Epoch','']]\
 ,["Seconds",4,['time','s']]\
 ,["Monitor",5,['monitor intensity','counts']]\
-,['Detector',6,['intensity','counts']]\
+,['Detector',7,['intensity','counts']]\
 ]
 # Measurement types where some parameters are fix and x,y and yerror columns are set.
 # [ 'list of constant parameters [ column , max_div ]' , x-col, y-col, div_y-col , plot options]
@@ -41,18 +41,18 @@ COLUMNS_MAPPING=[\
 # Diviations are only compared with last datapoint, so slow increases won't trigger a new sequence.
 MEASUREMENT_TYPES=[\
 # Theta/2Theta/chi/phi scans
-[[[7,500]],7,6,8,'']\
+[[[6,500]],6,7,8,'']\
 # h scan
-,[[[1,0.005],[2,0.005]],0,6,7,'']\
+,[[[1,0.005],[2,0.005]],0,8,7,'']\
 # k scan
-,[[[0,0.005],[2,0.005]],1,6,7,'']\
+,[[[0,0.005],[2,0.005]],1,8,7,'']\
 # l scan
-,[[[0,0.005],[1,0.005]],2,6,7,'']\
+,[[[0,0.005],[1,0.005]],2,8,7,'']\
 # hk mesh
-,[[[2,0.005]],0,1,7,'',6]\
+,[[[2,0.005]],0,1,8,'',7]\
 # kl mesh
-,[[[0,0.005]],1,2,7,'',6]\
+,[[[0,0.005]],1,2,8,'',7]\
 # hl mesh
-,[[[1,0.005]],0,2,7,'',6]\
+,[[[1,0.005]],0,2,8,'',7]\
 ,[[],0,3,6,'set title "Unknown Scan"\n']\
 ] # raw data measureing with temperature shown, MvsT with constand H,MvsH with constand T

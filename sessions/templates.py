@@ -337,7 +337,6 @@ class DataImportTemplate(object):
     while i<len(dataset.data)-1:
       i+=1
       dataset.data[i].values=list(dataset.data[i-1].values)
-    dataset.number_of_points=len(data_cols[0])
   
   def calculate_columns_from_function(self, data_cols):
     '''

@@ -741,7 +741,6 @@ def create_img_object(data, alphai=0., alphaf_center=0., cnt_time=1.):
   q_z=PI_4_OVER_LAMBDA*numpy.sin(GRAD_TO_RAD*z_angle/2.)
   data_array=numpy.array(data).flatten()
   error_array=numpy.sqrt(data_array)
-  dataobj.number_of_points=len(data_array)
   dataobj.data[0].values=x_array.tolist()
   dataobj.data[1].values=y_array.tolist()
   dataobj.data[2].values=(data_array/cnt_time).tolist()

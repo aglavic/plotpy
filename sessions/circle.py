@@ -149,14 +149,14 @@ class CircleSession(GUI, GenericSession):
     output_data=input_data
     counts_column=[]
     time_column=0
-    for i,unit in enumerate(self.units): 
+    for i,col in enumerate(input_data): 
   # selection of the columns for counts
-      if unit=='counts':
+      if col.unit=='counts':
         counts_column.append(i)
-      if unit=='s':
+      if col.unit=='s':
         time_column=i
     for counts in counts_column:
-      output_data[counts]=output_data[counts]/output_data[time_column]# calculate cps
+      output_data[counts]/=output_data[time_column]# calculate cps
     return output_data
 
   def cps_to_counts_calc(self, input_data):

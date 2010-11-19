@@ -188,7 +188,6 @@ def read_data_d7(file_name, print_comments=True):
                                        ['Error_Ch_0', 'counts/'+SCALE_BY[1]], 
                                        ['Detectorbank', '°'],
                                        ], [],0,1,2,zdata=-1)
-      measurement_data.number_of_points=132
       error_array=numpy.sqrt(counts_array)
       counts_array/=add_info[SCALE_BY[0]+'[%i]' % i]
       error_array/=add_info[SCALE_BY[0]+'[%i]' % i]

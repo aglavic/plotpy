@@ -23,7 +23,7 @@ import subprocess
 if "py2exe" in sys.argv:
   import py2exe
 
-__name__='Plot-script'
+__name__='plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __license__ = "None"

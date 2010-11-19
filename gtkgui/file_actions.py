@@ -669,7 +669,6 @@ class FileActions:
     output_data.data[1].values=yout
     output_data.data[2].values=zout
     output_data.data[3].values=dzout
-    output_data.number_of_points=len(xout)
     return output_data
     
 def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix_data_output=False, fill_value=(0., 1.)):
@@ -879,7 +878,6 @@ def calculate_savitzky_golay(dataset, window_size, order, max_deriv):
   # calculate smoothed data and derivatives
   for i in range(max_deriv):
     output.data[i+2].values=savitzky_golay(y, window_size, order, i).tolist()
-  output.number_of_points=len(x)
   output.short_info=dataset.short_info+' filtered with savitzky golay'
   output.sample_name=dataset.sample_name
   return output

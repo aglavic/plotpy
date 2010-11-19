@@ -58,7 +58,6 @@ class MeasurementData(object):
       unit_trans                Transform units
       units                     Return the units of all columns
   '''
-  number_of_points=0 #count number of stored data-points
   index=0
   # every data value is a pysical property
   data=[]
@@ -105,7 +104,6 @@ class MeasurementData(object):
       @param yerror Index of error column
       @param zdata Index of z column or -1 for None
     '''
-    self.number_of_points=0 #counts number of stored data-points
     self.index=0
     self.info=''
     self.sample_name=''
@@ -133,9 +131,7 @@ class MeasurementData(object):
       Function to iterate through the data-points, object can be used in "for bla in data:".
       Skippes pointes that are filtered.
     '''
-    data=self.get_filtered_data_matrix().transpose().tolist()
-    for point in data:
-      # return the next datapoint
+    for point in self.get_filtered_data_matrix().transpose():
       yield point
 
   def get_filtered_data_matrix(self):
@@ -188,23 +184,44 @@ class MeasurementData(object):
     '''
       MeasurementData[index] returns one datapoint.
     '''
-    data=numpy.array([col.values for col in self.data])
-    return data.transpose()[index].tolist()
-    #return self.get_data(index)
+    return [float(col[index]) for col in self.data]+[col.error[index] for col in self.data if col.has_error]
   
   def __getslice__(self, start, end):
     '''
-      MeasurementData[start:end] returns a list of datapoints.
+      MeasurementData[start:end] returns a MeasurementData instance with data columns in the given range.
     '''
-    if start<0:
-      start=max(0, self.number_of_points+start)
-    if end<0:
-      end=max(0, self.number_of_points+end)
+    output=deepcopy(self)
+    for i, col in enumerate(output.data):
+      output.data[i]=col[start:end]
+    return output
+  
+  def __setitem__(self, index, item):
+    '''
+      Set data at index reverse of __getitem__
+    '''
+    for col, data in zip(self.data, item):
+      col[index]=data
+  
+  def __setslice__(self, i, j, items):
+    '''
+      Inverse of __getslice__, items shoule be another MeasurementData instance.
+    '''
+    if not hasattr(items, 'data') or len(items)!=(j-i):
+      raise ValueError, "can only set slice if input object is MeasurementData with length %i" % (j-i)
+    for idx, col in enumerate(self.data):
+      col[i:j]=items.data[idx]
+  
+  def __repr__(self):
+    '''
+      Define the string representation of the object. Just some useful information for debugging/IPython console
+    '''
+    output="<MeasurementData at %s, cols=%i, points=%i" % (hex(id(self)), len(self.data), len(self))
+    if self.zdata<0:
+      output+=", x='%s', y='%s'>" % (self.x.dimension, self.y.dimension)
     else:
-      end=min(self.number_of_points, end)
-    region=range(start, end)
-    return [point for i, point in enumerate(self) if i in region]
-
+      output+=", x='%s', y='%s', z='%s'>" % (self.x.dimension, self.y.dimension, self.z.dimension)
+    return output
+  
   def _get_plot_options(self): return self._plot_options
   
   def _set_plot_options(self, input):
@@ -232,20 +249,27 @@ class MeasurementData(object):
           outidx+=len([1 for item in self.data[:self.ydata] if item.has_error])
           return outidx
         else:
-          return self.ydata
+          return None
       else:
         if self.z.has_error:
           outidx=len(self.data)
           outidx+=len([1 for item in self.data[:self.zdata] if item.has_error])
           return outidx
         else:
-          return self.zdata
+          return None
   
   def _set_error(self, index):
     self._yerror=index
+  
+  def _get_number_of_points(self):
+    if len(self.data)>0:
+      return len(self.data[0])
+    else:
+      return 0
 
   plot_options=property(_get_plot_options, _set_plot_options)
   yerror=property(_get_error, _set_error)  
+  number_of_points=property(_get_number_of_points)
 
   def get_info(self):
     '''
@@ -264,13 +288,33 @@ class MeasurementData(object):
     '''
     data=self.data # speedup data_lookup
     append_fast=PhysicalProperty.append
+    nop=self.number_of_points
     if len(point)==len(data):
-      for i,val in enumerate(point):
-        append_fast(data[i], val)
-      self.number_of_points+=1
+      try:
+        for i,val in enumerate(point):
+          append_fast(data[i], val)
+      except ValueError, error:
+        # make sure the length of all columns is the same after encountering an error
+        for j in range(i):
+          data[j]=data[j][:nop]
+        raise ValueError, error
+      return point
+    elif len(point)==len(self.units()):
+      # point is a set of [val1,val2...]+[err1,err2...]
+      try:
+        for i,val in enumerate(point[:len(data)]):
+          if data[i].has_error:
+            append_fast(data[i], (val, point[len(data)+len([col for col in data[:i] if col.has_error])]))
+          else:
+            append_fast(data[i], val)
+      except ValueError, error:
+        # make sure the length of all columns is the same after encountering an error
+        for j in range(i):
+          data[j]=data[j][:nop]
+        raise ValueError, error
       return point
     else:
-      return 'NULL'
+      raise ValueError, 'can only append data with %i/%i items, input has %i' % (len(data), len(self.units()), len(point))
 
   def append_column(self, column, dimension="", unit=""):
     '''
@@ -287,20 +331,8 @@ class MeasurementData(object):
       col=PhysicalProperty(dimension, unit, column)
       self.data.append(col)
 
-  def get_data(self,count): 
-    '''
-      Get datapoint at index count.
-      
-      @return List of values at this index
-    '''
-    return [value[count] for value in self.data]
-
-  def set_data(self,point,count): 
-    '''
-      Set data point at position count.
-    '''
-    for value in self.data:
-      value[count]=point[self.data.index(value)]
+  get_data=__getitem__
+  set_data=__setitem__
 
   def _get_x(self):
     '''
@@ -427,7 +459,7 @@ class MeasurementData(object):
     '''
       Return the last datapoint.
     '''
-    return self.get_data(self.number_of_points-1)
+    return self[-1]
 
   def is_type(self, dataset): 
     '''
@@ -771,8 +803,11 @@ class HugeMD(MeasurementData):
   changed_after_export=True
   tmp_export_file=''
   _last_datapoint=None
+  _units=None
+  _dimensions=None
   _filters=[]
   _data=[]
+  _len=None
   is_matrix_data=True
   
   # When filters have changed the data has to be reexported
@@ -787,24 +822,51 @@ class HugeMD(MeasurementData):
   # to pickle the data and unpickle it when it is needed
   
   def get_data_object(self):
+    if self._data is None:
+      self._data=load(open(self.tmp_export_file, 'rb'))
+      self._units=None
+      self._dimensions=None
+      self._len=None
     return self._data
   def set_data_object(self, object):
     self._data=object
     self.store_data()
   
+  def units(self):
+    if self._units is not None:
+      return self._units
+    else:
+      return MeasurementData.units(self)
+  
+  def dimensions(self):
+    if self._dimensions is not None:
+      return self._dimensions
+    else:
+      return MeasurementData.dimensions(self)
+  
+  def get_len(self):
+    if self._len is None:
+      return MeasurementData.__len__(self)
+    else:
+      return self._len
+  
   data=property(get_data_object, set_data_object)
+  __len__=get_len
   
   def store_data(self):
     '''
       Pickle the data in this object to save memory.
     '''
     self._last_datapoint=MeasurementData.last(self)
-    for i, d in enumerate(self._data):
-      if type(d) is not HugePhysicalProperty:
-        self._data[i]=HugePhysicalProperty(d)
-        del(d)
-        d=self._data[i]
-      d.store_data()
+    if self._data is not None:
+      self._units=MeasurementData.units(self)
+      self._dimensions=MeasurementData.dimensions(self)
+      if len(self._data)>0:
+        self._len=len(self._data[0])
+      else:
+        self._len=0
+      dump(self._data, open(self.tmp_export_file , 'wb'), 2)
+      self._data=None
   
   def last(self):
     if self._last_datapoint:
@@ -823,6 +885,8 @@ class HugeMD(MeasurementData):
       Define how the class is pickled and copied.
     '''
     self.changed_after_export=True
+    # restore saved data
+    self.data
     return MeasurementData.__getstate__(self)
  
   def __setstate__(self, state):
@@ -833,6 +897,25 @@ class HugeMD(MeasurementData):
     global hmd_file_number
     self.tmp_export_file=os.path.join(TEMP_DIR, 'HMD_'+ str(hmd_file_number)+ '.tmp')
     hmd_file_number+=1
+    self.store_data()
+    self.changed_after_export=True
+
+  def __repr__(self):
+    '''
+      Get object information without reloading the data.
+    '''
+    if self._data is None:
+      output="<HugeMD at %s, points=%i, state stored in: '%s'>" % (hex(id(self)), self._len, self.tmp_export_file)
+    else:
+      '''
+        Define the string representation of the object. Just some useful information for debugging/IPython console
+      '''
+      output="<HugeMD at %s, cols=%i, points=%i" % (hex(id(self)), len(self.data), len(self))
+      if self.zdata<0:
+        output+=", x='%s', y='%s'>" % (self.x.dimension, self.y.dimension)
+      else:
+        output+=", x='%s', y='%s', z='%s'>" % (self.x.dimension, self.y.dimension, self.z.dimension)
+    return output      
 
   def __del__(self):
     '''
@@ -867,7 +950,7 @@ class HugeMD(MeasurementData):
     '''
       Wrapper to MeasurementData.unit_trans_one which sets the data to be reexported after change.
     '''
-    self.unit_trans_one=True
+    self.changed_after_export=True
     output=MeasurementData.unit_trans_one(self, col, unit_lit)
     self.store_data()
     return output
@@ -875,419 +958,25 @@ class HugeMD(MeasurementData):
   def export(self,file_name,print_info=True,seperator=' ',xfrom=None,xto=None, only_fitted_columns=False): 
     if self.changed_after_export or self.plot_options.zrange!=self.last_export_zrange:
       print "Exporting large dataset, please stay patient"
-      self.last_export_output=self.do_export(self.tmp_export_file, print_info, seperator, xfrom, xto, only_fitted_columns)
+      self.last_export_output=self.do_export(self.tmp_export_file+'.gptmp', print_info, seperator, xfrom, xto, only_fitted_columns)
       self.changed_after_export=False
       self.last_export_zrange=self.plot_options.zrange
       self.store_data()
-    copyfile(self.tmp_export_file,  file_name)
+    copyfile(self.tmp_export_file+'.gptmp',  file_name)
     return self.last_export_output
   
   def export_matrix(self, file_name):
     '''
-      Quick export only the z values as binary file.
+      Quick export only the xyz values as binary file.
     '''
-    import array
-    a=array.array('f')
     # Create data as list of x1,y1,z1,x2,y2,z2...,xn,yn,zn
-    xyz=numpy.array([self.data[self.xdata][:], self.data[self.ydata][:], self.data[self.zdata][:]]).transpose()
-    a.fromlist(xyz.flatten().tolist())
-    a.tofile(open(file_name, 'wb'))
-    
+    xyz=numpy.array([self.x, self.y, self.z]).transpose().flatten().astype(numpy.float32)
+    xyz.tofile(open(file_name, 'wb'))
+    self.store_data()
   
   do_export=MeasurementData.export
 
 #--------------------------------------    HugeMD-Class     -----------------------------------------------------#
-
-class PhysicalProperty(object):
-  '''
-    Class for any physical property. Stores the data, unit and dimension
-    to make unit transformations possible. Can be used with numpy functions.
-    
-    Attributes:
-      dimension  String for the dimension of the instance
-      unit       String for the unit of the instance
-    
-    Hints:
-      PhysicalProperty can be used with different convenience operators/functions,
-      for a PhysicalProperty 'P' these are e.g.:
-      
-      P % [unit]                  Transform the instance to the unit
-      P % ([name], [mul], [add])  Transform the instance to [name] using the multiplyer [mul]
-                                  and adding [add]
-      P // [dim]                  Get P with different dimension name [dim]
-      P // ([dim], [unit])        Get P with different dimension and unit name
-      
-      Additionally PhysicalProperty instances can be used like numpy arrays in functions
-      and with respect to slicing. Addition and subtraction is unit dependent and angular
-      functions only take angles as input.
-  '''
-  values=[]
-  unit=''
-  dimension=''
-  
-  def __init__(self, dimension_in, unit_in):
-    '''
-      Class constructor.
-      
-      @param dimension_in String with the dimensions for that instance
-      @param unit_in String with unit for that instance
-    '''
-    self.values=[]
-    self.unit=unit_in
-    self.dimension=dimension_in
-
-  def __iter__(self): # see next()
-    '''
-      Function to iterate through the data-points, object can be used in "for bla in data:".
-    '''
-    for value in self.values:
-      yield value
- 
-  def __len__(self): 
-    '''
-      len(PhysicalProperty) returns number of Datapoints.
-    '''
-    return len(self.values)
-
-  def append(self, number): 
-    '''
-      Add value.
-    '''
-    self.values.append(number)
-
-  def unit_trans(self,transfere): 
-    '''
-      Transform one unit to another. transfere variable is of type [from,b,a,to].
-    '''
-    if transfere[0]==self.unit: # only transform if right 'from' parameter
-      old_values=numpy.array(self.values)
-      new_values=old_values*transfere[1]+transfere[2]
-      self.values=new_values.tolist()
-      self.unit=transfere[3]
-      return True
-    else:
-      return False
-
-  def dim_unit_trans(self,transfere): 
-    '''
-      Transform dimension and unit to another. Variable transfere is of type
-      [from_dim,from_unit,b,a,to_dim,to_unit].
-    '''
-    if len(transfere)>0 and (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right 'from_dim' and 'from_unit'
-      old_values=numpy.array(self.values)
-      new_values=old_values*transfere[2]+transfere[3]
-      self.values=new_values.tolist()
-      self.unit=transfere[5]
-      self.dimension=transfere[4]
-      return True
-    else:
-      return False
-
-  def max(self,from_index=None,to_index=None):
-    '''
-      Return maximum value in data.
-    '''
-    return max(self.values[from_index:to_index])
-
-  def min(self,from_index=None,to_index=None):
-    '''
-      Return minimum value in data.
-    '''
-    return min(self.values[from_index:to_index])
-  
-  def __repr__(self):
-    '''
-      Return a string representation of the data.
-    '''
-    output='PhysicalProperty(['
-    if len(self.values)<10:
-      sval=map(str, self.values)
-      output+=", ".join(sval)
-    else:
-      sval=map(str, self.values[:5])
-      output+=", ".join(sval)
-      output+=" ... "
-      sval=map(str, self.values[-5:])
-      output+=", ".join(sval)
-    output+="],\n\t\tdimension='%s', unit='%s', length=%i)" % (self.dimension, self.unit,  len(self.values))
-    return output
-
-  def __str__(self):
-    '''
-      Return the values as string.
-    '''
-    output='['
-    if len(self.values)<10:
-      sval=map(str, self.values)
-      output+=", ".join(sval)
-    else:
-      sval=map(str, self.values[:5])
-      output+=", ".join(sval)
-      output+=" ... "
-      sval=map(str, self.values[-5:])
-      output+=", ".join(sval)
-    output+="]"
-    return output
-
-  def __getitem__(self, index):
-    '''
-      Return the data at a specific index.
-    '''
-    return numpy.array(self.values)[index]
-  
-  def __array_wrap__(self, out_arr, context=None):
-    '''
-      Function that get's called by numpy ufunct functions after they get
-      called with one instance from this class. Makes PhysicalProperty objects
-      usable with all standart numpy functions.
-      
-      @return PhysicalProperty object with values as result from the function
-    '''
-    output=deepcopy(self)
-    output.values=out_arr.tolist()
-    if context:
-      # make sure angular dependent functions are called with radian unit
-      if context[0].__name__ in angle_functions:
-        if self.unit!='rad':
-          try:
-            output_new=self%'rad'
-          except ValueError:
-            raise ValueError, 'Input to function %s needs to be an angle' % context[0].__name__
-        else:
-          output_new=self
-        output.unit=''
-        output.values=context[0](output_new[:]).tolist()
-      # make sure inverse angular functions get called with dimensioinless input
-      elif context[0].__name__.startswith('arc'):
-        if self.unit=='':
-          output.unit='rad'
-        else:
-          raise ValueError, "Input to function %s needs to have empty unit" % context[0].__name__
-      output.dimension=context[0].__name__ + '(' + self.dimension + ')'
-    return output
-  
-  def __add__(self, other):
-    '''
-      Define addition of two PhysicalProperty instances.
-      
-      @return New instance of PhysicalProperty
-    '''
-    if type(self)==type(other):
-      if self.unit != other.unit:
-        try:
-          other=other%self.unit
-        except ValueError:
-          raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
-      output=deepcopy(self)
-      if self.dimension!=other.dimension:
-        output.dimension=self.dimension + '+' + other.dimension
-      output.values=(self[:]+other[:]).tolist()
-    elif type(other) in (float, int):
-      output=deepcopy(self)
-      output.values=(self[:]+other).tolist()  
-    else:
-      output=numpy.add(self, other)
-      output.dimension=self.dimension
-    return output
-  
-  def __radd__(self, other):
-    '''
-      Define addition of a PhysicalProperty with another type.
-      
-      @return New instance of PhysicalProperty
-    '''
-    if type(other) in (float, int):
-      output=deepcopy(self)
-      output.values=(self[:]+other).tolist()  
-    else:
-      output=numpy.add(self, other)
-      output.dimension=self.dimension
-    return output
-  
-  def __sub__(self, other):
-    '''
-      Define subtraction of two PhysicalProperty instances.
-      
-      @return New instance of PhysicalProperty
-    '''
-    if type(self)==type(other):
-      if self.unit != other.unit:
-        try:
-          other=other%self.unit
-        except ValueError:
-          raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
-      output=deepcopy(self)
-      if self.dimension != other.dimension:
-        output.dimension=self.dimension + '-' + other.dimension
-      output.values=(self[:]-other[:]).tolist()
-    elif type(other) in (float, int):
-      output=deepcopy(self)
-      output.values=(self[:]-other).tolist()  
-    else:
-      output=numpy.subtract(self, other)
-      output.dimension=self.dimension
-    return output
-  
-  def __rsub__(self, other):
-    '''
-      Define subtraction of a PhysicalProperty from another type.
-      
-      @return New instance of PhysicalProperty
-    '''
-    if type(other) in (float, int):
-      output=deepcopy(self)
-      output.values=(other-self[:]).tolist()  
-    else:
-      output=numpy.subtract(other, self)
-      output.dimension=self.dimension
-    return output
-
-  def __mul__(self, other):
-    '''
-      Define multiplication of two PhysicalProperty instances.
-      
-      @return New instance of PhysicalProperty
-    '''
-    if type(self)==type(other):
-      output=deepcopy(self)
-      if self.dimension!=other.dimension:
-        output.dimension=self.dimension + '*' + other.dimension
-      if self.unit!=other.unit and self.unit!='' and other.unit!='':
-        output.unit=self.unit + '*' + other.unit
-      elif self.unit!='':
-        output.unit=self.unit + '^2'
-      output.values=(self[:]*other[:]).tolist()
-    elif type(other) in (float, int):
-      output=deepcopy(self)
-      output.values=(self[:]*other).tolist()  
-    else:
-      output=numpy.multiply(self, other)
-      output.dimension=self.dimension
-    return output
-  
-  def __rmul__(self, other):
-    '''
-      Define multiplication of a PhysicalProperty with another type.
-      
-      @return New instance of PhysicalProperty
-    '''
-    if type(other) in (float, int):
-      output=deepcopy(self)
-      output.values=(other*self[:]).tolist()  
-    else:
-      output=numpy.multiply(self, other)
-      output.dimension=self.dimension
-    return output
-  
-  def __neg__(self):
-    '''
-      Define the unary - operator.
-    '''
-    return -1.*self
-
-  def __div__(self, other):
-    '''
-      Define division of two PhysicalProperty instances.
-      
-      @return New instance of PhysicalProperty
-    '''
-    if type(self)==type(other):
-      output=deepcopy(self)
-      if self.dimension!=other.dimension:
-        output.dimension=self.dimension + '/' + other.dimension
-      if self.unit!=other.unit:
-        output.unit=self.unit + '/' + other.unit
-      else:
-        output.unit=''
-      output.values=(self[:]/other[:]).tolist()
-    elif type(other) in (float, int):
-      output=deepcopy(self)
-      output.values=(self[:]/other).tolist()  
-    else:
-      output=numpy.divide(self, other)
-      output.dimension=self.dimension
-    return output
-  
-  def __rdiv__(self, other):
-    '''
-      Define division of a PhysicalProperty from another type.
-      
-      @return New instance of PhysicalProperty
-    '''
-    if type(other) in (float, int):
-      output=deepcopy(self)
-      output.dimension=self.dimension+'^{-1}'
-      if self.unit!='':
-        output.unit=self.unit+'^{-1}'
-      output.values=(other/self[:]).tolist()  
-    else:
-      output=numpy.divide(other, self)
-      output.dimension=self.dimension
-      if self.unit!='':
-        output.unit=self.unit+'^{-1}'
-    return output
-
-  def __pow__(self, to_power):
-    '''
-      Define calculation of PhysicalProperty instance to a specified power.
-      
-      @return New instance of PhysicalProperty
-    '''
-    output=deepcopy(self)
-    output.dimension=self.dimension+'^%s' % str(to_power)
-    if self.unit!='':
-      output.unit=self.unit+'^%s' % str(to_power)
-    output.values=(self[:]**to_power).tolist()
-    return output
-
-  def __floordiv__(self, new_dim_unit):
-    '''
-      Convenience method to easily get the same PhysicalProperty with another dimension or
-      dimension and unit. Examples:
-      pp // 'new' -> a copy of the PhysicalProperty with the new dimension 'new'
-      pp // ('length','m') -> a copy of the PhysicalProperty with the new dimension 'length' and the unit 'm'
-      
-      @return New object instance.
-    '''
-    output=deepcopy(self)
-    if type(new_dim_unit) is str:
-      output.dimension=new_dim_unit
-      return output
-    else:
-      if getattr(new_dim_unit, '__iter__', False) and len(new_dim_unit)>=2 and \
-          type(new_dim_unit[0]) is str and type(new_dim_unit[1]) is str:
-        output.dimension=new_dim_unit[0]
-        output.unit=new_dim_unit[1]
-        return output
-      else:
-        raise ValueError, '// only defined with str or iterable object of at least two strings'
-  
-  def __mod__(self, conversion):
-    '''
-      Convenience method to easily get the same PhysicalProperty with a converted unit. Examples:
-      pp % 'm' -> a copy of the PhysicalProperty with the unit converted to m
-      pp % ('m', 1.32, -0.2) -> a copy of the PhysicalProperty with the unit converted to 'm' 
-                                multiplying by 1.32 and subtracting 0.2
-      
-      @return New object instance.    
-    '''
-    output=deepcopy(self)
-    if type(conversion) is str:
-      if (self.unit, conversion) in known_transformations:
-        output.unit=conversion
-        multiplyer, addition=known_transformations[(self.unit, conversion)]
-        output.values=(multiplyer*output[:]+addition).tolist()
-        return output
-      else:
-        raise ValueError, "Automatic conversion not implemented for '%s'->'%s'." % (self.unit, conversion)
-    else:
-      if getattr(conversion, '__iter__', False) and len(conversion)>=3 and \
-          type(conversion[0]) is str and type(conversion[1]) in (float, int) and type(conversion[2]) in (float, int):
-        output.unit=conversion[0]
-        output.values=(conversion[1]*output[:]+conversion[2]).tolist()
-        return output
-      else:
-        raise ValueError, '% only defined with str or iterable object of at least one string and two floats/ints'
 
 def calculate_transformations(transformations):
   '''
@@ -1321,65 +1010,6 @@ def calculate_transformations(transformations):
 known_transformations=calculate_transformations(known_unit_transformations)
 # List of ufunc functions which need an angle as input
 angle_functions=( 'sin', 'cos', 'tan', 'sec', 'sinh', 'cosh', 'tanh', 'sech' )
-
-class HugePhysicalProperty(PhysicalProperty):
-  '''
-    PhysicalProperty which can write data to a pickled file if it is not accessed.
-  '''
-  _values=None
-  store_file=''
-  
-  def get_values(self):
-    if self._values is None:
-      self._values=load(open(self.store_file, 'rb'))
-    return self._values
-  def set_values(self, values):
-    self._values=values
-  values=property(get_values, set_values)
-  
-  def store_data(self):
-    '''
-      Store the data in a pickled file and delete the object to save memory.
-    '''
-    pass
-    if self._values is not None:
-      dump(self._values, open(self.store_file, 'wb'), -1)
-      del(self._values)
-      self._values=None
-  
-  def __init__(self, physprop_in):
-    '''
-      Class constructor.
-    '''
-    self.values=physprop_in.values
-    self.unit=physprop_in.unit
-    self.dimension=physprop_in.dimension
-    global hmd_file_number
-    self.store_file=os.path.join(TEMP_DIR, 'HMD_'+ str(hmd_file_number)+'.pkl')
-    hmd_file_number+=1
-  
-  def __getstate__(self):
-    '''
-      What to do when pickling the data.
-    '''
-    # restore the dataset
-    self.values
-    return self.__dict__
-  
-  def __setstate__(self, state):
-    self.__dict__=state
-    #assign a new temp file name
-    global hmd_file_number
-    self.store_file=os.path.join(TEMP_DIR, 'HMD_'+ str(hmd_file_number)+'.pkl') 
-    hmd_file_number+=1
-  
-  def __del__(self):
-    '''
-      Clean up temporary file after delition.
-    '''
-    store_file=self.store_file
-    del self.__dict__
-    os.remove(store_file)
 
 class PlotOptions(object):
   '''
@@ -1583,7 +1213,7 @@ class PhysicalUnit(object):
       nummerator and d units in the denominator.
     '''
     if type(entry_str) not in [str, PhysicalUnit]:
-      raise ValueError, 'can only construc unit from string or other PhysicalUnit'
+      raise ValueError, 'can only construc unit from string or other PhysicalUnit not %s' % type(entry_str)
     object.__init__(self)
     if type(entry_str) is PhysicalUnit:
       self._unit_parts=deepcopy(entry_str._unit_parts)
@@ -2077,21 +1707,53 @@ class PhysicalProperty(numpy.ndarray):
     self.unit=getattr(obj, 'unit', PhysicalUnit(''))
     self.dimension=getattr(obj, 'dimension', "")
     self._error=getattr(obj, '_error', None)
-    
+    #print "finalize", self.__dict__
+
+  def __reduce__(self):
+    '''
+      Method used by cPickle to get the object state
+    '''
+    state=list(numpy.ndarray.__reduce__(self))
+    state[2]=state[2]+tuple([self.__dict__])
+    return tuple(state)
+
+  def __setstate__(self, state):
+    '''
+      Reconstruct the object from the state saved via __reduce__.
+    '''    
+    numpy.ndarray.__setstate__(self, state[1:5])
+    self.__dict__=state[5]
+  
   def append(self, item):
     '''
       Append an item to the end of the data, if the array is to small it is enlarged.
     '''
-    if self.has_error:
-      if hasattr(item, '__iter__') and len(item)==2:
-        length=self.__len__()
-        self.resize(length+1, refcheck=False)
-        self.__setitem__(length, item[0])
-        self.error.resize(length+1, refcheck=False)
-        self.error.__setitem__(length, item[1])
+    if hasattr(item, 'dimension'):
+      length=self.__len__()
+      if self.has_error!=item.has_error:
+        raise ValueError, 'items do not have the same error status'
+      # item is PhysicalProperty or derived
+      self.resize(length+len(item), refcheck=False)
+      if self.has_error:
+        self._error.resize(length+len(item), refcheck=False)
+      self.__setslice__(length, length+len(item), item)
+    elif hasattr(item, '__iter__'):
+      if len(item)==2:
+        if len(self)==0:
+          self.error=[]
+        if self.has_error:      
+          length=self.__len__()
+          self.resize(length+1, refcheck=False)
+          self.__setitem__(length, item[0])
+          self.error.resize(length+1, refcheck=False)
+          self.error.__setitem__(length, item[1])
+        else:
+          raise ValueError, "the input needs to be a scalar without error value"
       else:
-        raise ValueError, "you need to supply an error value for this instance"
+        raise ValueError, "can only append scalar or iterable with length 2"
     else:
+      if self.has_error:
+        raise ValueError, "need a value with corresponding error to append data"
       length=self.__len__()
       self.resize(length+1, refcheck=False)
       self.__setitem__(length, item)
@@ -2143,9 +1805,12 @@ class PhysicalProperty(numpy.ndarray):
   def _set_values(self, values):
     self.resize(len(values), refcheck=False)
     self.__setslice__(0, len(values), values)
-    if self.has_error and len(self.error)!=len(self):
-      # remove the error values, if the number of items differs
-      self.error=None
+    if self.has_error:
+      if len(values)==0:
+        self.error=[]
+      elif len(self.error)!=len(self):
+        # remove the error values, if the number of items differs
+        self.error=None
   
   def _get_has_error(self):
     return (self._error is not None)
@@ -2154,8 +1819,11 @@ class PhysicalProperty(numpy.ndarray):
     return self._error
   
   def _set_error(self, value):
-    assert len(value)==len(self), "Error needs to have %i values" % len(self)
-    self._error=numpy.array(value)
+    if value is None:
+      self._error=None
+    else:
+      assert len(value)==len(self), "Error needs to have %i values" % len(self)
+      self._error=numpy.array(value)
   
   def _get_unit(self):
     return self._unit
@@ -2361,8 +2029,7 @@ class PhysicalProperty(numpy.ndarray):
           other=other%self.unit
         except ValueError:
           raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)
-    output=numpy.ndarray.__sub__(self, other)
-    return output
+    return numpy.ndarray.__sub__(self, other)
   
   def __isub__(self, other):
     '''
@@ -2460,6 +2127,9 @@ class PhysicalProperty(numpy.ndarray):
       @return This instance of PhysicalProperty altered
     '''
     self.unit**=to_power
+    if self.has_error and to_power in [2., 0.5]:
+      # errorpropagation doesn't work properly for square and sqrt if done inline
+      return self**to_power
     return numpy.ndarray.__ipow__(self, to_power)
 
   def __floordiv__(self, new_dim_unit):

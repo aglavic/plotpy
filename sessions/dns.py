@@ -1703,7 +1703,6 @@ class DNSMeasurementData(MeasurementData):
     for i in range(len(new.data)):
       new.data[i].values=[]
     nc=self.number_of_channels
-    new.number_of_points=0
     for point in self:
       if point[3] in new.data[3].values:
         index=new.data[3].values.index(point[3])

@@ -8,7 +8,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import os, sys
 from copy import deepcopy
-from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where
+from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where, int8, float32
 from configobj import ConfigObj
 from glob import glob
 from measurement_data_structure import MeasurementData, HugeMD
@@ -229,7 +229,6 @@ def read_cmb_file(file_name):
 
   use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
               (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
-  dataobj.number_of_points=len(use_indices)
   dataobj.data[0].values=y_array[use_indices].tolist()
   dataobj.data[1].values=z_array[use_indices].tolist()
   dataobj.data[2].values=corrected_data[use_indices].tolist()
@@ -261,7 +260,7 @@ def read_edf_file(file_name):
   
   q_window=[-0.9, 0.9, -0.9, 0.9]
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ],
                             [], 4, 5, 3, 2)
   # Get header information
   if setup['BACKGROUND']:
@@ -307,15 +306,15 @@ def read_edf_file(file_name):
            sin(arctan((y_array-center_y)*header_info['pixelsize_y']/setup['DETECTOR_DISTANCE']/2.))
   use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
               (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
-  dataobj.number_of_points=len(use_indices)
   dataobj.data[0].values=x_array[use_indices].tolist()
   dataobj.data[1].values=y_array[use_indices].tolist()
+  # convert indices to integers to save memory
+  dataobj.data[0]=dataobj.data[0]
+  dataobj.data[1]=dataobj.data[1]
   dataobj.data[2].values=corrected_data_array[use_indices].tolist()
   dataobj.data[3].values=corrected_error_array[use_indices].tolist()
   dataobj.data[4].values=qy_array[use_indices].tolist()
   dataobj.data[5].values=qz_array[use_indices].tolist()
-  dataobj.data[6].values=input_array[use_indices].tolist()
-  dataobj.data[7].values=error_array[use_indices].tolist()
   dataobj.sample_name=header_info['sample_name']
   dataobj.info="\n".join([item[0]+': '+item[1] for item in sorted(header_settings.items())])
   if import_subframes:
@@ -351,7 +350,7 @@ def import_edf_set(file_name):
   sys.stdout.write('\tReading file 1/%i' % len(file_list))
   sys.stdout.flush()
   input_array, header_settings, header_info=import_edf_file(file_name)
-
+  i=0
   # import all other files and add them together
   for i, file_name in enumerate(file_list[1:]):
     sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i' % (i+2, len(file_list)))

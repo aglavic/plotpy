@@ -620,7 +620,6 @@ class FileActions:
     # calculate smoothed data and derivatives
     for i in range(max_deriv):
       output.data[i+2].values=savitzky_golay(y, window_size, order, i).tolist()
-    output.number_of_points=len(x)
     output.short_info=dataset.short_info+' filtered with savitzky golay'
     output.sample_name=dataset.sample_name
     return output

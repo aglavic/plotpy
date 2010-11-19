@@ -683,7 +683,6 @@ class ReflectometerGUI:
     dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
                       ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
     data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', print_info=False, only_fitted_columns=True, xfrom=self.x_from, xto=self.x_to)
-    self.active_file_data.fit_object.number_of_points=data_lines
     self.active_file_data.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
@@ -782,7 +781,6 @@ class ReflectometerGUI:
     file_prefix=file_name.rsplit('.ent', 1)[0]
     dataset=self.active_file_data[window.index_mess]
     data_lines=dataset.export(file_prefix+'.res', print_info=False,  only_fitted_columns=True, xfrom=self.x_from, xto=self.x_to)
-    self.active_file_data.fit_object.number_of_points=data_lines
     self.active_file_data.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(file_prefix+'.ent', 'w')

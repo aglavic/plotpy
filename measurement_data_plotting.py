@@ -368,7 +368,7 @@ def create_plot_script(session,
   else:
     postscript_export=False
     terminal=gp.set_output_terminal_png
-  if with_errorbars:
+  if with_errorbars and datasets[0].yerror is not None:
     plotting_param=gp.plotting_parameters_errorbars
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].yerror+1)
   else:
@@ -436,7 +436,7 @@ def create_plot_script(session,
     if j==0:
       if datasets[0].zdata>=0:
         using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)+':'+str(datasets[i].zdata+1)
-      elif with_errorbars:
+      elif with_errorbars and datasets[i].yerror is not None:
         plotting_param=gp.plotting_parameters_errorbars
         using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)+':'+str(datasets[i].yerror+1)
       else:

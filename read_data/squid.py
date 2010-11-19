@@ -142,7 +142,10 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
     count=count+1
     for mapping in COLUMNS_MAPPING:
       if item==mapping[0]:
-        columns.append([count-2,mapping[1],mapping[2]])
+        if len(mapping)==3 or mapping[3] not in line:
+          columns.append([count-2,mapping[1],mapping[2]])
+        else:
+          columns.append([count-2,mapping[1],mapping[2], line.index(mapping[3])])
     columns.sort(key=lambda x:x[1])
   # Find the columns of the types which can be used with this measurement.
   # The columns can be given by index or name, if the name is not present
@@ -190,7 +193,7 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
     if (data_1!='NULL')&(data_2!='NULL'):
       for type_i in applicable_types:
         if not_found and check_type(data_1,data_2,type_i):
-          data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
+          data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],-1)
           data.append(data_1)
           data.append(data_2)
           data.plot_options=type_i[4]
@@ -228,7 +231,7 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
           not_found=True
           for type_i in applicable_types:
             if check_type(next_data,next_data_2,type_i)&not_found:
-              data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],type_i[3])
+              data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],-1)
               data.plot_options=type_i[4]
               not_found=False
               data.info=info[0]
@@ -262,10 +265,17 @@ def read_data_line(input_file_line, columns):
   if len(line)>=len(columns):
     for column in columns:
       val=line[column[0]]
-      if val != '':
-        values.append(float(val))
+      if len(column)==4:
+        err=line[column[3]]
+        if val != '' and err!='':
+          values.append((float(val), float(err)))
+        else:
+          values.append((0., 1.))        
       else:
-        values.append(0.)
+        if val != '':
+          values.append(float(val))
+        else:
+          values.append(0.)
     return values
   else:
     return 'NULL'
@@ -298,7 +308,6 @@ def split_after_read(dataset, split):
         output.append(deepcopy(dataset))
         for physprop in output[-1].data:
           physprop.values=[]
-        output[-1].number_of_points=0
         output[-1].append(point)
         output[-1].short_info='at %d %s' % (key*split[2], dataset.units()[split_col])
   else:
@@ -308,7 +317,6 @@ def split_after_read(dataset, split):
     direction = dataset[0][xcol]<dataset[4][xcol]
     lastpoint=dataset[0]
     active_data=deepcopy(dataset)
-    active_data.number_of_points=0
     for col in active_data.data:
       col.values=[]
     active_data.append(lastpoint)
@@ -322,7 +330,6 @@ def split_after_read(dataset, split):
         lastpoint=point
         output.append(active_data)
         active_data=deepcopy(dataset)
-        active_data.number_of_points=0
         for col in active_data.data:
           col.values=[]
         active_data.append(point)

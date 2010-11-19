@@ -465,7 +465,6 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
         ref_file.write('1 1 1\n150 1 1\n')
         ref_file.close()
         data_lines.append(2)
-    self.active_file_data.fit_object.number_of_points=data_lines
     self.active_file_data.fit_object.input_file_names=[os.path.join(folder, datafile_prefix+names[i]+'.ref') for i in range(4)]
     self.active_file_data.fit_object.set_fit_constrains()
     # create the .ent file
@@ -898,7 +897,6 @@ class TreffFitParameters(FitParameters):
     new_fit=FitParameters.copy(self, TreffFitParameters())
     new_fit.wavelength=copy(self.wavelength)
     new_fit.input_file_names=copy(self.input_file_names)
-    new_fit.number_of_points=copy(self.number_of_points)
     new_fit.slits=copy(self.slits)
     new_fit.sample_length=self.sample_length
     new_fit.distances=copy(self.distances)
