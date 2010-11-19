@@ -1756,12 +1756,33 @@ class FitSession(FitSessionGUI):
     self.functions=[] # a list of sequences (FitFunction, fit, plot, ignore errors) to be used
     self.data=dataset
     if dataset.zdata<0:
+      self.data_is_3d=False
       self.available_functions=self.available_functions_2d
     else:
+      self.data_is_3d=True
       self.available_functions=self.available_functions_3d
       self.fit=self.fit3d
       self.simulate=self.simulate3d
     self.show_covariance=False
+
+  def __getstate__(self):
+    '''
+      Used to pickle the fit object, as the object has instance methods.
+    '''
+    dict_out=dict(self.__dict__)
+    if self.data_is_3d:
+      del(dict_out['fit'])
+      del(dict_out['simulate'])
+    return dict_out
+  
+  def __setstate__(self, dict_in):
+    '''
+      Reconstruct the object from dict.
+    '''
+    self.__dict__=dict_in
+    if self.data_is_3d:
+      self.fit=self.fit3d
+      self.simulate=self.simulate3d
 
   def __getitem__(self, item):
     '''
