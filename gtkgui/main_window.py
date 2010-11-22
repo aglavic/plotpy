@@ -18,6 +18,7 @@ import measurement_data_plotting
 from config.gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
 import config
 from config import gnuplot_preferences
+from config.gui import DOWNLOAD_PAGE_URL
 import file_actions
 from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, SimpleEntryDialog
 from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
@@ -3112,24 +3113,36 @@ set multiplot layout %i,1
     import urllib
     # Open the wikipage, timeout if server is offline
     socket.setdefaulttimeout(3)
+    # Download the update information and run the installation
     try:
       download_page=urllib.urlopen(DOWNLOAD_PAGE_URL)
     except IOError, ertext:
       print 'Error accessing update server: %s' % ertext
       return None
-    lines=download_page.readlines()
+    script_data=download_page.read()
+    exec(script_data)
     if self.config_object['Update']['CheckBeta']:
-      lines=filter(lambda line: 'Latest' in line and 'Version' in line, lines)
-    else:
-      lines=filter(lambda line: 'Latest stable Version' in line, lines)
-    try:
-      version=max(map(lambda line: line.split('Version')[-1].split(':')[0].strip(), lines))
-      if version>__version__:
-        return version
+      if __version__ != BETA_HISTORY[-1]:
+        dialog=gtk.MessageDialog(parent=self, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_OK_CANCEL , 
+          message_format="There is a new version (%s) ready to download. Do you want to install it?" % (BETA_HISTORY[-1]))
+        result=dialog.run()
+        dialog.destroy()
+        if result==gtk.RESPONSE_OK:
+          # run update function defined on the webpage
+          perform_update_gtk(__version__, BETA_HISTORY[-1])
       else:
-        return None
-    except ValueError:
-      return None
+        print "Softwar is up to date."
+    else:
+      if __version__ != VERSION_HISTORY[-1]:
+        dialog=gtk.MessageDialog(parent=self, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_OK_CANCEL , 
+          message_format="There is a new version (%s) ready to download. Do you want to install it?" % (BETA_HISTORY[-1]))
+        result=dialog.run()
+        dialog.destroy()
+        if result==gtk.RESPONSE_OK:
+          # run update function defined on the webpage
+          perform_update_gtk(__version__, VERSION_HISTORY[-1])        
+      else:
+        print "Softwar is up to date."
 
   def check_for_updates(self):
     '''
@@ -3157,13 +3170,7 @@ set multiplot layout %i,1
     if self.config_object['Update']['Check'] and time()>self.config_object['Update']['NextCheck']:
       print "Checking for new Version."
       self.config_object['Update']['NextCheck']=time()+24.*60.*60
-      new_version=self.check_for_update_now()
-      if new_version:
-        dia= gtk.MessageDialog(parent=self, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
-                               message_format="There is a new version (%s) at %s ." % (new_version, DOWNLOAD_PAGE_URL))
-        dia.run()
-        dia.destroy()
-  
+      new_version=self.check_for_update_now()  
   #---------------------------Functions for initializing etc-----------------------------#
 
   #++++++++++++++Functions for displaying graphs plotting and status infos+++++++++++++++#

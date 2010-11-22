@@ -21,7 +21,7 @@ __status__ = "Development"
 #toolkit='gtk'
 toolkit='auto'
 
-DOWNLOAD_PAGE_URL='http://atzes.homeip.net/plotwiki/tiki-index.php?page=Download+Area'
+DOWNLOAD_PAGE_URL='http://iffwww.iff.kfa-juelich.de/~glavic/plotupdate.py'
 
 if toolkit=='auto':
   # try to automatically select the available toolkit (could be slower)
