@@ -37,7 +37,7 @@ __scripts__=['plot.py']
 __py_modules__=[]
 __package_dir__={'plot_script': '.'}
 __packages__=['plot_script', 'plot_script.config', 'plot_script.read_data', 'plot_script.sessions', 
-            'plot_script.sessions.reflectometer_fit', 'plot_script.wxgui', 'plot_script.gtkgui']
+            'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui'] #'plot_script.wxgui', 
 __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90', 
                             'fit/pnr_multi/*.f90', 'fonts/*.ttf', 'logo*.png'], 
                   'plot_script': ['doc/*.html'], 
@@ -63,6 +63,7 @@ __options__={ "py2exe": {
                           "optimize": 2, 
                           "skip_archive": True, # setting not to move compiled code into library.zip file
                           'packages':'encodings, gtk, sessions, read_data, gtkgui, scipy, IPython',
+                          "dll_excludes": ["MSVCP90.dll"], 
                              }, 
                              }
 

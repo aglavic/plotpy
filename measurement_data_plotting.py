@@ -267,9 +267,7 @@ def gnuplot_plot_script(session,
     else:
       output = proc.communicate()
   except:
-    print "\n!Problem commuself.data[self.zdata][:].tolist()nicating with Gnuplot, please check your system settings!"
-    print "Gnuplot command used: %s\n" % session.GNUPLOT_COMMAND
-    return "\n!Problem communicating with Gnuplot, please check your system settings!"
+    raise RuntimeError, "\nProblem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s" % session.GNUPLOT_COMMAND
   try:
     # on older version of python this doesn't work
     proc.stdin.close()

@@ -52,6 +52,7 @@ class ApplicationMainWindow(gtk.Window):
     Everything the GUI does is in this Class.
   '''
   status_dialog=None
+  init_complete=False
   garbage=[]
   
   def get_active_dataset(self):
@@ -400,11 +401,41 @@ class ApplicationMainWindow(gtk.Window):
     self.view_right.connect("clicked",self.change)
     
     #------------- connecting events --------------
-
-    self.replot()
-    
+    try:
+      # for the first plot catch exception if gnuplot command is not found
+      self.replot()
+    except RuntimeError, error_message:
+      info_dialog=gtk.Dialog(parent=self, title='Gnuplot Error..', buttons=('Select Gnuplot Executable', 1, 
+                                                                            'Exit Program', -1))
+      info_dialog.vbox.add(gtk.Label(error_message))
+      info_dialog.show_all()
+      result=info_dialog.run()
+      if result==1:
+        info_dialog.destroy()
+        file_chooser=gtk.FileChooserDialog(parent=self, title='Select Gnuplot executable...', 
+                                      action=gtk.FILE_CHOOSER_ACTION_OPEN, 
+                                      buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+        file_chooser.set_select_multiple(False)
+        result=file_chooser.run()
+        if result==gtk.RESPONSE_OK:
+          self.active_session.GNUPLOT_COMMAND=file_chooser.get_filename()
+          file_chooser.destroy()
+          self.replot()
+          message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
+            message_format='To make this executable persistent you need to change the GNUPLOT_COMMAND option in %s to %s' % \
+              (os.path.join(config.__path__[0], 'gnuplot_preferences.py'), self.active_session.GNUPLOT_COMMAND))
+          message.run()
+          message.destroy()
+        else:
+          file_chooser.destroy()
+          self.destroy()
+      else:
+        info_dialog.destroy()
+        self.destroy()
+        return
     self.geometry=(self.get_position(), self.get_size())
     self.check_for_updates()
+    self.init_complete=True
 
   #-------------------------------Window Constructor-------------------------------------#
 
@@ -426,7 +457,7 @@ class ApplicationMainWindow(gtk.Window):
     '''
       After releasing the mouse the picture gets replot.
     '''
-    if event.type==gtk.gdk.FOCUS_CHANGE and self.active_plot_geometry!=(self.widthf, self.heightf):
+    if event.type==gtk.gdk.FOCUS_CHANGE and self.active_plot_geometry!=(self.widthf, self.heightf) and self.init_complete:
       self.replot()
 
   #----------------------------Interrupt Events----------------------------------#
@@ -2210,7 +2241,7 @@ set multiplot layout %i,1
     """ % (
            (len(pattern_names)*30), 
            os.path.join(gnuplot_preferences.FONT_PATH, 'Arial.ttf'), 
-           os.path.join(self.active_session.TEMP_DIR, 'colormap.jpg'), 
+           os.path.join(self.active_session.TEMP_DIR, 'colormap.jpg').replace('\\', '\\\\'), 
            len(pattern_names), 
            )
     portions=1./len(pattern_names)

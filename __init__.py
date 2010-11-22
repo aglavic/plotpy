@@ -48,10 +48,13 @@ gui_main=None
 
 #+++++++++++++ Limit Memory Usage ++++++++++++++
 if not "--nolimit" in sys.argv:
-  import resource
-  # Maximum memeroy usage is MiB, otherwise the program could cause
-  # the system to hang do to excessive swap memory access
-  resource.setrlimit(resource.RLIMIT_AS, (2*1024**3,2*1024**3))
+  try:
+    import resource
+    # Maximum memeroy usage is MiB, otherwise the program could cause
+    # the system to hang do to excessive swap memory access
+    resource.setrlimit(resource.RLIMIT_AS, (2*1024**3,2*1024**3))
+  except ImportError:
+    pass
 
 #----------------------- importing modules --------------------------
 

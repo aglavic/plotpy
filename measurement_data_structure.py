@@ -178,7 +178,10 @@ class MeasurementData(object):
     '''
       len(MeasurementData) returns number of Datapoints.
     '''
-    return len(self.data[0])
+    try:
+      return len(self.data[0])
+    except IndexError:
+      return 0
 
   def __getitem__(self, index):
     '''

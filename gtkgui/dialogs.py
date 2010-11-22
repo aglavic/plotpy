@@ -373,13 +373,24 @@ class SimpleEntryDialog(gtk.Dialog):
       key=entry_list[0]
       label=gtk.Label(key + ': ')
       label.show()
-      entry=gtk.Entry()
-      entry.show()
-      entry.set_text(str(entry_list[1]))
-      entry.connect('activate', lambda *ignore: self.response(1))
-      self.entries[key]=entry
-      self.values[key]=entry_list[1]
-      self.conversions[key]=entry_list[2]
+      # If entry is a list, there will be a dropdown menu to choose
+      if hasattr(entry_list[1], '__iter__'):
+        entry=gtk.combo_box_new_text()
+        for selection_entry in entry_list[1]:
+          entry.append_text(selection_entry)        
+        entry.set_active(entry_list[2])
+        entry.show()
+        self.entries[key]=entry
+        self.values[key]=entry_list[1][entry_list[2]]
+        self.conversions[key]=entry_list[1]
+      else:
+        entry=gtk.Entry()
+        entry.show()
+        entry.set_text(str(entry_list[1]))
+        entry.connect('activate', lambda *ignore: self.response(1))
+        self.entries[key]=entry
+        self.values[key]=entry_list[1]
+        self.conversions[key]=entry_list[2]
       self.table.attach(label, 
             # X direction #          # Y direction
             0, 1,                      i, i+1,
@@ -414,12 +425,15 @@ class SimpleEntryDialog(gtk.Dialog):
       don't change the values.
     '''
     for key, entry in self.entries.items():
-      text=entry.get_text()
-      try:
-        value=self.conversions[key](text)
-        self.values[key]=value
-      except ValueError:
-        pass
+      if hasattr(entry, 'get_text'):
+        text=entry.get_text()
+        try:
+          value=self.conversions[key](text)
+          self.values[key]=value
+        except ValueError:
+          pass
+      else:
+        self.values[key]=self.conversions[key][entry.get_active()]
 
 #--------------- SimpleEntryDialog to get a list of values from the user ---------------
 

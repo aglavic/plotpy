@@ -201,6 +201,54 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       self.file_data={}
     self.file_data[name]=FitList(data_list)
 
+  def fourier_analysis(self, dataset, theta_c, lambda_x=1.54, interpolation_type='linear'):
+    '''
+      Apply the fourier transform calculus found in 
+        K.Sakurai et. all, Jpn. J. Appl. Phys. Vol 31 (1992) pp. L113-L115
+      to the dataset to get thickness components of the measured sample.
+      
+      The dataset is expressed as a function of sqrt(Θ²-Θc²)/λ and is than normalized
+      to a avaridge attenuation (polynomial fit to log of data). The result is then
+      fourier transformed using the FFT algorithm.
+      
+      @param dataset MeasurementData object of reflectivity data
+      @param theta_c Angle of total external reflection
+      @param lambda_x x-ray wavelength
+      
+      @return new MeasurementData object of transformed data.
+    '''
+    import numpy as np
+    from scipy.interpolate import interp1d
+    from measurement_data_structure import MeasurementData, PhysicalProperty
+    from fit_data import FitPolynomialPowerlaw
+    dataset.unit_trans([['q','Å^{-1}', lambda_x/4./np.pi**2*180.,0.,'Θ', '°'], 
+                        ['2Θ', '°', 0.5,0.,'Θ', '°']])
+    region=np.where(dataset.x>theta_c)
+    # Change x to sqrt(Θ²-Θc²)/λ and interpolate it to even spaced data
+    x_uneven=(np.sqrt( dataset.x[region]**2 - theta_c**2)%'rad')/lambda_x
+    x=np.linspace(x_uneven.min(), x_uneven.max(), len(x_uneven))
+    y_uneven=dataset.y[region]
+    f=interp1d(x_uneven, y_uneven, kind=interpolation_type, copy=False)
+    y=f(x)
+    # normalize by a polynomial fit to the logarithmic data
+    fit=FitPolynomialPowerlaw([0., 0., 0., -1., 1.])
+    fit.refine(x, y)
+    y=y/fit(x)
+    # Calculate the fourier transform of the data
+    fft_result=np.fft.rfft(y)[1:]
+    fft_y=np.abs(fft_result)
+    fft_x=np.linspace(1./(2.*x.max()), 1./(2.*x.max())*len(fft_y), len(fft_y))
+    fft_phi=np.angle(fft_result)
+    out=MeasurementData()
+    out.append_column( PhysicalProperty('d-spacing', 'Å', fft_x) )
+    out.append_column( PhysicalProperty('Amplitude', 'a.u.', fft_y) )
+    out.append_column( PhysicalProperty('phase', 'rad', fft_phi) )
+    out.sample_name=dataset.sample_name
+    out.short_info='Fourier Analysis with Θ_c=%g%s' % (theta_c, dataset.x.unit)
+    #out2=MeasurementData()
+    #out2.append_column( PhysicalProperty('d-spacing', 'Å', x) )
+    #out2.append_column( PhysicalProperty('Intensity', 'a.u.', y) )
+    return out#, out2
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
 

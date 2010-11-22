@@ -366,6 +366,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     if os.path.isfile(SCRIPT_PATH):
       # for cxFreeze remove the script name from the path
       SCRIPT_PATH=os.path.split(SCRIPT_PATH)[0]
+    self.GNUPLOT_COMMAND=config.gnuplot_preferences.GNUPLOT_COMMAND
     config.gnuplot_preferences.FONT_PATH=config.gnuplot_preferences.FONT_PATH.replace('[script-path]', SCRIPT_PATH)
     if 'linux' in sys.platform:
       # Linux case
@@ -373,7 +374,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       self.TEMP_DIR="/tmp/"
       self.SCRIPT_PATH=SCRIPT_PATH + '/'
       # name of the gnuplot command under linux
-      self.GNUPLOT_COMMAND=config.gnuplot_preferences.GNUPLOT_COMMAND
       # gnuplot term png can't handle font path longer than 64 letters, leaving 14 letters for font file name.
       if len(config.gnuplot_preferences.FONT_PATH)>50:
         # linking font path to tmp folder
@@ -389,7 +389,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       self.TEMP_DIR="/tmp/"
       self.SCRIPT_PATH=SCRIPT_PATH + '/'
       # name of the gnuplot command under linux
-      self.GNUPLOT_COMMAND=config.gnuplot_preferences.GNUPLOT_COMMAND
       # gnuplot term png can't handle font path longer than 64 letters, leaving 14 letters for font file name.
       if len(config.gnuplot_preferences.FONT_PATH)>50:
         # linking font path to tmp folder
@@ -404,8 +403,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       self.OPERATING_SYSTEM='windows'
       self.TEMP_DIR=os.getenv("TEMP")+'\\'
       self.SCRIPT_PATH=SCRIPT_PATH + '\\'
-      # name of the gnuplot command under windows
-      self.GNUPLOT_COMMAND="wgnuplot"
       self.gnuplot_scripts=True
       def replace_systemdependent( string): # replace backthlash by double backthlash for gnuplot under windows
         return string.replace('\\','\\\\').replace('\\\\\n','\\\n').replace('\\\\\\\\', '\\\\')

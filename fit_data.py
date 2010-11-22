@@ -542,6 +542,56 @@ class FitQuadratic(FitFunction):
     self.parameters=[1, 0, 0]
     FitFunction.__init__(self, initial_parameters)
 
+class FitPolynomialPowerlaw(FitFunction):
+  '''
+    Fit a quartic polynomial logarithmic function.
+  '''
+  
+  # define class variables.
+  name="Powerlaw with Polynom"
+  parameters=[0., 0., 1., 0.,  0.]
+  parameter_names=['a', 'b', 'c', 'd', 'e']
+  fit_function_text='a*x^2 + b*x + c'
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[0., 0., 1., 0., 0.]
+    FitFunction.__init__(self, initial_parameters)
+  
+  def fit_function(self, p, x):
+    x=numpy.array(x)
+    return 10.**(p[0]*x**4+p[1]*x**3+p[2]*x**2+p[3]*x+p[4])
+
+  def residuals(self, params, y, x, yerror=None):
+    '''
+      Function used by leastsq to compute the difference between the simulation and data.
+      For normal functions this is just the difference between y and simulation(x) but
+      can be overwritten e.g. to increase speed or fit to log(x).
+      If the dataset has yerror values they are used as weight.
+      
+      @param params Parameters for the function in this iteration
+      @param y List of y values measured
+      @param x List of x values for the measured points
+      @param yerror List of error values for the y values or None if the fit is not weighted
+      
+      @return Residuals (meaning the value to be minimized) of the fit function and the measured data
+    '''
+    # function is called len(x) times, this is just to speed up the lookup procedure
+    function=self.fit_function
+    function_parameters=[]
+    for i in range(len(self.parameters)):
+      if i in self.refine_parameters:
+        function_parameters.append(params[self.refine_parameters.index(i)])
+      else:
+        function_parameters.append(self.parameters[i])
+    remove_negative=numpy.where(y>0.)
+    x=x[remove_negative]
+    y=y[remove_negative]
+    err=numpy.log10(function(function_parameters, x))-numpy.log10(y)
+    return err
+  
 class FitSinus(FitFunction):
   '''
     Fit a sinus function.
@@ -1738,6 +1788,7 @@ class FitSession(FitSessionGUI):
                        FitBrillouineT.name: FitBrillouineT, 
                        FitFerromagnetic.name: FitFerromagnetic, 
                        FitCuK.name: FitCuK, 
+                       FitPolynomialPowerlaw.name: FitPolynomialPowerlaw, 
                        }
   available_functions_3d={
                        FitGaussian3D.name: FitGaussian3D, 

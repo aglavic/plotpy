@@ -11,6 +11,7 @@ import math
 # own modules
 import read_data.reflectometer
 from sessions.reflectometer_fit.reflectometer import *
+from dialogs import SimpleEntryDialog
 
 #----------------------- importing modules --------------------------
 
@@ -43,6 +44,8 @@ class ReflectometerGUI:
         <separator name='Reflectometer1'/>
         <menuitem action='ReflectometerCombineScans'/>
         <menuitem action='ReflectometerCreateMap'/>
+        <separator name='Reflectometer2'/>
+        <menuitem action='ReflectometerFourierAnalysis'/>
       </menu>
     '''
     # Create actions for the menu
@@ -71,6 +74,10 @@ class ReflectometerGUI:
                 "Create 3d Map from Rocking Scans", None,                    # label, accelerator
                 None,                                   # tooltip
                 self.combine_th_scans ),
+            ( "ReflectometerFourierAnalysis", None,                             # name, stock id
+                "Fourier Analysis Calculus...", '<control><shift>A',                    # label, accelerator
+                None,                                   # tooltip
+                self.fourier_analysis_dialog ),
              )
     return string,  actions
   
@@ -683,6 +690,7 @@ class ReflectometerGUI:
     dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
                       ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
     data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', print_info=False, only_fitted_columns=True, xfrom=self.x_from, xto=self.x_to)
+    self.active_file_data.fit_object.number_of_points=data_lines
     self.active_file_data.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
@@ -820,3 +828,27 @@ class ReflectometerGUI:
     '''
     dialog=gtk.Dialog()
   
+  def fourier_analysis_dialog(self, session, window):
+    '''
+      Opens a dialog do select Θc and λ for the fourier analysis calculus.
+    '''
+    dialog=SimpleEntryDialog('Fourier Analysis Calculus - Settings...', (
+                               ('Θc', 0.3, float), 
+                               ('λ', 1.54, float), 
+                               ('Interpolation Type', ['linear', 'cubic', 'nearest'], 0), 
+                               ))
+    options, accepted=dialog.run()
+    if accepted:
+      dialog.destroy()
+      theta_c=options['Θc']
+      lambda_x=options['λ']
+      interpolation_type=options['Interpolation Type']
+      index=window.index_mess
+      dataset=self.active_file_data[index]
+      fourier=self.fourier_analysis(dataset, theta_c, lambda_x=lambda_x, interpolation_type=interpolation_type)
+      fourier.number=str(index+1)
+      self.active_file_data.insert(index+1, fourier)
+      window.index_mess+=1
+      window.replot()
+    else:
+      dialog.destroy()

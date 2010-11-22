@@ -845,6 +845,7 @@ def calculate_savitzky_golay(dataset, window_size, order, max_deriv):
     
     @return a dataset containing the smoothed data and it's derivatives.
   '''
+  from measurement_data_structure import PhysicalUnit
   if dataset.zdata>=0:
     return None
   units=dataset.units()
@@ -857,10 +858,8 @@ def calculate_savitzky_golay(dataset, window_size, order, max_deriv):
                                                        ]
   max_deriv=min(order, max_deriv)
   for i in range(1, max_deriv):
-    if i>1:
-      newcols.append([dims[yindex]+("\\047"*i), units[yindex]+'/'+units[xindex]+'^%i'%i])
-    else:
-      newcols.append([dims[yindex]+"\\047", units[yindex]+'/'+units[xindex]])
+    newcols.append([dims[yindex]+("\\047"*i), 
+            PhysicalUnit(units[yindex])/PhysicalUnit(units[xindex]+'^%i'%i)])
   output=MeasurementData(newcols, [], 0, 2, 1)
   xlist=[]
   ylist=[]
