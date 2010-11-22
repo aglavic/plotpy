@@ -1,5 +1,5 @@
       Release Notes for the plotting script collection Version 0.6.3
-             Please report bugs and feature requests to http://atzes.homeip.net/plotwiki/tiki-forums.php
+             Please report bugs and feature requests to http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki
 
 
 Content:
@@ -24,7 +24,7 @@ For a description of the features see chapter 3.
 Version 0.6.3 is mainly fixing some issues with the GUI and backend but some additional features, which should
 not interfere with old functions, have also been included.
 If you would like some new features, found any bugs or would like to have additional file-types
-supported by the script feel free to go to the Wiki http://atzes.homeip.net/plotwiki/ . Any contribution
+supported by the script feel free to go to the Wiki http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki . Any contribution
 to the Wiki content is also welcome.
 
 ----- 1 - changes since version 0.6.2 -------
@@ -145,7 +145,7 @@ to the Wiki content is also welcome.
 
 
 ----------- 2 - installation --------------
-See http://atzes.homeip.net/plotwiki for more information
+See http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki for more information
 
 plotting-scripts:
 1. Extract Plot-script-{VERSION}.tar.gz to any destination folder:

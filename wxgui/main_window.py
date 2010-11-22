@@ -423,7 +423,7 @@ class ApplicationMainWindow( wx.Frame ):
      about_info.SetVersion( 'v%s'%__version__ )
      about_info.SetDevelopers( [__author__]+__credits__ )
      about_info.SetCopyright( '\302\251 Copyright 2008-2010 Artur Glavic\n a.glavic@fz-juelich.de' )
-     about_info.SetWebSite("http://www.fz-juelich.de/iff/Glavic_A/")
+     about_info.SetWebSite("http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki")
      dialog = wx.AboutBox( about_info )
   
   def show_config_path(self, action):

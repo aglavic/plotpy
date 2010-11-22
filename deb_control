@@ -3,7 +3,7 @@ Section: scientific
 Priority: extra
 Maintainer: Artur Glavic <a.glavic@fz-juelich.de>
 Standards-Version: 3.8.1
-Homepage: http://atzes.homeip.net/plotwiki
+Homepage: http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki
 
 Package: plot-script
 Architecture: all

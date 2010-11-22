@@ -30,7 +30,7 @@ __license__ = "None"
 __version__ = "0.7beta7"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
-__url__ = "http://atzes.homeip.net/plotwiki"
+__url__ = "http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki"
 __description__='''Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.'''
 
 __scripts__=['plot.py']

@@ -275,7 +275,7 @@ class RedirectError(RedirectOutput):
         debug_log.write('\n#-----------------------------end of tempfile %s------------\n' % tempfile)
       debug_log.close()
       msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log.gz has been created.\n\n"+\
-        "Please upload it to the bugreport forum at\n\nhttp://atzes.homeip.net/plotwiki\n\nwith some additional information.")
+        "Please upload it to the bugreport at\n\nhttp://iffwww.iff.kfa-juelich.de/~glavic/plotwiki\n\nwith some additional information.")
       msg.run()
       msg.destroy()
     else:

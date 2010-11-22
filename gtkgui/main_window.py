@@ -505,7 +505,7 @@ class ApplicationMainWindow(gtk.Window):
     dialog.set_version("v%s" % __version__)
     dialog.set_authors([__author__]+__credits__)
     dialog.set_copyright("© Copyright 2008-2010 Artur Glavic\n a.glavic@fz-juelich.de")
-    dialog.set_website("http://www.fz-juelich.de/iff/Glavic_A/")
+    dialog.set_website("http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki")
     dialog.set_website_label('Webseite @ fz-juelich.de')
     ## Close dialog on user response
     dialog.connect ("response", lambda d, r: d.destroy())
