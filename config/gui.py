@@ -31,3 +31,4 @@ if toolkit=='auto':
   except ImportError:
     import wx
     toolkit='wx'
+ 
