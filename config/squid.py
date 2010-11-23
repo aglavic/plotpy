@@ -42,19 +42,19 @@ COLUMNS_MAPPING=[\
 ,['Long Moment (emu)',3,['M_{rso}','emu'], 'Long Scan Std Dev']\
 #,['Long Scan Std Dev',4,['delta_M','emu']]\
 # AC dat file
-,["m' (emu)",3,['M_{ac}','emu']]\
-,["m' Scan Std Dev",4,['delta_M','emu']]\
+,["m' (emu)",3,['M_{ac}','emu'], "m' Scan Std Dev"]\
+#,["m' Scan Std Dev",4,['delta_M','emu']]\
 # Torque magnetometer
-,['Torque (Nm)',3,['Torque','Nm']]\
-,['Torque Std. Dev. (Nm)',4,['δTorque','Nm']]\
+,['Torque (Nm)',3,['Torque','Nm'], 'Torque Std. Dev. (Nm)']\
+#,['Torque Std. Dev. (Nm)',4,['δTorque','Nm']]\
 ,["Sample Position (deg)", 5, ['φ', '°']]\
 # AC PPMS dat file
-,["M' (emu)",7,["M\\047{ac}",'emu']]\
+,["M' (emu)",7,["M\\047{ac}",'emu', "M-Std.Dev. (emu)"]]\
 ,["M'' (emu)",8,["M\\047\\047_{ac}",'emu']]\
-,["M-Std.Dev. (emu)",4,['delta_M','emu']]\
+#,["M-Std.Dev. (emu)",4,['delta_M','emu']]\
 # VSM PPMS dat file
-,["Moment (emu)",3,["M",'emu']]\
-,['M. Std. Err. (emu)',4,['delta_M','emu']]\
+,["Moment (emu)",3,["M",'emu'], 'M. Std. Err. (emu)']\
+#,['M. Std. Err. (emu)',4,['delta_M','emu']]\
 # for RSO raw data files
 ,['Start Temperature (K)',2,['T','K']]\
 ,['Position (cm)',3,['pos','cm']]\

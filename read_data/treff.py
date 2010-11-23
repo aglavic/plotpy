@@ -76,11 +76,14 @@ class MeasurementDataTREFF(MeasurementData):
     else:
       new=deepcopy(self)
       add_obj=other
-    xydata=["%f,%f" % (new.data[0].values[i], new.data[1].values[i]) for i in range(len(new.data[0].values))]
-    for point in add_obj:
-      if "%f,%f" % (point[0], point[1]) in xydata:
-        continue
-      new.append(point)
+    xy=numpy.array([numpy.append(new.x, add_obj.x), numpy.append(new.y, add_obj.y)]).transpose()
+    # use tuple hash values to find unique items
+    xyitems=map(tuple, xy)
+    xyitems=map(tuple.__hash__, xyitems)
+    ignore, indices=numpy.unique1d(xyitems, return_index=True)
+    for i, col in enumerate(new.data):
+      col.append(add_obj.data[i])
+      new.data[i]=col[indices]
     return new
 
 def read_data(file_name, script_path, import_images, return_detector_images):
@@ -496,35 +499,34 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   except ValueError:
     return []
   img_file.close()
-  cos=math.cos
-  sin=math.sin
+  cos=numpy.cos
+  sin=numpy.sin
   data_list=[]
-  # for faster function lookup
-  append_to_list=data_list.append
   monitor=float(line[columns['Monitor']])
   calibration=numpy.array(calibration)
   img_columns_data=img_data.transpose()
-  img_intensities=numpy.array(map(lambda item: item.sum(), img_columns_data))
+  img_intensities=img_columns_data.sum(axis=1)
   try:
     intensities=img_intensities/monitor*calibration
   except ValueError:
     return []
   logintensities=numpy.log10(numpy.maximum(img_intensities, 0.1)/monitor*calibration)
   errors=numpy.sqrt(img_intensities)/monitor*calibration
-  alphaf=[alphaf_center + pixel_width * (CENTER_PIXEL - i) for i in range(DETECTOR_PIXELS)]
-  for i in range(DETECTOR_PIXELS):
-    if calibration[i] <= 0 :
-      continue # ignore blind spots of detector
-    # convert to mrad and create point list.
-    append_to_list((GRAD_TO_MRAD * alphai, 
-                    GRAD_TO_MRAD * alphaf[i], 
-                    GRAD_TO_MRAD * (alphai + alphaf[i]), 
-                    GRAD_TO_MRAD * (alphai - alphaf[i]), 
-                    PI_4_OVER_LAMBDA/2.*(cos(GRAD_TO_RAD * alphaf[i]) - cos(GRAD_TO_RAD * alphai)), 
-                    PI_4_OVER_LAMBDA/2.*(sin(GRAD_TO_RAD * alphai) + sin(GRAD_TO_RAD * alphaf[i])), 
-                    intensities[i], 
-                    logintensities[i], 
-                    errors[i]))
+  alphaf=alphaf_center + pixel_width * (CENTER_PIXEL - numpy.arange(DETECTOR_PIXELS))
+  filter_indices=numpy.where(calibration>0)
+  # create importent columns
+  data_list.append(GRAD_TO_MRAD*(numpy.zeros_like(alphaf)+alphai))
+  data_list.append(GRAD_TO_MRAD*alphaf)
+  data_list.append(data_list[0]+data_list[1])
+  data_list.append(data_list[0]-data_list[1])
+  data_list.append(PI_4_OVER_LAMBDA/2.*(cos(data_list[1]) - cos(data_list[0])))
+  data_list.append(PI_4_OVER_LAMBDA/2.*(sin(data_list[0]) + sin(data_list[1])))
+  data_list.append(intensities)
+  data_list.append(logintensities)
+  data_list.append(errors)
+  for i in range(9):
+    data_list[i]=data_list[i][filter_indices]
+  data_list=numpy.array(data_list).transpose().tolist()
   return data_list, img_data
 
 def read_simulation(file_name):

@@ -1739,7 +1739,7 @@ class PhysicalProperty(numpy.ndarray):
       self.resize(length+len(item), refcheck=False)
       if self.has_error:
         self._error.resize(length+len(item), refcheck=False)
-      self.__setslice__(length, length+len(item), item)
+      self.__setslice__(length, length+len(item), item.view(numpy.ndarray))
     elif hasattr(item, '__iter__'):
       if len(item)==2:
         if len(self)==0:

@@ -50,7 +50,9 @@ class TreffGUI:
           <menuitem action='TreffSelectPol'/>
           <menuitem action='TreffImportFit'/>
           <menuitem action='TreffExportFit'/>
+          <separator name='Treff1'/>
           <menuitem action='TreffSpecRef'/>
+          <menuitem action='TreffJoinDS'/>
         </menu>
       '''
     # Create actions for the menu
@@ -91,6 +93,10 @@ class TreffGUI:
                 "Gaussian Smoothing...", None,                    # label, accelerator
                 "Calculate convolution of data with gaussian.",                                   # tooltip
                 self.smooth_dataset_dialog ),
+            ( "TreffJoinDS", None,                             # name, stock id
+                "Join Datasets...", '<control>J',                    # label, accelerator
+                "Combine two datasets to one.",                                   # tooltip
+                self.join_datasets_dialog ),
              )
     return string,  actions
 
@@ -1183,6 +1189,36 @@ set style increment user
         return False
     self.dialog_fit(action, window)
     return True
+  
+  def join_datasets_dialog(self, action, window):
+    '''
+      Select two datasets and join them together.
+    '''
+    imported_files=self.file_data.keys()
+    imported_files.sort()
+    dialog=SimpleEntryDialog('Select Datasets to Join...', 
+                             (('Dataset 1', imported_files, imported_files.index(self.active_file_name)), 
+                             ('Dataset 2', imported_files, 0))
+                             )
+    options, result=dialog.run()
+    dialog.destroy()
+    if result:
+      d1=self.file_data[options['Dataset 1']]
+      d2=self.file_data[options['Dataset 2']]
+      if len(d1)<len(d2):
+        print "Can't join datasets with length %i and %i." % (len(d1), len(d2))
+        return
+      elif d1 is d2:
+        print "You need to select different datasets."
+        return
+      newd=[]
+      for i, data in enumerate(d1):
+        newd.append(data.join(d2[i]))
+      self.file_data[options['Dataset 1']+'+'+options['Dataset 2']]=newd
+      self.active_file_data=newd
+      self.active_file_name=options['Dataset 1']+'+'+options['Dataset 2']
+      window.measurement=newd
+      window.replot()
   
   #++++++++++ GISANS functions only present in this mode +++++++
   
