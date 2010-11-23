@@ -79,21 +79,10 @@ class FitFunction(FitFunctionGUI):
       else:
         function_parameters.append(self.parameters[i])
     if yerror==None: # is error list given?
-      # if function is defined for arrays (e.g. numpy) use this functionality
-      try:
-        err=function(function_parameters, x)-y
-      except TypeError:
-        # x and y are lists and the function is only defined for one point.
-        err= map((lambda x_i: function(function_parameters, x_i)-y[x.index(x_i)]), x)
-      return err
+      err=function(function_parameters, x)-y
     else:
-      # if function is defined for arrays (e.g. numpy) use this functionality
-      try:
-        err=(function(function_parameters, x)-y)/yerror
-      except TypeError:
-        # x and y are lists and the function is only defined for one point.
-        err= map((lambda x_i: (function(function_parameters, x_i)-y[x.index(x_i)])/yerror[x.index(x_i)]), x)
-      return err      
+      err=(function(function_parameters, x)-y)/yerror
+    return err      
   
   def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
     '''
@@ -129,6 +118,11 @@ class FitFunction(FitFunctionGUI):
       fit_args=(y, x)
     else:
       fit_args=(y, x, dy)
+    # remove errors which are zero
+    if dy is not None:
+      zero_elements=numpy.where(dy==0.)[0]
+      non_zero_elements=numpy.where(dy!=0.)[0]
+      dy[zero_elements]+=numpy.abs(dy[non_zero_elements]).min()
     new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=fit_args, full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     cov=cov_x
@@ -318,21 +312,10 @@ class FitFunction3D(FitFunctionGUI):
       else:
         function_parameters.append(self.parameters[i])
     if zerror is None: # is error list given?
-      # if function is defined for arrays (e.g. numpy) use this functionality
-      try:
-        err=function(function_parameters, x, y)-z
-      except TypeError:
-        # x and y are lists and the function is only defined for one point.
-        err=map(lambda x_i, y_i, z_i: function(function_parameters, x_i, y_i)-z_i, zip(x, y, z))
-      return err
+      err=function(function_parameters, x, y)-z
     else:
-      # if function is defined for arrays (e.g. numpy) use this functionality
-      try:
-        err=(function(function_parameters, x, y)-z)/zerror
-      except TypeError:
-        # x and y are lists and the function is only defined for one point.
-        err= map((lambda x_i, y_i, z_i, zerror_i: (function(function_parameters, x_i, y_i)-z_i)/zerror_i), zip(x, y, z, zerror))
-      return err      
+      err=(function(function_parameters, x, y)-z)/zerror
+    return err      
   
   def refine(self,  dataset_x,  dataset_y, dataset_z, dataset_zerror=None):
     '''
@@ -382,7 +365,12 @@ class FitFunction3D(FitFunctionGUI):
     if dz is None:
       fit_args=(z, y, x)
     else:
-      fit_args=(z, y, x, dz)  
+      fit_args=(z, y, x, dz)
+    # remove errors which are zero
+    if dz is not None:
+      zero_elements=numpy.where(dz==0.)[0]
+      non_zero_elements=numpy.where(dz!=0.)[0]
+      dz[zero_elements]+=numpy.abs(dz[non_zero_elements]).min()
     new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=fit_args, full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     cov=cov_x
@@ -1493,7 +1481,7 @@ class FitPsdVoigt3D(FitFunction3D):
     ydist=(numpy.array(y)-y0)
     xdif=numpy.abs(xdist*ta-ydist*tb)
     ydif=numpy.abs(ydist*ta+xdist*tb)
-    eta=p [7]
+    eta=p[7]
     c=p[8]
     G=numpy.exp(-numpy.log(2)*((xdif/sx)**2+(ydif/sy)**2))
     L=1./(1.+(xdif**2+ydif**2)/gamma**2)
@@ -1579,8 +1567,8 @@ class FitVoigt3D(FitFunction3D):
     else:
       numy=list(y)[1:].index(y[0])+1
       numx=len(y)//numy
-    x=numpy.float32(numpy.array(x)).reshape(numy, numx)
-    y=numpy.float32(numpy.array(y)).reshape(numy, numx)
+    x=numpy.array(x).reshape(numy, numx)
+    y=numpy.array(y).reshape(numy, numx)
     I=p[0]
     x0=p[1]
     y0=p[2]
@@ -1592,9 +1580,13 @@ class FitVoigt3D(FitFunction3D):
     ydist=y-y0
     c=p[7]
     L=1./(1.+((x-x0)/gamma_x)**2+((y-y0)/gamma_y)**2)
-    G=numpy.exp(-0.5*(((x-x.mean())/sigma_x)**2+((y-y.mean())/sigma_y)**2))/(sigma_x*sigma_y*2.*numpy.pi)
+    G=numpy.exp(-0.5*(((x-x.mean())/sigma_x)**2+((y-y.mean())/sigma_y)**2))
+    # normalize Gaussian
+    G/=G.sum()
     # convolute gauss and Lorentzian part using fft method
     V=signal.fftconvolve(L, G, mode='same')
+    # normalize convolution
+    V/=V.max()
     value = I * V + c
     return value.flatten()
 
@@ -1943,7 +1935,66 @@ class FitSession(FitSessionGUI):
     '''
       Create MeasurementData objects for every FitFunction.
     '''
-    pass
+    self.result_data=[]
+    dimensions=self.data.dimensions()
+    units=self.data.units()
+    column_1=(dimensions[self.data.xdata], units[self.data.xdata])
+    column_2=(dimensions[self.data.ydata], units[self.data.ydata])
+    column_3=(dimensions[self.data.zdata], units[self.data.zdata])
+    plot_list=[]
+    data=self.data
+    for function in self.functions:
+      fit=MeasurementData([column_1, column_2, column_3], # columns
+                                              [], # const_columns
+                                              0, # x-column
+                                              1, # y-column
+                                              -1,   # yerror-column
+                                              2   # z-column
+                                              )
+      div=MeasurementData([column_1, column_2, column_3], # columns
+                                              [], # const_columns
+                                              0, # x-column
+                                              1, # y-column
+                                              -1,   # yerror-column
+                                              2   # z-column
+                                              )
+      logdiv=MeasurementData([column_1, column_2, column_3], # columns
+                                              [], # const_columns
+                                              0, # x-column
+                                              1, # y-column
+                                              -1,   # yerror-column
+                                              2   # z-column
+                                              )
+      self.result_data.append(fit)
+      fit.plot_options=data.plot_options
+      div.plot_options=data.plot_options
+      logdiv.plot_options=data.plot_options
+      result=self.result_data[-1]
+      if function[2]:
+        fit.data[0]=data.x[:]
+        fit.data[1]=data.y[:]
+        div.data[0]=data.x[:]
+        div.data[1]=data.y[:]
+        logdiv.data[0]=data.x[:]
+        logdiv.data[1]=data.y[:]
+        fd=function[0](data.x, data.y)
+        fit.data[2].values=fd
+        div.data[2].values=data.z-fd
+        logdiv.data[2].values=10.**(numpy.log10(data.z)-numpy.log10(fd))
+        function_text=function[0].fit_function_text
+        for i in range(len(function[0].parameters)):
+          function_text=function_text.replace(function[0].parameter_names[i], "%.6g" % function[0].parameters[i], 2)
+        fit.short_info='fit: ' + function_text
+        div.short_info='data-%s' % function_text
+        logdiv.short_info='log(data)-log(%s)' % function_text
+        plot_list.append(fit)
+        if function[1]:
+          # show differences only when fitting
+          plot_list.append(div)
+          plot_list.append(logdiv)
+    self.data.plot_together=[self.data] + plot_list
+    if len(plot_list)>0:
+      self.data.plot_together_zindex=-1
 
   def simulate(self):
     '''

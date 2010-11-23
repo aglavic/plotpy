@@ -2965,57 +2965,58 @@ set multiplot layout %i,1
     def getxyz():
       # returns numpy arrays of x,y and z
       d=self.get_active_dataset()
-      xi=d.xdata
-      yi=d.ydata
-      zi=d.zdata
-      if zi>=0:
-        z=d.data[zi]
-      else:
-        z=None
-      return d.data[xi], d.data[yi], z
+      x=d.x
+      y=d.y
+      z=d.z
+      # if the dataset has an error value that is not
+      # empedded into the PhysicalProperty it is added to the output
+      if d._yerror>=0:
+        if z is not None:
+          z.error=d.data[d._yerror]
+        else:
+          y.error=d.data[d._yerror]
+      return x, y, z
     def getall():
       # returns a list of all columns as nump arrays
       return self.get_active_dataset().data
-    def newxyz(x, y, z=None):
+    def newxyz(x, y, z=None, sample_name=None, ):
       # create new plot of changed x,y and z columns
+      mds=measurement_data_structure
       d=self.get_active_dataset()
-      xi=d.xdata
-      yi=d.ydata
-      zi=d.zdata
-      newd=deepcopy(d)
-      if type(x) is measurement_data_structure.PhysicalProperty:
-        newd.data[xi]=x
+      if not hasattr(x, 'dimension'):
+        x=mds.PhysicalProperty(d.x.dimension, d.x.unit, x)
+      if not hasattr(y, 'dimension'):
+        y=mds.PhysicalProperty(d.y.dimension, d.y.unit, y)
+      if z is not None and not hasattr(z, 'dimension'):
+        z=mds.PhysicalProperty(d.z.dimension, d.z.unit, z)
+      newd=mds.MeasurementData()
+      newd.append_column(x)
+      newd.append_column(y)
+      if z is not None:
+        newd.zdata=2
+        newd.append_column(z)
+      newd.short_info=""
+      if sample_name is None:
+        newd.sample_name=d.sample_name
       else:
-        newd.data[xi].values=list(x)
-      newd.data[yi].values=list(y)
-      if type(y) is measurement_data_structure.PhysicalProperty:
-        newd.data[yi]=y
-      else:
-        newd.data[yi].values=list(y)
-      if zi>0:
-        if type(z) is measurement_data_structure.PhysicalProperty:
-          newd.data[zi]=z
-        else:
-          newd.data[zi].values=list(z)
-      newd.short_info+=" processed"
+        newd.sample_name=sample_name
       self.measurement.append(newd)
       self.index_mess=len(self.measurement)-1
+      newd.number=str(self.index_mess)
       self.replot()
     def newall(new_list):
       # create a new plot from a list of given columns
-      length=len(new_list[0])
-      if not (all(map(lambda item: type(item) is measurement_data_structure.PhysicalProperty, new_list)) and\
-        all(map(lambda item: len(item)==length, new_list))):
-        raise TypeError, 'Input should be list of PhysicalProperty instances with the same length'
-      # create a new plot from all columns
+      mds=measurement_data_structure
       d=self.get_active_dataset()
+      for i, col in enumerate(new_list):
+        if not hasattr(col, 'dimension'):
+          new_list[i]=mds.PhysicalProperty(d.data[i].dimension, d.data[i].unit, col)
       newd=deepcopy(d)
-      if len(new_list)!=len(d.data):
-        raise ValueError, 'Column number should be %i' % len(d.data)
       newd.data=new_list
       newd.short_info+=" processed"
       self.measurement.append(newd)
       self.index_mess=len(self.measurement)-1
+      newd.number=str(self.index_mess)
       self.replot()
     def mapdata(function):
       # apply a given function to all datasets of the active file
@@ -3275,6 +3276,18 @@ set multiplot layout %i,1
       print 'Gnuplot error!'
       self.show_last_plot_params(None)
 
+  def toggle_plotfit(self, action):
+    ds=self.measurement[self.index_mess]
+    if ds.plot_together_zindex==-1:
+      ds.plot_together_zindex=0
+    elif action.get_name()=='TogglePlotFit':
+      ds.plot_together_zindex=-1
+    else:
+      ds.plot_together_zindex+=1
+      if ds.plot_together_zindex==len(ds.plot_together):
+        ds.plot_together_zindex=0
+    self.replot()
+
   def replot(self):
     '''
       Recreate the current plot and clear statusbar.
@@ -3424,7 +3437,6 @@ set multiplot layout %i,1
         None,                                   # tooltip
         None ),)
   # Menus allways present
-  # TODO: Add unit transformation to GUI.
     output='''<ui>
     <menubar name='MenuBar'>
       <menu action='FileMenu'>
@@ -3597,6 +3609,11 @@ set multiplot layout %i,1
       <toolitem action='LoadSnapshot'/>
       <separator name='static13'/>
       <toolitem action='ShowPersistent'/>
+      '''
+    if self.measurement[self.index_mess].zdata>=0 and len(self.measurement[self.index_mess].plot_together)>1:
+      output+='''      <toolitem action='TogglePlotFit'/>
+      <toolitem action='IteratePlotFit'/>'''
+    output+='''
     </toolbar>
     </ui>'''
     return output
@@ -3805,6 +3822,14 @@ set multiplot layout %i,1
         "Open Persistent Gnuplot Window", None,                     # label, accelerator
         None,                                    # tooltip
         self.plot_persistent),
+      ( "TogglePlotFit", gtk.STOCK_ZOOM_FIT,                    # name, stock id
+        "Toggle between data,fit and combined plot", "<control>T",                     # label, accelerator
+        None,                                    # tooltip
+        self.toggle_plotfit),
+      ( "IteratePlotFit", gtk.STOCK_ZOOM_100,                    # name, stock id
+        "Select between data and fits to plot", "<control>T",                     # label, accelerator
+        None,                                    # tooltip
+        self.toggle_plotfit),
     )+self.added_items;
     # Create the menubar and toolbar
     action_group = gtk.ActionGroup("AppWindowActions")

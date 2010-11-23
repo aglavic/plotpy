@@ -25,152 +25,6 @@ __status__ = "Development"
 
 persistene_plots=0
 
-def gnuplot_plot(session, 
-                 datasets,
-                 file_name_prefix, 
-                 title,
-                 names,
-                 with_errorbars,
-                 output_file=gnuplot_preferences.output_file_name,
-                 additional_info='',
-                 fit_lorentz=False, 
-                 sample_name=None):
-  '''
-    Plotting with direct piping of the data to gnuplot, should work much faster
-    Gnuplot.py must by installed and properly working.
-    Files are stored in temporary folder set in gnuplot_preferences.
-    
-    @param session The session object to use
-    @param file_name_prefix Prefix of the used data and gnuplot files
-    @param title The title of the plot
-    @param names The names of the plotted functions
-    @param with_errorbars Use errorbars layout when plotting
-    @param output_file File name for the output picture_height
-    @param additional_info Additional info string for the title
-    @param fit_lorentz Is a fit included in this measurement?
-    
-    @return Gnuplot error message or empty string
-  '''
-  gp=gnuplot_preferences # short form for gnuplot_preferences
-  import Gnuplot
-  if not sample_name:
-    sample_name=datasets[0].sample_name
-  file_numbers=[]
-  for j, dataset in enumerate(datasets):
-    for i, attachedset in enumerate(dataset.plot_together):
-      file_numbers.append(str(j)+'-'+str(i))
-  if output_file.rsplit('.',1)[1]=='ps': # Determine which terminal to use depending on filename suffix
-    postscript_export=True
-    terminal=gp.set_output_terminal_ps
-  else:
-    postscript_export=False
-    terminal=gp.set_output_terminal_png
-  if with_errorbars|fit_lorentz: # Design of plot changed when using errorbars
-    plotting_param=str(gp.plotting_parameters_errorbars)
-  else:
-    plotting_param=str(gp.plotting_parameters)
-  # replace place holders
-  plotting_param=replace_ph(session, 
-                            plotting_param,
-                            datasets,
-                            file_name_prefix,
-                            file_numbers, 
-                            title,
-                            names,
-                            sample_name,
-                            (0, 0, 0),
-                            postscript_export,
-                            additional_info) 
-  gplot=Gnuplot.Gnuplot()
-  gnuplot_settings=gp.GNUPLOT_FILE_HEAD+\
-  'set term '+terminal+'\n'+\
-  'set output "'+output_file+'"\n'+\
-  'set encoding '+gp.ENCODING+'\n'+\
-  'set xlabel "'+gp.x_label+'"\n'+\
-  'set ylabel "'+gp.y_label+'"\n'+\
-  'set title "'+gp.plot_title+'"\n'
-  if (len(datasets)==1) and (len(datasets[0].plot_together)==1): # if there is only one graph don't show a key
-    gnuplot_settings+='unset key\n'
-  if datasets[0].zdata>=0: # plotting in 3D?
-    gnuplot_settings=gnuplot_settings+'set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
-            'set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
-    if ((datasets[0].view_x%180)==0)&((datasets[0].view_z%90)==0):
-      gnuplot_settings=gnuplot_settings+gp.settings_3dmap
-    else:
-      gnuplot_settings=gnuplot_settings+gp.settings_3d
-    plotting_param=str(gp.plotting_parameters_3d)
-  # replacing placeholders
-  gnuplot_settings=replace_ph(session, 
-                              gnuplot_settings+datasets[0].plot_options,
-                              datasets,
-                              file_name_prefix,
-                              file_numbers, 
-                              title,
-                              names,
-                              sample_name,
-                              (0, 0, 0),
-                              postscript_export,
-                              additional_info) 
-  # Manually mimic the Gnuplot plot function to use multiple plots, which is not easyly possible otherwise.
-  gplot(gnuplot_settings)
-  if datasets[0].logx:
-    gplot('set log x')
-  else:
-    gplot('unset log x')
-  if datasets[0].logy:
-    gplot('set log y')
-  else:
-    gplot('unset log y')
-  if datasets[0].logz and dataset[0].zdata>=0:
-    gplot('set log z\nset log cb')
-  else:
-    gplot('unset log z\nunset log cb')
-  if datasets[0].zdata>=0:
-    gplot.plotcmd = 'splot'
-  else:
-    gplot.plotcmd = 'plot'
-  gplot._clear_queue()
-  for i,dataset in enumerate(datasets):
-  #++++++++++++++++++++++++ add each dataset to the plot +++++++++++++
-    together_list=[use for use in dataset.plot_together if use!=dataset]
-    if with_errorbars:
-      datalist=dataset.list_err()
-    else:
-      datalist=dataset.list()
-    if (dataset.zdata>=0): # for 3d-Data we have to create a temporal File
-      dataset.export(session.TEMP_DIR+'tmp_data'+str(i)+'.out')
-      plot=[Gnuplot.PlotItems.File(session.TEMP_DIR+'tmp_data'+str(i)+'.out',
-                                   with_=str(plotting_param.replace('w ','',1)),
-                                   title=names[datasets.index(dataset)],
-                                   using=str(dataset.xdata+1)+':'+str(dataset.ydata+1)+':'+str(dataset.zdata+1))]
-    else:
-      plot=[Gnuplot.PlotItems.Data(datalist,
-                                   with_=str(plotting_param.replace('w ','',1)),
-                                   title=names[datasets.index(dataset)])]
-    gplot._add_to_queue(plot)
-
-  #------------------------ add each dataset to the plot --------------
-    for j,attachedset in enumerate(together_list):
-      #++++++++++++++++++++++++ add attached datasets to the plot +++++++++++++
-      datalist=attachedset.list()
-      if (attachedset.zdata>=0): # for 3d-Data we have to create a temporal File
-        attachedset.export(session.TEMP_DIR+'tmp_data'+str(i)+'-'+str(j)+'.out')
-        plot=[Gnuplot.PlotItems.File(session.TEMP_DIR+'tmp_data'+str(i)+'.out',
-                                     with_=str(plotting_param.replace('w ','',1)),
-                                     title=attachedset.short_info,
-                                     using=str(attachedset.xdata+1)+':'+str(attachedset.ydata+1)+':'+str(attachedset.zdata+1))]
-      else:
-        plot=[Gnuplot.PlotItems.Data(datalist,
-                                     with_=str(gp.plotting_parameters).replace('w ','',1),
-                                     title=attachedset.short_info)]
-      gplot._add_to_queue(plot)
-    #------------------------  add attached datasets to the plot --------------
-  gplot.refresh()
-  gplot.close()
-  # read stdout and stderr from gnuplot
-  output=(session.gnuplot_output[0].read(), session.gnuplot_output[1].read())
-  return output[1] # return the stderror
-
 def gnuplot_plot_script(session,  
                         datasets,
                         file_name_prefix, 
@@ -342,13 +196,12 @@ def create_plot_script(session,
       
       @return The text of the script
   '''
-  # TODO: Check for all functionalities compared with no script mode.
-  # Ceck for unused code.
   if output_file_prefix is None:
     output_file_prefix=session.TEMP_DIR+'tmp_data_'
   gp=gnuplot_preferences # define global gnuplot_preferences modul as local gp 
   if not sample_name:
     sample_name=datasets[0].sample_name
+  # Get nummerating strings for the datasets
   file_numbers=[]
   inserted=0
   for j, dataset in enumerate(datasets):
@@ -357,63 +210,43 @@ def create_plot_script(session,
       if i>0:
         names.insert(j+inserted+1, attachedset.short_info)
         inserted+=1
-  if show_persistent:
-    postscript_export=True
-    terminal=gp.set_output_terminal_wxt
-  elif output_file.rsplit('.',1)[1]=='ps':
-    postscript_export=True
-    terminal=gp.set_output_terminal_ps
+  # Create global options
+  postscript_export, gnuplot_file_text= script_header(show_persistent, datasets, output_file)
+  gnuplot_file_text=replace_ph(session, 
+                             gnuplot_file_text,
+                             datasets,
+                             file_name_prefix, 
+                             file_numbers, 
+                             title,
+                             names,
+                             sample_name,
+                             (0, 0, 0),
+                             postscript_export,
+                             additional_info)
+  # Creat plot/splot lines
+  if datasets[0].zdata>=0:
+    gnuplot_file_text+=script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
+                     title, names, sample_name, postscript_export, additional_info, with_errorbars)
   else:
-    postscript_export=False
-    terminal=gp.set_output_terminal_png
+    gnuplot_file_text+=script_plotlines(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
+                     title, names, sample_name, postscript_export, additional_info, with_errorbars)
+  return gnuplot_file_text
+
+def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
+                     title, names, sample_name, postscript_export, additional_info, with_errorbars):
+  '''
+    Plot lines for 2d plots. (x vs. y)
+  '''
+  gnuplot_file_text=''
+  gp=gnuplot_preferences
   if with_errorbars and datasets[0].yerror is not None:
     plotting_param=gp.plotting_parameters_errorbars
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].yerror+1)
   else:
     plotting_param=gp.plotting_parameters
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)
-  gnuplot_file_text=gp.GNUPLOT_FILE_HEAD+\
-                    'set term '+terminal+'\n'
-  if not show_persistent:
-    gnuplot_file_text+='set output "'+output_file+'"\n'
-  gnuplot_file_text+='set encoding '+gp.ENCODING+'\n'+\
-                     'set xlabel "'+gp.x_label+'"\n'+\
-                     'set ylabel "'+gp.y_label+'"\n'+\
-                     'set title "'+gp.plot_title+'"\n'
-  if (len(datasets)==1) and (len(datasets[0].plot_together)==1): # if there is only one graph don't show a key
-    gnuplot_file_text+='unset key\n'
-  gnuplot_file_text+=datasets[0].plot_options
-  if datasets[0].logx:
-    gnuplot_file_text=gnuplot_file_text+'set log x\n'
-  if datasets[0].logy:
-    gnuplot_file_text=gnuplot_file_text+'set log y\n'
-  if datasets[0].logz and datasets[0].zdata>=0:
-    gnuplot_file_text=gnuplot_file_text+'set log z\nset log cb\n'
-  splot_add=datasets[0].plot_options.splot
-  if datasets[0].zdata>=0:
-    plotting_param=gp.plotting_parameters_3d
-    gnuplot_file_text+='set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
-        'set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
-    if ((datasets[0].view_x%180)==0)&((datasets[0].view_z%90)==0):
-      gnuplot_file_text+=gp.settings_3dmap
-    else:
-      gnuplot_file_text+=gp.settings_3d
-    splot_add='s'
-    using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].zdata+1)
   output_file_prefix=os.path.normpath(output_file_prefix)
-  if len(datasets)==1 and getattr(datasets[0], 'is_matrix_data', False):
-    return replace_ph(session, 
-                       gnuplot_file_text+plot_matrix(datasets[0], output_file_prefix+file_numbers[0]+'.bin'),
-                       datasets,
-                       file_name_prefix,
-                       file_numbers, 
-                       title,
-                       names,
-                       sample_name,
-                       (0, 0, 0),
-                       postscript_export,
-                       additional_info)
-  gnuplot_file_text+='# now the plotting function\n'+splot_add+\
+  gnuplot_file_text+='# now the plotting function\n'+\
         'plot "'+output_file_prefix+file_numbers[0]+'.out" u '+using_cols+\
                 datasets[0].plot_options.special_using_parameters+\
                 ' t "'+gp.titles+'" '+\
@@ -432,9 +265,7 @@ def create_plot_script(session,
   for number in file_numbers[1:]:
     i, j=(int(number.split('-')[0]), int(number.split('-')[1]))
     if j==0:
-      if datasets[0].zdata>=0:
-        using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)+':'+str(datasets[i].zdata+1)
-      elif with_errorbars and datasets[i].yerror is not None:
+      if with_errorbars and datasets[i].yerror is not None:
         plotting_param=gp.plotting_parameters_errorbars
         using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)+':'+str(datasets[i].yerror+1)
       else:
@@ -457,8 +288,7 @@ def create_plot_script(session,
                                    additional_info)
     else:
       using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
-                          str(datasets[i].plot_together[j].ydata+1)#+':'+\
-                          #str(datasets[i].plot_together[j].yerror+1)
+                          str(datasets[i].plot_together[j].ydata+1)
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
           '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
       gnuplot_file_text=replace_ph(session, 
@@ -473,6 +303,152 @@ def create_plot_script(session,
                                    postscript_export,
                                    additional_info)
   return gnuplot_file_text
+
+def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
+                     title, names, sample_name, postscript_export, additional_info, with_errorbars):
+  '''
+    Plot lines for 3d plots. (x,y vs. z)
+  '''
+  gnuplot_file_text=''
+  gp=gnuplot_preferences  
+  plotting_param=gp.plotting_parameters_3d
+  gnuplot_file_text+='set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
+      'set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
+  if ((datasets[0].view_x%180)==0)&((datasets[0].view_z%90)==0):
+    gnuplot_file_text+=gp.settings_3dmap
+  else:
+    gnuplot_file_text+=gp.settings_3d
+  first_index=datasets[0].plot_together_zindex
+  if first_index==-1:
+    return gnuplot_file_text+script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_file_prefix, 
+                      file_numbers, title, names, sample_name, postscript_export, additional_info, with_errorbars)
+  using_cols=str(datasets[0].plot_together[first_index].xdata+1)+':'+\
+              str(datasets[0].plot_together[first_index].ydata+1)+':'+\
+              str(datasets[0].plot_together[first_index].zdata+1)
+  output_file_prefix=os.path.normpath(output_file_prefix)
+  if len(datasets)==1 and getattr(datasets[0], 'is_matrix_data', False):
+    return replace_ph(session, 
+                       gnuplot_file_text+plot_matrix(datasets[0], output_file_prefix+file_numbers[0]+'.bin'),
+                       datasets,
+                       file_name_prefix,
+                       file_numbers, 
+                       title,
+                       names,
+                       sample_name,
+                       (0, 0, 0),
+                       postscript_export,
+                       additional_info)
+  gnuplot_file_text+='# now the plotting function\n'+\
+        'splot "'+output_file_prefix+file_numbers[first_index]+'.out" u '+using_cols+\
+                datasets[0].plot_options.special_using_parameters+\
+                ' t "'+gp.titles+'" '+\
+                (datasets[0].plot_options.special_plot_parameters or plotting_param)
+  gnuplot_file_text=replace_ph(session, 
+                             gnuplot_file_text,
+                             datasets,
+                             file_name_prefix, 
+                             file_numbers, 
+                             title,
+                             names,
+                             sample_name,
+                             (0, first_index, 0),
+                             postscript_export,
+                             additional_info)
+  for i in range(len(datasets[1:])):
+    j=datasets[i].plot_together_zindex
+    number="%i-%i" % (i, j)
+    using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
+                        str(datasets[i].plot_together[j].ydata+1)+':'+\
+                        str(datasets[i].plot_together[j].zdata+1)
+    gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
+        '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
+    gnuplot_file_text=replace_ph(session, 
+                                 gnuplot_file_text,
+                                 datasets,
+                                 file_name_prefix,
+                                 file_numbers, 
+                                 title,
+                                 names,
+                                 sample_name,
+                                 (i, j, file_numbers.index(number)),
+                                 postscript_export,
+                                 additional_info)
+  return gnuplot_file_text
+
+def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_file_prefix, 
+                    file_numbers, title, names, sample_name, postscript_export, additional_info, with_errorbars):
+  '''
+    Plot lines for 3d plots as multiplot layout. (x,y vs. z)
+  '''
+  from math import log
+  gp=gnuplot_preferences
+  plotting_param=gp.plotting_parameters_3d
+  output_file_prefix=os.path.normpath(output_file_prefix)
+  cols=int(log((len(datasets[0].plot_together))+1, 2))
+  rows=(len(datasets[0].plot_together)-1)//cols+1
+  gnuplot_file_text='# now the plotting functions in multiplot layout\n'+\
+                    'set multiplot layout %i,%i\n' % (cols, rows)+\
+                    'unset key\n'
+  for i, subdata in enumerate(datasets[0].plot_together):
+    gnuplot_file_text+='set title "%s"\n' % (subdata.sample_name+' '+subdata.short_info)
+    #if subdata.logz:
+      #gnuplot_file_text+='set log z\nset log cb\n'
+    #else:
+      #gnuplot_file_text+='unset log z\nunset log cb\n'
+    using_cols=str(subdata.xdata+1)+':'+\
+              str(subdata.ydata+1)+':'+\
+              str(subdata.zdata+1)
+    gnuplot_file_text+='splot "'+output_file_prefix+file_numbers[i]+'.out" u '+using_cols+\
+                  datasets[0].plot_options.special_using_parameters+\
+                  ' t "'+gp.titles+'" '+\
+                  (datasets[0].plot_options.special_plot_parameters or plotting_param)+'\n'
+    gnuplot_file_text=replace_ph(session, 
+                             gnuplot_file_text,
+                             datasets,
+                             file_name_prefix, 
+                             file_numbers, 
+                             title,
+                             names,
+                             sample_name,
+                             (0, i, 0),
+                             postscript_export,
+                             additional_info)
+  return gnuplot_file_text+'unset multiplot\n'
+    
+
+def script_header(show_persistent, datasets, output_file):
+  '''
+    Create the header of the script with global settings.
+  '''
+  gp=gnuplot_preferences
+  if show_persistent:
+    postscript_export=True
+    terminal=gp.set_output_terminal_wxt
+  elif output_file.rsplit('.',1)[1]=='ps':
+    postscript_export=True
+    terminal=gp.set_output_terminal_ps
+  else:
+    postscript_export=False
+    terminal=gp.set_output_terminal_png
+  gnuplot_file_text=gp.GNUPLOT_FILE_HEAD+\
+                    'set term '+terminal+'\n'
+  if not show_persistent:
+    gnuplot_file_text+='set output "'+output_file+'"\n'
+  gnuplot_file_text+='set encoding '+gp.ENCODING+'\n'+\
+                     'set xlabel "'+gp.x_label+'"\n'+\
+                     'set ylabel "'+gp.y_label+'"\n'+\
+                     'set title "'+gp.plot_title+'"\n'
+  if (len(datasets)==1) and (len(datasets[0].plot_together)==1): # if there is only one graph don't show a key
+    gnuplot_file_text+='unset key\n'
+  gnuplot_file_text+=datasets[0].plot_options
+  if datasets[0].logx:
+    gnuplot_file_text=gnuplot_file_text+'set log x\n'
+  if datasets[0].logy:
+    gnuplot_file_text=gnuplot_file_text+'set log y\n'
+  if datasets[0].logz and datasets[0].zdata>=0:
+    gnuplot_file_text=gnuplot_file_text+'set log z\nset log cb\n'
+  return postscript_export, gnuplot_file_text
+
 
 def plot_matrix(dataset, file_name):
   return 'plot "%s" binary format="%%float" u 1:2:3 w image\n' % (file_name, )

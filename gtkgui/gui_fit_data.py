@@ -302,6 +302,7 @@ class FitSessionGUI:
     size=dialog.get_size()
     position=dialog.get_position()
     dialog.destroy()
+    window.rebuild_menus()
     window.replot()
     if self.show_covariance:
       # Show the estimated errors of the fit parameters

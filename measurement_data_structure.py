@@ -124,6 +124,7 @@ class MeasurementData(object):
       self.const_data.append([con[0],PhysicalProperty(self.data[con[0]].dimension,self.data[con[0]].unit)])
       self.const_data[-1][1].append(con[1])
     self.plot_together=[self] # list of datasets, which will be plotted together
+    self.plot_together_zindex=0
     self.fit_object=None
 
   def __iter__(self): # see next()
@@ -1164,6 +1165,7 @@ derivatives={# derivatives to numpy base functions for error propagation
              numpy.arccos.__str__(): lambda input: -1./(1.-input**2)**0.5, 
              numpy.arctan.__str__(): lambda input: 1./(1.+input**2),
              numpy.log.__str__(): lambda input: 1./input,
+             numpy.log10.__str__(): lambda input: 1./input,
              numpy.square.__str__(): lambda input: 2.*input , 
              numpy.sqrt.__str__(): lambda input: 1./(2.*numpy.sqrt(input)), 
              
@@ -2177,6 +2179,37 @@ class PhysicalProperty(numpy.ndarray):
         return output
       else:
         raise ValueError, '% only defined with str or iterable object of at least one string and two floats/ints'
+
+  # Boolean operations:
+  def __eq__(self, other):
+    if hasattr(other, 'dimension'):
+      other=other.view(numpy.ndarray)
+    return numpy.ndarray.__eq__(self.view(numpy.ndarray), other)
+
+  def __gt__(self, other):
+    if hasattr(other, 'dimension'):
+      other=other.view(numpy.ndarray)
+    return numpy.ndarray.__gt__(self.view(numpy.ndarray), other)
+
+  def __ge__(self, other):
+    if hasattr(other, 'dimension'):
+      other=other.view(numpy.ndarray)
+    return numpy.ndarray.__ge__(self.view(numpy.ndarray), other)
+
+  def __lt__(self, other):
+    if hasattr(other, 'dimension'):
+      other=other.view(numpy.ndarray)
+    return numpy.ndarray.__lt__(self.view(numpy.ndarray), other)
+
+  def __le__(self, other):
+    if hasattr(other, 'dimension'):
+      other=other.view(numpy.ndarray)
+    return numpy.ndarray.__le__(self.view(numpy.ndarray), other)
+
+  def __ne__(self, other):
+    if hasattr(other, 'dimension'):
+      other=other.view(numpy.ndarray)
+    return numpy.ndarray.__ne__(self.view(numpy.ndarray), other)
 
   def min(self):
     '''
