@@ -142,16 +142,16 @@ class FileActions:
       
       @return If the extraction has been sucessful
     '''
-    data=self.window.measurement[self.window.index_mess]
+    dataset=self.window.measurement[self.window.index_mess]
     try:
       cs_object=self.create_cross_section(x, x_0, y, y_0, w, binning, gauss_weighting, sigma_gauss, bin_distance)
       if cs_object is None:
         return False
-      cs_object.number=data.number
+      cs_object.number=dataset.number
       cs_object.short_info='%s - Cross-Section through (%g,%g)+x*(%g,%g)' % (
-                           data.short_info, x_0, y_0, x,y) 
-      cs_object.sample_name=data.sample_name
-      cs_object.info=data.info
+                           dataset.short_info, x_0, y_0, x,y) 
+      cs_object.sample_name=dataset.sample_name
+      cs_object.info=dataset.info
       if at_end:
         self.window.measurement.append(cs_object)
         self.window.index_mess=len(self.window.measurement)-1
@@ -430,13 +430,14 @@ class FileActions:
       bin the extracted data and to weight the binning with a gaussian.
     '''
     from math import sqrt, exp
-    data=self.window.measurement[self.window.index_mess].list_err()
-    dims=self.window.measurement[self.window.index_mess].dimensions()
-    units=self.window.measurement[self.window.index_mess].units()
-    cols=(self.window.measurement[self.window.index_mess].xdata, 
-          self.window.measurement[self.window.index_mess].ydata, 
-          self.window.measurement[self.window.index_mess].zdata, 
-          self.window.measurement[self.window.index_mess].yerror)
+    dataset=self.window.measurement[self.window.index_mess]
+    data=dataset.list_err()
+    dims=dataset.dimensions()
+    units=dataset.units()
+    cols=(dataset.xdata, 
+          dataset.ydata, 
+          dataset.zdata, 
+          dataset.yerror)
     new_cols=[(dims[col], units[col]) for col in cols]
     # Einheitsvector of line
     vec_e=(x/sqrt(x**2+y**2), y/sqrt(x**2+y**2))

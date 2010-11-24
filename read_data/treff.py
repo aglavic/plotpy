@@ -11,7 +11,7 @@ import os
 import math
 import numpy
 from copy import deepcopy
-from measurement_data_structure import MeasurementData
+from measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalConstant
 from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, \
                           PIXEL_WIDTH, DETECTOR_PIXELS,CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
 from zipfile import ZipFile
@@ -70,6 +70,12 @@ class MeasurementDataTREFF(MeasurementData):
       
       @return Another MeasurementDataTREFF instance.
     '''
+    # ignore warning from numpy.unique1d
+    import warnings
+    original_filters = warnings.filters[:]
+    # Ignore warnings.
+    warnings.simplefilter("ignore")
+    
     if join_type==1:
       new=deepcopy(other)
       add_obj=self
@@ -84,6 +90,8 @@ class MeasurementDataTREFF(MeasurementData):
     for i, col in enumerate(new.data):
       col.append(add_obj.data[i])
       new.data[i]=col[indices]
+    # restore old warning filters
+    warnings.filters = original_filters
     return new
 
 def read_data(file_name, script_path, import_images, return_detector_images):
@@ -96,6 +104,9 @@ def read_data(file_name, script_path, import_images, return_detector_images):
     
     @return List of MeasurementData objects for the 2d maps and scans splitted by polarization channels
   '''
+  #
+  if file_name.endswith('.d17'):
+    return read_d17_processed_data(file_name)
   # reset parameters, if maria image was imported before
   global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, PI_4_OVER_LAMBDA
   from config.treff import DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, PI_4_OVER_LAMBDA
@@ -757,6 +768,73 @@ def create_img_object(data, alphai=0., alphaf_center=0., cnt_time=1.):
   return dataobj
   
 
+
+def read_d17_processed_data(file_name):
+  '''
+    Read already processed data from the d17 instrument.
+  '''
+  if not os.path.exists(file_name):
+    print 'File '+file_name+' does not exist.'
+    return 'NULL'
+  file_text=open(file_name, 'r').read()
+  file_lines=file_text.splitlines()
+  first_block=-1
+  for i in range(10):
+    if file_lines[i].startswith('X-axis:'):
+      first_block=i+1
+      scan_points=int(file_lines[i].split('by')[-1].split('rows')[0])
+  if first_block==-1:
+    print 'No valid D17 data header found.'
+    return 'NULL'
+  sample_name=file_lines[0]
+  pol_channels=['++', '-+', '+-', '--']
+  alphaf=d17_pp_from_block('α_f', '°', file_lines[first_block:first_block+scan_points])
+  alphai=d17_pp_from_block('α_i', '°', file_lines[first_block+scan_points+2:first_block+2+2*scan_points])
+  channels=int(file_lines[first_block+scan_points*2+2].split('(')[1].split('arrays')[0])
+  # import the data for the channels
+  datasets=[]
+  min_int=1.e6
+  max_int=0.
+  for i in range(channels):
+    index=(scan_points+1)*i+(scan_points+2)*2+first_block
+    error_index=(scan_points+1)*(i+channels-1)+(scan_points+2)*3+first_block
+    intensity=d17_pp_from_block('Intensity', 
+                                'a.u.', 
+                                file_lines[index:index+scan_points],
+                                error_block=file_lines[error_index:error_index+scan_points])
+    dataset=MeasurementDataTREFF(zdata=2)
+    dataset.append_column(alphai)
+    dataset.append_column(alphaf)
+    dataset.append_column(intensity)
+    dataset.logz=True
+    dataset.sample_name=sample_name
+    dataset.short_info=pol_channels[i]
+    min_int=min(min_int, intensity[numpy.where(intensity!=0)].min())
+    max_int=max(max_int, intensity.max())
+    datasets.append(dataset)
+  min_int=10.**(int(math.log10(min_int)))
+  max_int=10.**(int(math.log10(max_int))+1)
+  for dataset in datasets:
+    dataset.plot_options.zrange=(min_int, max_int)
+  if len(datasets)==4:
+    datasets=[datasets[0], datasets[3], datasets[2], datasets[1]]
+  return datasets
+  
+  
+
+def d17_pp_from_block(dimension, unit, block, error_block=None):
+  '''
+    Convert a block of data lines into a phyical property.
+  '''
+  split_block=map(str.split, block)
+  if error_block is not None:
+    split_error_block=map(str.split, error_block)
+    error_data=numpy.array(split_error_block, dtype=numpy.float32).flatten()
+  pp=PhysicalProperty(dimension, unit, split_block)
+  pp=pp.flatten()
+  if error_block is not None:
+    pp.error=error_data
+  return pp
 
 if not getattr(ZipFile, 'open', False):
   import zipfile

@@ -1697,7 +1697,8 @@ class PhysicalProperty(numpy.ndarray):
       @param dimension_in String with the dimensions for that instance
       @param unit_in String with unit for that instance
     '''
-    obj=numpy.ndarray.__new__(subtype, len(input_data), dtype=numpy.float32)
+    #obj=numpy.ndarray.__new__(subtype, len(input_data), dtype=numpy.float32)
+    obj=numpy.asarray(input_data, dtype=numpy.float32).view(subtype).copy()
     obj.unit=PhysicalUnit(unit_in)
     obj.dimension=dimension_in
     obj.unit_save=True

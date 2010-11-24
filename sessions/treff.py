@@ -352,7 +352,8 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
 
-  def do_extract_specular_reflectivity(self, file_actions, line_width, weighting, sigma, binning, center_position_offset=(0., 0.)):
+  def do_extract_specular_reflectivity(self, file_actions, line_width, weighting, 
+                                       sigma, binning, center_position_offset=(0., 0.)):
     '''
       Function to extract the true specular reflectivity from an intensity map. It is appended to the
       file_actions dictionary to make it useable in a makro.
@@ -367,12 +368,12 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     specular=file_actions.create_cross_section(1.0, center_position_offset[0], 1.0, center_position_offset[1], 
                                                       line_width, 1, gauss_weighting=weighting, 
                                                       sigma_gauss=sigma, bin_distance=binning)
-    off_spec1=file_actions.create_cross_section(1.0, 1.4142*line_width+center_position_offset[0], 
-                                                1.0, -1.4142*line_width+center_position_offset[1], 
+    off_spec1=file_actions.create_cross_section(1.0, 1.4142/2.*line_width+center_position_offset[0], 
+                                                1.0, -1.4142/2.*line_width+center_position_offset[1], 
                                                 line_width, 1, gauss_weighting=False, 
                                                 sigma_gauss=1., bin_distance=binning)
-    off_spec2=file_actions.create_cross_section(1.0, -1.4142*line_width+center_position_offset[0], 
-                                                1.0, 1.4142*line_width+center_position_offset[1], 
+    off_spec2=file_actions.create_cross_section(1.0, -1.4142/2.*line_width+center_position_offset[0], 
+                                                1.0, 1.4142/2.*line_width+center_position_offset[1], 
                                                 line_width, 1, gauss_weighting=False, 
                                                 sigma_gauss=1., bin_distance=binning)
     # Create a new object for the stored data
@@ -521,6 +522,16 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     I=dataset.data[dataset.zdata][:].reshape(numpy.sqrt(len(x)), numpy.sqrt(len(x)))
     Ismooth=blur_image(I, kernel_size, kernel_size_y)
     dataset.data[dataset.zdata].values=Ismooth.flatten().tolist()
+  
+  def join_datasets(self, d1_name, d2_name):
+    d1=self.file_data[d1_name]
+    d2=self.file_data[d2_name]
+    newd=FitList([])
+    for i, data in enumerate(d1):
+      newd.append(data.join(d2[i]))
+    self.file_data[d1_name+'+'+d2_name]=newd
+    self.active_file_data=newd
+    self.active_file_name=d1_name+'+'+d2_name   
 
 def gauss_kern(size, size_y=None):
   """ 

@@ -1211,13 +1211,8 @@ set style increment user
       elif d1 is d2:
         print "You need to select different datasets."
         return
-      newd=[]
-      for i, data in enumerate(d1):
-        newd.append(data.join(d2[i]))
-      self.file_data[options['Dataset 1']+'+'+options['Dataset 2']]=newd
-      self.active_file_data=newd
-      self.active_file_name=options['Dataset 1']+'+'+options['Dataset 2']
-      window.measurement=newd
+      self.join_datasets(options['Dataset 1'], options['Dataset 2'])
+      window.measurement=self.active_file_data
       window.replot()
   
   #++++++++++ GISANS functions only present in this mode +++++++
