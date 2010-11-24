@@ -30,7 +30,7 @@ __copyright__ = "Copyright 2008-2010"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7RC1"
+__version__ = "0.7rc1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -3610,7 +3610,7 @@ set multiplot layout %i,1
       <separator name='static13'/>
       <toolitem action='ShowPersistent'/>
       '''
-    if self.measurement[self.index_mess].zdata>=0 and len(self.measurement[self.index_mess].plot_together)>1:
+    if len(self.measurement)>0 and self.measurement[self.index_mess].zdata>=0 and len(self.measurement[self.index_mess].plot_together)>1:
       output+='''      <toolitem action='TogglePlotFit'/>
       <toolitem action='IteratePlotFit'/>'''
     output+='''

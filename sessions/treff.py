@@ -46,7 +46,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.7RC1"
+__version__ = "0.7rc1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -63,6 +63,57 @@ class FitList(list):
     self.fit_object_future=[]
     self.fit_datasets=[None, None, None, None] # a list of datasets used for fit [++,--,+-,-+]
  
+def calc_intensities_general(S, P):
+  '''
+    A general formalism to calculate measured intensities from simulated scattering and
+    the polarization parameters. The matrices used can be found in:
+        A.R.Wildes, Review of Scientivic Instruments, Vol. 70, 11 (1999)
+    
+    @param S Dictionary of intensities for the Scattering channels '++','--','+-','-+'
+    @param P Dictionary of the instrumental parameters 'F1','F2','p1','p2'
+    
+    @return Dictionary of the calculated intensities
+  '''
+  F1=P['F1']
+  F2=P['F2']
+  p1=P['p1']
+  p2=P['p2']
+  # create a column vector for Σ
+  Sigma=numpy.array([S['++'], S['+-'], S['-+'], S['--']])
+  # Define the transformation matrices
+  M1=numpy.matrix(  [
+                     [     1.,        0.,        0.,       0.     ], 
+                     [     0.,        1.,        0.,       0.     ], 
+                     [     F1,        0.,     (1.-F1),     0.     ], 
+                     [     0.,        F1,        0.,     (1.-F1), ], 
+                     ])
+  M2=numpy.matrix(  [
+                     [     1.,        0.,        0.,       0.     ], 
+                     [     F2,     (1.-F2),      0.,       0.     ], 
+                     [     0.,        0.,        1.,       0.     ], 
+                     [     0.,        0.,        F2,     (1.-F2), ], 
+                     ])
+  M3=numpy.matrix(  [
+                     [  (1.-p1),      0.,        p1,       0.     ], 
+                     [     0.,      (1.-p1),     0.,       p1     ], 
+                     [     p1,        0.,     (1.-p1),     0.     ], 
+                     [     0.,        p1,        0.,     (1.-p1)  ], 
+                     ])
+  M4=numpy.matrix(  [
+                     [  (1.-p2),      p2,        0.,       0.     ], 
+                     [     p2,      (1.-p2),     0.,       0.     ], 
+                     [     0.,        0.,     (1.-p2),     p2     ], 
+                     [     0.,        0.,        p2,     (1.-p2)  ], 
+                     ])
+  Mall=M1*M2*M3*M4
+  Intensity=numpy.dot(Mall, Sigma)
+  Intensity=Intensity
+  return {
+          '++': numpy.array(Intensity[0]).flatten(), 
+          '+-': numpy.array(Intensity[1]).flatten(), 
+          '-+': numpy.array(Intensity[2]).flatten(),
+          '--': numpy.array(Intensity[3]).flatten(),
+          }
 
 def calc_intensities(R, P):
   '''
@@ -147,9 +198,9 @@ def seperate_scattering(datasets, P):
       I_div[key]=I[key]-I_neu[key]
       R[key]+=I_div[key]
       sum_of_divs+=numpy.abs(I_div[key]).sum()
-    print "Iteration %i: Sum of I_div=%.8f" % (i+1, sum_of_divs)
-    if (sum_of_divs < stop_iteration_at):
-      break
+      print "Iteration %i: Sum of I_div=%.8f" % (i+1, sum_of_divs)
+      if (sum_of_divs < stop_iteration_at):
+        break
   output=[]
   output.append(R['++']*normalization_factor)
   output.append(R['--']*normalization_factor)
@@ -181,7 +232,8 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=(('TREFF/MARIA', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]','*.zip'), ('All','*'))  
+  FILE_WILDCARDS=(('TREFF/MARIA/D17', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]','*.zip', '*.d17'), 
+                  ('All','*'))  
   TRANSFORMATIONS=[\
                   ['mrad',1/config.treff.GRAD_TO_MRAD,0,'°'],
                   ['detector', 'mrad', 1., 0, '2Θ', 'mrad'], 

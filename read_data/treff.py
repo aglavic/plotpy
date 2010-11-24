@@ -20,7 +20,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.7RC1"
+__version__ = "0.7rc1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -773,6 +773,7 @@ def read_d17_processed_data(file_name):
   '''
     Read already processed data from the d17 instrument.
   '''
+  PI_2_OVER_LAMBDA=numpy.pi*2./5.3
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
@@ -790,6 +791,19 @@ def read_d17_processed_data(file_name):
   pol_channels=['++', '-+', '+-', '--']
   alphaf=d17_pp_from_block('α_f', '°', file_lines[first_block:first_block+scan_points])
   alphai=d17_pp_from_block('α_i', '°', file_lines[first_block+scan_points+2:first_block+2+2*scan_points])
+  sort_order=numpy.lexsort(keys=(alphai, alphaf))
+  alphai=alphai[sort_order]
+  alphaf=alphaf[sort_order]
+  aipaf=alphai+alphaf
+  aipaf.dimension='α_i+α_f'
+  aimaf=alphai-alphaf
+  aimaf.dimension='α_i-α_f'
+  qx=PI_2_OVER_LAMBDA*(numpy.cos(alphaf) - numpy.cos(alphai))
+  qx.dimension='q_x'
+  qx.unit='Å^{-1}'
+  qz=PI_2_OVER_LAMBDA*(numpy.sin(alphai) + numpy.sin(alphaf))
+  qz.dimension='q_z'
+  qz.unit='Å^{-1}'
   channels=int(file_lines[first_block+scan_points*2+2].split('(')[1].split('arrays')[0])
   # import the data for the channels
   datasets=[]
@@ -802,16 +816,24 @@ def read_d17_processed_data(file_name):
                                 'a.u.', 
                                 file_lines[index:index+scan_points],
                                 error_block=file_lines[error_index:error_index+scan_points])
+    intensity=intensity[sort_order]
     dataset=MeasurementDataTREFF(zdata=2)
     dataset.append_column(alphai)
     dataset.append_column(alphaf)
     dataset.append_column(intensity)
+    dataset.append_column(aipaf)
+    dataset.append_column(aimaf)
+    dataset.append_column(qx)
+    dataset.append_column(qz)
     dataset.logz=True
     dataset.sample_name=sample_name
     dataset.short_info=pol_channels[i]
+    dataset.scan_line=1
+    dataset.scan_line_constant=0
     min_int=min(min_int, intensity[numpy.where(intensity!=0)].min())
     max_int=max(max_int, intensity.max())
     datasets.append(dataset)
+  # define same colorscale for all plots as powers of 10
   min_int=10.**(int(math.log10(min_int)))
   max_int=10.**(int(math.log10(max_int))+1)
   for dataset in datasets:

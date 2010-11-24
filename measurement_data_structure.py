@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7RC1"
+__version__ = "0.7rc1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -1168,6 +1168,7 @@ derivatives={# derivatives to numpy base functions for error propagation
              numpy.log10.__str__(): lambda input: 1./input,
              numpy.square.__str__(): lambda input: 2.*input , 
              numpy.sqrt.__str__(): lambda input: 1./(2.*numpy.sqrt(input)), 
+             numpy.abs.__str__(): lambda input: input, 
              
              # functions with two parameters
              numpy.add.__str__(): ( lambda input1, input2: 1., lambda input1, input2: 1. ), 
