@@ -7,10 +7,11 @@
 '''
 
 # Pleas do not make any changes here unless you know what you are doing.
-import os
+import os, sys
 import math
 import numpy
 from copy import deepcopy
+from glob import glob
 from measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalConstant
 from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, \
                           PIXEL_WIDTH, DETECTOR_PIXELS,CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
@@ -107,6 +108,10 @@ def read_data(file_name, script_path, import_images, return_detector_images):
   #
   if file_name.endswith('.d17'):
     return read_d17_processed_data(file_name)
+  if len(file_name.split('-'))==2:
+    file_from, file_to=file_name.split('-')
+    if file_from.isdigit() and file_to.isdigit():
+      return read_d17_raw_data(file_from, file_to)
   # reset parameters, if maria image was imported before
   global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, PI_4_OVER_LAMBDA
   from config.treff import DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, PI_4_OVER_LAMBDA
@@ -857,6 +862,110 @@ def d17_pp_from_block(dimension, unit, block, error_block=None):
   if error_block is not None:
     pp.error=error_data
   return pp
+
+def read_d17_raw_data(file_from, file_to):
+  '''
+    Read d17 raw detector images.
+  '''
+  folder, file_from=os.path.split(file_from)
+  file_to=os.path.join(folder, file_to)
+  file_from=os.path.join(folder, file_from)
+  file_list=glob(os.path.join(folder, '*'))
+  file_list=filter(lambda item: item.isdigit(), file_list)
+  file_list.sort()
+  if not (file_from in file_list and file_to in file_list):
+    print 'File not found: %s and %s.' % (file_from, file_to)
+  from_index=file_list.index(file_from)
+  to_index=file_list.index(file_to)
+  file_list=file_list[from_index:to_index]
+  datasets={(0, 0): [], (0, 1):[], (1, 0):[], (1, 1):[]}
+  sys.stdout.write('    Reading %3i/%3i' % (1, len(file_list)))
+  sys.stdout.flush()
+  notfound=[]
+  for i, file_name in enumerate(file_list):
+    sys.stdout.write('\b'*7+'%3i/%3i' % (i, len(file_list)))
+    sys.stdout.flush()
+    dataset=read_d17_raw_file(file_name)
+    if dataset is None:
+      notfound.append(i)
+      continue
+    dataset.number=str(i)
+    datasets[dataset.flipper].append(dataset)
+  sys.stdout.write('\n')
+  output=[]
+  absmin=100.
+  absmax=0.
+  for i, polarization_data in enumerate([datasets[(0, 0)], datasets[(1, 1)], datasets[(0, 1)], datasets[(1, 0)]]):
+    dataset=MeasurementData(zdata=2)
+    dataset.append_column(polarization_data[0].data[2].copy())
+    dataset.append_column(polarization_data[0].data[0].copy())
+    dataset.append_column(polarization_data[0].data[1].copy())
+    dataset.sample_name=polarization_data[0].sample_name
+    dataset.short_info="("+"".join(map(str, polarization_data[0].flipper)).replace('1', '-').replace('0', '+')+")"
+    dataset.number=str(i)
+    for dataset_i in polarization_data[1:]:
+      dataset.data[0].append(dataset_i.data[2])
+      dataset.data[1].append(dataset_i.data[0])
+      dataset.data[2].append(dataset_i.data[1])
+    dataset.logz=True
+    dataset.scan_line=1
+    dataset.scan_line_constant=0
+    absmin=numpy.minimum(absmin, dataset.z.view(numpy.ndarray)[numpy.where(dataset.z!=0)].min())
+    absmax=numpy.maximum(absmax, dataset.z.view(numpy.ndarray).max())
+    output.append(dataset)
+  zfrom=10**(int(math.log10(absmin)))
+  zto=10**(int(math.log10(absmax))+1)
+  for dataset in output:
+    dataset.plot_options.zrange=(zfrom, zto)
+  if len(notfound)>0:
+    print "Could not import files %s" % str([file_name[i] for i in notfound])
+  return output
+
+def read_d17_raw_file(file_name):
+  '''
+    Read one single detector image.
+  '''
+  file_text=open(file_name, 'r').read()
+  if not file_text.startswith('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'):
+    #print "No D17 raw data header found."
+    return None
+  regions=file_text.split('IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII')
+  regions=map(str.strip, regions)
+  dataset=MeasurementDataTREFF()
+  # evaluate header
+  header_1=regions[1].split('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')[1].strip()
+  header_1=header_1.splitlines()[1]
+  sample_name=header_1.split()[0].strip()
+  F1=int(header_1.split('*F1=')[1].split('*')[0])
+  F2=int(header_1.split('*F2=')[1].split('*')[0])
+  dataset.flipper=(F1, F2)
+  dataset.sample_name=sample_name
+  info_block1=regions[1].split('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')[1].strip()
+  info_block2=regions[1].split('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')[2].strip()
+  info_block1=info_block1.split()[1:]
+  info_block2=info_block2.split()[1:]
+  counting_time=PhysicalConstant(float(info_block1[2]), 's')
+  monitor=PhysicalConstant(float(info_block1[4]), 'monitor')
+  temp=float(info_block1[29])
+  detector_angle=float(info_block2[16])
+  omega=float(info_block2[2])
+  # get the data 
+  data=regions[-1].splitlines()[1:]
+  data=map(str.split, data)
+  # flatten data list
+  data=[item for sublist in data for item in sublist]
+  alphaf=PhysicalProperty('α_f', '°', numpy.arange(128, -128, -1)*0.0193+detector_angle-omega)
+  alphai=PhysicalProperty('α_i', '°', numpy.zeros_like(alphaf)+omega)
+  dataset.append_column(alphaf)
+  intensity=PhysicalProperty('Intensity', 'counts', data)
+  intensity=intensity.reshape(64, 256).sum(axis=0).flatten()
+  intensity.dimension='Intensity'
+  intensity.error=numpy.sqrt(intensity.view(numpy.ndarray))
+  dataset.append_column(intensity)
+  dataset.append_column(alphai)
+  dataset.y/=counting_time
+  return dataset
+
 
 if not getattr(ZipFile, 'open', False):
   import zipfile

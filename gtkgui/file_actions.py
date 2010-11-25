@@ -696,22 +696,24 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix
   z=data[dataset.zdata]
   z=where(numpy.isinf(z), 0., numpy.nan_to_num(z))
   # interpolate the square of the errors
-  dzq=data[dataset.yerror]**2
-  dzq=where(numpy.isinf(dzq), 0., numpy.nan_to_num(dzq))
+  if dataset._yerror>=0:
+    dzq=data[dataset.yerror]**2
+  else:
+    dzq=dataset.z.error**2
+  dzq=where(numpy.isinf(dzq), numpy.nan_to_num(dzq), 1.)
   zout=[]
   dzout=[]
   dims=dataset.dimensions()
   units=dataset.units()
   cols=[(dims[dataset.xdata], units[dataset.xdata]), 
         (dims[dataset.ydata], units[dataset.ydata]), 
-        (dims[dataset.zdata], units[dataset.zdata]), 
-        (dims[dataset.yerror], units[dataset.yerror])]
+        (dims[dataset.zdata], units[dataset.zdata])]
   if use_matrix_data_output:
     from read_data.kws2 import KWS2MeasurementData
-    output_data=KWS2MeasurementData(cols, [], 0,1,3,2)
+    output_data=KWS2MeasurementData(cols, [], 0,1,-1,2)
     output_data.is_matrix_data=True
   else:
-    output_data=MeasurementData(cols, [], 0,1,3,2)
+    output_data=MeasurementData(cols, [], 0,1,-1,2)
   # Go through the new grid point by point and search for datapoints close to the new grid points
   for xi in grid_x:
     distances_x=abs(x-xi)
@@ -719,7 +721,7 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix
     if len(indices_x)==0:
       # fill grid at points not in old grid
       for yi in grid_y:
-        output_data.append([xi, yi, fill_value[0], fill_value[1]])
+        output_data.append([xi, yi, (fill_value[0], fill_value[1])])
       continue
     for yi in grid_y:
       distances_y=abs(y[indices_x]-yi)
@@ -733,7 +735,7 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix
       scale=1./factors.sum()
       zi=(z[indices]*factors).sum()*scale
       dzi=sqrt((dzq[indices]*factors).sum())*scale
-      output_data.append([xi, yi, zi, dzi])
+      output_data.append([xi, yi, (zi, dzi)])
   return output_data
 
 def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=False):

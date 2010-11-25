@@ -537,7 +537,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     # only use mds file if it is newer than the original data and this script
     if os.path.exists(mds_name) and not self.read_directly and \
         (os.path.getmtime(own_path)<os.path.getmtime(mds_name)) and \
-        (os.path.getmtime(filename)<os.path.getmtime(mds_name)):
+        (not os.path.exists(filename) or not \
+        (os.path.getmtime(filename)<os.path.getmtime(mds_name))):
       print "Importing previously saved data from '" +mds_name + "'."
       if zip_mds:
         import gzip

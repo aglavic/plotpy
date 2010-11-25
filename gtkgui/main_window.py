@@ -10,6 +10,7 @@ import subprocess
 import gobject
 import gtk
 from time import sleep, time
+from copy import deepcopy
 # own modules
 # Module to save and load variables from/to config files
 from configobj import ConfigObj
@@ -2436,7 +2437,7 @@ set multiplot layout %i,1
         dataset.logx=use_data.logx
         dataset.logy=use_data.logy
         dataset.logz=use_data.logz
-        dataset.plot_options=use_data.plot_options
+        dataset.plot_options=deepcopy(use_data.plot_options)
         self.reset_statusbar()
         print 'Applied settings to all Plots!'
     selection_dialog.destroy()

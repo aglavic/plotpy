@@ -122,7 +122,12 @@ class FitFunction(FitFunctionGUI):
     if dy is not None:
       zero_elements=numpy.where(dy==0.)[0]
       non_zero_elements=numpy.where(dy!=0.)[0]
-      dy[zero_elements]+=numpy.abs(dy[non_zero_elements]).min()
+      if len(zero_elements)==0:
+        pass
+      elif len(non_zero_elements)==0:
+        dy=None
+      else:
+        dy[zero_elements]+=numpy.abs(dy[non_zero_elements]).min()
     new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=fit_args, full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     cov=cov_x

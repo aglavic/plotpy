@@ -2257,17 +2257,17 @@ class PhysicalProperty(numpy.ndarray):
     else:
       return PhysicalProperty('mean('+self.dimension+')', self.unit, [numpy.ndarray.mean(self)])
 
-  def sum(self):
+  def sum(self, *args, **opts):
     '''
       Get the sum of value as PhysicalProperty object.
     '''
     if self.has_error:
       # if the object has an error value calculate the weighted mean
-      output_error=numpy.sqrt((self._error**2).sum())
+      output_error=numpy.sqrt((self._error**2).sum(*args, **opts))
       return PhysicalProperty('sum('+self.dimension+')', self.unit, 
-                              [numpy.ndarray.sum(self)], [output_error])      
+                              [numpy.ndarray.sum(self, *args, **opts)], [output_error])      
     else:
-      return PhysicalProperty('sum('+self.dimension+')', self.unit, [numpy.ndarray.sum(self)])
+      return PhysicalProperty('sum('+self.dimension+')', self.unit, [numpy.ndarray.sum(self, *args, **opts)])
 
 ################### define some common physical constants
 
