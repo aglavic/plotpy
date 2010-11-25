@@ -1366,6 +1366,8 @@ class PhysicalUnit(object):
         unit_parts[key]+=value
       else:
         unit_parts[key]=value
+      if unit_parts[key]==0:
+        del(unit_parts[key])
     return out
   
   def __rmul__(self, other):

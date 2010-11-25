@@ -7,6 +7,7 @@
 
 import gtk
 from gtkgui.dialogs import PreviewDialog
+from measurement_data_structure import PhysicalConstant
 
 #----------------------- importing modules --------------------------
 
@@ -73,11 +74,11 @@ class SquidGUI:
     dia=self.dia_mag_correct
     para=self.para[0]
     if 'T' in units:
-      dia*=1e4
-      para*=1e4
+      dia=dia*1e4
+      para=para*1e4
     if 'A·m^2' in units:
-      dia/=1e3
-      para/=1e3
+      dia=dia/1e3
+      para=para/1e3
     dialog=gtk.Dialog(title="Enter diamagnetic and paramagnetic correction factors:", 
                       parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
     # create a table with the entries
@@ -164,11 +165,13 @@ class SquidGUI:
       dia=self.dia_mag_correct
       para=self.para[0]
       if 'T' in units:
-        dia*=1e4
-        para*=1e4
+        dia=dia*1e4
+        para=para*1e4
       if 'A·m^2' in units:
-        dia/=1e3
-        para/=1e3
+        dia=dia/1e3
+        para=para/1e3
+      dia=PhysicalConstant(dia, 'A·m^2/T')
+      para=PhysicalConstant(para, 'K·A·m^2/T')        
       self.dia_para_correction(window.measurement[window.index_mess], 
                                dia, para)
       window.replot()      
@@ -194,7 +197,9 @@ class SquidGUI:
       if dataset.xdata==1:
         from fit_data import FitDiamagnetism
         # fit after paramagnetic correction
-        self.dia_para_correction(dataset, 0. , para)
+        dia=PhysicalConstant(dia, 'A·m^2/T')
+        para=PhysicalConstant(para, 'K·A·m^2/T')
+        self.dia_para_correction(dataset, dia , para)
         fit=FitDiamagnetism(([0, 0, 0, split]))
         if not entries[3].get_active():
           fit.refine(dataset.data[1].values, 
@@ -206,17 +211,19 @@ class SquidGUI:
         entries[0].set_text(str(-fit.parameters[0]))
       return None
     if response>0:
+      dia=PhysicalConstant(dia, 'A·m^2/T')
+      para=PhysicalConstant(para, 'K·A·m^2/T')        
       self.dia_para_correction(window.measurement[window.index_mess], dia, para)
       window.replot()
     if response==2:
       # if OK is pressed, apply the corrections and save as global.
       units=window.measurement[window.index_mess].units()
       if 'T' in units:
-        dia/=1e4
-        para/=1e4
+        dia=dia/1e4
+        para=para/1e4
       if 'A·m^2' in units:
-        dia*=1e3
-        para*=1e3      
+        dia=dia*1e3
+        para=para*1e3      
       self.dia_mag_correct=dia
       self.para[0]=para
       dialog.destroy()
@@ -233,11 +240,11 @@ class SquidGUI:
     dia=self.dia_mag_correct
     para=self.para[0]
     if 'T' in units:
-      dia*=1e4
-      para*=1e4
+      dia=dia*1e4
+      para=para*1e4
     if 'A·m^2' in units:
-      dia/=1e3
-      para/=1e3
+      dia=dia/1e3
+      para=para/1e3
     dialog=gtk.Dialog(title="Enter diamagnetic and paramagnetic correction factors:", 
                       parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
     # create a table with the entries
@@ -256,7 +263,7 @@ class SquidGUI:
                 0,                       gtk.FILL,
                 0,                         0)
     dia_entry=gtk.Entry()
-    dia_entry.set_text(str(dia))
+    dia_entry.set_text(str(float(dia)))
     table.attach(dia_entry,
                 # X direction #          # Y direction
                 2, 4,                      1, 2,
@@ -297,7 +304,7 @@ class SquidGUI:
                 0,                       gtk.FILL,
                 0,                         0)
     para_entry=gtk.Entry()
-    para_entry.set_text(str(para))
+    para_entry.set_text(str(float(para)))
     table.attach(para_entry,
                 # X direction #          # Y direction
                 2, 4,                      3, 4,
@@ -324,11 +331,13 @@ class SquidGUI:
       dia=self.dia_mag_correct
       para=self.para[0]
       if 'T' in units:
-        dia*=1e4
-        para*=1e4
+        dia=dia*1e4
+        para=para*1e4
       if 'A·m^2' in units:
-        dia/=1e3
-        para/=1e3
+        dia=dia/1e3
+        para=para/1e3
+      dia=PhysicalConstant(dia, 'A·m^2/T')
+      para=PhysicalConstant(para, 'K·A·m^2/T')        
       self.dia_para_correction(window.measurement[window.index_mess], 
                                dia, para)
       window.replot()      
@@ -354,29 +363,38 @@ class SquidGUI:
       if dataset.xdata==1:
         from fit_data import FitDiamagnetism
         # fit after paramagnetic correction
-        self.dia_para_correction(dataset, 0. , para)
+        dia=PhysicalConstant(0., 'A·m^2/T')
+        para=PhysicalConstant(para, 'K·A·m^2/T')        
+        self.dia_para_correction(dataset, dia , para)
         fit=FitDiamagnetism(([0, 0, 0, split]))
         if not entries[3].get_active():
-          fit.refine(dataset.data[1].values, 
-                     dataset.data[-1].values, 
-                     dataset.data[dataset.yerror].values)
+          if dataset._yerror>=0:
+            fit.refine(dataset.x, 
+                     dataset.data[-1], 
+                     dataset.data[dataset.yerror])
+          else:
+            fit.refine(dataset.x, 
+                     dataset.data[-1], 
+                     dataset.data[-1].error)
         else:
-          fit.refine(dataset.data[1].values, 
-                     dataset.data[-1].values)
+          fit.refine(dataset.data[1], 
+                     dataset.data[-1])
         entries[0].set_text(str(-fit.parameters[0]))
       return None
     if response>0:
+      dia=PhysicalConstant(dia, 'A·m^2/T')
+      para=PhysicalConstant(para, 'K·A·m^2/T')        
       self.dia_para_correction(window.measurement[window.index_mess], dia, para)
       window.replot()
     if response==2:
       # if OK is pressed, apply the corrections and save as global.
       units=window.measurement[window.index_mess].units()
       if 'T' in units:
-        dia/=1e4
-        para/=1e4
+        dia=dia/1e4
+        para=para/1e4
       if 'A·m^2' in units:
-        dia*=1e3
-        para*=1e3      
+        dia=dia*1e3
+        para=para*1e3      
       self.dia_mag_correct=dia
       self.para[0]=para
       dialog.destroy()

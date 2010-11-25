@@ -502,8 +502,7 @@ class FileActions:
       @param max_r Maximal radius to integrate to
     '''
     from numpy import sqrt, array
-    dataset=[data.values for data in self.window.measurement[self.window.index_mess].data]
-    data=map(array, dataset)
+    data=self.window.measurement[self.window.index_mess].get_filtered_data_matrix()
     dims=self.window.measurement[self.window.index_mess].dimensions()
     units=self.window.measurement[self.window.index_mess].units()
     cols=(self.window.measurement[self.window.index_mess].xdata, 
@@ -608,25 +607,22 @@ class FileActions:
       
       @return The average of the integrated values with their errors.
     '''
-    from numpy import array, sqrt
-    x=array(dataset.data[dataset.xdata].values)
-    y=array(dataset.data[dataset.ydata].values)
-    z=array(dataset.data[dataset.zdata].values)
-    dz=array(dataset.data[dataset.yerror].values)
+    from numpy import array, sqrt, where, ndarray
+    x=dataset.x.view(ndarray)
+    y=dataset.y.view(ndarray)
+    z=dataset.z.view(ndarray)
+    if dataset._yerror>=0:
+      dz=dataset.data[dataset.yerror].view(ndarray)
+    else:
+      dz=dataset.z.error
     distances=sqrt((x-x_pos)**2 + (y-y_pos)**2)
-    values=[]
-    errors=[]
-    for i, dist in enumerate(distances):
-      if dist<=radius:
-        values.append(z[i])
-        errors.append(dz[i])
-    if len(values)>0:
-      values=array(values)
-      errors=array(errors)
-      # calculate mean of the values
-      value=values.sum() / len(values)
-      # calculate the error of the value
-      error=sqrt((errors**2).sum()) / len(values)
+    filter_ids=where(distances<=radius)[0]
+    if len(filter_ids)>0:
+      value=z[filter_ids].mean()
+      if dz is not None:
+        error=sqrt((dz[filter_ids]**2).sum()) / len(filter_ids)
+      else:
+        error=1.
       return (value, error)
     else:
       return (0., 1.)

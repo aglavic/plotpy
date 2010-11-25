@@ -30,6 +30,7 @@ import numpy
 
 # import GenericSession, which is the parent class for the SquidSession
 from generic import GenericSession
+from measurement_data_structure import PhysicalConstant
 # importing preferences and data readout
 import read_data.squid
 import config.squid
@@ -157,12 +158,14 @@ Data columns and unit transformations are defined in config.squid.py.
       dia=self.dia_mag_correct
       para=self.para[0]
       if 'T' in units:
-        dia*=1e4
-        para*=1e4
-      if 'A·m²' in units:
-        dia/=1e3
-        para/=1e3
+        dia=dia*1e4
+        para=para*1e4
+      if 'A·m^2' in units:
+        dia=dia/1e3
+        para=para/1e3
       if correct:
+        dia=PhysicalConstant(dia, 'A·m^2/T')
+        para=PhysicalConstant(para, 'K·A·m^2/T')
         self.dia_para_correction(dataset, dia, para)
       # name the dataset
       constant, unit=dataset.unit_trans_one(dataset.type(),config.squid.TRANSFORMATIONS_CONST)      

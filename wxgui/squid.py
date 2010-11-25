@@ -72,11 +72,11 @@ class SquidGUI:
     dia=self.dia_mag_correct
     para=self.para[0]
     if 'T' in units:
-      dia*=1e4
-      para*=1e4
+      dia=dia*1e4
+      para=para*1e4
     if 'A·m²' in units:
-      dia/=1e3
-      para/=1e3
+      dia=dia/1e3
+      para=para/1e3
 
     dialog = wx.Dialog(window, wx.ID_ANY, title="Enter diamagnetic and paramagnetic correction factors:",
                                size=wx.Size(600,280),
@@ -179,11 +179,11 @@ class SquidGUI:
       dia=self.dia_mag_correct
       para=self.para[0]
       if 'T' in units:
-        dia*=1e4
-        para*=1e4
+        dia=dia*1e4
+        para=para*1e4
       if 'A·m²' in units:
-        dia/=1e3
-        para/=1e3
+        dia=dia/1e3
+        para=para/1e3
       self.dia_para_correction(window.measurement[window.index_mess], 
                                dia, para)
       window.replot()      
@@ -228,11 +228,11 @@ class SquidGUI:
       # if OK is pressed, apply the corrections and save as global.
       units=window.measurement[window.index_mess].units()
       if 'T' in units:
-        dia/=1e4
-        para/=1e4
+        dia=dia/1e4
+        para=para/1e4
       if 'A·m²' in units:
-        dia*=1e3
-        para*=1e3      
+        dia=dia*1e3
+        para=para*1e3      
       self.dia_mag_correct=dia
       self.para[0]=para
       dialog.Destroy()

@@ -140,7 +140,7 @@ class FitFunction(FitFunctionGUI):
       self.set_parameters(new_function_parameters)
     # calculate the covariance matrix from cov_x, see scipy.optimize.leastsq help for details.
       if (len(y) > len(parameters)) and cov_x is not None:
-        if dataset_yerror:
+        if dataset_yerror is not None:
           s_sq = (numpy.array(self.residuals(new_function_parameters, y, x, dy))**2).sum()/\
                                            (len(y)-len(self.refine_parameters))        
           s_sq /= ((1./numpy.array(dy))**2).sum()
@@ -505,10 +505,9 @@ class FitDiamagnetism(FitFunction):
       Two linear functions with different offsets,
       split left and right from the y-axes.
     '''
-    xarray=numpy.array(x)
     # create an array with True at every xposition which is outside the split region
-    switch=(xarray<-abs(p[3]))+(xarray>abs(p[3]))
-    output=p[0] * xarray + numpy.sign(xarray) * p[1] + p[2]
+    switch=(x<-abs(p[3]))+(x>abs(p[3]))
+    output=numpy.where(switch, p[0] * x + numpy.sign(x) * p[1] + p[2], 0.)
     return switch*output
 
 class FitQuadratic(FitFunction):
