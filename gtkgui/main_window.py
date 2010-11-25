@@ -415,7 +415,7 @@ class ApplicationMainWindow(gtk.Window):
         info_dialog.destroy()
         file_chooser=gtk.FileChooserDialog(parent=self, title='Select Gnuplot executable...', 
                                       action=gtk.FILE_CHOOSER_ACTION_OPEN, 
-                                      buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+                                      buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
         file_chooser.set_select_multiple(False)
         result=file_chooser.run()
         if result==gtk.RESPONSE_OK:
@@ -661,7 +661,7 @@ class ApplicationMainWindow(gtk.Window):
     #++++++++++++++++File selection dialog+++++++++++++++++++#
     file_dialog=gtk.FileChooserDialog(title='Open new datafile...', 
                                       action=gtk.FILE_CHOOSER_ACTION_OPEN, 
-                                      buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+                                      buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
     file_dialog.set_select_multiple(True)
     file_dialog.set_default_response(gtk.RESPONSE_OK)
     file_dialog.set_current_folder(self.active_folder)
@@ -736,7 +736,7 @@ class ApplicationMainWindow(gtk.Window):
       #++++++++++++++++File selection dialog+++++++++++++++++++#
       file_dialog=gtk.FileChooserDialog(title='Save Snapshot to File...', 
                                         action=gtk.FILE_CHOOSER_ACTION_SAVE, 
-                                        buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+                                        buttons=(gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
       file_dialog.set_select_multiple(False)
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
@@ -772,7 +772,7 @@ class ApplicationMainWindow(gtk.Window):
       #++++++++++++++++File selection dialog+++++++++++++++++++#
       file_dialog=gtk.FileChooserDialog(title='Save Snapshot to File...', 
                                         action=gtk.FILE_CHOOSER_ACTION_OPEN, 
-                                        buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+                                        buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
       file_dialog.set_select_multiple(False)
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
@@ -799,22 +799,32 @@ class ApplicationMainWindow(gtk.Window):
     self.measurement=self.active_session.active_file_data
     self.replot()
 
-  def change_range(self,action):
+  def change_range(self, action):
     '''
       Change plotting range according to textinput.
     '''
     # set the font size
     try:
       self.active_session.font_size=float(self.font_size.get_text())
-      self.replot()
     except ValueError:
       self.active_session.font_size=24.
       self.font_size.set_text('24')
-      self.replot()
-    # get selected ranges
-    xin=self.x_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
-    yin=self.y_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
-    zin=self.z_range_in.get_text().lstrip('[').rstrip(']').split(':',1)
+    # get selected ranges which can be given as e.g. "[1:3]", "4:" , "3,4" , 3.2 4.5
+    ranges_texts=[]
+    ranges_texts.append(self.x_range_in.get_text().lstrip('[').rstrip(']'))
+    ranges_texts.append(self.y_range_in.get_text().lstrip('[').rstrip(']'))
+    ranges_texts.append(self.z_range_in.get_text().lstrip('[').rstrip(']'))
+    for i, range in enumerate(ranges_texts):
+      if ':' in range:
+        ranges_texts[i]=range.replace(',', '.').split(':')
+      elif ',' in range:
+        ranges_texts[i]=range.split(',')
+      else:
+        ranges_texts[i]=range.strip().split()
+    xin=ranges_texts[0]
+    yin=ranges_texts[1]
+    zin=ranges_texts[2]
+    # change ranges
     plot_options=self.measurement[self.index_mess].plot_options
     if self.active_multiplot:
       for mp in self.multiplot:
@@ -822,15 +832,24 @@ class ApplicationMainWindow(gtk.Window):
           if self.measurement[self.index_mess] is mpi:
             plot_options=mp[0][0].plot_options
     if len(xin)==2:
-      plot_options.xrange=xin
+      try:
+        plot_options.xrange=xin
+      except ValueError:
+        pass
     else:
       plot_options.xrange=[None, None]
     if len(yin)==2:
-      plot_options.yrange=yin
+      try:
+        plot_options.yrange=yin
+      except ValueError:
+        pass
     else:
       plot_options.yrange=[None, None]
     if len(zin)==2:
-      plot_options.zrange=zin
+      try:
+        plot_options.zrange=zin
+      except ValueError:
+        pass
     else:
       plot_options.zrange=[None, None]
     self.replot() # plot with new settings
@@ -2401,6 +2420,7 @@ set multiplot layout %i,1
     use_dim=use_data.dimensions()
     use_maxcol=max([use_data.xdata, use_data.ydata, use_data.zdata, use_data.yerror])
     selection_dialog=PreviewDialog(self.active_session.file_data, buttons=('Apply', 0, 'Cancel', 1))
+    selection_dialog.set_preview_parameters(self.plot, self.active_session, self.active_session.TEMP_DIR+'plot_temp.png')
     selection_dialog.set_default_size(800, 600)
     if selection_dialog.run()==0:
       for dataset in selection_dialog.get_active_objects():
@@ -2610,16 +2630,7 @@ set multiplot layout %i,1
                         )
       #----------------File selection dialog-------------------#      
     elif action.get_name()=='ExportAll':
-      for dataset in self.measurement:
-        self.last_plot_text=self.plot(self.active_session, 
-                                      dataset.plot_together,
-                                      self.input_file_name,
-                                      dataset.short_info,
-                                      [object.short_info for object in dataset.plot_together],
-                                      errorbars,
-                                      fit_lorentz=False)
-        self.reset_statusbar()
-        print 'Export plot number '+dataset.number+'... Done!'
+      self.export_all()
     elif self.active_multiplot:
       for plotlist in self.multiplot:
         if not self.measurement[self.index_mess] in [item[0] for item in plotlist]:
@@ -2712,6 +2723,74 @@ set multiplot layout %i,1
                                     fit_lorentz=False)
       self.reset_statusbar()
       print 'Export plot number '+self.measurement[self.index_mess].number+'... Done!'
+
+  def export_all(self):
+    '''
+      Open a Dialog to select which Plots to export with additional options.
+    '''
+    # Dialog to select the destination folder
+    #++++++++++++++++File selection dialog+++++++++++++++++++#
+    file_dialog=ExportFileChooserDialog(self.active_session.picture_width, 
+                                        self.active_session.picture_height, 
+                                        title='Select Destination Folder...', 
+                                        action=gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+    file_dialog.set_default_response(gtk.RESPONSE_OK)
+    file_dialog.set_current_folder(self.active_folder)
+    file_dialog.show_all()
+    response = file_dialog.run()
+    if response == gtk.RESPONSE_OK:
+      self.active_folder=unicode(file_dialog.get_current_folder(), 'utf-8')
+      self.active_session.picture_width, self.active_session.picture_height=file_dialog.get_with_height()
+    else:
+      file_dialog.destroy()
+      return
+    file_dialog.destroy()
+    #----------------File selection dialog-------------------#
+    # Dialog to select which plots to export
+    selection_dialog=PreviewDialog(self.active_session.file_data, 
+                                   buttons=('Export', 1, 'Cancel', 0))
+    selection_dialog.set_default_size(800, 600)
+    table=gtk.Table(2, 1, False)
+    naming_entry=gtk.Entry()
+    naming_entry.set_text('[name]_[nr].png')
+    naming_entry.set_width_chars(20)
+    naming_entry.connect('activate', lambda *ignore: selection_dialog.response(1))
+    table.attach(naming_entry, 
+              # X direction #          # Y direction
+              0, 1,                      0, 1,
+              0,                       0,
+              0,                         0)
+    description=gtk.Label("""      [name] \t- Name of the import file
+      [sample]\t- left entry above the plot
+      [title_add]\t- right entry above the plot
+      [nr]\t\t- Number of the plot""")
+    table.attach(description, 
+              # X direction #          # Y direction
+              1, 2,                      0, 1,
+              0,                       0,
+              0,                         0)
+    table.show_all()
+    selection_dialog.vbox.pack_end(table, False)
+    selection_dialog.set_preview_parameters(self.plot, self.active_session, 
+                                            self.active_session.TEMP_DIR+'plot_temp.png')
+    if selection_dialog.run()==1:
+      selection_dialog.hide()
+      naming_text=naming_entry.get_text()
+      for i, item in enumerate(selection_dialog.get_active_objects_with_key()):
+        file_name, dataset=item
+        filt_name=os.path.split(file_name)[1]
+        self.last_plot_text=self.plot(self.active_session, 
+                                      dataset.plot_together,
+                                      os.path.join(self.active_folder, file_name),
+                                      dataset.short_info,
+                                      [object.short_info for object in dataset.plot_together],
+                                      errorbars,
+                                      naming_text, 
+                                      fit_lorentz=False)
+        self.reset_statusbar()
+        print 'Export plot number %2i...' % i
+      print 'Export Done!'
+    selection_dialog.destroy()
 
   def print_plot(self,action): 
     '''
@@ -3779,8 +3858,8 @@ set multiplot layout %i,1
         "Apply current plot settings to all sequences",                                    # tooltip
         self.apply_to_all),
       ( "ExportAll", gtk.STOCK_EXECUTE,                    # name, stock id
-        "Exp. _All", None,                     # label, accelerator
-        "Export all sequences",                                    # tooltip
+        "Exp. Selection...", None,                     # label, accelerator
+        "Export a selection of plots",                                    # tooltip
         self.export_plot),
       ( "ErrorBars", gtk.STOCK_ADD,                    # name, stock id
         "E.Bars", None,                     # label, accelerator

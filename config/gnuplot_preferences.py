@@ -33,7 +33,7 @@ __status__ = "Production"
 # [y-dim] - dimension of y-dataset
 # [z-dim] - dimension of z-dataset
 # [title_add] - title addition set in function call
-# [titles_add] - titles addition set in function call for diff24erent plots
+# [titles_add] - titles addition set in function call for different plots
 # [const_unit] - first constant data unit
 # [const_dim] - first constant data dimension
 # [const_value] - first constant data value

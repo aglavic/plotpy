@@ -114,18 +114,28 @@ class PreviewDialog(gtk.Dialog):
     self.images=[]
     # Will store the checkboxes corresponding to one plot
     self.check_boxes={}
-    self.show_previews=show_previews
     # if true, only one plot can be selected.
     self.single_selection=single_selection
+    self.show_previews=gtk.CheckButton('Show Previews', use_underline=False)
+    if show_previews:
+      self.show_previews.set_active(True)
     self.vbox.add(self.get_scrolled_main_table())
     for key, datalist in sorted(data_dict.items()):
       self.add_line(key, datalist)
-    toggle_previews=gtk.CheckButton('Show Previews', use_underline=False)
-    toggle_previews.show()
-    if show_previews:
-      toggle_previews.set_active(True)
-    toggle_previews.connect('toggled', self.toggle_previews)
-    self.vbox.pack_end(toggle_previews, False)
+    self.show_previews.connect('toggled', self.toggle_previews)
+    bottom_table=gtk.Table(3, 1, False)
+    bottom_table.attach(self.show_previews, # X direction #   # Y direction
+                                            0, 1,                  0, 1,  0,0,  0,0)
+    select_all_button=gtk.Button('Select Everything')
+    bottom_table.attach(select_all_button, # X direction #   # Y direction
+                                            1, 2,                  0, 1,  0,0,  0,0)
+    select_all_button.connect('button_press_event', self.select_all)
+    select_none_button=gtk.Button('Select Nothing')
+    bottom_table.attach(select_none_button, # X direction #   # Y direction
+                                            2, 3,                  0, 1,  0,0,  0,0)
+    select_none_button.connect('button_press_event', self.select_none)
+    bottom_table.show_all()
+    self.vbox.pack_end(bottom_table, False)
   
   def run(self):
     '''
@@ -140,10 +150,10 @@ class PreviewDialog(gtk.Dialog):
     self.connect('response',  stop_preview_creation)
     while gtk.events_pending():
       gtk.main_iteration(False)
-    for image, dataset in self.unset_previews:
+    while len(self.unset_previews)>0:
       if self.stop_preview:
         return self.response_id
-      self.create_preview(image, dataset)
+      self.create_preview()
     return gtk.Dialog.run(self)
   
   def get_scrolled_main_table(self):
@@ -208,6 +218,7 @@ class PreviewDialog(gtk.Dialog):
     table.show()
     self.last_line+=2
     check_boxes=[]
+    show_previews=self.show_previews.get_active()
     for i, dataset in enumerate(datalist):
       if self.single_selection:
         if len(self.check_boxes.values())>0:
@@ -231,7 +242,7 @@ class PreviewDialog(gtk.Dialog):
       # toggle the checkbox when button gets pressed
       #image.add_events(gtk.gdk.BUTTON_PRESS_MASK)
       #image.connect('button_press_event', lambda *ignore: check_box.toggle(True))
-      if self.show_previews:
+      if show_previews:
         image.show()
       eventbox=gtk.EventBox()
       eventbox.add(image)
@@ -261,6 +272,22 @@ class PreviewDialog(gtk.Dialog):
     for check_box in check_boxes:
       check_box.set_active(set_value)
   
+  def select_none(self, widget, action):
+    '''
+      Unselect all entries of all files.
+    '''
+    for boxes in self.check_boxes.values():
+      for box in boxes:
+        box.set_active(False)
+  
+  def select_all(self, widget, action):
+    '''
+      Select all entries of all files.
+    '''
+    for boxes in self.check_boxes.values():
+      for box in boxes:
+        box.set_active(True)
+  
   def get_preview(self, dataset):
     '''
       Create an image as preview, if the dataset has no preview, add it to the
@@ -281,11 +308,12 @@ class PreviewDialog(gtk.Dialog):
     self.preview_session=session
     self.preview_temp_file=temp_file
   
-  def create_preview(self, image, dataset):
+  def create_preview(self):
     '''
       Create an preview of the dataset and render it onto image.
     '''
-    if getattr(self, 'preview_plot', False):
+    if getattr(self, 'preview_plot', False) and self.show_previews.get_active():
+      image, dataset=self.unset_previews.pop(0)
       self.preview_plot(self.preview_session,
                                   [dataset],
                                   'preview',
@@ -324,18 +352,28 @@ class PreviewDialog(gtk.Dialog):
         output.append(data_dict[key][i])
     return output
   
+  def get_active_objects_with_key(self):
+    '''
+      Return a list of data object for which the checkbox is set.
+    '''
+    active_dict=self.get_active_keys()
+    data_dict=self.data_dict
+    output=[]
+    for key, active_list in sorted(active_dict.items()):
+      for i in active_list:
+        output.append((key, data_dict[key][i]))
+    return output
+  
   def toggle_previews(self, widget):
     '''
       Show or hide all previews.
     '''
-    if self.show_previews:
-      self.show_previews=False
-      for image in self.images:
-        image.hide()
-    else:
-      self.show_previews=True
+    if self.show_previews.get_active():
       for image in self.images:
         image.show()
+    else:
+      for image in self.images:
+        image.hide()
       
 #-------------------------- PreviewDialog to select one plot ---------------------------
 
@@ -448,16 +486,24 @@ class ExportFileChooserDialog(gtk.FileChooserDialog):
     '''
       Class constructor which adds two entries for with and height.
     '''
-    opts['action']=gtk.FILE_CHOOSER_ACTION_SAVE
-    opts['buttons']=(gtk.STOCK_CANCEL, 
-                     gtk.RESPONSE_CANCEL, 
-                     gtk.STOCK_SAVE, 
-                     gtk.RESPONSE_OK)
+    if not 'action' in opts:
+      opts['action']=gtk.FILE_CHOOSER_ACTION_SAVE
+    if not 'buttons' in opts:
+      opts['buttons']=(gtk.STOCK_SAVE, 
+                     gtk.RESPONSE_OK, 
+                     gtk.STOCK_CANCEL, 
+                     gtk.RESPONSE_CANCEL
+                     )
     gtk.FileChooserDialog.__init__(self, *args, **opts)
     self.width=width
     self.height=height
-    # Get the top moste table widget from the dialog
-    table=self.vbox.get_children()[0].get_children()[0].get_children()[0].get_children()[0]
+    if opts['action'] == gtk.FILE_CHOOSER_ACTION_SAVE:
+      # Get the top moste table widget from the dialog
+      table=self.vbox.get_children()[0].get_children()[0].get_children()[0].get_children()[0]
+    elif opts['action'] == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
+      # Introduce a new table right of the location entry
+      table=gtk.Table(2, 2, False)
+      self.vbox.get_children()[0].get_children()[0].get_children()[0].get_children()[1].pack_end(table, False)
     label=gtk.Label('width')
     table.attach(label, 
             # X direction #          # Y direction

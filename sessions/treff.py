@@ -21,6 +21,7 @@ import sys
 import math, numpy
 import subprocess
 import time
+from copy import deepcopy
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # import parameter class for fits
@@ -114,6 +115,41 @@ def calc_intensities_general(S, P):
           '-+': numpy.array(Intensity[2]).flatten(),
           '--': numpy.array(Intensity[3]).flatten(),
           }
+
+def separate_scattering_d17(datasets, P, break_condition=1e-3):
+  I={
+    '++': deepcopy(datasets[0].z),
+    '--': deepcopy(datasets[1].z),
+    '+-': deepcopy(datasets[2].z),
+    '-+': deepcopy(datasets[3].z),
+    }
+  normalization_factor=sum(I.values())
+  normalization_factor[numpy.where(normalization_factor==0.)]=1.
+  for value in I.values():
+    value/=normalization_factor
+  S=deepcopy(I)
+  converged=False
+  for i in range(100):
+    I_neu=calc_intensities_general(S,P)
+    I_div={}
+    sum_of_divs=0.
+    for key in I.keys():
+      I_div[key]=I[key]-I_neu[key]
+      S[key]+=I_div[key]
+      sum_of_divs+=numpy.abs(I_div[key]).sum()
+    if (sum_of_divs < break_condition):
+      converged=True
+      break
+  for value in S.values():
+    value*=normalization_factor
+  output_data=FitList(deepcopy(datasets))
+  output_data[0].z=S['++']
+  output_data[1].z=S['--']
+  output_data[2].z=S['+-']
+  output_data[3].z=S['-+']
+  for data in output_data:
+    data.short_info='S('+data.short_info+')'
+  return output_data
 
 def calc_intensities(R, P):
   '''
@@ -583,7 +619,12 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       newd.append(data.join(d2[i]))
     self.file_data[d1_name+'+'+d2_name]=newd
     self.active_file_data=newd
-    self.active_file_name=d1_name+'+'+d2_name   
+    self.active_file_name=d1_name+'+'+d2_name
+  
+  def separate_active_scattering_d17(self, P):
+    datasets=self.active_file_data[:4]
+    new_data=separate_scattering_d17(datasets, P)
+    self.file_data[self.active_file_name+' separated']=new_data
 
 def gauss_kern(size, size_y=None):
   """ 

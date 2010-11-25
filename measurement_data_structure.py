@@ -1116,6 +1116,8 @@ class PlotOptions(object):
           xrange[0]=float(range[0])
         if range[1]:
           xrange[1]=float(range[1])
+        if None not in xrange and xrange[0]>xrange[1]:
+          xrange=[xrange[1], xrange[0]]
         self._xrange=xrange
       except ValueError:
         raise ValueError, 'xrange has to be a tuple or list with two elements of float or None'
@@ -1130,6 +1132,8 @@ class PlotOptions(object):
           yrange[0]=float(range[0])
         if range[1]:
           yrange[1]=float(range[1])
+        if None not in yrange and yrange[0]>yrange[1]:
+          yrange=[yrange[1], yrange[0]]
         self._yrange=yrange
       except ValueError:
         raise ValueError, 'yrange has to be a tuple or list with two elements of float or None'
@@ -1144,6 +1148,8 @@ class PlotOptions(object):
           zrange[0]=float(range[0])
         if range[1]:
           zrange[1]=float(range[1])
+        if None not in zrange and zrange[0]>zrange[1]:
+          zrange=[zrange[1], zrange[0]]
         self._zrange=zrange
       except ValueError:
         raise ValueError, 'zrange has to be a tuple or list with two elements of float or None'

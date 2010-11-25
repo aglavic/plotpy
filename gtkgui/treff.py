@@ -53,6 +53,7 @@ class TreffGUI:
           <separator name='Treff1'/>
           <menuitem action='TreffSpecRef'/>
           <menuitem action='TreffJoinDS'/>
+          <menuitem action='TreffFR'/>
         </menu>
       '''
     # Create actions for the menu
@@ -89,6 +90,10 @@ class TreffGUI:
                 "Seperate Scattering", None,                    # label, accelerator
                 "Calculate seperated scattering parts from polarization directions.",                                   # tooltip
                 self.seperate_scattering ),
+            ( "TreffFR", None,                             # name, stock id
+                "Flipping Ration correction", None,                    # label, accelerator
+                "Calculate the correction for finite flipping ratio.",                                   # tooltip
+                self.separate_active_scattering_d17_dialog ),
             ( "SmoothData", None,                             # name, stock id
                 "Gaussian Smoothing...", None,                    # label, accelerator
                 "Calculate convolution of data with gaussian.",                                   # tooltip
@@ -1380,4 +1385,22 @@ set style increment user
         self.smooth_dataset(window.measurement[window.index_mess], parameters['Size [pix]'], None)
       window.replot()
       print "Smoothed with %i pixel filter size." % parameters['Size [pix]']
+  
+  def separate_active_scattering_d17_dialog(self, session, window):
+    '''
+      Select the polarization channels for the correction.
+    '''
+    P, result=SimpleEntryDialog('Polarization Parameters:', 
+                         (('p1', 0.01, float),
+                          ('p2', 0.01, float), 
+                          ('F1', 0.01, float), 
+                          ('F2', 0.01, float)) ).run()
+    if result:
+      self.separate_active_scattering_d17(P)
+      self.active_file_name+=' separated'
+      self.active_file_data=self.file_data[self.active_file_name]
+      window.measurement=self.active_file_data
+      window.index_mess=0
+      window.rebuild_menus()
+      window.replot()
     
