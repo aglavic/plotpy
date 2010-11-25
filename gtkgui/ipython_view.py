@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Backend to the console plugin.
 
@@ -66,6 +67,7 @@ class IterableIPShell:
 
     self.term = IPython.genutils.IOTerm(cin=cin, cout=cout, cerr=cerr)
     os.environ['TERM'] = 'dumb'
+    
     excepthook = sys.excepthook
     self.IP = IPython.Shell.make_IPython(argv,user_ns=user_ns,
                                          user_global_ns=user_global_ns,
@@ -74,6 +76,8 @@ class IterableIPShell:
     self.IP.system = lambda cmd: self.shell(self.IP.var_expand(cmd),
                                             header='IPython system call: ',
                                             verbose=self.IP.rc.system_verbose)
+    # set right encoding
+    self.IP.stdin_encoding='UTF-8'
     sys.excepthook = excepthook
     self.iter_more = 0
     self.history_level = 0
@@ -214,7 +218,7 @@ class ConsoleView(gtk.TextView):
   def getCurrentLine(self):
     rv = self.text_buffer.get_slice(self.text_buffer.get_iter_at_mark(self.line_start),
                                     self.text_buffer.get_end_iter(), False)
-    return rv
+    return unicode(rv)
 
   def showReturned(self, text):
     iter = self.text_buffer.get_iter_at_mark(self.line_start)
@@ -264,7 +268,8 @@ class IPythonView(ConsoleView, IterableIPShell):
     if self.interrupt:
       self.interrupt = False
       raise KeyboardInterrupt
-    return self.getCurrentLine()
+    line=self.getCurrentLine()
+    return line
 
   def keyPress(self, widget, event):
     if event.state & gtk.gdk.CONTROL_MASK and event.keyval == 99:

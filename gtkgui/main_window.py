@@ -1234,17 +1234,15 @@ class ApplicationMainWindow(gtk.Window):
     table.resize(table_rows,5)
     filter_dialog.show_all()
     # open dialog and wait for a response
-    filter_dialog.connect("response", self.change_data_filter_response, table, table_rows, filters, data)
+    filter_dialog.connect("response", self.change_data_filter_response, table, filters, data)
 
-  def change_data_filter_response(self, filter_dialog, response, table, table_rows, filters, data):
+  def change_data_filter_response(self, filter_dialog, response, table, filters, data):
     '''
       Response actions for the add data filter dialog.
     '''
     # if the response is 'New Filter' add a new filter row and rerun the dialog
     if response==3:
-      filters.append(self.get_new_filter(table,table_rows,data))
-      table_rows+=1
-      table.resize(table_rows,5)
+      filters.append(self.get_new_filter(table,len(filters)+1,data))
       filter_dialog.show_all()
     # if response is apply change the dataset filters
     if response==1 or response==2:
