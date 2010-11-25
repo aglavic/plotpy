@@ -1414,7 +1414,7 @@ class FitGaussian3D(FitFunction3D):
   name="Gaussian"
   parameters=[1., 0., 0., 0.1, 0.1, 0., 0.]
   parameter_names=['A', 'x_0', 'y_0', 'sigma_x', 'sigma_y', 'tilt', 'C']
-  fit_function_text='A*exp(-0.5*(x-x_0)/sigma)+C'
+  fit_function_text='Gaussian'
 
   def __init__(self, initial_parameters):
     '''
@@ -1448,7 +1448,7 @@ class FitPsdVoigt3D(FitFunction3D):
   name="Psd. Voigt"
   parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0., 0.5, 0.]
   parameter_names=['I', 'x_0', 'y_0', 'gamma', 'sigma_x', 'sigma_y', 'tilt', 'eta','C']
-  fit_function_text='I*Re(w(z))/Re(w(z_0))+C; w=(x-x_0)/sigma/sqrt(2)'
+  fit_function_text='Pseudo Voigt'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
 
@@ -1942,55 +1942,107 @@ class FitSession(FitSessionGUI):
     column_3=(dimensions[self.data.zdata], units[self.data.zdata])
     plot_list=[]
     data=self.data
-    for function in self.functions:
+    if len(self.functions)>1 and \
+        all([self.functions[0][0].__class__ is function[0].__class__ for function in self.functions]):
       fit=MeasurementData([column_1, column_2, column_3], # columns
-                                              [], # const_columns
-                                              0, # x-column
-                                              1, # y-column
-                                              -1,   # yerror-column
-                                              2   # z-column
-                                              )
-      div=MeasurementData([column_1, column_2, column_3], # columns
-                                              [], # const_columns
-                                              0, # x-column
-                                              1, # y-column
-                                              -1,   # yerror-column
-                                              2   # z-column
-                                              )
-      logdiv=MeasurementData([column_1, column_2, column_3], # columns
-                                              [], # const_columns
-                                              0, # x-column
-                                              1, # y-column
-                                              -1,   # yerror-column
-                                              2   # z-column
-                                              )
-      self.result_data.append(fit)
-      fit.plot_options=data.plot_options
-      div.plot_options=data.plot_options
-      logdiv.plot_options=data.plot_options
-      result=self.result_data[-1]
-      if function[2]:
-        fit.data[0]=data.x[:]
-        fit.data[1]=data.y[:]
-        div.data[0]=data.x[:]
-        div.data[1]=data.y[:]
-        logdiv.data[0]=data.x[:]
-        logdiv.data[1]=data.y[:]
-        fd=function[0](data.x, data.y)
-        fit.data[2].values=fd
-        div.data[2].values=data.z-fd
-        logdiv.data[2].values=10.**(numpy.log10(data.z)-numpy.log10(fd))
-        function_text=function[0].fit_function_text
-        for i in range(len(function[0].parameters)):
-          function_text=function_text.replace(function[0].parameter_names[i], "%.6g" % function[0].parameters[i], 2)
-        fit.short_info='fit: ' + function_text
+                                                [], # const_columns
+                                                0, # x-column
+                                                1, # y-column
+                                                -1,   # yerror-column
+                                                2   # z-column
+                                                )
+      fit.data[0]=data.x
+      fit.data[1]=data.y
+      fit.data[2]=numpy.zeros_like(data.z)
+      function_text=function[0].fit_function_text
+      fit.short_info='fit: ' + function_text
+      if any([function[1] for function in self.functions]):
+        div=MeasurementData([column_1, column_2, column_3], # columns
+                                                [], # const_columns
+                                                0, # x-column
+                                                1, # y-column
+                                                -1,   # yerror-column
+                                                2   # z-column
+                                                )
+        logdiv=MeasurementData([column_1, column_2, column_3], # columns
+                                                [], # const_columns
+                                                0, # x-column
+                                                1, # y-column
+                                                -1,   # yerror-column
+                                                2   # z-column
+                                                )
+        div.data[0]=data.x
+        div.data[1]=data.y
+        div.data[2]=data.z.copy()
+        logdiv.data[0]=data.x
+        logdiv.data[1]=data.y
+        logdiv.data[2]=numpy.log10(data.z)
+        div.plot_options=data.plot_options
+        logdiv.plot_options=data.plot_options
         div.short_info='data-%s' % function_text
         logdiv.short_info='log(data)-log(%s)' % function_text
-        plot_list.append(fit)
-        if function[1]:
-          # show differences only when fitting
-          plot_list.append(div)
-          plot_list.append(logdiv)
+      fit.plot_options=data.plot_options
+      for function in self.functions:
+        fd=function[0](data.x, data.y)
+        fit.z+=fd
+        if any([function[1] for function in self.functions]):
+          div.z-=fd
+          logdiv.z-=numpy.log10(fd)
+      if any([function[1] for function in self.functions]):
+        logdiv.z=10.**logdiv.z
+        plot_list=[fit, div, logdiv]
+      else:
+        plot_list=[fit]
+    else:
+      for function in self.functions:
+        fit=MeasurementData([column_1, column_2, column_3], # columns
+                                                [], # const_columns
+                                                0, # x-column
+                                                1, # y-column
+                                                -1,   # yerror-column
+                                                2   # z-column
+                                                )
+        div=MeasurementData([column_1, column_2, column_3], # columns
+                                                [], # const_columns
+                                                0, # x-column
+                                                1, # y-column
+                                                -1,   # yerror-column
+                                                2   # z-column
+                                                )
+        logdiv=MeasurementData([column_1, column_2, column_3], # columns
+                                                [], # const_columns
+                                                0, # x-column
+                                                1, # y-column
+                                                -1,   # yerror-column
+                                                2   # z-column
+                                                )
+        self.result_data.append(fit)
+        fit.plot_options=data.plot_options
+        div.plot_options=data.plot_options
+        logdiv.plot_options=data.plot_options
+        result=self.result_data[-1]
+        if function[2]:
+          fit.data[0]=data.x
+          fit.data[1]=data.y
+          div.data[0]=data.x
+          div.data[1]=data.y
+          logdiv.data[0]=data.x
+          logdiv.data[1]=data.y
+          fd=function[0](data.x, data.y)
+          fit.data[2].values=fd
+          div.data[2].values=data.z-fd
+          logdiv.data[2].values=10.**(numpy.log10(data.z)-numpy.log10(fd))
+          function_text=function[0].fit_function_text
+          for i in range(len(function[0].parameters)):
+            function_text=function_text.replace(function[0].parameter_names[i], "%.6g" % function[0].parameters[i], 2)
+          fit.short_info='fit: ' + function_text
+          div.short_info='data-%s' % function_text
+          logdiv.short_info='log(data)-log(%s)' % function_text
+          plot_list.append(fit)
+          if function[1]:
+            # show differences only when fitting
+            plot_list.append(div)
+            plot_list.append(logdiv)
     self.data.plot_together=[self.data] + plot_list
     if len(plot_list)>0:
       self.data.plot_together_zindex=-1
