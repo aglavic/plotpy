@@ -6,7 +6,7 @@
 import numpy
 from copy import deepcopy
 from configobj import ConfigObj
-from measurement_data_structure import MeasurementData
+from measurement_data_structure import MeasurementData, PhysicalProperty
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2009"
@@ -425,6 +425,73 @@ class FileActions:
   #++++++++ Functions not directly called as actions ++++++
   
   def create_cross_section(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10, bin_distance=None):
+    '''
+      Create a cross-section of 3d-data along an arbitrary line. It is possible to
+      bin the extracted data and to weight the binning with a gaussian.
+    '''
+    sqrt=numpy.sqrt
+    exp=numpy.exp
+    dataset=self.window.measurement[self.window.index_mess]
+    xdata=dataset.x.view(numpy.ndarray)
+    ydata=dataset.y.view(numpy.ndarray)
+    zdata=dataset.z.view(numpy.ndarray)
+    if dataset._yerror>=0:
+      dzdata=dataset.data[dataset.yerror].view(numpy.ndarray)
+    else:
+      dzdata=dataset.z.error
+    # Einheitsvector of line
+    vec_e=(x/sqrt(x**2+y**2), y/sqrt(x**2+y**2))
+    # Vector normal to the line
+    vec_n=(vec_e[1], -1*vec_e[0])
+    # starting point of cross-section line
+    origin=(x_0, y_0)
+    # calculate distance to line
+    v1=(xdata-origin[0], ydata-origin[1])
+    dist=abs(v1[0]*vec_n[0] + v1[1]*vec_n[1])
+    # filter by distanc
+    filter_indices=numpy.where(dist<=(w/2.))[0]
+    xdata=xdata[filter_indices]
+    ydata=ydata[filter_indices]
+    zdata=zdata[filter_indices]
+    dzdata=dzdata[filter_indices]
+    # sort data for position on the line
+    len_vec=sqrt(x**2+y**2)
+    dist1=((xdata-x_0)*vec_e[0]+ (ydata-y_0)*vec_e[1])*len_vec
+    sort_idx=numpy.lexsort(keys=(dist1, ydata, xdata))
+    xdata=xdata[sort_idx]
+    ydata=ydata[sort_idx]
+    zdata=zdata[sort_idx]
+    dzdata=dzdata[sort_idx]
+    dist1=dist1[sort_idx]
+    dist=dist[sort_idx]
+    data=numpy.array([dist1, xdata, ydata, zdata, dzdata, dist]).transpose().tolist()
+    data=self.sort_and_bin(data, binning,  gauss_weighting, sigma_gauss, bin_distance)
+    data=numpy.array(data).transpose()
+    out_dataset=MeasurementData()
+    first_dim=''
+    first_unit=''
+    if x!=0:
+      first_dim+='%g %s' % (x, dataset.x.dimension)
+      if y==0:
+        first_unit=dataset.x.unit
+    if x!=0 and y!=0:
+      if y>0:
+        first_dim+=' + '
+      if dataset.x.unit==dataset.y.unit:
+        first_unit=dataset.x.unit
+      else:
+        first_unit="Unknown"
+    if y!=0:
+      first_dim+='%g %s' % (y, dataset.y.dimension)
+      if x==0:
+        first_unit=dataset.y.unit
+    out_dataset.append_column(PhysicalProperty(first_dim, first_unit, data[0]))
+    out_dataset.append_column(PhysicalProperty(dataset.z.dimension, dataset.z.unit, data[3], data[4]))
+    out_dataset.append_column(PhysicalProperty(dataset.x.dimension, dataset.x.unit, data[1]))
+    out_dataset.append_column(PhysicalProperty(dataset.y.dimension, dataset.y.unit, data[2]))
+    return out_dataset
+  
+  def create_cross_section_oll(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10, bin_distance=None):
     '''
       Create a cross-section of 3d-data along an arbitrary line. It is possible to
       bin the extracted data and to weight the binning with a gaussian.
