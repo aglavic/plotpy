@@ -991,23 +991,35 @@ set style increment user
         dataset=tupel[0]
         if len(dataset.plot_together)>1:
           dataset.data[dataset.ydata].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.ydata].values)
-          dataset.data[dataset.yerror].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.yerror].values)
+          if dataset._yerror>=0:
+            dataset.data[dataset.yerror].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.yerror].values)
+          else:
+            dataset.y.error=dataset.y.error*10.**(i*1)
           dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
             map(lambda number: number*10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
         else:
           dataset.data[dataset.ydata].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.ydata].values)
-          dataset.data[dataset.yerror].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.yerror].values)
+          if dataset._yerror>=0:
+            dataset.data[dataset.yerror].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.yerror].values)
+          else:
+            dataset.y.error=dataset.y.error*10.**(i*1)
       self.replot()
       for i, tupel in enumerate(reversed(window.multiplot[0])):
         dataset=tupel[0]
         if len(dataset.plot_together)>1:
           dataset.data[dataset.ydata].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.ydata].values)
-          dataset.data[dataset.yerror].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.yerror].values)
+          if dataset._yerror>=0:
+            dataset.data[dataset.yerror].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.yerror].values)
+          else:
+            dataset.y.error=dataset.y.error/10.**(i*1)
           dataset.plot_together[1].data[dataset.plot_together[1].ydata].values=\
             map(lambda number: number/10.**(i*1), dataset.plot_together[1].data[dataset.plot_together[1].ydata].values)
         else:
           dataset.data[dataset.ydata].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.ydata].values)
-          dataset.data[dataset.yerror].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.yerror].values)
+          if dataset._yerror>=0:
+            dataset.data[dataset.yerror].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.yerror].values)
+          else:
+            dataset.y.error=dataset.y.error/10.**(i*1)
     else:
       self.replot()
 

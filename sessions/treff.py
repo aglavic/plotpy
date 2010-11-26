@@ -489,7 +489,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     #                                 [point.error for point in true_specular_data])
     true_specular_data[numpy.where(true_specular_data<=0)]=true_specular_data[numpy.where(true_specular_data>0)].min()
     true_specular=MeasurementData()
-    true_specular.append_column(PhysicalProperty('2Θ', specular.x.unit, specular_x))
+    true_specular.append_column(PhysicalProperty('Θ', specular.x.unit, specular_x)/2.)
     true_specular.append_column(true_specular_data)
     true_specular.append_column(specular.y//'I_{Specular}')
     # add the object to the active_file_data list

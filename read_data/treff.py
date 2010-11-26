@@ -863,10 +863,31 @@ def d17_pp_from_block(dimension, unit, block, error_block=None):
     pp.error=error_data
   return pp
 
+d17_calibration={'water': None, 'transmission': None}
+from config.treff import D17_CALIBRATION_FILES
+
 def read_d17_raw_data(file_from, file_to):
   '''
     Read d17 raw detector images.
   '''
+  if d17_calibration['water'] is None and D17_CALIBRATION_FILES['water'] is not None:
+    print "    Reading calibration file 'water' which will be used for all imports..."
+    # using water measurement as mask and scale by the number of non zero elements per column
+    water=read_d17_calibration(D17_CALIBRATION_FILES['water']).z
+    mask=numpy.where(water!=0., 1., 0.).reshape(64, 256)
+    scaling=mask.copy()#numpy.where(water!=0., 1./water, 0.).reshape(64, 256)
+    scaling/=mask.sum(axis=0)
+    scaling=scaling.flatten()
+    scaling=numpy.nan_to_num(scaling)*mask.flatten()
+    # normalize to the mean value to stay at about counts/s
+    scaling/=scaling[numpy.where(water!=0)].mean()
+    d17_calibration['water']=scaling
+  if d17_calibration['transmission'] is None and D17_CALIBRATION_FILES['transmission'] is not None:
+    print "    Reading calibration file 'transmission' which will be used for all imports..."
+    transmission=read_d17_calibration(D17_CALIBRATION_FILES['transmission']).z
+    scaling_factor=numpy.where(transmission!=0, 1./transmission, 0.)
+    scaling_factor/=scaling_factor[numpy.where(transmission!=0)].mean()
+    d17_calibration['transmission']=scaling_factor
   folder, file_from=os.path.split(file_from)
   file_to=os.path.join(folder, file_to)
   file_from=os.path.join(folder, file_from)
@@ -882,6 +903,7 @@ def read_d17_raw_data(file_from, file_to):
   sys.stdout.write('    Reading %3i/%3i' % (1, len(file_list)))
   sys.stdout.flush()
   notfound=[]
+  join_sets=[]
   for i, file_name in enumerate(file_list):
     sys.stdout.write('\b'*7+'%3i/%3i' % (i, len(file_list)))
     sys.stdout.flush()
@@ -890,7 +912,16 @@ def read_d17_raw_data(file_from, file_to):
       notfound.append(i)
       continue
     dataset.number=str(i)
-    datasets[dataset.flipper].append(dataset)
+    join_sets.append(dataset)
+    if i%7==6:
+      datasets[(0, 0)].append(join_sets[0])
+      datasets[(1, 1)].append(join_sets[2])
+      datasets[(1, 0)].append(join_sets[1])
+      datasets[(0, 1)].append(join_sets[3])
+      datasets[(0, 0)][-1].y=(datasets[(0, 0)][-1].y+join_sets[6].y)/2.
+      datasets[(1, 0)][-1].y=(datasets[(1, 0)][-1].y+join_sets[5].y)/2.
+      datasets[(1, 1)][-1].y=(datasets[(1, 1)][-1].y+join_sets[4].y)/2.
+      join_sets=[]
   sys.stdout.write('\n')
   output=[]
   absmin=100.
@@ -958,12 +989,58 @@ def read_d17_raw_file(file_name):
   alphai=PhysicalProperty('α_i', '°', numpy.zeros_like(alphaf)+omega)
   dataset.append_column(alphaf)
   intensity=PhysicalProperty('Intensity', 'counts', data)
+  intensity/=counting_time
+  if d17_calibration['water'] is not None:
+    scaling=d17_calibration['water']
+    intensity=intensity*scaling
+    intensity.unit='a.u.'
+  if d17_calibration['transmission'] is not None:
+    scaling_factor=d17_calibration['transmission']
+    intensity=intensity*scaling
+    intensity.unit='a.u.'
   intensity=intensity.reshape(64, 256).sum(axis=0).flatten()
   intensity.dimension='Intensity'
   intensity.error=numpy.sqrt(intensity.view(numpy.ndarray))
   dataset.append_column(intensity)
   dataset.append_column(alphai)
-  dataset.y/=counting_time
+  return dataset
+
+def read_d17_calibration(file_name):
+  '''
+    Read one single detector image as calibration file.
+  '''
+  file_text=open(file_name, 'r').read()
+  if not file_text.startswith('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'):
+    #print "No D17 raw data header found."
+    return None
+  regions=file_text.split('IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII')
+  regions=map(str.strip, regions)
+  dataset=MeasurementDataTREFF(zdata=2)
+  # evaluate header
+  header_1=regions[1].split('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')[1].strip()
+  header_1=header_1.splitlines()[1]
+  sample_name=header_1.split()[0].strip()
+  dataset.sample_name=sample_name
+  info_block1=regions[1].split('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')[1].strip()
+  info_block2=regions[1].split('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')[2].strip()
+  info_block1=info_block1.split()[1:]
+  info_block2=info_block2.split()[1:]
+  counting_time=PhysicalConstant(float(info_block1[2]), 's')
+  monitor=PhysicalConstant(float(info_block1[4]), 'monitor')
+  # get the data 
+  data=regions[-1].splitlines()[1:]
+  data=map(str.split, data)
+  # flatten data list
+  data=[item for sublist in data for item in sublist]
+  pix_x=PhysicalProperty('x', 'pix', [range(256) for i in range(64)]).flatten()
+  pix_y=PhysicalProperty('y', 'pix', [[i for j in range(256)] for i in range(64)]).flatten()
+  dataset.append_column(pix_x)
+  dataset.append_column(pix_y)
+  intensity=PhysicalProperty('Intensity', 'counts', data)
+  intensity.dimension='Intensity'
+  intensity.error=numpy.sqrt(intensity.view(numpy.ndarray))
+  dataset.append_column(intensity)
+  dataset.z/=counting_time
   return dataset
 
 

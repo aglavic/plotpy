@@ -35,6 +35,10 @@ REF_FILE_ENDINGS=['uu', 'dd', 'ud', 'du']
 FIT_OUTPUT_FILES=['simulation_pp', 'simulation_mm', 'simulation_pm', 'simulation_mp']
 RESULT_FILE='result'
 
+# D17 Instrument options
+D17_CALIBRATION_FILES={'water': "/home/glavic/tmp/d17/Water/016295",  
+                       'transmission': "/home/glavic/tmp/d17/transmission/025258"}
+
 # compiler settings for fortran
 FORTRAN_COMPILER='gfortran'
 # compiler optimization options as can be found in the manual,
