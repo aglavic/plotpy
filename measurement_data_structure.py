@@ -1751,6 +1751,7 @@ class PhysicalProperty(numpy.ndarray):
       self.resize(length+len(item), refcheck=False)
       if self.has_error:
         self._error.resize(length+len(item), refcheck=False)
+        self._error.__setslice__(length, length+len(item), item.error)
       self.__setslice__(length, length+len(item), item.view(numpy.ndarray))
     elif hasattr(item, '__iter__'):
       if len(item)==2:
@@ -1837,7 +1838,8 @@ class PhysicalProperty(numpy.ndarray):
     if value is None:
       self._error=None
     else:
-      assert len(value)==len(self), "Error needs to have %i values" % len(self)
+      if len(self)>1:
+        assert len(value)==len(self), "Error needs to have %i values" % len(self)
       self._error=numpy.array(value)
   
   def _get_unit(self):
@@ -1920,10 +1922,10 @@ class PhysicalProperty(numpy.ndarray):
     '''
       Get an item of the object.
     '''
-    output=numpy.ndarray.__getitem__(self, item).view(type(self))
-    if not hasattr(output, 'dimension'):
-      # create array object from scalars
-      output=numpy.array([output]).view(type(self))
+    if hasattr(item, '__iter__'):
+      output=numpy.ndarray.__getitem__(self, item).view(type(self))
+    else:
+      output=numpy.array([numpy.ndarray.__getitem__(self, item)]).view(type(self)).copy()
     output.unit=self.unit
     output.dimension=self.dimension
     if self.has_error:

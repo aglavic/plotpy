@@ -26,7 +26,7 @@ from copy import deepcopy
 from generic import GenericSession
 # import parameter class for fits
 from reflectometer_fit.parameters import FitParameters, LayerParam, MultilayerParam
-from measurement_data_structure import MeasurementData
+from measurement_data_structure import MeasurementData, PhysicalProperty
 # importing data readout
 import read_data.treff
 import read_data.treff_addon1
@@ -465,58 +465,33 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
                                                 line_width, 1, gauss_weighting=False, 
                                                 sigma_gauss=1., bin_distance=binning)
     # Create a new object for the stored data
-    new_cols=[('2Θ', specular.units()[0]), 
-              ('Specular Intensity', 'a.u.'), 
-              ("True Specular Intensity", 'a.u.'), 
-              ('Specular Error', 'a.u.'), 
-              ('True Specular Error', 'a.u.'), 
-              ('Off-Specular Intensity', 'a.u.'), 
-              ]
-    true_specular=MeasurementData(new_cols, 
-                           [], 
-                           0, 
-                           2, 
-                           4,
-                           )
-    off_spec1_xes=map(lambda angle:round(angle, 4), off_spec1.data[0].values)
-    off_spec2_xes=map(lambda angle:round(angle, 4), off_spec2.data[0].values)
-    # Go through all points and try to subtract the off-specular part,
-    # if no off-specular point is present at the specific angle the specular intensity ist taken
-    for point in specular:
-      x=round(point[0], 4)
-      if x not in off_spec1_xes and\
-         x not in off_spec2_xes:
-        true_specular.append([
-                              x, 
-                              point[3], 
-                              point[3], 
-                              point[4], 
-                              point[4], 
-                              0.
-                              ])
+    new_cols=[]
+    # Try to subtract the off-specular part,
+    # if no off-specular point is present at the specific 
+    # angle the specular intensity is taken
+    off_spec1_x=numpy.round(off_spec1.x, 4).tolist()
+    off_spec1_y=off_spec1.y
+    off_spec2_x=numpy.round(off_spec2.x, 4).tolist()
+    off_spec2_y=off_spec2.y
+    specular_x=numpy.round(specular.x, 4).tolist()
+    I=specular.y
+    true_specular_data=PhysicalProperty('I_{True Specular}', specular.x.unit, [], [])
+    for i, specx in enumerate(specular_x):
+      if specx in off_spec1_x and specx in off_spec2_x:
+        true_specular_data.append(I[i]-(off_spec1_y[off_spec1_x.index(specx)]+off_spec2_y[off_spec2_x.index(specx)])/2.)
+      elif specx in off_spec1_x:
+        true_specular_data.append(I[i]-off_spec1_y[off_spec1_x.index(specx)])
+      elif specx in off_spec2_x:
+        true_specular_data.append(I[i]-off_spec2_y[off_spec2_x.index(specx)])
       else:
-        yo=[]
-        dy2=[]
-        if x in off_spec1_xes:
-          index=off_spec1_xes.index(x)
-          yo.append(-off_spec1.data[3].values[index])
-          dy2.append(off_spec1.data[4].values[index])
-        if x in off_spec2_xes:
-          index=off_spec2_xes.index(x)
-          yo.append(-off_spec2.data[3].values[index])
-          dy2.append(off_spec2.data[4].values[index])
-        y=sum(yo)/len(yo)+point[3]
-        if y<=0:
-          continue
-        dy=math.sqrt((sum(dy2)/len(dy2))**2+point[4]**2)
-        true_specular.append([
-                              x, 
-                              point[3], 
-                              y, 
-                              point[4], 
-                              dy, 
-                              -sum(yo)/len(yo)
-                              ])
+        true_specular_data.append(I[i])
+    #true_specular_y=PhysicalProperty('I_{True Specular}', specular.y.unit, true_specular_data, 
+    #                                 [point.error for point in true_specular_data])
+    true_specular_data[numpy.where(true_specular_data<=0)]=true_specular_data[numpy.where(true_specular_data>0)].min()
+    true_specular=MeasurementData()
+    true_specular.append_column(PhysicalProperty('2Θ', specular.x.unit, specular_x))
+    true_specular.append_column(true_specular_data)
+    true_specular.append_column(specular.y//'I_{Specular}')
     # add the object to the active_file_data list
     active_data=self.active_file_data[file_actions.window.index_mess]
     true_specular.number=str(len(self.active_file_data)-1)
