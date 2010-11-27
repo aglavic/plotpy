@@ -110,7 +110,7 @@ def read_data(file_name, script_path, import_images, return_detector_images):
     return read_d17_processed_data(file_name)
   if len(file_name.split('-'))==2:
     file_from, file_to=file_name.split('-')
-    if file_from.isdigit() and file_to.isdigit():
+    if os.path.split(file_from)[1].isdigit() and file_to.isdigit():
       return read_d17_raw_data(file_from, file_to)
   # reset parameters, if maria image was imported before
   global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, PI_4_OVER_LAMBDA
@@ -892,10 +892,11 @@ def read_d17_raw_data(file_from, file_to):
   file_to=os.path.join(folder, file_to)
   file_from=os.path.join(folder, file_from)
   file_list=glob(os.path.join(folder, '*'))
-  file_list=filter(lambda item: item.isdigit(), file_list)
+  file_list=filter(lambda item: os.path.split(item)[1].isdigit(), file_list)
   file_list.sort()
   if not (file_from in file_list and file_to in file_list):
     print 'File not found: %s and %s.' % (file_from, file_to)
+    return 'NULL'
   from_index=file_list.index(file_from)
   to_index=file_list.index(file_to)
   file_list=file_list[from_index:to_index]
@@ -985,7 +986,7 @@ def read_d17_raw_file(file_name):
   data=map(str.split, data)
   # flatten data list
   data=[item for sublist in data for item in sublist]
-  alphaf=PhysicalProperty('α_f', '°', numpy.arange(128, -128, -1)*0.0193+detector_angle-omega)
+  alphaf=PhysicalProperty('α_f', '°', numpy.arange(128, -128, -1)*0.02225+0.225+detector_angle-omega)
   alphai=PhysicalProperty('α_i', '°', numpy.zeros_like(alphaf)+omega)
   dataset.append_column(alphaf)
   intensity=PhysicalProperty('Intensity', 'counts', data)

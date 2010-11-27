@@ -82,39 +82,60 @@ def calc_intensities_general(S, P):
   # create a column vector for Σ
   Sigma=numpy.array([S['++'], S['+-'], S['-+'], S['--']])
   # Define the transformation matrices
-  M1=numpy.matrix(  [
-                     [     1.,        0.,        0.,       0.     ], 
-                     [     0.,        1.,        0.,       0.     ], 
-                     [     F1,        0.,     (1.-F1),     0.     ], 
-                     [     0.,        F1,        0.,     (1.-F1), ], 
+  o=numpy.zeros_like(F1)
+  i=numpy.zeros_like(F1)+1.
+  M1=numpy.array(   [
+                     [      i,         o,         o,        o     ], 
+                     [      o,         i,         o,        o     ], 
+                     [     F1,         o,      (i-F1),      o     ], 
+                     [      o,        F1,         o,      (i-F1), ], 
                      ])
-  M2=numpy.matrix(  [
-                     [     1.,        0.,        0.,       0.     ], 
-                     [     F2,     (1.-F2),      0.,       0.     ], 
-                     [     0.,        0.,        1.,       0.     ], 
-                     [     0.,        0.,        F2,     (1.-F2), ], 
+  M2=numpy.array(   [
+                     [      i,         o,         o,        o     ], 
+                     [     F2,      (i-F2),       o,        o     ], 
+                     [      o,         o,         i,        o     ], 
+                     [      o,         o,        F2,      (i-F2), ], 
                      ])
-  M3=numpy.matrix(  [
-                     [  (1.-p1),      0.,        p1,       0.     ], 
-                     [     0.,      (1.-p1),     0.,       p1     ], 
-                     [     p1,        0.,     (1.-p1),     0.     ], 
-                     [     0.,        p1,        0.,     (1.-p1)  ], 
+  M3=numpy.array(   [
+                     [   (i-p1),       o,        p1,        o     ], 
+                     [      o,       (i-p1),      o,       p1     ], 
+                     [     p1,         o,      (i-p1),      o     ], 
+                     [      o,        p1,         o,      (i-p1)  ], 
                      ])
-  M4=numpy.matrix(  [
-                     [  (1.-p2),      p2,        0.,       0.     ], 
-                     [     p2,      (1.-p2),     0.,       0.     ], 
-                     [     0.,        0.,     (1.-p2),     p2     ], 
-                     [     0.,        0.,        p2,     (1.-p2)  ], 
+  M4=numpy.array(   [
+                     [   (i-p2),      p2,         o,        o     ], 
+                     [     p2,       (i-p2),      o,        o     ], 
+                     [      o,         o,      (i-p2),     p2     ], 
+                     [      o,         o,        p2,      (i-p2)  ], 
                      ])
-  Mall=M1*M2*M3*M4
-  Intensity=numpy.dot(Mall, Sigma)
-  Intensity=Intensity
+  Mall=dot_matrix(dot_matrix(M1, M2), dot_matrix(M3, M4))
+  Intensity=dot_vector(Mall, Sigma)
   return {
-          '++': numpy.array(Intensity[0]).flatten(), 
-          '+-': numpy.array(Intensity[1]).flatten(), 
-          '-+': numpy.array(Intensity[2]).flatten(),
-          '--': numpy.array(Intensity[3]).flatten(),
+          '++': Intensity[0], 
+          '+-': Intensity[1], 
+          '-+': Intensity[2],
+          '--': Intensity[3], 
           }
+
+def dot_matrix(M1, M2):
+  '''
+    Calculate the matrix product of a 4x4 matrix of arrays.
+  '''
+  # create empty output matrix
+  Mout=[[None for i in range(4)] for j in range(4)]
+  for i in range(4):
+    for j in range(4):
+      Mout[i][j]=(M1[i]*M2.transpose(1, 0, 2)[j]).sum(axis=0)
+  return numpy.array(Mout)
+
+def dot_vector(M, v):
+  '''
+    Calculate the 4x4 matix·vector product of a matrix of arrays.
+  '''
+  vout=[None for i in range(4)]
+  for i in range(4):
+    vout[i]=(M[i]*v).sum(axis=0)
+  return vout
 
 def separate_scattering_d17(datasets, P, break_condition=1e-3):
   I={
@@ -475,7 +496,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     off_spec2_y=off_spec2.y
     specular_x=numpy.round(specular.x, 4).tolist()
     I=specular.y
-    true_specular_data=PhysicalProperty('I_{True Specular}', specular.x.unit, [], [])
+    true_specular_data=PhysicalProperty('I_{True Specular}', specular.y.unit, [], [])
     for i, specx in enumerate(specular_x):
       if specx in off_spec1_x and specx in off_spec2_x:
         true_specular_data.append(I[i]-(off_spec1_y[off_spec1_x.index(specx)]+off_spec2_y[off_spec2_x.index(specx)])/2.)

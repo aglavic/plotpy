@@ -2732,7 +2732,12 @@ set multiplot layout %i,1
     file_dialog=ExportFileChooserDialog(self.active_session.picture_width, 
                                         self.active_session.picture_height, 
                                         title='Select Destination Folder...', 
-                                        action=gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+                                        action=gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER, 
+                                        buttons=(gtk.STOCK_OK, 
+                                                 gtk.RESPONSE_OK, 
+                                                 gtk.STOCK_CANCEL, 
+                                                 gtk.RESPONSE_CANCEL
+                                                 ))
     file_dialog.set_default_response(gtk.RESPONSE_OK)
     file_dialog.set_current_folder(self.active_folder)
     file_dialog.show_all()
@@ -2777,14 +2782,15 @@ set multiplot layout %i,1
       naming_text=naming_entry.get_text()
       for i, item in enumerate(selection_dialog.get_active_objects_with_key()):
         file_name, dataset=item
-        filt_name=os.path.split(file_name)[1]
+        file_name_raw=os.path.split(file_name)[1]
+        naming=naming_text.replace('[name]', file_name_raw)
         self.last_plot_text=self.plot(self.active_session, 
                                       dataset.plot_together,
-                                      os.path.join(self.active_folder, file_name),
+                                      file_name,
                                       dataset.short_info,
                                       [object.short_info for object in dataset.plot_together],
                                       errorbars,
-                                      naming_text, 
+                                      os.path.join(self.active_folder, naming), 
                                       fit_lorentz=False)
         self.reset_statusbar()
         print 'Export plot number %2i...' % i

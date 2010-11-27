@@ -1408,6 +1408,8 @@ set style increment user
                           ('F1', 0.01, float), 
                           ('F2', 0.01, float)) ).run()
     if result:
+      for key, value in P.items():
+        P[key]=[value]
       self.separate_active_scattering_d17(P)
       self.active_file_name+=' separated'
       self.active_file_data=self.file_data[self.active_file_name]
