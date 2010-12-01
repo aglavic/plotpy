@@ -796,7 +796,7 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix
       indices=indices_x[sub_indices]
       if len(indices)==0:
         # fill grid at points not in old grid
-        output_data.append([xi, yi, fill_value[0], fill_value[1]])
+        output_data.append([xi, yi, (fill_value[0], fill_value[1])])
         continue
       factors=exp(distances_x[indices]**2*gauss_factor_x + distances_y[sub_indices]**2*gauss_factor_y)
       scale=1./factors.sum()

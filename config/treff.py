@@ -36,8 +36,12 @@ FIT_OUTPUT_FILES=['simulation_pp', 'simulation_mm', 'simulation_pm', 'simulation
 RESULT_FILE='result'
 
 # D17 Instrument options
+# Correction fiels
 D17_CALIBRATION_FILES={'water': "/home/glavic/tmp/d17/Water/016295",  
-                       'transmission': "/home/glavic/tmp/d17/transmission/025258"}
+                       'transmission': "/home/glavic/tmp/d17/transmission/025258"
+                       }
+# Lower and Upper Bounds of the detector to use
+D17_MASK_BOUNDS=(24, 41)
 
 # compiler settings for fortran
 FORTRAN_COMPILER='gfortran'

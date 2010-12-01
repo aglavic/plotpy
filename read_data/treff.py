@@ -864,7 +864,7 @@ def d17_pp_from_block(dimension, unit, block, error_block=None):
   return pp
 
 d17_calibration={'water': None, 'transmission': None}
-from config.treff import D17_CALIBRATION_FILES
+from config.treff import D17_CALIBRATION_FILES, D17_MASK_BOUNDS
 
 def read_d17_raw_data(file_from, file_to):
   '''
@@ -875,6 +875,9 @@ def read_d17_raw_data(file_from, file_to):
     # using water measurement as mask and scale by the number of non zero elements per column
     water=read_d17_calibration(D17_CALIBRATION_FILES['water']).z
     mask=numpy.where(water!=0., 1., 0.).reshape(64, 256)
+    if D17_MASK_BOUNDS:
+      mask=(mask.transpose()*numpy.where((numpy.arange(0, 64)>=D17_MASK_BOUNDS[0])*\
+                        (numpy.arange(0, 64)<=D17_MASK_BOUNDS[1]), 1., 0.)).transpose()
     scaling=mask.copy()#numpy.where(water!=0., 1./water, 0.).reshape(64, 256)
     scaling/=mask.sum(axis=0)
     scaling=scaling.flatten()
