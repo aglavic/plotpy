@@ -884,7 +884,7 @@ class DNSSession(GUI, GenericSession):
         active_map.info= "\n".join(map(lambda item: item[0]+': '+str(item[1]),
                                     sorted(scan.dns_info.items())))
       # add the data
-      data=[point for point in scan]
+      data=[list(point) for point in scan]
       detector_bank_2T=scan.dns_info['detector_bank_2T']
       omega=scan.dns_info['omega']
       map(self.file_data[file][i%increment].append, map(append_to_map, data))

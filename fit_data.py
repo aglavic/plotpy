@@ -46,6 +46,7 @@ class FitFunction(FitFunctionGUI):
   x_from=None
   x_to=None
   is_3d=False
+  fit_logarithmic=False
   
   def __init__(self, initial_parameters):
     '''
@@ -83,7 +84,40 @@ class FitFunction(FitFunctionGUI):
     else:
       err=(function(function_parameters, x)-y)/yerror
     return err      
-  
+
+  def residuals_log(self, params, y, x, yerror=None):
+    '''
+      Function used by leastsq to compute the difference between the logarithms of the simulation and data.
+      For normal functions this is just the difference between log(y) and log(simulation(x)) but
+      can be overwritten e.g. to increase speed or fit to log(x).
+      If the dataset has yerror values they are used as weight.
+      
+      @param params Parameters for the function in this iteration
+      @param y List of y values measured
+      @param x List of x values for the measured points
+      @param yerror List of error values for the y values or None if the fit is not weighted
+      
+      @return Residuals (meaning the value to be minimized) of the fit function and the measured data
+    '''
+    # function is called len(x) times, this is just to speed up the lookup procedure
+    function=self.fit_function
+    function_parameters=[]
+    for i in range(len(self.parameters)):
+      if i in self.refine_parameters:
+        function_parameters.append(params[self.refine_parameters.index(i)])
+      else:
+        function_parameters.append(self.parameters[i])
+    remove_negative=numpy.where(y>0.)
+    x=x[remove_negative]
+    y=y[remove_negative]
+    if yerror is not None:
+      yerror=yerror[remove_negative]
+      yerror=numpy.where((numpy.isinf(yerror))+(numpy.isnan(yerror))+(yerror<=0.), 1., yerror)
+      err=(numpy.log10(function(function_parameters, x))-numpy.log10(y))/numpy.log10(yerror)
+    else:
+      err=numpy.log10(function(function_parameters, x))-numpy.log10(y)
+    return err
+
   def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
     '''
       Do the least square refinement to the given dataset. If the fit converges
@@ -128,7 +162,11 @@ class FitFunction(FitFunctionGUI):
         dy=None
       else:
         dy[zero_elements]+=numpy.abs(dy[non_zero_elements]).min()
-    new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=fit_args, full_output=1)
+    if self.fit_logarithmic:
+      residuals=self.residuals_log
+    else:
+      residuals=self.residuals
+    new_params, cov_x, infodict, mesg, ier = leastsq(residuals, parameters, args=fit_args, full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     cov=cov_x
     if ier in [1, 2, 3, 4]:
@@ -283,6 +321,7 @@ class FitFunction3D(FitFunctionGUI):
   y_from=None
   y_to=None
   is_3d=True
+  fit_logarithmic=False
   
   def __init__(self, initial_parameters):
     '''
@@ -321,7 +360,41 @@ class FitFunction3D(FitFunctionGUI):
     else:
       err=(function(function_parameters, x, y)-z)/zerror
     return err      
-  
+
+  def residuals_log(self, params, z, y, x, zerror=None):
+    '''
+      Function used by leastsq to compute the difference between the logarithms of the simulation and data.
+      For normal functions this is just the difference between log(y) and log(simulation(x)) but
+      can be overwritten e.g. to increase speed or fit to log(x).
+      If the dataset has yerror values they are used as weight.
+      
+      @param params Parameters for the function in this iteration
+      @param y List of y values measured
+      @param x List of x values for the measured points
+      @param yerror List of error values for the y values or None if the fit is not weighted
+      
+      @return Residuals (meaning the value to be minimized) of the fit function and the measured data
+    '''
+    # function is called len(x) times, this is just to speed up the lookup procedure
+    function=self.fit_function
+    function_parameters=[]
+    for i in range(len(self.parameters)):
+      if i in self.refine_parameters:
+        function_parameters.append(params[self.refine_parameters.index(i)])
+      else:
+        function_parameters.append(self.parameters[i])
+    remove_negative=numpy.where(z>0.)
+    x=x[remove_negative]
+    y=y[remove_negative]
+    z=z[remove_negative]
+    if zerror is not None:
+      zerror=zerror[remove_negative]
+      zerror=numpy.where((numpy.isinf(zerror))+(numpy.isnan(zerror))+(zerror<=0.), 1., zerror)
+      err=(numpy.log10(function(function_parameters, x, y))-numpy.log10(z))/numpy.log10(zerror)
+    else:
+      err=numpy.log10(function(function_parameters, x, y))-numpy.log10(z)
+    return err
+
   def refine(self,  dataset_x,  dataset_y, dataset_z, dataset_zerror=None):
     '''
       Do the least square refinement to the given dataset. If the fit converges
@@ -376,7 +449,11 @@ class FitFunction3D(FitFunctionGUI):
       zero_elements=numpy.where(dz==0.)[0]
       non_zero_elements=numpy.where(dz!=0.)[0]
       dz[zero_elements]+=numpy.abs(dz[non_zero_elements]).min()
-    new_params, cov_x, infodict, mesg, ier = leastsq(self.residuals, parameters, args=fit_args, full_output=1)
+    if self.fit_logarithmic:
+      residuals=self.residuals_log
+    else:
+      residuals=self.residuals
+    new_params, cov_x, infodict, mesg, ier = leastsq(residuals, parameters, args=fit_args, full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     cov=cov_x
     if ier in [1, 2, 3, 4]:
@@ -477,7 +554,7 @@ class FitLinear(FitFunction):
   parameters=[1, 0]
   parameter_names=['a', 'b']
   fit_function=lambda self, p, x: p[0] * numpy.array(x) + p[1]
-  fit_function_text='a*x + b'
+  fit_function_text='[a]·x + [b]'
 
   def __init__(self, initial_parameters):
     '''
@@ -495,7 +572,7 @@ class FitDiamagnetism(FitFunction):
   name="Linear Asymptotes"
   parameters=[0, 0, 0, 1]
   parameter_names=['a', 'b', 'c', 'split']
-  fit_function_text='slope=a'
+  fit_function_text='slope=[a]'
 
   def __init__(self, initial_parameters):
     '''
@@ -525,7 +602,7 @@ class FitQuadratic(FitFunction):
   parameters=[1, 0,  0]
   parameter_names=['a', 'b', 'c']
   fit_function=lambda self, p, x: p[0] * numpy.array(x)**2 + p[1] * numpy.array(x) + p[2]
-  fit_function_text='a*x^2 + b*x + c'
+  fit_function_text='[a]·x^2 + [b]·x + [c]'
 
   def __init__(self, initial_parameters):
     '''
@@ -543,7 +620,7 @@ class FitPolynomialPowerlaw(FitFunction):
   name="Powerlaw with Polynom"
   parameters=[0., 0., 1., 0.,  0.]
   parameter_names=['a', 'b', 'c', 'd', 'e']
-  fit_function_text='a*x^2 + b*x + c'
+  fit_function_text='exp([a]·x^4 + [b]·x^3 + [c]·x^2 + [d]·x + [e])'
 
   def __init__(self, initial_parameters):
     '''
@@ -592,9 +669,9 @@ class FitSinus(FitFunction):
   # define class variables.
   name="Sinus"
   parameters=[1., 1.,  0.,  0.]
-  parameter_names=['a', 'ω_0','φ_0', 'c']
+  parameter_names=['a', 'ω0','φ0', 'c']
   fit_function=lambda self, p, x: p[0] * numpy.sin((numpy.array(x) * p[1] - p[2])*numpy.pi/180.) + p[3]
-  fit_function_text='a*sin(ω_0·x-φ_0)+c'
+  fit_function_text='[a]·sin([ω0|3]·x-[φ0|2])+[c]'
 
   def __init__(self, initial_parameters):
     '''
@@ -613,7 +690,7 @@ class FitExponential(FitFunction):
   parameters=[1, 1, 0]
   parameter_names=['A', 'B', 'C']
   fit_function=lambda self, p, x: p[0] * numpy.exp(p[1] * numpy.array(x)) + p[2]
-  fit_function_text='A*exp(B*x) + C'
+  fit_function_text='[A]·exp([B]·x) + [C]'
 
   def __init__(self, initial_parameters):
     '''
@@ -630,9 +707,9 @@ class FitOneOverX(FitFunction):
   # define class variables.
   name="1/x"
   parameters=[1, 0, 0]
-  parameter_names=['C', 'x_0', 'D']
+  parameter_names=['C', 'x0', 'D']
   fit_function=lambda self, p, x: p[0] * 1 / (numpy.array(x) - p[1]) + p[2]
-  fit_function_text='C/(x-x_0) + D'
+  fit_function_text='[C]/(x-[x0|2]) + [D]'
 
   def __init__(self, initial_parameters):
     '''
@@ -649,9 +726,9 @@ class FitGaussian(FitFunction):
   # define class variables.
   name="Gaussian"
   parameters=[1, 0, 1, 0]
-  parameter_names=['A', 'x_0', 'sigma', 'C']
+  parameter_names=['A', 'x0', 'σ', 'C']
   fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2) + p[3]
-  fit_function_text='A*exp(-0.5*(x-x_0)/sigma)+C'
+  fit_function_text='[A]·exp(-0.5·(x-[x0|2])/[σ])+[C]'
 
   def __init__(self, initial_parameters):
     '''
@@ -668,9 +745,9 @@ class FitLorentzian(FitFunction):
   # define class variables.
   name="Lorentzian"
   parameters=[1, 0, 1, 0]
-  parameter_names=['I', 'x_0', 'gamma', 'C']
+  parameter_names=['I', 'x0', 'γ', 'C']
   fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2) + p[3]
-  fit_function_text='A/(1 + ((x-x_0)/gamma)^2)+C'
+  fit_function_text='[A]/(1 + ((x-[x0|2])/[γ|2])^2)+[C]'
 
   def __init__(self, initial_parameters):
     '''
@@ -687,8 +764,8 @@ class FitVoigt(FitFunction):
   # define class variables.
   name="Voigt"
   parameters=[1, 0, 1, 1, 0]
-  parameter_names=['I', 'x_0', 'gamma', 'sigma', 'C']
-  fit_function_text='I*Re(w(z))/Re(w(z_0))+C; w=(x-x_0)/sigma/sqrt(2)'
+  parameter_names=['I', 'x0', 'γ', 'σ', 'C']
+  fit_function_text='Voigt: I=[I] x_0=[x0] σ=[σ|2] γ=[γ|2]'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
 
@@ -720,8 +797,8 @@ class FitCuK(FitFunction):
   # define class variables.
   name="Cu K-radiation"
   parameters=[1, 0, 0.001, 0.001, 0, 2, 0,99752006]
-  parameter_names=['I', 'x_0', 'gamma', 'sigma', 'C', 'K_a1/K_a2', 'x_01/x_02']
-  fit_function_text='x_0 ; gamma ; sigma'
+  parameter_names=['I', 'x0', 'γ', 'σ', 'C', 'K_a1/K_a2', 'x01/x02']
+  fit_function_text='K_α: [x0] ; [γ|2] ; [σ|2]'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
 
@@ -1205,7 +1282,7 @@ class FitSQUIDSignal(FitFunction):
                                           + numpy.exp(-0.5*((numpy.array(x) - p[1] - self.squid_coil_distance)/p[2])**2)\
                                           - 2.* numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2) \
                                           )+ p[3]
-  fit_function_text='M=Moment ; pos=x_0 ; s = sigma'
+  fit_function_text='M=[Moment] ; pos=[x_0] ; s = [sigma]'
 
   def __init__(self, initial_parameters):
     '''
@@ -1960,7 +2037,7 @@ class FitSession(FitSessionGUI):
       fit.data[1]=data.y
       fit.data[2]=numpy.zeros_like(data.z)
       function_text=function[0].fit_function_text
-      fit.short_info='fit: ' + function_text
+      fit.short_info=function_text
       if any([function[1] for function in self.functions]):
         div=MeasurementData([column_1, column_2, column_3], # columns
                                                 [], # const_columns
@@ -2039,8 +2116,24 @@ class FitSession(FitSessionGUI):
           logdiv.data[2].values=10.**(numpy.log10(data.z)-numpy.log10(fd))
           function_text=function[0].fit_function_text
           for i in range(len(function[0].parameters)):
-            function_text=function_text.replace(function[0].parameter_names[i], "%.6g" % function[0].parameters[i], 2)
-          fit.short_info='fit: ' + function_text
+            pname=function[0].parameter_names[i]
+            while '['+pname in function_text:
+              start_idx=function_text.index('['+pname)
+              end_idx=function_text[start_idx:].index(']')+start_idx
+              replacement=function_text[start_idx:end_idx+1]
+              pow_10=int(numpy.log10(abs(function[0].parameters[i])))
+              try:
+                digits=int(replacement.split('|')[1])
+              except:
+                digits=4
+              if pow_10>(digits-1):
+                function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % (function[0].parameters[i]/10.**pow_10, pow_10))
+              elif pow_10<0:
+                function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % (function[0].parameters[i]/10.**(pow_10-1), (pow_10-1)))
+              else:
+                function_text.replace(replacement, ("%%.%if" % (digits-1)) % (function[0].parameters[i]))
+            #function_text=function_text.replace(function[0].parameter_names[i], "%.6g" % function[0].parameters[i], 2)
+          fit.short_info=function_text
           div.short_info='data-%s' % function_text
           logdiv.short_info='log(data)-log(%s)' % function_text
           plot_list.append(fit)
@@ -2078,7 +2171,31 @@ class FitSession(FitSessionGUI):
           result.append((fit_x[i], fit_y[i]))
         function_text=function[0].fit_function_text
         for i in range(len(function[0].parameters)):
-          function_text=function_text.replace(function[0].parameter_names[i], "%.6g" % function[0].parameters[i], 2)
-        result.short_info='fit: ' + function_text
+          pname=function[0].parameter_names[i]
+          while '['+pname in function_text:
+            start_idx=function_text.index('['+pname)
+            end_idx=function_text[start_idx:].index(']')+start_idx
+            replacement=function_text[start_idx:end_idx+1]
+            if abs(function[0].parameters[i])!=0.:
+              pow_10=numpy.log10(abs(function[0].parameters[i]))
+            else:
+              pow_10=0
+            try:
+              digits=int(replacement.split('|')[1].rstrip(']'))
+            except:
+              digits=4
+            pow_10i=int(pow_10)
+            if pow_10i>(digits-1):
+              function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+                                                    (function[0].parameters[i]/10.**pow_10i, pow_10i))
+            elif pow_10<0:
+              if pow_10i==pow_10:
+                pow_10i+=1
+              function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+                                                    (function[0].parameters[i]/10.**(pow_10i-1), (pow_10i-1)))
+            else:
+              function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (function[0].parameters[i]))
+          #function_text=function_text.replace(function[0].parameter_names[i], "%.6g" % function[0].parameters[i], 2)
+        result.short_info=function_text
         plot_list.append(result)
     self.data.plot_together=[self.data] + plot_list  

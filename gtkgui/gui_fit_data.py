@@ -52,7 +52,8 @@ class FitSessionGUI:
         Called when check button is pressed.
       '''
       function[index]=not function[index]
-    
+    def toggle_logarithmic(action, function):
+      function[0].fit_logarithmic=not function[0].fit_logarithmic
     entries=[]
     align_table=gtk.Table(5,len(self.functions)*2+2,False)
     for i, function in enumerate(self.functions):
@@ -85,6 +86,14 @@ class FitSessionGUI:
       align_table.attach(toggle_errors,
                   # X direction #          # Y direction
                   5, 6,                      i*2, i*2+1,
+                  gtk.EXPAND,     gtk.EXPAND,
+                  0,                         0);
+      toggle_log=gtk.CheckButton(label="logarithmic")
+      toggle_log.set_active(function[0].fit_logarithmic)
+      toggle_log.connect('toggled', toggle_logarithmic, function)
+      align_table.attach(toggle_log,
+                  # X direction #          # Y direction
+                  6, 7,                      i*2, i*2+1,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       new_line, entry=self.function_line(function[0], dialog, window)
