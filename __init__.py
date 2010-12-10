@@ -2,6 +2,19 @@
 # -*- encoding: utf-8 -*-
 '''
   Plot-script package for data plotting and analyzing for different instruments.
+  
+  The data model is based on the following hirarchy:
+                 GUI-Interface        <->         session-Object
+                                                session.file_data
+              gnuplot-Interface       <->     MeasurementData-Object  (measurement_data_structure)
+                                              MeasurementData.data
+                                             PhysicalProperty-Objects (measurement_data_structure)
+  
+    As top level the session-object (which is different for each instrument) handles the
+    data readout and storage. The active session object stores the data read from each file in
+    a dictionary. The dictionary key is the input file name and the value as a list of 
+    MeasurementData object. The MeasurementData object stands for one Measurement/Scan and stores
+    plot specific information and the measured data as PhysicalProperty-Objects (derived from numpy.ndarray).
 '''
 #################################################################################################
 #                    Script to plot different measurements with gnuplot                         #
@@ -90,6 +103,7 @@ __status__ = "Production"
 known_measurement_types={
                          'squid': ('squid', 'SquidSession', ['dat', 'raw', 'DAT', 'RAW']), 
                          '4circle': ('circle', 'CircleSession', ['spec']), 
+                         'p09': ('circle', 'CircleSession', ['fio']), 
                          'refl': ('reflectometer', 'ReflectometerSession', ['UXD', 'uxd']), 
                          'treff': ('treff', 'TreffSession', ['___']), 
                          'in12': ('in12', 'IN12Session', ['___']), 

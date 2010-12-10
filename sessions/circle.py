@@ -19,7 +19,9 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
+import os
 from time import time
+import numpy
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # importing preferences and data readout
@@ -55,10 +57,13 @@ class CircleSession(GUI, GenericSession):
 
   #++++++++++++++++++ local variables +++++++++++++++++
   show_counts=False
-  FILE_WILDCARDS=(('4circle','*.spec', '*.spec.gz')),('All', '*')  
+  FILE_WILDCARDS=(('4circle','*.spec', '*.spec.gz', '*.fio', '*.fio.gz')),('All', '*')  
   mds_create=False
   read_directly=True
   autoreload_active=False
+  join_p09=False
+  
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['counts', 'jp9']
   #------------------ local variables -----------------
 
   
@@ -66,11 +71,10 @@ class CircleSession(GUI, GenericSession):
     '''
       class constructor expands the GenericSession constructor
     '''
-    self.COLUMNS_MAPPING=config.circle.COLUMNS_MAPPING
-    self.MEASUREMENT_TYPES=config.circle.MEASUREMENT_TYPES
     self.TRANSFORMATIONS=config.circle.TRANSFORMATIONS
     GenericSession.__init__(self, arguments)
-    
+    if self.join_p09:
+      self.join_sequences_p09()
   
   def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
     '''
@@ -82,7 +86,9 @@ class CircleSession(GUI, GenericSession):
       if last_argument_option[0]:
         found=False
       elif argument=='-counts':
-        show_counts=True
+        self.show_counts=True
+      elif argument=='-jp9':
+        self.join_p09=True
       else:
         found=False
     return (found, last_argument_option)
@@ -92,7 +98,7 @@ class CircleSession(GUI, GenericSession):
     '''
       function to read data files
     '''
-    return read_data.circle.read_data(file_name,self.COLUMNS_MAPPING,self.MEASUREMENT_TYPES)
+    return read_data.circle.read_data(file_name)
 
 
   def add_file(self, filename, append=True):
@@ -105,19 +111,27 @@ class CircleSession(GUI, GenericSession):
       dataset.logx=self.logx
       dataset.logy=self.logy
       # name the dataset
-      hkl=[str(round(dataset.data[0].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
-      str(round(dataset.data[1].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
-      str(round(dataset.data[2].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0')] # h,k,l information from middle of the Scan with 2 post point digits but with trailing 0 striped      
-      if (dataset.xdata==0)&(dataset.zdata==-1):
-        dataset.short_info='h,'+hkl[1] +','+hkl[2] +' scan'
-      elif (dataset.xdata==1)&(dataset.zdata==-1):
-        dataset.short_info=hkl[0] +',k,'+hkl[2] +' scan'
-      elif (dataset.xdata==2)&(dataset.zdata==-1):
-        dataset.short_info=hkl[0] +','+hkl[1] +',l scan'
-      elif dataset.zdata>=0:
-        dataset.short_info=dataset.xdim()+dataset.ydim()+' mesh at '+hkl[0]+ ','+hkl[1]+ ','+ hkl[2]
+      dims=dataset.dimensions()
+      h_idx=dims.index('H')
+      k_idx=dims.index('K')
+      l_idx=dims.index('L')
+      hkl=[str(round(dataset.data[h_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
+      str(round(dataset.data[k_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
+      str(round(dataset.data[l_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0')] # h,k,l information from middle of the Scan with 2 post point digits but with trailing 0 striped      
+      if dataset.zdata<0:
+        dataset.short_info=dataset.x.dimension+'-scan around (%s %s %s)' % (hkl[0], hkl[1], hkl[2])
       else:
-        dataset.short_info=dataset.xdim()+' scan at '+hkl[0] +','+ hkl[1]+ ','+hkl[2]
+        dataset.short_info=dataset.x.dimension+dataset.y.dimension+'-mesh around (%s %s %s)' % (hkl[0], hkl[1], hkl[2])
+      #if (dataset.xdata==0)&(dataset.zdata==-1):
+        #dataset.short_info='h,'+hkl[1] +','+hkl[2] +' scan'
+      #elif (dataset.xdata==1)&(dataset.zdata==-1):
+        #dataset.short_info=hkl[0] +',k,'+hkl[2] +' scan'
+      #elif (dataset.xdata==2)&(dataset.zdata==-1):
+        #dataset.short_info=hkl[0] +','+hkl[1] +',l scan'
+      #elif dataset.zdata>=0:
+        #dataset.short_info=dataset.xdim()+dataset.ydim()+' mesh at '+hkl[0]+ ','+hkl[1]+ ','+ hkl[2]
+      #else:
+        #dataset.short_info=dataset.xdim()+' scan at '+hkl[0] +','+ hkl[1]+ ','+hkl[2]
       if not self.show_counts:
         self.counts_to_cps(dataset)
     return datasets
@@ -168,12 +182,137 @@ class CircleSession(GUI, GenericSession):
     output_data=input_data
     counts_column=[]
     time_column=0
-    for i,unit in enumerate(self.units): 
+    for i,col in enumerate(input_data): 
   # selection of the columns for counts
-      if unit=='counts/s':
+      if col.unit=='counts/s':
         counts_column.append(i)
-      if unit=='s':
+      if col.unit=='s':
         time_column=i
     for counts in counts_column:
       output_data[counts]=output_data[counts]*output_data[time_column]# calculate cps
     return output_data
+  
+  def get_ds_hkl(self, dataset, round_by=1):
+    '''
+      Return the approximate hkl position of one scan.
+    '''
+    dims=dataset.dimensions()
+    h_idx=dims.index('H')
+    k_idx=dims.index('K')
+    l_idx=dims.index('L')
+    h=round(dataset.data[h_idx].mean(), round_by)
+    k=round(dataset.data[k_idx].mean(), round_by)
+    l=round(dataset.data[l_idx].mean(), round_by)
+    return (h, k, l)
+  
+  def join_sequences_p09(self):
+    '''
+      Combine scans to one file_data entry, which are around the same HKL position.
+    '''
+    datasets=self.file_data.items()
+    datasets.sort()
+    start_name=datasets[0][0]
+    last_name=start_name
+    start_hkl=self.get_ds_hkl(datasets[0][1][0])
+    joint=datasets[0][1]
+    del(self.file_data[start_name])
+    for name, data in datasets[1:]:
+      del(self.file_data[name])
+      hkl=self.get_ds_hkl(data[0])
+      if hkl==start_hkl:
+        joint+=data
+        last_name=name
+      else:
+        if last_name==start_name:
+          self.file_data[last_name]=joint
+        else:
+          if self.compare_types_p09(joint):
+            self.file_data[start_name+'-'+os.path.split(last_name)[1]]=self.create_mesh(joint)
+          else:
+            self.file_data[start_name+'-'+os.path.split(last_name)[1]]=joint
+        joint=data
+        start_name=name
+        last_name=name
+        start_hkl=hkl
+    if last_name==start_name:
+      self.file_data[last_name]=joint
+    else:
+      if self.compare_types_p09(joint):
+        self.file_data[start_name+'-'+os.path.split(last_name)[1]]=self.create_mesh(joint)
+        self.active_file_data=self.file_data[start_name+'-'+os.path.split(last_name)[1]]
+      else:
+        self.file_data[start_name+'-'+os.path.split(last_name)[1]]=joint
+
+  def compare_types_p09(self, datasets):
+    '''
+      Check if all scans have the same scan type.
+    '''
+    type1=datasets[0].x.dimension
+    if not type1.endswith('-Scan'):
+      return False
+    for dataset in datasets:
+      if dataset.x.dimension==type1:
+        continue
+      else:
+        return False
+    return True
+  
+  def create_mesh(self, datasets):
+    '''
+      Combine a list of scans to one mesh.
+    '''
+    import measurement_data_structure
+    cols=datasets[0].dimensions()
+    # define the scanned columns
+    h, k, l=self.get_ds_hkl(datasets[0], 3)
+    h2, k2, l2=self.get_ds_hkl(datasets[-1], 3)
+    if datasets[0].x.dimension.startswith('H'):
+      xids=cols.index('H')
+      if k==k2:
+        if l==l2:
+          return datasets
+        yids=cols.index('L')
+        output_info='HL-Mesh'
+      else:
+        yids=cols.index('K')
+        output_info='HK-Mesh'
+    elif datasets[0].x.dimension.startswith('K'):
+      xids=cols.index('K')
+      if l==l2:
+        if h==h2:
+          return datasets
+        yids=cols.index('H')
+        output_info='HK-Mesh'
+      else:
+        yids=cols.index('L')
+        output_info='KL-Mesh'
+    elif datasets[0].x.dimension.startswith('L'):
+      xids=cols.index('L')
+      if k==k2:
+        if h==h2:
+          return datasets
+        yids=cols.index('H')
+        output_info='HL-Mesh'        
+      else:
+        yids=cols.index('K')
+        output_info='KL-Mesh'
+    #combine the datasets
+    output=measurement_data_structure.MeasurementData(x=xids, y=yids, zdata=datasets[0].ydata)
+    output.short_info=output_info
+    output.sample_name=datasets[0].sample_name+'-'+datasets[-1].sample_name
+    for col in datasets[0].data:
+      output.append_column(col.copy())
+    for j, dataset in enumerate(datasets[1:]):
+      for i, col in enumerate(dataset.data):
+        if j%2==0:
+          output.data[i].append(col[numpy.arange(len(col)-1, -1)])
+        else:
+          output.data[i].append(col)
+    output.number='0'
+    output.scan_line=xids
+    output.scan_line_constant=yids
+    #order=numpy.lexsort(keys=(output.x, output.y))
+    #for i, col in enumerate(output.data):
+    #  output.data[i]=col[order]
+    return [output]
+  

@@ -1614,24 +1614,48 @@ class ApplicationMainWindow(gtk.Window):
     self.rebuild_menus()
     self.replot()      
 
-  def savitzky_golay(self, action):
+  def derivate_data(self, action):
     '''
-      Filter the dataset with Savitzky-Golay filter.
+      Derivate or smooth data using the local Savitzky Golay filter or the global
+      spectral estimate method calculated with a Butterworth filter.
     '''
-    parameters, result=SimpleEntryDialog('Savitzky Golay Filter...', 
-                         (('Window Size', 5, int), ('Polynomial Order', 2, int), ('Maximal Derivative', 1, int))).run()
-    if parameters['Polynomial Order']>parameters['Window Size']-2:
-      parameters['Polynomial Order']=parameters['Window Size']-2
-    if parameters['Maximal Derivative']+1>parameters['Polynomial Order']:
-      parameters['Maximal Derivative']=parameters['Polynomial Order']-1
-    if result==1:
-      # create a new dataset with the smoothed data and all derivatives till the selected order
-      self.file_actions.activate_action('savitzky_golay', 
-                        parameters['Window Size'], 
-                        parameters['Polynomial Order'], 
-                        parameters['Maximal Derivative']+1)
-      self.rebuild_menus()
-      self.replot()
+    parameters, result=SimpleEntryDialog('Derivate Data...', 
+                                         [('Select Method',
+                                          ['Spectral Estimate (Noisy or Periodic Data)', 'Moving Window (Low Errorbars)'], 
+                                          0)]
+                                         ).run()
+    if not result:
+      return
+    if parameters['Select Method']=='Moving Window (Low Errorbars)':
+      parameters, result=SimpleEntryDialog('Derivate Data - Moving Window Filter...', 
+                                           (('Window Size', 5, int), 
+                                              ('Polynomial Order', 2, int), 
+                                              ('Derivative', 1, int))).run()
+      if parameters['Polynomial Order']>parameters['Window Size']-2:
+        parameters['Polynomial Order']=parameters['Window Size']-2
+      if parameters['Derivative']+1>parameters['Polynomial Order']:
+        parameters['Derivative']=parameters['Polynomial Order']-1
+      if result:
+        # create a new dataset with the smoothed data and all derivatives till the selected order
+        self.file_actions.activate_action('savitzky_golay', 
+                          parameters['Window Size'], 
+                          parameters['Polynomial Order'], 
+                          parameters['Derivative'])
+        self.rebuild_menus()
+        self.replot()
+    else:
+      parameters, result=SimpleEntryDialog('Derivate Data - Spectral Estimate Method...', 
+                                           (('Filter Steepness', 6, int), 
+                                              ('Noise Filter Frequency (0,1]', 0.5, float), 
+                                              ('Derivative', 1, int))).run()
+      if result:
+        # create a new dataset with the smoothed data and all derivatives till the selected order
+        self.file_actions.activate_action('butterworth', 
+                          parameters['Filter Steepness'], 
+                          parameters['Noise Filter Frequency (0,1]'], 
+                          parameters['Derivative'])
+        self.rebuild_menus()
+        self.replot()
   
   def colorcode_points(self, action):
     '''
@@ -2350,20 +2374,37 @@ set multiplot layout %i,1
     fit_dialog.show_all()
     self.open_windows.append(fit_dialog)
 
+  def multi_fit_dialog(self,action, size=(800, 250), position=None):
+    '''
+      A dialog to fit several data with a set of functions.
+      
+      @param size Window size (x,y)
+      @param position Window position (x,y)
+    '''
+    if not self.active_session.ALLOW_FIT:
+      fit_dialog=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
+                                   message_format="You don't have the system requirenments for Fitting.\nNumpy and Scipy must be installed.")
+      #fit_dialog.set_markup()
+      fit_dialog.run()
+      fit_dialog.destroy()
+      return None
+    from fit_data import FitSession
+    multi_fit_object=FitSession(dataset)
+    
+  
+  def do_multi_fit(self, action, entries, fit_dialog, window):
+    '''
+      Called when the fit button on a multi fit dialog is pressed.
+    '''
+    self.open_windows.remove(fit_dialog)
+    fit_dialog.destroy()
+
   def show_add_info(self,action):
     '''
       Show or hide advanced options widgets.
     '''
     # TODO: Do we realy need this?
     if self.check_add.get_active():
-#      if action==None: # only resize picture if the length of additional settings changed
-#        if (self.logz.get_property('visible') & (self.measurement[self.index_mess].zdata<0))\
-#        |((not self.logz.get_property('visible')) & (self.measurement[self.index_mess].zdata>=0)):
-#          self.image.hide()
-#          self.image_shown=False
-#      else:
-#        self.image.hide()
-#        self.image_shown=False
       self.x_range_in.show()
       self.x_range_label.show()
       self.y_range_in.show()
@@ -2883,6 +2924,9 @@ set multiplot layout %i,1
       subprocess.call((print_command % self.active_session.TEMP_DIR+'plot_temp.ps').split())
 
   def print_plot_dialog(self, action):
+    '''
+      Opens a Print dialog to print the active or a selection of plots.
+    '''
     if action.get_name()=='PrintAll':
       dialog=PreviewDialog(self.active_session.file_data, title='Select Plots for Printing...', 
                            buttons=('OK', 1, 'Cancel', 0), parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
@@ -3630,6 +3674,7 @@ set multiplot layout %i,1
     if len(self.measurement)>0:
       output+='''
           <menuitem action='FitData'/>
+          <placeholder name='MultiFitData'/>
           <separator name='static5'/>
           <menuitem action='FilterData'/>
           <menuitem action='TransformData'/>
@@ -3650,7 +3695,7 @@ set multiplot layout %i,1
           <placeholder name='z-actions'/>
           <placeholder name='y-actions'>
           <menuitem action='CombinePoints'/>
-          <menuitem action='SavitzkyGolay'/>
+          <menuitem action='Derivate'/>
           <menuitem action='ColorcodePoints'/>
           </placeholder>'''
     output+='''
@@ -3846,10 +3891,10 @@ set multiplot layout %i,1
         "Combine points", None,                     # label, accelerator
         None,                                    # tooltip
         self.combine_data_points),
-      ( "SavitzkyGolay", None,                    # name, stock id
-        "Savitzky Golay Filtering", None,                     # label, accelerator
+      ( "Derivate", None,                    # name, stock id
+        "Derivate or Smoothe", '<control>D',                     # label, accelerator
         None,                                    # tooltip
-        self.savitzky_golay),
+        self.derivate_data),
       ( "ColorcodePoints", None,                    # name, stock id
         "Show Colorcoded Points", None,                     # label, accelerator
         None,                                    # tooltip
@@ -3890,6 +3935,10 @@ set multiplot layout %i,1
         "_Fit data...", "<control>F",                     # label, accelerator
         "Dialog for fitting of a function to the active dataset.",                                    # tooltip
         self.fit_dialog),
+      ( "MultiFitData", None,                    # name, stock id
+        "Fit _Multiple datasets...", "<control><shift>M",                     # label, accelerator
+        "Dialog for fitting of a function to the active dataset.",                                    # tooltip
+        self.multi_fit_dialog),
       ( "MultiPlot", gtk.STOCK_YES,                    # name, stock id
         "Multi", None,                     # label, accelerator
         "Show Multi-plot",                                    # tooltip

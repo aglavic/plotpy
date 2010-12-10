@@ -34,7 +34,6 @@ class FitFunction(FitFunctionGUI):
   '''
     Root class for fittable functions. Parant of all other functions.
   '''
-  
   # define class variables, will be overwritten from childs.
   name="Unnamed"
   parameters=[]
@@ -48,7 +47,7 @@ class FitFunction(FitFunctionGUI):
   is_3d=False
   fit_logarithmic=False
   
-  def __init__(self, initial_parameters):
+  def __init__(self, initial_parameters=[]):
     '''
       Constructor setting the initial values of the parameters.
     '''
@@ -633,33 +632,7 @@ class FitPolynomialPowerlaw(FitFunction):
     x=numpy.array(x)
     return 10.**(p[0]*x**4+p[1]*x**3+p[2]*x**2+p[3]*x+p[4])
 
-  def residuals(self, params, y, x, yerror=None):
-    '''
-      Function used by leastsq to compute the difference between the simulation and data.
-      For normal functions this is just the difference between y and simulation(x) but
-      can be overwritten e.g. to increase speed or fit to log(x).
-      If the dataset has yerror values they are used as weight.
-      
-      @param params Parameters for the function in this iteration
-      @param y List of y values measured
-      @param x List of x values for the measured points
-      @param yerror List of error values for the y values or None if the fit is not weighted
-      
-      @return Residuals (meaning the value to be minimized) of the fit function and the measured data
-    '''
-    # function is called len(x) times, this is just to speed up the lookup procedure
-    function=self.fit_function
-    function_parameters=[]
-    for i in range(len(self.parameters)):
-      if i in self.refine_parameters:
-        function_parameters.append(params[self.refine_parameters.index(i)])
-      else:
-        function_parameters.append(self.parameters[i])
-    remove_negative=numpy.where(y>0.)
-    x=x[remove_negative]
-    y=y[remove_negative]
-    err=numpy.log10(function(function_parameters, x))-numpy.log10(y)
-    return err
+  residuals=FitFunction.residuals_log
   
 class FitSinus(FitFunction):
   '''
@@ -679,6 +652,15 @@ class FitSinus(FitFunction):
     '''
     self.parameters=[1., 1., 0., 0.]
     FitFunction.__init__(self, initial_parameters)
+  
+  def refine(self, dataset_x, dataset_y, dataset_yerror=None):
+    '''
+      Refine the function for given x and y data and set the φ0 value
+      to be between -180° and 180°.
+    '''
+    output=FitFunction.refine(self, dataset_x, dataset_y, dataset_yerror)
+    self.parameters[2]=(self.parameters[2]+180.)%360.-180.
+    return output
 
 class FitExponential(FitFunction):
   '''
@@ -791,7 +773,8 @@ class FitVoigt(FitFunction):
 
 class FitCuK(FitFunction):
   '''
-    Fit a voigt function using the representation as real part of the complex error function.
+    Simulate Cu-Kα radiation for fitting θ-2θ scans of x-ray diffraction as douple
+    peak (α1,α2) with two coupled voigt profiles.
   '''
   
   # define class variables.
@@ -1386,23 +1369,6 @@ class FitBrillouineB(FitFunction):
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(4)
   
-  #def simulate(self, x, ignore=None):
-  #  return FitFunction.simulate(self, x, interpolate=1)
-  
-  #def residuals(self, params, y, x, yerror=None):
-  #  '''
-  #    As the fit with fsolve is quite slow we tell the user about
-  #    the state of the fit.
-  #  '''
-  #  err=FitFunction.residuals(self, params, y, x, yerror=None)
-  #  print "End of function call %i, chi is now %.6g" % (self.iteration, sum(err))
-  #  self.iteration+=1
-  #  return err
-  
-  #def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
-  #  self.iteration=1
-  #  return FitFunction.refine(self,  dataset_x,  dataset_y, dataset_yerror=None)
-
   def brillouine(self, p, B):
     '''
       Brillouine function of B.
@@ -1845,7 +1811,7 @@ class FitSession(FitSessionGUI):
   
   # class variables
   data=None
-  # a dictionary of known fit functions
+  # a dictionary of known fit functions for 2d datasets
   available_functions_2d={
                        FitLinear.name: FitLinear, 
                        #FitDiamagnetism.name: FitDiamagnetism, 
@@ -1863,6 +1829,7 @@ class FitSession(FitSessionGUI):
                        FitCuK.name: FitCuK, 
                        FitPolynomialPowerlaw.name: FitPolynomialPowerlaw, 
                        }
+  # known fit functions for 3d datasets
   available_functions_3d={
                        FitGaussian3D.name: FitGaussian3D, 
                        FitPsdVoigt3D.name: FitPsdVoigt3D, 

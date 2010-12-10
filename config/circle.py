@@ -56,3 +56,25 @@ MEASUREMENT_TYPES=[\
 ,[[[1,0.005]],0,2,8,'',7]\
 ,[[],0,3,6,'set title "Unknown Scan"\n']\
 ] # raw data measureing with temperature shown, MvsT with constand H,MvsH with constand T
+
+P09_COLUMNS_MAPPING={
+                     'EXP_C01_POINT_DETECTOR': ('I_{RAW}', 'counts'), 
+                     'EXP_VFC01_BEAM_MONITOR_VERT.': ('Monitor_{vert}', 'counts'), 
+                     'EXP_VFC02_BM_MONITOR_HOR.': ('Monitor_{hor}', 'counts'), 
+                     'SECONDS_PER_POINT': ('time', 's'), 
+                     'ATTN_FACTOR': ('Attenuation', ''), 
+                     'ENERGY': ('E', 'eV'), 
+                     'TEMPERATURE_SAMPLE': ('T_{Sample}', 'K'), 
+                     'TEMPERATURE_CONTROL': ('T_{Control}', 'K'), 
+                     'H': ('H', 'r.l.u'), 
+                     'K': ('K', 'r.l.u'), 
+                     'L': ('L', 'r.l.u'), 
+                     'T2T': ('Θ_{th2th}', '°'), 
+                     'DUMMY': ('time-scan', 'steps'), 
+                     'EXP_MOT05': ('Θ', '°'), 
+                     'EXP_MOT07': ('z', 'mm'), 
+                     'EXP_MOT12': ('Δ', '°'), 
+                     #'EXP_MOT07': ('Δ', '°'), 
+                     #'EXP_MOT06': ('χ', '°'), 
+                     'EXP_MOT17': ('φ', '°'),                      
+                     }

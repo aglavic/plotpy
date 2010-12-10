@@ -188,7 +188,13 @@ class MeasurementData(object):
     '''
       MeasurementData[index] returns one datapoint.
     '''
-    return [float(col[index]) for col in self.data]+[col.error[index] for col in self.data if col.has_error]
+    if hasattr(index, '__iter__'):
+      output=deepcopy(self)
+      for i, col in enumerate(output.data):
+        output.data[i]=col[index]
+      return output
+    else:
+      return [float(col[index]) for col in self.data]+[col.error[index] for col in self.data if col.has_error]
   
   def __getslice__(self, start, end):
     '''
@@ -570,7 +576,6 @@ class MeasurementData(object):
 #            con[1].dim_unit_trans(unit)
     return data.values[-1], unit_used
 
-  # When numpy is accessible use a faster array approach
   def process_function_nonumpy(self,function): 
     '''
       Processing a function on every data point.
@@ -1773,6 +1778,15 @@ class PhysicalProperty(numpy.ndarray):
       length=self.__len__()
       self.resize(length+1, refcheck=False)
       self.__setitem__(length, item)
+  
+  def copy(self):
+    '''
+      Return a copy of self.
+    '''
+    output=numpy.ndarray.copy(self)
+    if self.has_error:
+      output._error=output._error.copy()
+    return output
   
   def __repr__(self):
     '''

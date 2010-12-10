@@ -35,6 +35,7 @@ class CircleGUI:
         <menuitem action='ReloadFile' />
         <menuitem action='Autoreload' />
         <menuitem action='ToggleCPS' />
+        <menuitem action='FitCentral' />
       </menu>
     '''
     # Create actions for the menu
@@ -55,6 +56,10 @@ class CircleGUI:
                 "Toggle CPS", None,                    # label, accelerator
                 None ,                                   # tooltip
                 self.toggle_cps ),
+           ( "FitCentral", None,                             # name, stock id
+                "Fit Central Peak", '<control><shift>F',                    # label, accelerator
+                None ,                                   # tooltip
+                self.fit_central_peak ),
 )
     return string,  actions
 
@@ -100,4 +105,25 @@ class CircleGUI:
         while (time()-last)<1.:
           gtk.main_iteration()
 
-  
+  def fit_central_peak(self, action, window):
+    '''
+      Fit a peak at the center of a scan with Voigt-profile.
+    '''
+    window.file_actions.activate_action('create_fit_object')
+    window.file_actions.activate_action('add_function', 'Voigt',)
+    dataset=window.measurement[window.index_mess]
+    x0=float(dataset.x.mean())
+    I0=float(dataset.y.max())
+    sigma0=float((dataset.x.max()-dataset.x.min())/10.)
+    window.file_actions.activate_action('set_function_parameters', 
+                                        0, [I0, 
+                                             x0, 
+                                             sigma0, 
+                                             sigma0, 
+                                             0.0, 
+                                             None, 
+                                             None, 
+                                             'I=[I] x_0=[x0] \xcf\x83=[\xcf\x83|2] \xce\xb3=[\xce\xb3|2]'])
+    window.file_actions.activate_action('fit_functions')
+    window.file_actions.activate_action('simmulate_functions')
+    window.replot()

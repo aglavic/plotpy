@@ -37,7 +37,7 @@ class FitFunctionGUI:
 
 
 class FitSessionGUI:
-  def get_dialog(self, window, dialog):
+  def get_dialog(self, window, dialog, fit_button_press_event=None):
     '''
       Create a aligned table widget for the interaction with this class.
       

@@ -7,5 +7,7 @@
      </magic>
      <glob pattern="*.spec"/>
      <glob pattern="*.spec.gz"/>
+     <glob pattern="*.fio"/>
+     <glob pattern="*.fio.gz"/>
    </mime-type>
 </mime-info>

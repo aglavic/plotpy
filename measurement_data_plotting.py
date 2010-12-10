@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 '''
- Functions to plot measurements by gnuplot script or directly by gnuplot (faster).
+ Functions to plot measurements (MeasurementData objects) by gnuplot script.
  These functions are used by the GUI and script mode.
 '''
 

@@ -9,8 +9,9 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import os
 import sys
-import math
-from measurement_data_structure import MeasurementData
+import math, numpy
+from measurement_data_structure import MeasurementData, PhysicalProperty
+from config.circle import COLUMNS_MAPPING, MEASUREMENT_TYPES, P09_COLUMNS_MAPPING
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
@@ -21,7 +22,7 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
-def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
+def read_data(input_file): 
   '''
     Read the datafile.
     
@@ -30,6 +31,8 @@ def read_data(input_file,COLUMNS_MAPPING,MEASUREMENT_TYPES):
   '''
   measurement_data=[]
   if os.path.exists(input_file):
+    if input_file.endswith('.fio') or input_file.endswith('.fio.gz'):
+      return read_data_p09(input_file)
     if input_file.endswith('.gz'):
       # use gziped format file
       import gzip
@@ -235,3 +238,71 @@ def read_data_last_line(input_file_lines,columns):
         return values
       else:
         return None
+
+def read_data_p09(input_file):
+  if input_file.endswith('.gz'):
+    file_handle=gzip.open(input_file, 'r')
+  else:
+    file_handle=open(input_file, 'r')
+  text=file_handle.read()
+  if not (('! Parameter' in text) and ('! Data' in text)):
+    print "No valid P08 header found."
+    return 'NULL'
+  name=text.split('Name: ', 1)[1].split(' ', 1)[0].strip()
+  scan_type=text.split('%c')[1].strip().split()[0]
+  parameter_region=text.split('%p')[1].split('%d')[0].strip().splitlines()
+  data_region=text.split('%d')[1].strip().splitlines()
+  parameter_region=filter(lambda item: not item.startswith('!'), parameter_region)
+  data_region=filter(lambda item: not item.startswith('!'), data_region)
+  data_region=map(str.strip, data_region)
+  parameter_region=map(lambda line: line.strip().split('=', 1), parameter_region)
+  parameters={}
+  for param, value in parameter_region:
+    parameters[param]=value
+  columns=[]
+  for i, line in enumerate(data_region):
+    if line.strip().startswith('Col'):
+      try:
+        columns.append(line.split(name.upper()+'_')[1].split()[0])
+      except IndexError:
+        columns.append(scan_type)
+    else:
+      data_region=data_region[i:]
+      break
+  for i, col in enumerate(columns):
+    if col in P09_COLUMNS_MAPPING:
+      columns[i]=P09_COLUMNS_MAPPING[col]
+    else:
+      columns[i]=(col, '°')
+  columns[0]=columns[1]
+  columns[1]=['None', '']
+  data_region=map(str.strip, data_region)
+  data=map(str.split, data_region)
+  data=numpy.array(data, dtype=numpy.float32)
+  data=data.transpose()
+  output=MeasurementData(x=0, y=2)
+  for i, column in enumerate(columns):
+    if column[1]=='counts':
+      output.append_column( PhysicalProperty(column[0], column[1], data[i], numpy.sqrt(data[i])))
+    else:
+      output.append_column( PhysicalProperty(column[0], column[1], data[i]))
+  I=PhysicalProperty('I', 'counts', data[columns.index(('I_{RAW}', 'counts'))], 
+                        numpy.sqrt(data[columns.index(('I_{RAW}', 'counts'))]))
+  I*=data[columns.index(('Attenuation', ''))]
+  output.append_column(I)
+  output.ydata=len(output.data)-1
+  output.info="\n".join([param[0]+": "+param[1] for param in parameters.items()])
+  output.sample_name=name.split('_')[-1]
+  if output.x.dimension=='hkl-Scan':
+    output.x.dimension='-Scan'
+    output.x.unit=''
+    hidx=output.dimensions().index('H')
+    kidx=output.dimensions().index('K')
+    lidx=output.dimensions().index('L')
+    if (output.data[lidx].max()-output.data[lidx].min())>0.02:
+      output.x.dimension='L'+output.x.dimension
+    if (output.data[kidx].max()-output.data[kidx].min())>0.02:
+      output.x.dimension='K'+output.x.dimension
+    if (output.data[hidx].max()-output.data[hidx].min())>0.02:
+      output.x.dimension='H'+output.x.dimension
+  return [output]

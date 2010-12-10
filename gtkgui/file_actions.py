@@ -6,7 +6,7 @@
 import numpy
 from copy import deepcopy
 from configobj import ConfigObj
-from measurement_data_structure import MeasurementData, PhysicalProperty
+from measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalUnit
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2009"
@@ -51,6 +51,7 @@ class FileActions:
                   'unit_transformations': self.unit_transformations, 
                   'integrate_intensities': self.integrate_intensities, 
                   'savitzky_golay': self.get_savitzky_golay, 
+                  'butterworth': self.get_butterworth, 
                   'interpolate_and_smooth': self.do_interpolate_and_smooth, 
                   'rebin_2d': self.do_rebin_2d, 
                   }
@@ -193,12 +194,12 @@ class FileActions:
     except ValueError:
       return False
 
-  def get_savitzky_golay(self, window_size, order, max_deriv, at_end=False):
+  def get_savitzky_golay(self, window_size=5, order=4, derivative=1, at_end=False):
     '''
       See calculate_savitzky_golay.
     '''
     data=self.window.measurement[self.window.index_mess]
-    sg_object=calculate_savitzky_golay(data, window_size, order, max_deriv)
+    sg_object=calculate_savitzky_golay(data, window_size, order, derivative)
     if sg_object is None:
       return False
     sg_object.number=data.number
@@ -211,6 +212,23 @@ class FileActions:
       self.window.index_mess+=1
     return True
 
+  def get_butterworth(self, filter_steepness=6, filter_cutoff=0.5, derivative=1, at_end=False):
+    '''
+      See calculate_butterworth.
+    '''
+    data=self.window.measurement[self.window.index_mess]
+    bw_object=calculate_butterworth(data, filter_steepness, filter_cutoff, derivative)
+    if bw_object is None:
+      return False
+    bw_object.number=data.number
+    bw_object.info=data.info
+    if at_end:
+      self.window.measurement.append(bw_object)
+      self.window.index_mess=len(self.window.measurement)-1
+    else:
+      self.window.measurement.insert(self.window.index_mess+1, bw_object)
+      self.window.index_mess+=1
+    return True    
 
   def combine_data_points(self, binning, bin_distance=None):
     '''
@@ -897,21 +915,20 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
     output_data.data[0].values=newx.tolist()
     output_data.data[1].values=newy.tolist()
   output_data.data[2].values=newz.tolist()
-  output_data.data[3].values=newdz.tolist()
+  output_data.data[3].values=savinewdz.tolist()
   return output_data
 
-def calculate_savitzky_golay(dataset, window_size, order, max_deriv):
+def calculate_savitzky_golay(dataset, window_size=5, order=4, derivative=1):
   '''
-    Calculate smoothed dataset with savitzky golay filter up do a maximal derivative.
+    Calculate smoothed dataset with savitzky golay filter up to a maximal derivative.
     
     @param dataset The dataset to use for the data
     @param window_size Size of the filter window in points
     @param order Order of polynomials to be used for the filtering
-    @param max_deriv maximal derivative to be calculated
+    @param derivative The derivative to be calculated
     
     @return a dataset containing the smoothed data and it's derivatives.
   '''
-  from measurement_data_structure import PhysicalUnit
   if dataset.zdata>=0:
     return None
   units=dataset.units()
@@ -919,14 +936,12 @@ def calculate_savitzky_golay(dataset, window_size, order, max_deriv):
   xindex=dataset.xdata
   yindex=dataset.ydata
   yerror=dataset.yerror
-  newcols=[[dims[xindex], units[xindex]], [dims[yerror], units[yerror]], 
-                              ['smoothed '+dims[yindex], units[yindex]]
-                                                       ]
-  max_deriv=min(order, max_deriv)
-  for i in range(1, max_deriv):
+  newcols=[[dims[xindex], units[xindex]], ['smoothed '+dims[yindex], units[yindex]]]
+  derivative=min(order-1, derivative)
+  for i in range(1, derivative+1):
     newcols.append([dims[yindex]+("\\047"*i), 
             PhysicalUnit(units[yindex])/PhysicalUnit(units[xindex]+'^%i'%i)])
-  output=MeasurementData(newcols, [], 0, 2, 1)
+  output=MeasurementData(newcols, [], 0, 1+derivative)
   xlist=[]
   ylist=[]
   elist=[]
@@ -939,12 +954,56 @@ def calculate_savitzky_golay(dataset, window_size, order, max_deriv):
   y=numpy.array(ylist)
   error=numpy.array(elist)
   output.data[0].values=xlist
-  output.data[1].values=elist
   # calculate smoothed data and derivatives
-  for i in range(max_deriv):
-    output.data[i+2].values=savitzky_golay(y, window_size, order, i).tolist()
+  for i in range(derivative+1):
+    output.data[i+1].values=savitzky_golay(y, window_size, order, i).tolist()
   output.short_info=dataset.short_info+' filtered with savitzky golay'
   output.sample_name=dataset.sample_name
+  return output
+
+def calculate_butterworth(dataset, filter_steepness=6, filter_cutoff=0.5, derivative=1):
+  '''
+    Calculate a smoothed function as spectral estimate with a Butterworth low-pass
+    filter in frouier space. This can be used to calculate derivatives.
+      S. Smith, 
+       The Scientist and Engineer’s Guide to Digital Signal Processing, 
+       California Technical Publishing, 1997.
+    
+    @param dataset MeasurementData object to be used as input
+    @param filter_steepness The steepness of the low pass filter after the cut-off frequency
+    @param filter_cutoff The frequency (as parts from the maximal frequency) where the filter cut-off lies
+    @param derivative Which derivative to calculate with this method.
+    
+    @return a dataset containing the derivated data
+  '''
+  x=dataset.x.copy()
+  y=dataset.y.copy()
+  output=MeasurementData(x=0, y=2)
+  output.append_column(x)
+  # create a dataset with even number of elements.
+  if len(x)%2==1:
+    x=x.copy()
+    x.append(x[-1])
+    y.append(y[-1])
+    crop_last=True
+  else:
+    crop_last=False
+  F=numpy.fft.rfft(y)
+  k=numpy.arange(len(y)//2+1)
+  k_0=len(y)/2.*filter_cutoff+1.
+  F_B=(1./(1.+(k/k_0)**filter_steepness))*F
+  xout=PhysicalProperty(y.dimension, y.unit, numpy.fft.irfft(F_B))
+  if crop_last:
+    xout=xout[:-1]
+  output.append_column(PhysicalProperty(y.dimension, y.unit, xout))
+  deriv=numpy.fft.irfft(((2.j*numpy.pi*k)/x[numpy.arange(0, len(x)//2+1, 1)].view(numpy.ndarray))**derivative * F_B)
+  if crop_last:
+    deriv=deriv[:-1]
+  output.append_column(PhysicalProperty(y.dimension+"\\047"*derivative, 
+                                 y.unit/x.unit**derivative, 
+                                 deriv))
+  output.sample_name=dataset.sample_name
+  output.short_info=dataset.short_info+' filtered with butterworth low-pass'
   return output
 
   #-------- Functions not directly called as actions ------
@@ -1096,7 +1155,7 @@ def savitzky_golay(y, window_size, order, deriv=0):
   half_window = (window_size -1) // 2
   # precompute coefficients
   b = np.mat([[k**i for i in order_range] for k in range(-half_window, half_window+1)])
-  m = np.linalg.pinv(b).A[deriv]
+  m = np.linalg.pinv(b).A[deriv]*(-1.)**deriv
   # pad the signal at the extremes with
   # values taken from the signal itself
   firstvals = y[0] - np.abs( y[1:half_window+1][::-1] - y[0] )

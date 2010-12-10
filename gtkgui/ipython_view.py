@@ -2,10 +2,10 @@
 """
 Backend to the console plugin.
 
-@author: Eitan Isaacson
-@organization: IBM Corporation
-@copyright: Copyright (c) 2007 IBM Corporation
-@license: BSD
+ author: Eitan Isaacson
+ organization: IBM Corporation
+ copyright: Copyright (c) 2007 IBM Corporation
+ license: BSD
 
 All rights reserved. This program and the accompanying materials are made 
 available under the terms of the BSD which accompanies this distribution, and 
