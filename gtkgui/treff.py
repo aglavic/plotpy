@@ -67,7 +67,7 @@ class TreffGUI:
                 None,                                   # tooltip
                 self.fit_window ),
             ( "TreffSpecRef", None,                             # name, stock id
-                "Extract specular reflectivity...", None,                    # label, accelerator
+                "Extract specular reflectivity...", '<control>R',                    # label, accelerator
                 None,                                   # tooltip
                 self.extract_specular_reflectivity), 
             ( "TreffSelectPol", None,                             # name, stock id
@@ -147,21 +147,21 @@ class TreffGUI:
                 1, 3,                      6, 7,
                 0,                       gtk.FILL,
                 0,                         0);
-    weight=gtk.CheckButton(label='Gauss weighting, Sigma:', use_underline=True)
-    weight.set_active(True)
-    table.attach(weight,
-                # X direction #          # Y direction
-                0, 1,                      7, 8,
-                0,                       gtk.FILL,
-                0,                         0);
-    sigma=gtk.Entry()
-    sigma.set_width_chars(4)
-    sigma.set_text('0.04')
-    table.attach(sigma,
-                # X direction #          # Y direction
-                1, 3,                      7, 8,
-                0,                       gtk.FILL,
-                0,                         0);
+    #weight=gtk.CheckButton(label='Gauss weighting, Sigma:', use_underline=True)
+    #weight.set_active(True)
+    #table.attach(weight,
+    #            # X direction #          # Y direction
+    #            0, 1,                      7, 8,
+    #            0,                       gtk.FILL,
+    #            0,                         0);
+    #sigma=gtk.Entry()
+    #sigma.set_width_chars(4)
+    #sigma.set_text('0.04')
+    #table.attach(sigma,
+                ## X direction #          # Y direction
+                #1, 3,                      7, 8,
+                #0,                       gtk.FILL,
+                #0,                         0);
     ext_all=gtk.CheckButton(label='Extract for all maps', use_underline=True)
     ext_all.set_active(True)
     table.attach(ext_all,
@@ -199,7 +199,7 @@ class TreffGUI:
     offset_x.connect('activate', lambda *ign: cs_dialog.response(1))
     offset_y.connect('activate', lambda *ign: cs_dialog.response(1))
     binning.connect('activate', lambda *ign: cs_dialog.response(1))
-    sigma.connect('activate', lambda *ign: cs_dialog.response(1))
+    #sigma.connect('activate', lambda *ign: cs_dialog.response(1))
     cs_dialog.vbox.add(table)
     cs_dialog.add_button('OK', 1)
     cs_dialog.add_button('Cancel', 0)
@@ -220,8 +220,8 @@ class TreffGUI:
       try:
         args=('extract_specular_reflectivity',
               float(line_width.get_text()), 
-              weight.get_active(), 
-              float(sigma.get_text()), 
+              False, #weight.get_active(), 
+              0.08, #float(sigma.get_text()), 
               float(binning.get_text()), 
               (float(offset_x.get_text()), float(offset_y.get_text()))
               )

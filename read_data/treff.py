@@ -864,33 +864,46 @@ def d17_pp_from_block(dimension, unit, block, error_block=None):
   return pp
 
 d17_calibration={'water': None, 'transmission': None}
-from config.treff import D17_CALIBRATION_FILES, D17_MASK_BOUNDS
+from config.treff import D17_CALIBRATION_FILES, D17_MASK
 
 def read_d17_raw_data(file_from, file_to):
   '''
     Read d17 raw detector images.
   '''
-  if d17_calibration['water'] is None and D17_CALIBRATION_FILES['water'] is not None:
-    print "    Reading calibration file 'water' which will be used for all imports..."
-    # using water measurement as mask and scale by the number of non zero elements per column
-    water=read_d17_calibration(D17_CALIBRATION_FILES['water']).z
-    mask=numpy.where(water!=0., 1., 0.).reshape(64, 256)
-    if D17_MASK_BOUNDS:
-      mask=(mask.transpose()*numpy.where((numpy.arange(0, 64)>=D17_MASK_BOUNDS[0])*\
-                        (numpy.arange(0, 64)<=D17_MASK_BOUNDS[1]), 1., 0.)).transpose()
-    scaling=mask.copy()#numpy.where(water!=0., 1./water, 0.).reshape(64, 256)
+  import config.treff
+  config.treff.LAMBDA_N=5.3
+  PI_2_OVER_LAMBDA=numpy.pi*2./5.3
+  config.treff.PI_4_OVER_LAMBDA=4.*numpy.pi/5.3
+  if d17_calibration['water'] is None:
+    mask=D17_MASK
+    scaling=mask.copy()
     scaling/=mask.sum(axis=0)
     scaling=scaling.flatten()
     scaling=numpy.nan_to_num(scaling)*mask.flatten()
     # normalize to the mean value to stay at about counts/s
-    scaling/=scaling[numpy.where(water!=0)].mean()
+    scaling/=scaling[numpy.where(mask.flatten()!=0)].mean()
     d17_calibration['water']=scaling
-  if d17_calibration['transmission'] is None and D17_CALIBRATION_FILES['transmission'] is not None:
-    print "    Reading calibration file 'transmission' which will be used for all imports..."
-    transmission=read_d17_calibration(D17_CALIBRATION_FILES['transmission']).z
-    scaling_factor=numpy.where(transmission!=0, 1./transmission, 0.)
-    scaling_factor/=scaling_factor[numpy.where(transmission!=0)].mean()
-    d17_calibration['transmission']=scaling_factor
+  #if d17_calibration['water'] is None and D17_CALIBRATION_FILES['water'] is not None:
+    #print "    Reading calibration file 'water' which will be used for all imports..."
+    ## using water measurement as mask and scale by the number of non zero elements per column
+    #water=read_d17_calibration(D17_CALIBRATION_FILES['water']).z
+    #mask=numpy.where(water!=0., 1., 0.).reshape(64, 256)
+    #if D17_MASK_BOUNDS:
+      #mask=(mask.transpose()*numpy.where((numpy.arange(0, 64)>=D17_MASK_BOUNDS[0])*\
+                        #(numpy.arange(0, 64)<=D17_MASK_BOUNDS[1]), 1., 0.)).transpose()
+    #scaling=mask.copy()#numpy.where(water!=0., 1./water, 0.).reshape(64, 256)
+    #scaling/=mask.sum(axis=0)
+    #scaling=scaling.flatten()
+    #scaling=numpy.nan_to_num(scaling)*mask.flatten()
+    ## normalize to the mean value to stay at about counts/s
+    #scaling/=scaling[numpy.where(water!=0)].mean()
+    #d17_calibration['water']=scaling
+  #if d17_calibration['transmission'] is None and D17_CALIBRATION_FILES['transmission'] is not None:
+    #print "    Reading calibration file 'transmission' which will be used for all imports..."
+    #transmission=read_d17_calibration(D17_CALIBRATION_FILES['transmission']).z
+    #scaling_factor=numpy.where(transmission!=0, 1./transmission, 0.)
+    #scaling_factor/=scaling_factor[numpy.where(transmission!=0)].mean()
+    #d17_calibration['transmission']=scaling_factor
   folder, file_from=os.path.split(file_from)
   file_to=os.path.join(folder, file_to)
   file_from=os.path.join(folder, file_from)
@@ -931,7 +944,7 @@ def read_d17_raw_data(file_from, file_to):
   absmin=100.
   absmax=0.
   for i, polarization_data in enumerate([datasets[(0, 0)], datasets[(1, 1)], datasets[(0, 1)], datasets[(1, 0)]]):
-    dataset=MeasurementData(zdata=2)
+    dataset=MeasurementDataTREFF(zdata=2)
     dataset.append_column(polarization_data[0].data[2].copy())
     dataset.append_column(polarization_data[0].data[0].copy())
     dataset.append_column(polarization_data[0].data[1].copy())
@@ -942,6 +955,12 @@ def read_d17_raw_data(file_from, file_to):
       dataset.data[0].append(dataset_i.data[2])
       dataset.data[1].append(dataset_i.data[0])
       dataset.data[2].append(dataset_i.data[1])
+    alphai=dataset.data[0]
+    alphaf=dataset.data[1]
+    dataset.append_column((alphai+alphaf)//'α_i+α_f')
+    dataset.append_column((alphai-alphaf)//'α_i-α_f')
+    dataset.append_column((PI_2_OVER_LAMBDA*(numpy.cos(alphaf) - numpy.cos(alphai)))//('q_x', 'Å^{-1}'))
+    dataset.append_column((PI_2_OVER_LAMBDA*(numpy.sin(alphai) + numpy.sin(alphaf)))//('q_z', 'Å^{-1}'))
     dataset.logz=True
     dataset.scan_line=1
     dataset.scan_line_constant=0
