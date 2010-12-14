@@ -112,9 +112,14 @@ class CircleSession(GUI, GenericSession):
       dataset.logy=self.logy
       # name the dataset
       dims=dataset.dimensions()
-      h_idx=dims.index('H')
-      k_idx=dims.index('K')
-      l_idx=dims.index('L')
+      try:
+        h_idx=dims.index('H')
+        k_idx=dims.index('K')
+        l_idx=dims.index('L')
+      except ValueError:
+        h_idx=dims.index('h')
+        k_idx=dims.index('k')
+        l_idx=dims.index('l')
       hkl=[str(round(dataset.data[h_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
       str(round(dataset.data[k_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
       str(round(dataset.data[l_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0')] # h,k,l information from middle of the Scan with 2 post point digits but with trailing 0 striped      
