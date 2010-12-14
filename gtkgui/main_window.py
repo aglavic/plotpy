@@ -21,7 +21,7 @@ import config
 from config import gnuplot_preferences
 from config.gui import DOWNLOAD_PAGE_URL
 import file_actions
-from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, SimpleEntryDialog
+from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, SimpleEntryDialog, DataView
 from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
 #----------------------- importing modules --------------------------
 
@@ -2304,18 +2304,22 @@ set multiplot layout %i,1
     cps_dialog=gtk.Dialog(title='Select new color pattern:')
     cps_dialog.set_default_size(400, 400)
     cps_dialog.vbox.pack_start(pattern_box, False)
-    pixbuf=gtk.gdk.pixbuf_new_from_file(os.path.join(self.active_session.TEMP_DIR, 'colormap.jpg'))
-    image=gtk.Image()
-    image.set_from_pixbuf(pixbuf)
-    image.show()
-    sw = gtk.ScrolledWindow()
-    # Set the adjustments for horizontal and vertical scroll bars.
-    # POLICY_AUTOMATIC will automatically decide whether you need
-    # scrollbars.
-    sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
-    sw.add_with_viewport(image)
-    sw.show()
-    cps_dialog.vbox.pack_end(sw, True)
+    try:
+      # Not all versions support jpg import
+      pixbuf=gtk.gdk.pixbuf_new_from_file(os.path.join(self.active_session.TEMP_DIR, 'colormap.jpg'))
+      image=gtk.Image()
+      image.set_from_pixbuf(pixbuf)
+      image.show()
+      sw = gtk.ScrolledWindow()
+      # Set the adjustments for horizontal and vertical scroll bars.
+      # POLICY_AUTOMATIC will automatically decide whether you need
+      # scrollbars.
+      sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+      sw.add_with_viewport(image)
+      sw.show()
+      cps_dialog.vbox.pack_end(sw, True)
+    except:
+      pass
     cps_dialog.add_button('OK', 1)
     cps_dialog.add_button('Apply', 2)
     cps_dialog.add_button('Cancel', 0)
@@ -3179,6 +3183,32 @@ set multiplot layout %i,1
                        'apihelp': apihelp, 
                        })
 
+  def open_dataview_dialog(self, action):
+    '''
+      Open a Dialog with the data of the current plot, which can also be edited.
+    '''
+    dataset=self.measurement[self.index_mess]
+    unchanged_dataset=deepcopy(dataset)
+    dialog=DataView(dataset, buttons=('Replot', 1, 'Revert Changes', -1, 'Close', 0))
+    dialog.set_default_size(800, 800)
+    dialog.show()
+    self.open_windows.append(dialog)
+    dialog.connect('response', self.dataview_response, unchanged_dataset)
+  
+  def dataview_response(self, widget, id, unchanged_dataset):
+    '''
+      Button on dataview pressed.
+    '''
+    if id==0:
+      widget.destroy()
+    elif id==-1:
+      self.measurement[self.index_mess]=unchanged_dataset
+      self.replot()
+      widget.dataset=deepcopy(unchanged_dataset)
+      widget.add_data()
+    else:
+      self.replot()
+
   #--------------------------Menu/Toolbar Events---------------------------------#
 
   #----------------------------------Event hanling---------------------------------------#
@@ -3707,6 +3737,8 @@ set multiplot layout %i,1
         <menuitem action='LastMakro'/>
         <menuitem action='History'/>
         <menuitem action='OpenConsole'/>
+        <separator name='extras1'/>
+        <menuitem action='OpenDataView'/>
       </menu>
       <separator name='static13'/>
       <menu action='HelpMenu'>
@@ -3951,6 +3983,10 @@ set multiplot layout %i,1
         "Open IPython Console", "<control>I",                     # label, accelerator
         None,                                    # tooltip
         self.open_ipy_console),
+      ( "OpenDataView", None,                    # name, stock id
+        "Show/Edit Data", "<control><shift>D",                     # label, accelerator
+        None,                                    # tooltip
+        self.open_dataview_dialog),
       ( "ShowPersistent", gtk.STOCK_FULLSCREEN,                    # name, stock id
         "Open Persistent Gnuplot Window", None,                     # label, accelerator
         None,                                    # tooltip

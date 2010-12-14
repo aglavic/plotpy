@@ -712,5 +712,84 @@ class PrintDatasetDialog:
 
 #--- Printing Dialog which imports and creates PNG files for the datasets and sends it to a printer ---
 
+#+++++++++++++++++++ Dialog to display the columns of a dataset +++++++++++++++++++++++++
+
+class DataView(gtk.Dialog):
+  '''
+    A dialog containing a gtk.TreeView widget with gtk.ListStore to display data from
+    a MeasurementData object.
+  '''
+  
+  def __init__(self, dataset, *args, **opts):
+    '''
+      Create a dialog an place in the vbox a gtk.TreeView widget.
+    '''
+    gtk.Dialog.__init__(self, *args, **opts)
+    self.dataset=dataset
+    # Create the treeview widget
+    columns=zip(dataset.dimensions(), dataset.units())
+    self.liststore=gtk.ListStore(int, *[float for i in range(len(columns))])
+    self.treeview=gtk.TreeView(self.liststore)
+    #self.treeview.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+    self.create_columns(columns)
+    # insert the treeview in the dialog
+    sw=gtk.ScrolledWindow()
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add(self.treeview)
+    sw.show_all()
+    self.vbox.add(sw)
+    # insert the data into the treeview
+    self.add_data()
+  
+  def create_columns(self, columns):
+    '''
+      Add columns to the treeview.
+    '''
+    textrenderer = gtk.CellRendererText()
+    textrenderer.set_property('editable', True)
+    textrenderer.connect("edited", self.edit_data)
+    # Add the columns
+    column = gtk.TreeViewColumn('Point', textrenderer, text=0)
+    column.set_sort_column_id(0)
+    self.treeview.append_column(column)
+    for i, col in enumerate(columns):
+      column = gtk.TreeViewColumn('%s [%s]' % (col[0], col[1]), textrenderer, text=i+1)
+      column.set_sort_column_id(i+1)
+      self.treeview.append_column(column)
+
+  def add_data(self):
+    '''
+      Add the data from the dataset to the treeview.
+    '''
+    self.liststore.clear()
+    for i, point in enumerate(self.dataset):
+      self.liststore.append([i]+list(point))
+  
+  def edit_data(self, cellrenderertext, path, new_text):
+    '''
+      Change data inserted by user.
+    '''
+    row, column=self.treeview.get_cursor()
+    real_row=self.liststore[row[0]][0]
+    column=self.treeview.get_columns().index(column)-1
+    if column==-1:
+      return
+    try:
+      new_item=float(new_text)
+    except ValueError:
+      return
+    self.liststore[row][column+1]=new_item
+    if column<len(self.dataset.data):
+      self.dataset.data[column][real_row]=new_item
+    else:
+      i=len(self.dataset.data)-1
+      for j, col in self.dataset.data:
+        if col.has_error:
+          i+=1
+        if i==column:
+          col[real_row]=new_item
+
+#------------------- Dialog to display the columns of a dataset -------------------------
+
 # import last as this uses some of the classes
 import main_window

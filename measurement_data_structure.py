@@ -269,7 +269,10 @@ class MeasurementData(object):
           return None
   
   def _set_error(self, index):
-    self._yerror=index
+    if index>=len(self.data):
+      self._yerror=-1
+    else:
+      self._yerror=index
   
   def _get_number_of_points(self):
     if len(self.data)>0:
