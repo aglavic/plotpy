@@ -730,7 +730,9 @@ class DataView(gtk.Dialog):
     columns=zip(dataset.dimensions(), dataset.units())
     self.liststore=gtk.ListStore(int, *[float for i in range(len(columns))])
     self.treeview=gtk.TreeView(self.liststore)
-    #self.treeview.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+    self.treeview.connect('key-press-event', self.key_press_response)
+    self.treeview.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+    self.treeview.set_rubber_banding(True)
     self.create_columns(columns)
     # insert the treeview in the dialog
     sw=gtk.ScrolledWindow()
@@ -740,6 +742,7 @@ class DataView(gtk.Dialog):
     self.vbox.add(sw)
     # insert the data into the treeview
     self.add_data()
+    self.clipboard = gtk.Clipboard(gtk.gdk.display_get_default(), "CLIPBOARD")
   
   def create_columns(self, columns):
     '''
@@ -788,6 +791,19 @@ class DataView(gtk.Dialog):
           i+=1
         if i==column:
           col[real_row]=new_item
+
+  def key_press_response(self, widget, event):
+    keyname = gtk.gdk.keyval_name(event.keyval)
+    if event.state & gtk.gdk.CONTROL_MASK:
+      # copy selection
+      if keyname=='c':
+        model, selection=self.treeview.get_selection().get_selected_rows()
+        indices=map(lambda select: self.liststore[select][0], selection)
+        items=map(lambda index: "\t".join(map(str, self.dataset[index])), indices)
+        clipboard_content="\n".join(items)
+        self.clipboard.set_text(clipboard_content)
+      if keyname=='a':
+        self.treeview.get_selection().select_all()
 
 #------------------- Dialog to display the columns of a dataset -------------------------
 
