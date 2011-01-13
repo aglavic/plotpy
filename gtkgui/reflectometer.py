@@ -12,6 +12,7 @@ import math
 import read_data.reflectometer
 from sessions.reflectometer_fit.reflectometer import *
 from dialogs import SimpleEntryDialog
+from measurement_data_structure import MeasurementData
 
 #----------------------- importing modules --------------------------
 
