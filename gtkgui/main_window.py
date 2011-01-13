@@ -2641,7 +2641,10 @@ set multiplot layout %i,1
         for j, dataset in enumerate(itemlist):
           for i, attachedset in enumerate(dataset.plot_together):
             file_numbers.append(str(j)+'-'+str(i))
-            attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
+            if attachedset.is_matrix_data:
+              attachedset.export_matrix(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.bin'))
+            else:
+              attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
       else:
         plot_text=measurement_data_plotting.create_plot_script(
                            self.active_session, 
@@ -2659,7 +2662,10 @@ set multiplot layout %i,1
         dataset=self.measurement[self.index_mess]
         for i, attachedset in enumerate(dataset.plot_together):
           file_numbers.append(str(j)+'-'+str(i))
-          attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
+          if attachedset.is_matrix_data:
+            attachedset.export_matrix(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.bin'))
+          else:
+            attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
       write_file=open(os.path.join(common_folder, common_file_prefix+'.gp'), 'w')
       write_file.write(plot_text+'\n')
       write_file.close()
