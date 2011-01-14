@@ -3075,6 +3075,8 @@ set multiplot layout %i,1
               \tAll imported data can be accessed via the session.file_data dictionary
               \tThe data for the selected file is in session.active_file_data
       plot_gui \tThe window object with all window related funcitons
+      macros  \tDictionary containing all functions which can be run as 'macros'
+      action_history \tList of macros activated through the GUI (key, (parameters)).
     Modules:
       np \tNumpy
       sp \tScipy
@@ -3187,6 +3189,8 @@ set multiplot layout %i,1
                        'sp': scipy, 
                        'mds': measurement_data_structure, 
                        'apihelp': apihelp, 
+                       'macros': self.file_actions.actions, 
+                       'action_history': self.file_actions.history, 
                        })
 
   def open_dataview_dialog(self, action):
