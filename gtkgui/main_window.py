@@ -2641,7 +2641,7 @@ set multiplot layout %i,1
         for j, dataset in enumerate(itemlist):
           for i, attachedset in enumerate(dataset.plot_together):
             file_numbers.append(str(j)+'-'+str(i))
-            if attachedset.is_matrix_data:
+            if getattr(attachedset, 'is_matrix_data', False):
               attachedset.export_matrix(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.bin'))
             else:
               attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
@@ -2662,7 +2662,7 @@ set multiplot layout %i,1
         dataset=self.measurement[self.index_mess]
         for i, attachedset in enumerate(dataset.plot_together):
           file_numbers.append(str(j)+'-'+str(i))
-          if attachedset.is_matrix_data:
+          if  getattr(attachedset, 'is_matrix_data', False):
             attachedset.export_matrix(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.bin'))
           else:
             attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
