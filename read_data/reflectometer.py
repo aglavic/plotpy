@@ -98,7 +98,7 @@ def read_data_lines(input_file_lines,info,DATA_COLUMNS):
   for line in info[0].splitlines():
     setting=line.split('=')
     if setting[0]=='SAMPLE':
-      sample_name=setting[1].rstrip('\n')
+      sample_name=setting[1].rstrip('\n').strip("'")
     elif setting[0].strip()=='DRIVE':
       scantype=setting[1].strip("'").strip()
     elif setting[0].strip()=='STEPTIME':

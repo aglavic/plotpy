@@ -82,6 +82,10 @@ class DataImportTemplate(object):
       self.short_info=general['short info']
     else:
       self.short_info=''
+    if 'info' in general:
+      self.info=general['info']
+    else:
+      self.info='<header>'
     
     ## Header
     if 'length' in header:
@@ -258,7 +262,9 @@ class DataImportTemplate(object):
             continue
     if self.header_length==len(lines):
       raise IndexError, 'Header expands to hole file length'
-    return lines[:self.header_length]
+    header=lines[:self.header_length]
+    self.replacements['header']="\n".join(header)
+    return header
   
   def read_footer(self, lines):
     '''
@@ -538,8 +544,9 @@ class DataImportTemplate(object):
       @return MeasurementData or derived object
     '''
     dataset=self.MeasurementData(zip(self.dimensions, self.units), (), self.x, self.y, self.error, self.z)
-    dataset.sample=self.replace(self.sample)
+    dataset.sample_name=self.replace(self.sample)
     dataset.short_info=self.replace(self.short_info)
+    dataset.info=self.replace(self.info)
     dataset.number=str(self.number)
     return dataset
   

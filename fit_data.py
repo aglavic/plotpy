@@ -814,6 +814,60 @@ class FitCuK(FitFunction):
     value2=p[0]/p[5] * wofz(z2).real / wofz(z0).real + p[4]
     return value+value2
 
+class FitStepcrystal(FitFunction):
+  '''
+    
+  '''
+  
+  # define class variables.
+  name="Stepcrystal"
+  parameters=[1., 100., 5., 2., 3.]
+  parameter_names=['I', 'd', 'a', 'h', 'σ']
+  fit_function_text='d=[d] a=[a] σ=[σ|2]'
+  
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    self.parameters=[1., 100., 5., 2., 3.]
+    FitFunction.__init__(self, initial_parameters)
+  
+  def fit_function(self, p, x):
+    '''
+      Return the Voigt profile of x.
+      It is calculated using the complex error function,
+      see Wikipedia articel on Voigt-profile for the details.
+    '''
+    x=numpy.array(x)
+    I=p[0]
+    d_0=p[1]
+    a=p[2]
+    h=p[3]
+    sigma=p[4]
+    a_star=2.*numpy.pi/a
+    #d_star=2.*np.pi/d
+    x_0=h*a_star
+    if sigma!=0:
+      d_range=numpy.linspace(d_0-3*sigma, d_0+3*sigma, 30)
+      scalings=numpy.exp(-0.5*((d_range-d_0)/sigma)**2)
+      scalings/=scalings.sum()
+      A=numpy.zeros_like(x)
+      for d, scaling in zip(d_range, scalings):
+        A+=scaling*self.amplitude(x, x_0, d, a)
+    else:
+      A=self.amplitude(x, x_0, d_0, a)
+    I_sim=A**2
+    I_sim=I_sim/I_sim.max()
+    result=I*I_sim
+    return result
+  
+  def amplitude(self, x, x_0, d, a):
+    '''
+      Return the aplitude of a scattered wave on a crystal layer.
+    '''
+    sin=numpy.sin
+    return sin(d/2.*(x-x_0))/(x-x_0)#sin(a/2.*(x-x_0))
+
 class FitSuperlattice(FitFunction):
   '''
     Fit a bragg reflex from a multilayer. Formulas are taken from:
@@ -1684,7 +1738,22 @@ class FitLattice3D(FitFunction3D):
   # define class variables.
   name="GISAXS"
   parameters=[1.5e-5, 1.54, 0.066, 0.025, 60., 43.8, 0.002, 0.006, 0.0003, 0.0003, 40., 0.3, 0.1, 0.25, 0]
-  parameter_names=['I', 'λ', 'a*', 'c*', 'α_{crystal}', 'r', 'γ_y', 'γ_z','σ_y','σ_z','C', 'α_i', 'α_{c_{layer}}', 'α_{c_{substrate}}', 'show']
+  parameter_names=['I', # overall intensity scaling
+                   'λ', # x-ray wavelength
+                   'a*', # reciprocal structure parameter in-plane
+                   'c*', # reciprocal structure parameter out-of-plane
+                   'α_{crystal}', # angle between a* and b* (|a*|=|b*|)
+                   'r', # nano particle radius
+                   'γ_y', # correlation length in-plane
+                   'γ_z', # correlation length out-of-plane
+                   'σ_y', # beam size in-plane
+                   'σ_z', # beam size out-of-plane
+                   'BG',  # background
+                   'α_i', # angle of incidence
+                   'α_{c_{layer}}', 
+                   'α_{c_{substrate}}', 
+                   'show' # Used to select between full simulation and ony specific steps [-3,3]
+                   ]
   fit_function_text='GISAXS'
   
   structurefactors={
@@ -1886,6 +1955,7 @@ class FitSession(FitSessionGUI):
                        FitFerromagnetic.name: FitFerromagnetic, 
                        FitCuK.name: FitCuK, 
                        FitPolynomialPowerlaw.name: FitPolynomialPowerlaw, 
+                       FitStepcrystal.name: FitStepcrystal, 
                        }
   # known fit functions for 3d datasets
   available_functions_3d={
