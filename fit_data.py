@@ -51,6 +51,7 @@ class FitFunction(FitFunctionGUI):
     '''
       Constructor setting the initial values of the parameters.
     '''
+    self.parameters=list(self.parameters)    
     if len(self.parameters)==len(initial_parameters):
       self.parameters=initial_parameters
     self.refine_parameters=range(len(self.parameters))
@@ -326,6 +327,7 @@ class FitFunction3D(FitFunctionGUI):
     '''
       Constructor setting the initial values of the parameters.
     '''
+    self.parameters=list(self.parameters)
     if len(self.parameters)==len(initial_parameters):
       self.parameters=initial_parameters
     self.refine_parameters=range(len(self.parameters))
@@ -555,13 +557,6 @@ class FitLinear(FitFunction):
   fit_function=lambda self, p, x: p[0] * numpy.array(x) + p[1]
   fit_function_text='[a]·x + [b]'
 
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1, 0]
-    FitFunction.__init__(self, initial_parameters)
-
 class FitDiamagnetism(FitFunction):
   '''
     Fit two linear functions with the same slope, an offset and a hole around zero.
@@ -577,7 +572,6 @@ class FitDiamagnetism(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[0, 0, 0, 1]
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(3)
   
@@ -603,13 +597,6 @@ class FitQuadratic(FitFunction):
   fit_function=lambda self, p, x: p[0] * numpy.array(x)**2 + p[1] * numpy.array(x) + p[2]
   fit_function_text='[a]·x^2 + [b]·x + [c]'
 
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1, 0, 0]
-    FitFunction.__init__(self, initial_parameters)
-
 class FitPolynomialPowerlaw(FitFunction):
   '''
     Fit a quartic polynomial logarithmic function.
@@ -621,13 +608,6 @@ class FitPolynomialPowerlaw(FitFunction):
   parameter_names=['a', 'b', 'c', 'd', 'e']
   fit_function_text='exp([a]·x^4 + [b]·x^3 + [c]·x^2 + [d]·x + [e])'
 
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[0., 0., 1., 0., 0.]
-    FitFunction.__init__(self, initial_parameters)
-  
   def fit_function(self, p, x):
     x=numpy.array(x)
     return 10.**(p[0]*x**4+p[1]*x**3+p[2]*x**2+p[3]*x+p[4])
@@ -646,13 +626,6 @@ class FitSinus(FitFunction):
   fit_function=lambda self, p, x: p[0] * numpy.sin((numpy.array(x) * p[1] - p[2])*numpy.pi/180.) + p[3]
   fit_function_text='[a]·sin([ω0|3]·x-[φ0|2])+[c]'
 
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1., 1., 0., 0.]
-    FitFunction.__init__(self, initial_parameters)
-  
   def refine(self, dataset_x, dataset_y, dataset_yerror=None):
     '''
       Refine the function for given x and y data and set the φ0 value
@@ -674,13 +647,6 @@ class FitExponential(FitFunction):
   fit_function=lambda self, p, x: p[0] * numpy.exp(p[1] * numpy.array(x)) + p[2]
   fit_function_text='[A]·exp([B]·x) + [C]'
 
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1, 1, 0]
-    FitFunction.__init__(self, initial_parameters)
-
 class FitOneOverX(FitFunction):
   '''
     Fit a one over x function.
@@ -692,13 +658,6 @@ class FitOneOverX(FitFunction):
   parameter_names=['C', 'x0', 'D']
   fit_function=lambda self, p, x: p[0] * 1 / (numpy.array(x) - p[1]) + p[2]
   fit_function_text='[C]/(x-[x0|2]) + [D]'
-
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1, 0, 0]
-    FitFunction.__init__(self, initial_parameters)
 
 class FitGaussian(FitFunction):
   '''
@@ -712,13 +671,6 @@ class FitGaussian(FitFunction):
   fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2) + p[3]
   fit_function_text='[A]·exp(-0.5·(x-[x0|2])/[σ])+[C]'
 
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1, 0, 1, 0]
-    FitFunction.__init__(self, initial_parameters)
-
 class FitLorentzian(FitFunction):
   '''
     Fit a lorentz function.
@@ -729,14 +681,7 @@ class FitLorentzian(FitFunction):
   parameters=[1, 0, 1, 0]
   parameter_names=['I', 'x0', 'γ', 'C']
   fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2) + p[3]
-  fit_function_text='[A]/(1 + ((x-[x0|2])/[γ|2])^2)+[C]'
-
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1, 0, 1, 0]
-    FitFunction.__init__(self, initial_parameters)
+  fit_function_text='[I]/(1 + ((x-[x0|2])/[γ|2])^2)+[C]'
 
 class FitVoigt(FitFunction):
   '''
@@ -751,13 +696,6 @@ class FitVoigt(FitFunction):
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
 
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1, 0, 1, 1, 0]
-    FitFunction.__init__(self, initial_parameters)
-  
   def fit_function(self, p, x):
     '''
       Return the Voigt profile of x.
@@ -789,7 +727,6 @@ class FitCuK(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1, 0, 0.001, 0.001, 0, 2, 0.99752006]
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(6)
   
@@ -1419,7 +1356,6 @@ class FitBrillouineB(FitFunction):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1e16, 2, 2, 300]
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(4)
   
@@ -1518,13 +1454,6 @@ class FitGaussian3D(FitFunction3D):
   parameter_names=['A', 'x_0', 'y_0', 'sigma_x', 'sigma_y', 'tilt', 'C']
   fit_function_text='Gaussian'
 
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1., 0., 0., 0.1, 0.1, 0., 0.]
-    FitFunction3D.__init__(self, initial_parameters)
-  
   def fit_function(self, p, x, y):
     A=p[0]
     x0=p[1]
@@ -1554,13 +1483,6 @@ class FitPsdVoigt3D(FitFunction3D):
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
 
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0., 0.5, 0]
-    FitFunction3D.__init__(self, initial_parameters)
-  
   def fit_function(self, p, x, y):
     '''
       Return the 2d Voigt profile of x and y.
@@ -1640,13 +1562,6 @@ class FitLorentzian3D(FitFunction3D):
   fit_function_text='Lorentzian'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
-
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1, 0, 0, 0.01, 0.01, 0., 0.]
-    FitFunction3D.__init__(self, initial_parameters)
   
   def fit_function(self, p, x, y):
     '''
@@ -1690,7 +1605,6 @@ class FitVoigt3D(FitFunction3D):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0.01, 0.]
     FitFunction3D.__init__(self, initial_parameters)
     global signal
     from scipy import signal
@@ -1763,7 +1677,6 @@ class FitLattice3D(FitFunction3D):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[0.000133, 1.54, 0.05802, 0.0200789, 60.0, 52.0, 0.0015, 0.0025, 0.001, 0.001, 50.0, 0.285, 0.1, 0.317, 0]
     FitFunction3D.__init__(self, initial_parameters)
     global signal
     from scipy import signal
