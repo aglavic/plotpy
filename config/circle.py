@@ -26,13 +26,24 @@ COLUMNS_MAPPING=[\
 ,['Chi',6,['χ','°']]\
 ,['Phi',6,['φ','°']]\
 ,["Phi'",6,["φ_{calc}",'°']]\
+,['xsample', 6, ['x_{Sample}', 'mm']]\
+,['ysample', 6, ['y_{Sample}', 'mm']]\
+,['zsample', 6, ['z_{Sample}', 'mm']]\
+,['Time', 6, ['time', 's']]\
+,['Lakeshore', 6, ['T_{set}', 'K']]\
 ,['H',0,['h','']]\
 ,['K',1,['k','']]\
 ,['L',2,['l','']]\
 ,['Epoch',3,['Epoch','']]\
-,["Seconds",4,['time','s']]\
+,["Seconds",4,['counting time','s']]\
 ,["Monitor",5,['monitor intensity','counts']]\
 ,['Detector',7,['intensity','counts']]\
+,['T-diode',8,['T_{sample}','K']]\
+,['Det/Mon',13,['I','signal/monitor']]\
+,['PhotEner',9,['energy','eV']]\
+,['twotheta',10,['2Θ','°']]\
+,['theta',11,['Θ','°']]\
+, ['Drain/Mon', 12, ['drain/monitor', 'a.u.']]\
 ]
 # Measurement types where some parameters are fix and x,y and yerror columns are set.
 # [ 'list of constant parameters [ column , max_div ]' , x-col, y-col, div_y-col , plot options]

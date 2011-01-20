@@ -75,6 +75,14 @@ def read_file_header(input_file_lines):
   try:
     line=input_file_lines[3]
     sample_name=line.split('User')[0].split(' ', 1)[1]
+    # remove characters from keyboard input
+    if '[D' in sample_name or '\b' in sample_name:
+      while '[D' in sample_name:
+        i=sample_name.index('[D')
+        sample_name=sample_name[:i-1]+sample_name[i+3:]
+      while '\b' in sample_name:
+        i=sample_name.index('\b')
+        sample_name=sample_name[:i-1]+sample_name[i+1:]
     return sample_name
   except:
     return None
@@ -208,7 +216,10 @@ def read_data_line(input_file_lines,columns):
           values.append(0.)
         else:
           values.append(float(line[column[0]]))
-      values.append((float(line[-1]), max(math.sqrt(float(line[-1])),1)))
+      if columns[-1][2][1] == 'signal/monitor':
+        values.append(float(line[columns[-1][0]]))
+      else:
+        values.append((float(line[-1]), max(math.sqrt(float(line[-1])),1)))
       return values
     else:
       return None
@@ -234,7 +245,10 @@ def read_data_last_line(input_file_lines,columns):
             values.append(0.)
           else:
             values.append(float(line[column[0]]))
-        values.append((float(line[-1]), max(math.sqrt(float(line[-1])),1)))
+        if columns[-1][2][1] == 'signal/monitor':
+          values.append(float(line[columns[-1][0]]))
+        else:
+          values.append((float(line[-1]), max(math.sqrt(float(line[-1])),1)))
         return values
       else:
         return None

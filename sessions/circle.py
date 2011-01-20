@@ -112,21 +112,26 @@ class CircleSession(GUI, GenericSession):
       dataset.logy=self.logy
       # name the dataset
       dims=dataset.dimensions()
+      set_reciprocal_space=True
       try:
         h_idx=dims.index('H')
         k_idx=dims.index('K')
         l_idx=dims.index('L')
       except ValueError:
-        h_idx=dims.index('h')
-        k_idx=dims.index('k')
-        l_idx=dims.index('l')
-      hkl=[str(round(dataset.data[h_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
-      str(round(dataset.data[k_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
-      str(round(dataset.data[l_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0')] # h,k,l information from middle of the Scan with 2 post point digits but with trailing 0 striped      
-      if dataset.zdata<0:
-        dataset.short_info=dataset.x.dimension+'-scan around (%s %s %s)' % (hkl[0], hkl[1], hkl[2])
-      else:
-        dataset.short_info=dataset.x.dimension+dataset.y.dimension+'-mesh around (%s %s %s)' % (hkl[0], hkl[1], hkl[2])
+        try:
+          h_idx=dims.index('h')
+          k_idx=dims.index('k')
+          l_idx=dims.index('l')
+        except ValueError:
+          set_reciprocal_space=False
+      if set_reciprocal_space:
+        hkl=[str(round(dataset.data[h_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
+        str(round(dataset.data[k_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
+        str(round(dataset.data[l_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0')] # h,k,l information from middle of the Scan with 2 post point digits but with trailing 0 striped      
+        if dataset.zdata<0:
+          dataset.short_info=dataset.x.dimension+'-scan around (%s %s %s)' % (hkl[0], hkl[1], hkl[2])
+        else:
+          dataset.short_info=dataset.x.dimension+dataset.y.dimension+'-mesh around (%s %s %s)' % (hkl[0], hkl[1], hkl[2])
       #if (dataset.xdata==0)&(dataset.zdata==-1):
         #dataset.short_info='h,'+hkl[1] +','+hkl[2] +' scan'
       #elif (dataset.xdata==1)&(dataset.zdata==-1):

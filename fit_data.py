@@ -9,7 +9,7 @@
 import numpy
 from scipy.optimize import leastsq, fsolve
 from scipy.special import wofz
-from math import pi, sqrt,  tanh, sin, asin
+from math import pi, sqrt,  tanh, sin, asin, exp
 # import own modules
 from measurement_data_structure import MeasurementData
 # import gui functions for active config.gui.toolkit
@@ -234,10 +234,9 @@ class FitFunction(FitFunctionGUI):
       for j in range(interpolate):
         xint.append(xi + float(x[i+1]-xi)/interpolate * j)
     try:
-      y=list(self.fit_function(self.parameters, xint))
-    except TypeError:
-      # x is list and the function is only defined for one point.
-      y= map((lambda x_i: self.fit_function(self.parameters, x_i)), xint)
+      y=list(self.fit_function(self.parameters, numpy.array(xint)))
+    except TypeError, error:
+      raise ValueError, "Could not execute function with numpy array: "+str(error)
     return xint, y
   
   def __call__(self, x):
@@ -717,7 +716,7 @@ class FitCuK(FitFunction):
   
   # define class variables.
   name="Cu K-radiation"
-  parameters=[1, 0, 0.001, 0.001, 0, 2, 0,99752006]
+  parameters=     [1,   0,  0.001, 0.001, 0,     2,      0.99752006]
   parameter_names=['I', 'x0', 'γ', 'σ', 'C', 'K_a1/K_a2', 'x01/x02']
   fit_function_text='K_α: [x0] ; [γ|2] ; [σ|2]'
   sqrt2=numpy.sqrt(2)
@@ -751,23 +750,16 @@ class FitCuK(FitFunction):
     value2=p[0]/p[5] * wofz(z2).real / wofz(z0).real + p[4]
     return value+value2
 
-class FitStepcrystal(FitFunction):
+class FitCrystalLayer(FitFunction):
   '''
-    
+    Simulate diffraction from a crystal layer with finite size and roughness.
   '''
   
   # define class variables.
-  name="Stepcrystal"
+  name="CrystalLayer"
   parameters=[1., 100., 5., 2., 3.]
   parameter_names=['I', 'd', 'a', 'h', 'σ']
   fit_function_text='d=[d] a=[a] σ=[σ|2]'
-  
-  def __init__(self, initial_parameters):
-    '''
-      Constructor setting the initial values of the parameters.
-    '''
-    self.parameters=[1., 100., 5., 2., 3.]
-    FitFunction.__init__(self, initial_parameters)
   
   def fit_function(self, p, x):
     '''
@@ -804,6 +796,129 @@ class FitStepcrystal(FitFunction):
     '''
     sin=numpy.sin
     return sin(d/2.*(x-x_0))/(x-x_0)#sin(a/2.*(x-x_0))
+
+class FitRelaxingCrystalLayer(FitFunction):
+  '''
+    Simulate diffraction from a crystal layer with relaxing lattice constant from top to bottom.
+    In contrast to FitCrystalLayer this uses a purly numeric approach with sum of scattering layers.
+    The strain is released with a exponential decaying function
+  '''
+  # define class variables.
+  name="RelaxingCrystalLayer"
+  parameters=[1., 100., 3., 0., 5.76, 5.8, 20., 0., 0.1]
+  parameter_names=['I',               # intensity (scaling factor)
+                   'd',               # layer thickness
+                   'σ_layer',         # layer roughness
+                   'σ_substrate',     # layer roughness
+                   'a_bottom',        # lattice parameter at the substrate interface
+                   'a_infinity',      # lattice parameter of bulk
+                   'ε',               # strain relaxation length of the lattice parameter
+                   'a_substrate',     # 
+                   'scaling_substrate'# 
+                   ]
+  fit_function_text='d=[d] σ_{layer}=[σ_layer|2] a_{bottom}=[a_bottom|3] a_{inf}=[a_infinity|3]'
+
+  def fit_function(self, p, q):
+    q=numpy.array(q).view(numpy.ndarray)
+    I_0=p[0]
+    d=p[1]
+    sigma_l=p[2]
+    sigma_s=p[3]
+    a_bottom=p[4]
+    a_inf=p[5]
+    epsilon=p[6]
+    a_substrate=p[7]
+    scaling_substrate=p[8]
+    # calculate some constants
+    pi=numpy.pi
+    exp=numpy.exp
+    plain_spacings, plain_positions=self.get_strained_plains(a_bottom, a_inf, epsilon, d+3*sigma_l)
+    # calculate scattering amplitude up to d-3sigma
+    fixed_planes=plain_positions[numpy.where(plain_positions<d-3*sigma_l)]
+    A=self.get_amplitude(fixed_planes, q).sum(axis=0)
+    # calculate the sum of amplitudes for the rough region
+    if sigma_l!=0:
+      roughness_planes=plain_positions[numpy.where(plain_positions>=d-3*sigma_l)]
+      # caluclate gaussian scaling distribution
+      scaling_factors=numpy.exp(-0.5*((roughness_planes-d)/sigma_l)**2)
+      scaling_factors/=scaling_factors.sum()
+      A_max_planes=self.get_amplitude(roughness_planes, q)
+      for i in range(len(scaling_factors)):
+        # add amplitudes layer by layer
+        A+=scaling_factors[i]*A_max_planes[:i+1].sum(axis=0)
+    # substrate roughness is accounted for by multiplying the amplitudes with different offset phases
+    A*=self.calculate_substrate_roughness(q, sigma_s)
+    if a_substrate!=0:
+      A_substrate=self.get_substrate_amplitude(q, a_substrate, 1000)
+      I=numpy.abs(A+scaling_substrate*A_substrate)**2/(numpy.abs(A)**2).max()
+    else:
+      I=numpy.abs(A)**2
+      I/=I.max()
+    return I_0*I
+  
+  def get_strained_plains(self, a_bottom, a_inf, epsilon, d):
+    '''
+      Return an array of plane distances, exponentially decaying.
+      The distances have to be calculated iteratively.
+    '''
+    plain_distances=[a_bottom]
+    plain_positions=[0.]
+    i=1
+    a_dif=a_bottom-a_inf
+    # until the layersize is reached, add a new plain.
+    while ( plain_positions[-1] < d ):
+      plain_distances.append(a_dif*exp(-plain_positions[-1]/epsilon)+a_inf)
+      plain_positions.append(plain_positions[-1]+plain_distances[-1])
+      i+=1
+    return numpy.array(plain_distances), numpy.array(plain_positions)
+  
+  def get_amplitude(self, plane_positions, q):
+    '''
+      Return the scattering amplitude from a set of layers.
+      Uses a matrix of equal columns to compute for all q position at once.
+    '''
+    if len(plane_positions)>1:
+      plane_multiplication_matrix, ignore=numpy.meshgrid(plane_positions, q)
+      A=numpy.exp(1j*q*plane_multiplication_matrix.transpose())
+    else:
+      A=numpy.array([numpy.exp(1j*q*plane_positions)])
+    return A
+    
+  def calculate_substrate_roughness(self, q, sigma):
+    '''
+      Calculate a sum of amplitudes with different offset phases.
+      As the phase factore e^{iqd} averedged over gaussian distributed
+      offsets d is the fourier transform of the gaussian distribution
+      this is again a simple gaussian function in q.
+    '''
+    if sigma!=0:
+      #offsets=numpy.meshgrid(numpy.linspace(-3.*sigma, 3.*sigma, 31), q)[0]
+      #offset_phases=numpy.exp(1j*q*offsets.transpose())
+      #offset_factors=numpy.exp(-0.5*numpy.linspace(-3., 3., 31)**2)
+      #offset_factors/=offset_factors.sum()
+      #P=(offset_factors*offset_phases.transpose()).sum(axis=1)
+      prefactor=1./(2.*sigma**2*numpy.sqrt(numpy.pi))
+      P=prefactor*numpy.exp(-0.5*(q*sigma)**2)
+    else:
+      P=1.
+    return P
+  
+  def get_substrate_amplitude(self, q, a_substrate, mu):
+    '''
+      Calculate the scattering amplitude of the substrate with a attenuation length of mu.
+      As the real space structure is the product of the heaveside step function (u{x}), an exponential
+      decay and the crystal structure the amplitude can be calculated as the convolution of
+      delta functions with the fourier transform of the u{x}*exp(-ax)->F(q)=1./[sqrt(2π)·(a+iq)]
+    '''
+    a_star=2.*numpy.pi/a_substrate
+    A_substrate=numpy.zeros_like(q)
+    for i in range(1, 20):
+      q_i=a_star*i
+      #if q_i<=q.max() and q_i >= q.min():
+      A_substrate+=1./(numpy.sqrt(2.*numpy.pi)*(1j*(q-q_i)))
+      #  print q_i
+    return A_substrate
+
 
 class FitSuperlattice(FitFunction):
   '''
@@ -1651,13 +1766,22 @@ class FitLattice3D(FitFunction3D):
   
   # define class variables.
   name="GISAXS"
-  parameters=[1.5e-5, 1.54, 0.066, 0.025, 60., 43.8, 0.002, 0.006, 0.0003, 0.0003, 40., 0.3, 0.1, 0.25, 0]
+  parameters=[3.e-5, 1.54,       # I,λ
+              0.06, 0.021, 60.,  # a*,c*,α_crystal
+              49.8, 3.,            # r, σr
+              0.0025, 0.0005, 0.0025,# γ (x,y,z)
+              0.0003, 0.0001,     # σ (y,z)
+              10.,                 # BG
+              0.265, 0.05, 0.3,     # α_i, α_c-layer, α_c-substrate
+              0.]                  # show
   parameter_names=['I', # overall intensity scaling
                    'λ', # x-ray wavelength
                    'a*', # reciprocal structure parameter in-plane
                    'c*', # reciprocal structure parameter out-of-plane
                    'α_{crystal}', # angle between a* and b* (|a*|=|b*|)
                    'r', # nano particle radius
+                   'σr',  # width of radius distribution
+                   'γ_x', # correlation length in beam directoin
                    'γ_y', # correlation length in-plane
                    'γ_z', # correlation length out-of-plane
                    'σ_y', # beam size in-plane
@@ -1666,10 +1790,9 @@ class FitLattice3D(FitFunction3D):
                    'α_i', # angle of incidence
                    'α_{c_{layer}}', 
                    'α_{c_{substrate}}', 
-                   'show' # Used to select between full simulation and ony specific steps [-3,3]
+                   'show' # Used to select between full simulation and ony specific steps [-4,4]
                    ]
   fit_function_text='GISAXS'
-  
   structurefactors={
                     }
 
@@ -1680,13 +1803,32 @@ class FitLattice3D(FitFunction3D):
     FitFunction3D.__init__(self, initial_parameters)
     global signal
     from scipy import signal
+    self.refine_parameters=[0]
   
-  def S(self, q, r):
+  def S(self, q, r, sigma_r):
     '''
-      Form factor of a solid sphere.
+      Form factor of a gaussian size distribution of solid spheres.
     '''
-    qr=q*r
-    return 4./3.*numpy.pi*r**3*3.*(numpy.sin(qr)- qr*numpy.cos(qr))/(qr)**3
+    # shortcut to numpy functions/constants
+    pi=numpy.pi
+    sin=numpy.sin
+    cos=numpy.cos
+    if sigma_r!=0:
+      # if sigma_r != 0 the size distribution needs to be calculated
+      # this is done in the range between -3σ and +3σ
+      # and using a gaussian weighting
+      S=numpy.zeros_like(q)
+      r_range=numpy.linspace(r-3*sigma_r, r+3*sigma_r, 30)
+      scalings=numpy.exp(-0.5*((r_range-r)/sigma_r)**2)
+      scalings/=scalings.sum()
+      for r, scaling in zip(r_range, scalings):
+        qr=q*r
+        S+=scaling*4./3.*pi*r**3*3.*(sin(qr)- qr*cos(qr))/(qr)**3
+    else:
+      # no size distribution, calculate only one spheric formfactor
+      qr=q*r
+      S=4./3.*pi*r**3*3.*(sin(qr)- qr*cos(qr))/(qr)**3
+    return S
 
   def Lorentz(self, x0, y0, gamma_x, gamma_y, x, y):
     '''
@@ -1707,10 +1849,35 @@ class FitLattice3D(FitFunction3D):
 
   def Gaussian(self, x, y, sigma_x, sigma_y):
     '''
-      Calculate a gaussian resolution function centered for the given range.
+      Calculate a normalized gaussian resolution function in x and y.
     '''
-    G=numpy.exp(-0.5*(((x-x.mean())/sigma_x)**2+((y-y.mean())/sigma_y)**2))
+    G=numpy.exp(-0.5*((x/sigma_x)**2+(y/sigma_y)**2))
     return G/G.sum()
+  
+  def resolution(self, x, y, sigma_x, sigma_y):
+    '''
+      Calculate a resolution function consisting of a convolution of 
+      a pixel resolution and gaussian beam size.
+    '''
+    # center the range around 0
+    x=x-x.mean()
+    y=y-y.mean()
+    # calculate gaussian and pixel function separatly
+    G=self.Gaussian(x, y, sigma_x, sigma_y)
+    P=self.pixel_res(x, y, self.pixel_size)
+    # return the convolution of both
+    return signal.fftconvolve(P, G, mode='same')
+  
+  def pixel_res(self, x, y, pixel_size):
+    '''
+      Return a resolution function for one pixel which decays exponentially
+      into the neighboring pixels.
+    '''
+    decay_factor=pixel_size
+    # in the centeral point the value is exactly 1, outside it decays exponentially in x and y
+    P=numpy.where((numpy.abs(x)<=pixel_size/2.), 1., numpy.exp((pixel_size/2.-numpy.abs(x))/decay_factor))*\
+      numpy.where((numpy.abs(y)<=pixel_size/2.), 1., numpy.exp((pixel_size/2.-numpy.abs(y))/decay_factor))
+    return P
 
   def R(self, n_1, n_2, alpha_i):
     '''
@@ -1755,19 +1922,23 @@ class FitLattice3D(FitFunction3D):
     cstar=p[3]
     alpha_crystal=p[4]*pi/180.
     r=p[5]
-    gamma_x=p[6]
-    gamma_y=p[7]
-    sigma_x=p[8]
-    sigma_y=p[9]
-    C=p[10]
-    alpha_i=p[11]*pi/180.
-    alpha_c=p[12]*pi/180.
-    alpha_c_substrate=p[13]*pi/180.
-    show=p[14]
+    sigma_r=p[6]
+    gamma_x=p[7]
+    gamma_y=p[8]
+    gamma_z=p[9]
+    sigma_x=p[10]
+    sigma_y=p[11]
+    C=p[12]
+    alpha_i=p[13]*pi/180.
+    alpha_c=p[14]*pi/180.
+    alpha_c_substrate=p[15]*pi/180.
+    show=p[16]
     if x[1]!=x[0]:
+      self.pixel_size=abs(x[1]-x[0])
       numx=list(x)[1:].index(x[0])+1
       numy=len(x)//numx
     else:
+      self.pixel_size=abs(y[1]-y[0])
       numy=list(y)[1:].index(y[0])+1
       numx=len(y)//numy
     x=numpy.float32(numpy.array(x)).reshape(numy, numx)
@@ -1779,51 +1950,62 @@ class FitLattice3D(FitFunction3D):
     alpha_f=numpy.arcsin(y/k_xray)-alpha_i
     # gisaxs angle
     phi=numpy.arcsin(x/k_xray/2.)
-    # refractive index of the substrate
+    # refractive index of the layer and substrate
     n_l=1.-alpha_c**2/2.
     n_s=1.-alpha_c_substrate**2/2.
+    # intensities of born-approximated, reflected and yoneda peaks
     I_B=I_0*self.T(1., n_l, alpha_i)*self.T(n_l, 1., alpha_f)
     I_R=I_B*self.R(n_l, n_s, alpha_i)*self.R(n_s, n_l, alpha_f)
     I_Y=I_0*self.T(1., n_l, alpha_i)*self.T(n_s, n_l, alpha_f)*self.R(n_s, n_l, alpha_f)*self.T(n_l, 1., alpha_i)
+    # wave-vector calculations
     ki=2.*pi/lambda_x*sin(alpha_i)
     kc=2.*pi/lambda_x*sin(alpha_c)
     qx=k_xray*(numpy.cos(alpha_f)*numpy.cos(phi)-numpy.cos(alpha_i))
-    Lx=self.Lorentz1d( 0., gamma_x*2., qx )
+    # scaling factor due to qx
+    Lx=self.Lorentz1d( 0., gamma_x, qx )
+    
     # peaks from Born approximation
     born=numpy.zeros_like(x)
     for hkl, scaling in self.structurefactors.items():
-      # calculate x0 from hk
+      # calculate qy-position from hk
       Qy=astar*numpy.sqrt( ( hkl[0] + cosa*hkl[1])**2 + (sina*hkl[1])**2 )
-      # qz with refraction
+      # qz-position
       Qz=cstar*hkl[2]#ki+numpy.sqrt( kc**2 + (cstar*hkl[2] - numpy.sqrt(ki**2-kc**2))**2 )
-      born+=scaling*self.Lorentz(Qy, Qz, gamma_x, gamma_y, x, y)
+      born+=scaling*self.Lorentz(Qy, Qz, gamma_y, gamma_z, x, y)
     q=numpy.sqrt(x**2+y**2)
     #q=numpy.sqrt(x**2+ ( numpy.sqrt(numpy.abs((y-ki)**2-kc**2 )) + numpy.sqrt(ki**2-kc**2) )**2 )
-    born*=I_B*Lx*self.S(q, r)**2
+    # Intensity is scaled by the formfactor, lorentz in qx and the prefactor I_B
+    born*=I_B*Lx*self.S(q, r, sigma_r)**2
+    
     # peaks from scattering after reflection
     refl=numpy.zeros_like(x)
     for hkl, scaling in self.structurefactors.items():
-      # calculate x0 from hk
+      # calculate qy-position from hk
       Qy=astar*numpy.sqrt( ( hkl[0] + cosa*hkl[1])**2 + (sina*hkl[1])**2 )
-      # qz with reflection,refraction
+      # qz-position with reflection, refraction
       Qz=ki+numpy.sqrt( kc**2 + (cstar*hkl[2] + numpy.sqrt(ki**2-kc**2))**2 )
-      refl+=scaling*self.Lorentz(Qy, Qz, gamma_x, gamma_y, x, y)
+      refl+=scaling*self.Lorentz(Qy, Qz, gamma_y, gamma_z, x, y)
     q=numpy.sqrt(x**2+ ( numpy.sqrt(numpy.abs((y-ki)**2-kc**2 )) - numpy.sqrt(ki**2-kc**2) )**2 )
-    refl*=I_R*self.S(q, r)**2
+    # Intensity is scaled by the fromfactor and the prefector I_R
+    refl*=I_R*self.S(q, r, sigma_r)**2
+    
     # peaks of Yoneda-line
     yoneda=numpy.zeros_like(x)
     for hkl, scaling in self.structurefactors.items():
       if hkl[2]!=0 or (hkl[0]==0 and hkl[1]==0):
+        # skip peaks where qz!=0
         continue
       # calculate x0 from hk
       Qy=astar*numpy.sqrt( ( hkl[0] + cosa*hkl[1])**2 + (sina*hkl[1])**2 )
-      yoneda+=scaling*self.Lorentz(Qy, kc+ki, gamma_x, gamma_y, x, y)
+      yoneda+=scaling*self.Lorentz(Qy, kc+ki, gamma_y, gamma_z, x, y)
     q=numpy.sqrt(x**2+(y-kc-ki)**2)
-    yoneda*=I_Y*self.S(q, r)**2
-    # convolute the simulation with the resolution function
-    G=self.Gaussian(x, y, sigma_x, sigma_y)
+    # Intensity is scaled by the formfactor and the prefactor I_Y
+    yoneda*=I_Y*self.S(q, r, sigma_r)**2
+    
+    # convolute the simulation with the resolution function or select one part of the simulation
+    resolution=self.resolution(x, y, sigma_x, sigma_y)
     if show==0:
-      I=signal.fftconvolve(born+refl+yoneda, G, mode='same')
+      I=signal.fftconvolve(born+refl+yoneda, resolution, mode='same')
     elif show==1:
       I=born
     elif show==2:
@@ -1831,13 +2013,15 @@ class FitLattice3D(FitFunction3D):
     elif show==3:
       I=yoneda
     elif show==4:
-      I=G
+      I=resolution
+    elif show==5:
+      I=self.S(numpy.sqrt(x**2+y**2), r, sigma_r)**2
     elif show==-1:
-      I=signal.fftconvolve(born, G, mode='same')
+      I=signal.fftconvolve(born, resolution, mode='same')
     elif show==-2:
-      I=signal.fftconvolve(refl, G, mode='same')
+      I=signal.fftconvolve(refl, resolution, mode='same')
     elif show==-1:
-      I=signal.fftconvolve(yoneda, G, mode='same')
+      I=signal.fftconvolve(yoneda, resolution, mode='same')
     return I.flatten() + C
   
 
@@ -1868,7 +2052,8 @@ class FitSession(FitSessionGUI):
                        FitFerromagnetic.name: FitFerromagnetic, 
                        FitCuK.name: FitCuK, 
                        FitPolynomialPowerlaw.name: FitPolynomialPowerlaw, 
-                       FitStepcrystal.name: FitStepcrystal, 
+                       FitCrystalLayer.name: FitCrystalLayer, 
+                       FitRelaxingCrystalLayer.name: FitRelaxingCrystalLayer, 
                        }
   # known fit functions for 3d datasets
   available_functions_3d={
