@@ -7,7 +7,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7rc2"
+__version__ = "0.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -67,6 +67,38 @@ MEASUREMENT_TYPES=[\
 ,[[[1,0.005]],0,2,8,'',7]\
 ,[[],0,3,6,'set title "Unknown Scan"\n']\
 ] # raw data measureing with temperature shown, MvsT with constand H,MvsH with constand T
+
+KNOWN_COLUMNS={
+               'H': ('h', ''), 
+               'K': ('k', ''), 
+               'L': ('l', ''), 
+               'Epoch': ('Epoch', 's'), 
+               'Seconds': ('time', 's'), 
+               'T-diode': ('T_{sample}', 'K'), 
+               'Det/Mon': ('I_{norm}', 'signal/monitor'), 
+               'Drain': ('I_{drain}', 'mA'), 
+               'PhotEner': ('E', 'eV'), 
+               'Mon/Ring': ('monitor_{ring}', 'signal'), 
+               'Pressure': ('P', 'mBar'), 
+               'Two Theta': ('2Θ', '°'), 
+               'Theta': ('Θ', '°'), 
+               'Phi': ('φ', '°'), 
+               'Chi': ('χ', '°'), 
+               'Time': ('Time', 's'), 
+               'Ringcurr': ('I_{ring}', 'mA'), 
+               'Drain/Mon': ('I_{drain_{norm}}', 'mA/monitor'), 
+               'Monitor': ('monitor', 'a.u.'), 
+               'Detector': ('I', 'counts'), 
+               'xsample': ('x_{sample}', 'mm'), 
+               'ysample': ('y_{sample}', 'mm'), 
+               'zsample': ('z_{sample}', 'mm'), 
+               }
+
+INTENSITY_COLUMNS=[
+                   'I_{norm}',
+                   'I', 
+                   'I_{drain_{norm}}',
+                   ]
 
 P09_COLUMNS_MAPPING={
                      'EXP_C01_POINT_DETECTOR': ('I_{RAW}', 'counts'), 

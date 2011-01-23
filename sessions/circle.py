@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7rc2"
+__version__ = "0.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -129,21 +129,13 @@ class CircleSession(GUI, GenericSession):
         str(round(dataset.data[k_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0'),\
         str(round(dataset.data[l_idx].values[len(dataset)/2],2)).rstrip('0').rstrip('.').replace('-0','0')] # h,k,l information from middle of the Scan with 2 post point digits but with trailing 0 striped      
         if dataset.zdata<0:
-          dataset.short_info=dataset.x.dimension+'-scan around (%s %s %s)' % (hkl[0], hkl[1], hkl[2])
+          dataset.short_info+=dataset.x.dimension+'-scan around (%s %s %s)' % (hkl[0], hkl[1], hkl[2])
         else:
-          dataset.short_info=dataset.x.dimension+dataset.y.dimension+'-mesh around (%s %s %s)' % (hkl[0], hkl[1], hkl[2])
-      #if (dataset.xdata==0)&(dataset.zdata==-1):
-        #dataset.short_info='h,'+hkl[1] +','+hkl[2] +' scan'
-      #elif (dataset.xdata==1)&(dataset.zdata==-1):
-        #dataset.short_info=hkl[0] +',k,'+hkl[2] +' scan'
-      #elif (dataset.xdata==2)&(dataset.zdata==-1):
-        #dataset.short_info=hkl[0] +','+hkl[1] +',l scan'
-      #elif dataset.zdata>=0:
-        #dataset.short_info=dataset.xdim()+dataset.ydim()+' mesh at '+hkl[0]+ ','+hkl[1]+ ','+ hkl[2]
-      #else:
-        #dataset.short_info=dataset.xdim()+' scan at '+hkl[0] +','+ hkl[1]+ ','+hkl[2]
+          dataset.short_info+=dataset.x.dimension+dataset.y.dimension+'-mesh around (%s %s %s)' % (hkl[0], hkl[1], hkl[2])
       if not self.show_counts:
         self.counts_to_cps(dataset)
+      if 'timescan_cm' in dataset.info:
+        self.filter_fast_energyscan_ue64(dataset)
     return datasets
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
@@ -267,6 +259,33 @@ class CircleSession(GUI, GenericSession):
         return False
     return True
   
+  def filter_fast_energyscan_ue64(self, dataset):
+    '''
+      Remove points with wrong energy reading from the fast E-scan performed at ue64.
+    '''
+    tolerance=10
+    from scipy.interpolate import interp1d
+    from measurement_data_structure import PhysicalProperty
+    x=dataset.x.tolist()
+    idxs=[]
+    x_index=dataset.xdata
+    old_length=len(dataset)
+    for i in range(1, old_length-1):
+      if abs(x[i]-x[i-1])<tolerance and abs(x[i]-x[i+1])<tolerance:
+        idxs.append(i)
+    idxs=numpy.array(idxs)
+    new_x=numpy.arange(x[0], x[-1], (x[-1]-x[0])/len(x))
+    filter_x=dataset.x[idxs]
+    if len(idxs)<10:
+      return 0
+    for i, col in enumerate(dataset.data):
+      if i==x_index:
+        dataset.data[i]=PhysicalProperty(col.dimension, col.unit, new_x)
+      else:
+        f=interp1d(filter_x, col[idxs], bounds_error=False, fill_value=col[idxs].min())
+        dataset.data[i]=PhysicalProperty(col.dimension, col.unit, f(new_x))
+    return old_length-len(idxs)
+  
   def create_mesh(self, datasets):
     '''
       Combine a list of scans to one mesh.
@@ -308,7 +327,7 @@ class CircleSession(GUI, GenericSession):
         output_info='KL-Mesh'
     #combine the datasets
     output=measurement_data_structure.MeasurementData(x=xids, y=yids, zdata=datasets[0].ydata)
-    output.short_info=output_info
+    output.short_info+=output_info
     output.sample_name=datasets[0].sample_name+'-'+datasets[-1].sample_name
     for col in datasets[0].data:
       output.append_column(col.copy())
