@@ -805,7 +805,7 @@ class FitRelaxingCrystalLayer(FitFunction):
   '''
   # define class variables.
   name="RelaxingCrystalLayer"
-  parameters=[1., 100., 3., 0., 5.76, 5.8, 20., 0., 0.1]
+  parameters=[1., 100., 3., 0., 5.76, 5.8, 20., 0., 0.1, 0.001]
   parameter_names=['I',               # intensity (scaling factor)
                    'd',               # layer thickness
                    'σ_layer',         # layer roughness
@@ -814,7 +814,8 @@ class FitRelaxingCrystalLayer(FitFunction):
                    'a_infinity',      # lattice parameter of bulk
                    'ε',               # strain relaxation length of the lattice parameter
                    'a_substrate',     # 
-                   'scaling_substrate'# 
+                   'scaling_substrate',# 
+                   'μ'                # absorption coefficient 
                    ]
   fit_function_text='d=[d] σ_{layer}=[σ_layer|2] a_{bottom}=[a_bottom|3] a_{inf}=[a_infinity|3]'
 
@@ -829,27 +830,28 @@ class FitRelaxingCrystalLayer(FitFunction):
     epsilon=p[6]
     a_substrate=p[7]
     scaling_substrate=p[8]
+    mu=p[9]
     # calculate some constants
     pi=numpy.pi
     exp=numpy.exp
     plain_spacings, plain_positions=self.get_strained_plains(a_bottom, a_inf, epsilon, d+3*sigma_l)
     # calculate scattering amplitude up to d-3sigma
     fixed_planes=plain_positions[numpy.where(plain_positions<d-3*sigma_l)]
-    A=self.get_amplitude(fixed_planes, q).sum(axis=0)
+    A=self.get_amplitude(fixed_planes, q, mu).sum(axis=0)
     # calculate the sum of amplitudes for the rough region
     if sigma_l!=0:
       roughness_planes=plain_positions[numpy.where(plain_positions>=d-3*sigma_l)]
       # caluclate gaussian scaling distribution
       scaling_factors=numpy.exp(-0.5*((roughness_planes-d)/sigma_l)**2)
       scaling_factors/=scaling_factors.sum()
-      A_max_planes=self.get_amplitude(roughness_planes, q)
+      A_max_planes=self.get_amplitude(roughness_planes, q, mu)
       for i in range(len(scaling_factors)):
         # add amplitudes layer by layer
         A+=scaling_factors[i]*A_max_planes[:i+1].sum(axis=0)
     # substrate roughness is accounted for by multiplying the amplitudes with different offset phases
     A*=self.calculate_substrate_roughness(q, sigma_s)
     if a_substrate!=0:
-      A_substrate=self.get_substrate_amplitude(q, a_substrate, 1000)
+      A_substrate=self.get_substrate_amplitude(q, a_substrate, mu)
       I=numpy.abs(A+scaling_substrate*A_substrate)**2/(numpy.abs(A)**2).max()
     else:
       I=numpy.abs(A)**2
@@ -872,16 +874,18 @@ class FitRelaxingCrystalLayer(FitFunction):
       i+=1
     return numpy.array(plain_distances), numpy.array(plain_positions)
   
-  def get_amplitude(self, plane_positions, q):
+  def get_amplitude(self, plane_positions, q, mu):
     '''
       Return the scattering amplitude from a set of layers.
       Uses a matrix of equal columns to compute for all q position at once.
     '''
     if len(plane_positions)>1:
       plane_multiplication_matrix, ignore=numpy.meshgrid(plane_positions, q)
-      A=numpy.exp(1j*q*plane_multiplication_matrix.transpose())
+      A=(numpy.exp(-mu*plane_positions)*numpy.exp(1j*q*plane_multiplication_matrix.transpose()).transpose()).transpose()
+    elif len(plane_positions)==1:
+      A=numpy.array([numpy.exp(1j*q*plane_positions[0])])
     else:
-      A=numpy.array([numpy.exp(1j*q*plane_positions)])
+      return 0
     return A
     
   def calculate_substrate_roughness(self, q, sigma):
@@ -897,8 +901,8 @@ class FitRelaxingCrystalLayer(FitFunction):
       #offset_factors=numpy.exp(-0.5*numpy.linspace(-3., 3., 31)**2)
       #offset_factors/=offset_factors.sum()
       #P=(offset_factors*offset_phases.transpose()).sum(axis=1)
-      prefactor=1./(2.*sigma**2*numpy.sqrt(numpy.pi))
-      P=prefactor*numpy.exp(-0.5*(q*sigma)**2)
+      prefactor=numpy.sqrt(numpy.pi/2.*sigma**2)
+      P=prefactor*numpy.exp(-2.*(q*sigma)**2)
     else:
       P=1.
     return P
@@ -911,11 +915,11 @@ class FitRelaxingCrystalLayer(FitFunction):
       delta functions with the fourier transform of the u{x}*exp(-ax)->F(q)=1./[sqrt(2π)·(a+iq)]
     '''
     a_star=2.*numpy.pi/a_substrate
-    A_substrate=numpy.zeros_like(q)
+    A_substrate=numpy.zeros_like(q).astype(numpy.complex)
     for i in range(1, 20):
       q_i=a_star*i
       #if q_i<=q.max() and q_i >= q.min():
-      A_substrate+=1./(numpy.sqrt(2.*numpy.pi)*(1j*(q-q_i)))
+      A_substrate+=1./(mu+1j*(q-q_i))
       #  print q_i
     return A_substrate
 

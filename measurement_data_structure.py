@@ -232,6 +232,92 @@ class MeasurementData(object):
       output+=", x='%s', y='%s', z='%s'>" % (self.x.dimension, self.y.dimension, self.z.dimension)
     return output
   
+  def __add__(self, other):
+    '''
+      Define how to add two datasets together.
+    '''
+    if type(other)!=type(self) or len(self)!=len(other) or \
+          (self.zdata<0 and self.y.unit!=other.y.unit) or \
+          (self.zdata>=0 and (other.z is None or self.z.unit!=other.z.unit)):
+      raise ValueError, "can only add two MeasurementData instances with the same shape and unit"
+    if self.z is not None:
+      output=self.__class__([], [], 0, 1, -1, 2)
+      output.data.append(self.x.copy())
+      output.data.append(self.y.copy())
+      output.data.append(self.z+other.z)
+    else:
+      output=self.__class__([], [], 0, 1, -1, -1)
+      output.data.append(self.x.copy())
+      output.data.append(self.y+other.y)
+    output.sample_name=self.sample_name
+    output.number=self.number
+    output.short_info=self.short_info+'+'+other.short_info
+    return output
+    
+  def __sub__(self, other):
+    '''
+      Define how to add two datasets together.
+    '''
+    if type(other)!=type(self) or len(self)!=len(other) or \
+          (self.zdata<0 and self.y.unit!=other.y.unit) or \
+          (self.zdata>=0 and (other.z is None or self.z.unit!=other.z.unit)):
+      raise ValueError, "can only subtract two MeasurementData instances with the same shape and unit"
+    if self.z is not None:
+      output=self.__class__([], [], 0, 1, -1, 2)
+      output.data.append(self.x.copy())
+      output.data.append(self.y.copy())
+      output.data.append(self.z-other.z)
+    else:
+      output=self.__class__([], [], 0, 1, -1, -1)
+      output.data.append(self.x.copy())
+      output.data.append(self.y-other.y)
+    output.sample_name=self.sample_name
+    output.number=self.number
+    output.short_info=self.short_info+'-'+other.short_info
+    return output
+    
+  def __div__(self, other):
+    '''
+      Define how to divide two datasets together.
+    '''
+    if type(other)!=type(self) or len(self)!=len(other) or \
+          (self.zdata>=0 and other.z is None):
+      raise ValueError, "can only add two MeasurementData instances with the same shape and unit"
+    if self.z is not None:
+      output=self.__class__([], [], 0, 1, -1, 2)
+      output.data.append(self.x.copy())
+      output.data.append(self.y.copy())
+      output.data.append(self.z/other.z)
+    else:
+      output=self.__class__([], [], 0, 1, -1, -1)
+      output.data.append(self.x.copy())
+      output.data.append(self.y/other.y)
+    output.sample_name=self.sample_name
+    output.number=self.number
+    output.short_info=self.short_info+'/'+other.short_info
+    return output
+    
+  def __mul__(self, other):
+    '''
+      Define how to multiply two datasets together.
+    '''
+    if type(other)!=type(self) or len(self)!=len(other) or \
+          (self.zdata>=0 and other.z is None):
+      raise ValueError, "can only multiply two MeasurementData instances with the same shape and unit"
+    if self.z is not None:
+      output=self.__class__([], [], 0, 1, -1, 2)
+      output.data.append(self.x.copy())
+      output.data.append(self.y.copy())
+      output.data.append(self.z*other.z)
+    else:
+      output=self.__class__([], [], 0, 1, -1, -1)
+      output.data.append(self.x.copy())
+      output.data.append(self.y*other.y)
+    output.sample_name=self.sample_name
+    output.number=self.number
+    output.short_info=self.short_info+'*'+other.short_info
+    return output
+
   def _get_plot_options(self): return self._plot_options
   
   def _set_plot_options(self, input):
@@ -435,8 +521,8 @@ class MeasurementData(object):
     yd=self.ydata
     ye=self.yerror
     zd=self.zdata
-    if ye<0:
-      return [point.append(0) for point in self.list()]
+    if ye<0 or ye is None:
+      return [point+[0] for point in self.list()]
     if (xd>=0) and (yd>=0):
       if (zd<0):
         return [[point[xd], point[yd], point[ye]] for point in self]

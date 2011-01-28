@@ -25,7 +25,7 @@ from StringIO import StringIO
 try:
         import IPython
 except Exception,e:
-        raise "Error importing IPython (%s)" % str(e)
+        raise RuntimeError, "Error importing IPython (%s)" % str(e)
 
 __version__ = "0.7"
 

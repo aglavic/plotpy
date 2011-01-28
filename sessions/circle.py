@@ -264,7 +264,11 @@ class CircleSession(GUI, GenericSession):
       Remove points with wrong energy reading from the fast E-scan performed at ue64.
     '''
     tolerance=10
-    from scipy.interpolate import interp1d
+    try:
+      from scipy.interpolate import interp1d
+      interpolate=True
+    except ImportError:
+      interpolate=False
     from measurement_data_structure import PhysicalProperty
     x=dataset.x.tolist()
     idxs=[]
@@ -278,12 +282,16 @@ class CircleSession(GUI, GenericSession):
     filter_x=dataset.x[idxs]
     if len(idxs)<10:
       return 0
-    for i, col in enumerate(dataset.data):
-      if i==x_index:
-        dataset.data[i]=PhysicalProperty(col.dimension, col.unit, new_x)
-      else:
-        f=interp1d(filter_x, col[idxs], bounds_error=False, fill_value=col[idxs].min())
-        dataset.data[i]=PhysicalProperty(col.dimension, col.unit, f(new_x))
+    if interpolate:
+      for i, col in enumerate(dataset.data):
+        if i==x_index:
+          dataset.data[i]=PhysicalProperty(col.dimension, col.unit, new_x)
+        else:
+          f=interp1d(filter_x, col[idxs], bounds_error=False, fill_value=col[idxs].min())
+          dataset.data[i]=PhysicalProperty(col.dimension, col.unit, f(new_x))
+    else:
+      for i, col in enumerate(dataset.data):
+        dataset.data[i]=PhysicalProperty(col.dimension, col.unit, col[idxs])
     return old_length-len(idxs)
   
   def create_mesh(self, datasets):

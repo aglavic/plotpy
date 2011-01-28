@@ -238,18 +238,32 @@ class FileActions:
     data=dataset.list_err()
     dims=dataset.dimensions()
     units=dataset.units()
-    cols=(dataset.xdata, dataset.ydata, dataset.yerror)
-    new_cols=[(dims[col], units[col]) for col in cols]
-    output=MeasurementData(new_cols, 
-                           [], 
-                           0, 
-                           1, 
-                           2,
-                           )
-    def prepare_data(point):
-      return [point[0], point[0], point[0], point[1], point[2], 0]
-    def rebuild_data(point):
-      return [point[0], point[3], point[4]]
+    if dataset.yerror is not None:
+      cols=(dataset.xdata, dataset.ydata, dataset.yerror)
+      new_cols=[(dims[col], units[col]) for col in cols]
+      output=MeasurementData(new_cols, 
+                             [], 
+                             0, 
+                             1, 
+                             2,
+                             )
+      def prepare_data(point):
+        return [point[0], point[0], point[0], point[1], point[2], 0]
+      def rebuild_data(point):
+        return [point[0], point[3], point[4]]
+    else:
+      cols=(dataset.xdata, dataset.ydata)
+      new_cols=[(dims[col], units[col]) for col in cols]
+      output=MeasurementData(new_cols, 
+                             [], 
+                             0, 
+                             1, 
+                             -1,
+                             )      
+      def prepare_data(point):
+        return [point[0], point[0], point[0], point[1], 0, 0]
+      def rebuild_data(point):
+        return [point[0], point[3]]
     data2=map(prepare_data, data)
     data3=self.sort_and_bin(data2, binning, bin_distance=bin_distance)
     data3=map(rebuild_data, data3)
@@ -263,10 +277,6 @@ class FileActions:
                      dataset.short_info, bin_distance) 
     output.sample_name=dataset.sample_name
     output.info=dataset.info
-#    if at_end:
-#      self.window.measurement.append(cs_object)
-#      self.window.index_mess=len(self.window.measurement)-1
-#    else:
     self.window.measurement.insert(self.window.index_mess+1, output)
     self.window.index_mess+=1
 

@@ -82,6 +82,8 @@ KNOWN_COLUMNS={
                'Pressure': ('P', 'mBar'), 
                'Two Theta': ('2Θ', '°'), 
                'Theta': ('Θ', '°'), 
+               'twotheta': ('2Θ', '°'), 
+               'theta': ('Θ', '°'), 
                'Phi': ('φ', '°'), 
                'Chi': ('χ', '°'), 
                'Time': ('Time', 's'), 
