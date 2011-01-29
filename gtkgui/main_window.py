@@ -59,6 +59,7 @@ class ApplicationMainWindow(gtk.Window):
   mouse_mode=True
   mouse_data_range=[(0., 1., 0., 1.), (0., 1., 0., 1., False, False)]
   mouse_position_callback=None 
+  mouse_arrow_starting_point=None
   # sub-windows can set a function which gets called on button press
   # with the active position of the mouse on the plot
   garbage=[]
@@ -217,7 +218,7 @@ class ApplicationMainWindow(gtk.Window):
     if active_session.USE_MATPLOTLIB:
       self.initialize_matplotlib()
     else:
-      self.image = gtk.Image()    
+      self.image=gtk.Image()    
       self.image_shown=False # variable to decrease changes in picture size
       self.image.set_size_request(0, 0)
       self.image_do_resize=False
@@ -398,6 +399,8 @@ class ApplicationMainWindow(gtk.Window):
     self.image.connect('size-allocate', self.image_resize)
     self.event_box.connect('button-press-event', self.mouse_press)
     self.event_box.connect('button-release-event', self.mouse_release)
+    self.connect('key-press-event', self.key_press)
+    self.connect('key-release-event', self.key_press)
     self.connect('motion-notify-event', self.catch_mouse_position)
     self.plot_page_entry.connect("activate", self.iterate_through_measurements)
     self.check_add.connect("toggled",self.show_add_info)
@@ -3395,6 +3398,15 @@ set multiplot layout %i,1
     else:
       self.image_do_resize=True
   
+  def key_press(self, widget, action):
+    '''
+      Catch key press events.
+    '''
+    if action.type.value_name=='GDK_KEY_PRESS':
+      pass
+    else:
+      pass
+  
   def catch_mouse_position(self, widget, action):
     '''
       Get the current mouse position when the pointer was mooved on to of the image.
@@ -3404,6 +3416,9 @@ set multiplot layout %i,1
     position=self.get_position_on_plot()
     if position is not None and self.measurement[self.index_mess].zdata<0:
       self.statusbar.push(0, 'x=%g  \ty=%g' % (position[0], position[1]))
+      self.image.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.CROSSHAIR))
+    else:
+      self.image.window.set_cursor(None)
   
   def mouse_press(self, widget, action):
     '''
@@ -3412,26 +3427,79 @@ set multiplot layout %i,1
     if not self.mouse_mode:
       return
     position=self.get_position_on_plot()
-    if action.button==3:
-      # Zoom into region
+    if ['GDK_CONTROL_MASK'] == action.state.value_names:
+      # control was pressed during button press
+      # fit a peak function to the active mouse position
       if position is not None:
-        self.active_zoom_from=position
-      else:
-        self.active_zoom_from=None
-    if action.button==1 and position is not None and self.mouse_position_callback is not None:
-      self.mouse_position_callback(position)
-    if action.button==2:
-      self.measurement[self.index_mess].plot_options.xrange=[None, None]
-      self.measurement[self.index_mess].plot_options.yrange=[None, None]
-      self.replot()
+        ds=self.measurement[self.index_mess]
+        if ds.zdata>=0:
+          return
+        if (ds.fit_object==None):
+          self.file_actions.activate_action('create_fit_object')
+        import fit_data
+        width=ds.x.max()-ds.x.min()
+        if action.button==1:
+          gaussian=fit_data.FitGaussian([ position[1], position[0], width/10., 0.])
+          gaussian.refine(ds.x, ds.y)
+          ds.fit_object.functions.append([gaussian, False, True, False, False])
+        if action.button==2:
+          voigt=fit_data.FitVoigt([ position[1], position[0], width/10., width/10., 0.])
+          voigt.refine(ds.x, ds.y)
+          ds.fit_object.functions.append([voigt, False, True, False, False])
+        if action.button==3:
+          gaussian=fit_data.FitLorentzian([ position[1], position[0], width/10., 0.])
+          gaussian.refine(ds.x, ds.y)
+          ds.fit_object.functions.append([gaussian, False, True, False, False])
+        self.file_actions.activate_action('simmulate_functions')
+        self.replot()
+    elif action.state.value_names==[]:
+      if action.button==3:
+        # Zoom into region
+        if position is not None:
+          self.active_zoom_from=position
+        else:
+          self.active_zoom_from=None
+      if action.button==1 and position is not None and self.mouse_position_callback is not None:
+        # activate a function registered as callback
+        self.mouse_position_callback(position)
+      if action.button==2:
+        # unzoom the plot
+        self.measurement[self.index_mess].plot_options.xrange=[None, None]
+        self.measurement[self.index_mess].plot_options.yrange=[None, None]
+        self.replot()
+    elif action.state.value_names==['GDK_SHIFT_MASK']:
+      # chift pressed during button press leads to label or arrow
+      # to be added to the plot
+      if position is not None:
+        ds=self.measurement[self.index_mess]
+        if ds.zdata>=0:
+          return
+        if action.button==1:
+          dialog=SimpleEntryDialog
+          parameters, result=SimpleEntryDialog('Enter Label...', 
+                                         [('Text', 'Label', str)]
+                                         ).run()
+          if result:
+            ds.plot_options+='set label "%s" at %f,%f\n' % (parameters['Text'], position[0], position[1])
+        if action.button==2:
+          self.mouse_arrow_starting_point=position
+        if action.button==3:
+          dialog=SimpleEntryDialog
+          parameters, result=SimpleEntryDialog('Enter Label...', 
+                                         [('Text', '(%g,%g)' % (position[0], position[1]), str)]
+                                         ).run()
+          if result:
+            ds.plot_options+='set label "%s" at %f,%f point pt 6\n' % (parameters['Text'], position[0], position[1])
+        self.replot()
+          
   
   def mouse_release(self, widget, action):
     '''
       Catch mouse release event.
     '''
+    position=self.get_position_on_plot()
     if self.active_zoom_from is not None:
       # Zoom in to the selected Area
-      position=self.get_position_on_plot()
       if position is None:
         self.active_zoom_from=None
         return
@@ -3447,6 +3515,12 @@ set multiplot layout %i,1
       dsp.yrange=[y0, y1]
       self.active_zoom_from=None
       self.replot()
+    if self.mouse_arrow_starting_point is not None:
+      start=self.mouse_arrow_starting_point
+      self.mouse_arrow_starting_point=None
+      if position is not None:
+        self.measurement[self.index_mess].plot_options+='set arrow from %f,%f to %f,%f\n' % (start[0], start[1], position[0], position[1])
+        self.replot()
   
   def get_position_on_plot(self):
     position=self.image.get_pointer()

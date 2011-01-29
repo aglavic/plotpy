@@ -666,9 +666,9 @@ class FitGaussian(FitFunction):
   # define class variables.
   name="Gaussian"
   parameters=[1, 0, 1, 0]
-  parameter_names=['A', 'x0', 'σ', 'C']
+  parameter_names=['I', 'x0', 'σ', 'C']
   fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2) + p[3]
-  fit_function_text='[A]·exp(-0.5·(x-[x0|2])/[σ])+[C]'
+  fit_function_text='Gaussian: I=[I] x_0=[x0] σ=[σ|2]'
 
 class FitLorentzian(FitFunction):
   '''
@@ -680,7 +680,7 @@ class FitLorentzian(FitFunction):
   parameters=[1, 0, 1, 0]
   parameter_names=['I', 'x0', 'γ', 'C']
   fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2) + p[3]
-  fit_function_text='[I]/(1 + ((x-[x0|2])/[γ|2])^2)+[C]'
+  fit_function_text='Lorentzian: I=[I] x_0=[x0] γ=[γ|2]'
 
 class FitVoigt(FitFunction):
   '''
