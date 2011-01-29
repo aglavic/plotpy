@@ -9,6 +9,7 @@ import os, sys
 import subprocess
 import gobject
 import gtk
+import numpy
 from time import sleep, time
 from copy import deepcopy
 # own modules
@@ -55,7 +56,13 @@ class ApplicationMainWindow(gtk.Window):
   '''
   status_dialog=None
   init_complete=False
+  mouse_mode=True
+  mouse_data_range=[(0., 1., 0., 1.), (0., 1., 0., 1., False, False)]
+  mouse_position_callback=None 
+  # sub-windows can set a function which gets called on button press
+  # with the active position of the mouse on the plot
   garbage=[]
+  active_zoom_from=None
   
   def get_active_dataset(self):
     return self.measurement[self.index_mess]
@@ -214,7 +221,9 @@ class ApplicationMainWindow(gtk.Window):
       self.image_shown=False # variable to decrease changes in picture size
       self.image.set_size_request(0, 0)
       self.image_do_resize=False
-    self.frame1.append_page(self.image, gtk.Label("Plot"))
+    self.event_box=gtk.EventBox()
+    self.event_box.add(self.image)
+    self.frame1.append_page(self.event_box, gtk.Label("Plot"))
     table.attach(align,
         # X direction           Y direction
         0, 3,                   3, 4,
@@ -387,7 +396,10 @@ class ApplicationMainWindow(gtk.Window):
     self.label.connect("activate",self.change) # changed entry triggers change() function 
     self.label2.connect("activate",self.change) # changed entry triggers change() function 
     self.image.connect('size-allocate', self.image_resize)
-    self.plot_page_entry.connect("activate",self.iterate_through_measurements)
+    self.event_box.connect('button-press-event', self.mouse_press)
+    self.event_box.connect('button-release-event', self.mouse_release)
+    self.connect('motion-notify-event', self.catch_mouse_position)
+    self.plot_page_entry.connect("activate", self.iterate_through_measurements)
     self.check_add.connect("toggled",self.show_add_info)
     self.x_range_in.connect("activate",self.change_range)
     self.y_range_in.connect("activate",self.change_range)
@@ -3382,6 +3394,90 @@ set multiplot layout %i,1
         pass
     else:
       self.image_do_resize=True
+  
+  def catch_mouse_position(self, widget, action):
+    '''
+      Get the current mouse position when the pointer was mooved on to of the image.
+    '''
+    if not self.mouse_mode:
+      return
+    position=self.get_position_on_plot()
+    if position is not None and self.measurement[self.index_mess].zdata<0:
+      self.statusbar.push(0, 'x=%g  \ty=%g' % (position[0], position[1]))
+  
+  def mouse_press(self, widget, action):
+    '''
+      Catch mouse press event on image.
+    '''
+    if not self.mouse_mode:
+      return
+    position=self.get_position_on_plot()
+    if action.button==3:
+      # Zoom into region
+      if position is not None:
+        self.active_zoom_from=position
+      else:
+        self.active_zoom_from=None
+    if action.button==1 and position is not None and self.mouse_position_callback is not None:
+      self.mouse_position_callback(position)
+    if action.button==2:
+      self.measurement[self.index_mess].plot_options.xrange=[None, None]
+      self.measurement[self.index_mess].plot_options.yrange=[None, None]
+      self.replot()
+  
+  def mouse_release(self, widget, action):
+    '''
+      Catch mouse release event.
+    '''
+    if self.active_zoom_from is not None:
+      # Zoom in to the selected Area
+      position=self.get_position_on_plot()
+      if position is None:
+        self.active_zoom_from=None
+        return
+      if (position[2]-self.active_zoom_from[2])<0.1 and (position[3]-self.active_zoom_from[3])<0.1:
+        self.active_zoom_from=None
+        return
+      dsp=self.measurement[self.index_mess].plot_options
+      x0=min(position[0], self.active_zoom_from[0])
+      x1=max(position[0], self.active_zoom_from[0])
+      y0=min(position[1], self.active_zoom_from[1])
+      y1=max(position[1], self.active_zoom_from[1])
+      dsp.xrange=[x0, x1]
+      dsp.yrange=[y0, y1]
+      self.active_zoom_from=None
+      self.replot()
+  
+  def get_position_on_plot(self):
+    position=self.image.get_pointer()
+    img_size=self.image.get_allocation()
+    img_width=float(img_size[2]-img_size[0])
+    img_height=float(img_size[3]-img_size[1])
+    mr, pr=self.mouse_data_range
+    mouse_x=position[0]/float(img_size.width)
+    mouse_x-=mr[0]
+    mouse_x/=mr[1]
+    mouse_y=1.-position[1]/float(img_size.height)
+    mouse_y-=mr[2]
+    mouse_y/=mr[3]
+    if not (mouse_x>=0. and mouse_x<=1. and mouse_y>=0. and mouse_y<=1.):
+      return None
+    if pr[4]:
+      x_position=10.**(mouse_x*(numpy.log10(pr[1])-numpy.log10(pr[0]))+numpy.log10(pr[0]))
+    else:
+      x_position=(pr[1]-pr[0])*mouse_x+pr[0]
+    if pr[5]:
+      y_position=10.**(mouse_y*(numpy.log10(pr[3])-numpy.log10(pr[2]))+numpy.log10(pr[2]))
+    else:
+      y_position=(pr[3]-pr[2])*mouse_y+pr[2]
+    return x_position, y_position, mouse_x, mouse_y
+  
+  def toggle_mouse_mode(self, action=None):
+    '''
+      Activate/Deactivate cursor mode.
+    '''
+    self.mouse_mode=not self.mouse_mode
+    self.replot()
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
             with_errorbars, output_file=gnuplot_preferences.output_file_name, 
@@ -3391,7 +3487,7 @@ set multiplot layout %i,1
       
       @return Gnuplot error messages, which have been reported
     '''
-    return measurement_data_plotting.gnuplot_plot_script(session, 
+    output, variables= measurement_data_plotting.gnuplot_plot_script(session, 
                                                          datasets,
                                                          file_name_prefix, 
                                                          self.script_suf, 
@@ -3402,6 +3498,16 @@ set multiplot layout %i,1
                                                          fit_lorentz=False, 
                                                          sample_name=sample_name, 
                                                          show_persistent=show_persistent)
+    if output=='' and variables is not None and len(variables)==8:
+      img_size=self.image.get_allocation()
+      mr_x=variables[0]/img_size.width
+      mr_width=(variables[1]-variables[0])/img_size.width
+      mr_height=(variables[3]-variables[2])/img_size.height
+      mr_y=(variables[3])/img_size.height-mr_height
+      self.mouse_data_range=((mr_x, mr_width, mr_y, mr_height), variables[4:]+[
+                                          self.measurement[self.index_mess].logx, 
+                                          self.measurement[self.index_mess].logy])    
+    return output
 
   def plot_persistent(self, action=None):
     '''
@@ -3458,7 +3564,7 @@ set multiplot layout %i,1
 
   def replot(self):
     '''
-      Recreate the current plot and clear statusbar.
+      Recreate the current plot and clear the statusbar.
     '''
     global errorbars
     # change label and plot other picture
@@ -3531,8 +3637,8 @@ set multiplot layout %i,1
                                   output_file=self.active_session.TEMP_DIR+'plot_temp.png',
                                   fit_lorentz=False)
     if self.last_plot_text!='':
-      print 'Gnuplot error!'
-      self.show_last_plot_params(None)
+      print 'Gnuplot error, see "View->Show Plot Parameters" for more details!'
+      #self.show_last_plot_params(None)
     else:
       self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
       self.active_plot_geometry=(self.widthf, self.heightf)
@@ -4001,6 +4107,10 @@ set multiplot layout %i,1
         "Open Persistent Gnuplot Window", None,                     # label, accelerator
         None,                                    # tooltip
         self.plot_persistent),
+      ( "ToggleMousemode", gtk.STOCK_GOTO_TOP,                    # name, stock id
+        "Toggle Mousemode", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.toggle_mouse_mode),
       ( "TogglePlotFit", gtk.STOCK_ZOOM_FIT,                    # name, stock id
         "Toggle between data,fit and combined plot", "<control>T",                     # label, accelerator
         None,                                    # tooltip

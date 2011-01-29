@@ -18,10 +18,10 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.6.3.2"
+__version__ = "0.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
-__status__ = "Development"
+__status__ = "Production"
 
 persistene_plots=0
 
@@ -36,7 +36,8 @@ def gnuplot_plot_script(session,
                         additional_info='',
                         fit_lorentz=False, 
                         sample_name=None, 
-                        show_persistent=False): 
+                        show_persistent=False, 
+                        add_to_script=''): 
   '''
     Function to plot with an additional data and gnuplot file and calling to the gnuplot program.
     Files are stored in temporary folder set in gnuplot_preferences.
@@ -89,7 +90,7 @@ def gnuplot_plot_script(session,
                                           (0, 0, 0),
                                           postscript_export,
                                           additional_info)
-  gnuplot_file_text=create_plot_script(session, 
+  gnuplot_file_text=add_to_script+create_plot_script(session, 
                                        datasets,
                                        file_name_prefix, 
                                        file_name_postfix, 
@@ -102,6 +103,16 @@ def gnuplot_plot_script(session,
                                        output_file_prefix=output_file_prefix, 
                                        sample_name=sample_name, 
                                        show_persistent=show_persistent)
+  gnuplot_file_text+="""
+  print GPVAL_TERM_XMIN
+  print GPVAL_TERM_XMAX
+  print GPVAL_TERM_YMIN
+  print GPVAL_TERM_YMAX
+  print GPVAL_X_MIN
+  print GPVAL_X_MAX
+  print GPVAL_Y_MIN
+  print GPVAL_Y_MAX
+  """
   write_file=open(script_name,'w')
   write_file.write( gnuplot_file_text+'\n' )
   write_file.close()
@@ -127,7 +138,12 @@ def gnuplot_plot_script(session,
     proc.stdin.close()
   except:
     pass
-  return output[0]+output[1] # return the standard error output
+  output_message=output[0]+output[1] # return the standard error output
+  if 'line' in output_message:
+    return output_message, []
+  else:
+    print output_message
+    return '', map(float, output_message.splitlines())
 
 def replace_ph(session, 
                string,
