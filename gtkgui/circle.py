@@ -6,7 +6,7 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
 import gtk
-from time import time
+from time import time, sleep
 
 #----------------------- importing modules --------------------------
 
@@ -49,7 +49,7 @@ class CircleGUI:
                 None ,                                   # tooltip
                 self.reload_active_measurement ),
            ( "Autoreload", None,                             # name, stock id
-                "Toggle Autoreload", None,                    # label, accelerator
+                "Toggle Autoreload", "<control>F5",                    # label, accelerator
                 None ,                                   # tooltip
                 self.autoreload_dataset ),
            ( "ToggleCPS", None,                             # name, stock id
@@ -84,9 +84,6 @@ class CircleGUI:
         self.active_file_data[i].data=dataset.data
       else:
         self.active_file_data.append(dataset)
-    index=window.index_mess
-    window.change_active_file_object((self.active_file_name, self.file_data[self.active_file_name]))    
-    window.index_mess=index
     window.replot()
   
   def autoreload_dataset(self, action, window):
@@ -103,7 +100,8 @@ class CircleGUI:
         last=time()
         self.reload_active_measurement(action, window)
         while (time()-last)<1.:
-          gtk.main_iteration()
+          gtk.main_iteration(False)
+        sleep(0.1)
 
   def fit_central_peak(self, action, window):
     '''

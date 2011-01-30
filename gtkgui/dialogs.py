@@ -8,6 +8,7 @@
 import gtk
 import cairo
 import sys, os
+from time import sleep
 from config import gnuplot_preferences
 
 #----------------------- importing modules --------------------------
@@ -384,15 +385,16 @@ class SimpleEntryDialog(gtk.Dialog):
     A dialog with user defined entries. The values of the entries are converted to a
     given type and then returned when run() is called.
   '''
+  _callback_window=None
   
-  def __init__(self, title, entries, **opts):
+  def __init__(self, title, entries, *args, **opts):
     '''
       Class constructor. Creates the dialog and label + entries from the list of entries supplied above.
       
       @param entries a list of tuples containing the values name, start value and function for type conversion.
     '''
     # Initialize this dialog
-    gtk.Dialog.__init__(self, title=title, buttons=('OK', 1, 'Cancel', 0), **opts)
+    gtk.Dialog.__init__(self, *args, title=title, buttons=('OK', 1, 'Cancel', 0), **opts)
     self.entries={}
     self.values={}
     self.conversions={}
@@ -400,6 +402,7 @@ class SimpleEntryDialog(gtk.Dialog):
     self.table.show()
     self.vbox.add(self.table)
     self._init_entries(entries)
+    self.connect('destroy', self.cleanup)
   
   def _init_entries(self, entries):
     '''
@@ -472,6 +475,53 @@ class SimpleEntryDialog(gtk.Dialog):
           pass
       else:
         self.values[key]=self.conversions[key][entry.get_active()]
+
+  def register_mouse_callback(self, window, entries):
+    '''
+      Set the callback function to be used when selecting a position with the mouse button.
+    '''
+    window.mouse_position_callback=self._mouse_callback
+    self._callback_window=window
+    if self.transient_parent is None:
+      self.set_transient_for(window)
+    if len(entries)==0:
+      raise ValueError, "You need to set at least one entry."
+    for entry in entries:
+      for item in entry:
+        if len(item)!=2:
+          raise ValueError, "All entry items need to be tuples of a key and index"
+        if item[0] not in self.entries:
+          raise KeyError, "item %s not in dialog entries" % item[0]
+        if item[1]>5:
+          raise IndexError, "position tuple only has 6 items"
+    self.mouse_position_entries=entries
+    self.mouse_position_step=0
+    for key, index in entries[0]:
+      self.entries[key].modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse('red'))
+      self.entries[key].modify_text(gtk.STATE_SELECTED, gtk.gdk.color_parse('yellow'))
+  
+  def _mouse_callback(self, position):
+    '''
+      Activated when mouse selection has been made.
+    '''
+    entry_steps=self.mouse_position_entries[self.mouse_position_step]
+    for key, index in entry_steps:
+      self.entries[key].set_text(str(position[index]))
+      self.entries[key].modify_text(gtk.STATE_NORMAL, None)      
+      self.entries[key].modify_text(gtk.STATE_SELECTED, None)      
+    self.mouse_position_step+=1
+    if self.mouse_position_step>=len(self.mouse_position_entries):
+      self.mouse_position_step=0
+    for key, index in self.mouse_position_entries[self.mouse_position_step]:
+      self.entries[key].modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse('red'))
+      self.entries[key].modify_text(gtk.STATE_SELECTED, gtk.gdk.color_parse('yellow'))
+
+  def cleanup(self, action):
+    '''
+      On delete remove the callback function.
+    '''
+    if self._callback_window is not None:
+      self._callback_window.mouse_position_callback=None
 
 #--------------- SimpleEntryDialog to get a list of values from the user ---------------
 

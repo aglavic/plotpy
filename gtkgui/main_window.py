@@ -56,6 +56,7 @@ class ApplicationMainWindow(gtk.Window):
   '''
   status_dialog=None
   init_complete=False
+  gnuplot_initialized=False
   mouse_mode=True
   mouse_data_range=[(0., 1., 0., 1.), (0., 1., 0., 1., False, False)]
   mouse_position_callback=None 
@@ -64,6 +65,7 @@ class ApplicationMainWindow(gtk.Window):
   # with the active position of the mouse on the plot
   garbage=[]
   active_zoom_from=None
+  active_zoom_last_inside=None
   
   def get_active_dataset(self):
     return self.measurement[self.index_mess]
@@ -584,16 +586,16 @@ class ApplicationMainWindow(gtk.Window):
       self.measurement[self.index_mess].ydata=-1
     elif action.get_name()[0]=='x':
       dim=action.get_name()[2:]
-      self.measurement[self.index_mess].xdata=self.measurement[self.index_mess].dimensions().index(dim)
+      self.measurement[self.index_mess].xdata=int(dim)
     elif action.get_name()[0]=='y':
       dim=action.get_name()[2:]
-      self.measurement[self.index_mess].ydata=self.measurement[self.index_mess].dimensions().index(dim)
+      self.measurement[self.index_mess].ydata=int(dim)
     elif action.get_name()[0]=='z':
       dim=action.get_name()[2:]
-      self.measurement[self.index_mess].zdata=self.measurement[self.index_mess].dimensions().index(dim)
+      self.measurement[self.index_mess].zdata=int(dim)
     elif action.get_name()[0]=='d':
       dim=action.get_name()[3:]
-      self.measurement[self.index_mess].yerror=self.measurement[self.index_mess].dimensions().index(dim)
+      self.measurement[self.index_mess].yerror=int(dim)
     # change 3d view position
     elif action==self.view_left:
       if self.measurement[self.index_mess].view_z>=10:
@@ -3387,7 +3389,7 @@ set multiplot layout %i,1
     '''
       Scale the image during a resize.
     '''
-    if self.image_do_resize:
+    if self.image_do_resize and not self.active_zoom_from and self.mouse_arrow_starting_point is None:
       self.image_do_resize=False
       try:
         # if no image was set, there is not self.image_pixbuf
@@ -3415,10 +3417,49 @@ set multiplot layout %i,1
       return
     position=self.get_position_on_plot()
     if position is not None and self.measurement[self.index_mess].zdata<0:
-      self.statusbar.push(0, 'x=%g  \ty=%g' % (position[0], position[1]))
+      if self.active_zoom_from is not None:
+        self.active_zoom_last_inside=position
+        az=self.active_zoom_from
+        self.image_pixmap.draw_rectangle( self.get_style().black_gc, False, min(az[4], position[4]), 
+                                                                            min(az[5], position[5]), 
+                                         abs(position[4]-az[4]), abs(position[5]-az[5]))
+        self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
+        self.statusbar.push(0, 'Zoom: x1=%6g  \ty1=%6g \t x2=%6g \ty2=%6g' % (az[0], az[1], position[0], position[1]))
+        i=0
+        while gtk.events_pending() and i<10:
+          gtk.main_iteration(False)
+          i+=1
+        self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
+      elif self.mouse_arrow_starting_point is not None:
+        ma=self.mouse_arrow_starting_point
+        #i=0
+        #while gtk.events_pending() and i<3:
+        #  gtk.main_iteration(False)
+        #  i+=1
+        #self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
+        #self.image_pixmap.draw_line( self.get_style().black_gc, ma[4], ma[5], 
+        #                                              position[4], position[5])
+        #self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
+        self.statusbar.push(0, 'Draw Arrow: x=%6g  \ty=%6g \t-> \tx=%6g \ty=%6g' % (ma[0], ma[1], position[0], position[1]))
+        #i=0
+        #while gtk.events_pending() and i<10:
+        #  gtk.main_iteration(False)
+        #   i+=1
+      else:
+        info='x=%6g  \ty=%6g' % (position[0], position[1])
+        if action.state.value_names==['GDK_CONTROL_MASK']:
+          info+='\t\tFit peak with gaussian (left), voigt (middle) or lorentzian (right) profile.'
+        elif action.state.value_names==['GDK_SHIFT_MASK']:
+          info+='\t\tPlace label (left), draw arrow (middle) or label position (right).'
+        else:
+          info+='\t\tZoom (right), unzoom (middle). <ctrl>-fit / <shift>-label/arrow'
+        self.statusbar.push(0, info)
       self.image.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.CROSSHAIR))
     else:
-      self.image.window.set_cursor(None)
+      try:
+        self.image.window.set_cursor(None)
+      except AttributeError:
+        pass
   
   def mouse_press(self, widget, action):
     '''
@@ -3457,6 +3498,8 @@ set multiplot layout %i,1
         # Zoom into region
         if position is not None:
           self.active_zoom_from=position
+          self.active_zoom_last_inside=position
+          self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
         else:
           self.active_zoom_from=None
       if action.button==1 and position is not None and self.mouse_position_callback is not None:
@@ -3480,7 +3523,7 @@ set multiplot layout %i,1
                                          [('Text', 'Label', str)]
                                          ).run()
           if result:
-            ds.plot_options+='set label "%s" at %f,%f\n' % (parameters['Text'], position[0], position[1])
+            ds.plot_options+='set label "%s" at %g,%g\n' % (parameters['Text'], position[0], position[1])
         if action.button==2:
           self.mouse_arrow_starting_point=position
         if action.button==3:
@@ -3489,7 +3532,7 @@ set multiplot layout %i,1
                                          [('Text', '(%g,%g)' % (position[0], position[1]), str)]
                                          ).run()
           if result:
-            ds.plot_options+='set label "%s" at %f,%f point pt 6\n' % (parameters['Text'], position[0], position[1])
+            ds.plot_options+='set label "%s" at %g,%g point pt 6\n' % (parameters['Text'], position[0], position[1])
         self.replot()
           
   
@@ -3500,12 +3543,8 @@ set multiplot layout %i,1
     position=self.get_position_on_plot()
     if self.active_zoom_from is not None:
       # Zoom in to the selected Area
-      if position is None:
-        self.active_zoom_from=None
-        return
-      if (position[2]-self.active_zoom_from[2])<0.1 and (position[3]-self.active_zoom_from[3])<0.1:
-        self.active_zoom_from=None
-        return
+      if position is None or (position[2]-self.active_zoom_from[2])<0.1 and (position[3]-self.active_zoom_from[3])<0.1:
+        position=self.active_zoom_last_inside
       dsp=self.measurement[self.index_mess].plot_options
       x0=min(position[0], self.active_zoom_from[0])
       x1=max(position[0], self.active_zoom_from[0])
@@ -3519,7 +3558,7 @@ set multiplot layout %i,1
       start=self.mouse_arrow_starting_point
       self.mouse_arrow_starting_point=None
       if position is not None:
-        self.measurement[self.index_mess].plot_options+='set arrow from %f,%f to %f,%f\n' % (start[0], start[1], position[0], position[1])
+        self.measurement[self.index_mess].plot_options+='set arrow from %g,%g to %g,%g\n' % (start[0], start[1], position[0], position[1])
         self.replot()
   
   def get_position_on_plot(self):
@@ -3544,7 +3583,7 @@ set multiplot layout %i,1
       y_position=10.**(mouse_y*(numpy.log10(pr[3])-numpy.log10(pr[2]))+numpy.log10(pr[2]))
     else:
       y_position=(pr[3]-pr[2])*mouse_y+pr[2]
-    return x_position, y_position, mouse_x, mouse_y
+    return x_position, y_position, mouse_x, mouse_y, position[0], position[1]
   
   def toggle_mouse_mode(self, action=None):
     '''
@@ -3552,6 +3591,16 @@ set multiplot layout %i,1
     '''
     self.mouse_mode=not self.mouse_mode
     self.replot()
+  
+  def initialize_gnuplot(self):
+    '''
+      Check gnuplot version for capabilities.
+    '''
+    self.gnuplot_initialized=True
+    gnuplot_version=measurement_data_plotting.check_gnuplot_version(self.active_session)
+    if self.mouse_mode and gnuplot_version<4.4:
+      # mouse mode only works with version 4.4 and higher
+      self.mouse_mode=False
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
             with_errorbars, output_file=gnuplot_preferences.output_file_name, 
@@ -3561,6 +3610,8 @@ set multiplot layout %i,1
       
       @return Gnuplot error messages, which have been reported
     '''
+    if not self.gnuplot_initialized:
+      self.initialize_gnuplot()
     output, variables= measurement_data_plotting.gnuplot_plot_script(session, 
                                                          datasets,
                                                          file_name_prefix, 
@@ -3571,7 +3622,8 @@ set multiplot layout %i,1
                                                          output_file,
                                                          fit_lorentz=False, 
                                                          sample_name=sample_name, 
-                                                         show_persistent=show_persistent)
+                                                         show_persistent=show_persistent, 
+                                                         get_xy_ranges=self.mouse_mode)
     if output=='' and variables is not None and len(variables)==8:
       img_size=self.image.get_allocation()
       mr_x=variables[0]/img_size.width
@@ -3825,26 +3877,26 @@ set multiplot layout %i,1
             <menu action='xMenu'>
               <menuitem action='x-number'/>
         '''
-      for dimension in self.measurement[self.index_mess].dimensions():
-        output+="         <menuitem action='x-"+dimension+"'/>\n"
-        self.added_items=self.added_items+(("x-"+dimension, None,dimension,None,None,self.change),)
+      for i, dimension in enumerate(self.measurement[self.index_mess].dimensions()):
+        output+="         <menuitem action='x-"+str(i)+"'/>\n"
+        self.added_items=self.added_items+(("x-"+str(i), None,dimension,None,None,self.change),)
       output+='''
             </menu>
             <menu action='yMenu'>
               <menuitem action='y-number'/>
         '''
-      for dimension in self.measurement[self.index_mess].dimensions():
-        output+="            <menuitem action='y-"+dimension+"'/>\n"
-        self.added_items=self.added_items+(("y-"+dimension, None,dimension,None,None,self.change),)
+      for i, dimension in enumerate(self.measurement[self.index_mess].dimensions()):
+        output+="            <menuitem action='y-"+str(i)+"'/>\n"
+        self.added_items=self.added_items+(("y-"+str(i), None,dimension,None,None,self.change),)
       if self.measurement[self.index_mess].zdata>=0:
         output+='''
               </menu>
               <placeholder name='zMenu'>
               <menu action='zMenu'>
           '''
-        for dimension in self.measurement[self.index_mess].dimensions():
-          output+="          <menuitem action='z-"+dimension+"'/>\n"
-          self.added_items=self.added_items+(("z-"+dimension, None,dimension,None,None,self.change),)
+        for i, dimension in enumerate(self.measurement[self.index_mess].dimensions()):
+          output+="          <menuitem action='z-"+str(i)+"'/>\n"
+          self.added_items=self.added_items+(("z-"+str(i), None,dimension,None,None,self.change),)
         output+="</menu></placeholder>\n"
       else:
         output+='''
@@ -3853,9 +3905,9 @@ set multiplot layout %i,1
       output+='''
             <menu action='dyMenu'>
         '''
-      for dimension in self.measurement[self.index_mess].dimensions():
-        output+="              <menuitem action='dy-"+dimension+"'/>\n"
-        self.added_items=self.added_items+(("dy-"+dimension, None,dimension,None,None,self.change),)
+      for i, dimension in enumerate(self.measurement[self.index_mess].dimensions()):
+        output+="              <menuitem action='dy-"+str(i)+"'/>\n"
+        self.added_items=self.added_items+(("dy-"+str(i), None,dimension,None,None,self.change),)
       # allways present stuff and toolbar
       output+='''                   </menu>'''
     output+='''

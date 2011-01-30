@@ -98,7 +98,12 @@ class CircleSession(GUI, GenericSession):
     '''
       function to read data files
     '''
-    return read_data.circle.read_data(file_name)
+    datasets=read_data.circle.read_data(file_name)
+    for dataset in datasets:
+      if 'timescan_cm' in dataset.info:
+        self.filter_fast_energyscan_ue64(dataset)
+    return datasets
+
 
 
   def add_file(self, filename, append=True):
@@ -134,8 +139,6 @@ class CircleSession(GUI, GenericSession):
           dataset.short_info+=dataset.x.dimension+dataset.y.dimension+'-mesh around (%s %s %s)' % (hkl[0], hkl[1], hkl[2])
       if not self.show_counts:
         self.counts_to_cps(dataset)
-      if 'timescan_cm' in dataset.info:
-        self.filter_fast_energyscan_ue64(dataset)
     return datasets
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++

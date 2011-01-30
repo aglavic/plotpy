@@ -25,6 +25,29 @@ __status__ = "Production"
 
 persistene_plots=0
 
+def check_gnuplot_version(session):
+  '''
+    Return the version of the installed gnuplot program.
+  '''
+  script_name=os.path.join(session.TEMP_DIR, 'check_version.gp')
+  write_file=open(script_name,'w')
+  write_file.write( '''
+        print GPVAL_VERSION
+        print GPVAL_PATCHLEVEL
+      '''
+                    )
+  write_file.close()
+  params=[session.GNUPLOT_COMMAND, script_name]
+  proc = subprocess.Popen(params, 
+                      shell=False, 
+                      stderr=subprocess.PIPE,
+                      stdout=subprocess.PIPE, 
+                      stdin=subprocess.PIPE, 
+                      )
+  output = proc.communicate()[1]
+  version, patchlevel=output.splitlines()
+  return float(version), float(patchlevel)
+
 def gnuplot_plot_script(session,  
                         datasets,
                         file_name_prefix, 
@@ -37,7 +60,7 @@ def gnuplot_plot_script(session,
                         fit_lorentz=False, 
                         sample_name=None, 
                         show_persistent=False, 
-                        add_to_script=''): 
+                        get_xy_ranges=False): 
   '''
     Function to plot with an additional data and gnuplot file and calling to the gnuplot program.
     Files are stored in temporary folder set in gnuplot_preferences.
@@ -90,7 +113,7 @@ def gnuplot_plot_script(session,
                                           (0, 0, 0),
                                           postscript_export,
                                           additional_info)
-  gnuplot_file_text=add_to_script+create_plot_script(session, 
+  gnuplot_file_text=create_plot_script(session, 
                                        datasets,
                                        file_name_prefix, 
                                        file_name_postfix, 
@@ -103,16 +126,17 @@ def gnuplot_plot_script(session,
                                        output_file_prefix=output_file_prefix, 
                                        sample_name=sample_name, 
                                        show_persistent=show_persistent)
-  gnuplot_file_text+="""
-  print GPVAL_TERM_XMIN
-  print GPVAL_TERM_XMAX
-  print GPVAL_TERM_YMIN
-  print GPVAL_TERM_YMAX
-  print GPVAL_X_MIN
-  print GPVAL_X_MAX
-  print GPVAL_Y_MIN
-  print GPVAL_Y_MAX
-  """
+  if get_xy_ranges:
+    gnuplot_file_text+="""
+      print GPVAL_TERM_XMIN
+      print GPVAL_TERM_XMAX
+      print GPVAL_TERM_YMIN
+      print GPVAL_TERM_YMAX
+      print GPVAL_X_MIN
+      print GPVAL_X_MAX
+      print GPVAL_Y_MIN
+      print GPVAL_Y_MAX
+      """
   write_file=open(script_name,'w')
   write_file.write( gnuplot_file_text+'\n' )
   write_file.close()
@@ -142,8 +166,10 @@ def gnuplot_plot_script(session,
   if 'line' in output_message:
     return output_message, []
   else:
-    print output_message
-    return '', map(float, output_message.splitlines())
+    try:
+      return '', map(float, output_message.splitlines())
+    except ValueError:
+      return output_message, []
 
 def replace_ph(session, 
                string,
