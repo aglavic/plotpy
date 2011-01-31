@@ -53,7 +53,7 @@ class FitFunction(FitFunctionGUI):
     '''
     self.parameters=list(self.parameters)    
     if len(self.parameters)==len(initial_parameters):
-      self.parameters=initial_parameters
+      self.parameters=map(float, initial_parameters)
     self.refine_parameters=range(len(self.parameters))
 
 
@@ -108,10 +108,10 @@ class FitFunction(FitFunctionGUI):
       else:
         function_parameters.append(self.parameters[i])
     remove_negative=numpy.where(y>0.)
-    x=x[remove_negative]
-    y=y[remove_negative]
+    x=x[remove_negative].view(numpy.ndarray).astype(numpy.float64)
+    y=y[remove_negative].view(numpy.ndarray).astype(numpy.float64)
     if yerror is not None:
-      yerror=yerror[remove_negative]
+      yerror=yerror[remove_negative].view(numpy.ndarray).astype(numpy.float64)
       yerror=numpy.where((numpy.isinf(yerror))+(numpy.isnan(yerror))+(yerror<=0.), 1., yerror)
       err=(numpy.log10(function(function_parameters, x))-numpy.log10(y))/numpy.log10(yerror)
     else:
@@ -131,8 +131,8 @@ class FitFunction(FitFunctionGUI):
     '''
     parameters=[self.parameters[i] for i in self.refine_parameters]
     # only refine inside the selected region
-    x=numpy.array(dataset_x).astype(numpy.float64)
-    y=numpy.array(dataset_y).astype(numpy.float64)
+    x=numpy.array(dataset_x).view(numpy.ndarray).astype(numpy.float64)
+    y=numpy.array(dataset_y).view(numpy.ndarray).astype(numpy.float64)
     if dataset_yerror is not None:
       dy=numpy.array(dataset_yerror).astype(numpy.float64)
     else:
@@ -234,7 +234,7 @@ class FitFunction(FitFunctionGUI):
       for j in range(interpolate):
         xint.append(xi + float(x[i+1]-xi)/interpolate * j)
     try:
-      y=list(self.fit_function(self.parameters, numpy.array(xint)))
+      y=list(self.fit_function(self.parameters, numpy.array(xint).view(numpy.ndarray).astype(numpy.float64)))
     except TypeError, error:
       raise ValueError, "Could not execute function with numpy array: "+str(error)
     return xint, y
@@ -667,7 +667,7 @@ class FitGaussian(FitFunction):
   name="Gaussian"
   parameters=[1, 0, 1, 0]
   parameter_names=['I', 'x0', 'σ', 'C']
-  fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2) + p[3]
+  fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((x - p[1])/p[2])**2) + p[3]
   fit_function_text='Gaussian: I=[I] x_0=[x0] σ=[σ|2]'
 
 class FitLorentzian(FitFunction):

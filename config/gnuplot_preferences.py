@@ -74,6 +74,8 @@ ENCODING='iso_8859_1'
 # set the terminal options for the gnuplot output (postscript could need other labels)
 set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[font-path]',  'Arial.ttf')+\
                           '" [font-size] lw 2' #transparent
+# since gnuplot 4.4 this is suppoerted
+set_output_terminal_pngcairo='pngcairo enhanced size [width],[height] font "Arial,[font-size]" lw 2' #transparent
 # used is determined by file name
 set_output_terminal_ps='postscript landscape enhanced colour "Arial" 16 solid lw 2'
 

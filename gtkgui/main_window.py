@@ -3601,6 +3601,8 @@ set multiplot layout %i,1
     if self.mouse_mode and gnuplot_version<4.4:
       # mouse mode only works with version 4.4 and higher
       self.mouse_mode=False
+    else:
+      gnuplot_preferences.set_output_terminal_png=gnuplot_preferences.set_output_terminal_pngcairo
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
             with_errorbars, output_file=gnuplot_preferences.output_file_name, 
