@@ -1,33 +1,57 @@
-      Release Notes for the plotting script collection Version 0.6.3
+      Release Notes for the plotting script collection Version 0.7
              Please report bugs and feature requests to http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki
 
 
 Content:
 
 0   - introduction
-1   - changes since version 0.6.2
-1.1   - changes since version 0.6
-1.2 - changes from version 0.5 to 0.6
-1.3 - changes from version 0.4 to 0.5
+1   - changes since version 0.6.3
+1.1 - changes from version 0.5 to 0.6.3
+1.2 - changes from version 0.4 to 0.5
 2   - installation Linux
 2.1 - installation Windows
-3   - list of modules and packages
-4   - description of scripts
-5   - goles for later releases
+3   - goles for later releases
 
 ----------- 0 - introduction --------------
-This is the third release of scripts for plotting mpms/ppms, 4Circle, reflectometer, treff, dns and in12 data.
+This is the fourth release of scripts for plotting mpms/ppms, 4Circle, reflectometer, treff, dns and some more file formats.
 The main goal of this project is to create one framework for common data evaluation of a bunch of instuments
 so that common tasks are automated and the user saves a lot of time. Many people use gnuplot and with this
 program you can create nice gnuplot graphs quite fast and change the gnuplot script after exporting it.
 For a description of the features see chapter 3. 
-Version 0.6.3 is mainly fixing some issues with the GUI and backend but some additional features, which should
-not interfere with old functions, have also been included.
-If you would like some new features, found any bugs or would like to have additional file-types
-supported by the script feel free to go to the Wiki http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki . Any contribution
-to the Wiki content is also welcome.
+Version 0.7 is a huge step in functionality and usability. A lot of new features have been implemented and the old ones
+have been polished. The basic data structure has been reworked to be much faster and advanced.
+This version also introduces an ineractive ipython console, which can be used to run own scripts to interfere with the program
+interactively or to perform operations on the data. (For this purpose the new PhysicalProperty class which is used to store
+the data internally can be quite helpful.)
 
------ 1 - changes since version 0.6.2 -------
+The following list of changes does not claim to be complete:
+
+----- 1 - changes since version 0.6.3 -------
+- For gnuplot version >=4.4 mouse support was added for 2d plots including position status message, 
+  zoom functionality, adding labels on shift+click and fitting peak functions on ctrl+click.
+- Added template framework to fast create new datatypes.
+- Added MARIA, D7, general SPEC and IN17 datatype.
+- Added possibilty to derivate data using a moving window (Savitzky-Golay filter) or global (FFT) approach.
+- Added rebinning and smoothing options for 3d (map) data.
+- Added fit for 3d (map) datasets.
+- Added color selection dialog showing the available color scales.
+- Added some new fit functions.
+- Added FFT analysis of reflectivity measurements.
+- Export, apply options and print multple datasets together, which can be selected with previews.
+- Added a DataView dialog to show the data of the active plot in a table.
+- Possibility to update the program from a website (updatescript itself needs to be written, but will be downloaded
+  automatically)
+- Rework the data output leading to a speedup in plotting of 70-95%.
+- Rework of the MeasurementData and PhysicalProperty objects which store the data, now the columns storing data are
+  derived from the numpy.ndarray object, which make calculations a lot faster and gives the possiblity to use them with
+  numpy universal functions.
+- Added program icons in the system menu and file type assignment (Windows/Debian package)
+- Fix rescaling the program window
+- Fix some unicode issues
+- Improved error handling and debug.log
+- A lot of bugfixes.
+
+----- 1.1 - changes from version 0.5 to 0.6.3 -------
 - added printing with system print dialog (pygtk >= 2.10) or with commandline tool for unix
 - added Radial integration around one point of a plotted maps
 - added some convenience functions to the IPython console to give experienced users the possibility to 
@@ -46,11 +70,6 @@ to the Wiki content is also welcome.
 - fix Postscript export with wrong symbols
 - fix integrate intensities of only one dataset
 - a lot of small fixes for the usability
-
-
-
-
------ 1.1 - changes since version 0.6 -------
 - added snapshot framework to store the working stat including fits etc.
 - added possiblity to combine reflectometer rocking curves to 3d maps
 - added gui option to change squid dia- and paramagnetic correction including fit to asymptotic behaviour
@@ -83,8 +102,6 @@ to the Wiki content is also welcome.
 - fixed DNS reimplement a column with the file numbers
 - fixed small issue in DNS fullauto import optional
 - some minor fixes and changes
-
------ 1.2 - changes from version 0.5 to 0.6 -------
 - added support for treff data and image files
   - create intensity maps from the detector data, join scans
   - extract "true" specular reflectivity from those maps
@@ -128,7 +145,7 @@ to the Wiki content is also welcome.
 - config files in user directory if installed by admin
 
 
------ 1.3 - changes from version 0.4 to 0.5 -------
+----- 1.2 - changes from version 0.4 to 0.5 -------
 - combined all scripts into one executable with many changes in the backend for more
   flexibility using more object orientation
 - using temporal folder depending on the process ID so you can use more then one instance
@@ -144,8 +161,10 @@ to the Wiki content is also welcome.
 - a lot more of minor improvements
 
 
------------ 2 - installation --------------
+----------- 2 - installation (Linux) --------------
 See http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki for more information
+
+!!!On Debian systems I recommand to use the debian package available via the wiki download page.!!!
 
 plotting-scripts:
 1. Extract Plot-script-{VERSION}.tar.gz to any destination folder:
@@ -182,130 +201,46 @@ plotting-scripts:
       python setup.py install --prefix {Inst.Dir} --install-scripts {folder in your path}
       inside one of your system path folders. (type "print $PATH" to find out where to look)
 
-  !!! If you have the previous version installed, you have to uninstall it first, as the links have changed.  !!!
+  For full functionality you will need the gfortran compiler(fit.f90), numpy, scipy and pygtk(GUI) packages.
 
-  For full functionality you will need the gfortran compiler(fit.f90), gnuplot.py(speedup), numpy, scipy and pygtk(GUI) packages.
+----------- 2.1 - installation (Windows) --------------
+As installation from source is quite complicated on windows I skip to provide this information here.
 
------------ 2.1 - installation --------------
-You can install the complete binary package found in the wiki, but this is not always up to date
-  and could be a bit unstable, instead you can also install the software together with a python environment,
-  but that is not that easy, first of all because gnuplot is not as common 
-   as it is in Linux and especially because the GUI is programed using GTK+ with pygtk. 
-   The installation of pygtk is quite extensive, but not so complicated. 
+!!! I recommand to use the package installer available on the wiki download page. !!!!
 
-I am trying to make it easy with a step by step procedure:
+If you still want to try installing from source please reffer to the wiki page for more information.
 
-- get the needed installers for python, gnuplot and pygtk:
-    - gnuplot win32 version can be found at http://www.gnuplot.info/download.html
-    - for python get version 2.5.x or 2.6.x from http://www.python.org/download/releases/
-      (3.x versions have not been tested)
-    - from http://pygtk.org/downloads.html download
-      -PyCairo
-      -PyGObject
-      -PyGTK
-      -follow the Link to GTK+ and download the developer environment ( a file called
-                something like gtk-dev-2.12.9-win32-2.exe )
-      -be sure to get the right version fitting for the python version you downloaded.
-    - gfortran from http://gcc.gnu.org/wiki/GFortranBinaries ("native Windows")
-    - for the installers to work i had also to download MSVCR71.dll from the Internet in Vista
-- install the environment:
-    - install gnuplot,python and GTK
-    - install pycairo,pygobject and pygtk
-    - add the gnuplot, python, gfortran and python/scripts folders to your systems path
-      ( found in the environment variables
-        in window advanced system settings which opens when you press windows+pause)
-    - i had to reboot after that to get the installation to work
-
-- extract the *.zip file, and run   "python setup.py install" or just use the windows installer
-
-
-Now you should be ready to use the scripts with and without GUI-mode under windows. 
-  Building an exe file with py2exe resulted in major problems with pygtk so I won't provide it in the near future.
-
-
----------- 3 - list of modules and packages -------------
-Plot-script-0.6.3.tar.gz (.zip) contains:
-  config/                                                         - package with all settings for the datafile import and plot layout
-                                                                        to change these can make sense also for users
-  read_data/                                                   - contains all modules for datafile readout
-  sessions/                                                     - interfaces between plot script and data readout/treatment
-  
-  measurement_data_plotting.py                 - plotting functions
-  measurement_data_structure.py               - data structure classes
-  plot.py                                                      - executable script, mostly just module imports
-  plotting_gui.py                                          - class for the gui
-  file_actions                                               - functions for the new macro functionality
-  
-  configobj.py                                           - class for storing of variables in .ini files, from external source
-
-  config/fit/                                                  - fortran programs for reflectivity simulations
-
-
-
-------- 4 - description of scripts -------
-I don't have time to rewrite this list. Just try it...
-
-Commom:
-  All sessions (with and without gui) have some common features:
-    - the session type can be given as the first parameter
-    - Typing the script name followed by '--help' option will show the command line parameters
-    - Every script excepts input file names as command line parameters in any order and with
-      wild cards too
-    - The Scripts try to split the input files into measured sequences, in most cases due to
-      settings in the ..._preferences.py files
-    - The sequences can be plotted in one plot command line option
-    - Use Linux command line tool to send all plots to a printer
-
-4circle:
-  - The script will additionally calculate the counts/s value and error bars.
-
-Reflectometer:
-  - The script will additionally calculate the counts/s value and error bars.
-  - It can export entrance files for fit.f90 program and refine some parameters automatically
-    by calling the program with different parameters
-  - You can use the GUI to refine all parameters including multilayer functionality
-
-SQUID:
-  - Units are converted to SI by settings in SQUID_preferences
-  - can make dia-/paramagnetic correction with parameters from the command line
-
-GUI:
-  - Same functionalities as script with additional control over some plotting parameters
-  - Free possibilities to combine different plots
-  - Change title info of specific Plot
-  - Interactive change of plotted Column mostly useful in SQUID script
-  - Change and show all gnuplot parameters and store it as profile
-
-------- 5 - goals for later releases -------
+------- 3 - goals for later releases -------
 The next releases will hopefully come in about 3-6 month cycles. 
 At the moment I have these plans for the future releases:
+!!! Please give me feedback, thats the only way for me to find errors 
+     arising from differnt input options/operating systems !!!
 
-  v0.6.3) - revisite dns powder evaluation
-              - please give me feedback, thats the only way for me to find errors arising from differnt input options
-
-  v0.7)  - convert the program to the wxWidgets backend to make the program
-              accessible under OSX, too.
+  v0.8) 
         - replace the multiplot functionality by a plot dialog which is easier to use and has
-          additional functionality as to plot more than one column of a file
-        - revisite the datastructure, perhaps link the errors to the data (already on the way)
-        - make numpy a prerequisite and use only numpy arrays for speedup (also already working on that)
-        - setting up proper printing dialog
-        - more error handling
-        - save more settings in the config file, savable window profiles
-        - open the gui without any file (in alpha stage possible)
-        - combine data from different files together
-        - increase command line functionality
+          additional functionality as to plot more than one column of a file, still no idea how
+        - save more settings in the config file, savable window profiles, more user control on the
+          GUI behaviour
+        - combine data from different files together (for all file types)
+        - increase console functionality
+        - increase stability of the new data types and the gui functions
+        - review dialogs and old evaluation functions for errors.
+        - add convenience functions like fitting of multiple peaks at once or fit of multiple datasets
 
-  v0.8) - include powder diffractometer format and interface to fullprof
-        - complete mpms and ppms functionalities for all measurements
+  v0.8) 
+        ? include powder diffractometer format and interface to fullprof ?
+        - complete mpms and ppms functionalities for all measurement types
         - complete reflectometer functionalities (don't know what I will do there yet,
           perhaps you have any further ideas?)
-
-  v0.9) - complete 4circle functionality (don't know that either, perhaps a remote control
+        - complete 4circle functionality (don't know that either, perhaps a remote control
           interface for the 4circle for real time measurements with the GUI)
+  
+  v0.9)
+        - Easier, plug in like datatype interface to make development of for others easier.
 
-  v1.0) - get rid of most of the bugs
-        - increase usability (please tell me what is confusing or complicated to use
+  v1.0) 
+        - get rid of most of the bugs
+        - increase usability of the interface (please tell me what is confusing or complicated to use)
         - perhaps making it conform to the GNU license for publication
         - more automated data evaluation functions for the measurement types
 

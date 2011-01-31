@@ -56,7 +56,6 @@ class FitFunction(FitFunctionGUI):
       self.parameters=map(float, initial_parameters)
     self.refine_parameters=range(len(self.parameters))
 
-
   def residuals(self, params, y, x, yerror=None):
     '''
       Function used by leastsq to compute the difference between the simulation and data.

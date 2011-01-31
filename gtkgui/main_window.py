@@ -28,7 +28,7 @@ from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectO
 
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2010"
+__copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
@@ -57,20 +57,23 @@ class ApplicationMainWindow(gtk.Window):
   status_dialog=None
   init_complete=False
   gnuplot_initialized=False
+  # used for mouse tracking and interaction on the picture
   mouse_mode=True
   mouse_data_range=[(0., 1., 0., 1.), (0., 1., 0., 1., False, False)]
   mouse_position_callback=None 
   mouse_arrow_starting_point=None
+  active_zoom_from=None
+  active_zoom_last_inside=None
   # sub-windows can set a function which gets called on button press
   # with the active position of the mouse on the plot
   garbage=[]
-  active_zoom_from=None
-  active_zoom_last_inside=None
   
   def get_active_dataset(self):
+    # convenience method to get the active dataset
     return self.measurement[self.index_mess]
 
   active_dataset=property(get_active_dataset)
+  # stores the geometry of the window an image
   geometry=((0, 0), (800, 600))
   active_plot_geometry=(780, 550)
   
@@ -82,6 +85,7 @@ class ApplicationMainWindow(gtk.Window):
       @param active_session A session object derived from GenericSession.
       @param parant Parent window.
       @param script_suf Suffix for script file name.
+      @param status_dialog The dialog used to show import information.
     '''
     self.active_session=active_session # session object passed by plot.py
     if not active_session.DEBUG:
@@ -161,7 +165,7 @@ class ApplicationMainWindow(gtk.Window):
     try:
         self.toolbar_ui_id = self.UIManager.add_ui_from_string(ui_info)
     except gobject.GError, msg:
-        print "building menus failed: %s" % msg
+        raise RuntimeError, "building menus failed: %s" % msg
     self.menu_bar = self.UIManager.get_widget("/MenuBar")
     self.menu_bar.show()
 
@@ -171,7 +175,7 @@ class ApplicationMainWindow(gtk.Window):
         0, 3,                      0, 1,
         gtk.EXPAND | gtk.FILL,     0,
         0,                         0);
-    # put toolbar at below menubar, only expand in x direction
+    # put toolbar below menubar, only expand in x direction
     bar = self.UIManager.get_widget("/ToolBar")
     bar.set_tooltips(True)
     bar.show()
@@ -213,7 +217,6 @@ class ApplicationMainWindow(gtk.Window):
 
     # frame region for the image
     self.frame1 = gtk.Notebook()
-    # TODO: do we need alignment?
     align = gtk.Alignment(0.5, 0.5, 1, 1)
     align.add(self.frame1)
     # image object for the plots
@@ -224,6 +227,7 @@ class ApplicationMainWindow(gtk.Window):
       self.image_shown=False # variable to decrease changes in picture size
       self.image.set_size_request(0, 0)
       self.image_do_resize=False
+    # put image in an eventbox to catch e.g. mouse events
     self.event_box=gtk.EventBox()
     self.event_box.add(self.image)
     self.frame1.append_page(self.event_box, gtk.Label("Plot"))
@@ -358,7 +362,7 @@ class ApplicationMainWindow(gtk.Window):
 
     #-------Build widgets in table structure--------
 
-    # show the window, hide advanced settings and catch resize events
+    # show the window settings and catch resize events
     self.x_range_in.hide()
     self.y_range_in.hide()
     self.z_range_in.hide()
@@ -375,6 +379,7 @@ class ApplicationMainWindow(gtk.Window):
     self.view_right.hide()
 
     while len(self.measurement)==0:
+      # if there is no measurement loaded, open a file selction dialog
       while gtk.events_pending():
         gtk.main_iteration(False)
       return_status_ok=self.add_file(None, hide_status=False)
@@ -387,23 +392,23 @@ class ApplicationMainWindow(gtk.Window):
           sys.stdout=sys.__stdout__
           self.status_dialog.destroy()
         return
-    self.show_all()
-    self.check_add.set_active(True)
-    self.check_add.toggled()
+    
+    # Display the window
     if self.status_dialog:
+      # hide thw status dialog to make it possible to reshow it
       self.status_dialog.hide()
 
     #+++++++++++++ Show window and connecting events ++++++++++++++
+    self.show_all()
+    self.check_add.set_active(True)
+    self.check_add.toggled()
+    # resize events
     self.connect("event-after", self.update_picture)
     self.connect("event-after", self.update_size)
+    self.image.connect('size-allocate', self.image_resize)
+    # entries
     self.label.connect("activate",self.change) # changed entry triggers change() function 
     self.label2.connect("activate",self.change) # changed entry triggers change() function 
-    self.image.connect('size-allocate', self.image_resize)
-    self.event_box.connect('button-press-event', self.mouse_press)
-    self.event_box.connect('button-release-event', self.mouse_release)
-    self.connect('key-press-event', self.key_press)
-    self.connect('key-release-event', self.key_press)
-    self.connect('motion-notify-event', self.catch_mouse_position)
     self.plot_page_entry.connect("activate", self.iterate_through_measurements)
     self.check_add.connect("toggled",self.show_add_info)
     self.x_range_in.connect("activate",self.change_range)
@@ -418,12 +423,19 @@ class ApplicationMainWindow(gtk.Window):
     self.view_up.connect("clicked",self.change)
     self.view_down.connect("clicked",self.change)
     self.view_right.connect("clicked",self.change)
+    # mouse and keyboad events
+    self.event_box.connect('button-press-event', self.mouse_press)
+    self.event_box.connect('button-release-event', self.mouse_release)
+    self.connect('motion-notify-event', self.catch_mouse_position)
     
     #------------- connecting events --------------
+    
+    # create the first plot
     try:
       # for the first plot catch exception if gnuplot command is not found
       self.replot()
     except RuntimeError, error_message:
+      # user can select the gnuplot executable via a file selection dialog
       info_dialog=gtk.Dialog(parent=self, title='Gnuplot Error..', buttons=('Select Gnuplot Executable', 1, 
                                                                             'Exit Program', -1))
       info_dialog.vbox.add(gtk.Label(error_message))
@@ -570,6 +582,7 @@ class ApplicationMainWindow(gtk.Window):
     if len(self.measurement)>1:
       self.garbage.append(self.measurement.pop(self.index_mess))
       self.file_actions.activate_action('iterate_through_measurements', 'Prev')
+      self.rebuild_menus()
       self.replot()
       print "Plot removed."
 
@@ -2514,13 +2527,16 @@ set multiplot layout %i,1
       for i in range(len(self.measurement)):
         self.do_add_multiplot(i)
     elif action.get_name()=='ClearMultiplot':
+      self.clear_multiplot()
+    else:
+      self.do_add_multiplot(self.index_mess)
+
+  def clear_multiplot(self):
       self.multiplot=[]
       self.active_multiplot=False
       self.replot()
       print "Multiplots cleared."
-      self.multi_list.set_markup(' Multiplot List: \n' )      
-    else:
-      self.do_add_multiplot(self.index_mess)
+      self.multi_list.set_markup(' Multiplot List: \n' )          
 
   def do_add_multiplot(self,index): 
     '''
@@ -3400,15 +3416,6 @@ set multiplot layout %i,1
     else:
       self.image_do_resize=True
   
-  def key_press(self, widget, action):
-    '''
-      Catch key press events.
-    '''
-    if action.type.value_name=='GDK_KEY_PRESS':
-      pass
-    else:
-      pass
-  
   def catch_mouse_position(self, widget, action):
     '''
       Get the current mouse position when the pointer was mooved on to of the image.
@@ -3418,6 +3425,7 @@ set multiplot layout %i,1
     position=self.get_position_on_plot()
     if position is not None and self.measurement[self.index_mess].zdata<0:
       if self.active_zoom_from is not None:
+        # When a zoom drag is active draw a rectangle on the image
         self.active_zoom_last_inside=position
         az=self.active_zoom_from
         self.image_pixmap.draw_rectangle( self.get_style().black_gc, False, min(az[4], position[4]), 
@@ -3431,21 +3439,19 @@ set multiplot layout %i,1
           i+=1
         self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
       elif self.mouse_arrow_starting_point is not None:
+        # if an arrow drag is active show a different status and draw a line from the starting
+        # point to the active mouse position
         ma=self.mouse_arrow_starting_point
-        #i=0
-        #while gtk.events_pending() and i<3:
-        #  gtk.main_iteration(False)
-        #  i+=1
-        #self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
-        #self.image_pixmap.draw_line( self.get_style().black_gc, ma[4], ma[5], 
-        #                                              position[4], position[5])
-        #self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
+        self.image_pixmap.draw_line( self.get_style().black_gc, ma[4], ma[5], position[4], position[5] )
+        self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
         self.statusbar.push(0, 'Draw Arrow: x=%6g  \ty=%6g \t-> \tx=%6g \ty=%6g' % (ma[0], ma[1], position[0], position[1]))
-        #i=0
-        #while gtk.events_pending() and i<10:
-        #  gtk.main_iteration(False)
-        #   i+=1
+        i=0
+        while gtk.events_pending() and i<10:
+          gtk.main_iteration(False)
+          i+=1
+        self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
       else:
+        # show the position of the cusor on the plot
         info='x=%6g  \ty=%6g' % (position[0], position[1])
         if action.state.value_names==['GDK_CONTROL_MASK']:
           info+='\t\tFit peak with gaussian (left), voigt (middle) or lorentzian (right) profile.'
@@ -3454,11 +3460,18 @@ set multiplot layout %i,1
         else:
           info+='\t\tZoom (right), unzoom (middle). <ctrl>-fit / <shift>-label/arrow'
         self.statusbar.push(0, info)
-      self.image.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.CROSSHAIR))
+      try:
+        # if the cusor is inside the plot we change it's icon to a crosshair
+        self.image.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.CROSSHAIR))
+      except AttributeError:
+        # catch an example when event is triggered after window got closed
+        pass
     else:
       try:
+        # reset the mouse icon
         self.image.window.set_cursor(None)
       except AttributeError:
+        # catch an example when event is triggered after window got closed
         pass
   
   def mouse_press(self, widget, action):
@@ -3494,6 +3507,7 @@ set multiplot layout %i,1
         self.file_actions.activate_action('simmulate_functions')
         self.replot()
     elif action.state.value_names==[]:
+      # no control/alt/shift button is pressed
       if action.button==3:
         # Zoom into region
         if position is not None:
@@ -3526,6 +3540,7 @@ set multiplot layout %i,1
             ds.plot_options+='set label "%s" at %g,%g\n' % (parameters['Text'], position[0], position[1])
         if action.button==2:
           self.mouse_arrow_starting_point=position
+          self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
         if action.button==3:
           dialog=SimpleEntryDialog
           parameters, result=SimpleEntryDialog('Enter Label...', 
@@ -3544,6 +3559,7 @@ set multiplot layout %i,1
     if self.active_zoom_from is not None:
       # Zoom in to the selected Area
       if position is None or (position[2]-self.active_zoom_from[2])<0.1 and (position[3]-self.active_zoom_from[3])<0.1:
+        # if mouse is outside the ploted region, use the last position where it was inside
         position=self.active_zoom_last_inside
       dsp=self.measurement[self.index_mess].plot_options
       x0=min(position[0], self.active_zoom_from[0])
@@ -3555,6 +3571,7 @@ set multiplot layout %i,1
       self.active_zoom_from=None
       self.replot()
     if self.mouse_arrow_starting_point is not None:
+      # draw an arrow in the plot
       start=self.mouse_arrow_starting_point
       self.mouse_arrow_starting_point=None
       if position is not None:
@@ -3562,6 +3579,10 @@ set multiplot layout %i,1
         self.replot()
   
   def get_position_on_plot(self):
+    '''
+      Calculate the position of the mouse cursor on the plot. If the cursor
+      is outside, return None.
+    '''
     position=self.image.get_pointer()
     img_size=self.image.get_allocation()
     img_width=float(img_size[2]-img_size[0])
@@ -3926,14 +3947,19 @@ set multiplot layout %i,1
         </menu>
         <menuitem action='SelectColor'/>
         <separator name='static9'/>
-        <menuitem action='Next'/>
-        <menuitem action='Prev'/>
-        <menuitem action='First'/>
-        <menuitem action='Last'/>
-        <separator name='static3'/>
-        <menuitem action='AddMulti'/>
         <menuitem action='AddAll'/>
         <menuitem action='ClearMultiplot'/>
+        <menu action='ToolbarActions'>
+          <menuitem action='Next'/>
+          <menuitem action='Prev'/>
+          <menuitem action='First'/>
+          <menuitem action='Last'/>
+          <separator name='static3'/>
+          <menuitem action='ErrorBars'/>
+          <menuitem action='AddMulti'/>
+          <menuitem action='MultiPlot'/>
+          <menuitem action='Apply'/>
+        </menu>
         <separator name='static4'/>
         <menuitem action='ShowPlotparams'/>
         <menuitem action='ShowImportInfo'/>
@@ -4040,6 +4066,7 @@ set multiplot layout %i,1
       ( "ExtrasMenu", None,  "_Extras"),                # name, stock id, label
       ( "HelpMenu", None, "_Help" ),               # name, stock id, label
       ( "ToolBar", None, "Toolbar" ),               # name, stock id, label
+      ( "ToolbarActions", None, "Toolbar Actions" ),               # name, stock id, label
       ( "OpenDatafile", gtk.STOCK_OPEN,                    # name, stock id
         "_Open File","<control>O",                      # label, accelerator
         "Open a new datafile",                       # tooltip
@@ -4132,19 +4159,19 @@ set multiplot layout %i,1
         "Show the gnuplot parameters used for plot.",                                    # tooltip
         self.show_last_plot_params),
       ( "ShowImportInfo", None,                    # name, stock id
-        "Show File Import Informations", None,                     # label, accelerator
+        "Show File Import Informations", 'i',                     # label, accelerator
         "Show the information from the file import in this session.",                                    # tooltip
         self.show_status_dialog),
       ( "FilterData", None,                    # name, stock id
-        "Filter the data points", None,                     # label, accelerator
+        "Filter the data points", 'f',                     # label, accelerator
         None,                                    # tooltip
         self.change_data_filter),
       ( "TransformData", None,                    # name, stock id
-        "Transform the Units/Dimensions", None,                     # label, accelerator
+        "Transform the Units/Dimensions", 't',                     # label, accelerator
         None,                                    # tooltip
         self.unit_transformation),
       ( "CrossSection", None,                    # name, stock id
-        "Cross-Section...", None,                     # label, accelerator
+        "Cross-Section...", 's',                     # label, accelerator
         None,                                    # tooltip
         self.extract_cross_section),
       ( "InterpolateSmooth", None,                    # name, stock id
@@ -4176,11 +4203,11 @@ set multiplot layout %i,1
         None,                                    # tooltip
         self.colorcode_points),
       ( "SelectColor", None,                    # name, stock id
-        "Color Pattern...", None,                     # label, accelerator
+        "Color Pattern...", 'p',                     # label, accelerator
         None,                                    # tooltip
         self.change_color_pattern),
       ( "Apply", gtk.STOCK_CONVERT,                    # name, stock id
-        "Apply", None,                     # label, accelerator
+        "Apply", 'a',                     # label, accelerator
         "Apply current plot settings to all sequences",                                    # tooltip
         self.apply_to_all),
       ( "ExportAll", gtk.STOCK_EXECUTE,                    # name, stock id
@@ -4188,7 +4215,7 @@ set multiplot layout %i,1
         "Export a selection of plots",                                    # tooltip
         self.export_plot),
       ( "ErrorBars", gtk.STOCK_ADD,                    # name, stock id
-        "E.Bars", None,                     # label, accelerator
+        "E.Bars", 'e',                     # label, accelerator
         "Toggle errorbars",                                    # tooltip
         self.toggle_error_bars),
       ( "AddMulti", gtk.STOCK_JUMP_TO,                    # name, stock id
@@ -4200,7 +4227,7 @@ set multiplot layout %i,1
         "Add/Remove all sequences to/from multi-plot list",                                    # tooltip
         self.add_multiplot),
       ( "ClearMultiplot", gtk.STOCK_JUMP_TO,                    # name, stock id
-        "Clear Multiplot List",  None,                     # label, accelerator
+        "Clear Multiplot List",  'c',                     # label, accelerator
         "Remove all multi-plot list entries",                                    # tooltip
         self.add_multiplot),
       ( "RemovePlot", None,                    # name, stock id
@@ -4216,7 +4243,7 @@ set multiplot layout %i,1
         "Dialog for fitting of a function to the active dataset.",                                    # tooltip
         self.multi_fit_dialog),
       ( "MultiPlot", gtk.STOCK_YES,                    # name, stock id
-        "Multi", None,                     # label, accelerator
+        "Multi", 'm',                     # label, accelerator
         "Show Multi-plot",                                    # tooltip
         self.export_plot),
       ( "MultiPlotExport", None,                    # name, stock id
@@ -4340,3 +4367,4 @@ def apihelp(*ignore):
                               , 'index-plot_script.html'
                               )
   return webbrowser.open(help_file)
+

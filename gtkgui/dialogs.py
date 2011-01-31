@@ -386,6 +386,7 @@ class SimpleEntryDialog(gtk.Dialog):
     given type and then returned when run() is called.
   '''
   _callback_window=None
+  _result=None
   
   def __init__(self, title, entries, *args, **opts):
     '''
@@ -455,7 +456,21 @@ class SimpleEntryDialog(gtk.Dialog):
       Show the dialog and wait for input. Return the result as Dictionary 
       and a boolen definig if the Dialog was closed or OK was pressed.
     '''
-    result=gtk.Dialog.run(self)
+    if self._callback_window is None:
+      result=gtk.Dialog.run(self)
+    else:
+      # if a mouse callback is registered it doesn't
+      # work with Dialog.run
+      self._result=None
+      def set_result(widget, id):
+        self._result=id
+      self.connect('response', set_result)
+      self.show_all()
+      while self._result is None:
+        while gtk.events_pending():
+          gtk.main_iteration(False)
+        sleep(0.1)
+      result=self._result
     self.collect_entries()
     self.hide()
     return self.values, result==1
@@ -522,6 +537,7 @@ class SimpleEntryDialog(gtk.Dialog):
     '''
     if self._callback_window is not None:
       self._callback_window.mouse_position_callback=None
+    self._result=0
 
 #--------------- SimpleEntryDialog to get a list of values from the user ---------------
 
