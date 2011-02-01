@@ -59,11 +59,11 @@ if "py2app" in sys.argv:
               } 
 
 __options__={ "py2exe": {
-                          "includes": "numpy, pango, cairo, pangocairo, atk, gobject",
+                          "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
                           "optimize": 2, 
                           "skip_archive": True, # setting not to move compiled code into library.zip file
                           'packages':'encodings, gtk, sessions, read_data, gtkgui, scipy, IPython',
-                          "dll_excludes": ["MSVCP90.dll"], 
+                          "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'], 
                              }, 
                              }
 
@@ -291,12 +291,14 @@ if "py2exe" in sys.argv and not py2exe_test:
   os.popen('copy archiv\\__init__.exe archiv\\plot.exe')
   os.popen('del archiv\\__init__.exe')
   print "\n*** Copying gtk stuff ***"
+  gtk_folder='C:\\gtk'
+  #gtk_folder='C:\\Python27\\Lib\\site-packages\\gtk-2.0\\runtime'
   for src, dest in [
-                    ('c:\\gtk\\etc', 'etc'), 
-                    ('c:\\gtk\\share\\*.none', 'share'), 
-                    ('c:\\gtk\\share\\locale', 'share\\locale'), 
-                    ('c:\\gtk\\share\\themes', 'share\\themes'), 
-                    ('c:\\gtk\\lib', 'lib'), 
+                    (gtk_folder+'\\etc', 'etc'), 
+                    (gtk_folder+'\\share\\*.none', 'share'), 
+                    (gtk_folder+'\\share\\locale', 'share\\locale'), 
+                    (gtk_folder+'\\share\\themes', 'share\\themes'), 
+                    (gtk_folder+'\\lib', 'lib'), 
                     ('c:\\gnuplot', 'gnuplot'), 
                     ('config', 'config'), 
                     ]:

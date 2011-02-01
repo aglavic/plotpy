@@ -434,7 +434,7 @@ class ApplicationMainWindow(gtk.Window):
     try:
       # for the first plot catch exception if gnuplot command is not found
       self.replot()
-    except RuntimeError, error_message:
+    except (RuntimeError, WindowsError), error_message:
       # user can select the gnuplot executable via a file selection dialog
       info_dialog=gtk.Dialog(parent=self, title='Gnuplot Error..', buttons=('Select Gnuplot Executable', 1, 
                                                                             'Exit Program', -1))
@@ -2324,8 +2324,11 @@ set multiplot layout %i,1
                                   pattern, 
                                   gnuplot_preferences.defined_color_patterns[pattern])
     gptext+='unset multiplot\n'
-    open(os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp'), 'w').write(gptext)
-    subprocess.call([gnuplot_preferences.GNUPLOT_COMMAND, os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp')])
+    try:
+      open(os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp'), 'w').write(gptext)
+      subprocess.call([gnuplot_preferences.GNUPLOT_COMMAND, os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp')])
+    except WindowsError:
+      pass
     pattern_box=gtk.combo_box_new_text()
     # drop down menu for the pattern selection
     for pattern in pattern_names:

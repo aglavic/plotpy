@@ -44,10 +44,7 @@ gnuplot_file_name='gnuplot.tmp'
 # Linux printing command (works properly with .ps, problems with png with wrong size)
 PRINT_COMMAND="lpr -P IFF17c4 -J \'plot.py-output\' %s"
 # Command for script mode to accress gnuplot, change this if you don't have gnuplot in your path
-if 'linux' in platform or 'darwin' in platform:
-  GNUPLOT_COMMAND="gnuplot"
-else:
-  GNUPLOT_COMMAND="wgnuplot"
+GNUPLOT_COMMAND="gnuplot"
 
 # font path for export
 if exists('/usr/share/fonts/truetype/msttcorefonts'):

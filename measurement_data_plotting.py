@@ -38,15 +38,18 @@ def check_gnuplot_version(session):
                     )
   write_file.close()
   params=[session.GNUPLOT_COMMAND, script_name]
-  proc = subprocess.Popen(params, 
-                      shell=False, 
-                      stderr=subprocess.PIPE,
-                      stdout=subprocess.PIPE, 
-                      stdin=subprocess.PIPE, 
-                      )
-  output = proc.communicate()[1]
-  version, patchlevel=output.splitlines()
-  return float(version), float(patchlevel)
+  try:
+    proc = subprocess.Popen(params, 
+                        shell=False, 
+                        stderr=subprocess.PIPE,
+                        stdout=subprocess.PIPE, 
+                        stdin=subprocess.PIPE, 
+                        )
+    output = proc.communicate()[1]
+    version, patchlevel=output.splitlines()
+    return float(version), float(patchlevel)
+  except:
+    return 0., 0.
 
 def gnuplot_plot_script(session,  
                         datasets,
