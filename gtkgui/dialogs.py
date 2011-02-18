@@ -778,6 +778,81 @@ class PrintDatasetDialog:
 
 #--- Printing Dialog which imports and creates PNG files for the datasets and sends it to a printer ---
 
+#++++++++++++++++++++ Dialog storing all imported dataset names +++++++++++++++++++++++++
+
+class PlotTree(gtk.Dialog):
+  '''
+    A dialog containing a gtk.TreeView widget with gtk.ListStore to display data from
+    a MeasurementData object.
+  '''
+  expand_column=None
+  
+  def __init__(self, data_dict, connected_function, *args, **opts):
+    '''
+      Create a dialog an place in the vbox a gtk.TreeView widget.
+    '''
+    if 'expand' in opts:
+      self.expand_column=opts['expand']
+    gtk.Dialog.__init__(self, *args, **opts)
+    self.data_dict=data_dict
+    # Create the treeview widget
+    self.treestore=gtk.TreeStore(gtk.gdk.Pixbuf, str)
+    self.treeview=gtk.TreeView(self.treestore)
+    self.connected_function=connected_function
+    self.treeview.connect('cursor-changed', self.cursor_changed)
+    self.create_columns()
+    # insert the treeview in the dialog
+    sw=gtk.ScrolledWindow()
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add(self.treeview)
+    sw.show_all()
+    self.vbox.add(sw)
+    # insert the data into the treeview
+    self.add_data()
+    self.clipboard = gtk.Clipboard(gtk.gdk.display_get_default(), "CLIPBOARD")
+  
+  def create_columns(self):
+    '''
+      Add columns to the treeview.
+    '''
+    textrenderer = gtk.CellRendererText()
+    picturerenderer = gtk.CellRendererPixbuf()
+    # Add the columns
+    column = gtk.TreeViewColumn('Preview', picturerenderer, pixbuf=0)
+    self.treeview.append_column(column)
+    column = gtk.TreeViewColumn('Imported Items', textrenderer, text=1)
+    column.set_sort_column_id(1)
+    self.treeview.append_column(column)
+
+  def add_data(self):
+    '''
+      Add the data from the dataset to the treeview.
+    '''
+    self.treestore.clear()
+    for name, datasets in sorted(self.data_dict.items()):
+      iter=self.treestore.append(None, [None, name])
+      for i, dataset in enumerate(datasets):
+        preview=getattr(dataset,  'preview', None)
+        self.treestore.append(iter, [preview, "%3i: %s" % (i, dataset.short_info)])
+      if self.expand_column == name:
+        self.treeview.expand_to_path(sorted(self.data_dict.keys()).index(name))
+  
+  def cursor_changed(self, widget):
+    ''' 
+      If an item is selected call a function with the corresponding
+      key and index.
+    '''
+    cursor=self.treeview.get_cursor()[0]
+    if len(cursor)==1:
+      index=0
+      key=self.treestore[cursor][1]
+    else:
+      index=cursor[1]
+      key=self.treestore[cursor[0]][1]
+    self.connected_function(key, index)
+  
+#-------------------- Dialog storing all imported dataset names -------------------------
+
 #+++++++++++++++++++ Dialog to display the columns of a dataset +++++++++++++++++++++++++
 
 class DataView(gtk.Dialog):

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2010-08-25, 16:36:44 -->
-<!-- Copyright (C) 2010 Artur Glavic, a.glavic@fz-juelich.de -->
+<!-- Saved: 2011-02-02, 20:46:01 -->
+<!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -119,7 +119,6 @@
   <Interfaces>
   </Interfaces>
   <Others>
-    <Other>/usr/share/eric/APIs/plotting.api</Other>
     <Other>install</Other>
     <Other>uninstall</Other>
     <Other>doc</Other>

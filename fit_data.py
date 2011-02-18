@@ -51,9 +51,9 @@ class FitFunction(FitFunctionGUI):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=list(self.parameters)    
+    self.parameters=map(numpy.float64, self.parameters)
     if len(self.parameters)==len(initial_parameters):
-      self.parameters=map(float, initial_parameters)
+      self.parameters=map(numpy.float64, initial_parameters)
     self.refine_parameters=range(len(self.parameters))
 
   def residuals(self, params, y, x, yerror=None):
@@ -1558,6 +1558,102 @@ class FitBrillouineT(FitFunction):
     return self.brillouine(p, numpy.array(T))+p[4]
 
 
+
+class FitNanoparticleZFC(FitFunction):
+  '''
+    Fit zero field cooled curves of Nanoparticles.
+  '''
+  # define class variables.
+  name="NanoparticleZFC"
+  parameters=[1.5e-5, 1., 1e9, 0.05, 10., 0.05, 0.]
+  parameter_names=['3M_S²VB/kB', 'T/t', 'f_0', 'K_eff', 'r', 'δr', 'C']
+  fit_function_text='Nanoparticle M_{ZFC}: K_{eff}=[K_eff|2] δr=[δr|2]'
+  k_B=0.08617341 #meV∕K
+  measured_M_FC=None
+  
+  def M(self, M_0, tau, t):
+    return M_0*numpy.exp(-t/tau)
+
+  def tau(self, E_B, T):
+    return 1./(self.f_0*numpy.exp(-E_B/(self.k_B*T)))
+
+  def M_ZFC(self, M_FC, T, T_per_t, E_B):
+    M_out=[self.M_start]
+    for i, M_FC_i in enumerate(M_FC):
+      T_i=T[i]
+      if i>0:
+        delta_t=(T_i-T[i-1])/T_per_t
+      else:
+        delta_t=(T[1]-T[0])/T_per_t
+      M_div=M_FC_i-M_out[-1]
+      tau_i=self.tau(E_B, T_i)
+      M_div_next=self.M(M_div, tau_i, delta_t)
+      M_out.append(M_FC_i-M_div_next)
+    return numpy.array(M_out[1:])
+
+  def M_ZFC_dispersion(self, M_FC, T, T_per_t, K_eff, r, delta_r):
+    M_ZFC_out=numpy.zeros_like(M_FC)
+    delta_r_range=numpy.arange(-3.*delta_r, 3.*delta_r, delta_r/9.)
+    P=P_i=numpy.exp(-0.5*(delta_r_range/delta_r)**2)
+    P/=P.sum()
+    for delta_r_i, P_i in zip(delta_r_range, P):
+      r_i=r+delta_r_i
+      E_B=K_eff*4./3.*numpy.pi*r_i**3
+      M_ZFC_out+=P_i*self.M_ZFC(M_FC, T, T_per_t, E_B)
+    return M_ZFC_out
+      
+  def fit_function(self, p, x):
+    sort_idx=numpy.argsort(x)
+    resort_idx=numpy.argsort(sort_idx)
+    T=x[sort_idx]
+    if self.measured_M_FC is None:
+      M_FC=p[0]/T
+    else:
+      M_FC=self.measured_M_FC(T)
+    T_per_t=p[1]/60.
+    self.f_0=p[2]
+    K_eff=p[3]
+    r=p[4]
+    delta_r=p[5]
+    self.M_start=p[6]
+    return self.M_ZFC_dispersion(M_FC, T, T_per_t, K_eff, r, delta_r)[resort_idx]
+    
+class FitNanoparticleZFC2(FitFunction):
+  '''
+    Fit zero field cooled curves of Nanoparticles.
+  '''
+  # define class variables.
+  name="NanoparticleZFC2"
+  parameters=[50., 10., 0.05, 0.]
+  parameter_names=['T_B', 'r', 'δr', 'H_offset/H']
+  fit_function_text='Nanoparticle M_{ZFC}: T_{Block}=[T_B|3] δr=[δr|2]'
+  k_B=0.08617341 #meV∕K
+  measured_M_FC=None
+  
+  def fit_function(self, p, x):
+    '''
+      Calculate the ZFC curve of a nanoparticle distribution.
+    '''
+    sort_idx=numpy.argsort(x)
+    resort_idx=numpy.argsort(sort_idx)
+    T=x[sort_idx]
+    T_B=p[0]
+    r=p[1]
+    delta_r=p[2]
+    H_factor=p[3]
+    delta_r_array=numpy.arange(-3.*delta_r, 3.*delta_r, delta_r/numpy.float64(len(T)))
+    r_array=r+delta_r_array
+    V_array=4./3.*numpy.pi*r_array**3
+    P_array=numpy.exp(-0.5*(delta_r_array/delta_r)**2)
+    P_array/=P_array.sum()
+    V_L_factor=T/T_B*(4./3.*numpy.pi*r**3)
+    FC=self.measured_M_FC(T)
+    FC_2=H_factor*FC
+    M_ZFC=numpy.zeros_like(FC)
+    for V_i, P_i in zip(V_array,  P_array):
+      M_ZFC+=P_i*numpy.where(V_i<=V_L_factor, FC, FC_2)
+    return M_ZFC[resort_idx]
+
 #--------------------------------- Define common functions for 2d fits ---------------------------------
 
 #+++++++++++++++++++++++++++++++++ Define common functions for 3d fits +++++++++++++++++++++++++++++++++
@@ -2057,6 +2153,8 @@ class FitSession(FitSessionGUI):
                        FitPolynomialPowerlaw.name: FitPolynomialPowerlaw, 
                        FitCrystalLayer.name: FitCrystalLayer, 
                        FitRelaxingCrystalLayer.name: FitRelaxingCrystalLayer, 
+                       #FitNanoparticleZFC.name: FitNanoparticleZFC, 
+                       #FitNanoparticleZFC2.name: FitNanoparticleZFC2, 
                        }
   # known fit functions for 3d datasets
   available_functions_3d={
@@ -2065,7 +2163,7 @@ class FitSession(FitSessionGUI):
                        #FitCuK3D.name: FitCuK3D, 
                        FitVoigt3D.name: FitVoigt3D, 
                        FitLorentzian3D.name: FitLorentzian3D, 
-                       FitLattice3D.name: FitLattice3D, 
+                       #FitLattice3D.name: FitLattice3D, 
                           }
   
   def __init__(self,  dataset):

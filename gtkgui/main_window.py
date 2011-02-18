@@ -4162,19 +4162,19 @@ set multiplot layout %i,1
         "Show the gnuplot parameters used for plot.",                                    # tooltip
         self.show_last_plot_params),
       ( "ShowImportInfo", None,                    # name, stock id
-        "Show File Import Informations", 'i',                     # label, accelerator
+        "Show File Import Informations", None,#'i',                     # label, accelerator
         "Show the information from the file import in this session.",                                    # tooltip
         self.show_status_dialog),
       ( "FilterData", None,                    # name, stock id
-        "Filter the data points", 'f',                     # label, accelerator
+        "Filter the data points", None,#'f',                     # label, accelerator
         None,                                    # tooltip
         self.change_data_filter),
       ( "TransformData", None,                    # name, stock id
-        "Transform the Units/Dimensions", 't',                     # label, accelerator
+        "Transform the Units/Dimensions", None,#'t',                     # label, accelerator
         None,                                    # tooltip
         self.unit_transformation),
       ( "CrossSection", None,                    # name, stock id
-        "Cross-Section...", 's',                     # label, accelerator
+        "Cross-Section...", None,#'s',                     # label, accelerator
         None,                                    # tooltip
         self.extract_cross_section),
       ( "InterpolateSmooth", None,                    # name, stock id
@@ -4206,11 +4206,11 @@ set multiplot layout %i,1
         None,                                    # tooltip
         self.colorcode_points),
       ( "SelectColor", None,                    # name, stock id
-        "Color Pattern...", 'p',                     # label, accelerator
+        "Color Pattern...", None,#'p',                     # label, accelerator
         None,                                    # tooltip
         self.change_color_pattern),
       ( "Apply", gtk.STOCK_CONVERT,                    # name, stock id
-        "Apply", 'a',                     # label, accelerator
+        "Apply", None,#'a',                     # label, accelerator
         "Apply current plot settings to all sequences",                                    # tooltip
         self.apply_to_all),
       ( "ExportAll", gtk.STOCK_EXECUTE,                    # name, stock id
@@ -4218,7 +4218,7 @@ set multiplot layout %i,1
         "Export a selection of plots",                                    # tooltip
         self.export_plot),
       ( "ErrorBars", gtk.STOCK_ADD,                    # name, stock id
-        "E.Bars", 'e',                     # label, accelerator
+        "E.Bars", None,#'e',                     # label, accelerator
         "Toggle errorbars",                                    # tooltip
         self.toggle_error_bars),
       ( "AddMulti", gtk.STOCK_JUMP_TO,                    # name, stock id
@@ -4230,7 +4230,7 @@ set multiplot layout %i,1
         "Add/Remove all sequences to/from multi-plot list",                                    # tooltip
         self.add_multiplot),
       ( "ClearMultiplot", gtk.STOCK_JUMP_TO,                    # name, stock id
-        "Clear Multiplot List",  'c',                     # label, accelerator
+        "Clear Multiplot List",  None,#'c',                     # label, accelerator
         "Remove all multi-plot list entries",                                    # tooltip
         self.add_multiplot),
       ( "RemovePlot", None,                    # name, stock id
@@ -4246,7 +4246,7 @@ set multiplot layout %i,1
         "Dialog for fitting of a function to the active dataset.",                                    # tooltip
         self.multi_fit_dialog),
       ( "MultiPlot", gtk.STOCK_YES,                    # name, stock id
-        "Multi", 'm',                     # label, accelerator
+        "Multi", None,#'m',                     # label, accelerator
         "Show Multi-plot",                                    # tooltip
         self.export_plot),
       ( "MultiPlotExport", None,                    # name, stock id
