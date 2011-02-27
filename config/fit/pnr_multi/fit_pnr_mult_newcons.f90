@@ -50,9 +50,10 @@ program fit_pnr_mult
   !! Read the .ent file name from command line
   call getarg(1,ent_file)
   INQUIRE(FILE=ent_file, EXIST=file_exists)
-  if (not file_exists) then
+  if (file_exists) then
+  else
     write(*,*) "File ", ent_file, " does not exist."
-    end program fit_pnr_mult
+    go to
   endif
   !! Read maximum iterations from command line
   call getarg(2,max_iter_string)
@@ -486,6 +487,6 @@ program fit_pnr_mult
   write(8,*) 'results generated with program "fit_pnr_mult_newcons.f90"'   
   77 close(8)
   write(*,*) dtime(total_time)
-end
+9999 end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
