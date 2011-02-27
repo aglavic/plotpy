@@ -53,7 +53,7 @@ program fit_pnr_mult
   if (file_exists) then
   else
     write(*,*) "File ", ent_file, " does not exist."
-    go to
+    go to 9999
   endif
   !! Read maximum iterations from command line
   call getarg(2,max_iter_string)
