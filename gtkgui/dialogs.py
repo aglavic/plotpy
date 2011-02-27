@@ -782,17 +782,19 @@ class PrintDatasetDialog:
 
 class PlotTree(gtk.Dialog):
   '''
-    A dialog containing a gtk.TreeView widget with gtk.ListStore to display data from
-    a MeasurementData object.
+    A dialog containing a gtk.TreeView widget with gtk.TreeStore to display plots 
+    imported from all files.
   '''
   expand_column=None
+  ignore_cursor_change=False
   
   def __init__(self, data_dict, connected_function, *args, **opts):
     '''
-      Create a dialog an place in the vbox a gtk.TreeView widget.
+      Create a dialog and place in the vbox a gtk.TreeView widget.
     '''
     if 'expand' in opts:
       self.expand_column=opts['expand']
+      del(opts['expand'])
     gtk.Dialog.__init__(self, *args, **opts)
     self.data_dict=data_dict
     # Create the treeview widget
@@ -826,7 +828,7 @@ class PlotTree(gtk.Dialog):
 
   def add_data(self):
     '''
-      Add the data from the dataset to the treeview.
+      Add the data from the dictionary to the treeview.
     '''
     self.treestore.clear()
     for name, datasets in sorted(self.data_dict.items()):
@@ -837,11 +839,23 @@ class PlotTree(gtk.Dialog):
       if self.expand_column == name:
         self.treeview.expand_to_path(sorted(self.data_dict.keys()).index(name))
   
+  def set_focus_item(self, key, index):
+    '''
+      Highlight an item.
+    '''
+    self.ignore_cursor_change=True
+    item=(sorted(self.data_dict.keys()).index(key), index)
+    self.treeview.set_cursor(item)
+    print key
+    self.ignore_cursor_change=False
+  
   def cursor_changed(self, widget):
     ''' 
       If an item is selected call a function with the corresponding
       key and index.
     '''
+    if self.ignore_cursor_change:
+      return
     cursor=self.treeview.get_cursor()[0]
     if len(cursor)==1:
       index=0

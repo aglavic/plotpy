@@ -35,7 +35,6 @@ class FitFunctionGUI:
     dialog.destroy()
     window.fit_dialog(None, size, position)
 
-
 class FitSessionGUI:
   def get_dialog(self, window, dialog, fit_button_press_event=None):
     '''

@@ -29,6 +29,7 @@ program fit_pnr_mult
   character*128 fpp,fmm,fpm,fmp
   character*128 ent_file, max_iter_string
   integer*4     maximum_iterations
+  logical :: file_exists
   common/pici/pi,ci
   common/wave/lamda,dlamda
   common/nlayer/nlay
@@ -48,13 +49,18 @@ program fit_pnr_mult
   
   !! Read the .ent file name from command line
   call getarg(1,ent_file)
+  INQUIRE(FILE=ent_file, EXIST=file_exists)
+  if (not file_exists) then
+    write(*,*) "File ", ent_file, " does not exist."
+    end program fit_pnr_mult
+  endif
   !! Read maximum iterations from command line
   call getarg(2,max_iter_string)
-    if(max_iter_string.eq.'') then
-        maximum_iterations=50
-    else
-        read(max_iter_string,*) maximum_iterations
-    endif
+  if(max_iter_string.eq.'') then
+      maximum_iterations=50
+  else
+      read(max_iter_string,*) maximum_iterations
+  endif
   
   pi=dacos(-1.d0)
   ci=dcmplx(0.d0,1.d0)

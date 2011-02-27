@@ -535,8 +535,8 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   data_list.append(GRAD_TO_MRAD*alphaf)
   data_list.append(data_list[0]+data_list[1])
   data_list.append(data_list[0]-data_list[1])
-  data_list.append(PI_4_OVER_LAMBDA/2.*(cos(data_list[1]) - cos(data_list[0])))
-  data_list.append(PI_4_OVER_LAMBDA/2.*(sin(data_list[0]) + sin(data_list[1])))
+  data_list.append(PI_4_OVER_LAMBDA/2.*(cos(0.001*data_list[1]) - cos(0.001*data_list[0])))
+  data_list.append(PI_4_OVER_LAMBDA/2.*(sin(0.001*data_list[0]) + sin(0.001*data_list[1])))
   data_list.append(intensities)
   data_list.append(logintensities)
   data_list.append(errors)
@@ -575,6 +575,13 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
   global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
   from config.maria import DETECTOR_ROWS_MAP, COLUMNS_MAPPING,  DETECTOR_PIXELS, \
                           PIXEL_WIDTH,CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
+  import config.gnuplot_preferences
+  # speedup plotting using no interpolation or averidgeing
+  config.gnuplot_preferences.settings_3dmap='''set pm3d map corners2color c1
+set ticslevel 0.05
+set palette defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")
+set size square
+'''
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'

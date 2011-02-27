@@ -7,6 +7,7 @@
 .directory
 .eric4project
 .ropeproject
+MANIFEST
 archiv
 build
 doc
@@ -28,3 +29,5 @@ config/squid_calibration
 config/treff_calibration_old.dat
 edit_project.sh
 scripts/*.bat
+repository/binary
+repository/source

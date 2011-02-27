@@ -22,7 +22,7 @@ import config
 from config import gnuplot_preferences
 from config.gui import DOWNLOAD_PAGE_URL
 import file_actions
-from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, SimpleEntryDialog, DataView
+from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, SimpleEntryDialog, DataView, PlotTree
 from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
 #----------------------- importing modules --------------------------
 
@@ -64,6 +64,7 @@ class ApplicationMainWindow(gtk.Window):
   mouse_arrow_starting_point=None
   active_zoom_from=None
   active_zoom_last_inside=None
+  active_fit_selection_from=None
   # sub-windows can set a function which gets called on button press
   # with the active position of the mouse on the plot
   garbage=[]
@@ -124,9 +125,15 @@ class ApplicationMainWindow(gtk.Window):
     # create an associated textbuffer by default.
     self.plot_options_view = gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview.
-    # TODO: call buffer directly from textview widget
     self.plot_options_buffer = self.plot_options_view.get_buffer()
     self.active_folder=os.path.realpath('.') # For file dialogs to stay in the active directory
+    # Create a window for plot preview and selection
+    self.plot_tree=PlotTree(self.active_session.file_data, self.update_tree, 
+                            expand=self.active_session.active_file_name, parent=self)
+    self.plot_tree.set_title('Plotting - Imported Datasets')
+    self.plot_tree.connect('delete_event', self.plot_tree_hide_on_delete)
+    self.plot_tree.connect('delete_event', self.plot_tree.hide_on_delete)
+    self.plot_tree.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_UTILITY)
     #----------------- set class variables ------------------
 
 
@@ -136,6 +143,10 @@ class ApplicationMainWindow(gtk.Window):
                             os.path.split(
                            os.path.realpath(__file__))[0], 
                            "..", "config", "logo.png").replace('library.zip', ''))
+    self.plot_tree.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0], 
+                           "..", "config", "logoblue.png").replace('library.zip', ''))
     # Reading config file
     self.read_config_file()
     # When the window gets destroyed, process some cleanup and save the configuration
@@ -427,6 +438,7 @@ class ApplicationMainWindow(gtk.Window):
     self.event_box.connect('button-press-event', self.mouse_press)
     self.event_box.connect('button-release-event', self.mouse_release)
     self.connect('motion-notify-event', self.catch_mouse_position)
+    self.connect('focus-in-event', self.present_tree)
     
     #------------- connecting events --------------
     
@@ -466,6 +478,8 @@ class ApplicationMainWindow(gtk.Window):
         return
     self.geometry=(self.get_position(), self.get_size())
     self.check_for_updates()
+    if self.plot_tree_shown:
+      self.plot_tree.show_all()
     self.init_complete=True
 
   #-------------------------------Window Constructor-------------------------------------#
@@ -511,6 +525,9 @@ class ApplicationMainWindow(gtk.Window):
       self.config_object['Window']={
                                     'size': self.geometry[1], 
                                     'position': self.geometry[0], 
+                                    'plot_tree_position': self.plot_tree.get_position(), 
+                                    'plot_tree_size': self.plot_tree.get_size(), 
+                                    'plot_tree_shown': self.plot_tree_shown, 
                                     }
       self.config_object.write()
     for window in self.open_windows:
@@ -571,9 +588,43 @@ class ApplicationMainWindow(gtk.Window):
     # recreate the menus, if the columns for this dataset aren't the same
     self.rebuild_menus()
     self.reset_statusbar()
-      
     # plot the data
     self.replot()
+    if self.plot_tree_shown:
+      self.plot_tree.add_data()
+      self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
+
+  def update_tree(self, key, index):
+    '''
+      Update the active plot from the treeview.
+    '''
+    session=self.active_session
+    session.active_file_data=session.file_data[key]
+    self.measurement=session.active_file_data
+    session.active_file_name=key
+    self.index_mess=index
+    self.replot()
+    self.plot_tree.expand_column=key
+    self.plot_tree.add_data()
+    self.plot_tree.set_focus_item(key, index)
+    self.present()
+
+  def plot_tree_hide_on_delete(self, *ignore):
+    '''
+      Hide the plot tree window on delete.
+    '''
+    self.plot_tree_shown=False
+
+  def show_plot_tree(self, action):
+    '''
+      Show the plot tree window.
+    '''
+    if self.plot_tree_shown:
+      self.plot_tree_shown=False
+      self.plot_tree.hide()
+    else:
+      self.plot_tree_shown=True
+      self.plot_tree.show()
 
   def remove_active_plot(self, action):
     '''
@@ -641,8 +692,7 @@ class ApplicationMainWindow(gtk.Window):
         self.measurement[self.index_mess].sample_name=self.label.get_text()
         self.measurement[self.index_mess].short_info=self.label2.get_text()
     # change log settings
-    # TODO: check if realy log was triggering this action
-    else:
+    elif action in (self.logx, self.logy, self.logz):
       logitems=self.measurement[self.index_mess]
       if self.active_multiplot:
         for mp in self.multiplot:
@@ -681,6 +731,9 @@ class ApplicationMainWindow(gtk.Window):
     self.reset_statusbar()
     self.rebuild_menus()
     self.replot()
+    if self.plot_tree_shown:
+      self.plot_tree.add_data()
+      self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
   
   def add_file(self, action, hide_status=True):
     '''
@@ -755,6 +808,9 @@ class ApplicationMainWindow(gtk.Window):
     self.rebuild_menus()
     if hide_status:
       self.replot()
+    if self.plot_tree_shown:
+      self.plot_tree.add_data()
+      self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
     return True
 
   def save_snapshot(self, action):
@@ -3087,6 +3143,10 @@ set multiplot layout %i,1
     self.active_ipython=ipython_dialog
     ipython_dialog.set_size_request(750,600)
     ipython_dialog.set_resizable(True)
+    ipython_dialog.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0], 
+                           "..", "config", "logoyellow.png").replace('library.zip', ''))
     sw = gtk.ScrolledWindow()
     sw.set_policy(gtk.POLICY_AUTOMATIC,gtk.POLICY_AUTOMATIC)
     ipview = IPythonView("""    This is an interactive IPython session with direct access to the program.
@@ -3299,14 +3359,21 @@ set multiplot layout %i,1
     '''
       Read the window config parameters from the ConfigObj.
     '''
-    if 'Window' in self.config_object:
+    try:
       x, y=self.config_object['Window']['position']
       width, height=self.config_object['Window']['size']
       # Set the main windwo size to default or the last settings saved in config file
       self.set_default_size(width, height)
       self.move(x, y)
-    else:
+      px, py=self.config_object['Window']['plot_tree_position']
+      pwidth, pheight=self.config_object['Window']['plot_tree_size']
+      self.plot_tree_shown=self.config_object['Window']['plot_tree_shown']
+      self.plot_tree.set_default_size(pwidth, pheight)
+      self.plot_tree.move(px, py)
+    except KeyError:
       self.set_default_size(700, 600)
+      self.plot_tree.set_default_size(350, 500)
+      self.plot_tree_shown=True
 
   def check_for_update_now(self):
     '''
@@ -3408,7 +3475,7 @@ set multiplot layout %i,1
     '''
       Scale the image during a resize.
     '''
-    if self.image_do_resize and not self.active_zoom_from and self.mouse_arrow_starting_point is None:
+    if self.image_do_resize and not self.active_zoom_from and not self.active_fit_selection_from and self.mouse_arrow_starting_point is None:
       self.image_do_resize=False
       try:
         # if no image was set, there is not self.image_pixbuf
@@ -3436,6 +3503,19 @@ set multiplot layout %i,1
                                          abs(position[4]-az[4]), abs(position[5]-az[5]))
         self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
         self.statusbar.push(0, 'Zoom: x1=%6g  \ty1=%6g \t x2=%6g \ty2=%6g' % (az[0], az[1], position[0], position[1]))
+        i=0
+        while gtk.events_pending() and i<10:
+          gtk.main_iteration(False)
+          i+=1
+        self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
+      elif self.active_fit_selection_from is not None:
+        # When a drag is active draw a rectangle on the image
+        af=self.active_fit_selection_from
+        self.image_pixmap.draw_rectangle( self.get_style().black_gc, False, min(af[4], position[4]), 
+                                                                            min(af[5], position[5]), 
+                                         abs(position[4]-af[4]), abs(position[5]-af[5]))
+        self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
+        self.statusbar.push(0, 'Fit-region: x1=%6g  \ty1=%6g \t x2=%6g \ty2=%6g' % (af[0], af[1], position[0], position[1]))
         i=0
         while gtk.events_pending() and i<10:
           gtk.main_iteration(False)
@@ -3488,27 +3568,10 @@ set multiplot layout %i,1
       # control was pressed during button press
       # fit a peak function to the active mouse position
       if position is not None:
-        ds=self.measurement[self.index_mess]
-        if ds.zdata>=0:
-          return
-        if (ds.fit_object==None):
-          self.file_actions.activate_action('create_fit_object')
-        import fit_data
-        width=ds.x.max()-ds.x.min()
-        if action.button==1:
-          gaussian=fit_data.FitGaussian([ position[1], position[0], width/10., 0.])
-          gaussian.refine(ds.x, ds.y)
-          ds.fit_object.functions.append([gaussian, False, True, False, False])
-        if action.button==2:
-          voigt=fit_data.FitVoigt([ position[1], position[0], width/10., width/10., 0.])
-          voigt.refine(ds.x, ds.y)
-          ds.fit_object.functions.append([voigt, False, True, False, False])
-        if action.button==3:
-          gaussian=fit_data.FitLorentzian([ position[1], position[0], width/10., 0.])
-          gaussian.refine(ds.x, ds.y)
-          ds.fit_object.functions.append([gaussian, False, True, False, False])
-        self.file_actions.activate_action('simmulate_functions')
-        self.replot()
+        self.active_fit_selection_from=position
+        self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
+      else:
+        self.active_fit_selection_from=None
     elif action.state.value_names==[]:
       # no control/alt/shift button is pressed
       if action.button==3:
@@ -3561,7 +3624,7 @@ set multiplot layout %i,1
     position=self.get_position_on_plot()
     if self.active_zoom_from is not None:
       # Zoom in to the selected Area
-      if position is None or (position[2]-self.active_zoom_from[2])<0.1 and (position[3]-self.active_zoom_from[3])<0.1:
+      if position is None or abs(position[2]-self.active_zoom_from[2])<0.1 and abs(position[3]-self.active_zoom_from[3])<0.1:
         # if mouse is outside the ploted region, use the last position where it was inside
         position=self.active_zoom_last_inside
       dsp=self.measurement[self.index_mess].plot_options
@@ -3580,6 +3643,53 @@ set multiplot layout %i,1
       if position is not None:
         self.measurement[self.index_mess].plot_options+='set arrow from %g,%g to %g,%g\n' % (start[0], start[1], position[0], position[1])
         self.replot()
+    if self.active_fit_selection_from is not None:
+      start=self.active_fit_selection_from
+      self.active_fit_selection_from=None
+      if position is None:
+        return
+      ds=self.measurement[self.index_mess]
+      if ds.zdata>=0:
+        return
+      if (abs(start[2]-position[2])+abs(start[3]-position[3]))<0.03:
+        # Position was only clicked
+        width=(ds.x.max()-ds.x.min())/10.
+        start_range=None
+        end_range=None
+        x_0=position[0]
+        I=position[1]
+        bg=0.
+      else:
+        # Position was dragged, define a range of plotting
+        width=abs(position[0]-start[0])/4.
+        start_range=min(position[0], start[0])
+        end_range=max(position[0], start[0])
+        x_0=(end_range-start_range)/2.+start_range
+        I=abs(position[0]-start[0])/4.
+        bg=min(position[1], start[1])
+      if (ds.fit_object==None):
+        self.file_actions.activate_action('create_fit_object')
+      import fit_data
+      if action.button==1:
+        gaussian=fit_data.FitGaussian([ I, x_0, width, bg])
+        gaussian.x_from=start_range
+        gaussian.x_to=end_range
+        gaussian.refine(ds.x, ds.y)
+        ds.fit_object.functions.append([gaussian, False, True, False, False])
+      if action.button==2:
+        voigt=fit_data.FitVoigt([ I, x_0, width, width,  bg])
+        voigt.x_from=start_range
+        voigt.x_to=end_range
+        voigt.refine(ds.x, ds.y)
+        ds.fit_object.functions.append([voigt, False, True, False, False])
+      if action.button==3:
+        lorentz=fit_data.FitLorentzian([ I, x_0, width, bg])
+        lorentz.x_from=start_range
+        lorentz.x_to=end_range
+        lorentz.refine(ds.x, ds.y)
+        ds.fit_object.functions.append([lorentz, False, True, False, False])
+      self.file_actions.activate_action('simmulate_functions')
+      self.replot()
   
   def get_position_on_plot(self):
     '''
@@ -3615,6 +3725,16 @@ set multiplot layout %i,1
     '''
     self.mouse_mode=not self.mouse_mode
     self.replot()
+  
+  def present_tree(self, widget=None, action=None):
+    '''
+      Show the plot_tree window when the program grabs the focus.
+    '''
+    if self.plot_tree_shown:
+      self.plot_tree.hide()
+      while gtk.events_pending():
+        gtk.main_iteration(False)
+      self.plot_tree.show()
   
   def initialize_gnuplot(self):
     '''
@@ -3964,6 +4084,7 @@ set multiplot layout %i,1
           <menuitem action='Apply'/>
         </menu>
         <separator name='static4'/>
+        <menuitem action='ShowPlotTree'/>
         <menuitem action='ShowPlotparams'/>
         <menuitem action='ShowImportInfo'/>
       </menu>
@@ -4165,6 +4286,10 @@ set multiplot layout %i,1
         "Show File Import Informations", None,#'i',                     # label, accelerator
         "Show the information from the file import in this session.",                                    # tooltip
         self.show_status_dialog),
+      ( "ShowPlotTree", None,                    # name, stock id
+        "Show Tree of Datasets", "<control>T",#'i',                     # label, accelerator
+        "Show Tree of Datasets...",                                    # tooltip
+        self.show_plot_tree),
       ( "FilterData", None,                    # name, stock id
         "Filter the data points", None,#'f',                     # label, accelerator
         None,                                    # tooltip
@@ -4270,11 +4395,11 @@ set multiplot layout %i,1
         None,                                    # tooltip
         self.toggle_mouse_mode),
       ( "TogglePlotFit", gtk.STOCK_ZOOM_FIT,                    # name, stock id
-        "Toggle between data,fit and combined plot", "<control>T",                     # label, accelerator
+        "Toggle between data,fit and combined plot", "<control><shift>T",                     # label, accelerator
         None,                                    # tooltip
         self.toggle_plotfit),
       ( "IteratePlotFit", gtk.STOCK_ZOOM_100,                    # name, stock id
-        "Select between data and fits to plot", "<control>T",                     # label, accelerator
+        "Select between data and fits to plot", None,                     # label, accelerator
         None,                                    # tooltip
         self.toggle_plotfit),
     )+self.added_items;

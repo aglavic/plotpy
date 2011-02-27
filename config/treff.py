@@ -25,8 +25,8 @@ PIXEL_WIDTH=0.014645
 LAMBDA_N=4.75
 
 PI_4_OVER_LAMBDA=4*pi/LAMBDA_N
-GRAD_TO_MRAD=pi/180*1000
-GRAD_TO_RAD=pi/180
+GRAD_TO_MRAD=pi/180.*1000.
+GRAD_TO_RAD=pi/180.
 
 # Files to combine for the pnr_multi.f90 program
 PROGRAM_FILES=['fit_pnr_mult_newcons.f90', 'levenberg_rough_newcons.f90', 
