@@ -13,8 +13,6 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
-# TODO: Check for fortran-compiler to be installed
-
 # import buildin modules
 import os
 import sys
@@ -570,27 +568,50 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       program to finish, it only startes the sub process, which is returned.
     '''
     code_path=os.path.join(self.SCRIPT_PATH, 'config', 'fit', 'pnr_multi')
-    code_file=os.path.join(self.TEMP_DIR, 'pnr.f90')
+    param_code_file=os.path.join(self.TEMP_DIR,  config.treff.PROGRAM_PARAMETER_FILE)
     exe=os.path.join(self.TEMP_DIR, 'pnr.o')
     subcode_files=map(lambda name: os.path.join(code_path, name), config.treff.PROGRAM_FILES)
     # has the program been changed or does it not exist
     if force_compile or (not os.path.exists(exe)) or \
       any(map(lambda name: (os.stat(name)[8]-os.stat(exe)[8]) > 0, subcode_files)):
-      code=''
-      for subcode_file in subcode_files:
-        code+=open(subcode_file, 'r').read()
-      code=code.replace("parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=5000,np_conv=500,pdq=0.02d0)", 
-                        "parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=%i,np_conv=500,pdq=0.02d0)" % \
-                   self.max_hr
-                   )
-      open(code_file, 'w').write(code)
-      print 'Compiling fit program!'
-      call_params=[config.treff.FORTRAN_COMPILER, code_file, '-o', exe]
+      param_code=open(os.path.join(code_path, config.treff.PROGRAM_PARAMETER_FILE), 'r').read()
+      param_code=param_code.replace("parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=5000,np_conv=500,pdq=0.02d0)", 
+                              "parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=%i,np_conv=500,pdq=0.02d0)" % \
+                              self.max_hr
+                              )
+      open(param_code_file, 'w').write(param_code)
+      ofiles=[]
+      num_files=len(subcode_files)+2
+      sys.stdout.write('Compiling fit program %2i/%2i' % (0, num_files))
+      sys.stdout.flush()
+      for i, file in enumerate([param_code_file]+subcode_files):
+        # compile each source file separately
+        ofile=os.path.join(self.TEMP_DIR, os.path.split(file)[1].rsplit('.', 1)[0]+'.o')
+        ofiles.append(ofile)
+        call_params=[config.treff.FORTRAN_COMPILER, 
+                     config.treff.FORTRAN_PRECOMPILE_OPTION, file, 
+                     config.treff.FORTRAN_OUTPUT_OPTION, 
+                     ofile, 
+                     ]
+        if  config.treff.FORTRAN_COMPILER_OPTIONS!=None:
+          call_params.append(config.treff.FORTRAN_COMPILER_OPTIONS)
+        if  config.treff.FORTRAN_COMPILER_MARCH!=None:
+          call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
+        subprocess.call(call_params, shell=False)  
+        sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i' % (i+1, num_files))
+        sys.stdout.flush()
+      # compile the combination of all files
+      call_params=[config.treff.FORTRAN_COMPILER]+ofiles+\
+                    [config.treff.FORTRAN_OUTPUT_OPTION, 
+                     exe, 
+                     ]
       if  config.treff.FORTRAN_COMPILER_OPTIONS!=None:
         call_params.append(config.treff.FORTRAN_COMPILER_OPTIONS)
       if  config.treff.FORTRAN_COMPILER_MARCH!=None:
         call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
       subprocess.call(call_params, shell=False)
+      sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i\n' % (num_files, num_files))
+      sys.stdout.flush()
       print 'Compiled'
     process = subprocess.Popen([exe + ' ' + file_ent + ' ' + str(self.max_iter)], 
                         shell=True, 

@@ -29,9 +29,14 @@ GRAD_TO_MRAD=pi/180.*1000.
 GRAD_TO_RAD=pi/180.
 
 # Files to combine for the pnr_multi.f90 program
-PROGRAM_FILES=['parameters_module.f90','fit_pnr_mult_newcons.f90', 'levenberg_rough_newcons_treff.f90', 
-'param_mult.f90', 'polref_sp_rough.f90', 'read_mrad_sim_rough_treff.f90', 
-'refconv_illu.f90', 'calchi_treff.f90']
+PROGRAM_FILES=[ 'fit_pnr_mult_newcons.f90', 
+                'levenberg_rough_newcons_treff.f90', 
+                'param_mult.f90', 
+                'polref_sp_rough.f90', 
+                'read_mrad_sim_rough_treff.f90', 
+                'refconv_illu.f90', 
+                'calchi_treff.f90']
+PROGRAM_PARAMETER_FILE='parameters_module.f90'
 REF_FILE_ENDINGS=['uu', 'dd', 'ud', 'du']
 FIT_OUTPUT_FILES=['simulation_pp', 'simulation_mm', 'simulation_pm', 'simulation_mp']
 RESULT_FILE='result'
@@ -57,4 +62,7 @@ FORTRAN_COMPILER='gfortran'
 # stdandard cpu flags are:
 # i686 / pentium4 / athlon / k8 / amdfam10 (athlon64) / nocona (p4-64bit)
 FORTRAN_COMPILER_OPTIONS='-O3'
+# option to precompile every file
+FORTRAN_PRECOMPILE_OPTION='-c'
+FORTRAN_OUTPUT_OPTION='-o'
 FORTRAN_COMPILER_MARCH=None #'-march=nocona'

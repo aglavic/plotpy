@@ -141,11 +141,17 @@ class ReflectometerFitGUI:
         line=open(self.TEMP_DIR+'status').read()
         iteration=int(line.split('-')[0].split(':')[1])
         chi=float(line.split('-')[1].split(':')[1])
+        improvements=int(line.split('-')[2].split(':')[1])
+        s_text='Status after ' + str(round(time_get()-start, 1)) + \
+                ' s: iteration %i, chi %.6g' % (iteration, chi)
+        if improvements>0:
+          s_text+='(%i)' % improvements
       except:
         iteration=1
         chi=0
+        improvements=0
+        s_text='No status available at...'
       text=file.read()
-      s_text='Status after ' + str(round(time_get()-start, 1)) + ' s: iteration %i, chi %.6g' % (iteration, chi)
       status.set_title(s_text)
       status.write(text)
       time.sleep(0.1)

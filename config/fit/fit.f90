@@ -160,7 +160,7 @@ program fit_logspecrefgauss
     itest=0
     do 10 iter=1,maximum_iter !maximum iterations, standart 1000
         open(82,file='status')
-        write(82,*) 'iteration: ',iter,' - chi: ',chi
+        write(82,*) 'iteration: ',iter,' - chi: ',chi, ' - improvements: 0'
         close(82)
         write(8,*) '############################################################'
         write(8,*)
