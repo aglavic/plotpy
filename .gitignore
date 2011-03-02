@@ -31,3 +31,5 @@ edit_project.sh
 scripts/*.bat
 repository/binary
 repository/source
+repository/dists
+

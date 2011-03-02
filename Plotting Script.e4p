@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2011-02-02, 20:46:01 -->
+<!-- Saved: 2011-02-28, 15:51:16 -->
 <!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -49,13 +49,6 @@
     <Source>config/scattering_length_table.py</Source>
     <Source>sessions/reflectometer_fit/__init__.py</Source>
     <Source>sessions/reflectometer_fit/parameters.py</Source>
-    <Source>config/fit/pnr_multi/calchi.f90</Source>
-    <Source>config/fit/pnr_multi/fit_pnr_mult_newcons.f90</Source>
-    <Source>config/fit/pnr_multi/levenberg_rough_newcons.f90</Source>
-    <Source>config/fit/pnr_multi/param_mult.f90</Source>
-    <Source>config/fit/pnr_multi/polref_sp_rough_noncoll.f90</Source>
-    <Source>config/fit/pnr_multi/read_mrad_sim_rough.f90</Source>
-    <Source>config/fit/pnr_multi/refconv_illu.f90</Source>
     <Source>deb_control</Source>
     <Source>import_debug.py</Source>
     <Source>py2exe_imports.py</Source>
@@ -109,6 +102,14 @@
     <Source>measurement_data_functions.h</Source>
     <Source>wxgui/PrintDatasetDialog.py</Source>
     <Source>aptdoc.css</Source>
+    <Source>config/fit/pnr_multi/calchi_treff.f90</Source>
+    <Source>config/fit/pnr_multi/fit_pnr_mult_newcons.f90</Source>
+    <Source>config/fit/pnr_multi/levenberg_rough_newcons_treff.f90</Source>
+    <Source>config/fit/pnr_multi/param_mult.f90</Source>
+    <Source>config/fit/pnr_multi/parameters_module.f90</Source>
+    <Source>config/fit/pnr_multi/polref_sp_rough.f90</Source>
+    <Source>config/fit/pnr_multi/read_mrad_sim_rough_treff.f90</Source>
+    <Source>config/fit/pnr_multi/refconv_illu.f90</Source>
   </Sources>
   <Forms>
   </Forms>

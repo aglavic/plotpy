@@ -41,6 +41,7 @@ The following list of changes does not claim to be complete:
 - Added a DataView dialog to show the data of the active plot in a table.
 - Possibility to update the program from a website (updatescript itself needs to be written, but will be downloaded
   automatically)
+- Updated Polarized Neutron Reflectivity fit program from Emmanuel Kentzinger
 - Rework the data output leading to a speedup in plotting of 70-95%.
 - Rework of the MeasurementData and PhysicalProperty objects which store the data, now the columns storing data are
   derived from the numpy.ndarray object, which make calculations a lot faster and gives the possiblity to use them with
