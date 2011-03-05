@@ -57,7 +57,8 @@ class CircleSession(GUI, GenericSession):
 
   #++++++++++++++++++ local variables +++++++++++++++++
   show_counts=False
-  FILE_WILDCARDS=(('4circle','*.spec', '*.spec.gz', '*.fio', '*.fio.gz', '*.[0-9][0-9][0-9][0-9]', '*.[0-9][0-9][0-9][0-9].gz'),('All', '*'))  
+  FILE_WILDCARDS=[('4circle','*.spec', '*.spec.gz', '*.fio', '*.fio.gz', 
+                    '*.[0-9][0-9][0-9][0-9]', '*.[0-9][0-9][0-9][0-9].gz')]
   mds_create=False
   read_directly=True
   autoreload_active=False

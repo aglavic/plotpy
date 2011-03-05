@@ -10,6 +10,7 @@ import cairo
 import sys, os
 from time import sleep
 from config import gnuplot_preferences
+import config.templates
 
 #----------------------- importing modules --------------------------
 
@@ -621,6 +622,115 @@ class ExportFileChooserDialog(gtk.FileChooserDialog):
     return width, height
 
 #------------------- FileChooserDialog with entries for width and height ----------------
+
+#+++++++++++++++++++ FileImportDialog with additions for template import ++++++++++++++++
+
+class FileImportDialog(gtk.FileChooserDialog):
+  '''
+    File chooser dialog with additional options for import templates.
+  '''
+  starting_folder=''
+  template=None
+  
+  def __init__(self, current_folder, wildcards, template_folder=None, **options):
+    '''
+      Create a dialog for reading datafiles including an option for
+      using templates.
+
+      @param current_folder Folder uppond dialog start.
+      @param wildcards sequance of items (name, pattern1, pattern2, ...).
+    '''
+    if template_folder is None:
+      template_folder=config.templates.TEMPLATE_DIRECTORY
+    if not 'title' in options:
+      options['title']='Open new datafile...'
+    options['action']=gtk.FILE_CHOOSER_ACTION_OPEN
+    if not 'buttons' in options:
+      options['buttons']=('Use Template', 66, gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+    gtk.FileChooserDialog.__init__(self, **options)
+    self.set_select_multiple(True)
+    self.set_default_response(gtk.RESPONSE_OK)
+    self.starting_folder=current_folder
+    self.template_folder=template_folder
+    self.set_current_folder(current_folder)
+    filter = gtk.FileFilter()
+    filter.set_name('All Files')
+    filter.add_pattern('*')
+    self.add_filter(filter)
+    self.add_wildcards(wildcards)
+
+  def add_wildcards(self, wildcards):
+    '''
+      Add a list of wildcards to the dialogs list.
+      
+      @param wildcards sequance of items (name, pattern1, pattern2, ...).
+    '''
+    # the first wildcard will be active
+    wildcard=wildcards[0]
+    filter = gtk.FileFilter()
+    filter.set_name(wildcard[0])
+    for pattern in wildcard[1:]:
+      filter.add_pattern(pattern)
+    self.add_filter(filter)
+    self.set_filter(filter)
+    for wildcard in wildcards[1:]:
+      filter = gtk.FileFilter()
+      filter.set_name(wildcard[0])
+      for pattern in wildcard[1:]:
+        filter.add_pattern(pattern)
+      self.add_filter(filter)
+  
+  def clear_wildcards(self):
+    '''
+      Remove all wildcards active at the moment.
+    '''
+    filters=self.list_filters()
+    for filter in filters[1:]:
+      self.remove_filter(filter)
+
+  def run(self):
+    '''
+      Open the dialog and wait for response. Returns the selected
+      files, folder, template name.
+    '''
+    files=[]
+    folder=self.starting_folder
+    self.show_all()
+    response = gtk.FileChooserDialog.run(self)
+    if response == gtk.RESPONSE_OK:
+      folder=self.get_current_folder()
+      files=self.get_filenames()
+      return files, folder, self.template
+    elif response == 66:
+      self.run_template_chooser()
+      return self.run()
+    else:
+      return None, None, None
+
+  def run_template_chooser(self):
+    '''
+      Open a dialog to select a specific template for file import.
+    '''
+    import sessions.templates
+    tcdia=gtk.FileChooserDialog(title='Choose template file...', 
+                                parent=self, 
+                                action=gtk.FILE_CHOOSER_ACTION_OPEN, 
+                                buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+                                )
+    filter = gtk.FileFilter()
+    filter.set_name('Template (.py)')
+    filter.add_pattern('*.py')
+    tcdia.add_filter(filter)
+    tcdia.set_current_folder(self.template_folder)
+    result=tcdia.run()
+    if result==gtk.RESPONSE_OK:
+      template_file=tcdia.get_filename()
+      self.template=sessions.templates.DataImportTemplate(template_file)
+      self.clear_wildcards()
+      self.add_wildcards([[self.template.name]+self.template.wildcards])
+    tcdia.destroy()
+
+#------------------- FileImportDialog with additions for template import ----------------
 
 #+++ Printing Dialog which imports and creates PNG files for the datasets and sends it to a printer +++
 

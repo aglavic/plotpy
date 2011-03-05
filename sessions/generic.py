@@ -49,6 +49,7 @@ if hex(sys.hexversion)<'0x2050000':
 
 # import gui functions for active config.gui.toolkit
 import config.gui
+import config.templates
 try:
   GUI=__import__( config.gui.toolkit+'gui.generic', fromlist=['GenericGUI']).GenericGUI
 except ImportError: 
@@ -141,7 +142,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   active_file_data=None # pointer for the data of the current file
   active_file_name='' # the name of the current file
   index=0
-  FILE_WILDCARDS=(('All', '*')) # wildcards for the file open dialog of the GUI
+  FILE_WILDCARDS=[('All', '*')] # wildcards for the file open dialog of the GUI
   # known command line options list
   COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 
                         'template','no-trans', '-help', '-debug', '-nolimit', 'startuppath', 'mpl','ipy', ]
@@ -283,7 +284,13 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
             import templates
             #self.user_template=argument
             print "Using template %s." % argument
-            self.read_file=templates.DataImportTemplate(argument)
+            if argument.endswith('.py'):
+              template_file=argument
+            else:
+              template_file=os.path.join(config.templates.TEMPLATE_DIRECTORY,  argument + '.py')
+            template=templates.DataImportTemplate(template_file)
+            self.read_file=template
+            self.FILE_WILDCARDS=[[template.name]+template.wildcards]
             # reset the addfile function to the standard
             self.add_file=lambda *args, **opts: GenericSession.add_file(self, *args, **opts)
             last_argument_option=[False,'']

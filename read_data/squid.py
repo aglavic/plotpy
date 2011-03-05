@@ -68,7 +68,7 @@ def read_data(file_name,COLUMNS_MAPPING,MEASUREMENT_TYPES):
       return 'NULL'
     return measurement_data
   else:
-    print 'File '+input_file+' does not exist.'
+    print 'File '+file_name+' does not exist.'
     return 'NULL'
 
 def get_columns(input_file): 

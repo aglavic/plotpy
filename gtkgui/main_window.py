@@ -22,7 +22,8 @@ import config
 from config import gnuplot_preferences
 from config.gui import DOWNLOAD_PAGE_URL
 import file_actions
-from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, SimpleEntryDialog, DataView, PlotTree
+from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, \
+                    SimpleEntryDialog, DataView, PlotTree,  FileImportDialog
 from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
 #----------------------- importing modules --------------------------
 
@@ -748,26 +749,13 @@ class ApplicationMainWindow(gtk.Window):
     '''
     file_names=[]
     #++++++++++++++++File selection dialog+++++++++++++++++++#
-    file_dialog=gtk.FileChooserDialog(title='Open new datafile...', 
-                                      action=gtk.FILE_CHOOSER_ACTION_OPEN, 
-                                      buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
-    file_dialog.set_select_multiple(True)
-    file_dialog.set_default_response(gtk.RESPONSE_OK)
-    file_dialog.set_current_folder(self.active_folder)
-    for wildcard in self.active_session.FILE_WILDCARDS:
-      filter = gtk.FileFilter()
-      filter.set_name(wildcard[0])
-      for pattern in wildcard[1:]:
-        filter.add_pattern(pattern)
-      file_dialog.add_filter(filter)
-    response = file_dialog.run()
-    if response == gtk.RESPONSE_OK:
-      self.active_folder=file_dialog.get_current_folder()
-      file_names=map(lambda name: unicode(name, 'utf-8'), file_dialog.get_filenames())
-    elif response == gtk.RESPONSE_CANCEL:
-      file_dialog.destroy()
-      return False
+    file_dialog=FileImportDialog(self.active_folder, self.active_session.FILE_WILDCARDS)
+    file_names, folder, template=file_dialog.run()
     file_dialog.destroy()
+    if file_names is None:
+      # process canceled
+      return
+    self.active_folder=folder
     #----------------File selection dialog-------------------#
     # show a status dialog for the file import
     if type(sys.stdout)!=file:
@@ -782,14 +770,26 @@ class ApplicationMainWindow(gtk.Window):
       status_dialog.show_all()
       sys.stdout.second_output=status_dialog
     # try to import the selected files and append them to the active sesssion
-    # try to import the selected files and append them to the active sesssion
-    if self.active_session.ONLY_IMPORT_MULTIFILE:
-      self.active_session.add_file(file_names, append=True)
+    if template is None:
+      if self.active_session.ONLY_IMPORT_MULTIFILE:
+        self.active_session.add_file(file_names, append=True)
+      else:
+        for file_name in file_names:
+          datasets=self.active_session.add_file(file_name, append=True)
+          if len(datasets)>0:
+            self.active_session.change_active(name=file_name)
     else:
+      # if a template was selected, read the files using this template
+      session=self.active_session
       for file_name in file_names:
-        datasets=self.active_session.add_file(file_name, append=True)
-        if len(datasets)>0:
-          self.active_session.change_active(name=file_name)
+        datasets=template(file_name)
+        if datasets=='NULL':
+          continue
+        datasets=session.create_numbers(datasets)
+        session.add_data(datasets, file_name)
+        session.new_file_data_treatment(datasets)
+      session.active_file_data=session.file_data[file_names[0]]
+      session.active_file_name=file_names[0]
     # set the last imported file as active
     self.measurement=self.active_session.active_file_data
     if len(self.measurement)==0:

@@ -24,6 +24,8 @@ class DataImportTemplate(object):
     Class framework to import ascii data files with different settings defined in user templates.
     Can be used for any filetype instead of the normal import framework.
   '''
+  name='Unnamed'
+  wildcards=[]
   
   def __init__(self, template_name):
     '''
@@ -31,17 +33,15 @@ class DataImportTemplate(object):
     '''
     # check if template file exists:
     try:
-      template_file=open(os.path.join(config.templates.TEMPLATE_DIRECTORY,  template_name + '.py'), 'r')
-      template_code=compile(template_file.read(), template_name+'.py', 'exec')
+      template_file=open(template_name, 'r')
+      template_code=compile(template_file.read(), os.path.split(template_name)[1], 'exec')
       template_file.close()
       self.compile_template(template_code)
       self.MeasurementData=MeasurementDataClass
     except IOError:
-      print "Template file %s not found" % os.path.join(config.templates.TEMPLATE_DIRECTORY,  template_name + '.py')
-      return None
+      raise IOError, "Template file %s not found" % template_name
     except SyntaxError:
-      print "Error in Template syntax"
-      return None
+      raise SyntaxError,  "Error in Template syntax"
   
   def compile_template(self, template_code):
     '''
@@ -61,11 +61,12 @@ class DataImportTemplate(object):
       splitting
       footer
     except NameError, error_text:
-      print "Compiling template failed, not all needed variables are defined:", error_text
-      return False
+      raise SyntaxError,  "Compiling template failed, not all needed variables are defined: %s" % error_text
     # go through the local variables and set options accordingly.
     
     ## General
+    if 'name' in general:
+      self.name=general['name']
     if 'comments' in general:
       self.comments=general['comments']
     else:
@@ -170,6 +171,12 @@ class DataImportTemplate(object):
       self.footer_search_patterns=footer['search pattern']
     else:
       self.footer_search_patterns={}
+    
+    ## Define wildcards to use for this template
+    try:
+      self.wildcards=type_info['wildcards']
+    except (NameError, KeyError):
+      self.wildcards=['*']
     return True
   
   #++++++++++++++++++++++ Reading methods +++++++++++++++++++++++++++

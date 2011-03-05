@@ -18,6 +18,7 @@ __status__ = "Development"
 
 ## General settings for the file
 general={
+         'name': 'default', 
          ## A list of leading characters which will not be used for data lines.
          ##    If the according option is set, it can be used to find the header, footer or splitting.
          'comments': ['#'],
@@ -156,9 +157,10 @@ footer={
         #                   ],
         }
 
-## Define how the applicability of thes template can be checked
-type_check={
-            # Not jet implemented
+## Define how the applicability of thes template can be checked and to which files it applies
+type_info={
+            'wildcards': ['*.*'], 
+            # Not jet implemented further
             }
 
 #------------------------------------ Begin of Template settings -----------------------------------
