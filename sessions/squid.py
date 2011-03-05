@@ -47,7 +47,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7"
+__version__ = "0.7.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -187,8 +187,16 @@ Data columns and unit transformations are defined in config.squid.py.
     field=1
     temp=2
     mag=3
+    units=dataset.units()
     dims=dataset.dimensions()
     first=True
+    for i, unit in reversed(tuple(enumerate(units))):
+      if unit in ['A·m^2', 'emu']:
+        mag=i
+      if unit in ['K', '°C']:
+        temp=i
+      if unit in ['T', 'mT', 'Oe', 'kOe']:
+        field=i
     for dim in dims:
       if dim.startswith("Corrected"):
         first=False

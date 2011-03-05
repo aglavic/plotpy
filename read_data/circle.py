@@ -17,7 +17,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7"
+__version__ = "0.7.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -29,7 +29,9 @@ def read_data(input_file):
   if os.path.exists(input_file):
     if input_file.endswith('.fio') or input_file.endswith('.fio.gz'):
       return read_data_p09(input_file)
-    if input_file.endswith('.gz'):
+    elif input_file.rstrip('.gz').split('.')[-1].isdigit():
+      return read_data_4id(input_file)
+    elif input_file.endswith('.gz'):
       # use gziped format file
       import gzip
       file_handle=gzip.open(input_file, 'r')
@@ -260,6 +262,9 @@ def get_scan_header(scan_lines):
   return scan_header, data_lines
   
 def read_data_p09(input_file):
+  '''
+    Read data aquired at P09 beamlime of PETRA III.
+  '''
   if input_file.endswith('.gz'):
     file_handle=gzip.open(input_file, 'r')
   else:
@@ -326,3 +331,114 @@ def read_data_p09(input_file):
     if (output.data[hidx].max()-output.data[hidx].min())>0.02:
       output.x.dimension='H'+output.x.dimension
   return [output]
+
+def read_data_4id(input_file):
+  '''
+    Read data from 4-ID-C station at APS.
+  '''
+  if input_file.endswith('.gz'):
+    file_handle=gzip.open(input_file, 'r')
+  else:
+    file_handle=open(input_file, 'r')
+  text=file_handle.read()
+  if not text.startswith('## mda2ascii'):
+    print "No valid 4-ID ascii header found."
+    return 'NULL'
+  header, data_with_head=text.split('# Column Descriptions:',1)
+  header_info=extract_4id_headerinfo(header)
+  type, file_columns, data=extract_4id_columns_and_data(data_with_head)
+  if len(data)==0:
+    print "No data in the file."
+    return 'NULL'
+  output=MeasurementData(x=0, y=1)
+  used_columns=[0]
+  for i, column, unit in ID4_SCANS[type]:
+    if column is None:
+      column, unit=file_columns[i]
+      if column in ID4_MAPPING:
+        column=ID4_MAPPING[column]
+    if unit=='counts':
+      output.append_column( PhysicalProperty(column, unit, data[i], numpy.sqrt(data[i])))
+    else:
+      output.append_column( PhysicalProperty(column, unit, data[i]))
+    used_columns.append(i)
+  for i in range(len(file_columns)):
+    if i not in used_columns:
+      column, unit=file_columns[i]
+      column="% 2i: " % i +column
+      if column in ID4_MAPPING:
+        column=ID4_MAPPING[column]
+      if unit=='counts':
+        output.append_column( PhysicalProperty(column, unit, data[i], numpy.sqrt(data[i])))
+      else:
+        output.append_column( PhysicalProperty(column, unit, data[i]))
+  output.info="Started at: %s" % header_info['starting time']
+  output.info+='\n'+"\n".join(map(lambda item: "%s: \t%s" % (item[0], item[1]), header_info['status info']))
+  output.short_info="#%04i" % header_info['scan number']
+  output.sample_name=''
+  return [output]
+
+def extract_4id_headerinfo(header):
+  '''
+    Extract some infor from the file header.
+  '''
+  info={'status info': []}
+  for line in header.splitlines():
+    if line.startswith('# Scan number'):
+      info['scan number']=int(line.split('=')[1])
+    elif line.startswith('# Scan time'):
+      info['starting time']=line.split('=')[1].strip()
+    elif 'scaler time preset' in line:
+      info['time']=float(line.split(',')[2].strip(' "'))
+    elif 'SGM Energy' in line:
+      info['status info'].append(('Energy (eV)', line.split(',')[2].strip(' "')))
+    elif '7T Z pos' in line:
+      info['status info'].append(('Z', line.split(',')[2].strip(' "')))
+    elif '7T rotation' in line:
+      info['status info'].append(('φ', line.split(',')[2].strip(' "')))
+    elif '7T T sample' in line:
+      temperature=float(line.split(',')[2].strip(' "'))
+      info['status info'].append(('T', "%.1f" % temperature))
+    elif '7T field' in line:
+      field=float(line.split(',')[2].strip(' "'))*0.1
+      info['status info'].append(('H (T)', "%.3g" % field))
+      
+  return info
+
+def extract_4id_columns_and_data(data_with_head):
+  '''
+    Extract the data and columns of the file.
+  '''
+  type='other'
+  lines=data_with_head.splitlines()
+  columns=[]
+  data_lines=[]
+  for i,  line in enumerate(lines):
+    if not (line.startswith('#') or line.strip()==''):
+      data_lines=lines[i:]
+      break
+    if 'Index' in line:
+      columns.append(('Point', ''))
+    if 'Positioner' in line:
+      items=line.split(',')
+      columns.append((
+                      items[1].strip(), 
+                      items[3].strip()
+                      ))
+    if 'Detector' in line:
+      items=line.split(',')
+      columns.append((
+                      items[1].strip(), 
+                      items[2].strip()
+                      ))
+  if 'M3C DS Y' in data_with_head:
+    type='mirror-align'
+  elif 'XMCD_2_Diff' in data_with_head:
+    type='XMCD'
+  elif 'Positioner 2' in data_with_head:
+    type='e-scan'
+  data_lines=map(str.strip, data_lines)
+  data=map(str.split, data_lines)
+  data=numpy.array(data, dtype=numpy.float32)
+  data=data.transpose()  
+  return type, columns, data

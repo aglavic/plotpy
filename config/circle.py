@@ -7,7 +7,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7"
+__version__ = "0.7.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -127,3 +127,38 @@ P09_COLUMNS_MAPPING={
                      #'EXP_MOT06': ('χ', '°'), 
                      'EXP_MOT17': ('φ', '°'),                      
                      }
+
+ID4_SCANS={
+           'XMCD': ([(1, 'E', 'eV'), 
+                     (15, 'XMCD (TFY)', ''), (12, 'Total Fluorescense Yield', ''), 
+                     (11, 'Electron Yield', ''), (14, 'XMCD (EY)', ''),
+                     (13,  'Fluorescense Yield 2nd window', 'counts'), (16,  'XMCD (FY2)', ''), 
+                     (17,  'Reference Foil', ''), 
+                     (5, 'Raw TFY (1)', 'counts'), (9, 'Raw TFY (2)', 'counts'), 
+                     (3, 'Monitor (1)', 'counts'), (7, 'Monitor (2)', 'counts'), 
+                     (6, 'Raw FY2 (1)', 'counts'), (10, 'Raw FY2 (2)', 'counts'), 
+                     ]), 
+           'e-scan': ([(1, None, None), 
+                      (12, 'Total Fluorescense Yield', ''), 
+                      (11, 'Electron Yield', ''), 
+                      (10,  'Fluorescense Yield 2nd window', 'counts'), 
+                      (6, 'Raw TFY', 'counts'), 
+                     (4, 'Monitor', 'counts'),]), 
+           'mirror-align': ([(1, None, None), 
+                      (3, 'I_0', 'counts'), 
+                      (8, 'Electron Yield', ''), 
+                      (9, 'Total Fluorescense Yield', ''), 
+                      (10,  'Fluorescense Yield 2nd window', 'counts')]),
+           'other': ([(1, None, None), 
+                      (9, 'Total Fluorescense Yield', ''), 
+                      (8, 'Electron Yield', ''), 
+                      (10,  'Fluorescense Yield 2nd window', 'counts')])
+           }
+
+ID4_MAPPING={
+             '7T Sample Z': 'Z', 
+             'Magnet X': 'X', 
+             'Magnet Y': 'Y', 
+             'SGM1:Energy': 'E', 
+             'M3C DS Y': 'Mirror Y_{M3C DS Y}', 
+             }

@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7"
+__version__ = "0.7.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -101,11 +101,14 @@ Options:
 \t-mpl\t\tEXPERIMENTAL - Use matplot lib widget for plotting
 
 \tGeneral Data treatment:
+\t-ipy "[line]"\tAfter opening the GUI start the ipython console and execute a line given in "".
+\t\t\tThis option can be given multiple times to define a sequence of lines to be executed.
+\t\t\tI would recomand writing a script and just adding the option '-ipy "run -i script.py"'.
 \t-no-trans\tdon't make a unit transformation
 
 \tAdvanced settings:
 \t--nolimit\tDon't limit the amount of memory consumed by the program so there will not be a MemoryError 
-\t\t\t(be carefull, can lead to a non responsive system for operations causing to high memory usage)
+\t\t\t(be carefull, can lead to a non responsive system from operations causing to high memory usage)
 \t--debug\t\tDon't redirect the output to any GUI windows but show it on the command line, writes additional 
 \t\t\tinformation to a log file.
 \t--logmodules\t\tIn debug mode also logg all modules listed after this options (so the options should be 
@@ -113,7 +116,7 @@ Options:
 
 """ % (__version__, __email__)
   # TODO: implement these settings
-  '''    from cPickle import load, dump
+  '''   
 
   \t-l\t\tList sequences in file.
   \t-ls\t\tList selected Sequences.
@@ -141,7 +144,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   FILE_WILDCARDS=(('All', '*')) # wildcards for the file open dialog of the GUI
   # known command line options list
   COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 
-                        'template','no-trans', '-help', '-debug', '-nolimit', 'startuppath', 'mpl',]
+                        'template','no-trans', '-help', '-debug', '-nolimit', 'startuppath', 'mpl','ipy', ]
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -171,6 +174,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   DEBUG=False
   temp_fonts=False
   file_actions_addon={}
+  ipython_commands=[]
   #------------------ local variables -----------------
 
   def __init__(self, arguments):
@@ -285,6 +289,9 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
             last_argument_option=[False,'']
           elif last_argument_option[1]=='startuppath':
             os.chdir(os.path.abspath(argument))
+            last_argument_option=[False,'']
+          elif last_argument_option[1]=='ipy':
+            self.ipython_commands.append(argument)
             last_argument_option=[False,'']
           else:
             found_add, last_argument_option=self.read_argument_add(argument,  last_argument_option, input_file_names)
@@ -612,11 +619,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     output=''
     if not self.single_picture:
       for dataset in self.active_file_data:
-        output+=self.plot(dataset.plot_together, self.active_file_name, dataset.short_info, ['' for i in range(len(dataset.plot_together))])
+        self.plot(dataset.plot_together, self.active_file_name, dataset.short_info, ['' for i in range(len(dataset.plot_together))])
         sleep(0.0001) # Can get into troubles without waiting.
-      return output
     else:
-      return self.plot(self.active_file_data, self.active_file_name, '', [dataset.short_info for dataset in self.active_file_data])
+      self.plot(self.active_file_data, self.active_file_name, '', [dataset.short_info for dataset in self.active_file_data])
 
   def plot_all(self):
     '''
@@ -624,6 +630,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
     for name in self:
       print "Plotting '" + name + "' sequences."
+      self.active_file_data=self.file_data[name]
       self.plot_active()
   
   def plot(self, datasets, file_name_prefix, title, names):

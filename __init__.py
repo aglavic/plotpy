@@ -86,7 +86,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7"
+__version__ = "0.7.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -229,7 +229,8 @@ def _run():
   '''
   if '--debug' in sys.argv:
     initialize_debug()
-  initialize_gui_toolkit()
+  if not '-scp' in sys.argv:
+    initialize_gui_toolkit()
   active_session=initialize(sys.argv[1:])
   if active_session.use_gui: # start a new gui session
     plotting_session=initialize_gui(active_session, status_dialog)

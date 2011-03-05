@@ -32,7 +32,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7"
+__version__ = "0.7.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -481,6 +481,11 @@ class ApplicationMainWindow(gtk.Window):
     if self.plot_tree_shown:
       self.plot_tree.show_all()
     self.init_complete=True
+    # execute ipython commands supplied via commandline
+    if len(self.active_session.ipython_commands)>0:
+      while gtk.events_pending():
+        gtk.main_iteration(False)
+      self.open_ipy_console(commands=self.active_session.ipython_commands)
 
   #-------------------------------Window Constructor-------------------------------------#
 
@@ -3117,7 +3122,7 @@ set multiplot layout %i,1
     message.run()
     message.destroy()
 
-  def open_ipy_console(self, action):
+  def open_ipy_console(self, action=None, commands=[]):
     '''
       In debug mode this opens a window with an IPython console,
       which has direct access to all important objects.
@@ -3129,6 +3134,7 @@ set multiplot layout %i,1
     import numpy
     import scipy
     from copy import deepcopy
+    from glob import glob
     
     if getattr(self, 'active_ipython', False):
       # if there is already an ipython console, show it and exit
@@ -3288,6 +3294,11 @@ set multiplot layout %i,1
                        'macros': self.file_actions.actions, 
                        'action_history': self.file_actions.history, 
                        })
+    if len(commands)>0:
+      while gtk.events_pending():
+        gtk.main_iteration(False)
+      print commands
+      ipview.IP.runlines("\n".join(commands))
 
   def open_dataview_dialog(self, action):
     '''
@@ -3706,7 +3717,7 @@ set multiplot layout %i,1
     mouse_x/=mr[1]
     mouse_y=1.-position[1]/float(img_size.height)
     mouse_y-=mr[2]
-    mouse_y/=mr[3]
+    mouse_y/=mr[3]      
     if not (mouse_x>=0. and mouse_x<=1. and mouse_y>=0. and mouse_y<=1.):
       return None
     if pr[4]:
@@ -4475,6 +4486,7 @@ set multiplot layout %i,1
     self.update_size=do_nothing
     self.image_pixbuf=gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB,False,8,1,1)
     self.image_do_resize=False
+    self.mouse_mode=False
   
   #--------- EXPERIMENTAL: usage of matplotlib widget for plotting ----------------------#
 

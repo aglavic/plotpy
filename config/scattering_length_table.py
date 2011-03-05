@@ -7,7 +7,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = ["Esther Pfuhl", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.7"
+__version__ = "0.7.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -49,7 +49,7 @@ SCATTERING_LENGTH_DENSITIES={
     'LSMO 0.1':[16.27891, 15.80883],
     'LSMO 0.5':[17.62232, 10.90424],
     'LSMO 0.6':[17.74971, 10.18752],
-    'LSMO 0.7':[18.03254, 9.58077],
+    'LSMO 0.7.1':[18.03254, 9.58077],
     'LSMO 0.8':[18.26688, 9.06048],
     'LSMO 0.9':[18.48490, 8.60941],
 }

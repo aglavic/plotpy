@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7"
+__version__ = "0.7.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -57,7 +57,7 @@ class CircleSession(GUI, GenericSession):
 
   #++++++++++++++++++ local variables +++++++++++++++++
   show_counts=False
-  FILE_WILDCARDS=(('4circle','*.spec', '*.spec.gz', '*.fio', '*.fio.gz')),('All', '*')  
+  FILE_WILDCARDS=(('4circle','*.spec', '*.spec.gz', '*.fio', '*.fio.gz', '*.[0-9][0-9][0-9][0-9]', '*.[0-9][0-9][0-9][0-9].gz'),('All', '*'))  
   mds_create=False
   read_directly=True
   autoreload_active=False
@@ -99,6 +99,8 @@ class CircleSession(GUI, GenericSession):
       function to read data files
     '''
     datasets=read_data.circle.read_data(file_name)
+    if datasets=='NULL':
+      return datasets
     for dataset in datasets:
       if 'timescan_cm' in dataset.info:
         self.filter_fast_energyscan_ue64(dataset)
@@ -148,6 +150,8 @@ class CircleSession(GUI, GenericSession):
       Convert couts to couts per second.
     '''
     self.units=dataset.units()
+    if not 's' in self.units:
+      return
     dataset.process_function(self.counts_to_cps_calc)
     dataset.unit_trans([['counts',1,0,'counts/s']])
   
@@ -167,13 +171,15 @@ class CircleSession(GUI, GenericSession):
     '''
     output_data=input_data
     counts_column=[]
-    time_column=0
+    time_column=-1
     for i,col in enumerate(input_data): 
   # selection of the columns for counts
       if col.unit=='counts':
         counts_column.append(i)
       if col.unit=='s':
         time_column=i
+    if time_column<0:
+      return input_data
     for counts in counts_column:
       output_data[counts]/=output_data[time_column]# calculate cps
     return output_data

@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7"
+__version__ = "0.7.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -194,20 +194,20 @@ class SquidGUI:
       entries[2].set_text("1")
     if response==3:
       dataset=window.measurement[window.index_mess]
-      if dataset.xdata==1:
+      if dataset.x.unit in ['T', 'mT', 'Oe', 'kOe']:
         from fit_data import FitDiamagnetism
         # fit after paramagnetic correction
         dia=PhysicalConstant(dia, 'A·m^2/T')
         para=PhysicalConstant(para, 'K·A·m^2/T')
         self.dia_para_correction(dataset, dia , para)
-        fit=FitDiamagnetism(([0, 0, 0, split]))
+        fit=FitDiamagnetism(([0., 0, 0, split]))
         if not entries[3].get_active():
-          fit.refine(dataset.data[1].values, 
-                     dataset.data[-1].values, 
-                     dataset.data[dataset.yerror].values)
+          fit.refine(dataset.x, 
+                     dataset.y, 
+                     dataset.y.error)
         else:
-          fit.refine(dataset.data[1].values, 
-                     dataset.data[-1].values)
+          fit.refine(dataset.x, 
+                     dataset.y)
         entries[0].set_text(str(-fit.parameters[0]))
       return None
     if response>0:
@@ -360,25 +360,20 @@ class SquidGUI:
       entries[2].set_text("1")
     if response==3:
       dataset=window.measurement[window.index_mess]
-      if dataset.xdata==1:
+      if dataset.x.unit in ['T', 'mT', 'Oe', 'kOe']:
         from fit_data import FitDiamagnetism
         # fit after paramagnetic correction
         dia=PhysicalConstant(0., 'A·m^2/T')
         para=PhysicalConstant(para, 'K·A·m^2/T')        
         self.dia_para_correction(dataset, dia , para)
-        fit=FitDiamagnetism(([0, 0, 0, split]))
+        fit=FitDiamagnetism(([0., 0., 0., split]))
         if not entries[3].get_active():
-          if dataset._yerror>=0:
-            fit.refine(dataset.x, 
-                     dataset.data[-1], 
-                     dataset.data[dataset.yerror])
-          else:
-            fit.refine(dataset.x, 
-                     dataset.data[-1], 
-                     dataset.data[-1].error)
+          fit.refine(dataset.x, 
+                   dataset.y, 
+                   dataset.y.error)
         else:
-          fit.refine(dataset.data[1], 
-                     dataset.data[-1])
+          fit.refine(dataset.x, 
+                     dataset.y)
         entries[0].set_text(str(-fit.parameters[0]))
       return None
     if response>0:
