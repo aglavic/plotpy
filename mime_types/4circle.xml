@@ -9,5 +9,7 @@
      <glob pattern="*.spec.gz"/>
      <glob pattern="*.fio"/>
      <glob pattern="*.fio.gz"/>
+     <glob pattern="*.[0-9][0-9][0-9][0-9]"/>
+     <glob pattern="*.[0-9][0-9][0-9][0-9].gz"/>
    </mime-type>
 </mime-info>
