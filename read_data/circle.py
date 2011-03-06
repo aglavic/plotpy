@@ -17,7 +17,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.1"
+__version__ = "0.7.1a"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -266,6 +266,7 @@ def read_data_p09(input_file):
     Read data aquired at P09 beamlime of PETRA III.
   '''
   if input_file.endswith('.gz'):
+    import gzip    
     file_handle=gzip.open(input_file, 'r')
   else:
     file_handle=open(input_file, 'r')
@@ -337,6 +338,7 @@ def read_data_4id(input_file):
     Read data from 4-ID-C station at APS.
   '''
   if input_file.endswith('.gz'):
+    import gzip
     file_handle=gzip.open(input_file, 'r')
   else:
     file_handle=open(input_file, 'r')

@@ -33,7 +33,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.1"
+__version__ = "0.7.1a"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -3753,7 +3753,7 @@ set multiplot layout %i,1
     '''
     self.gnuplot_initialized=True
     gnuplot_version=measurement_data_plotting.check_gnuplot_version(self.active_session)
-    if self.mouse_mode and gnuplot_version<4.4:
+    if gnuplot_version[0]<4.4:
       # mouse mode only works with version 4.4 and higher
       self.mouse_mode=False
     else:

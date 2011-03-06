@@ -9,7 +9,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.1"
+__version__ = "0.7.1a"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -30,7 +30,7 @@ D7_DETECTOR_MAP=[
                  [(i%2)*(-1.0068*(i+1)+21.762)+((i+1)%2)*(-0.99642*(i+1)+21.326) for i in range(44)], 
                  # trying old one
                  #[(i%2)*(-1.0204*(i+1)+23.905)+((i+1)%2)*(-0.9955*(i+1)+23.377) for i in range(44)], 
-                 #[(i%2)*(-0.99762*(i+1)+20.566)+((i+1)%2)*(-0.99237*(i+1)+20.7.15) for i in range(44)], 
+                 #[(i%2)*(-0.99762*(i+1)+20.566)+((i+1)%2)*(-0.99237*(i+1)+20.7.1a5) for i in range(44)], 
                  #[(i%2)*(-0.99383*(i+1)+19.192)+((i+1)%2)*(-1.0035*(i+1)+19.827) for i in range(44)], 
                  ]
 LAMBDA_NEUTRON=None
