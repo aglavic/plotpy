@@ -298,6 +298,15 @@ class IPythonView(ConsoleView, IterableIPShell):
       self.changeLine(completed or slice)
       return True
 
+  def externalExecute(self, command):
+    '''
+      Run command inside the shell and show it in the dialog.
+    '''
+    self.write(command)
+    self._processLine()
+    #self.prompt=str(self.IP.outputcache.prompt1).strip()
+    #self.showReturned(str(self.IP.outputcache._))
+
   def _processLine(self):
     self.history_pos = 0
     self.execute()

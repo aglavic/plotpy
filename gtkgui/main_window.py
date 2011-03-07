@@ -10,6 +10,7 @@ import subprocess
 import gobject
 import gtk
 import numpy
+import warnings
 from time import sleep, time
 from copy import deepcopy
 # own modules
@@ -25,6 +26,9 @@ import file_actions
 from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, \
                     SimpleEntryDialog, DataView, PlotTree,  FileImportDialog
 from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
+
+if not sys.platform.startswith('win'):
+  WindowsError=RuntimeError
 #----------------------- importing modules --------------------------
 
 
@@ -69,6 +73,7 @@ class ApplicationMainWindow(gtk.Window):
   # sub-windows can set a function which gets called on button press
   # with the active position of the mouse on the plot
   garbage=[]
+  plot_tree_shown=True
   
   def get_active_dataset(self):
     # convenience method to get the active dataset
@@ -132,9 +137,10 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_tree=PlotTree(self.active_session.file_data, self.update_tree, 
                             expand=self.active_session.active_file_name, parent=self)
     self.plot_tree.set_title('Plotting - Imported Datasets')
-    self.plot_tree.connect('delete_event', self.plot_tree_hide_on_delete)
+    self.plot_tree.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
     self.plot_tree.connect('delete_event', self.plot_tree.hide_on_delete)
-    self.plot_tree.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_UTILITY)
+    self.plot_tree.connect('delete_event', self.plot_tree_hide_on_delete)
+    self.plot_tree.set_preview_parameters(self.plot, self.active_session, self.active_session.TEMP_DIR+'plot_temp.png')
     #----------------- set class variables ------------------
 
 
@@ -218,7 +224,7 @@ class ApplicationMainWindow(gtk.Window):
         1, 2,                   0, 1,
         gtk.FILL,  gtk.FILL,
         0,                      0)
-    align = gtk.Alignment(0.5, 0.5, 0, 0) # center the entrys
+    align = gtk.Alignment(0.5, 0., 0., 0) # center the entrys
     align.add(top_table)
     # put label below menubar on left column, only expand in x direction
     table.attach(align,
@@ -349,10 +355,10 @@ class ApplicationMainWindow(gtk.Window):
     #+++ Creating entries and options according to the active measurement +++
     if len(self.measurement)>0:
       self.label.set_width_chars(min(len(self.measurement[self.index_mess].sample_name)+5, 
-                                                          45)) # title width
+                                                          40)) # title width
       self.label.set_text(self.measurement[self.index_mess].sample_name)
       self.label2.set_width_chars(min(len(self.measurement[self.index_mess].short_info)+5, 
-                                                           45)) # title width
+                                                           40)) # title width
       self.label2.set_text(self.measurement[self.index_mess].short_info)
       # TODO: put this to a different location
       self.plot_options_buffer.set_text(str(self.measurement[self.index_mess].plot_options))
@@ -411,12 +417,13 @@ class ApplicationMainWindow(gtk.Window):
       self.status_dialog.hide()
 
     #+++++++++++++ Show window and connecting events ++++++++++++++
+    self.read_window_config()
     self.show_all()
     self.check_add.set_active(True)
     self.check_add.toggled()
     # resize events
     self.connect("event-after", self.update_picture)
-    self.connect("event-after", self.update_size)
+    self.connect("configure-event", self.update_size)
     self.image.connect('size-allocate', self.image_resize)
     # entries
     self.label.connect("activate",self.change) # changed entry triggers change() function 
@@ -439,7 +446,6 @@ class ApplicationMainWindow(gtk.Window):
     self.event_box.connect('button-press-event', self.mouse_press)
     self.event_box.connect('button-release-event', self.mouse_release)
     self.connect('motion-notify-event', self.catch_mouse_position)
-    self.connect('focus-in-event', self.present_tree)
     
     #------------- connecting events --------------
     
@@ -486,7 +492,7 @@ class ApplicationMainWindow(gtk.Window):
     if len(self.active_session.ipython_commands)>0:
       while gtk.events_pending():
         gtk.main_iteration(False)
-      self.open_ipy_console(commands=self.active_session.ipython_commands)
+      self.open_ipy_console(commands=self.active_session.ipython_commands, show_greetings=False)
 
   #-------------------------------Window Constructor-------------------------------------#
 
@@ -497,12 +503,11 @@ class ApplicationMainWindow(gtk.Window):
     '''
       If resize event is triggered the window size variables are changed.
     '''
-    if event.type==gtk.gdk.CONFIGURE:
-      geometry= (self.get_position(), self.get_size())
-      if geometry!=self.geometry:
-        self.geometry=geometry
-        self.widthf=self.frame1.get_allocation().width
-        self.heightf=self.frame1.get_allocation().height
+    geometry= (self.get_position(), self.get_size())
+    if geometry!=self.geometry:
+      self.geometry=geometry
+      self.widthf=self.frame1.get_allocation().width
+      self.heightf=self.frame1.get_allocation().height
 
   def update_picture(self, widget, event):
     '''
@@ -2432,28 +2437,34 @@ set multiplot layout %i,1
       self.replot()
     cps_dialog.destroy()
 
-  def fit_dialog(self,action, size=(800, 250), position=None):
+  def fit_dialog(self,action, size=None, position=None):
     '''
       A dialog to fit the data with a set of functions.
       
       @param size Window size (x,y)
       @param position Window position (x,y)
     '''
+    if size is None:
+      if 'FitDialog' in self.config_object:
+        size=self.config_object['FitDialog']['size']
+        position=self.config_object['FitDialog']['position']
+      else:
+        size=(800, 250)
     if not self.active_session.ALLOW_FIT:
-      fit_dialog=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
+      message_dialog=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
                                    message_format="You don't have the system requirenments for Fitting.\nNumpy and Scipy must be installed.")
-      #fit_dialog.set_markup()
-      fit_dialog.run()
-      fit_dialog.destroy()
+      message_dialog.run()
+      message_dialog.destroy()
       return None
     dataset=self.measurement[self.index_mess]
     if (dataset.fit_object==None):
       self.file_actions.activate_action('create_fit_object')
     fit_session=dataset.fit_object
     fit_dialog=gtk.Dialog(title='Fit...')
-    fit_dialog.set_default_size(size[0], size[1])
-    if position!=None:
-      fit_dialog.move(position[0], position[1])
+    fit_dialog.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0], 
+                           "..", "config", "logopurple.png").replace('library.zip', ''))
     sw = gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
@@ -2469,7 +2480,16 @@ set multiplot layout %i,1
       fit_dialog.get_action_area().pack_end(actions_table, expand=False, fill=True, padding=0)
     except AttributeError:
       fit_dialog.vbox.pack_end(actions_table, expand=False, fill=True, padding=0)
+    fit_dialog.set_default_size(*size)
+    if position!=None:
+      fit_dialog.move(*position)
     fit_dialog.show_all()
+    def store_fit_dialog_gemometry(widget, event):
+      self.config_object['FitDialog']={
+                                       'size': widget.get_size(), 
+                                       'position': widget.get_position()
+                                       }
+    fit_dialog.connect('configure-event', store_fit_dialog_gemometry)
     self.open_windows.append(fit_dialog)
 
   def multi_fit_dialog(self,action, size=(800, 250), position=None):
@@ -3122,7 +3142,7 @@ set multiplot layout %i,1
     message.run()
     message.destroy()
 
-  def open_ipy_console(self, action=None, commands=[]):
+  def open_ipy_console(self, action=None, commands=[], show_greetings=True):
     '''
       In debug mode this opens a window with an IPython console,
       which has direct access to all important objects.
@@ -3135,6 +3155,7 @@ set multiplot layout %i,1
     import scipy
     from copy import deepcopy
     from glob import glob
+    import IPython.ipapi
     
     if getattr(self, 'active_ipython', False):
       # if there is already an ipython console, show it and exit
@@ -3147,7 +3168,13 @@ set multiplot layout %i,1
 
     ipython_dialog= gtk.Dialog(title="Plotting GUI - IPython Console")
     self.active_ipython=ipython_dialog
-    ipython_dialog.set_size_request(750,600)
+    if 'IPython' in self.config_object:
+      ipython_dialog.set_default_size(*self.config_object['IPython']['size'])
+      ipython_dialog.move(*self.config_object['IPython']['position'])
+      if self.config_object['IPython']['size'][0]<700:
+        show_greetings=False
+    else:
+      ipython_dialog.set_default_size(750,600)
     ipython_dialog.set_resizable(True)
     ipython_dialog.set_icon_from_file(os.path.join(
                             os.path.split(
@@ -3155,7 +3182,7 @@ set multiplot layout %i,1
                            "..", "config", "logoyellow.png").replace('library.zip', ''))
     sw = gtk.ScrolledWindow()
     sw.set_policy(gtk.POLICY_AUTOMATIC,gtk.POLICY_AUTOMATIC)
-    ipview = IPythonView("""    This is an interactive IPython session with direct access to the program.
+    greeting="""    This is an interactive IPython session with direct access to the program.
     You have the whole python functionality and can interact with the programs objects.
     You can use tab-completion and inspect any object (get help) by writing "object?".
 
@@ -3186,7 +3213,11 @@ set multiplot layout %i,1
           \tand other data treatment Classes.
 
     Remark: This functionality is mainly for developers. If you are a user experienced
-            in python it is recommanded to use the get... and new... functions.\n\n""")
+            in python it is recommanded to use the get... and new... functions.\n\n"""
+    if show_greetings:
+      ipview = IPythonView(greeting)
+    else:
+      ipview = IPythonView('')
     ipview.modify_font(pango.FontDescription(FONT))
     ipview.set_wrap_mode(gtk.WRAP_CHAR)
     sys.stderr=ipview
@@ -3197,12 +3228,9 @@ set multiplot layout %i,1
     #ipview.modify_text('normal', gtk.gdk.Color('#fff'))
     #ipview.modify_cursor(gtk.gdk.Color('#aaa'), None)
     ipython_dialog.show_all()
-    ipython_dialog.connect('delete_event',lambda x,y:False)
-    def reset(action):
-      sys.stdout=oldstd[0]
-      sys.stderr=oldstd[1]
-      self.active_ipython=None
-    ipython_dialog.connect('destroy', reset)
+    ipython_dialog.connect('configure-event', self.update_ipy_console_size)
+    ipython_dialog.connect('destroy', self.closed_ipy_console, oldstd)
+    #ipython_dialog.connect('destroy', )
     # create functions for the use with ipython
     def getxyz():
       # returns numpy arrays of x,y and z
@@ -3294,11 +3322,47 @@ set multiplot layout %i,1
                        'macros': self.file_actions.actions, 
                        'action_history': self.file_actions.history, 
                        })
+    if hasattr(self, 'ipython_user_namespace'):
+      # reload namespace of an earlier session
+      ipview.updateNamespace(self.ipython_user_namespace)
     if len(commands)>0:
       while gtk.events_pending():
         gtk.main_iteration(False)
-      print commands
-      ipview.IP.runlines("\n".join(commands))
+      for command in commands:
+      #  ipview.IP.push(command)
+        ipview.externalExecute(command)
+    self.active_ipview=ipview
+    # redefine ls and cat as it doesn't work properly
+    del(ipview.IP.alias_table['ls'])
+    del(ipview.IP.alias_table['cat'])
+    ip=IPython.ipapi.get()
+    def _ls_new(self, arg):
+      ip = self.api
+      if arg=='':
+        arg='*'
+      ip.ex("from glob import glob; last_ls=glob('%s'); print 'last_ls=',last_ls" % arg)
+    def _cat_new(self, arg):
+      ip = self.api
+      if arg=='':
+        ip.ex("print 'No file supplied.'")
+      ip.ex("print open('%s','r').read()" % arg)
+    ip.expose_magic('ls',_ls_new)
+    ip.expose_magic('cat',_cat_new)
+
+  def closed_ipy_console(self, widget, oldstd):
+    '''
+      Unregister the ipython dialog when it gets destroyed.
+    '''
+    sys.stdout=oldstd[0]
+    sys.stderr=oldstd[1]
+    self.ipython_user_namespace=self.active_ipview.IP.user_ns
+    self.active_ipython=None
+    self.active_ipview=None
+
+  def update_ipy_console_size(self, *ignore):
+    self.config_object['IPython']={}
+    self.config_object['IPython']['size']=self.active_ipython.get_size()
+    self.config_object['IPython']['position']=self.active_ipython.get_position()
 
   def open_dataview_dialog(self, action):
     '''
@@ -3363,7 +3427,6 @@ set multiplot layout %i,1
       self.profiles={'default': PlotProfile('default')}
       self.profiles['default'].save(self)
     
-    self.read_window_config()
     return True
 
   def read_window_config(self):
@@ -3373,7 +3436,7 @@ set multiplot layout %i,1
     try:
       x, y=self.config_object['Window']['position']
       width, height=self.config_object['Window']['size']
-      # Set the main windwo size to default or the last settings saved in config file
+      # Set the main window size to default or the last settings saved in config file
       self.set_default_size(width, height)
       self.move(x, y)
       px, py=self.config_object['Window']['plot_tree_position']
@@ -3479,6 +3542,39 @@ set multiplot layout %i,1
     self.image_pixbuf=gtk.gdk.pixbuf_new_from_file(self.active_session.TEMP_DIR + 'plot_temp.png')
     s_alloc=self.image.get_allocation()
     pixbuf=self.image_pixbuf.scale_simple(s_alloc.width, s_alloc.height, gtk.gdk.INTERP_BILINEAR)
+    if self.mouse_mode and self.measurement[self.index_mess].zdata>=0:
+      try:
+        # estimate the size of the plot by searching for lines with low pixel intensity
+        original_filters = warnings.filters[:]
+        # Ignore warnings.
+        warnings.simplefilter("ignore")
+        pixbuf_data=pixbuf.get_pixels_array()
+        warnings.filters=original_filters
+        black_values=(pixbuf_data.mean(axis=2)==0.)
+        # as first step get the region inside all captions including colorbar
+        ysum=black_values.sum(axis=0)*1.
+        xsum=black_values.sum(axis=1)*1.
+        xsum/=float(len(ysum))
+        ysum/=float(len(xsum))
+        yids=numpy.where(xsum>0.1)[0]
+        xids=numpy.where(ysum>0.1)[0]
+        x0=float(xids[0])
+        x1=float(xids[-1])
+        y0=float(yids[0])
+        y1=float(yids[-1])
+        # try to remove the colorbar from the region
+        whith_values_inside=(pixbuf_data[y0:y1, x0:x1].mean(axis=2)==255.)
+        ysum2=whith_values_inside.sum(axis=0)*1.
+        ysum2/=float(y1-y0)
+        xids=numpy.where(ysum2==1.)[0]
+        x1=float(xids[0]+x0-1)
+        x0/=len(ysum)
+        x1/=len(ysum)
+        y0/=len(xsum)
+        y1/=len(xsum)
+        self.mouse_data_range=((x0, x1-x0, y0, y1-y0), self.mouse_data_range[1])
+      except:
+        self.mouse_data_range=((0, 0, 0, 0), self.mouse_data_range[1])
     self.image.set_from_pixbuf(pixbuf)
     return True
 
@@ -3504,7 +3600,7 @@ set multiplot layout %i,1
     if not self.mouse_mode:
       return
     position=self.get_position_on_plot()
-    if position is not None and self.measurement[self.index_mess].zdata<0:
+    if position is not None:
       if self.active_zoom_from is not None:
         # When a zoom drag is active draw a rectangle on the image
         self.active_zoom_last_inside=position
@@ -3547,12 +3643,15 @@ set multiplot layout %i,1
       else:
         # show the position of the cusor on the plot
         info='x=%6g  \ty=%6g' % (position[0], position[1])
-        if action.state.value_names==['GDK_CONTROL_MASK']:
+        if action.state.value_names==['GDK_CONTROL_MASK'] and self.measurement[self.index_mess].zdata<0:
           info+='\t\tFit peak with gaussian (left), voigt (middle) or lorentzian (right) profile.'
         elif action.state.value_names==['GDK_SHIFT_MASK']:
           info+='\t\tPlace label (left), draw arrow (middle) or label position (right).'
         else:
-          info+='\t\tZoom (right), unzoom (middle). <ctrl>-fit / <shift>-label/arrow'
+          if self.measurement[self.index_mess].zdata>=0:
+            info+='\t\tZoom (right), unzoom (middle). <shift>-label/arrow'
+          else:
+            info+='\t\tZoom (right), unzoom (middle). <ctrl>-fit / <shift>-label/arrow'
         self.statusbar.push(0, info)
       try:
         # if the cusor is inside the plot we change it's icon to a crosshair
@@ -3575,7 +3674,7 @@ set multiplot layout %i,1
     if not self.mouse_mode:
       return
     position=self.get_position_on_plot()
-    if ['GDK_CONTROL_MASK'] == action.state.value_names:
+    if ['GDK_CONTROL_MASK'] == action.state.value_names and self.measurement[self.index_mess].zdata<0:
       # control was pressed during button press
       # fit a peak function to the active mouse position
       if position is not None:
@@ -3606,15 +3705,13 @@ set multiplot layout %i,1
       # to be added to the plot
       if position is not None:
         ds=self.measurement[self.index_mess]
-        if ds.zdata>=0:
-          return
         if action.button==1:
           dialog=SimpleEntryDialog
           parameters, result=SimpleEntryDialog('Enter Label...', 
                                          [('Text', 'Label', str)]
                                          ).run()
           if result:
-            ds.plot_options+='set label "%s" at %g,%g\n' % (parameters['Text'], position[0], position[1])
+            ds.plot_options+='set label "%s" at %g,%g,1. front\n' % (parameters['Text'], position[0], position[1])
         if action.button==2:
           self.mouse_arrow_starting_point=position
           self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
@@ -3624,7 +3721,7 @@ set multiplot layout %i,1
                                          [('Text', '(%g,%g)' % (position[0], position[1]), str)]
                                          ).run()
           if result:
-            ds.plot_options+='set label "%s" at %g,%g point pt 6\n' % (parameters['Text'], position[0], position[1])
+            ds.plot_options+='set label "%s" at %g,%g,1. point pt 6 front\n' % (parameters['Text'], position[0], position[1])
         self.replot()
           
   
@@ -3652,7 +3749,7 @@ set multiplot layout %i,1
       start=self.mouse_arrow_starting_point
       self.mouse_arrow_starting_point=None
       if position is not None:
-        self.measurement[self.index_mess].plot_options+='set arrow from %g,%g to %g,%g\n' % (start[0], start[1], position[0], position[1])
+        self.measurement[self.index_mess].plot_options+='set arrow from %g,%g,1. to %g,%g,1. front\n' % (start[0], start[1], position[0], position[1])
         self.replot()
     if self.active_fit_selection_from is not None:
       start=self.active_fit_selection_from
@@ -3737,16 +3834,6 @@ set multiplot layout %i,1
     self.mouse_mode=not self.mouse_mode
     self.replot()
   
-  def present_tree(self, widget=None, action=None):
-    '''
-      Show the plot_tree window when the program grabs the focus.
-    '''
-    if self.plot_tree_shown:
-      self.plot_tree.hide()
-      while gtk.events_pending():
-        gtk.main_iteration(False)
-      self.plot_tree.show()
-  
   def initialize_gnuplot(self):
     '''
       Check gnuplot version for capabilities.
@@ -3815,10 +3902,10 @@ set multiplot layout %i,1
                                         show_persistent=True)
     else:
       self.label.set_width_chars(min(len(self.measurement[self.index_mess].sample_name)+5, 
-                                                          45))
+                                                          40))
       self.label.set_text(self.measurement[self.index_mess].sample_name)
       self.label2.set_width_chars(min(len(self.measurement[self.index_mess].short_info)+5, 
-                                                           45))
+                                                           40))
       self.label2.set_text(self.measurement[self.index_mess].short_info)
       self.last_plot_text=self.plot(self.active_session,
                                   [self.measurement[self.index_mess]],
@@ -3899,17 +3986,17 @@ set multiplot layout %i,1
                                         fit_lorentz=False, 
                                         sample_name=plotlist.sample_name)
           self.label.set_width_chars(min(len(plotlist.sample_name)+5, 
-                                         45))
+                                         40))
           self.label.set_text(plotlist.sample_name)
           self.label2.set_width_chars(min(len(plotlist.title)+5, 
-                                          45))
+                                          40))
           self.label2.set_text(plotlist.title)
     else:
       self.label.set_width_chars(min(len(self.measurement[self.index_mess].sample_name)+5, 
-                                                          45))
+                                                          40))
       self.label.set_text(self.measurement[self.index_mess].sample_name)
       self.label2.set_width_chars(min(len(self.measurement[self.index_mess].short_info)+5, 
-                                                           45))
+                                                           40))
       self.label2.set_text(self.measurement[self.index_mess].short_info)
       self.last_plot_text=self.plot(self.active_session,
                                   [self.measurement[self.index_mess]],

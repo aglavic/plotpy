@@ -54,20 +54,20 @@ class FitSessionGUI:
     def toggle_logarithmic(action, function):
       function[0].fit_logarithmic=not function[0].fit_logarithmic
     entries=[]
-    align_table=gtk.Table(5,len(self.functions)*2+2,False)
+    align_table=gtk.Table(6,len(self.functions)*3+3,False)
     for i, function in enumerate(self.functions):
       #+++++++ create a row for every function in the list +++++++
       text=gtk.Label(function[0].name + ': ')
       align_table.attach(text,
                   # X direction #          # Y direction
-                  0, 2,                      i*2, i*2+1,
+                  0, 5,                      i*3, i*3+1,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       if function[0].parameters_history is not None:
         back_button=gtk.Button(label='Undo')
         align_table.attach(back_button,
                     # X direction #          # Y direction
-                    0, 2,                      i*2+1, i*2+2,
+                    0, 2,                      i*3+2, i*3+3,
                     gtk.EXPAND,     gtk.EXPAND,
                     0,                         0);
         back_button.connect('clicked', function[0].history_back, dialog, window)
@@ -76,7 +76,7 @@ class FitSessionGUI:
       text.set_width_chars(40)
       align_table.attach(text,
                   # X direction #          # Y direction
-                  4, 5,                      i*2, i*2+1,
+                  4, 5,                      i*3+1, i*3+2,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       toggle_errors=gtk.CheckButton(label="ignore errors")
@@ -84,7 +84,7 @@ class FitSessionGUI:
       toggle_errors.connect('toggled', set_function_param, function, 3)
       align_table.attach(toggle_errors,
                   # X direction #          # Y direction
-                  5, 6,                      i*2, i*2+1,
+                  5, 6,                      i*3, i*3+1,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       toggle_log=gtk.CheckButton(label="logarithmic")
@@ -92,20 +92,20 @@ class FitSessionGUI:
       toggle_log.connect('toggled', toggle_logarithmic, function)
       align_table.attach(toggle_log,
                   # X direction #          # Y direction
-                  6, 7,                      i*2, i*2+1,
+                  5, 6,                      i*3+1, i*3+2,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       new_line, entry=self.function_line(function[0], dialog, window)
       entries.append(entry+[text, toggle_errors])
       align_table.attach(new_line,
                   # X direction #          # Y direction
-                  4, 6,                      i*2+1, i*2+2,
+                  4, 6,                      i*3+2, i*3+3,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       text=gtk.Label(' fit ')
       align_table.attach(text,
                   # X direction #          # Y direction
-                  2, 3,                      i*2, i*2+1,
+                  2, 3,                      i*3+1, i*3+2,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       toggle_fit=gtk.CheckButton()
@@ -113,13 +113,13 @@ class FitSessionGUI:
       toggle_fit.connect('toggled', set_function_param, function, 1)
       align_table.attach(toggle_fit,
                   # X direction #          # Y direction
-                  2, 3,                      i*2+1, i*2+2,
+                  2, 3,                      i*3+2, i*3+3,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       text=gtk.Label(' show ')
       align_table.attach(text,
                   # X direction #          # Y direction
-                  3, 4,                      i*2, i*2+1,
+                  3, 4,                      i*3+1, i*3+2,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       toggle_show=gtk.CheckButton()
@@ -127,7 +127,7 @@ class FitSessionGUI:
       toggle_show.connect('toggled', set_function_param, function, 2)
       align_table.attach(toggle_show,
                   # X direction #          # Y direction
-                  3, 4,                      i*2+1, i*2+2,
+                  3, 4,                      i*3+2, i*3+3,
                   gtk.EXPAND,     gtk.EXPAND,
                   0,                         0);
       #------- create a row for every function in the list -------

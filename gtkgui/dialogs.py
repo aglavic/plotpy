@@ -63,6 +63,10 @@ class StatusDialog(gtk.Dialog):
     self.vbox.add(self.scrollwidget)
     self.end_iter=self.buffer.get_end_iter()
     self.end_mark=self.buffer.create_mark('End', self.end_iter, False)
+    self.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0], 
+                           "..", "config", "logogreen.png").replace('library.zip', ''))    
   
   def write(self, text):
     '''
@@ -138,6 +142,10 @@ class PreviewDialog(gtk.Dialog):
     select_none_button.connect('button_press_event', self.select_none)
     bottom_table.show_all()
     self.vbox.pack_end(bottom_table, False)
+    self.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0], 
+                           "..", "config", "logopurple.png").replace('library.zip', ''))        
   
   def run(self):
     '''
@@ -404,6 +412,10 @@ class SimpleEntryDialog(gtk.Dialog):
     self.table.show()
     self.vbox.add(self.table)
     self._init_entries(entries)
+    self.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0], 
+                           "..", "config", "logopurple.png").replace('library.zip', ''))    
     self.connect('destroy', self.cleanup)
   
   def _init_entries(self, entries):
@@ -602,6 +614,10 @@ class ExportFileChooserDialog(gtk.FileChooserDialog):
             0,                       gtk.FILL,
             0,                         0)
     table.show_all()
+    self.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0], 
+                           "..", "config", "logopurple.png").replace('library.zip', ''))    
     
   def get_with_height(self):
     '''
@@ -658,6 +674,10 @@ class FileImportDialog(gtk.FileChooserDialog):
     filter.add_pattern('*')
     self.add_filter(filter)
     self.add_wildcards(wildcards)
+    self.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0], 
+                           "..", "config", "logopurple.png").replace('library.zip', ''))    
 
   def add_wildcards(self, wildcards):
     '''
@@ -896,7 +916,9 @@ class PlotTree(gtk.Dialog):
     imported from all files.
   '''
   expand_column=None
+  pre_parent=None
   ignore_cursor_change=False
+  preview_creation_active=False
   
   def __init__(self, data_dict, connected_function, *args, **opts):
     '''
@@ -922,7 +944,21 @@ class PlotTree(gtk.Dialog):
     # insert the data into the treeview
     self.add_data()
     self.clipboard = gtk.Clipboard(gtk.gdk.display_get_default(), "CLIPBOARD")
-  
+    if 'parent' in opts:
+      # Somhow the dialog doesn't recognize the parent option, this fixes it.
+      self.pre_parent=opts['parent']
+    self.preview_button=gtk.Button('Create Previews')
+    self.preview_button.connect('button_press_event', self.create_preview)
+    self.vbox.pack_end(self.preview_button, False)
+
+  def show_all(self):
+    '''
+      Chow the dialog and make it transient for it's parent.
+    '''
+    gtk.Dialog.show_all(self)
+    if self.pre_parent is not None:
+      self.set_transient_for(self.pre_parent)
+
   def create_columns(self):
     '''
       Add columns to the treeview.
@@ -933,7 +969,6 @@ class PlotTree(gtk.Dialog):
     column = gtk.TreeViewColumn('Preview', picturerenderer, pixbuf=0)
     self.treeview.append_column(column)
     column = gtk.TreeViewColumn('Imported Items', textrenderer, text=1)
-    column.set_sort_column_id(1)
     self.treeview.append_column(column)
 
   def add_data(self):
@@ -954,9 +989,9 @@ class PlotTree(gtk.Dialog):
       Highlight an item.
     '''
     self.ignore_cursor_change=True
-    item=(sorted(self.data_dict.keys()).index(key), index)
-    self.treeview.set_cursor(item)
-    print key
+    path=(sorted(self.data_dict.keys()).index(key), index)
+    self.treeview.expand_to_path(path)
+    self.treeview.set_cursor(path)
     self.ignore_cursor_change=False
   
   def cursor_changed(self, widget):
@@ -974,6 +1009,52 @@ class PlotTree(gtk.Dialog):
       index=cursor[1]
       key=self.treestore[cursor[0]][1]
     self.connected_function(key, index)
+  
+  def set_preview_parameters(self, plot_function, session, temp_file):
+    '''
+      Connect objects needed for preview creation.
+    '''
+    self.preview_plot=plot_function
+    self.preview_session=session
+    self.preview_temp_file=temp_file
+  
+  def create_preview(self, widget, action):
+    '''
+      Create a preview of the datasets and render it onto an image.
+    '''
+    if self.preview_creation_active:
+      self.preview_button.set_label('Create Previews')
+      self.preview_creation_active=False
+      return
+    if getattr(self, 'preview_plot', False):
+      self.ignore_cursor_change=True
+      self.preview_creation_active=True
+      self.preview_button.set_label('Stop')
+      for key, datasets in self.preview_session.file_data.items():
+        for index, dataset in enumerate(datasets):
+          if not self.preview_creation_active:
+            return
+          if getattr(dataset, 'preview', None) is None:
+            self.preview_plot(self.preview_session,
+                              [dataset],
+                              'preview',
+                              dataset.short_info,
+                              [object.short_info for object in dataset.plot_together],
+                              main_window.errorbars, 
+                              output_file=self.preview_temp_file,
+                              fit_lorentz=False)
+            dataset.preview=gtk.gdk.pixbuf_new_from_file(self.preview_temp_file).scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
+            self.add_data()
+            self.set_focus_item(key, index)
+            while gtk.events_pending():
+              gtk.main_iteration(False)
+      self.add_data()
+      self.set_focus_item(key, index)
+      while gtk.events_pending():
+        gtk.main_iteration(False)
+      self.preview_button.set_label('Create Previews')
+      self.preview_creation_active=False
+      self.ignore_cursor_change=False
   
 #-------------------- Dialog storing all imported dataset names -------------------------
 
@@ -1008,6 +1089,10 @@ class DataView(gtk.Dialog):
     # insert the data into the treeview
     self.add_data()
     self.clipboard = gtk.Clipboard(gtk.gdk.display_get_default(), "CLIPBOARD")
+    self.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0], 
+                           "..", "config", "logogreen.png").replace('library.zip', ''))    
   
   def create_columns(self, columns):
     '''
