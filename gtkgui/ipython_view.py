@@ -253,6 +253,8 @@ class ConsoleView(gtk.TextView):
       self.text_buffer.move_mark(selection_mark, start_iter)
 
 class IPythonView(ConsoleView, IterableIPShell):
+  propagate_key_parent=None # a window to which unhandles keys are propagated
+  
   def __init__(self, intro_text=""):
     ConsoleView.__init__(self)
     self.cout = StringIO()
@@ -297,6 +299,10 @@ class IPythonView(ConsoleView, IterableIPShell):
         self.showPrompt(self.prompt)
       self.changeLine(completed or slice)
       return True
+    elif (event.state&gtk.gdk.CONTROL_MASK or \
+          event.state&gtk.gdk.MOD1_MASK) and self.propagate_key_parent is not None:
+      # propagate any <control>+Key and <alt>+Key to the main window.
+      self.propagate_key_parent.emit('key_press_event', event)
 
   def externalExecute(self, command):
     '''
@@ -314,3 +320,32 @@ class IPythonView(ConsoleView, IterableIPShell):
     if rv: rv = rv.strip('\n')
     self.showReturned(rv)
     self.cout.truncate(0)
+
+class MenuWrapper(object):
+  '''
+    Class to provide GUI menu access as attributes of a interactive object.
+    Every attribute of this object should be hidden for the user.
+  '''
+  __menu_root__=None
+  
+  def __init__(self, menu_root):
+    self.__menu_root__=menu_root
+  
+  def __get_dict__(self):
+    menu_items=self.__menu_root__.get_children()
+    menu_items=filter(lambda item: type(item) in [gtk.ImageMenuItem, gtk.MenuItem], menu_items)
+    dict={}
+    for item in menu_items:
+      name=item.get_label().replace('_', '').replace('.', '').replace(' ', '_')
+      if name=='Empty':
+        continue
+      submenu=item.get_submenu()
+      if submenu is not None:
+        dict[name]=MenuWrapper(item.get_submenu())
+      else:
+        dict[name]=item.activate
+    for key, value in dict.items():
+      setattr(self, key, value)
+    return dict
+  
+  __dict__=property(__get_dict__)

@@ -3147,7 +3147,7 @@ set multiplot layout %i,1
       In debug mode this opens a window with an IPython console,
       which has direct access to all important objects.
     '''
-    from ipython_view import IPythonView
+    from ipython_view import IPythonView, MenuWrapper
     import measurement_data_structure
     import pango
     import sys
@@ -3205,6 +3205,7 @@ set multiplot layout %i,1
               \tThe data for the selected file is in session.active_file_data
       plot_gui \tThe window object with all window related funcitons
       macros  \tDictionary containing all functions which can be run as 'macros'
+      menus   \tAccess all GUI menus as properties of this object, e.g. "menus.File.Open_File()".
       action_history \tList of macros activated through the GUI (key, (parameters)).
     Modules:
       np \tNumpy
@@ -3230,7 +3231,8 @@ set multiplot layout %i,1
     ipython_dialog.show_all()
     ipython_dialog.connect('configure-event', self.update_ipy_console_size)
     ipython_dialog.connect('destroy', self.closed_ipy_console, oldstd)
-    #ipython_dialog.connect('destroy', )
+    # lets the widget propagate <control>+Key and <alt>+key to this window
+    ipview.propagate_key_parent=self
     # create functions for the use with ipython
     def getxyz():
       # returns numpy arrays of x,y and z
@@ -3321,6 +3323,7 @@ set multiplot layout %i,1
                        'apihelp': apihelp, 
                        'macros': self.file_actions.actions, 
                        'action_history': self.file_actions.history, 
+                       'menus': MenuWrapper(self.menu_bar), 
                        })
     if hasattr(self, 'ipython_user_namespace'):
       # reload namespace of an earlier session
@@ -3334,7 +3337,8 @@ set multiplot layout %i,1
     self.active_ipview=ipview
     # redefine ls and cat as it doesn't work properly
     del(ipview.IP.alias_table['ls'])
-    del(ipview.IP.alias_table['cat'])
+    if 'cat' in ipview.IP.alias_table:
+      del(ipview.IP.alias_table['cat'])
     ip=IPython.ipapi.get()
     def _ls_new(self, arg):
       ip = self.api
