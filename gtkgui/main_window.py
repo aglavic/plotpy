@@ -3556,8 +3556,8 @@ set multiplot layout %i,1
         xsum=black_values.sum(axis=1)*1.
         xsum/=float(len(ysum))
         ysum/=float(len(xsum))
-        yids=numpy.where(xsum>0.1)[0]
-        xids=numpy.where(ysum>0.1)[0]
+        yids=numpy.where(xsum>xsum.max()*0.9)[0]
+        xids=numpy.where(ysum>ysum.max()*0.9)[0]
         x0=float(xids[0])
         x1=float(xids[-1])
         y0=float(yids[0])
@@ -3574,7 +3574,7 @@ set multiplot layout %i,1
         y1/=len(xsum)
         self.mouse_data_range=((x0, x1-x0, y0, y1-y0), self.mouse_data_range[1])
       except:
-        self.mouse_data_range=((0, 0, 0, 0), self.mouse_data_range[1])
+        self.mouse_data_range=((0., 0., 0., 0.), self.mouse_data_range[1])
     self.image.set_from_pixbuf(pixbuf)
     return True
 
@@ -3809,6 +3809,8 @@ set multiplot layout %i,1
     img_width=float(img_size[2]-img_size[0])
     img_height=float(img_size[3]-img_size[1])
     mr, pr=self.mouse_data_range
+    if mr[1]==0. or mr[3]==0.:
+      return None
     mouse_x=position[0]/float(img_size.width)
     mouse_x-=mr[0]
     mouse_x/=mr[1]
