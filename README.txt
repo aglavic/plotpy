@@ -1,13 +1,14 @@
-      Release Notes for the plotting script collection Version 0.7
+      Release Notes for the plotting script collection Version 0.7.2
              Please report bugs and feature requests to http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki
 
 
 Content:
 
 0   - introduction
-1   - changes since version 0.6.3
-1.1 - changes from version 0.5 to 0.6.3
-1.2 - changes from version 0.4 to 0.5
+1    - changes since version 0.7
+1.1 - changes from version 0.6.3 to 0.7
+1.2 - changes from version 0.5 to 0.6.3
+1.3 - changes from version 0.4 to 0.5
 2   - installation Linux
 2.1 - installation Windows
 3   - goles for later releases
@@ -26,7 +27,22 @@ the data internally can be quite helpful.)
 
 The following list of changes does not claim to be complete:
 
------ 1 - changes since version 0.6.3 -------
+----- 1    - changes since version 0.7 -----
+- Support for 4-ID-C datatype of APS
+- Added templates support in GUI, user can define an ASCII file format with a simple template file.
+- Added experimental mouse support for mapplots under Linux.
+- Completed the "PlotTree" Dilaog, which shows a list of all plots including preview.
+- Improved GUI useablinity with e.g. important dialogs reappear at their last used position
+- IPython console improvements:
+  - Script lines can be automatically run at startup using the "-ipy" and "-ipr" command line parameters
+  - Keyboard shortcuts get redirected to the main window, e.g. <control>+N changes to the next plot
+  - Important mathematic functions as 'exp' and 'sin' are directly added to the namespace without using the np. prefix.
+  - 'ls' and 'cat' functions now use python functions as the result had not been shown in the program but the Unix console.
+  - GUI Menu functions are directly aveilable via the new 'menus' object.
+- Fix a bug making plotting impossible with Gnuplot versions <4.4
+- Fix small bug which could raise an error on unix systems where it should have been cought (WindowsError not defined)
+
+----- 1.1 - changes from version 0.6.3 to 0.7 -------
 - For gnuplot version >=4.4 mouse support was added for 2d plots including position status message, 
   zoom functionality, adding labels on shift+click and fitting peak functions on ctrl+click.
 - Added template framework to fast create new datatypes.
@@ -52,7 +68,7 @@ The following list of changes does not claim to be complete:
 - Improved error handling and debug.log
 - A lot of bugfixes.
 
------ 1.1 - changes from version 0.5 to 0.6.3 -------
+----- 1.2 - changes from version 0.5 to 0.6.3 -------
 - added printing with system print dialog (pygtk >= 2.10) or with commandline tool for unix
 - added Radial integration around one point of a plotted maps
 - added some convenience functions to the IPython console to give experienced users the possibility to 
@@ -146,7 +162,7 @@ The following list of changes does not claim to be complete:
 - config files in user directory if installed by admin
 
 
------ 1.2 - changes from version 0.4 to 0.5 -------
+----- 1.3 - changes from version 0.4 to 0.5 -------
 - combined all scripts into one executable with many changes in the backend for more
   flexibility using more object orientation
 - using temporal folder depending on the process ID so you can use more then one instance

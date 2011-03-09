@@ -329,18 +329,31 @@ class MenuWrapper(object):
   __menu_root__=None
   
   def __init__(self, menu_root):
+    '''
+      Constructor just connecting the base menu.
+    '''
     self.__menu_root__=menu_root
   
   def __get_dict__(self):
+    '''
+      Interactively creates the objects __dict__ dictionary to contain only the
+      menu names. If a menu has a submenu, it will be connected to another MenuWrapper.
+      If the menu is just connected to an action the attribute will be assigned to be
+      the activation function of this action. In this way the user in the ipython console
+      will get all menus when typing menu. + <TAB> and can activate the menu action by
+      calling it with e.g. menu.submenu().
+    '''
     menu_items=self.__menu_root__.get_children()
+    # remove seperators
     menu_items=filter(lambda item: type(item) in [gtk.ImageMenuItem, gtk.MenuItem], menu_items)
     dict={}
     for item in menu_items:
-      name=item.get_label().replace('_', '').replace('.', '').replace(' ', '_')
+      name=item.get_label().replace('_', '').replace('.', '').replace('/', '').replace(' ', '_')
       if name=='Empty':
         continue
       submenu=item.get_submenu()
       if submenu is not None:
+        # Create submenu wrapper
         dict[name]=MenuWrapper(item.get_submenu())
       else:
         dict[name]=item.activate
@@ -348,4 +361,5 @@ class MenuWrapper(object):
       setattr(self, key, value)
     return dict
   
+  # connect __dict__ to the __get_dict__ function
   __dict__=property(__get_dict__)

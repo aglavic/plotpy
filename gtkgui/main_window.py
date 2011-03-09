@@ -3325,6 +3325,11 @@ set multiplot layout %i,1
                        'action_history': self.file_actions.history, 
                        'menus': MenuWrapper(self.menu_bar), 
                        })
+    # add common mathematic functions to the namespace
+    math_functions=['exp','log', 'log10', 
+                    'sin', 'cos', 'tan', 'arcsin',  'arccos', 'arctan', 'sinh', 'cosh', 'tanh', 
+                    'sqrt', 'abs']
+    ipview.updateNamespace(dict([(item, getattr(numpy, item, None)) for item in math_functions]))
     if hasattr(self, 'ipython_user_namespace'):
       # reload namespace of an earlier session
       ipview.updateNamespace(self.ipython_user_namespace)
