@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.2"
+__version__ = "0.7.2.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -73,7 +73,7 @@ class ApplicationMainWindow(gtk.Window):
   # sub-windows can set a function which gets called on button press
   # with the active position of the mouse on the plot
   garbage=[]
-  plot_tree_shown=True
+  plot_tree=None
   
   def get_active_dataset(self):
     # convenience method to get the active dataset
@@ -133,14 +133,6 @@ class ApplicationMainWindow(gtk.Window):
     # Retrieving a reference to a textbuffer from a textview.
     self.plot_options_buffer = self.plot_options_view.get_buffer()
     self.active_folder=os.path.realpath('.') # For file dialogs to stay in the active directory
-    # Create a window for plot preview and selection
-    self.plot_tree=PlotTree(self.active_session.file_data, self.update_tree, 
-                            expand=self.active_session.active_file_name, parent=self)
-    self.plot_tree.set_title('Plotting - Imported Datasets')
-    self.plot_tree.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
-    self.plot_tree.connect('delete_event', self.plot_tree.hide_on_delete)
-    self.plot_tree.connect('delete_event', self.plot_tree_hide_on_delete)
-    self.plot_tree.set_preview_parameters(self.plot, self.active_session, self.active_session.TEMP_DIR+'plot_temp.png')
     #----------------- set class variables ------------------
 
 
@@ -150,10 +142,6 @@ class ApplicationMainWindow(gtk.Window):
                             os.path.split(
                            os.path.realpath(__file__))[0], 
                            "..", "config", "logo.png").replace('library.zip', ''))
-    self.plot_tree.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0], 
-                           "..", "config", "logoblue.png").replace('library.zip', ''))
     # Reading config file
     self.read_config_file()
     # When the window gets destroyed, process some cleanup and save the configuration
@@ -285,9 +273,6 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_page_entry.set_width_chars(4)
     self.plot_page_entry.set_text('0')
     align_table.attach(self.plot_page_entry,1,2,0,1,gtk.FILL,gtk.FILL,0,0)
-    # checkbox for more Settings
-    self.check_add=gtk.CheckButton(label='Show more options.', use_underline=True)
-    align_table.attach(self.check_add,2,3,0,1,gtk.EXPAND|gtk.FILL,gtk.FILL,0,0)
     # x,y ranges
     self.x_range_in=gtk.Entry()
     self.x_range_in.set_width_chars(6)
@@ -419,8 +404,6 @@ class ApplicationMainWindow(gtk.Window):
     #+++++++++++++ Show window and connecting events ++++++++++++++
     self.read_window_config()
     self.show_all()
-    self.check_add.set_active(True)
-    self.check_add.toggled()
     # resize events
     self.connect("event-after", self.update_picture)
     self.connect("configure-event", self.update_size)
@@ -429,7 +412,6 @@ class ApplicationMainWindow(gtk.Window):
     self.label.connect("activate",self.change) # changed entry triggers change() function 
     self.label2.connect("activate",self.change) # changed entry triggers change() function 
     self.plot_page_entry.connect("activate", self.iterate_through_measurements)
-    self.check_add.connect("toggled",self.show_add_info)
     self.x_range_in.connect("activate",self.change_range)
     self.y_range_in.connect("activate",self.change_range)
     self.font_size.connect("activate",self.change_range)
@@ -445,8 +427,7 @@ class ApplicationMainWindow(gtk.Window):
     # mouse and keyboad events
     self.event_box.connect('button-press-event', self.mouse_press)
     self.event_box.connect('button-release-event', self.mouse_release)
-    self.connect('motion-notify-event', self.catch_mouse_position)
-    
+    self.connect('motion-notify-event', self.catch_mouse_position)    
     #------------- connecting events --------------
     
     # create the first plot
@@ -485,8 +466,9 @@ class ApplicationMainWindow(gtk.Window):
         return
     self.geometry=(self.get_position(), self.get_size())
     self.check_for_updates()
-    if self.plot_tree_shown:
-      self.plot_tree.show_all()
+    # open the plot tree dialog
+    if self.config_object['plot_tree']['shown']:
+      self.show_plot_tree()
     self.init_complete=True
     # execute ipython commands supplied via commandline
     if len(self.active_session.ipython_commands)>0:
@@ -508,6 +490,11 @@ class ApplicationMainWindow(gtk.Window):
       self.geometry=geometry
       self.widthf=self.frame1.get_allocation().width
       self.heightf=self.frame1.get_allocation().height
+      # ConfigObj Window parameters
+      self.config_object['Window']={
+                                    'size': self.geometry[1], 
+                                    'position': self.geometry[0], 
+                                    }
 
   def update_picture(self, widget, event):
     '''
@@ -532,14 +519,6 @@ class ApplicationMainWindow(gtk.Window):
       for name, profile in self.profiles.items():
         profile.write(self.config_object['profiles'])
       del self.config_object['profiles']['default']
-      # ConfigObj Window parameters
-      self.config_object['Window']={
-                                    'size': self.geometry[1], 
-                                    'position': self.geometry[0], 
-                                    'plot_tree_position': self.plot_tree.get_position(), 
-                                    'plot_tree_size': self.plot_tree.get_size(), 
-                                    'plot_tree_shown': self.plot_tree_shown, 
-                                    }
       self.config_object.write()
     for window in self.open_windows:
       window.destroy()
@@ -601,7 +580,7 @@ class ApplicationMainWindow(gtk.Window):
     self.reset_statusbar()
     # plot the data
     self.replot()
-    if self.plot_tree_shown:
+    if self.plot_tree is not None:
       self.plot_tree.add_data()
       self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
 
@@ -620,22 +599,45 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_tree.set_focus_item(key, index)
     self.present()
 
-  def plot_tree_hide_on_delete(self, *ignore):
+  def plot_tree_on_delete(self, *ignore):
     '''
-      Hide the plot tree window on delete.
+      Store closed plot tree dialog option.
     '''
-    self.plot_tree_shown=False
+    self.config_object['plot_tree']['shown']=False
+    self.plot_tree=None
+  
+  def plot_tree_configure(self, widget, event):
+    '''
+      Store plot tree dialog position and size.
+    '''
+    self.config_object['plot_tree']['size']=widget.get_size()
+    self.config_object['plot_tree']['position']=widget.get_position()
 
-  def show_plot_tree(self, action):
+  def show_plot_tree(self, action=None):
     '''
       Show the plot tree window.
     '''
-    if self.plot_tree_shown:
-      self.plot_tree_shown=False
-      self.plot_tree.hide()
+    if self.plot_tree is None:
+      # Create a window for plot preview and selection
+      self.plot_tree=PlotTree(self.active_session.file_data, self.update_tree, 
+                              expand=self.active_session.active_file_name, parent=self)
+      self.plot_tree.set_title('Plotting - Imported Datasets')
+      self.plot_tree.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
+      self.plot_tree.connect('configure_event', self.plot_tree_configure)
+      self.plot_tree.connect('delete_event', self.plot_tree_on_delete)
+      self.plot_tree.set_preview_parameters(self.plot, self.active_session, self.active_session.TEMP_DIR+'plot_temp.png')
+      self.plot_tree.set_default_size(*self.config_object['plot_tree']['size'])
+      self.plot_tree.move(*self.config_object['plot_tree']['position'])
+      self.config_object['plot_tree']['shown']=True
+      self.plot_tree.set_icon_from_file(os.path.join(
+                              os.path.split(
+                             os.path.realpath(__file__))[0], 
+                             "..", "config", "logoblue.png").replace('library.zip', ''))
+      self.plot_tree.show_all()
     else:
-      self.plot_tree_shown=True
-      self.plot_tree.show()
+      self.plot_tree.destroy()
+      self.plot_tree=None
+      self.config_object['plot_tree']['shown']=False
 
   def remove_active_plot(self, action):
     '''
@@ -742,7 +744,7 @@ class ApplicationMainWindow(gtk.Window):
     self.reset_statusbar()
     self.rebuild_menus()
     self.replot()
-    if self.plot_tree_shown:
+    if self.plot_tree is not None:
       self.plot_tree.add_data()
       self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
   
@@ -818,7 +820,7 @@ class ApplicationMainWindow(gtk.Window):
     self.rebuild_menus()
     if hide_status:
       self.replot()
-    if self.plot_tree_shown:
+    if self.plot_tree is not None:
       self.plot_tree.add_data()
       self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
     return True
@@ -2521,53 +2523,30 @@ set multiplot layout %i,1
     '''
       Show or hide advanced options widgets.
     '''
-    # TODO: Do we realy need this?
-    if self.check_add.get_active():
-      self.x_range_in.show()
-      self.x_range_label.show()
-      self.y_range_in.show()
-      self.y_range_label.show()
-      self.font_size.show()
-      self.check_add.set_label('')
-      self.logx.show()
-      self.logy.show()
-      self.plot_options_button.show()
-      if self.measurement[self.index_mess].zdata>=0:
-        self.logz.show()
-        self.z_range_in.show()
-        self.z_range_label.show()
-        self.view_left.show()
-        self.view_up.show()
-        self.view_down.show()
-        self.view_right.show()
-      else:
-        self.logz.hide()
-        self.z_range_in.hide()
-        self.z_range_label.hide()
-        self.view_left.hide()
-        self.view_up.hide()
-        self.view_down.hide()
-        self.view_right.hide()
+    self.x_range_in.show()
+    self.x_range_label.show()
+    self.y_range_in.show()
+    self.y_range_label.show()
+    self.font_size.show()
+    self.logx.show()
+    self.logy.show()
+    self.plot_options_button.show()
+    if self.measurement[self.index_mess].zdata>=0:
+      self.logz.show()
+      self.z_range_in.show()
+      self.z_range_label.show()
+      self.view_left.show()
+      self.view_up.show()
+      self.view_down.show()
+      self.view_right.show()
     else:
-      if not action==None: # only change picture size if chack_add button is triggered
-        self.image.hide()
-        self.image_shown=False
-      self.x_range_in.hide()
-      self.x_range_label.hide()
-      self.y_range_in.hide()
-      self.y_range_label.hide()
+      self.logz.hide()
       self.z_range_in.hide()
       self.z_range_label.hide()
-      self.font_size.hide()
-      self.logx.hide()
-      self.logy.hide()
-      self.plot_options_button.hide()
-      self.logz.hide()
       self.view_left.hide()
       self.view_up.hide()
       self.view_down.hide()
       self.view_right.hide()
-      self.check_add.set_label('Show more options.')
 
   def apply_to_all(self,action): 
     '''
@@ -3435,7 +3414,12 @@ set multiplot layout %i,1
       self.config_object['profiles']={}
       self.profiles={'default': PlotProfile('default')}
       self.profiles['default'].save(self)
-    
+    if not 'plot_tree' in self.config_object:    
+      self.config_object['plot_tree']={
+                                       'shown': True, 
+                                       'size': (350, 500), 
+                                       'position': (0, 0), 
+                                       }
     return True
 
   def read_window_config(self):
@@ -3448,15 +3432,13 @@ set multiplot layout %i,1
       # Set the main window size to default or the last settings saved in config file
       self.set_default_size(width, height)
       self.move(x, y)
-      px, py=self.config_object['Window']['plot_tree_position']
-      pwidth, pheight=self.config_object['Window']['plot_tree_size']
-      self.plot_tree_shown=self.config_object['Window']['plot_tree_shown']
-      self.plot_tree.set_default_size(pwidth, pheight)
-      self.plot_tree.move(px, py)
     except KeyError:
       self.set_default_size(700, 600)
-      self.plot_tree.set_default_size(350, 500)
-      self.plot_tree_shown=True
+      # ConfigObj Window parameters
+      self.config_object['Window']={
+                                    'size': (700, 600), 
+                                    'position': self.get_position(), 
+                                    }
 
   def check_for_update_now(self):
     '''

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2011-03-02, 02:13:05 -->
+<!-- Saved: 2011-03-09, 11:27:33 -->
 <!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -51,7 +51,6 @@
     <Source>sessions/reflectometer_fit/parameters.py</Source>
     <Source>deb_control</Source>
     <Source>import_debug.py</Source>
-    <Source>py2exe_imports.py</Source>
     <Source>config/transformations.py</Source>
     <Source>sessions/kws2.py</Source>
     <Source>read_data/kws2.py</Source>
@@ -312,7 +311,6 @@
             <value>
               <list>
                 <unicode>import_debug.py</unicode>
-                <unicode>py2exe_imports.py</unicode>
                 <unicode>setup.py</unicode>
               </list>
             </value>
