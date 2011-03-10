@@ -3,7 +3,7 @@
   Own dialogs for the GUI using the wxWidgets toolkit.
 '''
 
-__version__    = "0.7.2.1"
+__version__    = "0.7.2.2"
 
 import wx
 import sys

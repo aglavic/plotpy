@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.2.1"
+__version__ = "0.7.2.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -4000,6 +4000,14 @@ set multiplot layout %i,1
                                   output_file=self.active_session.TEMP_DIR+'plot_temp.png',
                                   fit_lorentz=False)
     if self.last_plot_text!='':
+      self.set_title('Plotting GUI - ' + self.input_file_name + " - " + str(self.index_mess))
+      self.active_plot_geometry=(self.widthf, self.heightf)
+      self.reset_statusbar()
+      try:
+        # try to read the plot image even if there was an error
+        self.set_image()
+      except:
+        pass
       print 'Gnuplot error, see "View->Show Plot Parameters" for more details!'
       #self.show_last_plot_params(None)
     else:
