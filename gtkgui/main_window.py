@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.2.2"
+__version__ = "0.7.2.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -184,6 +184,7 @@ class ApplicationMainWindow(gtk.Window):
     # put toolbar below menubar, only expand in x direction
     bar = self.UIManager.get_widget("/ToolBar")
     bar.set_tooltips(True)
+    bar.set_style(gtk.TOOLBAR_ICONS)
     bar.show()
     table.attach(bar,
         # X direction #       # Y direction
@@ -267,7 +268,7 @@ class ApplicationMainWindow(gtk.Window):
     align_table = gtk.Table(12, 2, False)
     # input for jumping to a data sequence
     page_label=gtk.Label()
-    page_label.set_markup('Go to Plot:')
+    page_label.set_markup('P.:')
     align_table.attach(page_label,0,1,0,1,gtk.FILL,gtk.FILL,0,0)
     self.plot_page_entry=gtk.Entry()
     self.plot_page_entry.set_width_chars(4)
@@ -291,7 +292,7 @@ class ApplicationMainWindow(gtk.Window):
     self.font_size.set_width_chars(5)
     self.font_size.set_text(str(self.active_session.font_size))
     self.font_size_label=gtk.Label()
-    self.font_size_label.set_markup('Font size:')
+    self.font_size_label.set_markup('F. size:')
     self.font_size_label.set_padding(5, 0)
     align_table.attach(self.font_size,12,13,0,1,gtk.FILL,gtk.FILL,0,0)
     align_table.attach(self.font_size_label,11,12,0,1,gtk.FILL,gtk.FILL,0,0)
@@ -494,7 +495,7 @@ class ApplicationMainWindow(gtk.Window):
       self.config_object['Window']={
                                     'size': self.geometry[1], 
                                     'position': self.geometry[0], 
-                                    }
+                                    }                    
 
   def update_picture(self, widget, event):
     '''
@@ -519,6 +520,9 @@ class ApplicationMainWindow(gtk.Window):
       for name, profile in self.profiles.items():
         profile.write(self.config_object['profiles'])
       del self.config_object['profiles']['default']
+      self.config_object['MouseMode']={
+                                   'active': self.mouse_mode
+                                   }
       self.config_object.write()
     for window in self.open_windows:
       window.destroy()
@@ -3432,6 +3436,8 @@ set multiplot layout %i,1
       # Set the main window size to default or the last settings saved in config file
       self.set_default_size(width, height)
       self.move(x, y)
+      if 'MouseMode' in self.config_object:
+        self.mouse_mode=self.config_object['MouseMode']['active']
     except KeyError:
       self.set_default_size(700, 600)
       # ConfigObj Window parameters
@@ -3539,12 +3545,12 @@ set multiplot layout %i,1
         original_filters = warnings.filters[:]
         # Ignore warnings.
         warnings.simplefilter("ignore")
-        pixbuf_data=pixbuf.get_pixels_array()
+        pixbuf_data=pixbuf.get_pixels_array()[:,:,:3]
         warnings.filters=original_filters
-        black_values=(pixbuf_data.mean(axis=2)==0.)
+        black_values=(numpy.mean(pixbuf_data, axis=2)==0.)
         # as first step get the region inside all captions including colorbar
-        ysum=black_values.sum(axis=0)*1.
-        xsum=black_values.sum(axis=1)*1.
+        ysum=numpy.sum(black_values, axis=0)*1.
+        xsum=numpy.sum(black_values, axis=1)*1.
         xsum/=float(len(ysum))
         ysum/=float(len(xsum))
         yids=numpy.where(xsum>xsum.max()*0.9)[0]
@@ -3554,8 +3560,8 @@ set multiplot layout %i,1
         y0=float(yids[0])
         y1=float(yids[-1])
         # try to remove the colorbar from the region
-        whith_values_inside=(pixbuf_data[y0:y1, x0:x1].mean(axis=2)==255.)
-        ysum2=whith_values_inside.sum(axis=0)*1.
+        whith_values_inside=(numpy.mean(pixbuf_data[int(y0):int(y1), int(x0):int(x1)], axis=2)==255.)
+        ysum2=numpy.sum(whith_values_inside, axis=0)*1.
         ysum2/=float(y1-y0)
         xids=numpy.where(ysum2==1.)[0]
         x1=float(xids[0]+x0-1)
@@ -4255,6 +4261,7 @@ set multiplot layout %i,1
       <toolitem action='Apply'/>
       <toolitem action='ExportAll'/>
       <toolitem action='ErrorBars'/>
+      <toolitem action='ToggleMousemode' />
       <separator name='static11'/>
       <toolitem action='AddMulti'/>
       <toolitem action='MultiPlot'/>
@@ -4487,7 +4494,7 @@ set multiplot layout %i,1
         self.open_dataview_dialog),
       ( "ShowPersistent", gtk.STOCK_FULLSCREEN,                    # name, stock id
         "Open Persistent Gnuplot Window", None,                     # label, accelerator
-        None,                                    # tooltip
+        "Open Persistent Gnuplot Window",                                    # tooltip
         self.plot_persistent),
       ( "ToggleMousemode", gtk.STOCK_GOTO_TOP,                    # name, stock id
         "Toggle Mousemode", None,                     # label, accelerator
@@ -4522,7 +4529,6 @@ set multiplot layout %i,1
         self.toolbar_ui_id = self.UIManager.add_ui_from_string(ui_info)
     except gobject.GError, msg:
         print "building menus failed: %s" % msg
-
     
   #---------------------Functions responsible for menus and toolbar----------------------#
   
