@@ -804,7 +804,7 @@ class FitRelaxingCrystalLayer(FitFunction):
   '''
   # define class variables.
   name="RelaxingCrystalLayer"
-  parameters=[1., 100., 3., 0., 5.76, 5.8, 20., 0., 0.1, 0.001]
+  parameters=[4.e5, 146., 6., 0., 5.76, 5.858, 200., 5.1765, 0.165, 0.0005, 0.5,  0.99752006, 1.]
   parameter_names=['I',               # intensity (scaling factor)
                    'd',               # layer thickness
                    'σ_layer',         # layer roughness
@@ -814,9 +814,18 @@ class FitRelaxingCrystalLayer(FitFunction):
                    'ε',               # strain relaxation length of the lattice parameter
                    'a_substrate',     # 
                    'scaling_substrate',# 
-                   'μ'                # absorption coefficient 
+                   'μ',               # absorption coefficient 
+                   'I-Kα2', 'λ-Kα2',  # Relative intensity and wavelength of Cu-Kα2
+                   'BG',              # Background
                    ]
   fit_function_text='d=[d] σ_{layer}=[σ_layer|2] a_{bottom}=[a_bottom|3] a_{inf}=[a_infinity|3]'
+
+  def __init__(self, initial_parameters=[]):
+    '''
+      Constructor.
+    '''
+    FitFunction.__init__(self, initial_parameters)
+    self.refine_parameters=range(10)
 
   def fit_function(self, p, q):
     q=numpy.array(q).view(numpy.ndarray)
@@ -830,6 +839,11 @@ class FitRelaxingCrystalLayer(FitFunction):
     a_substrate=p[7]
     scaling_substrate=p[8]
     mu=p[9]
+    I_alpha2=p[10]
+    lambda_alpha2=p[11]
+    background=p[12]
+    if I_alpha2!=0:
+      q=numpy.append(q, q*lambda_alpha2)
     # calculate some constants
     pi=numpy.pi
     exp=numpy.exp
@@ -855,7 +869,10 @@ class FitRelaxingCrystalLayer(FitFunction):
     else:
       I=numpy.abs(A)**2
       I/=I.max()
-    return I_0*I
+    if I_alpha2!=0:
+      items=len(q)/2
+      I=(I[:items]+I_alpha2*I[items:])/(1.+I_alpha2)
+    return I_0*I+background
   
   def get_strained_plains(self, a_bottom, a_inf, epsilon, d):
     '''
