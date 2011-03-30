@@ -115,20 +115,21 @@ set palette defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "bl
 set size square
 '''
 defined_color_patterns={
-                        'Default': 'defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")', 
-                        'Black to Red': 'defined (0 "black", 1 "purple", 2 "blue", 3 "green", 4 "yellow",  5 "red")', 
-                        'Grey Scale': 'gray', 
-                        'Blue,Green,Yellow,Red': 'defined (0 "blue",1 "green", 2 "yellow",3 "red")', 
-                        'Black to Yellow': 'defined (0 "black",1 "blue", 2 "red",3 "yellow")', 
-                        'Gnuplot std.': 'rgbformulae 7,5,15', 
+                        'Default': 'defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black") model RGB', 
+                        'GLI': 'functions (gray*5./6.<0.75)?0.75-gray*5./6.:1.75-gray*5./6., 0.857, 0.875 model HSV', 
+                        'Black to Red': 'defined (0 "black", 1 "purple", 2 "blue", 3 "green", 4 "yellow",  5 "red") model RGB', 
+                        'Grey Scale': 'gray model RGB', 
+                        'Blue,Green,Yellow,Red': 'defined (0 "blue",1 "green", 2 "yellow",3 "red") model RGB', 
+                        'Black to Yellow': 'defined (0 "black",1 "blue", 2 "red",3 "yellow") model RGB', 
+                        'Gnuplot std.': 'rgbformulae 7,5,15 model RGB', 
                         # MARIA color map from Stefan Mattauch
-                        'MARIA log': 'defined (0 0 0 0 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1)', 
-                        'MARIA lin': 'defined (0 1 1 1 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1)', 
-                        'fit2d': 'defined (0 "#000000", 1 "#0000d1", 2 "#c3c3ff", 3 "#9ee246", 4 "#fdfe78", 5.5 "#cc8800", 6.5 "#dc3ef7", 7.5 "#ffffff")', 
-                        'Rainbow': 'rgbformulae 22,13,-31', 
-                        'Hot': 'rgbformulae 21,22,23', 
-                        'Color, gray printable': 'rgbformulae 31,32,33', 
-                        '+ and - peaks': 'defined (0 0 0 0.5, 1 0 0 1, 5 1 1 1, 9 1 0 0, 10 0.5 0 0)', 
+                        'MARIA log': 'defined (0 0 0 0 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1) model RGB', 
+                        'MARIA lin': 'defined (0 1 1 1 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1) model RGB', 
+                        'fit2d': 'defined (0 "#000000", 1 "#0000d1", 2 "#c3c3ff", 3 "#9ee246", 4 "#fdfe78", 5.5 "#cc8800", 6.5 "#dc3ef7", 7.5 "#ffffff") model RGB', 
+                        'Rainbow': 'rgbformulae 22,13,-31 model RGB', 
+                        'Hot': 'rgbformulae 21,22,23 model RGB', 
+                        'Color, gray printable': 'rgbformulae 31,32,33 model RGB', 
+                        '+ and - peaks': 'defined (0 0 0 0.5, 1 0 0 1, 5 1 1 1, 9 1 0 0, 10 0.5 0 0) model RGB', 
                         }
 # title for a curve
 titles='[titles_add]'
