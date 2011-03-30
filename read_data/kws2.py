@@ -8,10 +8,10 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import os, sys
 from copy import deepcopy
-from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where, int8, float32
+from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where, int8, float32, uint16, fromfile, arange, meshgrid, zeros
 from configobj import ConfigObj
 from glob import glob
-from measurement_data_structure import MeasurementData, HugeMD
+from measurement_data_structure import MeasurementData, HugeMD, PhysicalProperty
 import config.kws2
 import config.gnuplot_preferences
 import array as array_module
@@ -53,6 +53,10 @@ def read_data(file_name):
     #config.gnuplot_preferences.plotting_parameters_3d='w points palette pt 5'
     config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 5,5', '')
     return read_edf_file(file_name)
+  elif file_name.endswith('.bin') or file_name.endswith('.bin.gz'):
+    # Read .bin data (p08)
+    config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 5,5', '')
+    return read_p08_binary(file_name)
   folder, rel_file_name=os.path.split(os.path.realpath(file_name))
   setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
   for key, value in setups.items():
@@ -503,6 +507,84 @@ def write_edf_file(file_prefix, data, countingtime):
   output_array.fromlist(int_data)
   output_array.tofile(write_file)
   write_file.close()  
+
+def read_p08_binary(file_name):
+  '''
+    Read the binary .bin file format of P08@PETRA-3 CCD camera.
+  '''
+  folder, rel_file_name=os.path.split(os.path.realpath(file_name))
+  setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
+  for key, value in setups.items():
+    if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
+      setup=value
+  sys.stdout.write( "\tReading...")
+  sys.stdout.flush()
+  background=2.
+  countingtime=1.
+  detector_distance=1000. #mm
+  join_pixels=4.
+  pixelsize_x= 0.015 * join_pixels#mm
+  pixelsize_y= 0.015 * join_pixels#mm
+  sample_name=''
+  center_x=setup['CENTER_X']/join_pixels
+  center_y=setup['CENTER_Y']/join_pixels
+  q_window=[-0.5, 0.5, -0.5, 0.5]
+  dataobj=KWS2MeasurementData([], 
+                            [], 2, 3, -1, 4)
+  if file_name.endswith('.gz'):
+    file_handler=gzip.open(file_name, 'rb')
+  else:
+    file_handler=open(file_name, 'rb')
+  header=file_handler.read(216)
+  # read the data
+  sys.stdout.write( "\b\b\b binary...")
+  sys.stdout.flush()
+  data_array=fromfile(file_handler, uint16).reshape(4096, 4096)
+  # averadge 4x4 pixels
+  sys.stdout.write( "\b\b\b, joining %ix%i pixels..." % (join_pixels, join_pixels))
+  sys.stdout.flush()
+  # neighboring pixels
+  use_ids=arange(4096/join_pixels).astype(int)*int(join_pixels)
+  grid=meshgrid(use_ids, use_ids)
+  data_array2=zeros((4096/join_pixels, 4096/join_pixels))
+  for i in range(join_pixels):
+    for j in range(join_pixels):
+      data_array2+=data_array[use_ids+i][:,use_ids+j]
+  data_array=data_array2.flatten()
+  sys.stdout.write( "\b\b\b, calculating q-positions and joining data...")
+  sys.stdout.flush()
+  # read additional info from end of file
+  z_array=linspace((4096/join_pixels)**2-1, 0, (4096/join_pixels)**2)%(4096/join_pixels)
+  y_array=linspace(0, (4096/join_pixels)**2-1, (4096/join_pixels)**2)//(4096/join_pixels)
+  error_array=sqrt(data_array)
+  corrected_data=data_array/countingtime
+  corrected_error=error_array/countingtime
+  lambda_x=setup['LAMBDA_N']
+  qy_array=4.*pi/lambda_x*\
+           sin(arctan((y_array-center_y)*pixelsize_y/detector_distance/2.))
+  qz_array=4.*pi/lambda_x*\
+           sin(arctan((z_array-center_x)*pixelsize_x/detector_distance/2.))
+
+  use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
+              (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
+  dataobj.data.append(PhysicalProperty('pixel_x', 'pix', y_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('pixel_y', 'pix', z_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('q_y', 'Å^{-1}', qy_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('q_z', 'Å^{-1}', qz_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data[use_indices]))
+  dataobj.data[-1].error=corrected_error[use_indices]
+  #dataobj.data[3]=PhysicalProperty('raw_int', 'counts', data_array[use_indices])
+  #dataobj.data[3].error=error_array[use_indices]
+
+  dataobj.sample_name=sample_name
+  dataobj.scan_line=1
+  dataobj.scan_line_constant=0
+  dataobj.logz=True
+  sys.stdout.write( "\b\b\b done!\n")
+  sys.stdout.flush()
+  return [dataobj]
+ 
+
 
 class KWS2MeasurementData(HugeMD):
   '''

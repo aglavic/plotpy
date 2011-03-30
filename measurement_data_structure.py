@@ -1068,7 +1068,8 @@ class HugeMD(MeasurementData):
       Quick export only the xyz values as binary file.
     '''
     # Create data as list of x1,y1,z1,x2,y2,z2...,xn,yn,zn
-    xyz=numpy.array([self.x, self.y, self.z]).transpose().flatten().astype(numpy.float32)
+    xyz=numpy.append(numpy.append(self.x, self.y), self.z).astype(numpy.float32)\
+          .reshape(3,len(self.x)).transpose().flatten()
     xyz.tofile(open(file_name, 'wb'))
     self.store_data()
   
