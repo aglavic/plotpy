@@ -7,6 +7,7 @@ subroutine mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,alamda)
   real*8 alpha(map,map),atry(map),beta(map),da(map),oneda(map,1)
   common/lamdafirst/alamda_first
   common/chi0/ochisq0
+  common/oochisq/ochisq  
   common/layers/ntop,nincell,ncell,nbelow
   common/cons1/mfree,icons,itype_of_cons(map),i_para_ref(map)
   if (alamda.lt.0.d0) then
