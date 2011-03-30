@@ -12,8 +12,7 @@ import math
 import measurement_data_structure
 import codecs
 from copy import deepcopy
-from numpy import array
-from numpy import sqrt
+from numpy import array, sqrt, pi, sin
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
@@ -55,6 +54,14 @@ def read_data(file_name, DATA_COLUMNS):
       if sequence!='NULL':
         # filter 0 intensity points
         sequence.filters=[(1, 0.0, 0.0, False)]
+        # for Θ or 2Θ scans add q-column
+        if "DRIVE='THETA'" in sequence.info:
+          two_theta_start=float(sequence.info.split('2THETA=')[1].split("\n")[0])
+          th=(sequence.x-sequence.x[0])+two_theta_start*0.5
+          sequence.data.append( (4.*pi/1.54*sin(th))//('q_z', 'Å^{-1}') )
+        elif "DRIVE='2THETA'" in sequence.info:
+          th=sequence.x*0.5
+          sequence.data.append( (4.*pi/1.54*sin(th))//('q_z', 'Å^{-1}') )
         measurement_data.append(sequence)
       else:
         return 'NULL'
