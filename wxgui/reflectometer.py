@@ -25,7 +25,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.2.3"
+__version__ = "0.7.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -696,8 +696,8 @@ class ReflectometerGUI:
     '''
     dataset=window.measurement[window.index_mess]
       # convert x values from angle to q
-    dataset.unit_trans([['Theta', '\302\260', 4*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}'], \
-                      ['2 Theta', '\302\260', 2*math.pi/1.54/180*math.pi, 0, 'q','A^{-1}']])    
+    dataset.unit_trans([['Theta', '\302\260', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
+                      ['2 Theta', '\302\260', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
     data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', print_info=False, only_fitted_columns=True, xfrom=self.x_from, xto=self.x_to)
     self.active_file_data.fit_object.number_of_points=data_lines
     self.active_file_data.fit_object.set_fit_constrains()

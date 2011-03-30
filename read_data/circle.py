@@ -17,7 +17,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.2.3"
+__version__ = "0.7.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -171,13 +171,13 @@ ${comments}
     ''').substitute(scan_header)
   if 'h' in output.dimensions():
     index=output.dimensions().index('h')
-    output.data.append( (output.data[index]*scan_header['rl'][0])//('q_x', 'A^{-1}') )
+    output.data.append( (output.data[index]*scan_header['rl'][0])//('q_x', 'Å^{-1}') )
   if 'k' in output.dimensions():
     index=output.dimensions().index('k')
-    output.data.append( (output.data[index]*scan_header['rl'][0])//('q_y', 'A^{-1}') )
+    output.data.append( (output.data[index]*scan_header['rl'][0])//('q_y', 'Å^{-1}') )
   if 'l' in output.dimensions():
     index=output.dimensions().index('l')
-    output.data.append( (output.data[index]*scan_header['rl'][0])//('q_z', 'A^{-1}') )
+    output.data.append( (output.data[index]*scan_header['rl'][0])//('q_z', 'Å^{-1}') )
   recheck_type(output, scan_header)
   return output, scan_header['comments']
 
