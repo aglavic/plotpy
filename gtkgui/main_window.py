@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.3"
+__version__ = "0.7.3.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -2398,7 +2398,8 @@ set multiplot layout %i,1
     gptext+='unset multiplot\n'
     try:
       open(os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp'), 'w').write(gptext)
-      subprocess.call([gnuplot_preferences.GNUPLOT_COMMAND, os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp')])
+      subprocess.call([gnuplot_preferences.GNUPLOT_COMMAND, os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp')], 
+                       shell=gnuplot_preferences.EMMULATE_SHELL)
     except WindowsError:
       pass
     pattern_box=gtk.combo_box_new_text()
@@ -2772,7 +2773,7 @@ set multiplot layout %i,1
       if pic_box.get_active():
         proc=subprocess.Popen([self.active_session.GNUPLOT_COMMAND, 
                          common_file_prefix+'.gp'], 
-                        shell=False, 
+                        shell=gnuplot_preferences.EMMULATE_SHELL, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         stdin=subprocess.PIPE, 
@@ -4498,7 +4499,7 @@ set multiplot layout %i,1
         self.plot_persistent),
       ( "ToggleMousemode", gtk.STOCK_GOTO_TOP,                    # name, stock id
         "Toggle Mousemode", None,                     # label, accelerator
-        None,                                    # tooltip
+        "Switch mouse navigation On/Off (Off speeds up map plots)",                                    # tooltip
         self.toggle_mouse_mode),
       ( "TogglePlotFit", gtk.STOCK_ZOOM_FIT,                    # name, stock id
         "Toggle between data,fit and combined plot", "<control><shift>T",                     # label, accelerator

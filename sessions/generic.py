@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3"
+__version__ = "0.7.3.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -174,7 +174,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   USE_MATPLOTLIB=False
   ONLY_IMPORT_MULTIFILE=False
   DEBUG=False
-  temp_fonts=False
   file_actions_addon={}
   ipython_commands=[]
   #------------------ local variables -----------------
@@ -392,30 +391,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       self.TEMP_DIR="/tmp/"
       self.SCRIPT_PATH=SCRIPT_PATH + '/'
       # name of the gnuplot command under linux
-      # gnuplot term png can't handle font path longer than 64 letters, leaving 14 letters for font file name.
-      if len(config.gnuplot_preferences.FONT_PATH)>50:
-        # linking font path to tmp folder
-        try:
-          os.symlink(config.gnuplot_preferences.FONT_PATH, os.path.join(self.TEMP_DIR, 'plot_fonts'+self.OWN_PID))
-        except OSError:
-          pass
-        config.gnuplot_preferences.FONT_PATH=os.path.join(self.TEMP_DIR, 'plot_fonts'+self.OWN_PID)
-        self.temp_fonts=True
     elif 'darwin' in sys.platform:
       # MacOS case
       self.OPERATING_SYSTEM='darwin'
       self.TEMP_DIR="/tmp/"
       self.SCRIPT_PATH=SCRIPT_PATH + '/'
       # name of the gnuplot command under linux
-      # gnuplot term png can't handle font path longer than 64 letters, leaving 14 letters for font file name.
-      if len(config.gnuplot_preferences.FONT_PATH)>50:
-        # linking font path to tmp folder
-        try:
-          os.symlink(config.gnuplot_preferences.FONT_PATH, os.path.join(self.TEMP_DIR, 'plot_fonts'+self.OWN_PID))
-        except OSError:
-          pass
-        config.gnuplot_preferences.FONT_PATH=os.path.join(self.TEMP_DIR, 'plot_fonts'+self.OWN_PID)
-        self.temp_fonts=True
     else:
       # Windows case
       self.OPERATING_SYSTEM='windows'
@@ -425,6 +406,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       def replace_systemdependent( string): # replace backthlash by double backthlash for gnuplot under windows
         return string.replace('\\','\\\\').replace('\\\\\n','\\\n').replace('\\\\\\\\', '\\\\')
       self.replace_systemdependent=replace_systemdependent
+      config.gnuplot_preferences.EMMULATE_SHELL=True
     self.TEMP_DIR=self.TEMP_DIR+'plottingscript-'+self.OWN_PID+os.sep
     measurement_data_structure.TEMP_DIR=self.TEMP_DIR
     try:
@@ -439,8 +421,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     for file_name in os.listdir(self.TEMP_DIR):
       os.remove(self.TEMP_DIR+file_name)
     os.rmdir(self.TEMP_DIR)
-    if self.temp_fonts:
-      os.remove(config.gnuplot_preferences.FONT_PATH)
 
   def replace_systemdependent(self, string):
     '''

@@ -27,7 +27,7 @@ __name__='plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __license__ = "None"
-__version__ = "0.7.3"
+__version__ = "0.7.3.2"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki"
@@ -39,7 +39,7 @@ __package_dir__={'plot_script': '.'}
 __packages__=['plot_script', 'plot_script.config', 'plot_script.read_data', 'plot_script.sessions', 
             'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui'] #'plot_script.wxgui', 
 __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90', 
-                            'fit/pnr_multi/*.f90', 'fonts/*.ttf', 'logo*.png'], 
+                            'fit/pnr_multi/*.f90', 'logo*.png'], 
                   'plot_script': ['doc/*.html'], 
                     }
 __data_files__=[('doc', glob('doc/*.html'))]
@@ -186,8 +186,8 @@ setup(name=__name__,
       requires=__requires__, #does not do anything
       app=["__init__.py"],  # set the executable for py2app
       setup_requires=__setup_requires__, 
-      console = [ "__init__.py"], # set the executable for py2exe
-      #windows = [ "__init__.py" ],
+      #console = [ "__init__.py"], # set the executable for py2exe
+      windows = [ "__init__.py" ],
       options = __options__, 
      )
 

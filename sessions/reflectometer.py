@@ -36,6 +36,7 @@ import read_data.reflectometer
 import sessions.templates
 sessions.templates.MeasurementDataClass=read_data.reflectometer.MeasurementData
 import config.reflectometer
+import config.gnuplot_preferences
 from measurement_data_structure import MeasurementData
 # import gui functions for active config.gui.toolkit
 import config.gui
@@ -52,7 +53,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3"
+__version__ = "0.7.3.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -301,10 +302,10 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
         call_params.append(config.reflectometer.FORTRAN_COMPILER_OPTIONS)
       if  config.reflectometer.FORTRAN_COMPILER_MARCH!=None:
         call_params.append(config.reflectometer.FORTRAN_COMPILER_MARCH)
-      subprocess.call(call_params, shell=False)
+      subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL)
       print 'Compiled'
     process = subprocess.Popen([exe, file_ent, file_res, file_out+'.ref', file_out+'.sim', str(max_iter)], 
-                        shell=False, 
+                        shell=config.gnuplot_preferences.EMMULATE_SHELL, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         cwd=self.TEMP_DIR, 

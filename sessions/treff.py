@@ -30,6 +30,7 @@ import read_data.treff
 import read_data.treff_addon1
 import config.treff
 import config.transformations
+import config.gnuplot_preferences
 # import gui functions for active config.gui.toolkit
 import config.gui
 try:
@@ -46,7 +47,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.7.3"
+__version__ = "0.7.3.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -597,7 +598,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
           call_params.append(config.treff.FORTRAN_COMPILER_OPTIONS)
         if  config.treff.FORTRAN_COMPILER_MARCH!=None:
           call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
-        subprocess.call(call_params, shell=False)  
+        subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL)  
         sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i' % (i+1, num_files))
         sys.stdout.flush()
       # compile the combination of all files
@@ -609,12 +610,12 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
         call_params.append(config.treff.FORTRAN_COMPILER_OPTIONS)
       if  config.treff.FORTRAN_COMPILER_MARCH!=None:
         call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
-      subprocess.call(call_params, shell=False)
+      subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL)
       sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i\n' % (num_files, num_files))
       sys.stdout.flush()
       print 'Compiled'
     process = subprocess.Popen([exe + ' ' + file_ent + ' ' + str(self.max_iter)], 
-                        shell=True, 
+                        shell=config.gnuplot_preferences.EMMULATE_SHELL, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         cwd=self.TEMP_DIR

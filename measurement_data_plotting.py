@@ -18,7 +18,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3"
+__version__ = "0.7.3.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -40,7 +40,7 @@ def check_gnuplot_version(session):
   params=[session.GNUPLOT_COMMAND, script_name]
   try:
     proc = subprocess.Popen(params, 
-                        shell=False, 
+                        shell=gnuplot_preferences.EMMULATE_SHELL, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         stdin=subprocess.PIPE, 
@@ -149,7 +149,7 @@ def gnuplot_plot_script(session,
     else:
       params=[session.GNUPLOT_COMMAND, script_name]
     proc = subprocess.Popen(params, 
-                        shell=False, 
+                        shell=gnuplot_preferences.EMMULATE_SHELL, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         stdin=subprocess.PIPE, 

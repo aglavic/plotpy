@@ -11,7 +11,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3"
+__version__ = "0.7.3.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -45,6 +45,8 @@ gnuplot_file_name='gnuplot.tmp'
 PRINT_COMMAND="lpr -P IFF17c4 -J \'plot.py-output\' %s"
 # Command for script mode to accress gnuplot, change this if you don't have gnuplot in your path
 GNUPLOT_COMMAND="gnuplot"
+# Emmulate a shell for gnuplot execution (subprocess.Popen)
+EMMULATE_SHELL=False
 
 # font path for export
 if exists('/usr/share/fonts/truetype/msttcorefonts'):
@@ -60,10 +62,10 @@ else:
     if file_path:
       FONT_PATH=split(file_path)[0]
     else:
-      FONT_PATH=join_path('[script-path]', 'config', 'fonts')
+      FONT_PATH=''
   except ImportError:
     # if there is no pygame module installed, use the fonts from this program
-    FONT_PATH=join_path('[script-path]', 'config', 'fonts')
+    FONT_PATH=''
 
 
 # character encoding in gnuplot
