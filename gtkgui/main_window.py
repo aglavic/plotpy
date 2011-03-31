@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.3.2"
+__version__ = "0.7.3.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -2368,7 +2368,7 @@ class ApplicationMainWindow(gtk.Window):
     '''
     pattern_names=sorted(gnuplot_preferences.defined_color_patterns.keys())
     # get active name
-    active_pattern='default'
+    active_pattern='Default'
     for pattern in pattern_names:
       if gnuplot_preferences.defined_color_patterns[pattern] in gnuplot_preferences.settings_3dmap:
         active_pattern=pattern
@@ -2400,8 +2400,8 @@ set multiplot layout %i,1
       open(os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp'), 'w').write(gptext)
       subprocess.call([gnuplot_preferences.GNUPLOT_COMMAND, os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp')], 
                        shell=gnuplot_preferences.EMMULATE_SHELL)
-    except WindowsError:
-      pass
+    except WindowsError, error:
+      print error
     pattern_box=gtk.combo_box_new_text()
     # drop down menu for the pattern selection
     for pattern in pattern_names:

@@ -11,7 +11,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.2"
+__version__ = "0.7.3.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -86,7 +86,7 @@ elif "darwin" in platform:
   set_output_terminal_wxt='aqua enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\
                           '" 16'
 else:
-  set_output_terminal_wxt='windows enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\
+  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\
                           '" 16'
 
 # set output file name, the postfix has to be chosen consistant to the 'set term' statement

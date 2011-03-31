@@ -18,7 +18,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.2"
+__version__ = "0.7.3.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -160,11 +160,12 @@ def gnuplot_plot_script(session,
       output = proc.communicate()
   except:
     raise RuntimeError, "\nProblem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s" % session.GNUPLOT_COMMAND
-  try:
-    # on older version of python this doesn't work
-    proc.stdin.close()
-  except:
-    pass
+  if not show_persistent:
+    try:
+      # on older version of python this doesn't work
+      proc.stdin.close()
+    except:
+      pass
   output_message=output[0]+output[1] # return the standard error output
   if 'line' in output_message:
     return output_message, []
