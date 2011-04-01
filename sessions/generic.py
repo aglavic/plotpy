@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.3"
+__version__ = "0.7.3.4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -418,6 +418,11 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
       Delete temporal files and folder.
     '''
+    # close gnuplot
+    import measurement_data_plotting
+    measurement_data_plotting.gnuplot_instance.stdin.write('exit')
+    measurement_data_plotting.gnuplot_instance.communicate()
+    # remove temp files
     for file_name in os.listdir(self.TEMP_DIR):
       os.remove(self.TEMP_DIR+file_name)
     os.rmdir(self.TEMP_DIR)

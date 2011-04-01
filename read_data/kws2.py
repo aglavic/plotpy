@@ -21,7 +21,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.3"
+__version__ = "0.7.3.4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -531,15 +531,14 @@ def read_p08_binary(file_name):
   q_window=[-0.5, 0.5, -0.5, 0.5]
   dataobj=KWS2MeasurementData([], 
                             [], 2, 3, -1, 4)
-  if file_name.endswith('.gz'):
-    file_handler=gzip.open(file_name, 'rb')
-  else:
-    file_handler=open(file_name, 'rb')
-  header=file_handler.read(216)
   # read the data
   sys.stdout.write( "\b\b\b binary...")
   sys.stdout.flush()
-  data_array=fromfile(file_handler, uint16).reshape(4096, 4096)
+  header, data_array=read_p08_binarydata(file_name)
+  if setup['BACKGROUND'] is not None:
+    sys.stdout.write( "\b\b\b subtracting background %s..." % setup['BACKGROUND'])
+    sys.stdout.flush()
+    data_array-=read_p08_binarydata(setup['BACKGROUND'])[1]
   # averadge 4x4 pixels
   sys.stdout.write( "\b\b\b, joining %ix%i pixels..." % (join_pixels, join_pixels))
   sys.stdout.flush()
@@ -547,8 +546,8 @@ def read_p08_binary(file_name):
   use_ids=arange(4096/join_pixels).astype(int)*int(join_pixels)
   grid=meshgrid(use_ids, use_ids)
   data_array2=zeros((4096/join_pixels, 4096/join_pixels))
-  for i in range(join_pixels):
-    for j in range(join_pixels):
+  for i in range(int(join_pixels)):
+    for j in range(int(join_pixels)):
       data_array2+=data_array[use_ids+i][:,use_ids+j]
   data_array=data_array2.flatten()
   sys.stdout.write( "\b\b\b, calculating q-positions and joining data...")
@@ -583,9 +582,20 @@ def read_p08_binary(file_name):
   sys.stdout.write( "\b\b\b done!\n")
   sys.stdout.flush()
   return [dataobj]
- 
 
-
+def read_p08_binarydata(file_name):
+  '''
+    Read the raw data of p08 file.
+  '''
+  if file_name.endswith('.gz'):
+    file_handler=gzip.open(file_name, 'rb')
+  else:
+    file_handler=open(file_name, 'rb')
+  header=file_handler.read(216)
+  data=fromfile(file_handler, uint16).reshape(4096, 4096)
+  file_handler.close()
+  return header, data
+  
 class KWS2MeasurementData(HugeMD):
   '''
     Class implementing additions for KWS2 data objects.

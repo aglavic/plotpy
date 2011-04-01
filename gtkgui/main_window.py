@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.3.3"
+__version__ = "0.7.3.4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -2396,12 +2396,13 @@ set multiplot layout %i,1
                                   pattern, 
                                   gnuplot_preferences.defined_color_patterns[pattern])
     gptext+='unset multiplot\n'
-    try:
-      open(os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp'), 'w').write(gptext)
-      subprocess.call([gnuplot_preferences.GNUPLOT_COMMAND, os.path.join(self.active_session.TEMP_DIR, 'gnuplot.tmp')], 
-                       shell=gnuplot_preferences.EMMULATE_SHELL)
-    except WindowsError, error:
-      print error
+    # send commands to gnuplot
+    measurement_data_plotting.gnuplot_instance.stdin.write('reset\n')
+    measurement_data_plotting.gnuplot_instance.stdin.write(gptext)
+    measurement_data_plotting.gnuplot_instance.stdin.write('\nprint "|||"\n')
+    output=measurement_data_plotting.gnuplot_instance.stdout.read(3)
+    while output[-3:] != '|||':
+      output+=measurement_data_plotting.gnuplot_instance.stdout.read(1)
     pattern_box=gtk.combo_box_new_text()
     # drop down menu for the pattern selection
     for pattern in pattern_names:
@@ -3570,7 +3571,7 @@ set multiplot layout %i,1
         x1/=len(ysum)
         y0/=len(xsum)
         y1/=len(xsum)
-        self.mouse_data_range=((x0, x1-x0, y0, y1-y0), self.mouse_data_range[1])
+        self.mouse_data_range=((x0, x1-x0, 1.-y1, y1-y0), self.mouse_data_range[1])
       except:
         self.mouse_data_range=((0., 0., 0., 0.), self.mouse_data_range[1])
     self.image.set_from_pixbuf(pixbuf)

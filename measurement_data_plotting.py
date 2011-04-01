@@ -13,17 +13,23 @@ import sys
 exit=sys.exit
 import subprocess
 from config import gnuplot_preferences
+from time import sleep
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.3"
+__version__ = "0.7.3.4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
 persistene_plots=0
+
+# open an instance of gnuplot on first import
+gnuplot_instance=subprocess.Popen(['gnuplot'], 
+                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
+                                  shell=True)
 
 def check_gnuplot_version(session):
   '''
@@ -140,40 +146,35 @@ def gnuplot_plot_script(session,
       print GPVAL_Y_MIN
       print GPVAL_Y_MAX
       """
-  write_file=open(script_name,'w')
-  write_file.write( gnuplot_file_text+'\n' )
-  write_file.close()
-  try:
-    if show_persistent:
-      params=[session.GNUPLOT_COMMAND, '-persist', script_name]      
-    else:
-      params=[session.GNUPLOT_COMMAND, script_name]
-    proc = subprocess.Popen(params, 
-                        shell=gnuplot_preferences.EMMULATE_SHELL, 
-                        stderr=subprocess.PIPE,
-                        stdout=subprocess.PIPE, 
-                        stdin=subprocess.PIPE, 
-                        )
-    if show_persistent:
-      output=('', '')
-    else:
-      output = proc.communicate()
-  except:
-    raise RuntimeError, "\nProblem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s" % session.GNUPLOT_COMMAND
-  if not show_persistent:
+  if show_persistent:
+    write_file=open(script_name,'w')
+    write_file.write( gnuplot_file_text+'\n' )
+    write_file.close()
+    params=[session.GNUPLOT_COMMAND, '-persist', script_name]      
     try:
-      # on older version of python this doesn't work
-      proc.stdin.close()
+      proc = subprocess.Popen(params, 
+                          shell=gnuplot_preferences.EMMULATE_SHELL, 
+                          stderr=subprocess.PIPE,
+                          stdout=subprocess.PIPE, 
+                          stdin=subprocess.PIPE, 
+                          )
     except:
-      pass
-  output_message=output[0]+output[1] # return the standard error output
-  if 'line' in output_message:
-    return output_message, []
+      raise RuntimeError, "\nProblem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s" % session.GNUPLOT_COMMAND
+    return '', []
+  gnuplot_instance.stdin.write('reset\n')
+  gnuplot_instance.stdin.write(gnuplot_file_text)
+  gnuplot_instance.stdin.write('\nprint "|||"\n')
+  output=gnuplot_instance.stdout.read(3)
+  while output[-3:] != '|||':
+    output+=gnuplot_instance.stdout.read(1)
+  output=output[:-3].strip()
+  if 'line' in output:
+    return output, []
   else:
     try:
-      return '', map(float, output_message.splitlines())
+      return '', map(float, output.splitlines())
     except ValueError:
-      return output_message, []
+      return output, []
 
 def replace_ph(session, 
                string,
