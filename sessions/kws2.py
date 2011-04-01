@@ -14,6 +14,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 import os
+import sys
 from glob import glob
 from configobj import ConfigObj
 # import GenericSession, which is the parent class for the squid_session
@@ -88,7 +89,7 @@ class KWS2Session(GUI, GenericSession):
     '''
       Function to read data files.
     '''
-    folder, rel_file=os.path.split(os.path.realpath(file_name))
+    folder, rel_file=os.path.split(os.path.realpath(file_name ))
     setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
     setups.indent_type='\t'
     found=False
@@ -97,7 +98,7 @@ class KWS2Session(GUI, GenericSession):
         found=True
     if not found:
       self.new_configuration(setups, rel_file, folder)
-    return read_data.kws2.read_data(file_name)
+    return read_data.kws2.read_data(file_name )
 
   def autosubtract_background(self, dataset, fraction=5.):
     z=dataset.data[dataset.zdata]

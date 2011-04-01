@@ -20,6 +20,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 import os
+import sys
 from time import time
 import numpy
 # import GenericSession, which is the parent class for the squid_session
@@ -99,7 +100,7 @@ class CircleSession(GUI, GenericSession):
     '''
       function to read data files
     '''
-    datasets=read_data.circle.read_data(file_name)
+    datasets=read_data.circle.read_data(file_name )
     if datasets=='NULL':
       return datasets
     for dataset in datasets:

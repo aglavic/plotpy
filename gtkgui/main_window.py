@@ -3543,7 +3543,7 @@ set multiplot layout %i,1
     pixbuf=self.image_pixbuf.scale_simple(s_alloc.width, s_alloc.height, gtk.gdk.INTERP_BILINEAR)
     if self.mouse_mode and self.measurement[self.index_mess].zdata>=0:
       try:
-        # estimate the size of the plot by searching for lines with low pixel intensity
+        # estimate the size of the plot by searching for lines with low pixel intensity (Black)
         original_filters = warnings.filters[:]
         # Ignore warnings.
         warnings.simplefilter("ignore")

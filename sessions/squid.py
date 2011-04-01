@@ -18,6 +18,7 @@
 #                                                                                               #
 #################################################################################################
 
+import sys
 try:
   import scipy.interpolate
 except ImportError:
@@ -141,7 +142,7 @@ Data columns and unit transformations are defined in config.squid.py.
     '''
       function to read data files
     '''
-    return read_data.squid.read_data(file_name,self.COLUMNS_MAPPING,self.MEASUREMENT_TYPES)
+    return read_data.squid.read_data(file_name ,self.COLUMNS_MAPPING,self.MEASUREMENT_TYPES)
   
   def add_file(self, filename, append=True):
     '''

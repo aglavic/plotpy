@@ -69,7 +69,7 @@ else:
 
 
 # character encoding in gnuplot
-ENCODING='iso_8859_1'
+ENCODING='utf8'
 # set the terminal options for the gnuplot output (postscript could need other labels)
 set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[font-path]',  'Arial.ttf')+\
                           '" [font-size] lw 2' #transparent

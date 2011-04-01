@@ -12,7 +12,7 @@
 #################################################################################################
 
 # Pleas do not make any changes here unless you know what you are doing.
-
+import sys
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # importing data readout
@@ -82,7 +82,7 @@ class IN12Session(GUI, GenericSession):
     '''
       Function to read data files.
     '''
-    return read_data.in12.read_data(file_name)
+    return read_data.in12.read_data(file_name )
 
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++

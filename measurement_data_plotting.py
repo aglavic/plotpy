@@ -163,7 +163,7 @@ def gnuplot_plot_script(session,
     return '', []
   gnuplot_instance.stdin.write('reset\n')
   gnuplot_instance.stdin.write(gnuplot_file_text)
-  gnuplot_instance.stdin.write('\nprint "|||"\n')
+  gnuplot_instance.stdin.write('\nset output\nprint "|||"\n')
   output=gnuplot_instance.stdout.read(3)
   while output[-3:] != '|||':
     output+=gnuplot_instance.stdout.read(1)

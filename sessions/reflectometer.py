@@ -150,7 +150,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     '''
       function to read data files
     '''
-    return read_data.reflectometer.read_data(file_name,self.DATA_COLUMNS)
+    return read_data.reflectometer.read_data(file_name ,self.DATA_COLUMNS)
   
   def add_file(self, filename, append=True):
     '''

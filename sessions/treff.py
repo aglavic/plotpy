@@ -418,7 +418,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     '''
       Function to read data files.
     '''
-    data=self.read_data(file_name, self.SCRIPT_PATH, self.import_images, self.import_detector_images)
+    data=self.read_data(file_name , self.SCRIPT_PATH, self.import_images, self.import_detector_images)
     if self.import_detector_images:
       data, detector_images=data
       self.file_data[file_name+'_imgs']=[]

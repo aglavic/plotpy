@@ -848,10 +848,9 @@ class PrintDatasetDialog:
       dataset=self.datasets[page_nr]
       self.plot(dataset)
     # get the cairo context to draw in
-    page_setup=context.get_page_setup()
     cairo_context = context.get_cairo_context()
-    p_width=page_setup.get_page_width('inch')*72
-    p_height=page_setup.get_page_height('inch')*72
+    p_width=context.get_width()
+    p_height=context.get_height()
     # import the image
     surface=cairo.ImageSurface.create_from_png(self.main_window.active_session.TEMP_DIR+'plot_temp.png')
     # scale and center the image to fit the drawable area
