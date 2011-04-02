@@ -39,8 +39,10 @@ The following list of changes does not claim to be complete:
   - Important mathematic functions as 'exp' and 'sin' are directly added to the namespace without using the np. prefix.
   - 'ls' and 'cat' functions now use python functions as the result had not been shown in the program but the Unix console.
   - GUI Menu functions are directly aveilable via the new 'menus' object.
+- Speedup plotting by keeping one instance of gnuplot open in the background.
 - Fix a bug making plotting impossible with Gnuplot versions <4.4
 - Fix small bug which could raise an error on unix systems where it should have been cought (WindowsError not defined)
+- Fix printing under Windows
 
 ----- 1.1 - changes from version 0.6.3 to 0.7 -------
 - For gnuplot version >=4.4 mouse support was added for 2d plots including position status message, 

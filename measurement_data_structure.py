@@ -345,14 +345,14 @@ class MeasurementData(object):
           outidx+=len([1 for item in self.data[:self.ydata] if item.has_error])
           return outidx
         else:
-          return None
+          return -1
       else:
         if self.z.has_error:
           outidx=len(self.data)
           outidx+=len([1 for item in self.data[:self.zdata] if item.has_error])
           return outidx
         else:
-          return None
+          return -1
   
   def _set_error(self, index):
     if index>=len(self.data):

@@ -351,9 +351,9 @@ class DNSGUI:
                                                )
       if slice is None:
         continue
-      slice.ydata-=1
-      slice.yerror-=1
       slice.data.pop(0)
+      slice.xdata=1
+      slice.ydata=0
       slice.short_info=dataset.short_info + ' 2θ='+str(params['2θ-center'])
       slice.sample_name=dataset.sample_name
       slice.number=str(i)
