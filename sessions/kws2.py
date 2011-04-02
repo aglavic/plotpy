@@ -33,7 +33,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.7.3.4"
+__version__ = "0.7.3.5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -51,7 +51,7 @@ class KWS2Session(GUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('GISAS', '*.DAT', '*.DAT.gz', '*.cmb', '*.cmb.gz', '*.edf', '*.edf.gz'),]
+  FILE_WILDCARDS=[('GISAS', '*.DAT', '*.DAT.gz', '*.cmb', '*.cmb.gz', '*.edf', '*.edf.gz', '*.tif', '*.bin', '*.bin.gz'),]
   mds_create=False
   read_directly=True
 

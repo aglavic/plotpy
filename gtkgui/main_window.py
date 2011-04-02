@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.3.4"
+__version__ = "0.7.3.5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -3547,7 +3547,20 @@ set multiplot layout %i,1
         original_filters = warnings.filters[:]
         # Ignore warnings.
         warnings.simplefilter("ignore")
-        pixbuf_data=pixbuf.get_pixels_array()[:,:,:3]
+        try:
+          pixbuf_data=pixbuf.get_pixels_array()[:,:,:3]
+        except RuntimeError:
+          # not working at the moment
+          raise RuntimeError
+          # get raw pixel data
+          pixels=pixbuf.get_pixels()
+          pixbuf_data=numpy.fromstring(pixels, numpy.uint8)
+          pixbuf_data=pixbuf_data.reshape(pixbuf.get_rowstride(), len(pixbuf_data)/pixbuf.get_rowstride())
+          # create 2d array
+          pixbuf_data=pixbuf_data[:pixbuf.get_width()*3,:pixbuf.get_height()]
+          # create 3d color array
+          pixbuf_data=pixbuf_data.transpose().reshape(len(pixbuf_data[0]), len(pixbuf_data)/3, 3)
+          self.pixbuf_data=pixbuf_data
         warnings.filters=original_filters
         black_values=(numpy.mean(pixbuf_data, axis=2)==0.)
         # as first step get the region inside all captions including colorbar

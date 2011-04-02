@@ -8,7 +8,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import os, sys
 from copy import deepcopy
-from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where, int8, float32, uint16, fromfile, arange, meshgrid, zeros
+from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where, int8, float32, uint16, fromstring, arange, meshgrid, zeros
 from configobj import ConfigObj
 from glob import glob
 from measurement_data_structure import MeasurementData, HugeMD, PhysicalProperty
@@ -21,7 +21,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.4"
+__version__ = "0.7.3.5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -53,7 +53,7 @@ def read_data(file_name):
     #config.gnuplot_preferences.plotting_parameters_3d='w points palette pt 5'
     config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 5,5', '')
     return read_edf_file(file_name)
-  elif file_name.endswith('.bin') or file_name.endswith('.bin.gz'):
+  elif file_name.endswith('.bin') or file_name.endswith('.bin.gz') or file_name.endswith('.tif'):
     # Read .bin data (p08)
     config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 5,5', '')
     return read_p08_binary(file_name)
@@ -519,9 +519,8 @@ def read_p08_binary(file_name):
       setup=value
   sys.stdout.write( "\tReading...")
   sys.stdout.flush()
-  background=2.
   countingtime=1.
-  detector_distance=1000. #mm
+  detector_distance=setup['DETECTOR_DISTANCE'] #mm
   join_pixels=4.
   pixelsize_x= 0.015 * join_pixels#mm
   pixelsize_y= 0.015 * join_pixels#mm
@@ -553,7 +552,7 @@ def read_p08_binary(file_name):
   sys.stdout.write( "\b\b\b, calculating q-positions and joining data...")
   sys.stdout.flush()
   # read additional info from end of file
-  z_array=linspace((4096/join_pixels)**2-1, 0, (4096/join_pixels)**2)%(4096/join_pixels)
+  z_array=linspace(0, (4096/join_pixels)**2-1, (4096/join_pixels)**2)%(4096/join_pixels)
   y_array=linspace(0, (4096/join_pixels)**2-1, (4096/join_pixels)**2)//(4096/join_pixels)
   error_array=sqrt(data_array)
   corrected_data=data_array/countingtime
@@ -587,13 +586,20 @@ def read_p08_binarydata(file_name):
   '''
     Read the raw data of p08 file.
   '''
-  if file_name.endswith('.gz'):
-    file_handler=gzip.open(file_name, 'rb')
+  if file_name.endswith('.tif'):
+    header=''
+    import Image
+    image=Image.open(file_name)
+    data=fromstring(image.tostring(), uint16)
+    data=data.reshape(4096,  4096)
   else:
-    file_handler=open(file_name, 'rb')
-  header=file_handler.read(216)
-  data=fromfile(file_handler, uint16).reshape(4096, 4096)
-  file_handler.close()
+    if file_name.endswith('.gz'):
+      file_handler=gzip.open(file_name, 'rb')
+    else:
+      file_handler=open(file_name, 'rb')
+    header=file_handler.read(216)
+    data=fromstring(file_handler.read(), uint16).reshape(4096, 4096)
+    file_handler.close()
   return header, data
   
 class KWS2MeasurementData(HugeMD):

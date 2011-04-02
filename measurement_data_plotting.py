@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2010"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.4"
+__version__ = "0.7.3.5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -477,6 +477,8 @@ def script_header(show_persistent, datasets, output_file):
   else:
     postscript_export=False
     terminal=gp.set_output_terminal_png
+    if not 'crop' in terminal:
+      terminal+=' nocrop'
   gnuplot_file_text=gp.GNUPLOT_FILE_HEAD+\
                     'set term '+terminal+'\n'
   if not show_persistent:
