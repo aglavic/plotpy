@@ -30,10 +30,10 @@ except ImportError:
   class GUI: pass
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2010"
+__copyright__ = "Copyright 2008-2011"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.7.3.5"
+__version__ = "0.7.3.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -46,6 +46,8 @@ class KWS2Session(GUI, GenericSession):
   SPECIFIC_HELP=\
 '''
 \tGISAS-Data treatment:
+\t\t-bg fraction\tPerform automatic background substraction with the minimal fraction 1./{fraction}
+\t\t\t\tof pixels to be treated as background
 \t\t-all-frames
 '''
   #------------------ help text strings ---------------
@@ -58,7 +60,8 @@ class KWS2Session(GUI, GenericSession):
 #  TRANSFORMATIONS=[\
 #  ['','',1,0,'',''],\
 #  ]  
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['-all-frames']  
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['-all-frames', 'bg']  
+  auto_background=None
   #------------------ local variables -----------------
 
   
@@ -76,7 +79,11 @@ class KWS2Session(GUI, GenericSession):
     if (argument[0]=='-') or last_argument_option[0]:
       # Cases of arguments:
       if last_argument_option[0]:
-        found=False
+        if last_argument_option[1]=='bg':
+          self.auto_background=float(argument)
+          last_argument_option=[False,'']          
+        else:
+          found=False
       elif argument=='-all-frames':
         read_data.kws2.import_subframes=True
         found=True
@@ -98,9 +105,22 @@ class KWS2Session(GUI, GenericSession):
         found=True
     if not found:
       self.new_configuration(setups, rel_file, folder)
-    return read_data.kws2.read_data(file_name )
+    if self.auto_background is not None:
+      datasets=read_data.kws2.read_data(file_name )
+      print "\tAutosubtracting background"
+      for dataset in datasets:
+        self.autosubtract_background(dataset, self.auto_background)
+      return datasets
+    else:
+      return read_data.kws2.read_data(file_name )
 
   def autosubtract_background(self, dataset, fraction=5.):
+    '''
+      Try to estimate the background and subtract it. This is done using a
+      threashhold, which is logarithmic increased until a cirtain amount of 
+      points lies below it. After this the threashold is linearly increased within
+      the power of 10 evaluated by the logarithmic method.
+    '''
     z=dataset.data[dataset.zdata]
     zarray=z[:]
     length=len(zarray)

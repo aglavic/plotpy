@@ -16,10 +16,10 @@ from dialogs import SimpleEntryDialog
 
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2010"
+__copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.5"
+__version__ = "0.7.3.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -288,7 +288,7 @@ class KWS2GUI:
     self.active_file_data.append(result)
 
   def do_autosubtract_background(self, action, window):
-    fraction_entry=SimpleEntryDialog('Enter Background Fraction...', [('Fraction (1/x)', 5., float)])
+    fraction_entry=SimpleEntryDialog('Enter Minimal Background Fraction...', [('Fraction (1/x)', 5., float)])
     values, ok=fraction_entry.run()
     fraction_entry.destroy()
     if ok:

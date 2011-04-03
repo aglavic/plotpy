@@ -15,10 +15,10 @@ import config.dns
 
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2010"
+__copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.5"
+__version__ = "0.7.3.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"

@@ -9,10 +9,10 @@ from configobj import ConfigObj
 from measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalUnit
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2009"
+__copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.5"
+__version__ = "0.7.3.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -20,7 +20,7 @@ __status__ = "Development"
 class FileActions:
   '''
     A Class designed to preform simple operations on one dataset and
-    to store those in a history for later macro prosession.
+    to store those in a history for later macro processing.
   '''
   history=None
   actions=None
@@ -851,17 +851,19 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
   x=dataset.data[dataset.xdata][:]
   y=dataset.data[dataset.ydata][:]
   z=dataset.data[dataset.zdata][:]
-  dzq=dataset.data[dataset.yerror][:]**2
+  if dataset.yerror<0 or dataset.yerror >= len(dataset.data):
+    dzq=dataset.z.error**2
+  else:
+    dzq=dataset.data[dataset.yerror][:]**2
   # create new object
   dims=dataset.dimensions()
   units=dataset.units()
   cols=[(dims[dataset.xdata], units[dataset.xdata]), 
         (dims[dataset.ydata], units[dataset.ydata]), 
-        (dims[dataset.zdata], units[dataset.zdata]), 
-        (dims[dataset.yerror], units[dataset.yerror])]
+        (dims[dataset.zdata], units[dataset.zdata])]
   if use_matrix_data_output:
     from read_data.kws2 import KWS2MeasurementData
-    output_data=KWS2MeasurementData(cols, [], 0,1,3,2)
+    output_data=KWS2MeasurementData(cols, [], 0,1,-1,2)
     output_data.is_matrix_data=True
   else:
     output_data=MeasurementData(cols, [], 0,1,3,2)
@@ -925,7 +927,7 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
     output_data.data[0].values=newx.tolist()
     output_data.data[1].values=newy.tolist()
   output_data.data[2].values=newz.tolist()
-  output_data.data[3].values=savinewdz.tolist()
+  output_data.data[2].error=newdz
   return output_data
 
 def calculate_savitzky_golay(dataset, window_size=5, order=4, derivative=1):

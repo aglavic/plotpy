@@ -21,7 +21,8 @@
 #                  including a graphical user interface and easy andling                        #
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
-#                         please report bugs to a.glavic@fz-juelich.de                          #
+#                                    please report bugs to                                      #
+#            http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki/doku.php?id=bug-reports          #
 #                                                                                               #
 # Additional Files: plot_generic_data.py - session class, parent for the other sessions         #
 #                   measurement_data_structure.py - classes storing the measured data           #
@@ -83,10 +84,10 @@ except AttributeError:
   sys.setappdefaultencoding('utf8')
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2010"
+__copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.5"
+__version__ = "0.7.3.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -101,17 +102,18 @@ __status__ = "Production"
   the session.
 '''
 known_measurement_types={
-                         'squid': ('squid', 'SquidSession', ['dat', 'raw', 'DAT', 'RAW']), 
-                         '4circle': ('circle', 'CircleSession', ['spec']), 
-                         'p09': ('circle', 'CircleSession', ['fio']), 
-                         'refl': ('reflectometer', 'ReflectometerSession', ['UXD', 'uxd']), 
-                         'treff': ('treff', 'TreffSession', ['___']), 
-                         'in12': ('in12', 'IN12Session', ['___']), 
-                         'dns': ('dns', 'DNSSession', ['d_dat']), 
-                         'kws2': ('kws2', 'KWS2Session', ['DAT']),                         
-                         'gisas': ('kws2', 'KWS2Session', ['DAT', 'edf', 'cmb']),                         
+                         'squid': ('squid', 'SquidSession', ['dat', 'raw', 'DAT', 'RAW'], []), 
+                         '4circle': ('circle', 'CircleSession', ['spec'], []), 
+                         'p09': ('circle', 'CircleSession', ['fio'], []), 
+                         'refl': ('reflectometer', 'ReflectometerSession', ['UXD', 'uxd'], []), 
+                         'treff': ('treff', 'TreffSession', ['___'], []), 
+                         'maria': ('treff', 'TreffSession', ['___'], ['-maria']), 
+                         'in12': ('in12', 'IN12Session', ['___'], []), 
+                         'dns': ('dns', 'DNSSession', ['d_dat'], []), 
+                         'kws2': ('kws2', 'KWS2Session', ['DAT'], []),                         
+                         'gisas': ('kws2', 'KWS2Session', ['DAT', 'edf', 'cmb'], []),                         
                          #'scd': ('single_diff', 'SingleDiffSession', ['___']), 
-                         'generic': ('generic', 'GenericSession', ['___']), 
+                         'generic': ('generic', 'GenericSession', ['___'], []), 
                          }
 
 '''
@@ -159,7 +161,7 @@ def initialize(arguments):
   elif arguments[0] in known_measurement_types:
     # type is found in dictionary, using specific session
     measurement_type=known_measurement_types[arguments[0]]
-    active_session=import_session_from_name(arguments[1:], measurement_type)
+    active_session=import_session_from_name(arguments[1:]+measurement_type[3], measurement_type)
   else:
     found_sessiontype=False
     suffixes=map(lambda arg: arg.split('.')[-1], arguments)
@@ -169,12 +171,12 @@ def initialize(arguments):
       for suffix in measurement_type[2]:
         if suffix in suffixes:
           print "Setting session type to " + name + '.'
-          active_session=import_session_from_name(arguments, measurement_type)
+          active_session=import_session_from_name(arguments+measurement_type[3], measurement_type)
           found_sessiontype=True
           break
     if not found_sessiontype:
       # type is not found, using generic session
-      active_session=GenericSession(arguments)
+      active_session=GenericSession(arguments+measurement_type[3])
   return active_session
 
 def initialize_gui_toolkit():

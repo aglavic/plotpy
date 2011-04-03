@@ -18,10 +18,10 @@ import array as array_module
 import gzip
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2010"
+__copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.5"
+__version__ = "0.7.3.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -527,7 +527,7 @@ def read_p08_binary(file_name):
   sample_name=''
   center_x=setup['CENTER_X']/join_pixels
   center_y=setup['CENTER_Y']/join_pixels
-  q_window=[-0.5, 0.5, -0.5, 0.5]
+  q_window=[-0., 0.5, -0., 0.5]
   dataobj=KWS2MeasurementData([], 
                             [], 2, 3, -1, 4)
   # read the data

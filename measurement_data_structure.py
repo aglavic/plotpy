@@ -16,10 +16,10 @@ from tempfile import gettempdir
 from config.transformations import known_unit_transformations
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2010"
+__copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.5"
+__version__ = "0.7.3.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -711,12 +711,9 @@ class MeasurementData(object):
     '''
     if column is None:
       column=self.xdata
-    data_list=[point for point in self]    
-    def sort_by_column(point1, point2):
-      return cmp(point1[column], point2[column])
-    data_list.sort(sort_by_column)
-    for i, point in enumerate(data_list):
-      self.set_data(point, i)
+    sort_indices=numpy.argsort(self.data[column])
+    for i, data in enumerate(self.data):
+      self.data[i]=data[sort_indices]
 
   def export(self,file_name,print_info=True,seperator=' ',xfrom=None,xto=None, only_fitted_columns=False): 
     '''

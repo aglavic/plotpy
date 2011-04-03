@@ -18,10 +18,10 @@ from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD
 from zipfile import ZipFile
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2010"
+__copyright__ = "Copyright 2008-2011"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.7.3.5"
+__version__ = "0.7.3.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -347,14 +347,16 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                ['q_x', 'Å^{-1}'], 
                                ['q_z', 'Å^{-1}'], 
                                ['Intensity', 'a.u.'], 
-                               ['log_{10}(Intensity)', 'a.u.'], 
                                ['error','a.u.']], 
-                              [], 0, 1, 8, 6)  
+                              [], 0, 1, 7, 6)  
   # alpha_i is used as main column for the line splitteng used for pm3d
   data_object.scan_line_constant=0
   data_object.scan_line=1
   data_list=[]
   scan_data_list=[]
+  if (import_images  or return_detector_images):
+    sys.stdout.write('\t\t Image %03i/%03i' % (1, len(data_lines)))
+    sys.stdout.flush()
   for index, line in enumerate(data_lines):
     if float(line[columns['Monitor']]) == 0.:
       continue # measurement error, nothing to do
@@ -369,6 +371,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                       line[columns['Time']])))
     if not (import_images  or return_detector_images):
       continue
+    sys.stdout.write('\b'*14+' Image %03i/%03i' % (index+1, len(data_lines)))
+    sys.stdout.flush()
     if treff_zip and line[columns['Image']] in treff_zip.namelist():
       # use data inside ziped file
       img_file=treff_zip.open(line[columns['Image']], 'r')
@@ -389,7 +393,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
       img_file=open(data_path + line[columns['Image']], 'r')
     else:
       # no image file
-      print 'Image ' + data_path + line[columns['Image']] + '(.gz) does not exist, check your files.'
+      sys.stdout.write( '\n\t\t\t'+ data_path + line[columns['Image']] + \
+                    '(.gz) does not exist, check your files.\n\t\t Image %03i/%03i' % (1, len(data_lines)))
       continue
     # define alphai and alphaf (for the detector center)
     if columns['omega'] >= 0:
@@ -416,6 +421,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
       del(detector_image)
       detector_images.append(imgobj)
     #data_list+=integrate_one_picture(img_file, line, columns, alphai, alphaf_center, calibration, PIXEL_WIDTH)
+  if (import_images  or return_detector_images):
+    print ""
   if import_images:  
     data_append=data_object.append
     # append the integrated data to the object
@@ -489,9 +496,10 @@ def integrate_one_picture(img_file, line, columns, alphai, alphaf_center, calibr
                     PI_4_OVER_LAMBDA/2.*(cos(GRAD_TO_RAD * alphaf) - cos(GRAD_TO_RAD * alphai)), 
                     PI_4_OVER_LAMBDA/2.*(sin(GRAD_TO_RAD * alphai) + sin(GRAD_TO_RAD * alphaf)), 
                     intensity, 
-                    logintensity, 
                     error))
   return data_list, img_data
+
+filter_indices=None
 
 def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, calibration, pixel_width):
   '''
@@ -519,17 +527,16 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   sin=numpy.sin
   data_list=[]
   monitor=float(line[columns['Monitor']])
-  calibration=numpy.array(calibration)
   img_columns_data=img_data.transpose()
-  img_intensities=img_columns_data.sum(axis=1)
+  calibration=numpy.array(calibration)
+  filter_indices=numpy.where(calibration>0)
+  img_intensities=img_columns_data.sum(axis=1)[filter_indices]
   try:
     intensities=img_intensities/monitor*calibration
   except ValueError:
     return []
-  logintensities=numpy.log10(numpy.maximum(img_intensities, 0.1)/monitor*calibration)
   errors=numpy.sqrt(img_intensities)/monitor*calibration
-  alphaf=alphaf_center + pixel_width * (CENTER_PIXEL - numpy.arange(DETECTOR_PIXELS))
-  filter_indices=numpy.where(calibration>0)
+  alphaf=alphaf_center + pixel_width * (CENTER_PIXEL - numpy.arange(DETECTOR_PIXELS))[filter_indices]
   # create importent columns
   data_list.append(GRAD_TO_MRAD*(numpy.zeros_like(alphaf)+alphai))
   data_list.append(GRAD_TO_MRAD*alphaf)
@@ -538,10 +545,7 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   data_list.append(PI_4_OVER_LAMBDA/2.*(cos(0.001*data_list[1]) - cos(0.001*data_list[0])))
   data_list.append(PI_4_OVER_LAMBDA/2.*(sin(0.001*data_list[0]) + sin(0.001*data_list[1])))
   data_list.append(intensities)
-  data_list.append(logintensities)
   data_list.append(errors)
-  for i in range(9):
-    data_list[i]=data_list[i][filter_indices]
   data_list=numpy.array(data_list).transpose().tolist()
   return data_list, img_data
 

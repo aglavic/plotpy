@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.3.5"
+__version__ = "0.7.3.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -3686,7 +3686,7 @@ set multiplot layout %i,1
     if not self.mouse_mode:
       return
     position=self.get_position_on_plot()
-    if ['GDK_CONTROL_MASK'] == action.state.value_names and self.measurement[self.index_mess].zdata<0:
+    if 'GDK_CONTROL_MASK' in action.state.value_names and self.measurement[self.index_mess].zdata<0:
       # control was pressed during button press
       # fit a peak function to the active mouse position
       if position is not None:
@@ -3694,7 +3694,7 @@ set multiplot layout %i,1
         self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
       else:
         self.active_fit_selection_from=None
-    elif action.state.value_names==[]:
+    elif not 'GDK_SHIFT_MASK' in action.state.value_names:
       # no control/alt/shift button is pressed
       if action.button==3:
         # Zoom into region
@@ -3711,9 +3711,11 @@ set multiplot layout %i,1
         # unzoom the plot
         self.measurement[self.index_mess].plot_options.xrange=[None, None]
         self.measurement[self.index_mess].plot_options.yrange=[None, None]
+        self.x_range_in.set_text('')
+        self.y_range_in.set_text('')
         self.replot()
-    elif action.state.value_names==['GDK_SHIFT_MASK']:
-      # chift pressed during button press leads to label or arrow
+    else:
+      # shift pressed during button press leads to label or arrow
       # to be added to the plot
       if position is not None:
         ds=self.measurement[self.index_mess]
