@@ -7,7 +7,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.6"
+__version__ = "0.7.3.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -392,7 +392,10 @@ class DataImportTemplate(object):
       
       @return List of sequence lines containing data, List of inter sequence lines
     '''
-    relevant_lines=lines[self.header_length:-self.footer_length-1]
+    if self.footer_length>0:
+      relevant_lines=lines[self.header_length:-self.footer_length]
+    else:
+      relevant_lines=lines[self.header_length:]
     sequences=[[]]
     inter_sequences=[]
     if self.splitting_use_empty:

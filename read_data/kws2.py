@@ -8,7 +8,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import os, sys
 from copy import deepcopy
-from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where, int8, float32, uint16, fromstring, arange, meshgrid, zeros
+from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where, int8, float32, uint16, int16, fromstring, arange, meshgrid, zeros
 from configobj import ConfigObj
 from glob import glob
 from measurement_data_structure import MeasurementData, HugeMD, PhysicalProperty
@@ -21,7 +21,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.3.6"
+__version__ = "0.7.3.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -527,7 +527,7 @@ def read_p08_binary(file_name):
   sample_name=''
   center_x=setup['CENTER_X']/join_pixels
   center_y=setup['CENTER_Y']/join_pixels
-  q_window=[-0., 0.5, -0., 0.5]
+  q_window=[-1000., 1000., -1000., 1000.]
   dataobj=KWS2MeasurementData([], 
                             [], 2, 3, -1, 4)
   # read the data
@@ -552,7 +552,7 @@ def read_p08_binary(file_name):
   sys.stdout.write( "\b\b\b, calculating q-positions and joining data...")
   sys.stdout.flush()
   # read additional info from end of file
-  z_array=linspace(0, (4096/join_pixels)**2-1, (4096/join_pixels)**2)%(4096/join_pixels)
+  z_array=linspace((4096/join_pixels)**2-1, 0, (4096/join_pixels)**2)%(4096/join_pixels)
   y_array=linspace(0, (4096/join_pixels)**2-1, (4096/join_pixels)**2)//(4096/join_pixels)
   error_array=sqrt(data_array)
   corrected_data=data_array/countingtime
@@ -560,8 +560,12 @@ def read_p08_binary(file_name):
   lambda_x=setup['LAMBDA_N']
   qy_array=4.*pi/lambda_x*\
            sin(arctan((y_array-center_y)*pixelsize_y/detector_distance/2.))
+  if 'tth' in setup:
+    tth_offset=setup['tth']
+  else:
+    tth_offset=0.
   qz_array=4.*pi/lambda_x*\
-           sin(arctan((z_array-center_x)*pixelsize_x/detector_distance/2.))
+           sin(arctan((z_array-center_x)*pixelsize_x/detector_distance/2.)+tth_offset/360.*pi)
 
   use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
               (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
@@ -600,7 +604,7 @@ def read_p08_binarydata(file_name):
     header=file_handler.read(216)
     data=fromstring(file_handler.read(), uint16).reshape(4096, 4096)
     file_handler.close()
-  return header, data
+  return header, data.astype(int16)
   
 class KWS2MeasurementData(HugeMD):
   '''

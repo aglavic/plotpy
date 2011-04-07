@@ -21,7 +21,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "None"
-__version__ = "0.7.3.6"
+__version__ = "0.7.3.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -846,7 +846,7 @@ def read_d17_processed_data(file_name):
     dataset.short_info=pol_channels[i]
     dataset.scan_line=1
     dataset.scan_line_constant=0
-    min_int=min(min_int, intensity[numpy.where(intensity!=0)].min())
+    min_int=min(min_int, intensity[numpy.where(intensity>0)].min())
     max_int=max(max_int, intensity.max())
     datasets.append(dataset)
   # define same colorscale for all plots as powers of 10
