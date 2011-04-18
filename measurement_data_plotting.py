@@ -96,11 +96,12 @@ def gnuplot_plot_script(session,
   else:
     tmp_name='tmp_data_'
     output_file_prefix=session.TEMP_DIR+tmp_name
-  if len(datasets)==1 and getattr(datasets[0], 'is_matrix_data', False):
-    datasets[0].export_matrix(output_file_prefix+str(0)+'-'+str(0)+'.bin')
-  else:
-    for j, dataset in enumerate(datasets):
-      for i, attachedset in enumerate(dataset.plot_together):
+  for j, dataset in enumerate(datasets):
+    for i, attachedset in enumerate(dataset.plot_together):
+      if getattr(attachedset, 'is_matrix_data', False):
+        file_numbers.append(str(j)+'-'+str(i))
+        attachedset.export_matrix(output_file_prefix+str(j)+'-'+str(i)+'.bin')
+      else:
         file_numbers.append(str(j)+'-'+str(i))
         attachedset.export(output_file_prefix+str(j)+'-'+str(i)+'.out')
   if not sample_name:
@@ -373,19 +374,23 @@ def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix,
               str(datasets[0].plot_together[first_index].ydata+1)+':'+\
               str(datasets[0].plot_together[first_index].zdata+1)
   output_file_prefix=os.path.normpath(output_file_prefix)
-  if len(datasets)==1 and getattr(datasets[0], 'is_matrix_data', False):
-    return replace_ph(session, 
-                       gnuplot_file_text+plot_matrix(datasets[0], output_file_prefix+file_numbers[0]+'.bin'),
-                       datasets,
-                       file_name_prefix,
-                       file_numbers, 
-                       title,
-                       names,
-                       sample_name,
-                       (0, 0, 0),
-                       postscript_export,
-                       additional_info)
-  gnuplot_file_text+='# now the plotting function\n'+\
+  #if len(datasets)==1 and getattr(datasets[0], 'is_matrix_data', False):
+    #return replace_ph(session, 
+                       #gnuplot_file_text+plot_matrix(datasets[0], output_file_prefix+file_numbers[0]+'.bin'),
+                       #datasets,
+                       #file_name_prefix,
+                       #file_numbers, 
+                       #title,
+                       #names,
+                       #sample_name,
+                       #(0, 0, 0),
+                       #postscript_export,
+                       #additional_info)
+  if getattr(datasets[0], 'is_matrix_data', False):
+    gnuplot_file_text+='# now the plotting function\n'+\
+        'plot "'+output_file_prefix+file_numbers[first_index]+'.bin" binary format="%float" u 1:2:3 w image t "'+gp.titles+'" '
+  else:
+    gnuplot_file_text+='# now the plotting function\n'+\
         'splot "'+output_file_prefix+file_numbers[first_index]+'.out" u '+using_cols+\
                 datasets[0].plot_options.special_using_parameters+\
                 ' t "'+gp.titles+'" '+\
@@ -407,7 +412,11 @@ def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix,
     using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
                         str(datasets[i].plot_together[j].ydata+1)+':'+\
                         str(datasets[i].plot_together[j].zdata+1)
-    gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
+    if getattr(dataset[i], 'is_matrix_data', False):
+      gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
+        '.bin" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
+    else:
+      gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
         '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
     gnuplot_file_text=replace_ph(session, 
                                  gnuplot_file_text,
@@ -425,7 +434,7 @@ def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix,
 def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_file_prefix, 
                     file_numbers, title, names, sample_name, postscript_export, additional_info, with_errorbars):
   '''
-    Plot lines for 3d plots as multiplot layout. (x,y vs. z)
+    Plot lines for 3d plots as multiplot layout (data, fit, data-fit, log(data)-log(fit)). (x,y vs. z)
   '''
   from math import log
   gp=gnuplot_preferences
@@ -437,15 +446,29 @@ def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_fi
                     'set multiplot layout %i,%i\n' % (cols, rows)+\
                     'unset key\n'
   for i, subdata in enumerate(datasets[0].plot_together):
+    # Subplot title
     gnuplot_file_text+='set title "%s"\n' % (subdata.sample_name+' '+subdata.short_info)
-    #if subdata.logz:
-      #gnuplot_file_text+='set log z\nset log cb\n'
-    #else:
-      #gnuplot_file_text+='unset log z\nunset log cb\n'
+    gnuplot_file_text+='set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
+    gnuplot_file_text=replace_ph(session, 
+                             gnuplot_file_text,
+                             datasets,
+                             file_name_prefix, 
+                             file_numbers, 
+                             title,
+                             names,
+                             sample_name,
+                             (0, i, i),
+                             postscript_export,
+                             additional_info)
     using_cols=str(subdata.xdata+1)+':'+\
               str(subdata.ydata+1)+':'+\
               str(subdata.zdata+1)
-    gnuplot_file_text+='splot "'+output_file_prefix+file_numbers[i]+'.out" u '+using_cols+\
+    # Matrix binary or column exported data?
+    if getattr(datasets[0], 'is_matrix_data', False):
+      gnuplot_file_text+='# now the plotting function\n'+\
+          'plot "'+output_file_prefix+file_numbers[i]+'.bin" binary format="%float" u 1:2:3 w image t "'+gp.titles+'"\n'
+    else:
+      gnuplot_file_text+='splot "'+output_file_prefix+file_numbers[i]+'.out" u '+using_cols+\
                   datasets[0].plot_options.special_using_parameters+\
                   ' t "'+gp.titles+'" '+\
                   (datasets[0].plot_options.special_plot_parameters or plotting_param)+'\n'
@@ -457,7 +480,7 @@ def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_fi
                              title,
                              names,
                              sample_name,
-                             (0, i, 0),
+                             (0, i, i),
                              postscript_export,
                              additional_info)
   return gnuplot_file_text+'unset multiplot\n'

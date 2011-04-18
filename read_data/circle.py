@@ -203,6 +203,17 @@ def get_type_columns(type_line, columns):
   elif type=='hklmesh':
     items=options.strip().split()
     return columns.index(items[0].lower()), columns.index(items[4].lower()), intensity_error, intensity
+  elif type=='mesh':
+    items=options.strip().split()
+    first_angle=items[0]
+    if first_angle in KNOWN_COLUMNS:
+      first_angle=KNOWN_COLUMNS[first_angle][0]
+    second_angle=items[4]
+    if second_angle in KNOWN_COLUMNS:
+      second_angle=KNOWN_COLUMNS[second_angle][0]
+    first_index=columns.index(first_angle)
+    second_index=columns.index(second_angle)
+    return first_index, second_index, intensity_error, intensity
   elif type=='timescan_cm' or type=='Escan':
     return columns.index('E'), intensity, intensity_error, -1
   elif type=='ascan' and options.split()[0]=='lake':

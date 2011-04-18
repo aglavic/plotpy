@@ -593,11 +593,7 @@ class ApplicationMainWindow(gtk.Window):
       Update the active plot from the treeview.
     '''
     session=self.active_session
-    session.active_file_data=session.file_data[key]
-    self.measurement=session.active_file_data
-    session.active_file_name=key
-    self.index_mess=index
-    self.replot()
+    self.change_active_file_object( (key, session.file_data[key]), index)
     self.plot_tree.expand_column=key
     self.plot_tree.add_data()
     self.plot_tree.set_focus_item(key, index)
@@ -729,7 +725,7 @@ class ApplicationMainWindow(gtk.Window):
     object=sorted(self.active_session.file_data.items())[index]
     self.change_active_file_object(object)
   
-  def change_active_file_object(self, object):
+  def change_active_file_object(self, object, index_mess=0):
     '''
       Change the active file object from which the plotted sequences are extracted.
       
@@ -739,7 +735,7 @@ class ApplicationMainWindow(gtk.Window):
     self.measurement=self.active_session.active_file_data
     self.input_file_name=object[0]
     # reset index to the first sequence in that file
-    self.index_mess=0
+    self.index_mess=index_mess
     self.active_multiplot=False
     self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
     self.plot_page_entry.set_text(str(int(self.measurement[0].number)))

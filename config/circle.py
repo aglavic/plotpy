@@ -98,6 +98,12 @@ KNOWN_COLUMNS={
                'xsample': ('x_{sample}', 'mm'), 
                'ysample': ('y_{sample}', 'mm'), 
                'zsample': ('z_{sample}', 'mm'), 
+               'x': ('x_{sample}', 'mm'), 
+               'y': ('y_{sample}', 'mm'), 
+               'z': ('z_{sample}', 'mm'), 
+               'Sample X': ('x_{sample}', 'mm'), 
+               'Sample Y': ('y_{sample}', 'mm'), 
+               'Sample Z': ('z_{sample}', 'mm'), 
                }
 
 INTENSITY_COLUMNS=[

@@ -51,9 +51,16 @@ class FitFunction(FitFunctionGUI):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=map(numpy.float64, self.parameters)
     if len(self.parameters)==len(initial_parameters):
+      # Use supplied parameters
       self.parameters=map(numpy.float64, initial_parameters)
+    elif len(initial_parameters)==0:
+      # Use std parameters
+      self.parameters=map(numpy.float64, self.parameters)
+    else:
+      # Make sure a wrong number of parameters doesn't get silently ignored
+      raise ValueError, "Wrong number of parameters, got %i need %i" % (len(initial_parameters), len(self.parameters))
+    # As default all parameters get fitted
     self.refine_parameters=range(len(self.parameters))
 
   def residuals(self, params, y, x, yerror=None):
@@ -107,10 +114,10 @@ class FitFunction(FitFunctionGUI):
       else:
         function_parameters.append(self.parameters[i])
     remove_negative=numpy.where(y>0.)
-    x=x[remove_negative].view(numpy.ndarray).astype(numpy.float64)
-    y=y[remove_negative].view(numpy.ndarray).astype(numpy.float64)
+    x=numpy.array(x[remove_negative], dtype=numpy.float64, copy=False)
+    y=numpy.array(y[remove_negative], dtype=numpy.float64, copy=False)
     if yerror is not None:
-      yerror=yerror[remove_negative].view(numpy.ndarray).astype(numpy.float64)
+      yerror=numpy.array(yerror[remove_negative], dtype=numpy.float64, copy=False)
       yerror=numpy.where((numpy.isinf(yerror))+(numpy.isnan(yerror))+(yerror<=0.), 1., yerror)
       err=(numpy.log10(function(function_parameters, x))-numpy.log10(y))/numpy.log10(yerror)
     else:
@@ -130,10 +137,10 @@ class FitFunction(FitFunctionGUI):
     '''
     parameters=[self.parameters[i] for i in self.refine_parameters]
     # only refine inside the selected region
-    x=numpy.array(dataset_x).view(numpy.ndarray).astype(numpy.float64)
-    y=numpy.array(dataset_y).view(numpy.ndarray).astype(numpy.float64)
+    x=numpy.array(dataset_x, dtype=numpy.float64, copy=False)
+    y=numpy.array(dataset_y, dtype=numpy.float64, copy=False)
     if dataset_yerror is not None:
-      dy=numpy.array(dataset_yerror).astype(numpy.float64)
+      dy=numpy.array(dataset_yerror, dtype=numpy.float64, copy=False)
     else:
       dy=None
     x_from=self.x_from
@@ -147,10 +154,6 @@ class FitFunction(FitFunctionGUI):
     y=y[filter]
     if dy is not None:
       dy=dy[filter]
-    if dy is None:
-      fit_args=(y, x)
-    else:
-      fit_args=(y, x, dy)
     # remove errors which are zero
     if dy is not None:
       zero_elements=numpy.where(dy==0.)[0]
@@ -160,11 +163,16 @@ class FitFunction(FitFunctionGUI):
       elif len(non_zero_elements)==0:
         dy=None
       else:
+        # Zero elements are replaced by minimal other errors
         dy[zero_elements]+=numpy.abs(dy[non_zero_elements]).min()
     if self.fit_logarithmic:
       residuals=self.residuals_log
     else:
       residuals=self.residuals
+    if dy is None:
+      fit_args=(y, x)
+    else:
+      fit_args=(y, x, dy)
     new_params, cov_x, infodict, mesg, ier = leastsq(residuals, parameters, args=fit_args, full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     cov=cov_x
@@ -207,7 +215,7 @@ class FitFunction(FitFunctionGUI):
       @param new_params List of new parameters
     '''
     self.parameters_history=self.parameters
-    self.parameters=list(new_params)
+    self.parameters=map(numpy.float64, new_params)
 
   def toggle_refine_parameter(self, action, index):
     '''
@@ -218,22 +226,39 @@ class FitFunction(FitFunctionGUI):
     else:
       self.refine_parameters.append(index)
   
-  def simulate(self, x, interpolate=5):
+  def simulate(self, x, interpolate=5, inside_fitrange=False):
     '''
       Calculate the function for the active parameters for x values and some values
       in between.
       
       @param x List of x values to calculate the function for
       @param interpolate Number of points to interpolate in between the x values
+      @param inside_fitrange Only simulate points inside the x-constrains of the fit
     
       @return simulated y-values for a list of giver x-values.
     '''
-    xint=[]
-    for i, xi in enumerate(x[:-1]):
+    x=numpy.array(x, dtype=numpy.float64, copy=False)
+    if inside_fitrange:
+      x_from=self.x_from
+      x_to=self.x_to
+      if x_from is None:
+        x_from=x.min()
+      if x_to is None:
+        x_to=x.max()
+      filter=numpy.where((x>=x_from)*(x<=x_to))[0]
+      x=x[filter]
+    if interpolate > 1:
+      # Add interpolation points to x
+      xint=[]
+      dx=(x[1:]-x[:-1])/interpolate
       for j in range(interpolate):
-        xint.append(xi + float(x[i+1]-xi)/interpolate * j)
+        xint.append(x[:-1] + dx * j)
+      xint=numpy.array(xint, dtype=numpy.float64).transpose().flatten()
+      xint=numpy.append(xint, x[-1])
+    else:
+      xint=x
     try:
-      y=list(self.fit_function(self.parameters, numpy.array(xint).view(numpy.ndarray).astype(numpy.float64)))
+      y=self.fit_function(self.parameters, numpy.array(xint, dtype=numpy.float64, copy=False))
     except TypeError, error:
       raise ValueError, "Could not execute function with numpy array: "+str(error)
     return xint, y
@@ -242,11 +267,7 @@ class FitFunction(FitFunctionGUI):
     '''
       Calling the object returns the y values corresponding to the given x values.
     '''
-    x=numpy.array(x)
-    try:
-      return self.fit_function(self.parameters, x)
-    except TypeError:
-      return map((lambda x_i: self.fit_function(self.parameters, x_i)), x)
+    return self.simulate(x, interpolate=1)[1] # return y values
 
 class FitSum(FitFunction):
   '''
@@ -325,9 +346,15 @@ class FitFunction3D(FitFunctionGUI):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=list(self.parameters)
     if len(self.parameters)==len(initial_parameters):
-      self.parameters=initial_parameters
+      # Use supplied parameters
+      self.parameters=map(numpy.float64, initial_parameters)
+    elif len(initial_parameters)==0:
+      # Use std parameters
+      self.parameters=map(numpy.float64, self.parameters)
+    else:
+      # Make sure a wrong number of parameters doesn't get silently ignored
+      raise ValueError, "Wrong number of parameters, got %i need %i" % (len(initial_parameters), len(self.parameters))
     self.refine_parameters=range(len(self.parameters))
 
 
@@ -407,11 +434,11 @@ class FitFunction3D(FitFunctionGUI):
       @return The message string of leastsq and the covariance matrix
     '''
     parameters=[self.parameters[i] for i in self.refine_parameters]
-    x=numpy.array(dataset_x).astype(numpy.float64)
-    y=numpy.array(dataset_y).astype(numpy.float64)
-    z=numpy.array(dataset_z).astype(numpy.float64)
+    x=numpy.array(dataset_x, dtype=numpy.float64, copy=False)
+    y=numpy.array(dataset_y, dtype=numpy.float64, copy=False)
+    z=numpy.array(dataset_z, dtype=numpy.float64, copy=False)
     if dataset_zerror is not None:
-      dz=numpy.array(dataset_zerror).astype(numpy.float64)
+      dz=numpy.array(dataset_zerror, dtype=numpy.float64, copy=False)
     else:
       dz=None
     # only refine inside the selected region
@@ -494,7 +521,7 @@ class FitFunction3D(FitFunctionGUI):
       @param new_params List of new parameters
     '''
     self.parameters_history=self.parameters
-    self.parameters=list(new_params)
+    self.parameters=map(numpy.float64, new_params)
 
   def toggle_refine_parameter(self, action, index):
     '''
@@ -516,30 +543,21 @@ class FitFunction3D(FitFunctionGUI):
       @return simulated y-values for a list of giver x-values.
     '''
     try:
-      x=numpy.array(x[:])
-      y=numpy.array(y[:])
+      x=numpy.array(x, dtype=numpy.float64, copy=False)
+      y=numpy.array(y, dtype=numpy.float64, copy=False)
     except TypeError:
-      pass
+      raise TypeError, "Input needs to be a number or iterable not %s/%s" % (type(x), type(y))
     try:
-      z=list(self.fit_function(self.parameters, x, y))
+      z=self.fit_function(self.parameters, x, y)
     except TypeError:
-      # x is list and the function is only defined for one point.
-      z= map((lambda x_i, y_i: self.fit_function(self.parameters, x_i, y_i)), zip(x, y))
+      raise TypeError, "Fit functions need to be defined for numpy arrays!"
     return x, y, z
   
   def __call__(self, x, y):
     '''
-      Calling the object returns the y values corresponding to the given x values.
+      Calling the object returns the z values corresponding to the given x and y values.
     '''
-    try:
-      x=numpy.array(x[:])
-      y=numpy.array(y[:])
-    except TypeError:
-      pass
-    try:
-      return self.fit_function(self.parameters, x, y)
-    except TypeError:
-      return map((lambda x_i, y_i: self.fit_function(self.parameters, x_i, y_i)), zip(x, y))
+    return self.simulate(y, x)[2] # return z values
 
 #+++++++++++++++++++++++++++++++++ Define common functions for 2d fits +++++++++++++++++++++++++++++++++
 
@@ -828,7 +846,7 @@ class FitRelaxingCrystalLayer(FitFunction):
     self.refine_parameters=range(10)
 
   def fit_function(self, p, q):
-    q=numpy.array(q).view(numpy.ndarray)
+    q=numpy.array(q, dtype=numpy.float64, copy=False)
     I_0=p[0]
     d=p[1]
     sigma_l=p[2]
@@ -2063,36 +2081,36 @@ class FitSession(FitSessionGUI):
       Create MeasurementData objects for every FitFunction.
     '''
     self.result_data=[]
-    dimensions=self.data.dimensions()
-    units=self.data.units()
+    data=self.data
+    dimensions=data.dimensions()
+    units=data.units()
     column_1=(dimensions[self.data.xdata], units[self.data.xdata])
     column_2=(dimensions[self.data.ydata], units[self.data.ydata])
     column_3=(dimensions[self.data.zdata], units[self.data.zdata])
     plot_list=[]
-    data=self.data
     if len(self.functions)>1 and \
         all([self.functions[0][0].__class__ is function[0].__class__ for function in self.functions]):
-      fit=MeasurementData([column_1, column_2, column_3], # columns
+      fit=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
                                                 -1,   # yerror-column
                                                 2   # z-column
                                                 )
-      fit.data[0]=data.x
-      fit.data[1]=data.y
+      fit.data[0]=data.x.copy()
+      fit.data[1]=data.y.copy()
       fit.data[2]=numpy.zeros_like(data.z)
       function_text=function[0].fit_function_text
       fit.short_info=function_text
       if any([function[1] for function in self.functions]):
-        div=MeasurementData([column_1, column_2, column_3], # columns
+        div=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
                                                 -1,   # yerror-column
                                                 2   # z-column
                                                 )
-        logdiv=MeasurementData([column_1, column_2, column_3], # columns
+        logdiv=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
@@ -2121,23 +2139,27 @@ class FitSession(FitSessionGUI):
         plot_list=[fit, div, logdiv]
       else:
         plot_list=[fit]
+      if getattr(data, 'is_matrix_data', False):
+        fit.is_matrix_data=True
+        div.is_matrix_data=True
+        logdiv.is_matrix_data=True
     else:
       for function in self.functions:
-        fit=MeasurementData([column_1, column_2, column_3], # columns
+        fit=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
                                                 -1,   # yerror-column
                                                 2   # z-column
                                                 )
-        div=MeasurementData([column_1, column_2, column_3], # columns
+        div=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
                                                 -1,   # yerror-column
                                                 2   # z-column
                                                 )
-        logdiv=MeasurementData([column_1, column_2, column_3], # columns
+        logdiv=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
@@ -2167,18 +2189,25 @@ class FitSession(FitSessionGUI):
               start_idx=function_text.index('['+pname)
               end_idx=function_text[start_idx:].index(']')+start_idx
               replacement=function_text[start_idx:end_idx+1]
-              pow_10=int(numpy.log10(abs(function[0].parameters[i])))
+              if abs(function[0].parameters[i])!=0.:
+                pow_10=numpy.log10(abs(function[0].parameters[i]))
+              else:
+                pow_10=0
               try:
-                digits=int(replacement.split('|')[1])
+                digits=int(replacement.split('|')[1].rstrip(']'))
               except:
                 digits=4
-              if pow_10>(digits-1):
-                function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % (function[0].parameters[i]/10.**pow_10, pow_10))
+              pow_10i=int(pow_10)
+              if pow_10i>(digits-1):
+                function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+                                                      (function[0].parameters[i]/10.**pow_10i, pow_10i))
               elif pow_10<0:
-                function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % (function[0].parameters[i]/10.**(pow_10-1), (pow_10-1)))
+                if pow_10i==pow_10:
+                  pow_10i+=1
+                function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+                                                      (function[0].parameters[i]/10.**(pow_10i-1), (pow_10i-1)))
               else:
-                function_text.replace(replacement, ("%%.%if" % (digits-1)) % (function[0].parameters[i]))
-            #function_text=function_text.replace(function[0].parameter_names[i], "%.6g" % function[0].parameters[i], 2)
+                function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (function[0].parameters[i]))
           fit.short_info=function_text
           div.short_info='data-%s' % function_text
           logdiv.short_info='log(data)-log(%s)' % function_text
@@ -2245,3 +2274,69 @@ class FitSession(FitSessionGUI):
         result.short_info=function_text
         plot_list.append(result)
     self.data.plot_together=[self.data] + plot_list  
+
+def register_class(function_class):
+  '''
+    Convenience method to add a new FitFunction derived class to the list of fittables.
+  '''
+  if function_class.is_3d:
+    FitSession.available_functions_3d[function_class.name]=function_class
+  else:
+    FitSession.available_functions_2d[function_class.name]=function_class
+
+def register_function(function, function_parameter_names=None, function_parameter_default=None, function_name=None):
+  '''
+    Convenience method to add a new fittable function.
+    
+    @param function The function to be fitted as f(p,x) or f(p,x,y) with p as list of parameters
+    @param function_parameter_names Names of the parameters supplied to the function as p
+    @param function_parameter_default Default values of the parameters when the function is first created
+    @param function_name Name of the function
+  '''
+  import inspect
+  numargs=len(inspect.getargspec(function)[0])
+  if function_parameter_names is None:
+    if function_parameter_default is not None:
+      function_parameter_names=["P%02i" % i for i in range(len(function_parameter_default))]
+    else:
+      # try to guess parameter numbers
+      if numargs==2:
+        position=[1.]
+      else:
+        position=[1., 1.]
+      for i in range(99):
+        try:
+          out=function(*([range(i)]+position))
+          function_parameter_names=["P%02i" % i for i in range(i)]
+          break
+        except IndexError:
+          continue
+  if function_parameter_default is None:
+    function_parameter_default=[0. for i in range(len(function_parameter_names))]
+  if function_name is None:
+    function_name=function.__name__
+  if numargs==2:
+    class function_class(FitFunction):
+      '''
+        User defined FitFunction subclass named: %s
+      ''' % function_name
+      name=function_name
+      fit_function_text=function_name+":"+" ".join(["%s=[%s]" % (param, param) for param in function_parameter_names])
+      parameters=list(function_parameter_default)
+      parameter_names=list(function_parameter_names)
+      
+      def fit_function(self, p, x):
+        return function(p, x)
+  else:
+    class function_class(FitFunction3D):
+      '''
+        User defined FitFunction3D subclass named: %s
+      ''' % function_name
+      name=function_name
+      fit_function_text=function_name+":"+" ".join(["%s=[%s]" % (param, param) for param in function_parameter_names])
+      parameters=list(function_parameter_default)
+      parameter_names=list(function_parameter_names)
+      
+      def fit_function(self, p, x, y):
+        return function(p, x, y)
+  register_class(function_class)
