@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.3.7"
+__version__ = "0.7.4"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -3136,6 +3136,7 @@ set multiplot layout %i,1
     import scipy
     from copy import deepcopy
     from glob import glob
+    from fit_data import register_function
     import IPython.ipapi
     
     if getattr(self, 'active_ipython', False):
@@ -3170,15 +3171,14 @@ set multiplot layout %i,1
     Functions:
       replot \tFunction to replot the dataset
       dataset \tFunction to get the active MeasurementData object
-      getxyz \tReturn 3 PhysicalProperty instances of the x,y and z columns 
-              \tfrom the active dataset
-      getall \tReturn all data columns of the active dataset
-      newxyz \tCreate a new plot with changed columns, takes three lists or 
-              \tarrays as input. For line plots the last parameter is 'None'.
-      newall \tCreate a new plot from a list of all data columns, the list 
-              \thas to have the same length as returned by get_all
+      getxyz/\tReturn 3/all PhysicalProperty instances of the x,y and z columns 
+        getall\tfrom the active dataset
+      newxyz/ \tCreate a new plot with changed columns, takes three/several lists or 
+        newall\tarrays as input. For line plots the last parameter is 'None'.
       mapdata \tApply a function to all datasets in the active file data
       mapall  \tApply a function to all datasets from all files
+      newfit  \tAdd a function to the fit dialog functions, should be defined as
+              \tither f(p,x) of f(p,x,y) for 2d or 3d datasets respectively.
       apihelp \tOpen the api reference manual
     Objects:
       session \tThe active session containing the data objects and settings
@@ -3305,6 +3305,7 @@ set multiplot layout %i,1
                        'macros': self.file_actions.actions, 
                        'action_history': self.file_actions.history, 
                        'menus': MenuWrapper(self.menu_bar), 
+                       'newfit': register_function, 
                        })
     # add common mathematic functions to the namespace
     math_functions=['exp','log', 'log10', 

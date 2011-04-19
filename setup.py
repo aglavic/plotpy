@@ -27,7 +27,7 @@ __name__='plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __license__ = "None"
-__version__ = "0.7.3.7"
+__version__ = "0.7.4"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki"
@@ -51,7 +51,7 @@ if "py2app" in sys.argv:
   #__data_files__+=[('../Frameworks', glob('/usr/lib/libwx_mac*'))]
   __options__={ "py2app": {
                          "includes": "numpy", 
-                         "optimize": 2, 
+                         "optimize": 1, # Keep docstrings
                          "packages": "encodings, wx, scipy, IPython, sessions, read_data, wxgui, config", 
                          "resources": "doc/*.html", 
                          "argv_emulation": True,
@@ -60,7 +60,7 @@ if "py2app" in sys.argv:
 
 __options__={ "py2exe": {
                           "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
-                          "optimize": 2, 
+                          "optimize": 1, # Keep docstring (e.g. IPython console usage)
                           "skip_archive": True, # setting not to move compiled code into library.zip file
                           'packages':'encodings, gtk, sessions, read_data, gtkgui, scipy, IPython',
                           "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'], 
