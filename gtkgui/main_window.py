@@ -3783,7 +3783,7 @@ set multiplot layout %i,1
         start_range=min(position[0], start[0])
         end_range=max(position[0], start[0])
         x_0=(end_range-start_range)/2.+start_range
-        I=abs(position[0]-start[0])/4.
+        I=abs(position[1]-start[1])/4.
         bg=min(position[1], start[1])
       if (ds.fit_object==None):
         self.file_actions.activate_action('create_fit_object')
@@ -3795,7 +3795,7 @@ set multiplot layout %i,1
         gaussian.refine(ds.x, ds.y)
         ds.fit_object.functions.append([gaussian, False, True, False, False])
       if action.button==2:
-        voigt=fit_data.FitVoigt([ I, x_0, width, width,  bg])
+        voigt=fit_data.FitVoigt([ I, x_0, width/2., width/2.,  bg])
         voigt.x_from=start_range
         voigt.x_to=end_range
         voigt.refine(ds.x, ds.y)

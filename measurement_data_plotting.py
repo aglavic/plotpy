@@ -374,18 +374,6 @@ def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix,
               str(datasets[0].plot_together[first_index].ydata+1)+':'+\
               str(datasets[0].plot_together[first_index].zdata+1)
   output_file_prefix=os.path.normpath(output_file_prefix)
-  #if len(datasets)==1 and getattr(datasets[0], 'is_matrix_data', False):
-    #return replace_ph(session, 
-                       #gnuplot_file_text+plot_matrix(datasets[0], output_file_prefix+file_numbers[0]+'.bin'),
-                       #datasets,
-                       #file_name_prefix,
-                       #file_numbers, 
-                       #title,
-                       #names,
-                       #sample_name,
-                       #(0, 0, 0),
-                       #postscript_export,
-                       #additional_info)
   if getattr(datasets[0], 'is_matrix_data', False):
     gnuplot_file_text+='# now the plotting function\n'+\
         'plot "'+output_file_prefix+file_numbers[first_index]+'.bin" binary format="%float" u 1:2:3 w image t "'+gp.titles+'" '
@@ -406,18 +394,20 @@ def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix,
                              (0, first_index, 0),
                              postscript_export,
                              additional_info)
-  for i in range(len(datasets[1:])):
+  for i in range(len(datasets))[1:]:
     j=datasets[i].plot_together_zindex
     number="%i-%i" % (i, j)
     using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
                         str(datasets[i].plot_together[j].ydata+1)+':'+\
                         str(datasets[i].plot_together[j].zdata+1)
-    if getattr(dataset[i], 'is_matrix_data', False):
+    if getattr(datasets[i], 'is_matrix_data', False):
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
-        '.bin" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
+        '.bin" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + \
+          (datasets[i].plot_options.special_plot_parameters or plotting_param)
     else:
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
-        '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
+        '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + \
+          (datasets[i].plot_options.special_plot_parameters or plotting_param)
     gnuplot_file_text=replace_ph(session, 
                                  gnuplot_file_text,
                                  datasets,
