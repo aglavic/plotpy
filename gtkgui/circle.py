@@ -7,6 +7,9 @@
 
 import gtk
 from time import time, sleep
+import dialogs
+import fit_data
+from measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalConstant
 
 #----------------------- importing modules --------------------------
 
@@ -15,7 +18,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.4"
+__version__ = "0.7.4.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -35,7 +38,7 @@ class CircleGUI:
         <menuitem action='ReloadFile' />
         <menuitem action='Autoreload' />
         <menuitem action='ToggleCPS' />
-        <menuitem action='FitCentral' />
+        <menuitem action='FitPositions' />
       </menu>
     '''
     # Create actions for the menu
@@ -56,10 +59,10 @@ class CircleGUI:
                 "Toggle CPS", None,                    # label, accelerator
                 None ,                                   # tooltip
                 self.toggle_cps ),
-           ( "FitCentral", None,                             # name, stock id
-                "Fit Central Peak", '<control><shift>F',                    # label, accelerator
+           ( "FitPositions", None,                             # name, stock id
+                "Fit Θ2Θ-scan positions", '<control><shift>F',                    # label, accelerator
                 None ,                                   # tooltip
-                self.fit_central_peak ),
+                self.fit_positions ),
 )
     return string,  actions
 
@@ -103,25 +106,62 @@ class CircleGUI:
           gtk.main_iteration(False)
         sleep(0.1)
 
-  def fit_central_peak(self, action, window):
+  def fit_positions(self, action, window):
     '''
       Fit a peak at the center of a scan with Voigt-profile.
     '''
-    window.file_actions.activate_action('create_fit_object')
-    window.file_actions.activate_action('add_function', 'Voigt',)
-    dataset=window.measurement[window.index_mess]
-    x0=float(dataset.x.mean())
-    I0=float(dataset.y.max())
-    sigma0=float((dataset.x.max()-dataset.x.min())/10.)
-    window.file_actions.activate_action('set_function_parameters', 
-                                        0, [I0, 
-                                             x0, 
-                                             sigma0, 
-                                             sigma0, 
-                                             0.0, 
-                                             None, 
-                                             None, 
-                                             'I=[I] x_0=[x0] \xcf\x83=[\xcf\x83|2] \xce\xb3=[\xce\xb3|2]'])
-    window.file_actions.activate_action('fit_functions')
-    window.file_actions.activate_action('simmulate_functions')
-    window.replot()
+    dataset=self.active_file_data[window.index_mess]
+    if dataset.fit_object is None:
+      window.file_actions.activate_action('create_fit_object')
+    if dataset.x.dimension=='h':
+      dataset.xdata=dataset.dimensions().index('q_x')
+      window.replot()
+    if dataset.x.dimension=='k':
+      dataset.xdata=dataset.dimensions().index('q_y')
+      window.replot()
+    if dataset.x.dimension=='l':
+      dataset.xdata=dataset.dimensions().index('q_z')
+      window.replot()
+    dialog=dialogs.MultipeakDialog(fit_data.FitCuK, 
+                                   dataset.fit_object, 
+                                   window, 
+                                   title='Crystal Diffraction Peaks...', 
+                                   startparams=[1,0, 0.00125,0.001,0,2,0.99752006],
+                                   fitwidth=0.1, 
+                                   fitruns=[[0, 1], [0, 1, 3, 4]],
+                                   )
+    window.open_windows.append(dialog)
+    positions, result=dialog.run()
+    if result and len(positions)>=2:
+      peak_data=MeasurementData()
+      indices=self._get_indices([position[0] for position in positions])
+      x=PhysicalProperty('Index', '', indices)
+      y=PhysicalProperty('Peak Position', dataset.x.unit, [position[0] for position in positions], 
+                                                          [position[1] for position in positions])
+      p=PhysicalProperty('Peak Intensities', dataset.y.unit, [position[2] for position in positions], 
+                                                            [position[3] for position in positions])
+      peak_data.data=[x, y, p]
+      peak_data.sample_name=dataset.sample_name
+      peak_data.short_info=' - Fitted Peak Positions'
+      window.index_mess+=1
+      peak_data.number=str(window.index_mess)
+      self.active_file_data.insert(window.index_mess, peak_data)
+      window.file_actions.activate_action('create_fit_object')
+      th_correction=fit_data.ThetaCorrection([y[0]/x[0], 0.])
+      peak_data.fit_object.functions.append([th_correction, True, True, False, False])
+      peak_data.fit_object.fit()
+      peak_data.fit_object.simulate()
+      peak_data.plot_options.xrange=[0., x[-1]+1]
+      peak_data.plot_options.yrange[0]=0.
+      window.replot()
+
+  def _get_indices(self, positions):
+    '''
+      Estimate the indices for peaks where only the positions are given
+    '''
+    for i in range(1, 20):
+      ids=[round(pos/(positions[0]/i)) for pos in positions[1:]]
+      divs=[abs(pos-(positions[0]/i*id)) for pos, id in zip(positions[1:], ids)]
+      if sum(divs)/(len(positions)-1.)<(0.25/i):
+        break
+    return [round(pos/(positions[0]/i)) for pos in positions]

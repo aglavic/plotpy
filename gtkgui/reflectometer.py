@@ -11,8 +11,9 @@ import math
 # own modules
 import read_data.reflectometer
 from sessions.reflectometer_fit.reflectometer import *
-from dialogs import SimpleEntryDialog
-from measurement_data_structure import MeasurementData
+import dialogs
+import fit_data
+from measurement_data_structure import MeasurementData, PhysicalProperty
 
 #----------------------- importing modules --------------------------
 
@@ -21,7 +22,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.4"
+__version__ = "0.7.4.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -47,6 +48,7 @@ class ReflectometerGUI:
         <menuitem action='ReflectometerCreateMap'/>
         <separator name='Reflectometer2'/>
         <menuitem action='ReflectometerFourierAnalysis'/>
+        <menuitem action='FitPositions'/>
       </menu>
     '''
     # Create actions for the menu
@@ -79,6 +81,10 @@ class ReflectometerGUI:
                 "Fourier Analysis Calculus...", '<control><shift>A',                    # label, accelerator
                 None,                                   # tooltip
                 self.fourier_analysis_dialog ),
+           ( "FitPositions", None,                             # name, stock id
+                "Fit Θ2Θ-scan positions", '<control><alt>F',                    # label, accelerator
+                None ,                                   # tooltip
+                self.fit_positions ),
              )
     return string,  actions
   
@@ -833,7 +839,7 @@ class ReflectometerGUI:
     '''
       Opens a dialog do select Θc and λ for the fourier analysis calculus.
     '''
-    dialog=SimpleEntryDialog('Fourier Analysis Calculus - Settings...', (
+    dialog=dialogs.SimpleEntryDialog('Fourier Analysis Calculus - Settings...', (
                                ('Θc', 0.3, float), 
                                ('λ', 1.54, float), 
                                ('Interpolation Type', ['linear', 'cubic', 'nearest'], 0), 
@@ -853,3 +859,57 @@ class ReflectometerGUI:
       window.replot()
     else:
       dialog.destroy()
+
+  def fit_positions(self, action, window):
+    '''
+      Fit a peak at the center of a scan with Voigt-profile.
+    '''
+    dataset=self.active_file_data[window.index_mess]
+    if dataset.fit_object is None:
+      window.file_actions.activate_action('create_fit_object')
+    if dataset.x.dimension=='Θ' or dataset.x.dimension=='2Θ':
+      dataset.xdata=dataset.dimensions().index('q_z')
+      window.replot()
+    dialog=dialogs.MultipeakDialog(fit_data.FitCuK, 
+                                   dataset.fit_object, 
+                                   window, 
+                                   title='Crystal Diffraction Peaks...', 
+                                   startparams=[1,0, 0.00125,0.001,0,2,0.99752006],
+                                   fitwidth=0.1, 
+                                   fitruns=[[0, 1], [0, 1, 3, 4]],
+                                   )
+    window.open_windows.append(dialog)
+    positions, result=dialog.run()
+    if result and len(positions)>=2:
+      peak_data=MeasurementData()
+      indices=self._get_indices([position[0] for position in positions])
+      x=PhysicalProperty('Index', '', indices)
+      y=PhysicalProperty('Peak Position', dataset.x.unit, [position[0] for position in positions], 
+                                                          [position[1] for position in positions])
+      p=PhysicalProperty('Peak Intensities', dataset.y.unit, [position[2] for position in positions], 
+                                                            [position[3] for position in positions])
+      peak_data.data=[x, y, p]
+      peak_data.sample_name=dataset.sample_name
+      peak_data.short_info=' - Fitted Peak Positions'
+      window.index_mess+=1
+      peak_data.number=str(window.index_mess)
+      self.active_file_data.insert(window.index_mess, peak_data)
+      window.file_actions.activate_action('create_fit_object')
+      th_correction=fit_data.ThetaCorrection([y[0]/x[0], 0.])
+      peak_data.fit_object.functions.append([th_correction, True, True, False, False])
+      peak_data.fit_object.fit()
+      peak_data.fit_object.simulate()
+      peak_data.plot_options.xrange=[0., x[-1]+1]
+      peak_data.plot_options.yrange[0]=0.
+      window.replot()
+
+  def _get_indices(self, positions):
+    '''
+      Estimate the indices for peaks where only the positions are given
+    '''
+    for i in range(1, 20):
+      ids=[round(pos/(positions[0]/i)) for pos in positions[1:]]
+      divs=[abs(pos-(positions[0]/i*id)) for pos, id in zip(positions[1:], ids)]
+      if sum(divs)/(len(positions)-1.)<(0.25/i):
+        break
+    return [round(pos/(positions[0]/i)) for pos in positions]

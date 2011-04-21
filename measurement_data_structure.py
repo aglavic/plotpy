@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.4"
+__version__ = "0.7.4.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -1204,9 +1204,9 @@ class PlotOptions(object):
     if len(range)==2:
       try:
         xrange=[None, None]
-        if range[0]:
+        if range[0] is not None:
           xrange[0]=float(range[0])
-        if range[1]:
+        if range[1] is not None:
           xrange[1]=float(range[1])
         if None not in xrange and xrange[0]>xrange[1]:
           xrange=[xrange[1], xrange[0]]
@@ -1220,9 +1220,9 @@ class PlotOptions(object):
     if len(range)==2:
       try:
         yrange=[None, None]
-        if range[0]:
+        if range[0] is not None:
           yrange[0]=float(range[0])
-        if range[1]:
+        if range[1] is not None:
           yrange[1]=float(range[1])
         if None not in yrange and yrange[0]>yrange[1]:
           yrange=[yrange[1], yrange[0]]

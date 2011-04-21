@@ -9,6 +9,7 @@ import gtk
 import cairo
 import sys, os
 from time import sleep
+from math import sqrt
 from config import gnuplot_preferences
 import config.templates
 
@@ -19,7 +20,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.4"
+__version__ = "0.7.4.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -553,6 +554,251 @@ class SimpleEntryDialog(gtk.Dialog):
     self._result=0
 
 #--------------- SimpleEntryDialog to get a list of values from the user ---------------
+
+#++++++++++++ MultipeakDialog to fit a peak function at differnt positions +++++++++++++
+
+class MultipeakDialog(gtk.Dialog):
+  '''
+    A dialog to fit multiple peaks to a given dataset.
+  '''
+  _callback_window=None
+  _result=None
+  fit_class=None
+  # define which parameter from the fit function are x0 and y0 values
+  x_parameter=1
+  y_parameter=0
+  # start parameters used for the fit function
+  _start_parameters=None
+  # defines a list of fit runs to be made (e.g. first just x position than x,y,width)
+  fit_runs=None
+  # half width of the region where the fit should take place
+  _fit_width=None
+  
+  def __init__(self, fit_class, fit_object, main_window,  *args, **opts):
+    '''
+      Class constructor.
+      
+      Additional keyword arguments:
+        xyparams    : tuple of x0 and y0 parameter index of the used peak function
+        startparams : list of start parameters used instead of the normal function default
+        fitruns     : list of tuples with parameter indices to be fitted in sequential steps
+        fitwidth    : half width of the region where each peak is fitted
+      
+      @param fit_class FitFunction derived object
+      @param fit_object FitSession object to attach the functions to
+    '''
+    self.fit_class=fit_class
+    self.fit_object=fit_object
+    self._callback_window=main_window
+    self._evaluate_options(opts)
+    opts['parent']=main_window
+    # Initialize this dialog
+    gtk.Dialog.__init__(self, *args, buttons=('Pop Last',2, 'Finished', 1, 'Cancel', 0), **opts)
+    self.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0], 
+                           "..", "config", "logopurple.png").replace('library.zip', ''))    
+    self.connect('destroy', self.cleanup)
+    self.register_mouse_callback()
+    self.table=gtk.Table(4, 5, False)
+    self.table.show()
+    self.new_peak_table=gtk.Table(3, 2, False)
+    self.new_peak_table.show()
+    self.vbox.pack_start(self.table, True)
+    align=gtk.Alignment(0.5, 0, 0, 0)
+    align.add(self.new_peak_table)
+    align.show()
+    self.vbox.pack_end(align, False)
+    # List of FitFunction objects already finished
+    self.finished_fits=[]
+    self.peak_labels=[]
+    self.peak_data=[]
+    self._init_entries()
+  
+  def _evaluate_options(self, opts):
+    '''
+      Evaluate the keyword arguments supplied to the constructor.
+    '''
+    if not 'title' in opts:
+      title=opts['title']='Multipeak Fit...'
+    if 'xyparams' in opts:
+      self.x_parameter, self.y_parameter=opts['xyparams']
+      del(opts['xyparams'])
+    if 'startparams' in opts:
+      self._start_parameters=opts['startparams']
+      del(opts['startparams'])
+    else:
+      self._start_parameters=list(self.fit_class.parameters)
+    if 'fitruns' in opts:
+      self.fit_runs=opts['fitruns']
+      del(opts['fitruns'])
+    else:
+      self.fit_runs=[None]
+    if 'fitwidth' in opts:
+      self._fit_width=opts['fitwidth']
+      del(opts['fitwidth'])
+  
+  def _init_entries(self):
+    '''
+      Append labels and entries to the main table and the objects dictionaries and show them. 
+    '''
+    # Entries for a new peak
+    peak_x=gtk.Entry()
+    peak_x.set_text('0')
+    peak_x.set_width_chars(10)
+    peak_y=gtk.Entry()
+    peak_y.set_text('Auto')
+    peak_y.set_width_chars(10)
+    self.peak_entries=[peak_x, peak_y]
+    fit_button=gtk.Button('Fit')
+    fit_button.connect('clicked', self.fit_peak)
+    peak_x.connect('activate', self.fit_peak)
+    peak_y.connect('activate', self.fit_peak)
+    self.new_peak_table.attach(gtk.Label('x-position'), 0,1, 0,1, gtk.FILL,gtk.FILL, 0,0)
+    self.new_peak_table.attach(gtk.Label('y-position'), 1,2, 0,1, gtk.FILL,gtk.FILL, 0,0)
+    self.new_peak_table.attach(peak_x, 0,1, 1,2, gtk.FILL,gtk.FILL, 0,0)
+    self.new_peak_table.attach(peak_y, 1,2, 1,2, gtk.FILL,gtk.FILL, 0,0)
+    self.new_peak_table.attach(fit_button, 2,3, 0,2, gtk.FILL,gtk.FILL, 0,0)
+    self.new_peak_table.show_all()
+  
+  def fit_peak(self, widget=None, action=None):
+    '''
+      Fit a new function to the peak position defined in the dialog or by mouse click.
+    '''
+    peak_x, peak_y=self.peak_entries
+    try:
+      x=float(peak_x.get_text())
+    except ValueError:
+      peak_x.set_text('')
+      return
+    try:
+      y=float(peak_y.get_text())
+    except ValueError:
+      if peak_y.get_text()=='Auto':
+        y=self._start_parameters[self.y_parameter]
+      else:
+        peak_y.set_text('Auto')
+        return
+    start_params=list(self._start_parameters)
+    start_params[self.x_parameter]=x
+    start_params[self.y_parameter]=y
+    fit=self.fit_class(start_params)
+    if not self._fit_width is None:
+      fit.x_from=x-self._fit_width
+      fit.x_to=x+self._fit_width
+    self.fit_object.functions.append([fit, True, True, False, False])
+    for fit_params in self.fit_runs:
+      if fit_params is not None:
+        fit.refine_parameters=fit_params
+      cov=self.fit_object.fit()[-1]
+    self.fit_object.functions[-1][1]=False
+    self.fit_object.simulate()
+    self.add_peak(fit, cov)
+    self._callback_window.replot()
+
+  def add_peak(self, fit, cov):
+    '''
+      Add a new peak to the table of fits and the dialog.
+      
+      @param fit FitFunction object.
+      @param cov Covariance matrix of the last fit
+    '''
+    self.finished_fits.append(fit)
+    fits=len(self.finished_fits)
+    x=fit.parameters[self.x_parameter]
+    y=fit.parameters[self.y_parameter]
+    if cov is None:
+      dx=x/10.
+      dy=y/10.
+    else:
+      dx=sqrt(cov[self.x_parameter][self.x_parameter])
+      dy=sqrt(cov[self.y_parameter][self.y_parameter])
+    label=gtk.Label("%i: \t%f±%f" % (fits, x, dx))
+    label.show()
+    self.peak_labels.append(label)
+    self.table.attach(label, 
+                      0,4,  fits, fits+1, 
+                      gtk.FILL,gtk.FILL, 0,0
+                      )
+    self.peak_data.append([x, dx, y, dy])
+  
+  def remove_peak(self):
+    '''
+      Remove the last fited peak.
+    '''
+    self.peak_data.pop(-1)
+    self.finished_fits.pop(-1)
+    self.fit_object.functions.pop(-1)
+    self.fit_object.simulate()
+    self.table.remove(self.peak_labels.pop(-1))
+    self._callback_window.replot()
+  
+  def run(self):
+    '''
+      Show the dialog and wait for input. Return the result as Dictionary 
+      and a boolen definig if the Dialog was closed or OK was pressed.
+    '''
+    if self._callback_window is None:
+      result=gtk.Dialog.run(self)
+      while result==2:
+        self.remove_peak()
+        result=gtk.Dialog.run(self)
+    else:
+      # if a mouse callback is registered it doesn't
+      # work with Dialog.run
+      self._result=None
+      def set_result(widget, id):
+        self._result=id
+      self.connect('response', set_result)
+      self.show_all()
+      while self._result is None or self._result==2:
+        if self._result==2:
+          self._result=None
+          self.remove_peak()
+        while gtk.events_pending():
+          gtk.main_iteration(False)
+        sleep(0.1)
+      result=self._result
+    self.hide()
+    self.cleanup()
+    return self.collect_positions(), result==1
+  
+  def collect_positions(self):
+    '''
+      Get values from all fits.
+    '''
+    output=list(self.peak_data)
+    output.sort()
+    return output
+
+  def register_mouse_callback(self):
+    '''
+      Set the callback function to be used when selecting a position with the mouse button.
+    '''
+    window=self._callback_window
+    window.mouse_position_callback=self._mouse_callback
+  
+  def _mouse_callback(self, position):
+    '''
+      Activated when mouse selection has been made.
+    '''
+    peak_x, peak_y=self.peak_entries
+    peak_x.set_text(str(position[0]))
+    peak_y.set_text(str(position[1]))
+    self.fit_peak()
+
+  def cleanup(self, action=None):
+    '''
+      On delete remove the callback function.
+    '''
+    if self._callback_window is not None:
+      self._callback_window.mouse_position_callback=None
+    self._result=0
+
+  def __del__(self, *ignore):
+    self.cleanup()
+
+#------------- MultipeakDialog to fit a peak function at differnt positions -------------
 
 #+++++++++++++++++++ FileChooserDialog with entries for width and height ++++++++++++++++
 

@@ -25,7 +25,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.4"
+__version__ = "0.7.4.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -573,6 +573,30 @@ class FitLinear(FitFunction):
   fit_function=lambda self, p, x: p[0] * numpy.array(x) + p[1]
   fit_function_text='[a]·x + [b]'
 
+class ThetaCorrection(FitFunction):
+  '''
+    Fit a function to peak positions to get a reciprocal lattice parameter and Θ-offset.
+  '''
+  
+  # define class variables.
+  name="Peak Positions"
+  parameters=[3., 0.]
+  parameter_names=['a*', 'Θ_0']
+  fit_function_text='a^*=[a*|6] [y-unit]    Θ_0=[Θ_0] °'
+  lambda_factor=1.540/(4.*numpy.pi) # Cu-k_alpha prefactor
+  
+  def fit_function(self, p, x):
+    '''
+      Fit a function to the peak positions.
+    '''
+    a_star=p[0]
+    theta0=p[1]/180.*numpy.pi
+    # theoretical q positions q=h·a*
+    q_theo=x*a_star
+    th_theo=numpy.arctan( q_theo*self.lambda_factor )
+    q_mess=q_theo + numpy.cos(th_theo)*numpy.sin(theta0)/self.lambda_factor
+    return q_mess
+
 class FitDiamagnetism(FitFunction):
   '''
     Fit two linear functions with the same slope, an offset and a hole around zero.
@@ -733,9 +757,9 @@ class FitCuK(FitFunction):
   
   # define class variables.
   name="Cu K-radiation"
-  parameters=     [1,   0,  0.001, 0.001, 0,     2,      0.99752006]
+  parameters=     [1000,   0,  0.00125, 0.001, 0,     2,      0.99752006]
   parameter_names=['I', 'x0', 'γ', 'σ', 'C', 'K_a1/K_a2', 'x01/x02']
-  fit_function_text='K_α: [x0] ; [γ|2] ; [σ|2]'
+  fit_function_text='K_α: I=[I] [y-unit]   x_0=[x0] [x-unit]   σ=[σ|2] [x-unit]'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
 
@@ -744,7 +768,7 @@ class FitCuK(FitFunction):
       Constructor setting the initial values of the parameters.
     '''
     FitFunction.__init__(self, initial_parameters)
-    self.refine_parameters=range(6)
+    self.refine_parameters=[0, 1, 3, 4]
   
   def fit_function(self, p, x):
     '''
@@ -2241,7 +2265,7 @@ class FitSession(FitSessionGUI):
       if function[2]:
         data_xy=self.data.list()
         data_x=[d[0] for d in data_xy]
-        fit_x, fit_y=function[0].simulate(data_x)
+        fit_x, fit_y=function[0].simulate(data_x, inside_fitrange=getattr(self, 'restrict_to_region', False))
         for i in range(len(fit_x)):
           result.append((fit_x[i], fit_y[i]))
         function_text=function[0].fit_function_text

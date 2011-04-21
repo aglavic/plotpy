@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.4"
+__version__ = "0.7.4.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -196,6 +196,20 @@ def replace_ph(session,
   datanr=number[0]
   withnr=number[1]
   gp=gnuplot_preferences
+  if '[titles_add]' in string:
+    titles_add=replace_ph(session, 
+                                    names[number[2]],
+                                    datasets, 
+                                    file_name_prefix, 
+                                    file_numbers, 
+                                    title, 
+                                    names, 
+                                    sample_name, 
+                                    number, 
+                                    postscript_export, 
+                                    additional_info)
+  else:
+    titles_add=''
   string=string.\
   replace('[font-path]',gp.FONT_PATH).\
   replace('[width]',session.picture_width).\
@@ -213,7 +227,7 @@ def replace_ph(session,
   replace('[z-unit]',datasets[datanr].plot_together[withnr].zunit()).\
   replace('[z-dim]',datasets[datanr].plot_together[withnr].zdim()).\
   replace('[title_add]',title).\
-  replace('[titles_add]',names[number[2]]).\
+  replace('[titles_add]',titles_add).\
   replace('[const_unit]',datasets[datanr].plot_together[withnr].units()[datasets[datanr].plot_together[withnr].type()]).\
   replace('[const_dim]',datasets[datanr].plot_together[withnr].dimensions()[datasets[datanr].plot_together[withnr].type()]).\
   replace('[const_value]',str(datasets[datanr].plot_together[withnr].last()[datasets[datanr].plot_together[withnr].type()]))

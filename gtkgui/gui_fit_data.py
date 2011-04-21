@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.4"
+__version__ = "0.7.4.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -36,6 +36,8 @@ class FitFunctionGUI:
     window.fit_dialog(None, size, position)
 
 class FitSessionGUI:
+  restrict_to_region=True
+  
   def get_dialog(self, window, dialog, fit_button_press_event=None):
     '''
       Create a aligned table widget for the interaction with this class.
@@ -145,10 +147,15 @@ class FitSessionGUI:
     align.add(align_table)
     def toggle_show_covariance(action, self):
       self.show_covariance=not self.show_covariance
+    def toggle_show_region(action, self):
+      self.restrict_to_region=not self.restrict_to_region
     toggle_covariance=gtk.CheckButton(label='show errors')
     toggle_covariance.set_active(self.show_covariance)
     toggle_covariance.connect('toggled', toggle_show_covariance, self)
-    return align, [toggle_covariance, new_function, add_button, sum_button, fit_button]
+    toggle_region=gtk.CheckButton(label='region')
+    toggle_region.set_active(self.restrict_to_region)
+    toggle_region.connect('toggled', toggle_show_region, self)
+    return align, [toggle_region, toggle_covariance, new_function, add_button, sum_button, fit_button]
   
   def function_line(self, function, dialog, window):
     '''
