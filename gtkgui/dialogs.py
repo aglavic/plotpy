@@ -20,7 +20,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.4.1"
+__version__ = "0.7.5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -373,6 +373,19 @@ class PreviewDialog(gtk.Dialog):
     for key, active_list in sorted(active_dict.items()):
       for i in active_list:
         output.append((key, data_dict[key][i]))
+    return output
+  
+  def get_active_dictionary(self):
+    '''
+      Return a dictionary with lists of active objects.
+    '''
+    data_items=self.get_active_objects_with_key()
+    output={}
+    for key, item in data_items:
+      if key in output:
+        output[key].append(item)
+      else:
+        output[key]=[item]
     return output
   
   def toggle_previews(self, widget):

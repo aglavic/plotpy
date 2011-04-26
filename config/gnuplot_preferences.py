@@ -11,7 +11,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.4.1"
+__version__ = "0.7.5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -54,6 +54,8 @@ if exists('/usr/share/fonts/truetype/msttcorefonts'):
   FONT_PATH='/usr/share/fonts/truetype/msttcorefonts'
 elif exists('C:\\WINDOWS\\Fonts'):
   FONT_PATH='C:\\WINDOWS\\Fonts'
+elif exists('/Library/Fonts'):
+  FONT_PATH='/Library/Fonts'
 else:
   try:
     # try to get the font path from the pygame module

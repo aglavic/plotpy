@@ -16,18 +16,14 @@ try:
 except ImportError:
   pass
 
-from distutils.core import setup, Extension
 from glob import glob
 import subprocess
-
-if "py2exe" in sys.argv:
-  import py2exe
 
 __name__='plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __license__ = "None"
-__version__ = "0.7.4.1"
+__version__ = "0.7.5"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki"
@@ -43,29 +39,44 @@ __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat
                   'plot_script': ['doc/*.html'], 
                     }
 __data_files__=[('doc', glob('doc/*.html'))]
-__requires__=['pygtk', 'gobject', 'numpy', 'scipy']
-__setup_requires__=[]
+
 if "py2app" in sys.argv:
   import py2app
-  __packages__.remove('plot_script.gtkgui')
+  __scripts__=['__init__.py']
   #__data_files__+=[('../Frameworks', glob('/usr/lib/libwx_mac*'))]
-  __options__={ "py2app": {
-                         "includes": "numpy", 
-                         "optimize": 1, # Keep docstrings
-                         "packages": "encodings, wx, scipy, IPython, sessions, read_data, wxgui, config", 
-                         "resources": "doc/*.html", 
-                         "argv_emulation": True,
-                         }, 
-              } 
-
-__options__={ "py2exe": {
-                          "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
-                          "optimize": 1, # Keep docstring (e.g. IPython console usage)
-                          "skip_archive": True, # setting not to move compiled code into library.zip file
-                          'packages':'encodings, gtk, sessions, read_data, gtkgui, scipy, IPython',
-                          "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'], 
+  __options__={ 
+              "app": ['__init__.py'], 
+              "options": { "py2app": {
+                           "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio", 
+                           "optimize": 1, # Keep docstrings
+                           "packages": "encodings, gtk, sessions, read_data, gtkgui, scipy, IPython", 
+                           "resources": glob("doc/*.html"), 
+                           "iconfile": "config/logo.png", 
+                           #"argv_emulation": True,
+                           }, 
+                          }
+              }
+elif "py2exe" in sys.argv:
+  import py2exe
+  __options__={ 
+                #"setup_requires": ['py2exe'], 
+                #"console": [ "__init__.py"], # set the executable for py2exe
+                "windows": [ "__init__.py" ],                
+                "options": {  "py2exe": {
+                              "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
+                              "optimize": 1, # Keep docstring (e.g. IPython console usage)
+                              "skip_archive": True, # setting not to move compiled code into library.zip file
+                              'packages':'encodings, gtk, sessions, read_data, gtkgui, scipy, IPython',
+                              "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'], 
                              }, 
-                             }
+                           }
+              }
+else:
+  __options__={"setup_requires":[], 
+                }
+
+__requires__=['pygtk', 'gobject', 'numpy', 'scipy']
+from distutils.core import setup, Extension
 
 # extensions modules written in C
 #mdf_module = Extension('plot_script.measurement_data_functions',
@@ -184,11 +195,7 @@ setup(name=__name__,
       package_data=__package_data__,
       data_files=__data_files__, 
       requires=__requires__, #does not do anything
-      app=["__init__.py"],  # set the executable for py2app
-      setup_requires=__setup_requires__, 
-      #console = [ "__init__.py"], # set the executable for py2exe
-      windows = [ "__init__.py" ],
-      options = __options__, 
+      **__options__
      )
 
 # If binary distribution has been created rename it and create .deb package, too.
@@ -307,4 +314,7 @@ if "py2exe" in sys.argv and not py2exe_test:
   for script_file in glob('scripts\\*.bat'):
     sf=open(script_file, 'r').read()
     open(os.path.join('archiv', os.path.split(script_file)[1]), 'w').write(sf.replace('plot.py', 'plot'))
-  
+ 
+# py2app specific stuff to make it work: 
+if "py2app" in sys.argv:
+  subprocess.call(['cp', '-r','config/*','archiv/plot-script.app/Contents/Resources/lib/python2.7/config'])

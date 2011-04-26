@@ -87,7 +87,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.4.1"
+__version__ = "0.7.5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -156,8 +156,9 @@ def initialize(arguments):
   from sessions.generic import GenericSession
   if (len(arguments) == 0):
     # if no input parameter given, print the short help string
-    print GenericSession.SHORT_HELP
-    exit()
+    #print GenericSession.SHORT_HELP
+    #exit()
+    return None
   elif arguments[0] in known_measurement_types:
     # type is found in dictionary, using specific session
     measurement_type=known_measurement_types[arguments[0]]
@@ -234,13 +235,17 @@ def _run():
   if not '-scp' in sys.argv:
     initialize_gui_toolkit()
   active_session=initialize(sys.argv[1:])
-  if active_session.use_gui: # start a new gui session
+  if active_session is None or active_session.use_gui: # start a new gui session
     plotting_session=initialize_gui(active_session, status_dialog)
     gui_main.main_loop(plotting_session)
   else: # in command line mode, just plot the selected data.
     active_session.plot_all()
   # delete temporal files and folders after the program ended
-  active_session.os_cleanup()
+  if active_session is None:
+    # if the session is initialized in the gui, use the active gui session for cleanup
+    plotting_session.active_session.os_cleanup()
+  else:
+    active_session.os_cleanup()
 
 if __name__ == '__main__':    #code to execute if called from command-line
   _run()

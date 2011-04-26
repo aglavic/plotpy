@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.4.1"
+__version__ = "0.7.5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -85,7 +85,7 @@ class ApplicationMainWindow(gtk.Window):
   active_plot_geometry=(780, 550)
   
   #+++++++++++++++++++++++++++++++Window Constructor+++++++++++++++++++++++++++++++++++++#
-  def __init__(self, active_session, parent=None, script_suf='', status_dialog=None):
+  def __init__(self, active_session=None, parent=None, script_suf='', status_dialog=None):
     '''
       Class constructor which builds the main window with it's menus, buttons and the plot area.
       
@@ -94,7 +94,12 @@ class ApplicationMainWindow(gtk.Window):
       @param script_suf Suffix for script file name.
       @param status_dialog The dialog used to show import information.
     '''
+    # List of sessions which are suspended after changing to another session.
+    self.suspended_sessions=[]
     self.active_session=active_session # session object passed by plot.py
+    if active_session is None:
+      self.change_session()
+      active_session=self.active_session
     if not active_session.DEBUG:
       # redirect script output to session objects
       active_session.stdout=RedirectOutput(self)
@@ -546,7 +551,7 @@ class ApplicationMainWindow(gtk.Window):
       pass
     dialog.set_version("v%s" % __version__)
     dialog.set_authors([__author__]+__credits__)
-    dialog.set_copyright("© Copyright 2008-2010 Artur Glavic\n a.glavic@fz-juelich.de")
+    dialog.set_copyright("© Copyright 2008-2011 Artur Glavic\n a.glavic@fz-juelich.de")
     dialog.set_website("http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki")
     dialog.set_website_label('Webseite @ fz-juelich.de')
     ## Close dialog on user response
@@ -716,7 +721,94 @@ class ApplicationMainWindow(gtk.Window):
       logitems.logy=self.logy.get_active()
       logitems.logz=self.logz.get_active()
     self.replot() # plot with new Settings
-  
+
+  def change_session(self, action=None, transfere=None):
+    '''
+      Change the session type used to import Data.
+      
+      @param transfere A dictionary of measurements to be trasfered to the new session
+    '''
+    session_dialog=gtk.Dialog(title='Select Session Type...', buttons=('OK', 1, 'Cancel', 0))
+    sessions={
+              'SQUID': ('squid', 'SquidSession'), 
+              '4-Circle': ('circle', 'CircleSession'), 
+              'Reflectometer': ('reflectometer', 'ReflectometerSession'), 
+              'TREFF': ('treff', 'TreffSession'), 
+              
+              }
+        
+    table=gtk.Table(1, len(sessions.keys()), False)
+    buttons=[]
+    for i, name in enumerate(sorted(sessions.keys())):
+      if i==0:
+        buttons.append(gtk.RadioButton(label=name))
+      else:
+        buttons.append(gtk.RadioButton(group=buttons[0], label=name))
+      table.attach( buttons[i], 0, 1, i, i+1 )
+    table.show_all()
+    session_dialog.vbox.add(table)
+    result=session_dialog.run()
+    if result==1:
+      for button in buttons:
+        if button.get_active():
+          name=button.get_label()
+          session_dialog.destroy()
+          break
+      # If session already in suspended sessions, just switch
+      for i, session in enumerate(self.suspended_sessions):
+        if session.__module__=='sessions.%s' % sessions[name][0]:
+          self.suspended_sessions.append(self.active_session)
+          self.active_session=self.suspended_sessions.pop(i)
+          self.measurement=self.active_session.active_file_data
+          self.index_mess=0
+          if transfere is not None:
+            self.active_session.file_data.update(transfere)
+          self.rebuild_menus()
+          self.replot()
+          return
+      new_session_class = getattr(__import__('sessions.'+sessions[name][0], globals(), locals(), 
+                                      [sessions[name][1]]), sessions[name][1])
+      new_session=new_session_class([])
+      if self.active_session is not None:
+        self.suspended_sessions.append(self.active_session)
+        self.active_session=new_session
+        if transfere is None:
+          self.add_file()
+        else:
+          # Add transfered data to the session
+          self.active_session.file_data=transfere
+          file_name=sorted(transfere.keys())[0]
+          self.active_session.active_file_data=transfere[file_name]
+          self.measurement=transfere[file_name]
+          self.index_mess=0
+          self.active_session.active_file_name=file_name
+          self.rebuild_menus()
+          self.replot()
+      else:
+        self.active_session=new_session
+    if result==0 and self.active_session is None:
+      self.main_quit()
+      session_dialog.destroy()
+
+  def transfere_datasets(self, action):
+    '''
+      Open a selection dialog to transfere datasets to another session.
+    '''
+    selection_dialog=PreviewDialog(self.active_session.file_data, show_previews=True, 
+                                   buttons=('Transfere', 1, 'Cancel', 0), 
+                                   title='Select dataset to be transfered...')
+    selection_dialog.set_default_size(800, 600)
+    selection_dialog.set_preview_parameters(self.plot, self.active_session, self.active_session.TEMP_DIR+'plot_temp.png')
+    result=selection_dialog.run()
+    if result==1:
+      transfere=selection_dialog.get_active_dictionary()
+      selection_dialog.destroy()
+      if transfere=={}:
+        return
+      self.change_session(transfere=transfere)
+      return
+    selection_dialog.destroy()
+
   def change_active_file(self, action):
     '''
       Change the active datafile for plotted sequences.
@@ -748,7 +840,7 @@ class ApplicationMainWindow(gtk.Window):
       self.plot_tree.add_data()
       self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
   
-  def add_file(self, action, hide_status=True):
+  def add_file(self, action=None, hide_status=True):
     '''
       Import one or more new datafiles of the same type.
       
@@ -3856,7 +3948,7 @@ set multiplot layout %i,1
     if gnuplot_version[0]<4.4:
       # mouse mode only works with version 4.4 and higher
       self.mouse_mode=False
-    else:
+    elif not sys.platform == 'darwin':
       gnuplot_preferences.set_output_terminal_png=gnuplot_preferences.set_output_terminal_pngcairo
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
@@ -4120,6 +4212,9 @@ set multiplot layout %i,1
         <separator name='static1'/>
         <menuitem action='Print'/>
         <menuitem action='PrintAll'/>
+        <separator name='static15'/>
+        <menuitem action='ChangeSession'/>
+        <menuitem action='TransfereDatasets'/>
         <separator name='static2'/>
         <menuitem action='Quit'/>
       </menu>
@@ -4354,6 +4449,14 @@ set multiplot layout %i,1
         "Print Selection...", "<control><shift>P",                       # label, accelerator
         None,                          # tooltip
         self.print_plot ),
+      ( "ChangeSession", gtk.STOCK_LEAVE_FULLSCREEN,                  # name, stock id
+        "Change Active Session...", None,                       # label, accelerator
+        None,                          # tooltip
+        self.change_session ),
+      ( "TransfereDatasets", None,                  # name, stock id
+        "Transfere Datasets to Session...", None,                       # label, accelerator
+        None,                          # tooltip
+        self.transfere_datasets),
       ( "Quit", gtk.STOCK_QUIT,                    # name, stock id
         "_Quit", "<control>Q",                     # label, accelerator
         "Quit",                                    # tooltip
