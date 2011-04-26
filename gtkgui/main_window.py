@@ -62,6 +62,7 @@ class ApplicationMainWindow(gtk.Window):
   status_dialog=None
   init_complete=False
   gnuplot_initialized=False
+  destroyed_directly=False
   # used for mouse tracking and interaction on the picture
   mouse_mode=True
   mouse_data_range=[(0., 1., 0., 1.), (0., 1., 0., 1., False, False)]
@@ -74,6 +75,7 @@ class ApplicationMainWindow(gtk.Window):
   # with the active position of the mouse on the plot
   garbage=[]
   plot_tree=None
+  open_windows=[]
   
   def get_active_dataset(self):
     # convenience method to get the active dataset
@@ -98,8 +100,11 @@ class ApplicationMainWindow(gtk.Window):
     self.suspended_sessions=[]
     self.active_session=active_session # session object passed by plot.py
     if active_session is None:
-      self.change_session()
-      active_session=self.active_session
+      if self.change_session():
+        active_session=self.active_session
+      else:
+        self.destroyed_directly=True
+        return
     if not active_session.DEBUG:
       # redirect script output to session objects
       active_session.stdout=RedirectOutput(self)
@@ -765,7 +770,7 @@ class ApplicationMainWindow(gtk.Window):
             self.active_session.file_data.update(transfere)
           self.rebuild_menus()
           self.replot()
-          return
+          return True
       new_session_class = getattr(__import__('sessions.'+sessions[name][0], globals(), locals(), 
                                       [sessions[name][1]]), sessions[name][1])
       new_session=new_session_class([])
@@ -786,9 +791,10 @@ class ApplicationMainWindow(gtk.Window):
           self.replot()
       else:
         self.active_session=new_session
-    if result==0 and self.active_session is None:
-      self.main_quit()
+      return True
+    if result==0:
       session_dialog.destroy()
+      return False
 
   def transfere_datasets(self, action):
     '''

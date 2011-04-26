@@ -520,8 +520,8 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   img_data=numpy.fromstring(img_file.read(), int, sep=" ")
   try:
     img_data=img_data.reshape(DETECTOR_PIXELS, -1)
-  except ValueError:
-    return []
+  except ValueError, error:
+    return [], None
   img_file.close()
   cos=numpy.cos
   sin=numpy.sin
@@ -531,10 +531,11 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   calibration=numpy.array(calibration)
   filter_indices=numpy.where(calibration>0)
   img_intensities=img_columns_data.sum(axis=1)[filter_indices]
+  calibration=calibration[filter_indices]
   try:
     intensities=img_intensities/monitor*calibration
-  except ValueError:
-    return []
+  except ValueError, error:
+    return [], None
   errors=numpy.sqrt(img_intensities)/monitor*calibration
   alphaf=alphaf_center + pixel_width * (CENTER_PIXEL - numpy.arange(DETECTOR_PIXELS))[filter_indices]
   # create importent columns

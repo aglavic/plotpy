@@ -243,7 +243,8 @@ def _run():
   # delete temporal files and folders after the program ended
   if active_session is None:
     # if the session is initialized in the gui, use the active gui session for cleanup
-    plotting_session.active_session.os_cleanup()
+    if not plotting_session.destroyed_directly:
+      plotting_session.active_session.os_cleanup()
   else:
     active_session.os_cleanup()
 

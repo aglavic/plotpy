@@ -231,7 +231,7 @@ def seperate_scattering(datasets, P):
   maximum_iterations=100
   stop_iteration_at=1e-10
   I={}
-  min_length=min(map(len, datasets))
+  min_length=min(map(len, datasets[:4]))
   if datasets[0].zdata<0:
     I['++']=numpy.array(datasets[0].data[datasets[0].ydata].values[:min_length])
     I['--']=numpy.array(datasets[1].data[datasets[0].ydata].values[:min_length])
