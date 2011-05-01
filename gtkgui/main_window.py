@@ -735,10 +735,12 @@ class ApplicationMainWindow(gtk.Window):
     '''
     session_dialog=gtk.Dialog(title='Select Session Type...', buttons=('OK', 1, 'Cancel', 0))
     sessions={
-              'SQUID': ('squid', 'SquidSession'), 
+              'SQUID/PPMS': ('squid', 'SquidSession'), 
               '4-Circle': ('circle', 'CircleSession'), 
+              'DNS': ('dns', 'DNSSession'), 
+              'GISAS': ('kws2', 'KWS2Session'), 
               'Reflectometer': ('reflectometer', 'ReflectometerSession'), 
-              'TREFF': ('treff', 'TreffSession'), 
+              'TREFF/MARIA': ('treff', 'TreffSession'), 
               
               }
         

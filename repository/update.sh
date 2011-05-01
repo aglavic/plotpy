@@ -1,13 +1,27 @@
 #!/bin/bash
 # Script to update the repository contents with the latest verstion of the plot script package
-# Copy latest .deb file
-cd ../archiv
+# Build binary distribution
+cd ..
+# create Python 2.6 package:
+python2.6 setup.py bdist
+cd archiv
 FILE=`ls -t *.deb| head -1`
-cd ../repository
 FILE_ALL=`echo $FILE|sed 's/.deb//'`_all.deb
-cp ../archiv/$FILE binary/$FILE_ALL
+cp $FILE ../repository/binary/dist/maverick/$FILE_ALL
+# create Python 2.7 package:
+cd ..
+python setup.py bdist
+cd archiv
+FILE=`ls -t *.deb| head -1`
+FILE_ALL=`echo $FILE|sed 's/.deb//'`_all.deb
+cp $FILE ../repository/binary/dist/natty/$FILE_ALL
+
+cd ../repository
+# Repo update
 apt-ftparchive generate ftparchive.conf
-apt-ftparchive -c ftparchive.conf release dists/maverick/> dists/maverick/Release
+apt-ftparchive -c ftparchive_maverick.conf release dists/maverick/> dists/maverick/Release
+apt-ftparchive -c ftparchive_natty.conf release dists/natty/> dists/natty/Release
 gpg -sba -o dists/maverick/Release.gpg dists/maverick/Release
+gpg -sba -o dists/natty/Release.gpg dists/natty/Release
 # sync with server
-rsync -ruvz * ifflinux.iff.kfa-juelich.de:public_html/plotrepo
+rsync -ruvz --delete * ifflinux.iff.kfa-juelich.de:public_html/plotrepo

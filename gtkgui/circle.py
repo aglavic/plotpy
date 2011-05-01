@@ -5,6 +5,7 @@
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
+import os
 import gtk
 from time import time, sleep
 import dialogs
@@ -81,12 +82,16 @@ class CircleGUI:
     '''
       Reload the data of the active file.
     '''
+    if hasattr(self.active_file_data[-1], 'last_import'):
+      if self.active_file_data[-1].last_import>=os.path.getctime(self.active_file_name):
+        return
     new_data=self.read_file(self.active_file_name)
     for i, dataset in enumerate(new_data):
       if i<len(self.active_file_data):
         self.active_file_data[i].data=dataset.data
       else:
         self.active_file_data.append(dataset)
+    self.active_file_data[-1].last_import=os.path.getctime(self.active_file_name)
     window.replot()
   
   def autoreload_dataset(self, action, window):
@@ -102,7 +107,7 @@ class CircleGUI:
       while self.autoreload_active:
         last=time()
         self.reload_active_measurement(action, window)
-        while (time()-last)<1.:
+        while gtk.events_pending():
           gtk.main_iteration(False)
         sleep(0.1)
 
