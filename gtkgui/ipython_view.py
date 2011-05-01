@@ -27,7 +27,7 @@ try:
 except Exception,e:
         raise RuntimeError, "Error importing IPython (%s)" % str(e)
 
-__version__ = "0.7.5.1"
+__version__ = "0.7.5.2"
 
 ansi_colors =  {'0;30': 'Black',
                 '0;31': 'Red',
@@ -363,3 +363,123 @@ class MenuWrapper(object):
   
   # connect __dict__ to the __get_dict__ function
   __dict__=property(__get_dict__)
+  
+  def __getattribute__(self, name):
+    # if used before first accessing the __dict__
+    if name.startswith('_'):
+      return object.__getattribute__(self, name)
+    else:
+      return self.__dict__[name]
+  
+
+class FitWrapper(object):
+  '''
+    Class to provide easy fit from the IPython console.
+  '''
+  __fit_root__=None
+  __session_root__=None
+  __window_root__=None
+  
+  def __init__(self, main_window, active_session):
+    '''
+      Constructor just connecting the base menu.
+    '''
+    from fit_data import FitSession
+    self.__fit_root__=FitSession
+    self.__window_root__=main_window
+    self.__session_root__=active_session
+  
+  def __get_dict__(self):
+    '''
+      Interactively creates the objects __dict__ dictionary to contain only the
+      fit function names. Calling a function creates a fit and fits it.
+    '''
+    # remove seperators
+    dataset=self.__session_root__.active_file_data[self.__window_root__.index_mess]
+    if dataset.zdata<0:
+      items=sorted(self.__fit_root__.available_functions_2d.items())
+    else:
+      items=sorted(self.__fit_root__.available_functions_3d.items())
+    dict=FitSubWrapper(self.__fit_root__, 
+                               self.__window_root__, 
+                               self.__session_root__, 
+                               items).__dict__
+    for key, value in dict.items():
+      setattr(self, key, value)
+    return dict
+  
+  # connect __dict__ to the __get_dict__ function
+  __dict__=property(__get_dict__)
+  
+  def __getattribute__(self, name):
+    if name.startswith('_'):
+      return object.__getattribute__(self, name)
+    else:
+      return self.__dict__[name]
+
+class FitSubWrapper(object):
+  '''
+    Class to provide easy fit from the IPython console.
+  '''
+  __fit_root__=None
+  __session_root__=None
+  __window_root__=None
+  __items_root__=None
+  
+  def __init__(self, fit_session, main_window, active_session, items):
+    '''
+      Constructor just connecting the base menu.
+    '''
+    self.__fit_root__=fit_session
+    self.__window_root__=main_window
+    self.__session_root__=active_session
+    self.__items_root__=items
+  
+  def __get_dict__(self):
+    '''
+      Interactively creates the objects __dict__ dictionary to contain only the
+      fit function names. Calling a function creates a fit and fits it.
+    '''
+    dict={
+          }
+    for name, fit_class in self.__items_root__:
+      name=name.replace('_', '').replace('.', '').replace('/', '').replace(' ', '_').replace('-', '_')
+      dict[name]=FitCaller(self, fit_class)
+    for key, value in dict.items():
+      setattr(self, key, value)
+    return dict
+  
+  # connect __dict__ to the __get_dict__ function
+  __dict__=property(__get_dict__)
+
+  def __getattribute__(self, name):
+    if name.startswith('_'):
+      return object.__getattribute__(self, name)
+    else:
+      return self.__dict__[name]
+
+
+class FitCaller(object):
+  '''
+    A class to create a specific fit object for the current dataset.
+    
+    FitCallser.parameters is a list of (name,value) tuples for the default parameters.
+  '''
+  
+  def __init__(self, parent, fit_class):
+    self.__parent__=parent
+    self.__fit_class__=fit_class
+    self.parameters=zip(fit_class.parameter_names, fit_class.parameters)
+
+  def __call__(self, params=None, dataset=None):
+    if dataset is None:
+      dataset=self.__parent__.__session_root__.active_file_data[self.__parent__.__window_root__.index_mess]
+    if dataset.fit_object is None:
+      dataset.fit_object=self.__parent__.__fit_root__(dataset)
+    if params is None:
+      params=self.__fit_class__.parameters
+    fit=self.__fit_class__(params)
+    dataset.fit_object.functions.append([fit, True, True, False, False])
+    dataset.fit_object.fit()
+    dataset.fit_object.simulate()
+    return fit.parameters

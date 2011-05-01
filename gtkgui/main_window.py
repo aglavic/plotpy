@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.5.1"
+__version__ = "0.7.5.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -3228,7 +3228,7 @@ set multiplot layout %i,1
       In debug mode this opens a window with an IPython console,
       which has direct access to all important objects.
     '''
-    from ipython_view import IPythonView, MenuWrapper
+    from ipython_view import IPythonView, MenuWrapper, FitWrapper
     import measurement_data_structure
     import pango
     import sys
@@ -3279,6 +3279,9 @@ set multiplot layout %i,1
       mapall  \tApply a function to all datasets from all files
       newfit  \tAdd a function to the fit dialog functions, should be defined as
               \tither f(p,x) of f(p,x,y) for 2d or 3d datasets respectively.
+      makefit \tClass which holds all fittable functions as properties. To fit
+              \te.g. a linear regression to the current dataset use:
+              \tmakefit.Linear_Regression([0.5, 2]) (-> parameters after fit)
       apihelp \tOpen the api reference manual
     Objects:
       session \tThe active session containing the data objects and settings
@@ -3293,9 +3296,7 @@ set multiplot layout %i,1
       sp \tScipy
       mds \tMeasurement_data_strunctur module with PhysicalProperty, MeasurementData
           \tand other data treatment Classes.
-
-    Remark: This functionality is mainly for developers. If you are a user experienced
-            in python it is recommanded to use the get... and new... functions.\n\n"""
+    """
     if show_greetings:
       ipview = IPythonView(greeting)
     else:
@@ -3406,6 +3407,7 @@ set multiplot layout %i,1
                        'action_history': self.file_actions.history, 
                        'menus': MenuWrapper(self.menu_bar), 
                        'newfit': register_function, 
+                       'makefit': FitWrapper(self, self.active_session), 
                        })
     # add common mathematic functions to the namespace
     math_functions=['exp','log', 'log10', 
