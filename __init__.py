@@ -64,8 +64,8 @@ gui_main=None
 if not "--nolimit" in sys.argv:
   try:
     import resource
-    # Maximum memeroy usage is MiB, otherwise the program could cause
-    # the system to hang do to excessive swap memory access
+    # Maximum memeroy usage is GiB, otherwise the program could cause
+    # the system to hang dew to excessive swap memory access
     resource.setrlimit(resource.RLIMIT_AS, (2*1024**3,2*1024**3))
   except ImportError:
     pass
@@ -87,7 +87,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.5"
+__version__ = "0.7.5.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -193,6 +193,10 @@ def initialize_gui_toolkit():
       print "Setting GUI toolkit to %s." % toolkit
   if config.gui.toolkit=='wx':
     sys.argv.append('--debug')
+  if sys.platform.startswith('win') and '--debug' not in sys.argv:
+    # For windows ignore any warnigs (mostly from gtk)
+    import warnings
+    warnings.simplefilter("ignore")
   global gui_main, status_dialog
   gui_main=__import__( config.gui.toolkit+'gui.main_window' , fromlist=["main_window"])
   if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:

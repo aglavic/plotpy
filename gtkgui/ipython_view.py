@@ -27,7 +27,7 @@ try:
 except Exception,e:
         raise RuntimeError, "Error importing IPython (%s)" % str(e)
 
-__version__ = "0.7.5"
+__version__ = "0.7.5.1"
 
 ansi_colors =  {'0;30': 'Black',
                 '0;31': 'Red',
@@ -348,7 +348,7 @@ class MenuWrapper(object):
     menu_items=filter(lambda item: type(item) in [gtk.ImageMenuItem, gtk.MenuItem], menu_items)
     dict={}
     for item in menu_items:
-      name=item.get_label().replace('_', '').replace('.', '').replace('/', '').replace(' ', '_')
+      name=item.get_label().replace('_', '').replace('.', '').replace('/', '').replace(' ', '_').replace('-', '_')
       if name=='Empty':
         continue
       submenu=item.get_submenu()
