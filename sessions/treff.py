@@ -614,11 +614,11 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i\n' % (num_files, num_files))
       sys.stdout.flush()
       print 'Compiled'
-    process = subprocess.Popen([exe + ' ' + file_ent + ' ' + str(self.max_iter)], 
+    process = subprocess.Popen([exe, file_ent, str(self.max_iter)], 
                         shell=config.gnuplot_preferences.EMMULATE_SHELL, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
-                        cwd=self.TEMP_DIR
+                        cwd=self.TEMP_DIR, 
                         )
     return process
 

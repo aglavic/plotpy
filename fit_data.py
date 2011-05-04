@@ -85,6 +85,8 @@ class FitFunction(FitFunctionGUI):
         function_parameters.append(params[self.refine_parameters.index(i)])
       else:
         function_parameters.append(self.parameters[i])
+    # in some circumstances a single parameter can lead to one entry arrays as paramter, so we fix this
+    function_parameters=map(numpy.float64, function_parameters)
     if yerror==None: # is error list given?
       err=function(function_parameters, x)-y
     else:

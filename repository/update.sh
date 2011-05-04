@@ -7,14 +7,14 @@ python2.6 setup.py bdist
 cd archiv
 FILE=`ls -t *.deb| head -1`
 FILE_ALL=`echo $FILE|sed 's/.deb//'`_all.deb
-cp $FILE ../repository/binary/dist/maverick/$FILE_ALL
+cp $FILE ../repository/binary/dists/maverick/$FILE_ALL
 # create Python 2.7 package:
 cd ..
 python setup.py bdist
 cd archiv
 FILE=`ls -t *.deb| head -1`
 FILE_ALL=`echo $FILE|sed 's/.deb//'`_all.deb
-cp $FILE ../repository/binary/dist/natty/$FILE_ALL
+cp $FILE ../repository/binary/dists/natty/$FILE_ALL
 
 cd ../repository
 # Repo update

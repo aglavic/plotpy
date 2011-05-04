@@ -205,7 +205,6 @@ if ('bdist' in sys.argv):
   os.chdir('archiv')
   os.rename(__name__+'-'+__version__+'-1.noarch.rpm', __name__+'-'+__version__+'.rpm')
   os.remove(__name__+'-'+__version__+'-1.src.rpm')
-  os.rename(__name__+'-'+__version__+'.linux-x86_64.exe', __name__+'-'+__version__+'.exe')
   print "Creating debian folder..."
   subprocess.Popen(['fakeroot', 'alien', '-k', '-g', __name__+'-'+__version__+'.rpm'], shell=False, 
                    stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
@@ -305,6 +304,7 @@ if "py2exe" in sys.argv and not py2exe_test:
                     (gtk_folder+'\\share\\*.none', 'share'), 
                     (gtk_folder+'\\share\\locale', 'share\\locale'), 
                     (gtk_folder+'\\share\\themes', 'share\\themes'), 
+                    (gtk_folder+'\\share\\icons', 'share\\icons'), 
                     (gtk_folder+'\\lib', 'lib'), 
                     ('c:\\gnuplot', 'gnuplot'), 
                     ('config', 'config'), 
