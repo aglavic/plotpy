@@ -7,7 +7,8 @@
 
 # import mathematic functions and least square fit which uses the Levenberg-Marquardt algorithm.
 import numpy
-from scipy.optimize import leastsq, fsolve
+from scipy.optimize import leastsq, fsolve, fmin_slsqp
+from mpfit import mpfit
 from scipy.special import wofz
 from math import pi, sqrt,  tanh, sin, asin, exp
 # import own modules
@@ -25,10 +26,12 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.5.2"
+__version__ = "0.7.5.9"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
+
+ALWAYS_MPFIT=True
 
 class FitFunction(FitFunctionGUI):
   '''
@@ -46,6 +49,7 @@ class FitFunction(FitFunctionGUI):
   x_to=None
   is_3d=False
   fit_logarithmic=False
+  constrains=None
   
   def __init__(self, initial_parameters=[]):
     '''
@@ -126,7 +130,7 @@ class FitFunction(FitFunctionGUI):
       err=numpy.log10(function(function_parameters, x))-numpy.log10(y)
     return err
 
-  def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
+  def refine(self,  dataset_x,  dataset_y, dataset_yerror=None, progress_bar_update=None):
     '''
       Do the least square refinement to the given dataset. If the fit converges
       the new parameters are stored.
@@ -175,6 +179,8 @@ class FitFunction(FitFunctionGUI):
       fit_args=(y, x)
     else:
       fit_args=(y, x, dy)
+    if self.constrains is not None or ALWAYS_MPFIT:
+      return self.refine_constrained(residuals, parameters, x, y, dy, progress_bar_update)
     new_params, cov_x, infodict, mesg, ier = leastsq(residuals, parameters, args=fit_args, full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     cov=cov_x
@@ -208,6 +214,83 @@ class FitFunction(FitFunctionGUI):
           cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
         else:
           cov_out[i].append(0.)
+    return mesg, cov_out
+  
+  def refine_constrained(self, residuals, parameters, x, y, dy, progress_bar_update=None):
+    '''
+      Refine the function using a constrained fit with the 
+      Sequential Least SQuares Programming algorithm.
+      
+      The constrains can be boundaries, equalitiy and inequality fuctions.
+    '''
+    constrains=self.constrains
+    def function(p, fjac=None, x=None, y=None, dy=None):
+      return [0, residuals(p, y, x, dy)]
+    function_keywords={'x':x, 'y': y, 'dy': dy}
+    # define constrains
+    if constrains is None:
+      parinfo=None
+    else:
+      parinfo = []
+      for i in range(len(parameters)):
+        parinfo.append({'limited':[0,0], 'limits':[0.,0.]})
+        if self.refine_parameters[i] in constrains:
+          constrains_i=constrains[self.refine_parameters[i]]
+          parinfo_i=parinfo[i]
+          if 'bounds' in constrains_i:
+            for j in [0, 1]:
+              if constrains_i['bounds'][j] is not None:
+                parinfo_i['limited'][j]=1
+                parinfo_i['limits'][j]=constrains_i['bounds'][j]
+                if j==0 and parameters[i]<constrains_i['bounds'][j] or j==1 and parameters[i]>constrains_i['bounds'][j]:
+                  parameters[i]=constrains_i['bounds'][j]
+          if 'tied' in constrains_i:
+            expression=constrains_i['tied']
+            for j, pj in enumerate(self.refine_parameters):
+              name=self.parameter_names[pj]
+              expression=expression.replace('[%s]' % name, 'p[%i]' % j)
+            test=expression.replace('p[', '').replace(']', '').replace(' ', '').replace('.', '')\
+                .replace('*', '').replace('-', '').replace('/', '').replace('+', '')
+            if not test.isdigit() and test!='':
+              raise ValueError, 'Wrong syntax in constrains.'
+            parinfo_i['tied']=expression
+    if progress_bar_update is not None:
+      def iterfunct(myfunct, p, iter, fnorm, functkw=None,
+                  parinfo=None, quiet=0, dof=None):
+        # perform custom iteration update   
+        progress_bar_update(step_add=float(iter)/200., info='Iteration %i    Chi²=%4f' % (iter, fnorm))
+    else:
+      iterfunct=None
+    # call the fit routine
+    result=mpfit(function, xall=parameters, functkw=function_keywords, 
+                 parinfo=parinfo, 
+                 maxiter=200, iterfunct=iterfunct, 
+                 fastnorm=1, # faster computation of Chi², can be less stable
+                 quiet=1
+                 )
+    if progress_bar_update is not None:
+      progress_bar_update(step_add=1.)
+    if result.status>0:
+      # set the new parameters
+      new_params=result.params
+      new_function_parameters=[]
+      for i in range(len(self.parameters)):
+        if i in self.refine_parameters:
+          new_function_parameters.append(new_params[self.refine_parameters.index(i)])
+        else:
+          new_function_parameters.append(self.parameters[i])      
+      self.set_parameters(new_function_parameters)
+    # covariance matrix for all parameters
+    cov=result.covar
+    cov_out=[]
+    for i in range(len(self.parameters)):
+      cov_out.append([])
+      for j in range(len(self.parameters)):
+        if (cov is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
+          cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
+        else:
+          cov_out[i].append(0.)
+    mesg=result.errmsg
     return mesg, cov_out
 
   def set_parameters(self, new_params):
@@ -343,6 +426,7 @@ class FitFunction3D(FitFunctionGUI):
   y_to=None
   is_3d=True
   fit_logarithmic=False
+  constrains=None
   
   def __init__(self, initial_parameters):
     '''
@@ -423,7 +507,7 @@ class FitFunction3D(FitFunctionGUI):
       err=numpy.log10(function(function_parameters, x, y))-numpy.log10(z)
     return err
 
-  def refine(self,  dataset_x,  dataset_y, dataset_z, dataset_zerror=None):
+  def refine(self,  dataset_x,  dataset_y, dataset_z, dataset_zerror=None, progress_bar_update=None):
     '''
       Do the least square refinement to the given dataset. If the fit converges
       the new parameters are stored.
@@ -668,7 +752,7 @@ class FitSinus(FitFunction):
   fit_function=lambda self, p, x: p[0] * numpy.sin((numpy.array(x) * p[1] - p[2])*numpy.pi/180.) + p[3]
   fit_function_text='[a]·sin([ω0|3]·x-[φ0|2])+[c]'
 
-  def refine(self, dataset_x, dataset_y, dataset_yerror=None):
+  def refine(self, dataset_x, dataset_y, dataset_yerror=None, progress_bar_update=None):
     '''
       Refine the function for given x and y data and set the φ0 value
       to be between -180° and 180°.
@@ -1479,7 +1563,7 @@ class FitFerromagnetic(FitFunction):
     self.iteration+=1
     return err
   
-  def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
+  def refine(self,  dataset_x,  dataset_y, dataset_yerror=None, progress_bar_update=None):
     self.iteration=1
     return FitFunction.refine(self,  dataset_x,  dataset_y, dataset_yerror=None)
 
@@ -1960,6 +2044,7 @@ class FitSession(FitSessionGUI):
                        FitVoigt3D.name: FitVoigt3D, 
                        FitLorentzian3D.name: FitLorentzian3D, 
                           }
+  progress_bar=None
   
   def __init__(self,  dataset):
     '''
@@ -2048,6 +2133,7 @@ class FitSession(FitSessionGUI):
       
       @return The covariance matrices of the fits or [[None]]
     '''
+    from time import sleep
     if (self.data.yerror>=0) and (self.data.yerror!=self.data.ydata)\
         and (self.data.yerror!=self.data.xdata):
       data=self.data.list_err()
@@ -2060,12 +2146,16 @@ class FitSession(FitSessionGUI):
       data_y=[d[1] for d in data]
       data_yerror=None
     covariance_matices=[]
-    for function in self.functions:
+    for i, function in enumerate(self.functions):
+      pgu=None
+      if self.progress_bar is not None:
+        self.update_progress(item=[i+1, len(self.functions)])
+        pgu=self.update_progress
       if function[1]:
         if not function[3]:
-          mesg, cov_out=function[0].refine(data_x, data_y, data_yerror)
+          mesg, cov_out=function[0].refine(data_x, data_y, data_yerror, progress_bar_update=pgu)
         else:
-          mesg, cov_out=function[0].refine(data_x, data_y, None)
+          mesg, cov_out=function[0].refine(data_x, data_y, None, progress_bar_update=pgu)
         covariance_matices.append(cov_out)
       else:
         covariance_matices.append([[None]])
@@ -2267,7 +2357,10 @@ class FitSession(FitSessionGUI):
       if function[2]:
         data_xy=self.data.list()
         data_x=[d[0] for d in data_xy]
-        fit_x, fit_y=function[0].simulate(data_x, inside_fitrange=getattr(self, 'restrict_to_region', False))
+        # only interpolate if the number of points isn't too large
+        use_interpolate=min(5, 5000/len(data_x))
+        fit_x, fit_y=function[0].simulate(data_x, inside_fitrange=getattr(self, 'restrict_to_region', False), 
+                                          interpolate=use_interpolate)
         for i in range(len(fit_x)):
           result.append((fit_x[i], fit_y[i]))
         function_text=function[0].fit_function_text

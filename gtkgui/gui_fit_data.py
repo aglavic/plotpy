@@ -8,7 +8,7 @@
 # for dialog window import gtk
 import gtk
 import numpy
-
+from dialogs import SimpleEntryDialog
 #----------------------- importing modules --------------------------
 
 
@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.5.2"
+__version__ = "0.7.5.9"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -131,8 +131,11 @@ class FitSessionGUI:
                   # X direction #          # Y direction
                   3, 4,                      i*3+2, i*3+3,
                   gtk.EXPAND,     gtk.EXPAND,
-                  0,                         0);
+                  0,                         0)
       #------- create a row for every function in the list -------
+    # Add progressbar to the table
+    self.progress_bar=gtk.ProgressBar()
+    self.progress_bar.set_text('Status Information (INFO: <control>+click on parameter for advanced options>)')
     # Options for new functions
     new_function=gtk.combo_box_new_text()
     add_button=gtk.Button(label='Add Function')
@@ -155,7 +158,7 @@ class FitSessionGUI:
     toggle_region=gtk.CheckButton(label='region')
     toggle_region.set_active(self.restrict_to_region)
     toggle_region.connect('toggled', toggle_show_region, self)
-    return align, [toggle_region, toggle_covariance, new_function, add_button, sum_button, fit_button]
+    return align, [toggle_region, toggle_covariance, new_function, add_button, sum_button, fit_button], self.progress_bar
   
   def function_line(self, function, dialog, window):
     '''
@@ -179,9 +182,22 @@ class FitSessionGUI:
       entries.append(gtk.Entry())
       entries[i].set_width_chars(8)
       entries[i].set_text("%.6g" % parameter)
+      entries[i].connect('button_press_event', self.advanced_parameter_options, i, function)
       table.attach(toggle, i*3%12, (i*3%12)+1, i*3//12, i*3//12+1, gtk.EXPAND, gtk.EXPAND, 0, 0)
       table.attach(text, (i*3%12)+1, (i*3%12)+2, i*3//12, i*3//12+1, gtk.EXPAND, gtk.EXPAND, 0, 0)
       table.attach(entries[i], (i*3%12)+2, (i*3%12)+3, i*3//12, i*3//12+1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+    # Color entries if they are constrained
+    if function.constrains is not None:
+      for i, entry in enumerate(entries):
+        if i in function.constrains:
+          settings=function.constrains[i]
+          if settings['bounds'][0] is None and settings['bounds'][1] is None:
+            if settings['tied'].strip() != '':
+              entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#aaaaaa"))
+            else:
+              entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#ffffff"))
+          else:
+            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#ffaaaa"))        
     # Button to delete the function
     del_button=gtk.Button(label='DEL')
     table.attach(del_button, 12, 13, 0, 1, gtk.EXPAND, gtk.EXPAND, 0, 0)
@@ -222,6 +238,49 @@ class FitSessionGUI:
       table.attach(entries[len(function.parameters)+3], 14,15, 1, 2, 
                                gtk.EXPAND, gtk.EXPAND, 0, 0)
     return table, entries
+
+  def advanced_parameter_options(self, entry, event, i, function):
+    '''
+      Open advanced options dialog on double klick on Entries.
+      Allows for constrained parameters.
+    '''
+    if event.button == 1 and (event.state & gtk.gdk.CONTROL_MASK):
+      def float_of_none(input):
+        try:
+          output=float(input)
+        except ValueError:
+          output=None
+        return output
+      if function.constrains is None or i not in function.constrains:
+        entries=[
+               ('Upper Bound', None, float_of_none), 
+               ('Lower Bound', None, float_of_none), 
+               ('Constrain', '', str)
+               ]
+      else:
+        entries=[
+               ('Upper Bound', function.constrains[i]['bounds'][0], float_of_none), 
+               ('Lower Bound', function.constrains[i]['bounds'][1], float_of_none), 
+               ('Constrain', function.constrains[i]['tied'], str)
+               ]   
+      advanced_dialog=SimpleEntryDialog('Advanced options for parameter [%s]' % function.parameter_names[i], 
+                                        entries)
+      values, result=advanced_dialog.run()
+      if result==1:
+        settings={'bounds': [values['Upper Bound'], values['Lower Bound']], 
+                                    'tied': values['Constrain']}
+        if function.constrains is None:
+          function.constrains={i: settings}
+        else:
+          function.constrains[i]=settings
+        if settings['bounds'][0] is None and settings['bounds'][1] is None:
+          if settings['tied'].strip() != '':
+            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#aaaaaa"))
+          else:
+            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#ffffff"))
+        else:
+          entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#ffaaaa"))
+      advanced_dialog.destroy()
 
   def add_function_dialog(self, action, name, dialog, window):
     '''
@@ -333,6 +392,21 @@ class FitSessionGUI:
       info_dialog.destroy()
     # recreate the fit dialog with the new parameters 
     window.fit_dialog(None, size, position)
+
+  def update_progress(self, item=None, step_add=0., info=''):
+    '''
+      Set the fit Progress bar position and text.
+    '''
+    if item is None:
+      item=getattr(self, 'active_fit_item', [0, 1])
+    else:
+      self.active_fit_item=item
+    fraction=float(item[0]-1.+step_add)/(item[1])
+    text='Function % 3i/%i: %s' % (item[0], item[1], info)
+    self.progress_bar.set_fraction(fraction)
+    self.progress_bar.set_text(text)
+    while gtk.events_pending():
+      gtk.main_iteration(False)
 
   def combine_dialog(self, action, dialog, window):
     '''

@@ -47,7 +47,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 __license__ = "None"
-__version__ = "0.7.5.2"
+__version__ = "0.7.5.9"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -576,8 +576,8 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     if force_compile or (not os.path.exists(exe)) or \
       any(map(lambda name: (os.stat(name)[8]-os.stat(exe)[8]) > 0, subcode_files)):
       param_code=open(os.path.join(code_path, config.treff.PROGRAM_PARAMETER_FILE), 'r').read()
-      param_code=param_code.replace("parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=5000,np_conv=500,pdq=0.02d0)", 
-                              "parameter(maxlay=400,map=7*maxlay+12,ndatap=1000,max_hr=%i,np_conv=500,pdq=0.02d0)" % \
+      param_code=param_code.replace("parameter(maxlay=400,map=7*maxlay+12,ndatap=4000,max_hr=5000,np_conv=500,pdq=0.02d0)", 
+                              "parameter(maxlay=400,map=7*maxlay+12,ndatap=4000,max_hr=%i,np_conv=500,pdq=0.02d0)" % \
                               self.max_hr
                               )
       open(param_code_file, 'w').write(param_code)

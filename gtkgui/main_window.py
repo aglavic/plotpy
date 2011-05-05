@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.5.2"
+__version__ = "0.7.5.9"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -2574,12 +2574,13 @@ set multiplot layout %i,1
     # POLICY_AUTOMATIC will automatically decide whether you need
     # scrollbars.
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    align, buttons=fit_session.get_dialog(self, fit_dialog)
+    align, buttons, progress_bar=fit_session.get_dialog(self, fit_dialog)
     sw.add_with_viewport(align) # add fit dialog
     fit_dialog.vbox.add(sw)
-    actions_table=gtk.Table(len(buttons),1,False)
+    actions_table=gtk.Table(len(buttons),2,False)
     for i, button in enumerate(buttons):
-      actions_table.attach(button, i, i+1, 0, 1, gtk.FILL, gtk.FILL, 0, 0);
+      actions_table.attach(button, i, i+1, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
+    actions_table.attach(progress_bar, 0, len(buttons), 1, 2, gtk.FILL|gtk.EXPAND, gtk.FILL, 0, 0)
     try:
       fit_dialog.get_action_area().pack_end(actions_table, expand=False, fill=True, padding=0)
     except AttributeError:
@@ -3295,8 +3296,7 @@ set multiplot layout %i,1
       np \tNumpy
       sp \tScipy
       mds \tMeasurement_data_strunctur module with PhysicalProperty, MeasurementData
-          \tand other data treatment Classes.
-    """
+          \tand other data treatment Classes.\n"""
     if show_greetings:
       ipview = IPythonView(greeting)
     else:
