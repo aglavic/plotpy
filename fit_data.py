@@ -128,9 +128,9 @@ class FitFunction(FitFunctionGUI):
     if yerror is not None:
       yerror=numpy.array(yerror[remove_negative], dtype=numpy.float64, copy=False)
       yerror=numpy.where((numpy.isinf(yerror))+(numpy.isnan(yerror))+(yerror<=0.), 1., yerror)
-      log_correction_factor=yerror.min()*10.
-      err=(numpy.log10(function(function_parameters, x)*log_correction_factor)-\
-                                numpy.log10(y*log_correction_factor))/numpy.log10(yerror*log_correction_factor)
+      # use error propagation for log(yi)
+      propagated_error=yerror/y
+      err=(numpy.log10(function(function_parameters, x))-numpy.log10(y))/propagated_error
     else:
       err=numpy.log10(function(function_parameters, x))-numpy.log10(y)
     return err
@@ -511,9 +511,9 @@ class FitFunction3D(FitFunctionGUI):
     if zerror is not None:
       zerror=zerror[remove_negative]
       zerror=numpy.where((numpy.isinf(zerror))+(numpy.isnan(zerror))+(zerror<=0.), 1., zerror)
-      log_correction_factor=zerror.min()*10.
-      err=(numpy.log10(function(function_parameters, x, y)*log_correction_factor)-\
-                                numpy.log10(z*log_correction_factor))/numpy.log10(zerror*log_correction_factor)
+      # use error propagation for log(yi)
+      propagated_error=zerror/z
+      err=(numpy.log10(function(function_parameters, x, y))-numpy.log10(z))/propagated_error
     else:
       err=numpy.log10(function(function_parameters, x, y))-numpy.log10(z)
     return err
