@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "None"
-__version__ = "0.7.5.9"
+__version__ = "0.7.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -2581,10 +2581,10 @@ set multiplot layout %i,1
     for i, button in enumerate(buttons):
       actions_table.attach(button, i, i+1, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
     actions_table.attach(progress_bar, 0, len(buttons), 1, 2, gtk.FILL|gtk.EXPAND, gtk.FILL, 0, 0)
-    try:
-      fit_dialog.get_action_area().pack_end(actions_table, expand=False, fill=True, padding=0)
-    except AttributeError:
-      fit_dialog.vbox.pack_end(actions_table, expand=False, fill=True, padding=0)
+    #try:
+    #  fit_dialog.get_action_area().pack_end(actions_table, expand=False, fill=True, padding=0)
+    #except AttributeError:
+    fit_dialog.vbox.pack_end(actions_table, expand=False, fill=True, padding=0)
     fit_dialog.set_default_size(*size)
     if position!=None:
       fit_dialog.move(*position)

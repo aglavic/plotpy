@@ -26,7 +26,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.5.9"
+__version__ = "0.7.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -45,6 +45,7 @@ class FitFunction(FitFunctionGUI):
   parameters_covariance=None
   fit_function=lambda self, p, x: 0.
   fit_function_text='f(x)'
+  last_fit_output=None
   x_from=None
   x_to=None
   is_3d=False
@@ -66,6 +67,8 @@ class FitFunction(FitFunctionGUI):
       raise ValueError, "Wrong number of parameters, got %i need %i" % (len(initial_parameters), len(self.parameters))
     # As default all parameters get fitted
     self.refine_parameters=range(len(self.parameters))
+    if self.constrains is not None:
+      self.constrains=dict(self.constrains)
 
   def residuals(self, params, y, x, yerror=None):
     '''
@@ -125,7 +128,9 @@ class FitFunction(FitFunctionGUI):
     if yerror is not None:
       yerror=numpy.array(yerror[remove_negative], dtype=numpy.float64, copy=False)
       yerror=numpy.where((numpy.isinf(yerror))+(numpy.isnan(yerror))+(yerror<=0.), 1., yerror)
-      err=(numpy.log10(function(function_parameters, x))-numpy.log10(y))/numpy.log10(yerror)
+      log_correction_factor=yerror.min()*10.
+      err=(numpy.log10(function(function_parameters, x)*log_correction_factor)-\
+                                numpy.log10(y*log_correction_factor))/numpy.log10(yerror*log_correction_factor)
     else:
       err=numpy.log10(function(function_parameters, x))-numpy.log10(y)
     return err
@@ -268,6 +273,7 @@ class FitFunction(FitFunctionGUI):
                  fastnorm=1, # faster computation of Chi², can be less stable
                  quiet=1
                  )
+    self.last_fit_output=result
     if progress_bar_update is not None:
       progress_bar_update(step_add=1.)
     if result.status>0:
@@ -420,6 +426,7 @@ class FitFunction3D(FitFunctionGUI):
   parameters_covariance=None
   fit_function=lambda self, p, x, y: 0.
   fit_function_text='f(x,y)'
+  last_fit_output=None
   x_from=None
   x_to=None
   y_from=None
@@ -442,6 +449,8 @@ class FitFunction3D(FitFunctionGUI):
       # Make sure a wrong number of parameters doesn't get silently ignored
       raise ValueError, "Wrong number of parameters, got %i need %i" % (len(initial_parameters), len(self.parameters))
     self.refine_parameters=range(len(self.parameters))
+    if self.constrains is not None:
+      self.constrains=dict(self.constrains)
 
 
   def residuals(self, params, z, y, x, zerror=None):
@@ -502,7 +511,9 @@ class FitFunction3D(FitFunctionGUI):
     if zerror is not None:
       zerror=zerror[remove_negative]
       zerror=numpy.where((numpy.isinf(zerror))+(numpy.isnan(zerror))+(zerror<=0.), 1., zerror)
-      err=(numpy.log10(function(function_parameters, x, y))-numpy.log10(z))/numpy.log10(zerror)
+      log_correction_factor=zerror.min()*10.
+      err=(numpy.log10(function(function_parameters, x, y)*log_correction_factor)-\
+                                numpy.log10(z*log_correction_factor))/numpy.log10(zerror*log_correction_factor)
     else:
       err=numpy.log10(function(function_parameters, x, y))-numpy.log10(z)
     return err
@@ -565,6 +576,8 @@ class FitFunction3D(FitFunctionGUI):
       residuals=self.residuals_log
     else:
       residuals=self.residuals
+    if self.constrains is not None or ALWAYS_MPFIT:
+      return self.refine_constrained(residuals, parameters, x, y, z, dz, progress_bar_update)
     new_params, cov_x, infodict, mesg, ier = leastsq(residuals, parameters, args=fit_args, full_output=1)
     # if the fit converged use the new parameters and store the old ones in the history variable.
     cov=cov_x
@@ -598,6 +611,84 @@ class FitFunction3D(FitFunctionGUI):
           cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
         else:
           cov_out[i].append(0.)
+    return mesg, cov_out
+
+  def refine_constrained(self, residuals, parameters, x, y, z, dz, progress_bar_update=None):
+    '''
+      Refine the function using a constrained fit with the 
+      Sequential Least SQuares Programming algorithm.
+      
+      The constrains can be boundaries, equalitiy and inequality fuctions.
+    '''
+    constrains=self.constrains
+    def function(p, fjac=None, x=None, y=None, z=None, dz=None):
+      return [0, residuals(p, z, y, x, dz)]
+    function_keywords={'x':x, 'y': y, 'z':z, 'dz': dz}
+    # define constrains
+    if constrains is None:
+      parinfo=None
+    else:
+      parinfo = []
+      for i in range(len(parameters)):
+        parinfo.append({'limited':[0,0], 'limits':[0.,0.]})
+        if self.refine_parameters[i] in constrains:
+          constrains_i=constrains[self.refine_parameters[i]]
+          parinfo_i=parinfo[i]
+          if 'bounds' in constrains_i:
+            for j in [0, 1]:
+              if constrains_i['bounds'][j] is not None:
+                parinfo_i['limited'][j]=1
+                parinfo_i['limits'][j]=constrains_i['bounds'][j]
+                if j==0 and parameters[i]<constrains_i['bounds'][j] or j==1 and parameters[i]>constrains_i['bounds'][j]:
+                  parameters[i]=constrains_i['bounds'][j]
+          if 'tied' in constrains_i:
+            expression=constrains_i['tied']
+            for j, pj in enumerate(self.refine_parameters):
+              name=self.parameter_names[pj]
+              expression=expression.replace('[%s]' % name, 'p[%i]' % j)
+            test=expression.replace('p[', '').replace(']', '').replace(' ', '').replace('.', '')\
+                .replace('*', '').replace('-', '').replace('/', '').replace('+', '')
+            if not test.isdigit() and test!='':
+              raise ValueError, 'Wrong syntax in constrains.'
+            parinfo_i['tied']=expression
+    if progress_bar_update is not None:
+      def iterfunct(myfunct, p, iter, fnorm, functkw=None,
+                  parinfo=None, quiet=0, dof=None):
+        # perform custom iteration update   
+        progress_bar_update(step_add=float(iter)/200., info='Iteration %i    Chi²=%4f' % (iter, fnorm))
+    else:
+      iterfunct=None
+    # call the fit routine
+    result=mpfit(function, xall=parameters, functkw=function_keywords, 
+                 parinfo=parinfo, 
+                 maxiter=200, iterfunct=iterfunct, 
+                 fastnorm=1, # faster computation of Chi², can be less stable
+                 quiet=1
+                 )
+    self.last_fit_output=result
+    if progress_bar_update is not None:
+      progress_bar_update(step_add=1.)
+    if result.status>0:
+      # set the new parameters
+      new_params=result.params
+      new_function_parameters=[]
+      for i in range(len(self.parameters)):
+        if i in self.refine_parameters:
+          new_function_parameters.append(new_params[self.refine_parameters.index(i)])
+        else:
+          new_function_parameters.append(self.parameters[i])      
+      self.set_parameters(new_function_parameters)
+    # covariance matrix for all parameters
+    cov=result.covar
+    cov_out=[]
+    for i in range(len(self.parameters)):
+      cov_out.append([])
+      for j in range(len(self.parameters)):
+        if (cov is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
+          cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
+        else:
+          cov_out[i].append(0.)
+    mesg=result.errmsg
     return mesg, cov_out
 
   def set_parameters(self, new_params):
@@ -1812,6 +1903,15 @@ class FitGaussian3D(FitFunction3D):
   parameters=[1., 0., 0., 0.1, 0.1, 0., 0.]
   parameter_names=['A', 'x_0', 'y_0', 'sigma_x', 'sigma_y', 'tilt', 'C']
   fit_function_text='Gaussian'
+  constrains={
+              4: {'bounds': [None,None], 'tied': '[sigma_x]'},
+              5: {'bounds': [-180., 180.], 'tied': ''},  
+              6: {'bounds': [0., None], 'tied': ''}
+              }
+  
+  def __init__(self, initial_parameters=[]):
+    FitFunction3D.__init__(self, initial_parameters)
+    self.refine_parameters=[0, 1, 2, 3, 4, 6]  
 
   def fit_function(self, p, x, y):
     A=p[0]
@@ -1819,8 +1919,9 @@ class FitGaussian3D(FitFunction3D):
     y0=p[2]
     sx=p[3]
     sy=p[4]
-    tb=numpy.sin(p[5])
-    ta=numpy.cos(p[5])
+    tilt=p[5]/180.*numpy.pi
+    tb=numpy.sin(tilt)
+    ta=numpy.cos(tilt)
     C=p[6]
     xdist=(numpy.array(x)-x0)
     ydist=(numpy.array(y)-y0)
@@ -2181,12 +2282,16 @@ class FitSession(FitSessionGUI):
       data_z=[d[2] for d in data]
       data_zerror=None
     covariance_matices=[]
-    for function in self.functions:
+    for i, function in enumerate(self.functions):
+      pgu=None
+      if self.progress_bar is not None:
+        self.update_progress(item=[i+1, len(self.functions)])
+        pgu=self.update_progress
       if function[1]:
         if not function[3]:
-          mesg, cov_out=function[0].refine(data_x, data_y, data_z, data_zerror)
+          mesg, cov_out=function[0].refine(data_x, data_y, data_z, data_zerror, progress_bar_update=pgu)
         else:
-          mesg, cov_out=function[0].refine(data_x, data_y, data_z, None)
+          mesg, cov_out=function[0].refine(data_x, data_y, data_z, None, progress_bar_update=pgu)
         covariance_matices.append(cov_out)
       else:
         covariance_matices.append([[None]])

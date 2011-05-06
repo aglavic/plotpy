@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "None"
-__version__ = "0.7.5.9"
+__version__ = "0.7.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -146,13 +146,13 @@ class FitSessionGUI:
     add_button.connect('clicked', self.add_function_dialog, new_function, dialog, window)
     sum_button.connect('clicked', self.combine_dialog, dialog, window)
     fit_button.connect('clicked', self.fit_from_dialog, entries, dialog, window)
-    align=gtk.Alignment(0.5, 0.5, 0, 0) # the table is centered in the dialog window
+    align=gtk.Alignment(0.5, 0., 0, 0) # the table is centered in the dialog window
     align.add(align_table)
     def toggle_show_covariance(action, self):
       self.show_covariance=not self.show_covariance
     def toggle_show_region(action, self):
       self.restrict_to_region=not self.restrict_to_region
-    toggle_covariance=gtk.CheckButton(label='show errors')
+    toggle_covariance=gtk.CheckButton(label='show summary')
     toggle_covariance.set_active(self.show_covariance)
     toggle_covariance.connect('toggled', toggle_show_covariance, self)
     toggle_region=gtk.CheckButton(label='region')
@@ -380,12 +380,20 @@ class FitSessionGUI:
     window.replot()
     if self.show_covariance:
       # Show the estimated errors of the fit parameters
-      text='Esitmated errors from covariance matrices:'
+      text='Fit Summary:'
       for i, function in enumerate(self.functions):
         if function[1]:
-          text+='\n\n%s:' % function[0].name
+          text+='\n\n%i - %s:' % (i, function[0].name)
+          if function[0].last_fit_output is not None:
+            result=function[0].last_fit_output
+            text+='\n%i iterations, %i function evaluations, exit status %i' % (result.niter, result.nfev, result.status)
+            if result.status<=0:
+              text+='\n%s' % result.errmsg
           for j, pj in enumerate(function[0].parameter_names):
-            text+='\n%s = %g +/- %g' % (pj, function[0].parameters[j], numpy.sqrt(covariance_matices[i][j][j]))
+            error=numpy.sqrt(covariance_matices[i][j][j])
+            text+='\n%s = %g' % (pj, function[0].parameters[j])
+            if error != 0:
+              text+=' ± %g' % error
       info_dialog=gtk.MessageDialog(parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
                                     type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, message_format=text)
       info_dialog.run()
