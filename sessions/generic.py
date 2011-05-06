@@ -251,10 +251,9 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         self.gnuplot_script=True
     try: # verify mathematic modules needed for fitting
       import numpy
-      import scipy
       self.ALLOW_FIT=True
     except ImportError:
-      print "Numpy and/or Scipy is not installed, fitting will not be possible."
+      print "Numpy is not installed, fitting will not be possible."
       self.ALLOW_FIT=False
 
   def read_arguments(self, arguments):

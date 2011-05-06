@@ -7,9 +7,7 @@
 
 # import mathematic functions and least square fit which uses the Levenberg-Marquardt algorithm.
 import numpy
-from scipy.optimize import leastsq, fsolve, fmin_slsqp
 from mpfit import mpfit
-from scipy.special import wofz
 from math import pi, sqrt,  tanh, sin, asin, exp
 # import own modules
 from measurement_data_structure import MeasurementData
@@ -184,44 +182,9 @@ class FitFunction(FitFunctionGUI):
       fit_args=(y, x)
     else:
       fit_args=(y, x, dy)
-    if self.constrains is not None or ALWAYS_MPFIT:
-      return self.refine_constrained(residuals, parameters, x, y, dy, progress_bar_update)
-    new_params, cov_x, infodict, mesg, ier = leastsq(residuals, parameters, args=fit_args, full_output=1)
-    # if the fit converged use the new parameters and store the old ones in the history variable.
-    cov=cov_x
-    if ier in [1, 2, 3, 4]:
-      if len(parameters)==1:
-        new_function_parameters=list(self.parameters)
-        new_function_parameters[self.refine_parameters[0]]=new_params
-      else:
-        new_function_parameters=[]
-        for i in range(len(self.parameters)):
-          if i in self.refine_parameters:
-            new_function_parameters.append(new_params[self.refine_parameters.index(i)])
-          else:
-            new_function_parameters.append(self.parameters[i])      
-      self.set_parameters(new_function_parameters)
-    # calculate the covariance matrix from cov_x, see scipy.optimize.leastsq help for details.
-      if (len(y) > len(parameters)) and cov_x is not None:
-        if dataset_yerror is not None:
-          s_sq = (numpy.array(self.residuals(new_function_parameters, y, x, dy))**2).sum()/\
-                                           (len(y)-len(self.refine_parameters))        
-          s_sq /= ((1./numpy.array(dy))**2).sum()
-        else:
-          s_sq = (numpy.array(self.residuals(new_function_parameters, y, x))**2).sum()/\
-                                           (len(y)-len(self.refine_parameters))        
-        cov = cov_x * s_sq
-    cov_out=[]
-    for i in range(len(self.parameters)):
-      cov_out.append([])
-      for j in range(len(self.parameters)):
-        if (cov is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
-          cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
-        else:
-          cov_out[i].append(0.)
-    return mesg, cov_out
+    return self.refine_mpfit(residuals, parameters, x, y, dy, progress_bar_update)
   
-  def refine_constrained(self, residuals, parameters, x, y, dy, progress_bar_update=None):
+  def refine_mpfit(self, residuals, parameters, x, y, dy, progress_bar_update=None):
     '''
       Refine the function using a constrained fit with the 
       Sequential Least SQuares Programming algorithm.
@@ -576,44 +539,9 @@ class FitFunction3D(FitFunctionGUI):
       residuals=self.residuals_log
     else:
       residuals=self.residuals
-    if self.constrains is not None or ALWAYS_MPFIT:
-      return self.refine_constrained(residuals, parameters, x, y, z, dz, progress_bar_update)
-    new_params, cov_x, infodict, mesg, ier = leastsq(residuals, parameters, args=fit_args, full_output=1)
-    # if the fit converged use the new parameters and store the old ones in the history variable.
-    cov=cov_x
-    if ier in [1, 2, 3, 4]:
-      if len(parameters)==1:
-        new_function_parameters=list(self.parameters)
-        new_function_parameters[self.refine_parameters[0]]=new_params
-      else:
-        new_function_parameters=[]
-        for i in range(len(self.parameters)):
-          if i in self.refine_parameters:
-            new_function_parameters.append(new_params[self.refine_parameters.index(i)])
-          else:
-            new_function_parameters.append(self.parameters[i])      
-      self.set_parameters(new_function_parameters)
-    # calculate the covariance matrix from cov_x, see scipy.optimize.leastsq help for details.
-      if (len(z) > len(parameters)) and cov_x is not None:
-        if dataset_zerror:
-          s_sq = (numpy.array(self.residuals(new_function_parameters, z, y, x, dz))**2).sum()/\
-                                           (len(z)-len(self.refine_parameters))
-          s_sq /= ((1./numpy.array(dz))**2).sum()
-        else:
-          s_sq = (numpy.array(self.residuals(new_function_parameters, z, y, x))**2).sum()/\
-                                           (len(z)-len(self.refine_parameters))        
-        cov = cov_x * s_sq
-    cov_out=[]
-    for i in range(len(self.parameters)):
-      cov_out.append([])
-      for j in range(len(self.parameters)):
-        if (cov is not None) and (i in self.refine_parameters) and (j in self.refine_parameters):
-          cov_out[i].append(cov[self.refine_parameters.index(i)][self.refine_parameters.index(j)])
-        else:
-          cov_out[i].append(0.)
-    return mesg, cov_out
+    return self.refine_mpfit(residuals, parameters, x, y, z, dz, progress_bar_update)
 
-  def refine_constrained(self, residuals, parameters, x, y, z, dz, progress_bar_update=None):
+  def refine_mpfit(self, residuals, parameters, x, y, z, dz, progress_bar_update=None):
     '''
       Refine the function using a constrained fit with the 
       Sequential Least SQuares Programming algorithm.
@@ -913,6 +841,15 @@ class FitVoigt(FitFunction):
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
 
+  def __init__(self, initial_parameters=[]):
+    '''
+      Initialize and import scipy function.
+    '''
+    FitFunction.__init__(self, initial_parameters)
+    global wofz
+    from scipy.special import wofz
+
+
   def fit_function(self, p, x):
     '''
       Return the Voigt profile of x.
@@ -946,6 +883,8 @@ class FitCuK(FitFunction):
     '''
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=[0, 1, 3, 4]
+    global wofz
+    from scipy.special import wofz
   
   def fit_function(self, p, x):
     '''
@@ -1640,6 +1579,8 @@ class FitFerromagnetic(FitFunction):
     self.parameters=[1.e16, 1., 2., 0.1, 1., 1e-5]
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=[0, 1, 2]
+    global fsolve
+    from scipy.optimize import fsolve
   
   def simulate(self, x, ignore=None):
     return FitFunction.simulate(self, x, interpolate=1)

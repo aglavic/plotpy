@@ -650,7 +650,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
 
 def gauss_kern(size, size_y=None):
   """ 
-    Function from scipy cookbook (www.scipy.org/Cookbook/SiognalSmooth)
+    Function from scipy cookbook (www.scipy.org/Cookbook/SignalSmooth)
     Returns a normalized 2D gauss kernel array for convolutions 
   """
   if size_y is None:

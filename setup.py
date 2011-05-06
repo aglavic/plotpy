@@ -170,9 +170,8 @@ if 'install' in sys.argv:
   # fitting dependencies, not crucial
   try:
     import numpy
-    import scipy
   except ImportError:
-    print "For fitting to work, numpy and scipy have to be installed."
+    print "For fitting to work, numpy has to be installed."
     dependencies_ok=False
   if not dependencies_ok:
     answer=raw_input('Do you still want to install? (y/n): ')

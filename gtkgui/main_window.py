@@ -3234,7 +3234,10 @@ set multiplot layout %i,1
     import pango
     import sys
     import numpy
-    import scipy
+    try:
+      import scipy
+    except ImportError:
+      scipy=None
     from copy import deepcopy
     from glob import glob
     from fit_data import register_function
