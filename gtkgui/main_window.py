@@ -4632,11 +4632,11 @@ set multiplot layout %i,1
         self.toggle_mouse_mode),
       ( "TogglePlotFit", gtk.STOCK_ZOOM_FIT,                    # name, stock id
         "Toggle between data,fit and combined plot", "<control><shift>T",                     # label, accelerator
-        None,                                    # tooltip
+        "Toggle between data,fit and combined plot",                                    # tooltip
         self.toggle_plotfit),
       ( "IteratePlotFit", gtk.STOCK_ZOOM_100,                    # name, stock id
         "Select between data and fits to plot", None,                     # label, accelerator
-        None,                                    # tooltip
+        "Select between data and fits to plot",                                    # tooltip
         self.toggle_plotfit),
     )+self.added_items;
     # Create the menubar and toolbar

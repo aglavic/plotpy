@@ -434,7 +434,7 @@ class FitSessionGUI:
     combine_dialog.vbox.add(function_1)
     combine_dialog.vbox.add(function_2)
     combine_dialog.add_button('Add: a + b',2)
-    #combine_dialog.add_button('Add: a(b)',3)
+    combine_dialog.add_button('Multiply: a * b',3)
     combine_dialog.add_button('Cancel',1)
     combine_dialog.show_all()
     result=combine_dialog.run()
@@ -442,8 +442,10 @@ class FitSessionGUI:
     if result in [2, 3]:
       if result==2:
         window.file_actions.activate_action('sum_up_functions', selected[0], selected[1])
-        size=dialog.get_size()
-        position=dialog.get_position()
-        dialog.destroy()
-        window.fit_dialog(None, size, position)
+      if result==3:
+        window.file_actions.activate_action('multiply_functions', selected[0], selected[1])
+      size=dialog.get_size()
+      position=dialog.get_position()
+      dialog.destroy()
+      window.fit_dialog(None, size, position)
     combine_dialog.destroy()

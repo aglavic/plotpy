@@ -29,7 +29,80 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
-ALWAYS_MPFIT=True
+class ConnectedDict(dict):
+  '''
+    Dictionary connecting two constrain dictionaries depending on the index.
+  '''
+  split_index=None
+  origin_dicts=None
+  
+  def __init__(self, dict1, dict2, split_index):
+    dict.__init__(self)
+    self.split_index=split_index
+    self.origin_dicts=(dict1, dict2)
+  
+  def __setitem__(self, index, value):
+    if index>=self.split_index:
+      if 'tied' in value:
+        if '1]' in value['tied']:
+          dict.__setitem__(self, index, value)
+          return
+        value['tied']=value['tied'].replace('2]', ']')
+      self.origin_dicts[1][index-self.split_index]=value
+    else:
+      if 'tied' in value:
+        if '2]' in value['tied']:
+          dict.__setitem__(self, index, value)
+          return
+        value['tied']=value['tied'].replace('1]', ']')
+      self.origin_dicts[0][index]=value
+
+  def __getitem__(self, index):
+    if index>=self.split_index:
+      if dict.__contains__(self, index):
+        return dict.__getitem__(self, index)
+      output=dict(self.origin_dicts[1][index-self.split_index])
+      if 'tied' in output:
+        output['tied']=output['tied'].replace(']', '2]')
+    else:
+      if dict.__contains__(self, index):
+        return dict.__getitem__(self, index)
+      output=dict(self.origin_dicts[0][index])
+      if 'tied' in output:
+        output['tied']=output['tied'].replace(']', '1]')
+    return output
+  
+  def items(self):
+    combine_dict=dict(self.origin_dicts[0].items())
+    for index, item in self.origin_dicts[1].items():
+      combine_dict[index+self.split_index]=item
+    for index, item in dict.items(self):
+      combine_dict[index]=item
+    return combine_dict.items()
+
+  def keys(self):
+    combine_dict=dict(self.origin_dicts[0].items())
+    for index, item in self.origin_dicts[1].items():
+      combine_dict[index+self.split_index]=item
+    for index, item in dict.items(self):
+      combine_dict[index]=item
+    return combine_dict.keys()
+
+  def values(self):
+    combine_dict=dict(self.origin_dicts[0].items())
+    for index, item in self.origin_dicts[1].items():
+      combine_dict[index+self.split_index]=item
+    for index, item in dict.items(self):
+      combine_dict[index]=item
+    return combine_dict.values()
+  
+  def __contains__(self, index):
+    if dict.__contains__(self, index):
+      return True
+    if index>=self.split_index:
+      return (index-self.split_index) in self.origin_dicts[1]
+    else:
+      return index in self.origin_dicts[0]      
 
 class FitFunction(FitFunctionGUI):
   '''
@@ -322,6 +395,18 @@ class FitFunction(FitFunctionGUI):
       Calling the object returns the y values corresponding to the given x values.
     '''
     return self.simulate(x, interpolate=1)[1] # return y values
+  
+  def __add__(self, other):
+    '''
+      Define the addition of two FitFunction objects.
+    '''
+    return FitSum(self, other)
+
+  def __mul__(self, other):
+    '''
+      Define the multiplication of two FitFunction objects.
+    '''
+    return FitMultiply(self, other)
 
 class FitSum(FitFunction):
   '''
@@ -350,12 +435,81 @@ class FitSum(FitFunction):
     self.fit_function_text+=' + ' + function_text
     self.func_len = (len(func1.parameters), len(func2.parameters))
     self.origin=(func1, func2)
+    if func1.constrains is None:
+      func1.constrains={}
+    if func2.constrains is None:
+      func2.constrains={}
+    self.constrains=ConnectedDict(func1.constrains, func2.constrains, len(func1.parameters))
 
   def fit_function(self, p, x):
+    '''
+      Combine the functions by adding their values together.
+    '''
     func1=self.origin[0].fit_function
     func2=self.origin[1].fit_function
     len1, len2=self.func_len
     return func1(p[0:len1], x) + func2(p[len1:], x)
+  
+  def set_parameters(self, new_params):
+    '''
+      Set new parameters and pass them to origin functions.
+    '''
+    FitFunction.set_parameters(self, new_params)
+    index=len(self.origin[0].parameters)
+    self.origin[0].set_parameters(self.parameters[:index])
+    self.origin[1].set_parameters(self.parameters[index:])
+
+  def toggle_refine_parameter(self, action, index):
+    '''
+      Change the refined parameters in the origin functions.
+    '''
+    FitFunction.toggle_refine_parameter(self, action, index)
+    if index < len(self.origin[0].parameters):
+      self.origin[0].toggle_refine_parameter(action, index)
+    else:
+      self.origin[1].toggle_refine_parameter(action, index-len(self.origin[0].parameters))
+  
+class FitMultiply(FitFunction):
+  '''
+    Fit the Multiplication of two FitFunctions.
+  '''
+  
+  func_len=(None, None)
+  
+  def __init__(self, func1,  func2):
+    '''
+      Construct a sum of two functions to use for fit.
+      
+      @param funci the functions to add together
+    '''
+    self.name=func1.name + ' * ' + func2.name
+    self.parameters=func1.parameters + func2.parameters
+    self.parameter_names=[name + '1' for name in func1.parameter_names] + [name + '2' for name in func2.parameter_names]
+    self.refine_parameters=func1.refine_parameters + [index + len(func1.parameters) for index in func2.refine_parameters]
+    function_text=func1.fit_function_text
+    for i in range(len(func1.parameters)):
+      function_text=function_text.replace(func1.parameter_names[i], func1.parameter_names[i]+'1')
+    self.fit_function_text=function_text
+    function_text=func2.fit_function_text
+    for i in range(len(func2.parameters)):
+      function_text=function_text.replace(func2.parameter_names[i], func2.parameter_names[i]+'2')
+    self.fit_function_text+=' * ' + function_text
+    self.func_len = (len(func1.parameters), len(func2.parameters))
+    self.origin=(func1, func2)
+    if func1.constrains is None:
+      func1.constrains={}
+    if func2.constrains is None:
+      func2.constrains={}
+    self.constrains=ConnectedDict(func1.constrains, func2.constrains, len(func1.parameters))
+
+  def fit_function(self, p, x):
+    '''
+      Combine the functions by adding their values together.
+    '''
+    func1=self.origin[0].fit_function
+    func2=self.origin[1].fit_function
+    len1, len2=self.func_len
+    return func1(p[0:len1], x) * func2(p[len1:], x)
   
   def set_parameters(self, new_params):
     '''
@@ -663,6 +817,140 @@ class FitFunction3D(FitFunctionGUI):
       Calling the object returns the z values corresponding to the given x and y values.
     '''
     return self.simulate(y, x)[2] # return z values
+  
+  def __add__(self, other):
+    '''
+      Define the addition of two FitFunction objects.
+    '''
+    return FitSum3D(self, other)
+
+  def __mul__(self, other):
+    '''
+      Define the multiplication of two FitFunction objects.
+    '''
+    return FitMultiply3D(self, other)
+
+class FitSum3D(FitFunction3D):
+  '''
+    Fit the Sum of two FitFunctions3D.
+  '''
+  
+  func_len=(None, None)
+  
+  def __init__(self, func1,  func2):
+    '''
+      Construct a sum of two functions to use for fit.
+      
+      @param funci the functions to add together
+    '''
+    self.name=func1.name + ' + ' + func2.name
+    self.parameters=func1.parameters + func2.parameters
+    self.parameter_names=[name + '1' for name in func1.parameter_names] + [name + '2' for name in func2.parameter_names]
+    self.refine_parameters=func1.refine_parameters + [index + len(func1.parameters) for index in func2.refine_parameters]
+    function_text=func1.fit_function_text
+    for i in range(len(func1.parameters)):
+      function_text=function_text.replace(func1.parameter_names[i], func1.parameter_names[i]+'1')
+    self.fit_function_text=function_text
+    function_text=func2.fit_function_text
+    for i in range(len(func2.parameters)):
+      function_text=function_text.replace(func2.parameter_names[i], func2.parameter_names[i]+'2')
+    self.fit_function_text+=' + ' + function_text
+    self.func_len = (len(func1.parameters), len(func2.parameters))
+    self.origin=(func1, func2)
+    if func1.constrains is None:
+      func1.constrains={}
+    if func2.constrains is None:
+      func2.constrains={}
+    self.constrains=ConnectedDict(func1.constrains, func2.constrains, len(func1.parameters))
+
+  def fit_function(self, p, x, y):
+    '''
+      Combine the functions by adding their values together.
+    '''
+    func1=self.origin[0].fit_function
+    func2=self.origin[1].fit_function
+    len1, len2=self.func_len
+    return func1(p[0:len1], x, y) + func2(p[len1:], x, y)
+  
+  def set_parameters(self, new_params):
+    '''
+      Set new parameters and pass them to origin functions.
+    '''
+    FitFunction3D.set_parameters(self, new_params)
+    index=len(self.origin[0].parameters)
+    self.origin[0].set_parameters(self.parameters[:index])
+    self.origin[1].set_parameters(self.parameters[index:])
+
+  def toggle_refine_parameter(self, action, index):
+    '''
+      Change the refined parameters in the origin functions.
+    '''
+    FitFunction3D.toggle_refine_parameter(self, action, index)
+    if index < len(self.origin[0].parameters):
+      self.origin[0].toggle_refine_parameter(action, index)
+    else:
+      self.origin[1].toggle_refine_parameter(action, index-len(self.origin[0].parameters))
+
+class FitMultiply3D(FitFunction3D):
+  '''
+    Fit the Multiplication of two FitFunctions3D.
+  '''
+  
+  func_len=(None, None)
+  
+  def __init__(self, func1,  func2):
+    '''
+      Construct a sum of two functions to use for fit.
+      
+      @param funci the functions to add together
+    '''
+    self.name=func1.name + ' * ' + func2.name
+    self.parameters=func1.parameters + func2.parameters
+    self.parameter_names=[name + '1' for name in func1.parameter_names] + [name + '2' for name in func2.parameter_names]
+    self.refine_parameters=func1.refine_parameters + [index + len(func1.parameters) for index in func2.refine_parameters]
+    function_text=func1.fit_function_text
+    for i in range(len(func1.parameters)):
+      function_text=function_text.replace(func1.parameter_names[i], func1.parameter_names[i]+'1')
+    self.fit_function_text=function_text
+    function_text=func2.fit_function_text
+    for i in range(len(func2.parameters)):
+      function_text=function_text.replace(func2.parameter_names[i], func2.parameter_names[i]+'2')
+    self.fit_function_text+=' * ' + function_text
+    self.func_len = (len(func1.parameters), len(func2.parameters))
+    self.origin=(func1, func2)
+    if func1.constrains is None:
+      func1.constrains={}
+    if func2.constrains is None:
+      func2.constrains={}
+    self.constrains=ConnectedDict(func1.constrains, func2.constrains, len(func1.parameters))
+
+  def fit_function(self, p, x, y):
+    '''
+      Combine the functions by adding their values together.
+    '''
+    func1=self.origin[0].fit_function
+    func2=self.origin[1].fit_function
+    len1, len2=self.func_len
+    return func1(p[0:len1], x, y) * func2(p[len1:], x, y)
+  
+  def set_parameters(self, new_params):
+    '''
+      Set new parameters and pass them to origin functions.
+    '''
+    FitFunction3D.set_parameters(self, new_params)
+    index=len(self.origin[0].parameters)
+    self.origin[0].set_parameters(self.parameters[:index])
+    self.origin[1].set_parameters(self.parameters[index:])
+
+  def toggle_refine_parameter(self, action, index):
+    '''
+      Change the refined parameters in the origin functions.
+    '''
+    FitFunction3D.toggle_refine_parameter(self, action, index)
+    if index < len(self.origin[0].parameters):
+      self.origin[0].toggle_refine_parameter(action, index)
+    else:
+      self.origin[1].toggle_refine_parameter(action, index-len(self.origin[0].parameters))
 
 #+++++++++++++++++++++++++++++++++ Define common functions for 2d fits +++++++++++++++++++++++++++++++++
 
@@ -1531,7 +1819,50 @@ class FitSuperlattice(FitFunction):
                     (params['t_B']/(numpy.pi*2./params['q0_B'])-int(params['t_B']/(numpy.pi*2./params['q0_B'])))*(numpy.pi*2./params['q0_B'])
                                                                                   ))
     return output
-    
+
+class FitInterpolation(FitFunction):
+  '''
+    Fit a spline interpolation to up to 6 points.
+  '''
+  
+  # define class variables.
+  name="Background Spline Interpolation"
+  parameters=[0., 1., 1., 1., 2., 1., 3., 1., 0., 0., 0., 0.]
+  parameter_names=['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3', 'x_4', 'y_4', 'x_5', 'y_5', 'x_6', 'y_6']
+  fit_function_text='Spline'
+  
+  constrains={
+              1: {'bounds': [0.,None], 'tied': ''},
+              3: {'bounds': [0.,None], 'tied': ''},
+              5: {'bounds': [0.,None], 'tied': ''},
+              7: {'bounds': [0.,None], 'tied': ''},
+              9: {'bounds': [0.,None], 'tied': ''},
+              11: {'bounds': [0.,None], 'tied': ''},              
+              }
+  
+  def __init__(self, initial_parameters=[], method='cubic'):
+    FitFunction.__init__(self, initial_parameters)
+    from scipy.interpolate import interp1d
+    self.interp=interp1d
+    self.method=method
+    self.refine_parameters=[i*2+1 for i in range(4)]
+
+  def fit_function(self, p, x):
+    '''
+      Spline interpolate the different points.
+    '''
+    px=[p[i*2] for i in range(6)]
+    py=[p[i*2+1] for i in range(6)]
+    method=self.method
+    for i in range(3, 6):
+      if px[i]<=px[i-1]:
+        px=px[:i]
+        py=py[:i]
+        if i==3 and method=='cubic':
+          method='linear'
+        break
+    func=self.interp(numpy.array(px), numpy.array(py), kind=method, bounds_error=False, fill_value=0.)
+    return func(x)
 
 class FitSQUIDSignal(FitFunction):
   '''
@@ -1842,10 +2173,10 @@ class FitGaussian3D(FitFunction3D):
   # define class variables.
   name="Gaussian"
   parameters=[1., 0., 0., 0.1, 0.1, 0., 0.]
-  parameter_names=['A', 'x_0', 'y_0', 'sigma_x', 'sigma_y', 'tilt', 'C']
+  parameter_names=['A', 'x_0', 'y_0', 'σ_x', 'σ_y', 'tilt', 'C']
   fit_function_text='Gaussian'
   constrains={
-              4: {'bounds': [None,None], 'tied': '[sigma_x]'},
+              4: {'bounds': [None,None], 'tied': '[σ_x]'},
               5: {'bounds': [-180., 180.], 'tied': ''},  
               6: {'bounds': [0., None], 'tied': ''}
               }
@@ -1878,11 +2209,17 @@ class FitPsdVoigt3D(FitFunction3D):
   
   # define class variables.
   name="Psd. Voigt"
-  parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0., 0.5, 0.]
-  parameter_names=['I', 'x_0', 'y_0', 'gamma', 'sigma_x', 'sigma_y', 'tilt', 'eta','C']
+  parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0.01, 0., 0.5, 0.]
+  parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'σ_x', 'σ_y', 'tilt', 'eta','C']
   fit_function_text='Pseudo Voigt'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
+  constrains={
+              4: {'bounds': [None,None], 'tied': '[γ_x]'},
+              7: {'bounds': [-180., 180.], 'tied': ''},  
+              8: {'bounds': [0., 1.], 'tied': ''}, 
+              9: {'bounds': [0., None], 'tied': ''}
+              }
 
   def fit_function(self, p, x, y):
     '''
@@ -1890,25 +2227,24 @@ class FitPsdVoigt3D(FitFunction3D):
       It is calculated using the complex error function,
       see Wikipedia articel on Voigt-profile for the details.
     '''
-    x=numpy.float64(numpy.array(x))
-    y=numpy.float64(numpy.array(y))
-    p=numpy.float64(numpy.array(p))
     I=p[0]
     x0=p[1]
     y0=p[2]
-    gamma=p[3]
-    sx=p[4]
-    sy=p[5]
-    tb=numpy.sin(p[6])
-    ta=numpy.cos(p[6])
+    gammax=p[3]
+    gammay=p[4]
+    sx=p[5]
+    sy=p[6]
+    tilt=p[7]*numpy.pi/180.
+    tb=numpy.sin(tilt)
+    ta=numpy.cos(tilt)
     xdist=(numpy.array(x)-x0)
     ydist=(numpy.array(y)-y0)
     xdif=numpy.abs(xdist*ta-ydist*tb)
     ydif=numpy.abs(ydist*ta+xdist*tb)
-    eta=p[7]
-    c=p[8]
+    eta=p[8]
+    c=p[9]
     G=numpy.exp(-numpy.log(2)*((xdif/sx)**2+(ydif/sy)**2))
-    L=1./(1.+(xdif**2+ydif**2)/gamma**2)
+    L=1./(1.+(xdif**2/gammax**2+ydif**2/gammay**2))
     value = I * ((1.-eta)*G+eta*L) + c
     return value
 
@@ -1959,10 +2295,15 @@ class FitLorentzian3D(FitFunction3D):
   # define class variables.
   name="Lorentzian"
   parameters=[1, 0, 0, 0.01, 0.01, 0., 0.]
-  parameter_names=['I', 'x_0', 'y_0', 'gamma_x', 'gamma_y', 'tilt','C']
+  parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'tilt','C']
   fit_function_text='Lorentzian'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
+  constrains={
+              4: {'bounds': [None,None], 'tied': '[γ_x]'},
+              5: {'bounds': [-180., 180.], 'tied': ''},  
+              6: {'bounds': [0., None], 'tied': ''}
+              }
   
   def fit_function(self, p, x, y):
     '''
@@ -1978,6 +2319,7 @@ class FitLorentzian3D(FitFunction3D):
     y0=p[2]
     gamma_x=p[3]
     gamma_y=p[4]
+    tilt=p[5]*numpy.pi/180.
     tb=numpy.sin(p[5])
     ta=numpy.cos(p[5])
     xdist=(numpy.array(x)-x0)
@@ -1997,7 +2339,7 @@ class FitVoigt3D(FitFunction3D):
   # define class variables.
   name="Voigt"
   parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0.01, 0.]
-  parameter_names=['I', 'x_0', 'y_0', 'gamma_x', 'gamma_y', 'sigma_x','sigma_y','C']
+  parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'σ_x','σ_y','C']
   fit_function_text='Voigt'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
@@ -2059,6 +2401,7 @@ class FitSession(FitSessionGUI):
   # a dictionary of known fit functions for 2d datasets
   available_functions_2d={
                        FitLinear.name: FitLinear, 
+                       FitInterpolation.name: FitInterpolation, 
                        #FitDiamagnetism.name: FitDiamagnetism, 
                        FitQuadratic.name: FitQuadratic, 
                        FitSinus.name: FitSinus, 
@@ -2165,7 +2508,30 @@ class FitSession(FitSessionGUI):
     '''
     functions=self.functions
     if (index_1 < len(functions)) and (index_2 < len(functions)):
-      functions.append([FitSum(functions[index_1][0], functions[index_2][0]), True, True, False])
+      if functions[index_1][0].is_3d:
+        Sum=FitSum3D
+        functions[index_1][2]=False
+        functions[index_2][2]=False
+      else:
+          Sum=FitSum
+      functions.append([Sum(functions[index_1][0], functions[index_2][0]), True, True, False])
+      functions[index_1][1]=False
+      functions[index_2][1]=False
+  
+  def multiply(self, index_1, index_2):
+    '''
+      Create a multiplication of the functions with index 1 and 2.
+      Function 1 and 2 are set not to be fitted.
+    '''
+    functions=self.functions
+    if (index_1 < len(functions)) and (index_2 < len(functions)):
+      if functions[index_1][0].is_3d:
+        Mul=FitMultiply3D
+        functions[index_1][2]=False
+        functions[index_2][2]=False
+      else:
+          Mul=FitMultiply
+      functions.append([Mul(functions[index_1][0], functions[index_2][0]), True, True, False])
       functions[index_1][1]=False
       functions[index_2][1]=False
   
