@@ -1308,17 +1308,17 @@ class FitRelaxingCrystalLayer(FitFunction):
         # add amplitudes layer by layer
         A+=scaling_factors[i]*A_max_planes[:i+1].sum(axis=0)
     # substrate roughness is accounted for by multiplying the amplitudes with different offset phases
-    A*=self.calculate_substrate_roughness(q, sigma_s)
+    A*=numpy.sqrt(I_0) * self.calculate_substrate_roughness(q, sigma_s)
     if a_substrate!=0:
       A_substrate=self.get_substrate_amplitude(q, a_substrate, mu)
-      I=numpy.abs(A+scaling_substrate*A_substrate)**2/(numpy.abs(A)**2).max()
+      I=numpy.abs(A+numpy.sqrt(scaling_substrate)*A_substrate)**2
     else:
       I=numpy.abs(A)**2
-      I/=I.max()
+      I/=scaling
     if I_alpha2!=0:
       items=len(q)/2
       I=(I[:items]+I_alpha2*I[items:])/(1.+I_alpha2)
-    return I_0*I+background
+    return I+background
   
   def get_strained_plains(self, a_bottom, a_inf, epsilon, d):
     '''
@@ -1363,8 +1363,8 @@ class FitRelaxingCrystalLayer(FitFunction):
       #offset_factors=numpy.exp(-0.5*numpy.linspace(-3., 3., 31)**2)
       #offset_factors/=offset_factors.sum()
       #P=(offset_factors*offset_phases.transpose()).sum(axis=1)
-      prefactor=numpy.sqrt(numpy.pi/2.*sigma**2)
-      P=prefactor*numpy.exp(-2.*(q*sigma)**2)
+      #prefactor=1./numpy.sqrt(numpy.pi*2.*sigma**2)
+      P=numpy.exp(-(q*sigma)**2/2.)
     else:
       P=1.
     return P
