@@ -1195,6 +1195,7 @@ class FitCuK(FitFunction):
     value2=p[0]/p[5] * wofz(z2).real / wofz(z0).real + p[4]
     return value+value2
 
+
 class FitCrystalLayer(FitFunction):
   '''
     Simulate diffraction from a crystal layer with finite size and roughness.
@@ -2029,23 +2030,6 @@ class FitBrillouineT(FitFunction):
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(5)
   
-  #def simulate(self, x, ignore=None):
-  #  return FitFunction.simulate(self, x, interpolate=1)
-  
-  #def residuals(self, params, y, x, yerror=None):
-  #  '''
-  #    As the fit with fsolve is quite slow we tell the user about
-  #    the state of the fit.
-  #  '''
-  #  err=FitFunction.residuals(self, params, y, x, yerror=None)
-  #  print "End of function call %i, chi is now %.6g" % (self.iteration, sum(err))
-  #  self.iteration+=1
-  #  return err
-  
-  #def refine(self,  dataset_x,  dataset_y, dataset_yerror=None):
-  #  self.iteration=1
-  #  return FitFunction.refine(self,  dataset_x,  dataset_y, dataset_yerror=None)
-
   def brillouine(self, p, T):
     '''
       Brillouine function of B.

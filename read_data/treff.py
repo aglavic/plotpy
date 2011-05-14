@@ -794,7 +794,11 @@ def read_d17_processed_data(file_name):
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
-  file_text=open(file_name, 'r').read()
+  if file_name.endswith('.gz'):
+    import gzip
+    file_text=gzip.open(file_name, 'r').read()
+  else:
+    file_text=open(file_name, 'r').read()
   file_lines=file_text.splitlines()
   first_block=-1
   for i in range(10):
@@ -886,15 +890,6 @@ def read_d17_raw_data(file_from, file_to):
   config.treff.LAMBDA_N=5.3
   PI_2_OVER_LAMBDA=numpy.pi*2./5.3
   config.treff.PI_4_OVER_LAMBDA=4.*numpy.pi/5.3
-  if d17_calibration['water'] is None:
-    mask=D17_MASK
-    scaling=mask.copy()
-    scaling/=mask.sum(axis=0)
-    scaling=scaling.flatten()
-    scaling=numpy.nan_to_num(scaling)*mask.flatten()
-    # normalize to the mean value to stay at about counts/s
-    scaling/=scaling[numpy.where(mask.flatten()!=0)].mean()
-    d17_calibration['water']=scaling
   #if d17_calibration['water'] is None and D17_CALIBRATION_FILES['water'] is not None:
     #print "    Reading calibration file 'water' which will be used for all imports..."
     ## using water measurement as mask and scale by the number of non zero elements per column
@@ -916,11 +911,20 @@ def read_d17_raw_data(file_from, file_to):
     #scaling_factor=numpy.where(transmission!=0, 1./transmission, 0.)
     #scaling_factor/=scaling_factor[numpy.where(transmission!=0)].mean()
     #d17_calibration['transmission']=scaling_factor
+  if d17_calibration['water'] is None:
+    mask=D17_MASK
+    scaling=mask.copy()
+    scaling/=mask.sum(axis=0)
+    scaling=scaling.flatten()
+    scaling=numpy.nan_to_num(scaling)*mask.flatten()
+    # normalize to the mean value to stay at about counts/s
+    scaling/=scaling[numpy.where(mask.flatten()!=0)].mean()
+    d17_calibration['water']=scaling
   folder, file_from=os.path.split(file_from)
   file_to=os.path.join(folder, file_to)
   file_from=os.path.join(folder, file_from)
   file_list=glob(os.path.join(folder, '*'))
-  file_list=filter(lambda item: os.path.split(item)[1].isdigit(), file_list)
+  file_list=filter(lambda item: os.path.split(item)[1].rstrip('.gz').isdigit(), file_list)
   file_list.sort()
   if not (file_from in file_list and file_to in file_list):
     print 'File not found: %s and %s.' % (file_from, file_to)
@@ -991,7 +995,11 @@ def read_d17_raw_file(file_name):
   '''
     Read one single detector image.
   '''
-  file_text=open(file_name, 'r').read()
+  if file_name.endswith('.gz'):
+    import gzip
+    file_text=gzip.open(file_name, 'r').read()
+  else:
+    file_text=open(file_name, 'r').read()
   if not file_text.startswith('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'):
     #print "No D17 raw data header found."
     return None
@@ -1044,7 +1052,11 @@ def read_d17_calibration(file_name):
   '''
     Read one single detector image as calibration file.
   '''
-  file_text=open(file_name, 'r').read()
+  if file_name.endswith('.gz'):
+    import gzip
+    file_text=gzip.open(file_name, 'r').read()
+  else:
+    file_text=open(file_name, 'r').read()
   if not file_text.startswith('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'):
     #print "No D17 raw data header found."
     return None

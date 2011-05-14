@@ -174,10 +174,10 @@ ${comments}
     output.data.append( (output.data[index]*scan_header['rl'][0])//('q_x', 'Å^{-1}') )
   if 'k' in output.dimensions():
     index=output.dimensions().index('k')
-    output.data.append( (output.data[index]*scan_header['rl'][0])//('q_y', 'Å^{-1}') )
+    output.data.append( (output.data[index]*scan_header['rl'][1])//('q_y', 'Å^{-1}') )
   if 'l' in output.dimensions():
     index=output.dimensions().index('l')
-    output.data.append( (output.data[index]*scan_header['rl'][0])//('q_z', 'Å^{-1}') )
+    output.data.append( (output.data[index]*scan_header['rl'][2])//('q_z', 'Å^{-1}') )
   recheck_type(output, scan_header)
   return output, scan_header['comments']
 
@@ -283,7 +283,7 @@ def read_data_p09(input_file):
     file_handle=open(input_file, 'r')
   text=file_handle.read()
   if not (('! Parameter' in text) and ('! Data' in text)):
-    print "No valid P08 header found."
+    print "No valid P09 header found."
     return 'NULL'
   name=text.split('Name: ', 1)[1].split(' ', 1)[0].strip()
   scan_type=text.split('%c')[1].strip().split()[0]
