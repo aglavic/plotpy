@@ -4400,6 +4400,18 @@ set multiplot layout %i,1
     if self.active_session.DEBUG:
       output+='''
       '''
+    plugin_menu=''
+    for plugin in self.active_session.plugins:
+      if hasattr(plugin, 'menu') and ('all' in plugin.SESSIONS or self.active_session.__class__.__name__ in plugin.SESSIONS):
+        string, actions=plugin.menu(self, self.active_session)
+        plugin_menu+=string
+        self.session_added_items=self.session_added_items+actions
+    if plugin_menu!='':
+      output+='''
+        </menu>
+        <menu action='PluginMenu'>
+      '''+plugin_menu
+      self.session_added_items=self.session_added_items+( ( "PluginMenu", None, "Plugins", None, None, None ), )
     output+=    '''
       </menu>
     </menubar>
