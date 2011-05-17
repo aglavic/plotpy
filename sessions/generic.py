@@ -176,6 +176,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   DEBUG=False
   file_actions_addon={}
   ipython_commands=[]
+  plugins=[]
   #------------------ local variables -----------------
 
   def __init__(self, arguments):
@@ -201,6 +202,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     self.os_path_stuff() # create temp folder according to OS
     self.try_import_externals()
+    self.import_plugins() # search the plugin folder for modules
     files.sort()
     remove=[]
     config.transformations.known_transformations+=self.TRANSFORMATIONS
@@ -425,6 +427,23 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     for file_name in os.listdir(self.TEMP_DIR):
       os.remove(self.TEMP_DIR+file_name)
     os.rmdir(self.TEMP_DIR)
+  
+  def import_plugins(self):
+    '''
+      Import plugins from the users plugin directory.
+    '''
+    plugins=self.plugins
+    if len(plugins)>0:
+      # already imported plugins
+      return
+    user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')
+    if os.path.exists(user_folder) and os.path.exists(os.path.join(user_folder, 'plugins')):
+      sys.path.append(os.path.join(user_folder, 'plugins'))
+      plugin_sources=os.listdir(os.path.join(user_folder, 'plugins'))
+      plugin_sources=filter(lambda file: file.endswith('.py'), plugin_sources)
+      for plugin_source in plugin_sources:
+        plugin=__import__(plugin_source.rstrip('.py'))
+        plugins.append(plugin)
 
   def replace_systemdependent(self, string):
     '''

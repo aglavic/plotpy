@@ -480,6 +480,8 @@ class ApplicationMainWindow(gtk.Window):
     # open the plot tree dialog
     if self.config_object['plot_tree']['shown']:
       self.show_plot_tree()
+    # if plugins are installed activate session specific options
+    self.activate_plugins()
     self.init_complete=True
     # execute ipython commands supplied via commandline
     if len(self.active_session.ipython_commands)>0:
@@ -727,6 +729,30 @@ class ApplicationMainWindow(gtk.Window):
       logitems.logz=self.logz.get_active()
     self.replot() # plot with new Settings
 
+  def activate_plugins(self):
+    '''
+      If a plugin defines an activate function and the active session is in the list
+      of sessions the function gets called.
+    '''
+    session=self.active_session
+    activated=False
+    for plugin in session.plugins:
+      if hasattr(plugin, 'activate') and ('all' in plugin.SESSIONS or session.__class__.__name__ in plugin.SESSIONS):
+        plugin.activate(self, session)
+        activated=True
+    if activated:
+      self.rebuild_menus()
+
+  def deactivate_plugins(self):
+    '''
+      If a plugin defines an activate function and the active session is in the list
+      of sessions the function gets called.
+    '''
+    session=self.active_session
+    for plugin in session.plugins:
+      if hasattr(plugin, 'deactivate') and ('all' in plugin.SESSIONS or session.__class__.__name__ in plugin.SESSIONS):
+        plugin.deactivate(self, session)
+
   def change_session(self, action=None, transfere=None):
     '''
       Change the session type used to import Data.
@@ -756,6 +782,7 @@ class ApplicationMainWindow(gtk.Window):
     session_dialog.vbox.add(table)
     result=session_dialog.run()
     if result==1:
+      self.deactivate_plugins()
       for button in buttons:
         if button.get_active():
           name=button.get_label()
@@ -771,6 +798,7 @@ class ApplicationMainWindow(gtk.Window):
           if transfere is not None:
             self.active_session.file_data.update(transfere)
           self.rebuild_menus()
+          self.activate_plugins()
           self.replot()
           return True
       new_session_class = getattr(__import__('sessions.'+sessions[name][0], globals(), locals(), 
@@ -793,6 +821,7 @@ class ApplicationMainWindow(gtk.Window):
           self.replot()
       else:
         self.active_session=new_session
+      self.activate_plugins()
       return True
     if result==0:
       session_dialog.destroy()

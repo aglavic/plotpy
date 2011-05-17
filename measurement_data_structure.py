@@ -142,7 +142,7 @@ class MeasurementData(object):
       @return numpy array of point lists
     '''
     #try:
-    data=numpy.array(self.data+[item.error for item in self.data if item.has_error])#numpy.array([col.values for col in self.data])
+    data=numpy.array(self.data+[item.error.tolist() for item in self.data if item.has_error])#numpy.array([col.values for col in self.data])
     #except ValueError:
      # min_length=min([len(col.values) for col in self.data])
       #data=numpy.array([col.values[:min_length] for col in self.data])

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2011-05-05, 08:16:18 -->
+<!-- Saved: 2011-05-17, 13:51:54 -->
 <!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -110,6 +110,9 @@
     <Source>config/fit/pnr_multi/read_mrad_sim_rough_treff.f90</Source>
     <Source>config/fit/pnr_multi/refconv_illu.f90</Source>
     <Source>mpfit.py</Source>
+    <Source>gtkgui/sas.py</Source>
+    <Source>sessions/sas.py</Source>
+    <Source>read_data/sas.py</Source>
   </Sources>
   <Forms>
   </Forms>

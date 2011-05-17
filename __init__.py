@@ -111,6 +111,7 @@ known_measurement_types={
                          'in12': ('in12', 'IN12Session', ['___'], []), 
                          'dns': ('dns', 'DNSSession', ['d_dat'], []), 
                          'kws2': ('kws2', 'KWS2Session', ['DAT'], []),                         
+                         'sas': ('sas', 'SASSession', ['___'], []),                         
                          'gisas': ('kws2', 'KWS2Session', ['DAT', 'edf', 'cmb'], []),                         
                          #'scd': ('single_diff', 'SingleDiffSession', ['___']), 
                          'generic': ('generic', 'GenericSession', ['___'], []), 
