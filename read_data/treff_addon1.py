@@ -15,8 +15,8 @@ from config.treff import GRAD_TO_MRAD, GRAD_TO_RAD
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = ["Daniel Schumacher"]
-__license__ = "None"
-__version__ = "0.7.6"
+__license__ = "GPL v3"
+__version__ = "0.7.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"

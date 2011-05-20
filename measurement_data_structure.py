@@ -18,8 +18,8 @@ from config.transformations import known_unit_transformations
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
-__license__ = "None"
-__version__ = "0.7.6"
+__license__ = "GPL v3"
+__version__ = "0.7.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -539,6 +539,25 @@ class MeasurementData(object):
     '''
     return [[point[x],point[y]] for point in self]
 
+  def join(self, other):
+    '''
+      Return a joined instance of two measurements with the same columns.
+    '''
+    if type(other) is list:
+      if len(other)==1:
+        other=other[0]
+      else:
+        other=other[0].join(other[1:])
+    if not self.__class__ is other.__class__:
+      raise TypeError, 'Can only join with instance of type %s' % self.__class__
+    if not ( [(col.dimension, col.unit) for col in self.data] == \
+             [(col.dimension, col.unit) for col in other.data]):
+      raise ValueError, 'Can only join with instance with the same columns (dimension and unit)'
+    output=deepcopy(self)
+    for i, col in enumerate(output.data):
+      output.data[i]=col.join(other.data[i])
+    return output
+  
   def type(self): 
     '''
       Short form to get the first constant data column.
@@ -2371,6 +2390,29 @@ class PhysicalProperty(numpy.ndarray):
                               [numpy.ndarray.sum(self, *args, **opts)], [output_error])      
     else:
       return PhysicalProperty('sum('+self.dimension+')', self.unit, [numpy.ndarray.sum(self, *args, **opts)])
+  
+  def join(self, other):
+    '''
+      Combine two PhysicalProperty objects of the same unit.
+    '''
+    # can join with a list of PhysicalProperty objects
+    if type(other) is list:
+      if len(other) == 1:
+        other=other[0]
+      else:
+        other=other[0].join(other[1:])
+    
+    if hasattr(other, 'unit') and (self.unit!=other.unit or (self.has_error!=other.has_error)):
+      try:
+        other=other%self.unit
+      except ValueError:
+        raise ValueError, "Wrong unit, %s!=%s" % (self.unit, other.unit)        
+    joined_data=numpy.append(self, other)
+    output=self.__class__(self.dimension, self.unit, joined_data)
+    if (self.has_error and hasattr(other, 'unit') and other.has_error):
+      joined_error=numpy.append(self.error, other.error)
+      output.error=joined_error
+    return output
 
 ################### define some common physical constants
 

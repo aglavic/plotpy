@@ -22,8 +22,8 @@ import subprocess
 __name__='plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
-__license__ = "None"
-__version__ = "0.7.6"
+__license__ = "GPL v3"
+__version__ = "0.7.6.1"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki"
@@ -36,7 +36,7 @@ __packages__=['plot_script', 'plot_script.config', 'plot_script.read_data', 'plo
             'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui'] #'plot_script.wxgui', 
 __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90', 
                             'fit/pnr_multi/*.f90', 'logo*.png'], 
-                  'plot_script': ['doc/*.html'], 
+                  'plot_script': ['doc/*.html', 'gpl.pdf'], 
                     }
 __data_files__=[('doc', glob('doc/*.html'))]
 
@@ -235,14 +235,27 @@ if ('bdist' in sys.argv):
   deb_tmp=open('debian/postrm', 'w')
   deb_tmp.write(open('../../deb_postrm', 'r').read())
   deb_tmp.close()
-  print "Packaging for debian..."
-  subprocess.Popen(['dpkg-buildpackage', '-i', '-I', '-rfakeroot'], shell=False, 
-                   stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  # python 2.7
+  print "Packaging for debian (python2.7)..."
+  subprocess.Popen(['dpkg-buildpackage', '-i.*', '-I', '-rfakeroot', '-us', '-uc'], shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
   os.chdir('..')
-  os.rename((__name__+'_'+__version__).lower()+'-1_all.deb', __name__+'-'+__version__+'.deb')
+  os.rename((__name__+'_'+__version__).lower()+'-1_all.deb', __name__+'-'+__version__+'_natty.deb')
+  # python 2.6
+  subprocess.Popen(['mv', __name__+'-'+__version__+'/usr/local/lib/python2.7', 
+                    __name__+'-'+__version__+'/usr/local/lib/python2.6'], 
+                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['mv', __name__+'-'+__version__+'.orig/usr/local/lib/python2.7', 
+                    __name__+'-'+__version__+'.orig/usr/local/lib/python2.6'], 
+                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  os.chdir(__name__+'-'+__version__)
+  print "Packaging for debian (python2.6)..."
+  subprocess.Popen(['dpkg-buildpackage', '-i.*', '-I', '-rfakeroot', '-us', '-uc'], shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+  os.chdir('..')
+  os.rename((__name__+'_'+__version__).lower()+'-1_all.deb', __name__+'-'+__version__+'_maverick.deb')
   print "Removing debian folder..."
   os.popen('rm '+__name__+'-'+__version__+' -r')
   os.popen('rm '+(__name__+'_'+__version__).lower()+'-1*')
+  os.popen('rm *.rpm')
   os.popen('rm '+(__name__+'_'+__version__).lower()+'.orig.tar.gz')
   print "Removing build folder..."
   os.chdir('..')

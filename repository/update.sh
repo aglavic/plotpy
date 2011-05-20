@@ -3,17 +3,13 @@
 # Build binary distribution
 cd ..
 # create Python 2.6 package:
-python2.6 setup.py bdist
 cd archiv
-FILE=`ls -t *.deb| head -1`
-FILE_ALL=`echo $FILE|sed 's/.deb//'`_all.deb
+FILE=`ls -t *_maverick.deb| head -1`
+FILE_ALL=`echo $FILE|sed 's/_maverick.deb//'`_all.deb
 cp $FILE ../repository/binary/dists/maverick/$FILE_ALL
 # create Python 2.7 package:
-cd ..
-python setup.py bdist
-cd archiv
-FILE=`ls -t *.deb| head -1`
-FILE_ALL=`echo $FILE|sed 's/.deb//'`_all.deb
+FILE=`ls -t *_natty.deb| head -1`
+FILE_ALL=`echo $FILE|sed 's/_natty.deb//'`_all.deb
 cp $FILE ../repository/binary/dists/natty/$FILE_ALL
 
 cd ../repository

@@ -15,8 +15,8 @@ from dialogs import SimpleEntryDialog
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
-__license__ = "None"
-__version__ = "0.7.6"
+__license__ = "GPL v3"
+__version__ = "0.7.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -175,11 +175,16 @@ class FitSessionGUI:
     entries=[]
     for i, parameter in enumerate(function.parameters):
       # Test,Toggle and Entry for every parameter of the funciton
-      text=gtk.Label(function.parameter_names[i])
+      p_name=function.parameter_names[i]
+      text=gtk.Label(p_name)
+      if p_name in function.parameter_description:
+        text.set_tooltip_text(function.parameter_description[p_name])
       toggle=gtk.CheckButton()
       toggle.set_active(i in function.refine_parameters)
       toggle.connect('toggled', function.toggle_refine_parameter, i)
       entries.append(gtk.Entry())
+      if p_name in function.parameter_description:
+        entries[i].set_tooltip_text(function.parameter_description[p_name])
       entries[i].set_width_chars(8)
       entries[i].set_text("%.6g" % parameter)
       entries[i].connect('button_press_event', self.advanced_parameter_options, i, function)

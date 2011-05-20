@@ -23,8 +23,8 @@ except ImportError:
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
-__license__ = "None"
-__version__ = "0.7.6"
+__license__ = "GPL v3"
+__version__ = "0.7.6.1"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -112,6 +112,7 @@ class FitFunction(FitFunctionGUI):
   name="Unnamed"
   parameters=[]
   parameter_names=[]
+  parameter_description={} # tooltip for parameters
   parameters_history=None
   parameters_covariance=None
   fit_function=lambda self, p, x: 0.
@@ -541,6 +542,7 @@ class FitFunction3D(FitFunctionGUI):
   parameter_names=[]
   parameters_history=None
   parameters_covariance=None
+  parameter_description={}
   fit_function=lambda self, p, x, y: 0.
   fit_function_text='f(x,y)'
   last_fit_output=None
@@ -963,6 +965,7 @@ class FitLinear(FitFunction):
   name="Linear Regression"
   parameters=[1, 0]
   parameter_names=['a', 'b']
+  parameter_description={'a': 'Slope', 'b': 'Offset'}
   fit_function=lambda self, p, x: p[0] * numpy.array(x) + p[1]
   fit_function_text='[a]·x + [b]'
 
@@ -975,6 +978,7 @@ class ThetaCorrection(FitFunction):
   name="Peak Positions"
   parameters=[3., 0.]
   parameter_names=['a*', 'Θ_0']
+  parameter_description={'a*': 'Reciprocal Lattice Vector'}
   fit_function_text='a^*=[a*|6] [y-unit]    Θ_0=[Θ_0] °'
   lambda_factor=1.540/(4.*numpy.pi) # Cu-k_alpha prefactor
   
@@ -1056,6 +1060,7 @@ class FitSinus(FitFunction):
   name="Sinus"
   parameters=[1., 1.,  0.,  0.]
   parameter_names=['a', 'ω0','φ0', 'c']
+  parameter_description={'a': 'Prefactor', 'ω0': 'Frequency', 'φ0': 'Phase', 'c': 'Offset'}
   fit_function=lambda self, p, x: p[0] * numpy.sin((numpy.array(x) * p[1] - p[2])*numpy.pi/180.) + p[3]
   fit_function_text='[a]·sin([ω0|3]·x-[φ0|2])+[c]'
 
@@ -1101,6 +1106,7 @@ class FitGaussian(FitFunction):
   name="Gaussian"
   parameters=[1, 0, 1, 0]
   parameter_names=['I', 'x0', 'σ', 'C']
+  parameter_description={'I': 'Scaling', 'x0': 'Peak Position', 'σ': 'Variance', 'C':'Offset'}
   fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((x - p[1])/p[2])**2) + p[3]
   fit_function_text='Gaussian: I=[I] x_0=[x0] σ=[σ|2]'
 
@@ -1113,6 +1119,7 @@ class FitLorentzian(FitFunction):
   name="Lorentzian"
   parameters=[1, 0, 1, 0]
   parameter_names=['I', 'x0', 'γ', 'C']
+  parameter_description={'I': 'Scaling', 'x0': 'Peak Position', 'γ': 'Half Width Half Maximum', 'C':'Offset'}
   fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2) + p[3]
   fit_function_text='Lorentzian: I=[I] x_0=[x0] γ=[γ|2]'
 
@@ -1125,6 +1132,7 @@ class FitVoigt(FitFunction):
   name="Voigt"
   parameters=[1, 0, 1, 1, 0]
   parameter_names=['I', 'x0', 'γ', 'σ', 'C']
+  parameter_description={'I': 'Scaling', 'x0': 'Peak Position', 'σ': 'Gaussian Variance', 'γ': 'HWHM Lorentzian','C':'Offset'}
   fit_function_text='Voigt: I=[I] x_0=[x0] σ=[σ|2] γ=[γ|2]'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
@@ -1161,6 +1169,11 @@ class FitCuK(FitFunction):
   name="Cu K-radiation"
   parameters=     [1000,   0,  0.00125, 0.001, 0,     2,      0.99752006]
   parameter_names=['I', 'x0', 'γ', 'σ', 'C', 'K_a1/K_a2', 'x01/x02']
+  parameter_description={'I': 'Scaling', 'x0': 'Peak Position', 'σ': 'Gaussian Variance', 
+                          'γ': 'Lorentzian HWHM of each Peak', 
+                          'K_a1/K_a2': 'Intensity Ration of K_α1 to K_α2',
+                          'x01/x02': 'Relative Peak position of K_α1 and K_α2', 
+                          'C':'Offset'}
   fit_function_text='K_α: I=[I] [y-unit]   x_0=[x0] [x-unit]   σ=[σ|2] [x-unit]'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
@@ -1204,7 +1217,11 @@ class FitCrystalLayer(FitFunction):
   # define class variables.
   name="CrystalLayer"
   parameters=[1., 100., 5., 2., 3.]
+  parameter_description={'I': 'Scaling', 'd': 'Film Thickness', 
+                         'a': 'Film Crystal Parameter', 
+                          'σ': 'Roughness', 'h':'r.l.u.'}
   parameter_names=['I', 'd', 'a', 'h', 'σ']
+  
   fit_function_text='d=[d] a=[a] σ=[σ|2]'
   
   def fit_function(self, p, x):
