@@ -23,7 +23,7 @@ __name__='plot-script'
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __license__ = "GPL v3"
-__version__ = "0.7.6.1"
+__version__ = "0.7.6.3"
 __email__ = "a.glavic@fz-juelich.de"
 __author_email__ = __email__
 __url__ = "http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki"
@@ -61,7 +61,7 @@ elif "py2exe" in sys.argv:
   __options__={ 
                 #"setup_requires": ['py2exe'], 
                 #"console": [ "__init__.py"], # set the executable for py2exe
-                "windows": [ "__init__.py" ],                
+                "windows": [ "__init__.py" ], # executable for py2exe is windows application            
                 "options": {  "py2exe": {
                               "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
                               "optimize": 1, # Keep docstring (e.g. IPython console usage)
@@ -198,6 +198,8 @@ setup(name=__name__,
      )
 
 # If binary distribution has been created rename it and create .deb package, too.
+# The .deb only works on similar systems so we use python2.6 and python2.7 folders
+# as these are the versions used in the latest ubuntu versions
 if ('bdist' in sys.argv):
   print "Moving distribution files..."
   from glob import glob
@@ -210,9 +212,9 @@ if ('bdist' in sys.argv):
   # creating menu entries
   os.mkdir(__name__+'-'+__version__+'/usr/share/applications/')
   os.mkdir(__name__+'-'+__version__+'.orig/usr/share/applications/')
-  subprocess.Popen(['cp']+ glob('../menu_entries/*.desktop')+[__name__+'-'+__version__+'/usr/share/applications/'], 
+  subprocess.Popen(['cp']+ glob('../menu_entries_27/*.desktop')+[__name__+'-'+__version__+'/usr/share/applications/'], 
                    shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
-  subprocess.Popen(['cp']+glob('../menu_entries/*.desktop')+[__name__+'-'+__version__+'.orig/usr/share/applications/'], 
+  subprocess.Popen(['cp']+glob('../menu_entries_27/*.desktop')+[__name__+'-'+__version__+'.orig/usr/share/applications/'], 
                    shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
   # creating mime types
   os.mkdir(__name__+'-'+__version__+'/usr/share/mime/')
@@ -237,10 +239,16 @@ if ('bdist' in sys.argv):
   deb_tmp.close()
   # python 2.7
   print "Packaging for debian (python2.7)..."
-  subprocess.Popen(['dpkg-buildpackage', '-i.*', '-I', '-rfakeroot', '-us', '-uc'], shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['dpkg-buildpackage', '-i.*', '-I', '-rfakeroot', '-us', '-uc'], shell=False, 
+                   stderr=subprocess.STDOUT, stdout=open('../last_package.log', 'w')
+                   ).communicate()
   os.chdir('..')
   os.rename((__name__+'_'+__version__).lower()+'-1_all.deb', __name__+'-'+__version__+'_natty.deb')
   # python 2.6
+  subprocess.Popen(['cp']+ glob('../menu_entries/*.desktop')+[__name__+'-'+__version__+'/usr/share/applications/'], 
+                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['cp']+glob('../menu_entries/*.desktop')+[__name__+'-'+__version__+'.orig/usr/share/applications/'], 
+                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
   subprocess.Popen(['mv', __name__+'-'+__version__+'/usr/local/lib/python2.7', 
                     __name__+'-'+__version__+'/usr/local/lib/python2.6'], 
                    shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
@@ -249,7 +257,8 @@ if ('bdist' in sys.argv):
                    shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
   os.chdir(__name__+'-'+__version__)
   print "Packaging for debian (python2.6)..."
-  subprocess.Popen(['dpkg-buildpackage', '-i.*', '-I', '-rfakeroot', '-us', '-uc'], shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['dpkg-buildpackage', '-i.*', '-I', '-rfakeroot', '-us', '-uc'], shell=False, 
+                   stderr=subprocess.STDOUT, stdout=open('../last_package_2.log', 'w')).communicate()
   os.chdir('..')
   os.rename((__name__+'_'+__version__).lower()+'-1_all.deb', __name__+'-'+__version__+'_maverick.deb')
   print "Removing debian folder..."
@@ -309,6 +318,8 @@ if "py2exe" in sys.argv and not py2exe_test:
   os.popen('copy archiv\\__init__.exe archiv\\plot.exe')
   os.popen('del archiv\\__init__.exe')
   print "\n*** Copying gtk stuff ***"
+  # the package needs all gtk libraries to work stand alone 
+  # (only works if the folders are set right on the building system)
   gtk_folder='C:\\gtk'
   #gtk_folder='C:\\Python27\\Lib\\site-packages\\gtk-2.0\\runtime'
   for src, dest in [

@@ -24,7 +24,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.1"
+__version__ = "0.7.6.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -123,6 +123,7 @@ class FitFunction(FitFunctionGUI):
   is_3d=False
   fit_logarithmic=False
   constrains=None
+  max_iter=200. # maximum numer of iterations for fitting (should be lowered for slow functions)
   
   def __init__(self, initial_parameters=[]):
     '''
@@ -300,13 +301,13 @@ class FitFunction(FitFunctionGUI):
       def iterfunct(myfunct, p, iter, fnorm, functkw=None,
                   parinfo=None, quiet=0, dof=None):
         # perform custom iteration update   
-        progress_bar_update(step_add=float(iter)/200., info='Iteration %i    Chi²=%4f' % (iter, fnorm))
+        progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    Chi²=%4f' % (iter, fnorm))
     else:
       iterfunct=None
     # call the fit routine
     result=mpfit(function, xall=parameters, functkw=function_keywords, 
                  parinfo=parinfo, 
-                 maxiter=200, iterfunct=iterfunct, 
+                 maxiter=self.max_iter, iterfunct=iterfunct, 
                  fastnorm=1, # faster computation of Chi², can be less stable
                  quiet=1
                  )
@@ -553,6 +554,7 @@ class FitFunction3D(FitFunctionGUI):
   is_3d=True
   fit_logarithmic=False
   constrains=None
+  max_iter=200. # maximum numer of iterations for fitting (should be lowered for slow functions)
   
   def __init__(self, initial_parameters):
     '''
@@ -739,13 +741,13 @@ class FitFunction3D(FitFunctionGUI):
       def iterfunct(myfunct, p, iter, fnorm, functkw=None,
                   parinfo=None, quiet=0, dof=None):
         # perform custom iteration update   
-        progress_bar_update(step_add=float(iter)/200., info='Iteration %i    Chi²=%4f' % (iter, fnorm))
+        progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    Chi²=%4f' % (iter, fnorm))
     else:
       iterfunct=None
     # call the fit routine
     result=mpfit(function, xall=parameters, functkw=function_keywords, 
                  parinfo=parinfo, 
-                 maxiter=200, iterfunct=iterfunct, 
+                 maxiter=self.max_iter, iterfunct=iterfunct, 
                  fastnorm=1, # faster computation of Chi², can be less stable
                  quiet=1
                  )
@@ -1003,6 +1005,10 @@ class FitDiamagnetism(FitFunction):
   name="Linear Asymptotes"
   parameters=[0, 0, 0, 1]
   parameter_names=['a', 'b', 'c', 'split']
+  parameter_description={'a': 'Slope', 
+                         'b': 'Offset of left to right part', 
+                         'c': 'Constant offset value', 
+                         'split': 'Ignored region around 0'}
   fit_function_text='slope=[a]'
 
   def __init__(self, initial_parameters):
@@ -1031,6 +1037,11 @@ class FitQuadratic(FitFunction):
   name="Parabula"
   parameters=[1, 0,  0]
   parameter_names=['a', 'b', 'c']
+  parameter_description={ 
+                         'a': 'Coefficient of x²', 
+                         'b': 'Coefficient of x', 
+                         'c': 'Offset'
+                         }
   fit_function=lambda self, p, x: p[0] * numpy.array(x)**2 + p[1] * numpy.array(x) + p[2]
   fit_function_text='[a]·x^2 + [b]·x + [c]'
 
@@ -1060,7 +1071,10 @@ class FitSinus(FitFunction):
   name="Sinus"
   parameters=[1., 1.,  0.,  0.]
   parameter_names=['a', 'ω0','φ0', 'c']
-  parameter_description={'a': 'Prefactor', 'ω0': 'Frequency', 'φ0': 'Phase', 'c': 'Offset'}
+  parameter_description={'a': 'Prefactor', 
+                         'ω0': 'Frequency', 
+                         'φ0': 'Phase', 
+                         'c': 'Offset'}
   fit_function=lambda self, p, x: p[0] * numpy.sin((numpy.array(x) * p[1] - p[2])*numpy.pi/180.) + p[3]
   fit_function_text='[a]·sin([ω0|3]·x-[φ0|2])+[c]'
 
@@ -1082,6 +1096,11 @@ class FitExponential(FitFunction):
   name="Exponential"
   parameters=[1, 1, 0]
   parameter_names=['A', 'B', 'C']
+  parameter_description={
+                         'A': 'Prefactor', 
+                         'B': 'Exponential prefactor', 
+                         'C': 'Offset'
+                         }
   fit_function=lambda self, p, x: p[0] * numpy.exp(p[1] * numpy.array(x)) + p[2]
   fit_function_text='[A]·exp([B]·x) + [C]'
 
@@ -1094,6 +1113,11 @@ class FitOneOverX(FitFunction):
   name="1/x"
   parameters=[1, 0, 0]
   parameter_names=['C', 'x0', 'D']
+  parameter_description={
+                         'C': 'Scaling', 
+                         'x0': 'x-offset', 
+                         'D': 'Offset'
+                         }
   fit_function=lambda self, p, x: p[0] * 1 / (numpy.array(x) - p[1]) + p[2]
   fit_function_text='[C]/(x-[x0|2]) + [D]'
 
@@ -1106,7 +1130,10 @@ class FitGaussian(FitFunction):
   name="Gaussian"
   parameters=[1, 0, 1, 0]
   parameter_names=['I', 'x0', 'σ', 'C']
-  parameter_description={'I': 'Scaling', 'x0': 'Peak Position', 'σ': 'Variance', 'C':'Offset'}
+  parameter_description={'I': 'Scaling', 
+                         'x0': 'Peak Position', 
+                         'σ': 'Variance', 
+                         'C':'Offset'}
   fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((x - p[1])/p[2])**2) + p[3]
   fit_function_text='Gaussian: I=[I] x_0=[x0] σ=[σ|2]'
 
@@ -1119,7 +1146,10 @@ class FitLorentzian(FitFunction):
   name="Lorentzian"
   parameters=[1, 0, 1, 0]
   parameter_names=['I', 'x0', 'γ', 'C']
-  parameter_description={'I': 'Scaling', 'x0': 'Peak Position', 'γ': 'Half Width Half Maximum', 'C':'Offset'}
+  parameter_description={'I': 'Scaling', 
+                        'x0': 'Peak Position', 
+                        'γ': 'Half Width Half Maximum', 
+                        'C':'Offset'}
   fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2) + p[3]
   fit_function_text='Lorentzian: I=[I] x_0=[x0] γ=[γ|2]'
 
@@ -1132,7 +1162,11 @@ class FitVoigt(FitFunction):
   name="Voigt"
   parameters=[1, 0, 1, 1, 0]
   parameter_names=['I', 'x0', 'γ', 'σ', 'C']
-  parameter_description={'I': 'Scaling', 'x0': 'Peak Position', 'σ': 'Gaussian Variance', 'γ': 'HWHM Lorentzian','C':'Offset'}
+  parameter_description={'I': 'Scaling', 
+                         'x0': 'Peak Position', 
+                         'σ': 'Gaussian Variance', 
+                         'γ': 'HWHM Lorentzian',
+                         'C':'Offset'}
   fit_function_text='Voigt: I=[I] x_0=[x0] σ=[σ|2] γ=[γ|2]'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
@@ -1847,6 +1881,8 @@ class FitInterpolation(FitFunction):
   name="Background Spline Interpolation"
   parameters=[0., 1., 1., 1., 2., 1., 3., 1., 0., 0., 0., 0.]
   parameter_names=['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3', 'x_4', 'y_4', 'x_5', 'y_5', 'x_6', 'y_6']
+  parameter_description=dict([('x_%i' % i, 'x-position of node %i' % i) for i in range(1, 7)]+\
+                             [('y_%i' % i, 'y-value of node %i' % i) for i in range(1, 7)])
   fit_function_text='Spline'
   
   constrains={
@@ -2174,8 +2210,15 @@ class FitGaussian3D(FitFunction3D):
   # define class variables.
   name="Gaussian"
   parameters=[1., 0., 0., 0.1, 0.1, 0., 0.]
-  parameter_names=['A', 'x_0', 'y_0', 'σ_x', 'σ_y', 'tilt', 'C']
+  parameter_names=['I', 'x_0', 'y_0', 'σ_x', 'σ_y', 'tilt', 'C']
   fit_function_text='Gaussian'
+  parameter_description={'I': 'Scaling', 
+                         'x_0': 'Peak x-Position', 
+                         'y_0': 'Peak y-Position', 
+                         'σ_x': 'Variance in x-direction', 
+                         'σ_y': 'Variance in x-direction', 
+                         'tilt': 'Tilting angle of the data x-axis to the function x-axis', 
+                         'C':'Offset'}
   constrains={
               4: {'bounds': [None,None], 'tied': '[σ_x]'},
               5: {'bounds': [-180., 180.], 'tied': ''},  
@@ -2212,6 +2255,16 @@ class FitPsdVoigt3D(FitFunction3D):
   name="Psd. Voigt"
   parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0.01, 0., 0.5, 0.]
   parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'σ_x', 'σ_y', 'tilt', 'eta','C']
+  parameter_description={'I': 'Scaling', 
+                         'x_0': 'Peak x-Position', 
+                         'y_0': 'Peak y-Position', 
+                         'σ_x': 'Gauss variance in x-direction', 
+                         'σ_y': 'Gauss variance in x-direction', 
+                         'γ_x': 'Lorentz HWHM in x-direction', 
+                         'γ_y': 'Lorentz HWHM in x-direction', 
+                         'tilt': 'Tilting angle of the data x-axis to the function x-axis', 
+                         'eta': 'Relative intensity of Lorentz', 
+                         'C':'Offset'}
   fit_function_text='Pseudo Voigt'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
@@ -2297,6 +2350,13 @@ class FitLorentzian3D(FitFunction3D):
   name="Lorentzian"
   parameters=[1, 0, 0, 0.01, 0.01, 0., 0.]
   parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'tilt','C']
+  parameter_description={'I': 'Scaling', 
+                         'x_0': 'Peak x-Position', 
+                         'y_0': 'Peak y-Position', 
+                         'γ_x': 'HWHM in x-direction', 
+                         'γ_y': 'HWHM in x-direction', 
+                         'tilt': 'Tilting angle of the data x-axis to the function x-axis', 
+                         'C':'Offset'}
   fit_function_text='Lorentzian'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
@@ -2341,6 +2401,14 @@ class FitVoigt3D(FitFunction3D):
   name="Voigt"
   parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0.01, 0.]
   parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'σ_x','σ_y','C']
+  parameter_description={'I': 'Scaling', 
+                         'x_0': 'Peak x-Position', 
+                         'y_0': 'Peak y-Position', 
+                         'σ_x': 'Gauss variance in x-direction', 
+                         'σ_y': 'Gauss variance in x-direction', 
+                         'γ_x': 'Lorentz HWHM in x-direction', 
+                         'γ_y': 'Lorentz HWHM in x-direction', 
+                         'C':'Offset'}
   fit_function_text='Voigt'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)

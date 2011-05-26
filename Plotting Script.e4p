@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2011-05-17, 13:51:54 -->
+<!-- Saved: 2011-05-25, 23:06:49 -->
 <!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -73,23 +73,9 @@
     <Source>gtkgui/kws2.py</Source>
     <Source>gtkgui/ipython_view.py</Source>
     <Source>gtkgui/reflectometer_functions.py</Source>
-    <Source>wxgui/__init__.py</Source>
-    <Source>wxgui/circle.py</Source>
-    <Source>wxgui/dns.py</Source>
-    <Source>wxgui/in12.py</Source>
-    <Source>wxgui/MyClasses.py</Source>
-    <Source>wxgui/refl_fit_functions.py</Source>
-    <Source>wxgui/squid.py</Source>
-    <Source>wxgui/treff.py</Source>
-    <Source>wxgui/main_window.py</Source>
-    <Source>wxgui/dialogs.py</Source>
-    <Source>wxgui/diverse_classes.py</Source>
     <Source>gtkgui/file_actions.py</Source>
     <Source>gtkgui/gui_fit_data.py</Source>
-    <Source>wxgui/file_actions.py</Source>
-    <Source>wxgui/gui_fit_data.py</Source>
     <Source>sessions/reflectometer_fit/reflectometer.py</Source>
-    <Source>wxgui/reflectometer.py</Source>
     <Source>read_data/treff_addon1.py</Source>
     <Source>config/maria.py</Source>
     <Source>sessions/reflectometer_fit/treff.py</Source>
@@ -99,7 +85,6 @@
     <Source>gtkgui/generic.py</Source>
     <Source>measurement_data_functions.c</Source>
     <Source>measurement_data_functions.h</Source>
-    <Source>wxgui/PrintDatasetDialog.py</Source>
     <Source>aptdoc.css</Source>
     <Source>config/fit/pnr_multi/calchi_treff.f90</Source>
     <Source>config/fit/pnr_multi/fit_pnr_mult_newcons.f90</Source>

@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.1"
+__version__ = "0.7.6.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -178,13 +178,20 @@ class FitSessionGUI:
       p_name=function.parameter_names[i]
       text=gtk.Label(p_name)
       if p_name in function.parameter_description:
-        text.set_tooltip_text(function.parameter_description[p_name])
+        try:
+          text.set_tooltip_text(function.parameter_description[p_name])
+        except AttributeError:
+          # older pygtk versions don't have this functions
+          pass
       toggle=gtk.CheckButton()
       toggle.set_active(i in function.refine_parameters)
       toggle.connect('toggled', function.toggle_refine_parameter, i)
       entries.append(gtk.Entry())
       if p_name in function.parameter_description:
-        entries[i].set_tooltip_text(function.parameter_description[p_name])
+        try:
+          entries[i].set_tooltip_text(function.parameter_description[p_name])
+        except AttributeError:
+          pass
       entries[i].set_width_chars(8)
       entries[i].set_text("%.6g" % parameter)
       entries[i].connect('button_press_event', self.advanced_parameter_options, i, function)
@@ -258,14 +265,14 @@ class FitSessionGUI:
         return output
       if function.constrains is None or i not in function.constrains:
         entries=[
-               ('Upper Bound', None, float_of_none), 
                ('Lower Bound', None, float_of_none), 
+               ('Upper Bound', None, float_of_none), 
                ('Constrain', '', str)
                ]
       else:
         entries=[
-               ('Upper Bound', function.constrains[i]['bounds'][0], float_of_none), 
-               ('Lower Bound', function.constrains[i]['bounds'][1], float_of_none), 
+               ('Lower Bound', function.constrains[i]['bounds'][0], float_of_none), 
+               ('Upper Bound', function.constrains[i]['bounds'][1], float_of_none), 
                ('Constrain', function.constrains[i]['tied'], str)
                ]   
       advanced_dialog=SimpleEntryDialog('Advanced options for parameter [%s]' % function.parameter_names[i], 

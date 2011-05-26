@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "GPL v3"
-__version__ = "0.7.6.1"
+__version__ = "0.7.6.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -559,6 +559,10 @@ class ApplicationMainWindow(gtk.Window):
     dialog.set_version("v%s" % __version__)
     dialog.set_authors([__author__]+__credits__)
     dialog.set_copyright("© Copyright 2008-2011 Artur Glavic\n a.glavic@fz-juelich.de")
+    dialog.set_license('''                    GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+                       
+      The license can be found in the program directory as gpl.pdf''')
     dialog.set_website("http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki")
     dialog.set_website_label('Webseite @ fz-juelich.de')
     ## Close dialog on user response
@@ -741,7 +745,10 @@ class ApplicationMainWindow(gtk.Window):
         plugin.activate(self, session)
         activated=True
     if activated:
-      self.rebuild_menus()
+      try:
+        self.rebuild_menus()
+      except:
+        pass
 
   def deactivate_plugins(self):
     '''
@@ -782,7 +789,8 @@ class ApplicationMainWindow(gtk.Window):
     session_dialog.vbox.add(table)
     result=session_dialog.run()
     if result==1:
-      self.deactivate_plugins()
+      if self.active_session is not None:
+        self.deactivate_plugins()
       for button in buttons:
         if button.get_active():
           name=button.get_label()
