@@ -87,7 +87,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.3"
+__version__ = "0.7.6.5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -144,7 +144,7 @@ def import_session_from_name(arguments, measurement_type):
     else:
       new_args.append(item)
   arguments=new_args
-  active_session_class = getattr(__import__('sessions.'+measurement_type[0], globals(), locals(), 
+  active_session_class = getattr(__import__('sessions.'+measurement_type[0], {}, {}, 
                                       [measurement_type[1]]), measurement_type[1])
   return active_session_class(arguments)
 

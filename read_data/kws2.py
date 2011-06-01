@@ -21,7 +21,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.3"
+__version__ = "0.7.6.5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -186,17 +186,23 @@ def read_cmb_file(file_name):
   '''
     Read the binary .cmb file format.
   '''
+  # Read configurations
+  folder, rel_file_name=os.path.split(os.path.realpath(file_name))
+  setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
+  for key, value in setups.items():
+    if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
+      setup=value
   sys.stdout.write( "\tReading...\n")
   sys.stdout.flush()
   background=2.
   countingtime=1.
-  detector_distance=1435. #mm
+  detector_distance=setup['DETECTOR_DISTANCE']#1435. #mm
   pixelsize_x= 0.2171 #mm
   pixelsize_y= 0.2071 #mm
   sample_name=''
-  center_x=345.
-  center_y=498.5
-  q_window=[-0.2, 0.2, -0.05, 0.35]
+  center_x=setup['CENTER_X'] #345. pix
+  center_y=setup['CENTER_Y'] #498.5 pix
+  q_window=[-0.23, 0.23, -0.05, 0.35]
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
                            ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
@@ -225,7 +231,7 @@ def read_cmb_file(file_name):
   error_array=sqrt(data_array)
   corrected_data=data_array/countingtime
   corrected_error=error_array/countingtime
-  lambda_x=1.54
+  lambda_x=setup['LAMBDA_N'] #1.54
   qy_array=4.*pi/lambda_x*\
            sin(arctan((y_array-center_y)*pixelsize_y/detector_distance/2.))
   qz_array=4.*pi/lambda_x*\

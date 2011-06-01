@@ -11,7 +11,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.3"
+__version__ = "0.7.6.5"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -120,6 +120,7 @@ set size square
 '''
 defined_color_patterns={
                         'Default': 'defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black") model RGB', 
+                        'Default White Base': 'defined (0 "white", 0.001  "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")', 
                         'GLI': 'functions (gray*5./6.<0.75)?0.75-gray*5./6.:1.75-gray*5./6., 0.857, 0.875 model HSV', 
                         'Black to Red': 'defined (0 "black", 1 "purple", 2 "blue", 3 "green", 4 "yellow",  5 "red") model RGB', 
                         'Grey Scale': 'gray model RGB', 
