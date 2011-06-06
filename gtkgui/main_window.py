@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "GPL v3"
-__version__ = "0.7.6.5"
+__version__ = "0.7.6.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -3450,7 +3450,7 @@ set multiplot layout %i,1
                        'makefit': FitWrapper(self, self.active_session), 
                        })
     # add common mathematic functions to the namespace
-    math_functions=['exp','log', 'log10', 
+    math_functions=['exp','log', 'log10', 'pi', 
                     'sin', 'cos', 'tan', 'arcsin',  'arccos', 'arctan', 'sinh', 'cosh', 'tanh', 
                     'sqrt', 'abs']
     ipview.updateNamespace(dict([(item, getattr(numpy, item, None)) for item in math_functions]))
@@ -3488,7 +3488,8 @@ set multiplot layout %i,1
     '''
     sys.stdout=oldstd[0]
     sys.stderr=oldstd[1]
-    self.ipython_user_namespace=self.active_ipview.IP.user_ns
+    self.ipython_user_namespace=dict(
+        [(key, value) for key, value in self.active_ipview.IP.user_ns.items() if not key.startswith('_')])
     self.active_ipython=None
     self.active_ipview=None
 

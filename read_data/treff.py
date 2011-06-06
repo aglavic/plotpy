@@ -14,14 +14,15 @@ from copy import deepcopy
 from glob import glob
 from measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalConstant
 from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, \
-                          PIXEL_WIDTH, DETECTOR_PIXELS,CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
+                          PIXEL_WIDTH, DETECTOR_PIXELS,CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, \
+                          D17_PIXEL_SIZE, D17_CENTER_OFFSET
 from zipfile import ZipFile
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "GPL v3"
-__version__ = "0.7.6.5"
+__version__ = "0.7.6.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -33,6 +34,7 @@ class MeasurementDataTREFF(MeasurementData):
     Treff measurement data class, defining functions
     to combine two sets of measurements.
   '''
+  is_matrix_data=False # can speed up map plots, not well tested
   
   def __init__(self, *args, **opts):
     MeasurementData.__init__(self, *args, **opts)
@@ -911,7 +913,7 @@ def read_d17_raw_data(file_from, file_to):
     #scaling_factor=numpy.where(transmission!=0, 1./transmission, 0.)
     #scaling_factor/=scaling_factor[numpy.where(transmission!=0)].mean()
     #d17_calibration['transmission']=scaling_factor
-  if d17_calibration['water'] is None:
+  if d17_calibration['water'] is None and D17_MASK is not None:
     mask=D17_MASK
     scaling=mask.copy()
     scaling/=mask.sum(axis=0)
@@ -930,13 +932,13 @@ def read_d17_raw_data(file_from, file_to):
     print 'File not found: %s and %s.' % (file_from, file_to)
     return 'NULL'
   from_index=file_list.index(file_from)
-  to_index=file_list.index(file_to)
+  to_index=file_list.index(file_to)+1
   file_list=file_list[from_index:to_index]
-  datasets={(0, 0): [], (0, 1):[], (1, 0):[], (1, 1):[]}
   sys.stdout.write('    Reading %3i/%3i' % (1, len(file_list)))
   sys.stdout.flush()
   notfound=[]
   join_sets=[]
+  found_pattern=False
   for i, file_name in enumerate(file_list):
     sys.stdout.write('\b'*7+'%3i/%3i' % (i, len(file_list)))
     sys.stdout.flush()
@@ -946,47 +948,81 @@ def read_d17_raw_data(file_from, file_to):
       continue
     dataset.number=str(i)
     join_sets.append(dataset)
-    if i%7==6:
-      datasets[(0, 0)].append(join_sets[0])
-      datasets[(1, 1)].append(join_sets[2])
-      datasets[(1, 0)].append(join_sets[1])
-      datasets[(0, 1)].append(join_sets[3])
-      datasets[(0, 0)][-1].y=(datasets[(0, 0)][-1].y+join_sets[6].y)/2.
-      datasets[(1, 0)][-1].y=(datasets[(1, 0)][-1].y+join_sets[5].y)/2.
-      datasets[(1, 1)][-1].y=(datasets[(1, 1)][-1].y+join_sets[4].y)/2.
-      join_sets=[]
+    if (not found_pattern and len(join_sets)%2==0) or (not found_pattern and i==(len(file_list)-1)):
+      flippers=[set_i.flipper for set_i in join_sets]
+      found_pattern=flippers[:len(flippers)/2]==flippers[len(flippers)/2:]
+      if found_pattern:
+        flippers=flippers[:len(flippers)/2]
+      if found_pattern or i==(len(file_list)-1):
+        datasets={}
+        new_append={}
+        for flipper in flippers:
+          if not flipper in new_append:
+            new_append[flipper]=[join_sets.pop(0)]
+          else:
+            new_append[flipper].append(join_sets.pop(0))
+        for key, value in sorted(new_append.items()):
+          if not key in datasets:
+            datasets[key]=[]
+          datasets[key].append(value[0])
+          for subitem in value[1:]:
+            datasets[key][-1].y+=subitem.y
+          datasets[key][-1].y/=len(value)
+      else:
+        continue
+    elif not found_pattern:
+      continue
+    if len(join_sets)==len(flippers):
+      new_append={}
+      for flipper in flippers:
+        if not flipper in new_append:
+          new_append[flipper]=[join_sets.pop(0)]
+        else:
+          new_append[flipper].append(join_sets.pop(0))
+      for key, value in sorted(new_append.items()):
+        datasets[key].append(value[0])
+        for subitem in value[1:]:
+          datasets[key][-1].y+=subitem.y
+        datasets[key][-1].y/=len(value)
   sys.stdout.write('\n')
   output=[]
   absmin=100.
   absmax=0.
-  for i, polarization_data in enumerate([datasets[(0, 0)], datasets[(1, 1)], datasets[(0, 1)], datasets[(1, 0)]]):
-    dataset=MeasurementDataTREFF(zdata=2)
-    dataset.append_column(polarization_data[0].data[2].copy())
-    dataset.append_column(polarization_data[0].data[0].copy())
-    dataset.append_column(polarization_data[0].data[1].copy())
-    dataset.sample_name=polarization_data[0].sample_name
-    dataset.short_info="("+"".join(map(str, polarization_data[0].flipper)).replace('1', '-').replace('0', '+')+")"
-    dataset.number=str(i)
-    for dataset_i in polarization_data[1:]:
-      dataset.data[0].append(dataset_i.data[2])
-      dataset.data[1].append(dataset_i.data[0])
-      dataset.data[2].append(dataset_i.data[1])
-    alphai=dataset.data[0]
-    alphaf=dataset.data[1]
-    dataset.append_column((alphai+alphaf)//'α_i+α_f')
-    dataset.append_column((alphai-alphaf)//'α_i-α_f')
-    dataset.append_column((PI_2_OVER_LAMBDA*(numpy.cos(alphaf) - numpy.cos(alphai)))//('q_x', 'Å^{-1}'))
-    dataset.append_column((PI_2_OVER_LAMBDA*(numpy.sin(alphai) + numpy.sin(alphaf)))//('q_z', 'Å^{-1}'))
-    dataset.logz=True
-    dataset.scan_line=1
-    dataset.scan_line_constant=0
-    absmin=numpy.minimum(absmin, dataset.z.view(numpy.ndarray)[numpy.where(dataset.z!=0)].min())
-    absmax=numpy.maximum(absmax, dataset.z.view(numpy.ndarray).max())
-    output.append(dataset)
-  zfrom=10**(int(math.log10(absmin)))
-  zto=10**(int(math.log10(absmax))+1)
-  for dataset in output:
-    dataset.plot_options.zrange=(zfrom, zto)
+  if datasets.values()[0][0].tof:
+    output=[]
+    for key, values in sorted(datasets.items()):
+      output+=values
+    for dataset in output:
+      dataset.logz=True
+  else:
+    for i, polarization_data in enumerate([datasets[key] for key in sorted(datasets.keys())]):
+      dataset=MeasurementDataTREFF(zdata=2)
+      dataset.append_column(polarization_data[0].data[2].copy())
+      dataset.append_column(polarization_data[0].data[0].copy())
+      dataset.append_column(polarization_data[0].data[1].copy())
+      dataset.sample_name=polarization_data[0].sample_name
+      dataset.short_info="("+"".join(map(str, polarization_data[0].flipper)).replace('1', '-').replace('0', '+')+")"
+      dataset.number=str(i)
+      for dataset_i in polarization_data[1:]:
+        dataset.data[0].append(dataset_i.data[2])
+        dataset.data[1].append(dataset_i.data[0])
+        dataset.data[2].append(dataset_i.data[1])
+      alphai=dataset.data[0]
+      alphaf=dataset.data[1]
+      dataset.append_column((alphai+alphaf)//'α_i+α_f')
+      dataset.append_column((alphai-alphaf)//'α_i-α_f')
+      dataset.append_column((PI_2_OVER_LAMBDA*(numpy.cos(alphaf) - numpy.cos(alphai)))//('q_x', 'Å^{-1}'))
+      dataset.append_column((PI_2_OVER_LAMBDA*(numpy.sin(alphai) + numpy.sin(alphaf)))//('q_z', 'Å^{-1}'))
+      dataset.logz=True
+      dataset.scan_line=1
+      dataset.scan_line_constant=0
+      absmin=numpy.minimum(absmin, dataset.z.view(numpy.ndarray)[numpy.where(dataset.z!=0)].min())
+      absmax=numpy.maximum(absmax, dataset.z.view(numpy.ndarray).max())
+      output.append(dataset)
+    zfrom=10**(int(math.log10(absmin)))
+    zto=10**(int(math.log10(absmax))+1)
+    for dataset in output:
+      dataset.plot_options.zrange=(zfrom, zto)
   if len(notfound)>0:
     print "Could not import files %s" % str([file_name[i] for i in notfound])
   return output
@@ -1001,37 +1037,62 @@ def read_d17_raw_file(file_name):
   else:
     file_text=open(file_name, 'r').read()
   if not file_text.startswith('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'):
-    #print "No D17 raw data header found."
+    print "No D17 raw data header found."
     return None
   regions=file_text.split('IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII')
   regions=map(str.strip, regions)
   dataset=MeasurementDataTREFF()
   # evaluate header
-  header_1=regions[1].split('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')[1].strip()
+  info_block0, header_1=map(str.strip, regions[1].split('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'))
   header_1=header_1.splitlines()[1]
-  sample_name=header_1.split()[0].strip()
+  try:
+    sample_name=header_1.split('*')[0].rsplit(None, 2)[0].split(None, 1)[1].strip()
+  except:
+    sample_name='(%s)' % file_name
   F1=int(header_1.split('*F1=')[1].split('*')[0])
   F2=int(header_1.split('*F2=')[1].split('*')[0])
   dataset.flipper=(F1, F2)
   dataset.sample_name=sample_name
   info_block1=regions[1].split('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')[1].strip()
   info_block2=regions[1].split('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')[2].strip()
+  info_block0=info_block0.split()[1:]
   info_block1=info_block1.split()[1:]
   info_block2=info_block2.split()[1:]
+  tof_channels=int(info_block0[0])
+  dataset.tof=tof_channels!=1
   counting_time=PhysicalConstant(float(info_block1[2]), 's')
   monitor=PhysicalConstant(float(info_block1[4]), 'monitor')
   temp=float(info_block1[29])
   detector_angle=float(info_block2[16])
   omega=float(info_block2[2])
   # get the data 
-  data=regions[-1].splitlines()[1:]
-  data=map(str.split, data)
-  # flatten data list
-  data=[item for sublist in data for item in sublist]
-  alphaf=PhysicalProperty('α_f', '°', numpy.arange(128, -128, -1)*0.02225+0.225+detector_angle-omega)
-  alphai=PhysicalProperty('α_i', '°', numpy.zeros_like(alphaf)+omega)
-  dataset.append_column(alphaf)
+  data_region=map(lambda region: region.split(
+                'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS'
+                                              )[0].splitlines()[1:], regions[2:])
+  if tof_channels==1:
+    data=data_region[0]
+    data=map(str.split, data)
+    # flatten data list
+    data=[item for sublist in data for item in sublist]
+  else:
+    # colect TOF parameters
+    tof_cwidth=float(info_block1[95])*1e-6 # δt of between TOF channels
+    tof_d0=float(info_block1[55])-float(info_block2[14])/200. # (chopper1,chopper2)-sample distance m
+    tof_d1=float(info_block2[15])*1e-3 # sample-detector distance
+    tof_distance=tof_d0+tof_d1
+    tof_open_req=45.-(float(info_block2[43])-float(info_block2[41]))/100.
+    tof_open_act=45.-(float(info_block2[47])-float(info_block2[45]))
+    tof_real_open=tof_open_act-float(info_block1[56])
+    tof_period=60./float(info_block2[44])
+    tof_delay_angle=(float(info_block1[54])-tof_real_open)/2.
+    tof_delay_time=tof_delay_angle/360.*tof_period
+    tof_delta_t=0.5*tof_cwidth+float(info_block1[96])*1e-6-tof_delay_time
+    # extract data
+    data=map(lambda region: map(str.split, region), data_region)
+    # flatten data list
+    data=[item for range in data for sublist in range for item in sublist]
   intensity=PhysicalProperty('Intensity', 'counts', data)
+  intensity.error=numpy.sqrt(intensity.view(numpy.ndarray))
   intensity/=counting_time
   if d17_calibration['water'] is not None:
     scaling=d17_calibration['water']
@@ -1041,12 +1102,30 @@ def read_d17_raw_file(file_name):
     scaling_factor=d17_calibration['transmission']
     intensity=intensity*scaling
     intensity.unit='a.u.'
-  intensity=intensity.reshape(64, 256).sum(axis=0).flatten()
-  intensity.dimension='Intensity'
-  intensity.error=numpy.sqrt(intensity.view(numpy.ndarray))
-  dataset.append_column(intensity)
-  dataset.append_column(alphai)
+  if tof_channels==1:
+    alphaf=PhysicalProperty('α_f', '°', numpy.arange(128, -128, -1)*D17_PIXEL_SIZE+\
+                                              D17_CENTER_OFFSET+detector_angle-omega)
+    alphai=PhysicalProperty('α_i', '°', numpy.zeros_like(alphaf)+omega)
+    dataset.append_column(alphaf)
+    intensity=intensity.reshape(64, 256).sum(axis=0).flatten()
+    intensity.dimension='Intensity'
+    dataset.append_column(intensity)
+    dataset.append_column(alphai)
+  else:
+    two_theta=PhysicalProperty('2Θ', '°', numpy.repeat(numpy.arange(128, -128, -1)*D17_PIXEL_SIZE+\
+                                              D17_CENTER_OFFSET+detector_angle, tof_channels))
+    tof=PhysicalProperty('TOF', 's', numpy.tile(numpy.arange(tof_channels)*tof_cwidth+\
+                                                tof_delta_t, 256))
+    lambda_n=(tof*h_over_m0/tof_distance)//('λ_n', 'Å')
+    dataset.append_column(two_theta)    
+    dataset.append_column(lambda_n)
+    dataset.append_column(intensity)
+    dataset.append_column(tof)
+    dataset.is_matrix_data=True
+    dataset.zdata=2
   return dataset
+
+h_over_m0=3.956034E3 # ((m⋅Å) ∕ s)
 
 def read_d17_calibration(file_name):
   '''

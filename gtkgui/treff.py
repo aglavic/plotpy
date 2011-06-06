@@ -21,7 +21,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.5"
+__version__ = "0.7.6.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -132,36 +132,6 @@ class TreffGUI:
                 1, 3,                      5, 6,
                 0,                       gtk.FILL,
                 0,                         0);
-    label=gtk.Label()
-    label.set_markup('Stepwidth:')
-    table.attach(label,
-                # X direction #          # Y direction
-                0, 1,                      6, 7,
-                gtk.EXPAND | gtk.FILL,     gtk.FILL,
-                0,                         0);
-    binning=gtk.Entry()
-    binning.set_width_chars(4)
-    binning.set_text('0.08')
-    table.attach(binning,
-                # X direction #          # Y direction
-                1, 3,                      6, 7,
-                0,                       gtk.FILL,
-                0,                         0);
-    #weight=gtk.CheckButton(label='Gauss weighting, Sigma:', use_underline=True)
-    #weight.set_active(True)
-    #table.attach(weight,
-    #            # X direction #          # Y direction
-    #            0, 1,                      7, 8,
-    #            0,                       gtk.FILL,
-    #            0,                         0);
-    #sigma=gtk.Entry()
-    #sigma.set_width_chars(4)
-    #sigma.set_text('0.04')
-    #table.attach(sigma,
-                ## X direction #          # Y direction
-                #1, 3,                      7, 8,
-                #0,                       gtk.FILL,
-                #0,                         0);
     ext_all=gtk.CheckButton(label='Extract for all maps', use_underline=True)
     ext_all.set_active(True)
     table.attach(ext_all,
@@ -198,8 +168,6 @@ class TreffGUI:
     line_width.connect('activate', lambda *ign: cs_dialog.response(1))
     offset_x.connect('activate', lambda *ign: cs_dialog.response(1))
     offset_y.connect('activate', lambda *ign: cs_dialog.response(1))
-    binning.connect('activate', lambda *ign: cs_dialog.response(1))
-    #sigma.connect('activate', lambda *ign: cs_dialog.response(1))
     cs_dialog.vbox.add(table)
     cs_dialog.add_button('OK', 1)
     cs_dialog.add_button('Cancel', 0)
@@ -220,14 +188,11 @@ class TreffGUI:
       try:
         args=('extract_specular_reflectivity',
               float(line_width.get_text()), 
-              False, #weight.get_active(), 
-              0.08, #float(sigma.get_text()), 
-              float(binning.get_text()), 
               (float(offset_x.get_text()), float(offset_y.get_text()))
               )
+        gotit=True
       except ValueError:
         gotit=False
-      gotit=True
       for i in extract_indices:
         window.index_mess=i
         gotit=gotit and window.file_actions.activate_action(*args)        
@@ -436,7 +401,7 @@ class TreffGUI:
     delta_wavelength.set_width_chars(5)
     delta_wavelength.set_text(str(self.active_file_data.fit_object.wavelength[1]))
     # activating the input will apply the settings, too
-    wavelength.connect('activate', self.dialog_activate, dialog)
+    delta_wavelength.connect('activate', self.dialog_activate, dialog)
     wavelength_table.attach(delta_wavelength, 3, 4,  0, 1, gtk.FILL, gtk.FILL, 0, 3)
     align_table.attach(wavelength_table, 0, 2,  2, 3, gtk.FILL, gtk.FILL, 0, 0)
     text_filed=gtk.Label()
@@ -604,7 +569,7 @@ class TreffGUI:
     dialog.add_button('New Multilayer',4) # button new multilayer has handler_id 4
     dialog.add_button('Fit/Simulate and Replot',5) # button replot has handler_id 5
     dialog.connect("response", self.dialog_response, dialog, window,
-                   [wavelength, background, 
+                   [(wavelength, delta_wavelength), background, 
                    [first_slit, second_slit], 
                    scaling_factor, 
                    [polarizer_efficiancy, analyzer_efficiancy, flipper0_efficiancy, flipper1_efficiancy], 
@@ -810,7 +775,8 @@ class TreffGUI:
     '''
     if response>=5:
       try:
-        self.active_file_data.fit_object.wavelength[0]=float(parameters_list[0].get_text())
+        self.active_file_data.fit_object.wavelength[0]=float(parameters_list[0][0].get_text())
+        self.active_file_data.fit_object.wavelength[1]=float(parameters_list[0][1].get_text())
         self.active_file_data.fit_object.background=float(parameters_list[1].get_text())
         self.active_file_data.fit_object.slits=map(float, map(lambda item: item.get_text(), parameters_list[2]))
         self.active_file_data.fit_object.scaling_factor=float(parameters_list[3].get_text())

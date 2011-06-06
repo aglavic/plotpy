@@ -24,7 +24,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.5"
+__version__ = "0.7.6.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -1152,6 +1152,82 @@ class FitLorentzian(FitFunction):
                         'C':'Offset'}
   fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2) + p[3]
   fit_function_text='Lorentzian: I=[I] x_0=[x0] γ=[γ|2]'
+
+class FitLorentzianAsymmetric(FitFunction):
+  '''
+    Fit a asymmetric lorentz function.
+  '''
+  
+  # define class variables.
+  name="Asymmetric Lorentzian"
+  parameters=[1, 0, 1, 0, 0]
+  parameter_names=['I', 'x0', 'γ', 'C', 'ν']
+  parameter_description={'I': 'Scaling', 
+                        'x0': 'Peak Position', 
+                        'γ': 'Half Width Half Maximum', 
+                        'C':'Offset', 
+                        'ν': 'Asymmetry'}
+  fit_function_text='Asymmetric Lorentzian: I=[I] x_0=[x0] γ=[γ|2]'
+  
+  def fit_function(self, p, x):
+    I=p[0]
+    x0=p[1]
+    gamma=p[2]
+    C=p[3]
+    nu=p[4]
+    gamma_asym=2.*gamma/(1+numpy.exp(nu*(x-x0)))
+    L=I / (1 + ((x-x0)/gamma_asym)**2) + C
+    return L
+
+class FitVoigtAsymmetric(FitFunction):
+  '''
+    Fit a voigt function using the representation as real part of the complex error function.
+  '''
+  
+  # define class variables.
+  name="AsymmetricVoigt"
+  parameters=[1, 0, 0.01, 0.01, 0, 0, 0]
+  parameter_names=['I', 'x0', 'γ', 'σ', 'C', 'ν_γ', 'ν_σ']
+  parameter_description={'I': 'Scaling', 
+                         'x0': 'Peak Position', 
+                         'σ': 'Gaussian Variance', 
+                         'γ': 'HWHM Lorentzian',
+                         'C':'Offset', 
+                         'ν_γ': 'Asymmetry Lorentzian', 
+                         'ν_σ': 'Asymmetry Gaussian', 
+                         }
+  fit_function_text='Asymmetric Voigt: I=[I] x_0=[x0] σ=[σ|2] γ=[γ|2]'
+  sqrt2=numpy.sqrt(2)
+  sqrt2pi=numpy.sqrt(2*numpy.pi)
+
+  def __init__(self, initial_parameters=[]):
+    '''
+      Initialize and import scipy function.
+    '''
+    FitFunction.__init__(self, initial_parameters)
+    global wofz
+    from scipy.special import wofz
+
+
+  def fit_function(self, p, x):
+    '''
+      Return the Voigt profile of x.
+      It is calculated using the complex error function,
+      see Wikipedia articel on Voigt-profile for the details.
+    '''
+    I=p[0]
+    x0=p[1]
+    gamma=p[2]
+    sigma=p[3]
+    C=p[4]
+    nu_gamma=p[5]
+    nu_sigma=p[6]
+    gamma_asym=2.*gamma/(1+numpy.exp(nu_gamma*(x-x0)))
+    sigma_asym=2.*sigma/(1+numpy.exp(nu_sigma*(x-x0)))
+    z=(x - x0 + (abs(gamma_asym)*1j)) / abs(sigma_asym)/self.sqrt2
+    z0=(0. + (abs(gamma_asym)*1j)) / abs(sigma_asym)/self.sqrt2
+    value=I * wofz(z).real / wofz(z0).real + C
+    return value
 
 class FitVoigt(FitFunction):
   '''
@@ -2479,6 +2555,7 @@ class FitSession(FitSessionGUI):
                        FitVoigt.name: FitVoigt, 
                        FitOneOverX.name: FitOneOverX, 
                        FitLorentzian.name: FitLorentzian, 
+                       FitVoigtAsymmetric.name: FitVoigtAsymmetric, 
                        FitSQUIDSignal.name: FitSQUIDSignal, 
                        FitBrillouineB.name: FitBrillouineB, 
                        FitBrillouineT.name: FitBrillouineT, 

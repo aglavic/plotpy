@@ -8,6 +8,7 @@
 # import buildin modules
 import os
 import sys
+import signal
 import math
 import subprocess
 import gtk
@@ -17,7 +18,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.5"
+__version__ = "0.7.6.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -111,7 +112,13 @@ class ReflectometerFitGUI:
     '''
     def status_response(action, response, session, window):
       if response==1: # if the process is abborted, plot without fit
-        self.proc.kill()
+        if subprocess.mswindows:
+          # on windows the fit program is executed in a shell, 
+          # which would be killed by proc.kill, so we kill it by name
+          subprocess.call(['taskkill', '/F', '/im', 'fit.o'], shell=True)
+          self.proc.wait() # wait until process is actually terminated
+        else:
+          self.proc.kill()
         session.active_file_data.fit_object.fit=0
         session.dialog_fit(action, window)
       elif response==2:

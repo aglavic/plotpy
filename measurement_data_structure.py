@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.5"
+__version__ = "0.7.6.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -84,6 +84,7 @@ class MeasurementData(object):
   filters=[] # a list of filters to be applied when returning the data, the format is:
              # ( column , from , to , include )
   SPLIT_SENSITIVITY=0.01
+  is_matrix_data=False
 
   def __init__(self, columns=[], const=[],x=0,y=1,yerror=-1,zdata=-1): 
     '''
@@ -833,6 +834,15 @@ class MeasurementData(object):
     write_file.close()
     return split_indices[-1] # return the number of exported data lines
 
+  def export_matrix(self, file_name):
+    '''
+      Quick export only the xyz values as binary file.
+    '''
+    # Create data as list of x1,y1,z1,x2,y2,z2...,xn,yn,zn
+    xyz=numpy.append(numpy.append(self.x, self.y), self.z).astype(numpy.float32)\
+          .reshape(3,len(self.x)).transpose().flatten()
+    xyz.tofile(open(file_name, 'wb'))
+
   def rough_sort(self, ds1, ds2, sensitivity):
     '''
       Return the sorting indices from a first and second column ignoring small
@@ -1080,15 +1090,9 @@ class HugeMD(MeasurementData):
     return self.last_export_output
   
   def export_matrix(self, file_name):
-    '''
-      Quick export only the xyz values as binary file.
-    '''
-    # Create data as list of x1,y1,z1,x2,y2,z2...,xn,yn,zn
-    xyz=numpy.append(numpy.append(self.x, self.y), self.z).astype(numpy.float32)\
-          .reshape(3,len(self.x)).transpose().flatten()
-    xyz.tofile(open(file_name, 'wb'))
-    self.store_data()
-  
+    MeasurementData.export_matrix(self, file_name)
+    self.store_data()    
+
   do_export=MeasurementData.export
 
 #--------------------------------------    HugeMD-Class     -----------------------------------------------------#
@@ -1346,33 +1350,34 @@ class PhysicalUnit(object):
       self._unit_parts={}
       begin=0
       nummerator=True
-      for i in range(1, len(entry_str)):
-        if entry_str[i] in ['*', '/']:
-          pass
-        elif entry_str[i:i+2] == '·':
-          # unicode items have to bytes
-          pass
-        else:
-          continue
-        new_region=entry_str[begin:i]
-        pow_idx=new_region.find('^')
-        if pow_idx==-1:
-          new_unit=new_region
-          new_power=1.
-        else:
-          new_unit=new_region[:pow_idx]
-          new_power=float(new_region[pow_idx+1:].strip('{}'))
-        if not nummerator:
-          new_power=-new_power
-        begin=i+1
-        if new_unit in self._unit_parts:
-          self._unit_parts[new_unit]+=new_power
-        else:
-          self._unit_parts[new_unit]=new_power
-        if entry_str[i] == '/':
-          nummerator=False
-        if entry_str[i:i+2] == '·':
-          begin+=1
+      if len(entry_str)>0:
+        for i in range(1, len(entry_str)):
+          if entry_str[i] in ['*', '/']:
+            pass
+          elif entry_str[i:i+2] == '·':
+            # unicode items have to bytes
+            pass
+          else:
+            continue
+          new_region=entry_str[begin:i]
+          pow_idx=new_region.find('^')
+          if pow_idx==-1:
+            new_unit=new_region
+            new_power=1.
+          else:
+            new_unit=new_region[:pow_idx]
+            new_power=float(new_region[pow_idx+1:].strip('{}'))
+          if not nummerator:
+            new_power=-new_power
+          begin=i+1
+          if new_unit in self._unit_parts:
+            self._unit_parts[new_unit]+=new_power
+          else:
+            self._unit_parts[new_unit]=new_power
+          if entry_str[i] == '/':
+            nummerator=False
+          if entry_str[i:i+2] == '·':
+            begin+=1
       new_region=entry_str[begin:]
       pow_idx=new_region.find('^')
       if pow_idx==-1:
@@ -2390,6 +2395,22 @@ class PhysicalProperty(numpy.ndarray):
                               [numpy.ndarray.sum(self, *args, **opts)], [output_error])      
     else:
       return PhysicalProperty('sum('+self.dimension+')', self.unit, [numpy.ndarray.sum(self, *args, **opts)])
+  
+  def reshape(self, *a, **opts):
+    '''
+      Change the dimensional order of the data.
+    '''
+    output=numpy.ndarray.reshape(self, *a, **opts)
+    output._error=self._error.reshape(*a, **opts)
+    return output
+  
+  def flatten(self):
+    '''
+      Reduce data to one dimension.
+    '''
+    output=numpy.ndarray.flatten(self)
+    output._error=self._error.flatten()
+    return output
   
   def join(self, other):
     '''

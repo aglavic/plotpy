@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.5"
+__version__ = "0.7.6.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -558,7 +558,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     # only use mds file if it is newer than the original data and this script
     if os.path.exists(mds_name) and not self.read_directly and \
         (os.path.getmtime(own_path)<os.path.getmtime(mds_name)) and \
-        (not os.path.exists(filename) or not \
+        (not os.path.exists(filename) or \
         (os.path.getmtime(filename)<os.path.getmtime(mds_name))):
       print "Importing previously saved data from '" +mds_name + "'."
       if zip_mds:

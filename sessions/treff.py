@@ -47,7 +47,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 __license__ = "GPL v3"
-__version__ = "0.7.6.5"
+__version__ = "0.7.6.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -307,7 +307,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
   max_iter=50 # maximal iterations in fit
   max_hr=5000 # Parameter in fit_pnr_multi
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add', 'ft1', 'maria', 'dimg', 'sim', 'bin']
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add', 'ft1', 'maria', 'dimg', 'sim', 'bin', 'speedup']
   MARIA=False
   replot=None 
   add_to_files={}
@@ -388,6 +388,8 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       elif argument=='-ft1':
         self.read_data=read_data.treff_addon1.read_data
         self.mds_create=False
+      elif argument=='-speedup':
+        read_data.treff.MeasurementDataTREFF.is_matrix_data=True
       elif argument=='-maria':
         self.maria=True
         self.read_data=read_data.treff.read_data_maria
@@ -464,8 +466,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
 
-  def do_extract_specular_reflectivity(self, file_actions, line_width, weighting, 
-                                       sigma, binning, center_position_offset=(0., 0.)):
+  def do_extract_specular_reflectivity(self, file_actions, line_width, center_position_offset=(0., 0.)):
     '''
       Function to extract the true specular reflectivity from an intensity map. It is appended to the
       file_actions dictionary to make it useable in a makro.
@@ -476,18 +477,23 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       
       @return At the moment True, should be if the extraction was successfull.
     '''
+    dataset=self.active_file_data[file_actions.window.index_mess]
+    alphai_steps=0.001
+    savey=dataset.y.copy()
+    dataset.y-=dataset.x
     # Extract the two lines
-    specular=file_actions.create_cross_section(1.0, center_position_offset[0], 1.0, center_position_offset[1], 
-                                                      line_width, 1, gauss_weighting=weighting, 
-                                                      sigma_gauss=sigma, bin_distance=binning)
-    off_spec1=file_actions.create_cross_section(1.0, 1.4142/2.*line_width+center_position_offset[0], 
-                                                1.0, -1.4142/2.*line_width+center_position_offset[1], 
+    specular=file_actions.create_cross_section(1.0, center_position_offset[0], 0.0, center_position_offset[1], 
+                                                      line_width, 1, gauss_weighting=False, 
+                                                      sigma_gauss=0.1, bin_distance=alphai_steps)
+    off_spec1=file_actions.create_cross_section(1.0, center_position_offset[0], 
+                                                0.0, 2.*line_width+center_position_offset[1], 
                                                 line_width, 1, gauss_weighting=False, 
-                                                sigma_gauss=1., bin_distance=binning)
-    off_spec2=file_actions.create_cross_section(1.0, -1.4142/2.*line_width+center_position_offset[0], 
-                                                1.0, 1.4142/2.*line_width+center_position_offset[1], 
+                                                sigma_gauss=1., bin_distance=alphai_steps)
+    off_spec2=file_actions.create_cross_section(1.0, center_position_offset[0], 
+                                                0.0, -2.*line_width+center_position_offset[1], 
                                                 line_width, 1, gauss_weighting=False, 
-                                                sigma_gauss=1., bin_distance=binning)
+                                                sigma_gauss=1., bin_distance=alphai_steps)
+    dataset.y=savey
     # Create a new object for the stored data
     new_cols=[]
     # Try to subtract the off-specular part,
@@ -513,7 +519,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     #                                 [point.error for point in true_specular_data])
     true_specular_data[numpy.where(true_specular_data<=0)]=true_specular_data[numpy.where(true_specular_data>0)].min()
     true_specular=MeasurementData()
-    true_specular.append_column(PhysicalProperty('Θ', specular.x.unit, specular_x)/2.)
+    true_specular.append_column(PhysicalProperty('Θ', specular.x.unit, specular_x))
     true_specular.append_column(true_specular_data)
     true_specular.append_column(specular.y//'I_{Specular}')
     # add the object to the active_file_data list

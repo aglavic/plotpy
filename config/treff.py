@@ -10,7 +10,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.5"
+__version__ = "0.7.6.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -43,18 +43,19 @@ RESULT_FILE='result'
 
 # D17 Instrument options
 # Correction fiels
-D17_CALIBRATION_FILES={'water': "/home/glavic/tmp/d17/Water/016295",  
+D17_CALIBRATION_FILES={'water': None,#"/home/glavic/tmp/d17/Water/016295",  
                        'transmission': None,#"/home/glavic/tmp/d17/transmission/025258"
                        }
 # Lower and Upper Bounds of the detector to use
 D17_MASK_BOUNDS_Y=(20, 51)
 D17_MASK_BOUNDS_X=(28, 237)
 # Define the integration mask of the detector, a 64x265 matrix of 0 and 1
-D17_MASK=((numpy.zeros((64, 256))+1).transpose()*numpy.where((numpy.arange(0, 64)>=D17_MASK_BOUNDS_Y[0])*\
-                    (numpy.arange(0, 64)<=D17_MASK_BOUNDS_Y[1]), 1., 0.)).transpose()*\
-                    numpy.where((numpy.arange(0, 256)>=D17_MASK_BOUNDS_X[0])*\
-                    (numpy.arange(0, 256)<=D17_MASK_BOUNDS_X[1]), 1., 0.)
-
+D17_MASK=None #((numpy.zeros((64, 256))+1).transpose()*numpy.where((numpy.arange(0, 64)>=D17_MASK_BOUNDS_Y[0])*\
+               #     (numpy.arange(0, 64)<=D17_MASK_BOUNDS_Y[1]), 1., 0.)).transpose()*\
+               #     numpy.where((numpy.arange(0, 256)>=D17_MASK_BOUNDS_X[0])*\
+               #     (numpy.arange(0, 256)<=D17_MASK_BOUNDS_X[1]), 1., 0.)
+D17_PIXEL_SIZE=0.02225 # °
+D17_CENTER_OFFSET=0.18846#0.225 # °
 # compiler settings for fortran
 FORTRAN_COMPILER='gfortran'
 # compiler optimization options as can be found in the manual,

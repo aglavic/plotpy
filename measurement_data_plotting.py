@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.5"
+__version__ = "0.7.6.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -416,7 +416,7 @@ def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix,
                         str(datasets[i].plot_together[j].zdata+1)
     if getattr(datasets[i], 'is_matrix_data', False):
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
-        '.bin" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + \
+        '.bin"  binary format="%float" u 1:2:3 t "' + gp.titles + '" ' + \
           (datasets[i].plot_options.special_plot_parameters or plotting_param)
     else:
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\

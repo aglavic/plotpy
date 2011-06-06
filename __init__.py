@@ -73,21 +73,21 @@ if not "--nolimit" in sys.argv:
 #----------------------- importing modules --------------------------
 
 # set default encoding
-try:
-  # TODO: try to fix unicode handling
-  # this is just a hack as wx can lead to unicode errors
-  # the site.py module removes sys.setdefaultencoding
-  # so we reload it to use the function until we get this fixed
-  reload(sys)
-  sys.setdefaultencoding('utf8')
-except AttributeError:
-  sys.setappdefaultencoding('utf8')
+#try:
+  ## TODO: try to fix unicode handling
+  ## this is just a hack as wx can lead to unicode errors
+  ## the site.py module removes sys.setdefaultencoding
+  ## so we reload it to use the function until we get this fixed
+  #reload(sys)
+#  sys.setdefaultencoding('utf8')
+#except AttributeError:
+  #sys.setappdefaultencoding('utf8')
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.5"
+__version__ = "0.7.6.6"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
