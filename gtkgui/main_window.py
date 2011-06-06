@@ -899,6 +899,8 @@ class ApplicationMainWindow(gtk.Window):
     if file_names is None:
       # process canceled
       return
+    file_names=map(unicode, file_names)
+    folder=unicode(folder)
     self.active_folder=folder
     #----------------File selection dialog-------------------#
     # show a status dialog for the file import

@@ -235,6 +235,9 @@ def _run():
   '''
     Start the program.
   '''
+  if sys.platform.startswith('win'):
+    # fix problems with windows and non ascii file names
+    sys.argv=map(lambda arg: unicode(arg.decode('mbcs')), sys.argv)
   if '--debug' in sys.argv:
     initialize_debug()
   if not '-scp' in sys.argv:

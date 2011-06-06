@@ -484,7 +484,7 @@ class DNSSession(GUI, GenericSession):
           self.TRANSFORM_Q=True
           last_argument_option=[False,'']
         elif last_argument_option[1]=='vana':
-          self.VANADIUM_FILE=argument
+          self.VANADIUM_FILE=unicode(argument)
           last_argument_option=[False,'']
         # Set sample name:
         elif last_argument_option[1]=='sample':
