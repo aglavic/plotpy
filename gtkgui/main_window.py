@@ -2802,6 +2802,14 @@ set multiplot layout %i,1
     self.replot()
     print 'Show errorbars='+str(errorbars)
 
+  def toggle_xyprojections(self,action):
+    '''
+      Show or remove error bars in plots.
+    '''
+    measurement_data_plotting.maps_with_projection= not measurement_data_plotting.maps_with_projection
+    self.reset_statusbar()
+    self.replot()
+
   def export_plot(self,action): 
     '''
       Function for every export action. 
@@ -2883,6 +2891,10 @@ set multiplot layout %i,1
               attachedset.export_matrix(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.bin'))
             else:
               attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
+        if itemlist[0].zdata>=0 and measurement_data_plotting.maps_with_projection:
+          # export data of projections
+          projections_name=os.path.join(common_folder, common_file_prefix+str(0)+'-'+str(0)+'.xy')
+          itemlist[0].export_projections(projections_name)    
       else:
         plot_text=measurement_data_plotting.create_plot_script(
                            self.active_session, 
@@ -2904,6 +2916,10 @@ set multiplot layout %i,1
             attachedset.export_matrix(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.bin'))
           else:
             attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
+        if dataset.zdata>=0 and measurement_data_plotting.maps_with_projection:
+          # export data of projections
+          projections_name=os.path.join(common_folder, common_file_prefix+str(0)+'-'+str(0)+'.xy')
+          dataset.export_projections(projections_name)    
       write_file=open(os.path.join(common_folder, common_file_prefix+'.gp'), 'w')
       write_file.write(plot_text+'\n')
       write_file.close()
@@ -3716,12 +3732,13 @@ set multiplot layout %i,1
         x1=float(xids[-1])
         y0=float(yids[0])
         y1=float(yids[-1])
-        # try to remove the colorbar from the region
-        whith_values_inside=(numpy.mean(pixbuf_data[int(y0):int(y1), int(x0):int(x1)], axis=2)==255.)
-        ysum2=numpy.sum(whith_values_inside, axis=0)*1.
-        ysum2/=float(y1-y0)
-        xids=numpy.where(ysum2==1.)[0]
-        x1=float(xids[0]+x0-1)
+        if not measurement_data_plotting.maps_with_projection:
+          # try to remove the colorbar from the region
+          whith_values_inside=(numpy.mean(pixbuf_data[int(y0):int(y1), int(x0):int(x1)], axis=2)==255.)
+          ysum2=numpy.sum(whith_values_inside, axis=0)*1.
+          ysum2/=float(y1-y0)
+          xids=numpy.where(ysum2==1.)[0]
+          x1=float(xids[0]+x0-1)
         x0/=len(ysum)
         x1/=len(ysum)
         y0/=len(xsum)
@@ -4434,8 +4451,14 @@ set multiplot layout %i,1
       <separator name='static10'/>
       <toolitem action='Apply'/>
       <toolitem action='ExportAll'/>
-      <toolitem action='ErrorBars'/>
-      <toolitem action='ToggleMousemode' />
+      '''
+    if self.measurement[self.index_mess].zdata>=0:
+      output+='''<toolitem action='XYProjections'/>
+      '''        
+    else:
+      output+='''<toolitem action='ErrorBars'/>
+      '''
+    output+='''<toolitem action='ToggleMousemode' />
       <separator name='static11'/>
       <toolitem action='AddMulti'/>
       <toolitem action='MultiPlot'/>
@@ -4634,6 +4657,10 @@ set multiplot layout %i,1
         "E.Bars", None,#'e',                     # label, accelerator
         "Toggle errorbars",                                    # tooltip
         self.toggle_error_bars),
+      ( "XYProjections", gtk.STOCK_FULLSCREEN,                    # name, stock id
+        "XY-Proj.", None,#'e',                     # label, accelerator
+        "Toggle xy-projections",                                    # tooltip
+        self.toggle_xyprojections),
       ( "AddMulti", gtk.STOCK_JUMP_TO,                    # name, stock id
         "_Add", '<alt>a',                     # label, accelerator
         "Add/Remove plot to/from multi-plot list",                                    # tooltip

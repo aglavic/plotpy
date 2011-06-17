@@ -32,4 +32,4 @@ scripts/*.bat
 repository/binary
 repository/source
 repository/dists
-
+repository/packages-*

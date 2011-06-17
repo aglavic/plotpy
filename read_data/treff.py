@@ -994,6 +994,9 @@ def read_d17_raw_data(file_from, file_to):
       output+=values
     for dataset in output:
       dataset.logz=True
+    for dataset in output:
+      # short info for the flipper state
+      dataset.short_info="("+"-"*dataset.flipper[0]+"+"*(1-dataset.flipper[0])+"-"*dataset.flipper[1]+"+"*(1-dataset.flipper[1])+")"
   else:
     for i, polarization_data in enumerate([datasets[key] for key in sorted(datasets.keys())]):
       dataset=MeasurementDataTREFF(zdata=2)
@@ -1049,8 +1052,12 @@ def read_d17_raw_file(file_name):
     sample_name=header_1.split('*')[0].rsplit(None, 2)[0].split(None, 1)[1].strip()
   except:
     sample_name='(%s)' % file_name
-  F1=int(header_1.split('*F1=')[1].split('*')[0])
-  F2=int(header_1.split('*F2=')[1].split('*')[0])
+  try:
+    F1=int(header_1.split('*F1=')[1].split('*')[0])
+    F2=int(header_1.split('*F2=')[1].split('*')[0])
+  except IndexError:
+    F1=0
+    F2=0
   dataset.flipper=(F1, F2)
   dataset.sample_name=sample_name
   info_block1=regions[1].split('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')[1].strip()

@@ -113,7 +113,7 @@ set ticslevel 0.05
 set palette defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")
 '''
 settings_3dmap=\
-'''set pm3d map interpolate 5,5
+'''set pm3d map interpolate 3,3
 set ticslevel 0.05
 set palette defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")
 set size square

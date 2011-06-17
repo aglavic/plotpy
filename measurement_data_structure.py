@@ -237,6 +237,13 @@ class MeasurementData(object):
     '''
       Define how to add two datasets together.
     '''
+    if type(other) in [float, int, numpy.ndarray]:
+      output=deepcopy(self)
+      if self.zdata>=0:
+        output.z+=other
+      else:
+        output.y+=other
+      return output
     if type(other)!=type(self) or len(self)!=len(other) or \
           (self.zdata<0 and self.y.unit!=other.y.unit) or \
           (self.zdata>=0 and (other.z is None or self.z.unit!=other.z.unit)):
@@ -254,11 +261,21 @@ class MeasurementData(object):
     output.number=self.number
     output.short_info=self.short_info+'+'+other.short_info
     return output
+  
+  def __radd__(self, other):
+    return self.__add__(other)
     
   def __sub__(self, other):
     '''
       Define how to add two datasets together.
     '''
+    if type(other) in [float, int, numpy.ndarray]:
+      output=deepcopy(self)
+      if self.zdata>=0:
+        output.z-=other
+      else:
+        output.y-=other
+      return output
     if type(other)!=type(self) or len(self)!=len(other) or \
           (self.zdata<0 and self.y.unit!=other.y.unit) or \
           (self.zdata>=0 and (other.z is None or self.z.unit!=other.z.unit)):
@@ -276,14 +293,31 @@ class MeasurementData(object):
     output.number=self.number
     output.short_info=self.short_info+'-'+other.short_info
     return output
+  
+  def __rsub__(self, other):
+    if type(other) in [float, int, numpy.ndarray]:
+      output=deepcopy(self)
+      if self.zdata>=0:
+        output.z=other-output.z
+      else:
+        output.y=other-output.y
+      return output
+    raise ValueError, "can only subtrac a MeasurementData from a scalar or array"
     
   def __div__(self, other):
     '''
       Define how to divide two datasets together.
     '''
+    if type(other) in [float, int, numpy.ndarray]:
+      output=deepcopy(self)
+      if self.zdata>=0:
+        output.z/=other
+      else:
+        output.y/=other
+      return output
     if type(other)!=type(self) or len(self)!=len(other) or \
           (self.zdata>=0 and other.z is None):
-      raise ValueError, "can only add two MeasurementData instances with the same shape and unit"
+      raise ValueError, "can only devide two MeasurementData instances with the same shape and unit"
     if self.z is not None:
       output=self.__class__([], [], 0, 1, -1, 2)
       output.data.append(self.x.copy())
@@ -297,11 +331,28 @@ class MeasurementData(object):
     output.number=self.number
     output.short_info=self.short_info+'/'+other.short_info
     return output
+  
+  def __rdiv__(self, other):
+    if type(other) in [float, int, numpy.ndarray]:
+      output=deepcopy(self)
+      if self.zdata>=0:
+        output.z=other/output.z
+      else:
+        output.y=other/output.y
+      return output
+    raise ValueError, "can only devide a scalar or array by a MeasurementData object"
     
   def __mul__(self, other):
     '''
       Define how to multiply two datasets together.
     '''
+    if type(other) in [float, int, numpy.ndarray]:
+      output=deepcopy(self)
+      if self.zdata>=0:
+        output.z*=other
+      else:
+        output.y*=other
+      return output
     if type(other)!=type(self) or len(self)!=len(other) or \
           (self.zdata>=0 and other.z is None):
       raise ValueError, "can only multiply two MeasurementData instances with the same shape and unit"
@@ -318,6 +369,12 @@ class MeasurementData(object):
     output.number=self.number
     output.short_info=self.short_info+'*'+other.short_info
     return output
+  
+  def __rmul__(self, other):
+    '''
+      Define how to multiply the MeasurementData from the left.
+    '''
+    return self.__mul__(other)
 
   def _get_plot_options(self): return self._plot_options
   
@@ -912,7 +969,67 @@ class MeasurementData(object):
     indices=numpy.where((x>=xstart)*(x<=xstop))[0]
     min_point=self.data[self.ydata].values.index(y[indices].min())
     return [self.data[self.xdata].values[min_point],self.data[self.ydata].values[min_point]]
+  
+  def get_xprojection(self, numpoints=200):
+    '''
+      Return the projection of 3d data on the x-axis.
+    '''
+    if self.zdata<0:
+      raise TypeError, "Only 3d datasets can be used to calculate a projection."
+    x=numpy.array(self.x, dtype=numpy.float32)
+    z=numpy.array(self.z, dtype=numpy.float32)
+    steps=numpy.linspace(float(x.min()), float(x.max()), numpoints)
+    dsteps=steps[1]-steps[0]
+    y=numpy.zeros_like(steps)
+    for i, step in enumerate(steps):
+      idx=numpy.where((x>=step)*(x<(step+dsteps)))[0]
+      if len(idx)==1:
+        y[i]=z[idx].sum()
+      elif len(idx)>1:
+        y[i]=z[idx].mean()
+    steps=steps[y!=0]
+    y=y[y!=0]
+    return PhysicalProperty(self.x.dimension, self.x.unit, steps), PhysicalProperty(self.z.dimension, self.z.unit, y)
 
+  def get_yprojection(self, numpoints=200):
+    '''
+      Return the projection of 3d data on the x-axis.
+    '''
+    if self.zdata<0:
+      raise TypeError, "Only 3d datasets can be used to calculate a projection."
+    x=numpy.array(self.y, dtype=numpy.float32)
+    z=numpy.array(self.z, dtype=numpy.float32)
+    steps=numpy.linspace(float(x.min()), float(x.max()), numpoints)
+    dsteps=steps[1]-steps[0]
+    y=numpy.zeros_like(steps)
+    for i, step in enumerate(steps):
+      idx=numpy.where((x>=step)*(x<(step+dsteps)))[0]
+      if len(idx)==1:
+        y[i]=z[idx].sum()
+      elif len(idx)>1:
+        y[i]=z[idx].mean()
+    steps=steps[y!=0]
+    y=y[y!=0]
+    return PhysicalProperty(self.y.dimension, self.y.unit, steps), PhysicalProperty(self.z.dimension, self.z.unit, y)
+  
+  def export_projections(self, file_name, numpoints=200):
+    '''
+      Export x and y projections to a 4-column file.
+    '''
+    #file_handler=open(file_name, 'w')
+    xx, xy=self.get_xprojection(numpoints)
+    yx, yy=self.get_yprojection(numpoints)
+    if len(xx)<len(yx):
+      xx.resize(len(yx), refcheck=False)
+      xy.resize(len(yx), refcheck=False)
+    elif len(yx)<len(xx):
+      yx.resize(len(xx), refcheck=False)
+      yy.resize(len(xx), refcheck=False)
+    #file_handler.write('# Projection on x and y axes of %s-%s map\n' % (self.sample_name,self.short_info))
+    #columns=' '.join(col.dimension+'['+col.units+']' for col in [xx, xy, yx, yy])
+    #write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
+    data=numpy.array([xx.tolist(), xy.tolist(), yx.tolist(), yy.tolist()]).transpose()
+    numpy.savetxt(file_name, data, fmt='%.10e', delimiter=' ', newline='\n')
 
 #--------------------------------------MeasurementData-Class-----------------------------------------------------#
 

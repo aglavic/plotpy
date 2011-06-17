@@ -25,6 +25,7 @@ __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
 persistene_plots=0
+maps_with_projection=False
 
 # open an instance of gnuplot on first import
 gnuplot_instance=subprocess.Popen(['gnuplot'], 
@@ -104,6 +105,10 @@ def gnuplot_plot_script(session,
       else:
         file_numbers.append(str(j)+'-'+str(i))
         attachedset.export(output_file_prefix+str(j)+'-'+str(i)+'.out')
+  if datasets[0].zdata>=0 and maps_with_projection:
+    # export data of projections
+    projections_name=output_file_prefix+file_numbers[0]+'.xy'
+    datasets[0].export_projections(projections_name)    
   if not sample_name:
     sample_name=datasets[0].sample_name
   if output_file.rsplit('.',1)[1]=='ps':
@@ -287,7 +292,11 @@ def create_plot_script(session,
                              additional_info)
   # Creat plot/splot lines
   if datasets[0].zdata>=0:
-    gnuplot_file_text+=script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
+    if maps_with_projection:
+      gnuplot_file_text+=script_plotlines_3d_projection(session, datasets, file_name_prefix, output_file_prefix, 
+                file_numbers, title, names, sample_name, postscript_export, additional_info, with_errorbars)
+    else:
+      gnuplot_file_text+=script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
                      title, names, sample_name, postscript_export, additional_info, with_errorbars)
   else:
     gnuplot_file_text+=script_plotlines(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
@@ -489,6 +498,89 @@ def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_fi
                              additional_info)
   return gnuplot_file_text+'unset multiplot\n'
     
+def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
+                     title, names, sample_name, postscript_export, additional_info, with_errorbars):
+  '''
+    Plot lines for 3d plots with projections on the axes. (x,y vs. z)
+  '''
+  gnuplot_file_text='unset title\n'
+  gp=gnuplot_preferences
+
+  dataset=datasets[0]
+  output_file_prefix=os.path.normpath(output_file_prefix)
+  projections_name=output_file_prefix+file_numbers[0]+'.xy'
+  
+  gnuplot_file_text+='set multiplot title "%s"\n' % (dataset.sample_name + dataset.short_info)
+  if dataset.logz:
+    gnuplot_file_text+='set log x\n'
+  xrange=list(dataset.plot_options._xrange)
+  yrange=list(dataset.plot_options._yrange)
+  if xrange[0] is None:
+    xrange[0]=dataset.x.min()
+  if xrange[1] is None:
+    xrange[1]=dataset.x.max()
+  if yrange[0] is None:
+    yrange[0]=dataset.y.min()
+  if yrange[1] is None:
+    yrange[1]=dataset.y.max()
+  zrange=dataset.plot_options._zrange
+  gnuplot_file_text+="set autoscale x\n"
+  gnuplot_file_text+= ("set xrange [%s:%s]\n" % (zrange[0], zrange[1] )).replace("None", "")
+  gnuplot_file_text+='set yrange [%f:%f]\n' % (yrange[0], yrange[1])
+  gnuplot_file_text+='unset xtics\n'
+  gnuplot_file_text+='unset xlabel\n'
+  gnuplot_file_text+='set lmargin at screen 0.15\nset rmargin at screen 0.3\n'
+  gnuplot_file_text+='set bmargin at screen 0.3\nset tmargin at screen 0.9\n'
+  gnuplot_file_text+='plot "%s" u 4:3 w lines\n' % projections_name
+  if dataset.logz:
+    gnuplot_file_text+='unset log x\n'
+    gnuplot_file_text+='set log y\n'
+  gnuplot_file_text+='set xrange [%f:%f]\n' % (xrange[0], xrange[1])
+  gnuplot_file_text+='set autoscale y\n'
+  gnuplot_file_text+=("set yrange [%s:%s]\n" % (zrange[0], zrange[1] )).replace("None", "")
+  gnuplot_file_text+='unset ytics\n'
+  gnuplot_file_text+='set xtics\n'
+  gnuplot_file_text+='set xlabel "%s"\n' % gp.x_label
+  gnuplot_file_text+='unset ylabel\n'
+  gnuplot_file_text+='set lmargin at screen 0.3\nset rmargin at screen 0.8\n'
+  gnuplot_file_text+='set bmargin at screen 0.15\nset tmargin at screen 0.3\n'
+  gnuplot_file_text+='plot "%s" u 1:2 w lines\n' % projections_name
+  if dataset.logz:
+    gnuplot_file_text+='unset log y\n'
+  
+  gnuplot_file_text+='set xrange [%f:%f]\n' % (xrange[0], xrange[1])
+  gnuplot_file_text+='set yrange [%f:%f]\n' % (yrange[0], yrange[1])
+  gnuplot_file_text+='unset xtics\n'
+  gnuplot_file_text+='unset xlabel\n'
+  gnuplot_file_text+='set lmargin at screen 0.3\nset rmargin at screen 0.8\n'
+  gnuplot_file_text+='set bmargin at screen 0.3\nset tmargin at screen 0.9\n'
+  plotting_param=gp.plotting_parameters_3d
+  gnuplot_file_text+='set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
+  gnuplot_file_text+=gp.settings_3dmap.replace('set size square', '')
+  using_cols=str(datasets[0].xdata+1)+':'+\
+              str(datasets[0].ydata+1)+':'+\
+              str(datasets[0].zdata+1)
+  if getattr(datasets[0], 'is_matrix_data', False):
+    gnuplot_file_text+='# now the plotting function\n'+\
+        'plot "'+output_file_prefix+file_numbers[0]+'.bin" binary format="%float" u 1:2:3 w image t "'+gp.titles+'" '
+  else:
+    gnuplot_file_text+='# now the plotting function\n'+\
+        'splot "'+output_file_prefix+file_numbers[0]+'.out" u '+using_cols+\
+                datasets[0].plot_options.special_using_parameters+\
+                ' t "'+gp.titles+'" '+\
+                (datasets[0].plot_options.special_plot_parameters or plotting_param)
+  gnuplot_file_text=replace_ph(session, 
+                             gnuplot_file_text,
+                             datasets,
+                             file_name_prefix, 
+                             file_numbers, 
+                             title,
+                             names,
+                             sample_name,
+                             (0, 0, 0),
+                             postscript_export,
+                             additional_info)
+  return gnuplot_file_text+'\nunset multiplot'
 
 def script_header(show_persistent, datasets, output_file):
   '''
