@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.6"
+__version__ = "0.7.6.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -1456,7 +1456,7 @@ class PhysicalUnit(object):
       The input string should be of the form n1*n2*n3/d1*d2*d3 where n are units in the 
       nummerator and d units in the denominator.
     '''
-    if type(entry_str) not in [str, PhysicalUnit]:
+    if type(entry_str) not in [str, unicode, PhysicalUnit]:
       raise ValueError, 'can only construc unit from string or other PhysicalUnit not %s' % type(entry_str)
     object.__init__(self)
     if type(entry_str) is PhysicalUnit:

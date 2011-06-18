@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 '''
-  class for IN12 data sessions
+  class for SHG data sessions
 '''
 #################################################################################################
 #                        Script to plot IN12-measurements with gnuplot                          #
@@ -16,11 +16,11 @@ import sys
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # importing data readout
-import read_data.in12
+import read_data.shg
 # import gui functions for active config.gui.toolkit
 import config.gui
 try:
-  GUI=__import__( config.gui.toolkit+'gui.in12', fromlist=['IN12GUI']).IN12GUI
+  GUI=__import__( config.gui.toolkit+'gui.shg', fromlist=['SHGGUI']).SHGGUI
 except ImportError: 
   class GUI: pass
 
@@ -33,19 +33,19 @@ __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
-class IN12Session(GUI, GenericSession):
+class SHGSession(GUI, GenericSession):
   '''
-    Class to handle in12 data sessions
+    Class to handle SHG data sessions
   '''
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
 '''
-\tIN12-Data treatment:
+\tSHG-Data treatment:
 '''
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]', '*.gz'),]
+  FILE_WILDCARDS=[('SHG Parameters (.par)', '*.par'),]
   mds_create=False
 
 #  TRANSFORMATIONS=[\
@@ -82,7 +82,7 @@ class IN12Session(GUI, GenericSession):
     '''
       Function to read data files.
     '''
-    return read_data.in12.read_data(file_name )
+    return read_data.shg.read_data(file_name )
 
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++

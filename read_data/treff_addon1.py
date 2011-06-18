@@ -16,7 +16,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = ["Daniel Schumacher"]
 __license__ = "GPL v3"
-__version__ = "0.7.6.6"
+__version__ = "0.7.6.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -34,14 +34,31 @@ def read_data(file_name, script_path, import_images, return_detector_images):
     file_data=open(name, 'r').read()
     lines=file_data.splitlines()
     lines=filter(lambda line: not (line.startswith('#') or line.strip()==''), lines)
-    floats=map(lambda line: map(float, line.split()),  lines)
-    floats=filter(lambda line: line[1]!=0., floats)
-    dataset=MeasurementData([['q', 'Å^{-1}'], ['I', 'a.u.'], ['dI', 'a.u.']], [], 0, 1, 2)
-    map(dataset.append, floats)
-    dataset.sample_name=name
-    dataset.logy=True
-    dataset.short_info=''
-    # (from dim, from unit, multiplier, offset, to dim, to unit)
-    dataset.unit_trans([['q', 'Å^{-1}', 1000./PI_4_OVER_LAMBDA, 0., 'Θ', 'mrad']])
-    output.append(dataset)
+    lines=map(str.strip, lines)
+    i=0
+    continue_it=True
+    while continue_it:
+      try:
+        block=lines[i:lines.index('')]
+        i=lines.index('')
+      except ValueError:
+        block=lines[i:]
+        continue_it=False
+      try:
+        floats=map(lambda line: map(float, line.split()),  block)
+      except ValueError:
+        print "\tNot numeric string in %s[%i], ignoreing block." % (name, i+1)
+      floats=filter(lambda line: line[1]!=0., floats)
+      dataset=MeasurementData([['q', 'Å^{-1}'], ['I', 'a.u.'], ['dI', 'a.u.']], [], 0, 1, 2)
+      map(dataset.append, floats)
+      dataset.sample_name=name
+      dataset.logy=True
+      dataset.short_info=''
+      # (from dim, from unit, multiplier, offset, to dim, to unit)
+      dataset.data.append(dataset.data[0]//'q2')
+      dataset.unit_trans([['q2', 'Å^{-1}', 1000./PI_4_OVER_LAMBDA, 0., 'Θ{4.73Å}', 'mrad']])
+      if len(dataset.data[0])>1:
+        output.append(dataset)
+      else:
+        print "\tDataset %s[%i] has no intensities >0 in it!" % (name, i+1)
   return output
