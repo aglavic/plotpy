@@ -14,7 +14,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.7"
+__version__ = "0.7.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -101,13 +101,13 @@ def read_dat_file(file_info, global_info):
   for i, dimension, unit in zip(range(len(units)), dimensions, units)[1:]:
     if dimension in column_rename:
       dimension=column_rename[dimension]
-    cols.append( PhysicalProperty(dimension, unit, data[:, i]) )
+    cols.append( PhysicalProperty(str(dimension), str(unit), data[:, i]) )
   if 'Polariser' in file_info:
     pol=file_info['Polariser']
-    cols.append( PhysicalProperty('Polariser', pol[1], pol[0]+numpy.zeros_like(cols[0])) )
+    cols.append( PhysicalProperty('Polariser', str(pol[1]), pol[0]+numpy.zeros_like(cols[0])) )
   if 'Analyser' in file_info:
     ana=file_info['Analyser']
-    cols.append( PhysicalProperty('Analyser', ana[1], ana[0]+numpy.zeros_like(cols[0])) )
+    cols.append( PhysicalProperty('Analyser', str(ana[1]), ana[0]+numpy.zeros_like(cols[0])) )
   if 'polarizer offset' in file_info:
     for col in cols:
       if col.dimension=='Analyser':
@@ -135,13 +135,7 @@ def read_dat_file(file_info, global_info):
       output.short_info+=' Polariser at +%.0f°' % file_info['polarizer offset']
     # plot in polar coordinates
     po=output.plot_options
-    po.free_input+=[
-                'set polar', 
-                'set grid polar', 
-                'set angles degrees', 
-                'set size square'
-                    ]
+    po.is_polar=True
     maxI=cols[1].max()
-    po.xrange=[-maxI, maxI]
-    po.yrange=[-maxI, maxI]
+    po.yrange=[None, maxI]
   return output

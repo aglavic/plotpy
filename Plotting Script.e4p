@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2011-05-25, 23:06:49 -->
+<!-- Saved: 2011-06-19, 09:17:43 -->
 <!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -98,6 +98,9 @@
     <Source>gtkgui/sas.py</Source>
     <Source>sessions/sas.py</Source>
     <Source>read_data/sas.py</Source>
+    <Source>gtkgui/shg.py</Source>
+    <Source>sessions/shg.py</Source>
+    <Source>read_data/shg.py</Source>
   </Sources>
   <Forms>
   </Forms>

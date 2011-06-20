@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.7"
+__version__ = "0.7.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -1029,7 +1029,7 @@ class MeasurementData(object):
     #columns=' '.join(col.dimension+'['+col.units+']' for col in [xx, xy, yx, yy])
     #write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
     data=numpy.array([xx.tolist(), xy.tolist(), yx.tolist(), yy.tolist()]).transpose()
-    numpy.savetxt(file_name, data, fmt='%.10e', delimiter=' ', newline='\n')
+    numpy.savetxt(file_name, data, fmt='%.10e')
 
 #--------------------------------------MeasurementData-Class-----------------------------------------------------#
 
@@ -1254,6 +1254,7 @@ class PlotOptions(object):
   special_plot_parameters=None
   special_using_parameters=""
   splot=''
+  is_polar=False
   
   def __init__(self, initial_text=""):
     '''
@@ -1265,6 +1266,17 @@ class PlotOptions(object):
     self._yrange=[None, None]
     self._zrange=[None, None]
     self.input_string(initial_text)
+  
+  def overwrite_copy(self, other):
+    '''
+      Overwrite an other Plot option with the settings from this one.
+    '''
+    other._xrange=deepcopy(self._xrange)
+    other._yrange=deepcopy(self._yrange)
+    other._zrange=deepcopy(self._zrange)
+    other.free_input=deepcopy(self.free_input)
+    other.settings=deepcopy(self.settings)
+    return other
 
   def __str__(self):
     '''
@@ -1276,10 +1288,16 @@ class PlotOptions(object):
         output+="set "+key+" "+value+"\n"
     for value in self.free_input:
       output+=value+"\n"
-    output+=("set xrange [%s:%s]\n" % (self._xrange[0], self._xrange[1] )).replace("None", "")
-    output+=("set yrange [%s:%s]\n" % (self._yrange[0], self._yrange[1] )).replace("None", "")
-    output+=("set zrange [%s:%s]\n" % (self._zrange[0], self._zrange[1] )).replace("None", "")
-    output+=("set cbrange [%s:%s]\n" % (self._zrange[0], self._zrange[1] )).replace("None", "")
+    if self.is_polar:
+      output+="set polar\nset grid polar\n set size square\n"
+      output+=("set xrange [-%s:%s]\n" % (self._yrange[1], self._yrange[1] )).replace("-None", "").replace("None", "")
+      output+=("set yrange [-%s:%s]\n" % (self._yrange[1], self._yrange[1] )).replace("-None", "").replace("None", "")
+      output+=("set rrange [%s:%s]\n" % (self._xrange[0], self._xrange[1] )).replace("None", "")
+    else:
+      output+=("set xrange [%s:%s]\n" % (self._xrange[0], self._xrange[1] )).replace("None", "")
+      output+=("set yrange [%s:%s]\n" % (self._yrange[0], self._yrange[1] )).replace("None", "")
+      output+=("set zrange [%s:%s]\n" % (self._zrange[0], self._zrange[1] )).replace("None", "")
+      output+=("set cbrange [%s:%s]\n" % (self._zrange[0], self._zrange[1] )).replace("None", "")
     return output
   
   def __add__(self, input_string):

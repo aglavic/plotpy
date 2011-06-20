@@ -24,7 +24,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.7"
+__version__ = "0.7.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -409,6 +409,38 @@ class FitFunction(FitFunctionGUI):
       Define the multiplication of two FitFunction objects.
     '''
     return FitMultiply(self, other)
+  
+  def _get_function_text(self):
+    function_text=self.fit_function_text
+    for i in range(len(self.parameters)):
+      pname=self.parameter_names[i]
+      while '['+pname in function_text:
+        start_idx=function_text.index('['+pname)
+        end_idx=function_text[start_idx:].index(']')+start_idx
+        replacement=function_text[start_idx:end_idx+1]
+        if abs(self.parameters[i])!=0.:
+          pow_10=numpy.log10(abs(self.parameters[i]))
+        else:
+          pow_10=0
+        try:
+          digits=int(replacement.split('|')[1].rstrip(']'))
+        except:
+          digits=4
+        pow_10i=int(pow_10)
+        if pow_10i>(digits-1):
+          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+                                                (self.parameters[i]/10.**pow_10i, pow_10i))
+        elif pow_10<0:
+          if pow_10i==pow_10:
+            pow_10i+=1
+          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+                                                (self.parameters[i]/10.**(pow_10i-1), (pow_10i-1)))
+        else:
+          function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (self.parameters[i]))
+    return function_text
+    
+  
+  fit_function_text_eval=property(_get_function_text)
 
 class FitSum(FitFunction):
   '''
@@ -833,6 +865,38 @@ class FitFunction3D(FitFunctionGUI):
       Define the multiplication of two FitFunction objects.
     '''
     return FitMultiply3D(self, other)
+
+  def _get_function_text(self):
+    function_text=self.fit_function_text
+    for i in range(len(self.parameters)):
+      pname=self.parameter_names[i]
+      while '['+pname in function_text:
+        start_idx=function_text.index('['+pname)
+        end_idx=function_text[start_idx:].index(']')+start_idx
+        replacement=function_text[start_idx:end_idx+1]
+        if abs(self.parameters[i])!=0.:
+          pow_10=numpy.log10(abs(self.parameters[i]))
+        else:
+          pow_10=0
+        try:
+          digits=int(replacement.split('|')[1].rstrip(']'))
+        except:
+          digits=4
+        pow_10i=int(pow_10)
+        if pow_10i>(digits-1):
+          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+                                                (self.parameters[i]/10.**pow_10i, pow_10i))
+        elif pow_10<0:
+          if pow_10i==pow_10:
+            pow_10i+=1
+          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+                                                (self.parameters[i]/10.**(pow_10i-1), (pow_10i-1)))
+        else:
+          function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (self.parameters[i]))
+    return function_text
+    
+  
+  fit_function_text_eval=property(_get_function_text)
 
 class FitSum3D(FitFunction3D):
   '''
@@ -2856,32 +2920,7 @@ class FitSession(FitSessionGUI):
           fit.data[2].values=fd
           div.data[2].values=data.z-fd
           logdiv.data[2].values=10.**(numpy.log10(data.z)-numpy.log10(fd))
-          function_text=function[0].fit_function_text
-          for i in range(len(function[0].parameters)):
-            pname=function[0].parameter_names[i]
-            while '['+pname in function_text:
-              start_idx=function_text.index('['+pname)
-              end_idx=function_text[start_idx:].index(']')+start_idx
-              replacement=function_text[start_idx:end_idx+1]
-              if abs(function[0].parameters[i])!=0.:
-                pow_10=numpy.log10(abs(function[0].parameters[i]))
-              else:
-                pow_10=0
-              try:
-                digits=int(replacement.split('|')[1].rstrip(']'))
-              except:
-                digits=4
-              pow_10i=int(pow_10)
-              if pow_10i>(digits-1):
-                function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
-                                                      (function[0].parameters[i]/10.**pow_10i, pow_10i))
-              elif pow_10<0:
-                if pow_10i==pow_10:
-                  pow_10i+=1
-                function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
-                                                      (function[0].parameters[i]/10.**(pow_10i-1), (pow_10i-1)))
-              else:
-                function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (function[0].parameters[i]))
+          function_text=function[0].fit_function_text_eval
           fit.short_info=function_text
           div.short_info='data-%s' % function_text
           logdiv.short_info='log(data)-log(%s)' % function_text
@@ -2921,33 +2960,7 @@ class FitSession(FitSessionGUI):
                                           interpolate=use_interpolate)
         for i in range(len(fit_x)):
           result.append((fit_x[i], fit_y[i]))
-        function_text=function[0].fit_function_text
-        for i in range(len(function[0].parameters)):
-          pname=function[0].parameter_names[i]
-          while '['+pname in function_text:
-            start_idx=function_text.index('['+pname)
-            end_idx=function_text[start_idx:].index(']')+start_idx
-            replacement=function_text[start_idx:end_idx+1]
-            if abs(function[0].parameters[i])!=0.:
-              pow_10=numpy.log10(abs(function[0].parameters[i]))
-            else:
-              pow_10=0
-            try:
-              digits=int(replacement.split('|')[1].rstrip(']'))
-            except:
-              digits=4
-            pow_10i=int(pow_10)
-            if pow_10i>(digits-1):
-              function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
-                                                    (function[0].parameters[i]/10.**pow_10i, pow_10i))
-            elif pow_10<0:
-              if pow_10i==pow_10:
-                pow_10i+=1
-              function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
-                                                    (function[0].parameters[i]/10.**(pow_10i-1), (pow_10i-1)))
-            else:
-              function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (function[0].parameters[i]))
-          #function_text=function_text.replace(function[0].parameter_names[i], "%.6g" % function[0].parameters[i], 2)
+        function_text=function[0].fit_function_text_eval
         result.short_info=function_text
         plot_list.append(result)
     self.data.plot_together=[self.data] + plot_list  

@@ -20,7 +20,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.7"
+__version__ = "0.7.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -1207,7 +1207,12 @@ class PlotTree(gtk.Dialog):
       self.pre_parent=opts['parent']
     self.preview_button=gtk.Button('Create Previews')
     self.preview_button.connect('button_press_event', self.create_preview)
-    self.vbox.pack_end(self.preview_button, False)
+    expand=gtk.Button('Expand')
+    expand.connect('button_press_event', self.expand_all)
+    button_hbox=gtk.HBox()
+    button_hbox.add(self.preview_button)
+    button_hbox.add(expand)
+    self.vbox.pack_end(button_hbox, False)
 
   def show_all(self):
     '''
@@ -1275,7 +1280,13 @@ class PlotTree(gtk.Dialog):
     self.preview_plot=plot_function
     self.preview_session=session
     self.preview_temp_file=temp_file
-  
+
+  def expand_all(self, widget, action):
+    '''
+      Expand all files.
+    '''
+    self.treeview.expand_all()
+
   def create_preview(self, widget, action):
     '''
       Create a preview of the datasets and render it onto an image.

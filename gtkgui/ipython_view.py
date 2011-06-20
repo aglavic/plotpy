@@ -27,7 +27,7 @@ try:
 except Exception,e:
         raise RuntimeError, "Error importing IPython (%s)" % str(e)
 
-__version__ = "0.7.6.7"
+__version__ = "0.7.7"
 
 ansi_colors =  {'0;30': 'Black',
                 '0;31': 'Red',

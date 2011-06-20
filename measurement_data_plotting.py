@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.7"
+__version__ = "0.7.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -512,7 +512,8 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
   
   gnuplot_file_text+='set multiplot title "%s"\n' % (dataset.sample_name + dataset.short_info)
   if dataset.logz:
-    gnuplot_file_text+='set log x\n'
+    gnuplot_file_text+='set log x2\n'
+    gnuplot_file_text+='set format x2 "10^{%L}\n'
   xrange=list(dataset.plot_options._xrange)
   yrange=list(dataset.plot_options._yrange)
   if xrange[0] is None:
@@ -524,21 +525,26 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
   if yrange[1] is None:
     yrange[1]=dataset.y.max()
   zrange=dataset.plot_options._zrange
+  if zrange[1] is None:
+    zrange=(zrange[0], float(dataset.z.max()))
   gnuplot_file_text+="set autoscale x\n"
-  gnuplot_file_text+= ("set xrange [%s:%s]\n" % (zrange[0], zrange[1] )).replace("None", "")
+  gnuplot_file_text+= ("set x2range [%s:%s]\n" % (zrange[0], zrange[1] )).replace("None", "")
   gnuplot_file_text+='set yrange [%f:%f]\n' % (yrange[0], yrange[1])
   gnuplot_file_text+='unset xtics\n'
+  gnuplot_file_text+='set x2tics rotate by -90 offset 0,1.4\n'
   gnuplot_file_text+='unset xlabel\n'
   gnuplot_file_text+='set lmargin at screen 0.15\nset rmargin at screen 0.3\n'
-  gnuplot_file_text+='set bmargin at screen 0.3\nset tmargin at screen 0.9\n'
-  gnuplot_file_text+='plot "%s" u 4:3 w lines\n' % projections_name
+  gnuplot_file_text+='set bmargin at screen 0.3\nset tmargin at screen 0.85\n'
+  gnuplot_file_text+='plot "%s" u 4:3 axes x2y1 w lines\n' % projections_name
   if dataset.logz:
     gnuplot_file_text+='unset log x\n'
     gnuplot_file_text+='set log y\n'
+    gnuplot_file_text+='set format y "10^{%L}\n'
   gnuplot_file_text+='set xrange [%f:%f]\n' % (xrange[0], xrange[1])
   gnuplot_file_text+='set autoscale y\n'
   gnuplot_file_text+=("set yrange [%s:%s]\n" % (zrange[0], zrange[1] )).replace("None", "")
-  gnuplot_file_text+='unset ytics\n'
+  #gnuplot_file_text+='unset ytics\n'
+  gnuplot_file_text+='unset x2tics\n'
   gnuplot_file_text+='set xtics\n'
   gnuplot_file_text+='set xlabel "%s"\n' % gp.x_label
   gnuplot_file_text+='unset ylabel\n'
@@ -551,9 +557,11 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
   gnuplot_file_text+='set xrange [%f:%f]\n' % (xrange[0], xrange[1])
   gnuplot_file_text+='set yrange [%f:%f]\n' % (yrange[0], yrange[1])
   gnuplot_file_text+='unset xtics\n'
+  gnuplot_file_text+='unset ytics\n'
+  gnuplot_file_text+='unset xtics\n'
   gnuplot_file_text+='unset xlabel\n'
   gnuplot_file_text+='set lmargin at screen 0.3\nset rmargin at screen 0.8\n'
-  gnuplot_file_text+='set bmargin at screen 0.3\nset tmargin at screen 0.9\n'
+  gnuplot_file_text+='set bmargin at screen 0.3\nset tmargin at screen 0.85\n'
   plotting_param=gp.plotting_parameters_3d
   gnuplot_file_text+='set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
   gnuplot_file_text+=gp.settings_3dmap.replace('set size square', '')
@@ -602,7 +610,15 @@ def script_header(show_persistent, datasets, output_file):
                     'set term '+terminal+'\n'
   if not show_persistent:
     gnuplot_file_text+='set output "'+output_file+'"\n'
-  gnuplot_file_text+='set encoding '+gp.ENCODING+'\n'+\
+  if datasets[0].plot_options.is_polar:
+    gnuplot_file_text+='set encoding '+gp.ENCODING+'\n'+\
+                     'set xlabel "'+gp.y_label+'"\n'+\
+                     'set ylabel "'+gp.y_label+'"\n'+\
+                     'set title "'+gp.plot_title+'"\n'
+    if datasets[0].x.unit == '°':
+      gnuplot_file_text+='set angle degree\n'
+  else:
+    gnuplot_file_text+='set encoding '+gp.ENCODING+'\n'+\
                      'set xlabel "'+gp.x_label+'"\n'+\
                      'set ylabel "'+gp.y_label+'"\n'+\
                      'set title "'+gp.plot_title+'"\n'

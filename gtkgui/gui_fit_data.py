@@ -16,12 +16,12 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.6.7"
+__version__ = "0.7.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
 
-class FitFunctionGUI:
+class FitFunctionGUI(object):
   def history_back(self, action, dialog, window):
     '''
       Set old parameters from the history of parameters and

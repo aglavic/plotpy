@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "GPL v3"
-__version__ = "0.7.6.7"
+__version__ = "0.7.7"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -2717,7 +2717,7 @@ set multiplot layout %i,1
         dataset.logx=use_data.logx
         dataset.logy=use_data.logy
         dataset.logz=use_data.logz
-        dataset.plot_options=deepcopy(use_data.plot_options)
+        dataset.plot_options=use_data.plot_options.overwrite_copy(dataset.plot_options)
         self.reset_statusbar()
         print 'Applied settings to all Plots!'
     selection_dialog.destroy()
@@ -4452,7 +4452,7 @@ set multiplot layout %i,1
       <toolitem action='Apply'/>
       <toolitem action='ExportAll'/>
       '''
-    if self.measurement[self.index_mess].zdata>=0:
+    if len(self.measurement)>0 and self.measurement[self.index_mess].zdata>=0:
       output+='''<toolitem action='XYProjections'/>
       '''        
     else:
