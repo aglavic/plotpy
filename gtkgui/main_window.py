@@ -3472,9 +3472,13 @@ set multiplot layout %i,1
                     'sin', 'cos', 'tan', 'arcsin',  'arccos', 'arctan', 'sinh', 'cosh', 'tanh', 
                     'sqrt', 'abs']
     ipview.updateNamespace(dict([(item, getattr(numpy, item, None)) for item in math_functions]))
+    ip=IPython.ipapi.get()
     if hasattr(self, 'ipython_user_namespace'):
       # reload namespace of an earlier session
       ipview.updateNamespace(self.ipython_user_namespace)
+      ipview.IP.user_ns['In']+=self.ipython_user_history
+      if sys.platform.startswith('win'):
+        ip.magic('color_info')
     if len(commands)>0:
       while gtk.events_pending():
         gtk.main_iteration(False)
@@ -3486,7 +3490,6 @@ set multiplot layout %i,1
     del(ipview.IP.alias_table['ls'])
     if 'cat' in ipview.IP.alias_table:
       del(ipview.IP.alias_table['cat'])
-    ip=IPython.ipapi.get()
     def _ls_new(self, arg):
       ip = self.api
       if arg=='':
@@ -3499,6 +3502,7 @@ set multiplot layout %i,1
       ip.ex("print open('%s','r').read()" % arg)
     ip.expose_magic('ls',_ls_new)
     ip.expose_magic('cat',_cat_new)
+    ip.magic("colors Linux")
 
   def closed_ipy_console(self, widget, oldstd):
     '''
@@ -3507,7 +3511,9 @@ set multiplot layout %i,1
     sys.stdout=oldstd[0]
     sys.stderr=oldstd[1]
     self.ipython_user_namespace=dict(
-        [(key, value) for key, value in self.active_ipview.IP.user_ns.items() if not (key.startswith('_') or key=='self')])
+        [(key, value) for key, value in self.active_ipview.IP.user_ns.items() \
+              if not (key.startswith('_') or key in ['self', 'In', 'Out'])])
+    self.ipython_user_history=self.active_ipview.IP.user_ns['In']
     self.active_ipython=None
     self.active_ipview=None
 
