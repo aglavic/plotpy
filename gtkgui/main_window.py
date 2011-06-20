@@ -3507,7 +3507,7 @@ set multiplot layout %i,1
     sys.stdout=oldstd[0]
     sys.stderr=oldstd[1]
     self.ipython_user_namespace=dict(
-        [(key, value) for key, value in self.active_ipview.IP.user_ns.items() if not key.startswith('_')])
+        [(key, value) for key, value in self.active_ipview.IP.user_ns.items() if not (key.startswith('_') or key=='self')])
     self.active_ipython=None
     self.active_ipview=None
 

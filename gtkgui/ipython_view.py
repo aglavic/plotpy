@@ -81,7 +81,7 @@ class IterableIPShell:
     sys.excepthook = excepthook
     self.iter_more = 0
     self.history_level = 0
-    self.complete_sep =  re.compile('[\s\{\}\[\]\(\)]')
+    self.complete_sep =  re.compile('[\s\{\}\[\]\(\)=]')
 
   def execute(self):
     self.history_level = 0
