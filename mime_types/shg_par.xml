@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+   <mime-type type="text/shg_par">
+     <comment>SHG Parameter File</comment>
+     <glob pattern="*.pat"/>
+   </mime-type>
+</mime-info>
