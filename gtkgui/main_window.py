@@ -3477,8 +3477,8 @@ set multiplot layout %i,1
       # reload namespace of an earlier session
       ipview.updateNamespace(self.ipython_user_namespace)
       ipview.IP.user_ns['In']+=self.ipython_user_history
-      if sys.platform.startswith('win'):
-        ip.magic('color_info')
+      ipview.IP.outputcache.prompt_count=len(self.ipython_user_history)
+      ipview.externalExecute('')
     if len(commands)>0:
       while gtk.events_pending():
         gtk.main_iteration(False)
