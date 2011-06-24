@@ -22,7 +22,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "GPL v3"
-__version__ = "0.7.7"
+__version__ = "0.7.7.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -841,13 +841,13 @@ def read_d17_processed_data(file_name):
                                 error_block=file_lines[error_index:error_index+scan_points])
     intensity=intensity[sort_order]
     dataset=MeasurementDataTREFF(zdata=2)
-    dataset.append_column(alphai)
-    dataset.append_column(alphaf)
+    dataset.append_column(alphai.copy())
+    dataset.append_column(alphaf.copy())
     dataset.append_column(intensity)
-    dataset.append_column(aipaf)
-    dataset.append_column(aimaf)
-    dataset.append_column(qx)
-    dataset.append_column(qz)
+    dataset.append_column(aipaf.copy())
+    dataset.append_column(aimaf.copy())
+    dataset.append_column(qx.copy())
+    dataset.append_column(qz.copy())
     dataset.logz=True
     dataset.sample_name=sample_name
     dataset.short_info=pol_channels[i]

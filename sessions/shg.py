@@ -31,7 +31,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = ["Ulrich Ruecker"]
 __license__ = "GPL v3"
-__version__ = "0.7.7"
+__version__ = "0.7.7.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -107,8 +107,8 @@ class ChiMultifit(FitFunction3D):
   '''
   
   name="SHG Signal"
-  parameters=[0.001, 0.]
-  parameter_names=['I_0', 'δφ']
+  parameters=[0., 0.01]
+  parameter_names=['δφ','I_0']
   parameter_description={
                          'I_0': 'General scaling factor.', 
                          'δφ': 'Tilt of Sample-axis', 
@@ -117,6 +117,8 @@ class ChiMultifit(FitFunction3D):
   max_iter=50. # maximum numer of iterations for fitting (should be lowered for slow functions)
   is_3d=False
   show_components=False
+  # domain switch operations, key is the index of the Chi and the value is a factor
+  domains=[({})]
   
   def __init__(self, datasets, Chis=[]):
     '''
@@ -133,20 +135,43 @@ class ChiMultifit(FitFunction3D):
     '''
       Simulate the SHG Intensity dependent on the polarizer/analzer tilt.
     '''
+    sin=numpy.sin
     cos=numpy.cos
     pih=numpy.pi*0.5
-    I0=p[0]
-    dphi=p[1]*numpy.pi/180
-    Chis=self.get_chis(p[2:])
+    dphi=p[0]*numpy.pi/180
+    domains=len(self.domains)
+    Chis=self.get_chis(p[1+domains:])
+    pol_terms={
+               0: cos(pol+dphi), 
+               1: sin(pol+dphi), 
+               }
     I=numpy.zeros_like(pol)
-    components=[]
+    components=map(lambda comp: numpy.zeros_like(pol), Chis)
+    for i, domain in enumerate(self.domains):
+      I0=p[i+1]
+      for key, value in domain.items():
+        Chis[key][0]*=value
+      Ex=numpy.zeros_like(pol)
+      Ey=numpy.zeros_like(pol)
+      domain_components=[]
+      for Chi in Chis:
+        Ex_comp=(Chi[0]*Chi[1]*pol_terms[Chi[2]]*pol_terms[Chi[3]])
+        Ey_comp=(Chi[0]*(1-Chi[1])*pol_terms[Chi[2]]*pol_terms[Chi[3]])
+        if Chi[2]!=Chi[3]:
+          # tensors with the last terms different are exchangebal
+          # it's equivalent to use one term twice
+          Ex_comp*=2.
+          Ey_comp*=2.
+        domain_components.append((Ex_comp, Ey_comp))
+        Ex+=Ex_comp
+        Ey+=Ey_comp
+      I_domain=I0*(cos(ana+dphi)*Ey+sin(ana+dphi)*Ex)**2
+      domain_components=map(lambda Exy: I0*(sin(ana+dphi)*Exy[0]+cos(ana+dphi)*Exy[1])**2, 
+                                 domain_components)
+      I+=I_domain
+      for comp, domain_comp in zip(components, domain_components):
+        comp+=domain_comp
     self.last_fit_components=components
-    for Chi in Chis:
-      component=I0*(Chi[0]*cos(ana-Chi[1]*pih+dphi) *\
-                        cos(pol-Chi[2]*pih+dphi) *\
-                        cos(pol-Chi[3]*pih+dphi))**2
-      components.append(component)
-      I+=component
     self.last_fit_sum=I
     return I
   
@@ -154,15 +179,16 @@ class ChiMultifit(FitFunction3D):
     '''
       Add a specific Chi_ijk factor.
     '''
-    name='χ_%s%s%s' % tuple(map(lambda i: "x"*i+"y"*(1-i), Chi))
-    if not name in self.parameter_names:
+    name='%s%s%s' % tuple(map(lambda i: "x"*i+"y"*(1-i), Chi))
+    name_eq=name[0]+name[2]+name[1]
+    if not (name in self.parameter_names or name_eq in self.parameter_names):
       self.parameter_names.append(name)
       self.parameters.append(0.)
       return True
     return False
   
   def remove_chi(self, Chi):
-    name='χ_%s%s%s' % tuple(map(lambda i: "x"*i+"y"*(1-i), Chi))
+    name='%s%s%s' % tuple(map(lambda i: "x"*i+"y"*(1-i), Chi))
     if chi in self.parameter_names:
       idx=self.parameter_names.index(name)
       self.parameters.remove(idx)
@@ -174,14 +200,34 @@ class ChiMultifit(FitFunction3D):
     '''
       Return a list of chi_ijk as (chi_ijk, i, j, k).
     '''
-    Chinames=self.parameter_names[2:]
+    domains=len(self.domains)
+    Chinames=self.parameter_names[1+domains:]
     Chis=map(lambda item: [
                            item[0], 
-                           int(item[1][3]=='x'), 
-                          int(item[1][4]=='x'), 
-                          int(item[1][5]=='x')], 
+                           int(item[1][0]=='x'), 
+                          int(item[1][1]=='x'), 
+                          int(item[1][2]=='x')], 
             zip(scale, Chinames))
     return Chis
+  
+  def add_domain(self, operations):
+    '''
+      Add a domain to the model.
+    '''
+    self.domains.append(operations)
+    domains=len(self.domains)
+    self.parameter_names.insert(domains, 'I_%i' % (domains-1))
+    self.parameters.insert(domains, 0.)
+  
+  def delete_domain(self, index):
+    '''
+      Remove a domain.
+    '''
+    domains=len(self.domains)    
+    if index>=0 and index<domains:
+      self.domains.pop(index)
+      self.parameter_names.pop(index+1)
+      self.parameters.pop(index+1)
   
   def get_anapol(self):
     '''

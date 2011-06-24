@@ -14,7 +14,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.7"
+__version__ = "0.7.7.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -38,6 +38,10 @@ def read_data(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
   global_info, file_infos=read_parameterfile(file_name)
+  try:
+    global_info['par_index']=int(file_name.split('Nr', 1)[1].split('.', 1)[0])
+  except:
+    global_info['par_index']=0
   output=[]
   for file_info in file_infos:
     if not os.path.exists(file_info['name']):
@@ -116,7 +120,7 @@ def read_dat_file(file_info, global_info):
     cols.append( (ana+file_info['polarizer offset'])//'Polariser' )
   output=MeasurementData()
   output.sample_name="%s - %s " % (global_info['sample'], global_info['type'])
-  output.short_info="%i:" % file_info['index']
+  output.short_info="%i_{%i}:" % (global_info['par_index'], file_info['index'])
   output.data=cols
   output.info="User: %s\nDate: %s\n\nComments:\n%s" % (global_info['user'], global_info['datetime'], global_info['comments'])
   # type specific column settings_3d

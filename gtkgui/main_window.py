@@ -37,7 +37,7 @@ __copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 __license__ = "GPL v3"
-__version__ = "0.7.7"
+__version__ = "0.7.7.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -3373,6 +3373,8 @@ set multiplot layout %i,1
     ipython_dialog.connect('destroy', self.closed_ipy_console, oldstd)
     # lets the widget propagate <control>+Key and <alt>+key to this window
     ipview.propagate_key_parent=self
+    ip=IPython.ipapi.get()
+    ip.magic("colors Linux")
     # create functions for the use with ipython
     def getxyz():
       # returns numpy arrays of x,y and z
@@ -3472,13 +3474,15 @@ set multiplot layout %i,1
                     'sin', 'cos', 'tan', 'arcsin',  'arccos', 'arctan', 'sinh', 'cosh', 'tanh', 
                     'sqrt', 'abs']
     ipview.updateNamespace(dict([(item, getattr(numpy, item, None)) for item in math_functions]))
-    ip=IPython.ipapi.get()
     if hasattr(self, 'ipython_user_namespace'):
       # reload namespace of an earlier session
       ipview.updateNamespace(self.ipython_user_namespace)
       ipview.IP.user_ns['In']+=self.ipython_user_history
       ipview.IP.outputcache.prompt_count=len(self.ipython_user_history)
-      ipview.externalExecute('')
+      if sys.platform.startswith('win'):
+        ipview.externalExecute('color_info')
+      else:
+        ipview.externalExecute('')
     if len(commands)>0:
       while gtk.events_pending():
         gtk.main_iteration(False)
@@ -3502,7 +3506,6 @@ set multiplot layout %i,1
       ip.ex("print open('%s','r').read()" % arg)
     ip.expose_magic('ls',_ls_new)
     ip.expose_magic('cat',_cat_new)
-    ip.magic("colors Linux")
 
   def closed_ipy_console(self, widget, oldstd):
     '''

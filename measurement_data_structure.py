@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.7"
+__version__ = "0.7.7.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -2536,7 +2536,8 @@ class PhysicalProperty(numpy.ndarray):
       Change the dimensional order of the data.
     '''
     output=numpy.ndarray.reshape(self, *a, **opts)
-    output._error=self._error.reshape(*a, **opts)
+    if output.has_error:
+      output._error=self._error.reshape(*a, **opts)
     return output
   
   def flatten(self):
@@ -2544,7 +2545,8 @@ class PhysicalProperty(numpy.ndarray):
       Reduce data to one dimension.
     '''
     output=numpy.ndarray.flatten(self)
-    output._error=self._error.flatten()
+    if output.has_error:
+      output._error=self._error.flatten()
     return output
   
   def join(self, other):

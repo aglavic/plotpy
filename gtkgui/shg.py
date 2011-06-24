@@ -15,7 +15,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.7"
+__version__ = "0.7.7.2"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -78,14 +78,14 @@ class SHGGUI:
       simulation specific settings.
     '''
     sim=self.create_shg_sim()
-    dialog=gtk.Dialog(title='SHG Simulation', buttons=('Add Chi', 1,'Remove Chi', 2, 'Cancel', 0))
-    #dialog.set_default_size(300, 300)
+    domains=len(sim.domains)
+    dialog=gtk.Dialog(title='SHG Simulation', buttons=('Add Chi', 1,'Remove Chi', 2, 'Add Domain', 3, 'Cancel', 0))
     label=gtk.Label("SHG Simulation with following parameter:")
     dialog.vbox.add(label)
-    table=gtk.Table(4, len(sim.parameter_names[1:]), False)
+    table=gtk.Table(4, len(sim.parameter_names)-domains, False)
     dialog.vbox.add(table)
     checkboxes=[]
-    for i, chi in enumerate(zip(sim.parameter_names[2:], sim.parameters[2:])):
+    for i, chi in enumerate(zip(sim.parameter_names[1+domains:], sim.parameters[1+domains:])):
       checkbox=gtk.CheckButton(label=chi[0]+'=%.2f' % chi[1], use_underline=False)
       table.attach(checkbox, 0, 4, i, i+1)
       checkboxes.append(checkbox)
@@ -94,8 +94,14 @@ class SHGGUI:
     map(lambda item: item.append_text('x'), choices)
     map(lambda item: item.set_active(0), choices)
     for j in range(3):
-      table.attach(choices[j], j+1, j+2, len(sim.parameters), len(sim.parameters)+1, 0, 0)
-    table.attach(gtk.Label('χ'), 0, 1, len(sim.parameters), len(sim.parameters)+1, 0, 0)
+      table.attach(choices[j], j+1, j+2, len(sim.parameters)-domains+1, len(sim.parameters)-domains+2, 0, 0)
+    table.attach(gtk.Label('χ'), 0, 1, len(sim.parameters)-domains+1, len(sim.parameters)-domains+2, 0, 0)
+    for i, domain in enumerate(sim.domains):
+      dstring= 'Domain %i: I=%.4f' % (i+1, sim.parameters[i+1])
+      for key, value in domain.items():
+        dstring+='\n     %s->%f·%s' % (sim.parameter_names[1+domains+key], value, sim.parameter_names[1+domains+key])
+      domain_label=gtk.Label(dstring)
+      dialog.vbox.pack_end(domain_label, False)
     dialog.show_all()
     result=dialog.run() 
     if result==2:
@@ -106,9 +112,46 @@ class SHGGUI:
     elif result==1:
       chi=map(lambda item: item.get_active(), choices)
       sim.add_chi(chi)
+    elif result==3:
+      dialog.destroy()
+      self.domain_dialog(action, window)
+      return
     dialog.destroy()
     if result>0:
       self.shg_simulation_dialog(action, window)
+  
+  def domain_dialog(self, action, window):
+    '''
+      Add a domain with specific transformation options to the simulation.
+    '''
+    sim=self.create_shg_sim()
+    domains=len(sim.domains)
+    dialog=gtk.Dialog(title='SHG Simulation - Add Domain', buttons=('Add', 1, 'Cancel', 0))
+    table=gtk.Table(2, len(sim.parameter_names)-domains, False)
+    dialog.vbox.add(table)
+    parameters=[]
+    for i, chi in enumerate(zip(sim.parameter_names[1+domains:], sim.parameters[1+domains:])):
+      label=gtk.Label(chi[0]+'=%.2f' % chi[1])
+      table.attach(label, 0, 1, i, i+1)
+      entry=gtk.Entry()
+      entry.set_text('1')
+      table.attach(entry, 1, 2, i, i+1)
+      parameters.append(entry)
+    dialog.show_all()
+    result=dialog.run()
+    if result==1:
+      try:
+        parameters=map(lambda param: float(param.get_text()), parameters)
+      except ValueError:
+        pass
+      else:
+        domain_parameters={}
+        for i, param in enumerate(parameters):
+          if param!=1:
+            domain_parameters[i]=param
+        sim.add_domain(domain_parameters)
+    dialog.destroy()
+    self.shg_simulation_dialog(action, window)
   
   def add_to_sim(self, action, window):
     sim=self.create_shg_sim()
@@ -142,6 +185,7 @@ class SHGGUI:
     newsim.parameter_names=list(sim.parameter_names)
     newsim.fit_function_text=sim.fit_function_text
     newsim.datasets=[]
+    newsim.domains=map(dict, sim.domains)
     self.shg_simulation=newsim
 
   def simulation_new_empty(self, action, window):
