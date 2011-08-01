@@ -19,7 +19,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.7.2"
+__version__ = "0.7.7.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -2589,3 +2589,95 @@ constants={
            'm_n': PhysicalConstant(1.67493E-24 , 'g', 'm_n', 'Neutron mass'), 
            'm_e': PhysicalConstant(9.1094E-28  , 'g', 'm_e', 'Electron mass'), 
            }
+
+
+#################### Old psd #######################
+class PysicalProperty:
+  '''
+    Class for any physical property. Stores the data, unit and dimension
+    to make unit transformations possible.
+  '''
+  index=0
+  values=[]
+  unit=''
+  dimension=''
+  
+  def __init__(self, dimension_in, unit_in):
+    '''
+      Class constructor.
+    '''
+    self.values=[]
+    self.index=0
+    self.unit=unit_in
+    self.dimension=dimension_in
+
+  def __iter__(self): # see next()
+    return self
+ 
+  def next(self): 
+    '''
+      Function to iterate through the data-points, object can be used in "for bla in data:".
+    '''
+    if self.index == len(self.values):
+      self.index=0
+      raise StopIteration
+    self.index=self.index+1
+    return self.values[self.index-1]
+
+  def __len__(self): 
+    '''
+      len(PhysicalProperty) returns number of Datapoints.
+    '''
+    return len(self.values)
+
+  def append(self, number): 
+    '''
+      Add value.
+    '''
+    self.values.append(number)
+
+  def unit_trans(self,transfere): 
+    '''
+      Transform one unit to another. transfere variable is of type [from,b,a,to].
+    '''
+    if transfere[0]==self.unit: # only transform if right 'from' parameter
+      new_values=[]
+      for value in self.values:
+        new_values.append(value*transfere[1]+transfere[2])
+      self.values=new_values
+      self.unit=transfere[3]
+      return True
+    else:
+      return False
+
+  def dim_unit_trans(self,transfere): 
+    '''
+      Transform dimension and unit to another. Variable transfere is of type
+      [from_dim,from_unit,b,a,to_dim,to_unit].
+    '''
+    if len(transfere)>0 and (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right 'from_dim' and 'from_unit'
+      new_values=[]
+      for value in self.values:
+        new_values.append(value*transfere[2]+transfere[3])
+      self.values=new_values
+      self.unit=transfere[5]
+      self.dimension=transfere[4]
+      return True
+    else:
+      return False
+
+  def max(self,from_index=0,to_index=None):
+    '''
+      Return maximum value in data.
+    '''
+    if to_index==None:
+      to_index=len(self)-1
+    return max([self.values[i] for i in range(from_index,to_index)])
+
+  def min(self,from_index=0,to_index=None):
+    '''
+      Return minimum value in data.
+    '''
+    if to_index==None:
+      to_index=len(self)-1
+    return min([self.values[i] for i in range(from_index,to_index)])

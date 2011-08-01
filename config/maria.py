@@ -7,7 +7,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.7.2"
+__version__ = "0.7.7.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
@@ -18,7 +18,7 @@ CENTER_PIXEL=512.5
 CENTER_PIXEL_Y=512.5
 DETECTOR_ROWS_MAP=[[j+i*DETECTOR_PIXELS for i in range(DETECTOR_PIXELS)] for j in range(DETECTOR_PIXELS)]
 DETECTOR_REGION=(207, 836, 197, 826)
-PIXEL_WIDTH=-0.02
+PIXEL_WIDTH=-0.019
 
 COLUMNS_MAPPING={
                  'omega': 'omega', 

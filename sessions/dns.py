@@ -39,7 +39,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = ["Werner Schweika"]
 __license__ = "GPL v3"
-__version__ = "0.7.7.2"
+__version__ = "0.7.7.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -250,6 +250,7 @@ class DNSSession(GUI, GenericSession):
     self.os_path_stuff() # create temp folder according to OS
     self.read_vana_bg_nicr_files() # read NiCr files for flipping-ratio correction
     self.try_import_externals()
+    self.import_plugins() # search the plugin folder for modules
     if self.BACKGROUND_FILES:
       self.BACKGROUND_FILES.sort()
       print "Reading user set background files %s-%s" % (self.BACKGROUND_FILES[0], self.BACKGROUND_FILES[-1])

@@ -38,7 +38,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.7.2"
+__version__ = "0.7.7.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -442,7 +442,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       plugin_sources=os.listdir(os.path.join(user_folder, 'plugins'))
       plugin_sources=filter(lambda file: file.endswith('.py'), plugin_sources)
       for plugin_source in plugin_sources:
-        plugin=__import__(plugin_source.rstrip('.py'))
+        plugin=__import__(plugin_source[:-3])
         plugins.append(plugin)
 
   def replace_systemdependent(self, string):

@@ -24,7 +24,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.7.2"
+__version__ = "0.7.7.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -2160,7 +2160,7 @@ def B_J(p, x):
 
 class FitBrillouineB(FitFunction):
   '''
-    Fit a Brillouine's function for the magnetic behaviour of a ferromagnet
+    Fit a Brillouine's function for the magnetic behaviour of a paramagnet
     against field.
   '''
   
@@ -2203,7 +2203,7 @@ class FitBrillouineB(FitFunction):
 
 class FitBrillouineT(FitFunction):
   '''
-    Fit a Brillouine's function for the magnetic behaviour of a ferromagnet
+    Fit a Brillouine's function for the magnetic behaviour of a paramagnet
     against field.
   '''
   

@@ -17,7 +17,7 @@ __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
 __license__ = "GPL v3"
-__version__ = "0.7.7.2"
+__version__ = "0.7.7.3"
 __maintainer__ = "Artur Glavic"
 __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Production"
@@ -203,6 +203,9 @@ class RedirectError(RedirectOutput):
     # make sure all error messages get reported if the program exits
     import atexit
     atexit.register(self.flush)
+    import numpy
+    # don't write numpy information on errors to stdout
+    self.old_numpy_settings=numpy.seterr(all='ignore')
   
   def write(self, string):
     '''
