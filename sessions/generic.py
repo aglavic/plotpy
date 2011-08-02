@@ -231,12 +231,19 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Start a gnuplot instance for the main plotting.
     '''
     if measurement_data_plotting.gnuplot_instance is None:
-      program=config.gnuplot_preferences.GNUPLOT_COMMAND
+      program=self.GNUPLOT_COMMAND
       try:
+        if config.gnuplot_preferences.EMMULATE_SHELL:
+          # run test instance to catch execution error as with shell execution there is no error
+          test=subprocess.Popen([program], 
+                      stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
+                      shell=False)
+          test.stdin.write('exit\n')
+          test.communicate()
         # run the real instance
         measurement_data_plotting.gnuplot_instance=subprocess.Popen([program], 
-                                      stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-                                      shell=False)
+                  stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
+                  shell=config.gnuplot_preferences.EMMULATE_SHELL)
       except:
         raise RuntimeError, "Problem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s" % program
 
