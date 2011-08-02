@@ -1017,6 +1017,7 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.set_current_folder(self.active_folder)
       filter = gtk.FileFilter()
       filter.set_name("Snapshots (*.mdd(.gz))")
+      filter.add_pattern("*.mdd")
       filter.add_pattern("*.mdd.gz")
       file_dialog.add_filter(filter)
       filter = gtk.FileFilter()

@@ -754,7 +754,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       else:
         print "No snapshot file found."
         return False
-    print "Reading snapshot from file..."
+    print "Reading snapshot from file %s..." % name
     dump_obj=load(dump_file)
     dump_file.close()
     self.extract_snapshot_obj(dump_obj)

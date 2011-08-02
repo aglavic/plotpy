@@ -342,8 +342,12 @@ class DNSGUI:
         continue
       saved_x=dataset.xdata
       saved_y=dataset.ydata
-      dataset.xdata=1
-      dataset.ydata=3
+      dimensions=dataset.dimensions()
+      try:
+        dataset.xdata=dimensions.index('ω')
+        dataset.ydata=dimensions.index('2Θ')
+      except ValueError:
+        continue
       window.index_mess=i
       slice=window.file_actions.create_cross_section(
                         1, 0, 0, params['2θ-center'], params['2θ-width'], 

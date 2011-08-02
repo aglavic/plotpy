@@ -484,7 +484,8 @@ class FileActions:
     xdata=xdata[filter_indices]
     ydata=ydata[filter_indices]
     zdata=zdata[filter_indices]
-    dzdata=dzdata[filter_indices]
+    if dzdata is not None:
+      dzdata=dzdata[filter_indices]
     # sort data for position on the line
     len_vec=sqrt(x**2+y**2)
     dist1=((xdata-x_0)*vec_e[0]+ (ydata-y_0)*vec_e[1])*len_vec
@@ -492,13 +493,18 @@ class FileActions:
     xdata=xdata[sort_idx]
     ydata=ydata[sort_idx]
     zdata=zdata[sort_idx]
-    dzdata=dzdata[sort_idx]
+    if dzdata is not None:
+      dzdata=dzdata[sort_idx]
     dist1=dist1[sort_idx]
     dist=dist[sort_idx]
-    data=numpy.array([dist1, xdata, ydata, zdata, dzdata, dist]).transpose().tolist()
+    if dzdata is not None:
+      data=numpy.array([dist1, xdata, ydata, zdata, dzdata, dist]).transpose().tolist()
+    else:
+      data=numpy.array([dist1, xdata, ydata, zdata, dist]).transpose().tolist()
     data=self.sort_and_bin(data, binning,  gauss_weighting, sigma_gauss, bin_distance)
     data=numpy.array(data).transpose()
     out_dataset=MeasurementData()
+    out_dataset.yerror=-1
     first_dim=''
     first_unit=''
     if x!=0:
@@ -517,7 +523,10 @@ class FileActions:
       if x==0:
         first_unit=dataset.y.unit
     out_dataset.append_column(PhysicalProperty(first_dim, first_unit, data[0]))
-    out_dataset.append_column(PhysicalProperty(dataset.z.dimension, dataset.z.unit, data[3], data[4]))
+    if dzdata is not None:
+      out_dataset.append_column(PhysicalProperty(dataset.z.dimension, dataset.z.unit, data[3], data[4]))
+    else:
+      out_dataset.append_column(PhysicalProperty(dataset.z.dimension, dataset.z.unit, data[3]))
     out_dataset.append_column(PhysicalProperty(dataset.x.dimension, dataset.x.unit, data[1]))
     out_dataset.append_column(PhysicalProperty(dataset.y.dimension, dataset.y.unit, data[2]))
     return out_dataset
@@ -660,7 +669,7 @@ class FileActions:
       def gauss_sum(data_list):
         output=0.
         for i, dat in enumerate(data_list):
-          output+=dat*exp(-din[i][5]**2/(2*sigma_gauss**2))
+          output+=dat*exp(-din[i][-1]**2/(2*sigma_gauss**2))
         return output
     if bin_distance:
       bin_dist_position=int(data[0][0]/bin_distance)
@@ -688,13 +697,15 @@ class FileActions:
         g_sum=gauss_sum([1 for d in din])
         for j in range(4):
           dout.append(gauss_sum([d[j] for d in din])/g_sum)
-        dout.append(sqrt(gauss_sum([d[4]**2 for d in din]))/g_sum)
+        if len(din)>5:
+          dout.append(sqrt(gauss_sum([d[4]**2 for d in din]))/g_sum)
         dout.append(g_sum/len(din))          
       else:
         for j in range(4):
           dout.append(sum([d[j] for d in din])/len(din))
-        dout.append(sqrt(sum([d[4]**2 for d in din]))/len(din))
-        dout.append(sum([d[5] for d in din])/len(din))
+        if len(din)>5:
+          dout.append(sqrt(sum([d[4]**2 for d in din]))/len(din))
+        dout.append(sum([d[-1] for d in din])/len(din))
       dat_tmp.append(dout)
     return dat_tmp
  
