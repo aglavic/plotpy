@@ -941,6 +941,13 @@ class FileImportDialog(gtk.FileChooserDialog):
     filter.set_name('All Files')
     filter.add_pattern('*')
     self.add_filter(filter)
+    filter = gtk.FileFilter()
+    filter.set_name('Binary Plot.py')
+    filter.add_pattern('*.mdd')
+    filter.add_pattern('*.mdd.gz')
+    filter.add_pattern('*.mds')
+    filter.add_pattern('*.mds.gz')
+    self.add_filter(filter)
     self.add_wildcards(wildcards)
     self.set_icon_from_file(os.path.join(
                             os.path.split(

@@ -271,6 +271,9 @@ comment: ''')
       text=buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
       comment_dialog.destroy()
       info=gtk.MessageDialog(type=gtk.MESSAGE_INFO, message_format='Writing debug information, please stay patient...')
+      info.show_all()
+      while gtk.events_pending():
+        gtk.main_iteration(False)
       debug_log=gzip.open('debug.log.gz', 'w')
       debug_log.write('# This is a debug log file created by plot.py (%s)\n# The following error(s) have occured at %s.\n' % \
                       (__version__, time.strftime('%m/%d/%y %H:%M:%S', time.localtime())))

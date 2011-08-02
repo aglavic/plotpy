@@ -235,9 +235,6 @@ class DNSSession(GUI, GenericSession):
     if names==None: # read_arguments returns none, if help option is set
       print self.LONG_HELP + self.SPECIFIC_HELP + self.LONG_HELP_END
       exit()
-    elif (len(self.prefixes) < 1) and (len(names)<1) and not self.FULLAUTO and not self.D7_IMPORT: # show help, if there is no file in the list
-      print self.SHORT_HELP
-      exit()
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     if self.FULLAUTO:
       # Initialize full automatic search for appropriate sequences
@@ -264,7 +261,7 @@ class DNSSession(GUI, GenericSession):
     names.sort()
     self.set_transformations()
     config.transformations.known_transformations+=self.TRANSFORMATIONS
-    if len(names) > 1:
+    if len(names) > 0:
       self.find_prefixes(names) # try to find the sequences for the remaining file names
     if not self.SPLIT is None:
       self.split_sequences(self.SPLIT) # old way of splitting sequences every SPLIT step
@@ -274,18 +271,19 @@ class DNSSession(GUI, GenericSession):
       # for every measured sequence read the datafiles and create a map/lineplot.
       self.read_files(prefix)
     
-    if len(self.prefixes) == 0 and not self.D7_IMPORT: # show help, if there is no valid file in the list
-      print "No valid datafile found!"
-      print self.SHORT_HELP
-      exit()
     if len(self.prefixes)>0:
       # set the first measurement as active
       self.active_file_data=self.file_data[self.prefixes[0]]
       self.active_file_name=self.prefixes[0]
       self.INIT_COMPLETE=True
+    elif self.active_file_data is not None:
+      self.INIT_COMPLETE=True
     else:
       self.active_file_data=[]
       self.active_file_name=''
+    
+    # for gui set fullauto import
+    self.FULLAUTO=True
   
   def initialize_fullauto(self, names):
     '''
@@ -611,7 +609,7 @@ class DNSSession(GUI, GenericSession):
       Works as if the filenames had been given via commandline.
     '''
     filenames.sort()
-    if len(filenames) > 1:
+    if len(filenames) > 0:
       self.find_prefixes(filenames)
     else:
       return False
@@ -1076,6 +1074,11 @@ class DNSSession(GUI, GenericSession):
       
       @param names A list of file names to process
     '''
+    for filename in filter(lambda item: item.endswith('.mds') or item.endswith('.mds.gz')\
+                  or item.endswith('.mdd') or item.endswith('.mdd.gz'), names):
+      GenericSession.add_file(self, filename)
+    if len(names)<2:
+      return
     names.sort()
     names=filter(lambda item: item.endswith('.d_dat') or item.endswith('.d_dat.gz')\
                   or item.endswith('.d7') or item.endswith('.d7.gz'), names)

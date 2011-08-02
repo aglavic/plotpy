@@ -440,8 +440,11 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
     # close gnuplot
     import measurement_data_plotting
-    measurement_data_plotting.gnuplot_instance.stdin.write('exit')
-    measurement_data_plotting.gnuplot_instance.communicate()
+    try:
+      measurement_data_plotting.gnuplot_instance.stdin.write('exit')
+      measurement_data_plotting.gnuplot_instance.communicate()
+    except:
+      pass
     # remove temp files
     for file_name in os.listdir(self.TEMP_DIR):
       os.remove(self.TEMP_DIR+file_name)
@@ -568,6 +571,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     own_path=os.path.abspath(__file__)
     if 'library.zip' in own_path:
       own_path=own_path.split('library.zip')[0]+'library.zip'
+    if filename.endswith('.mds.gz') or filename.endswith('.mds') or \
+      filename.endswith('.mdd.gz') or filename.endswith('.mdd'):
+      # import binary files from this program
+      self.active_file_name=filename.rsplit('.mds', 1)[0].rsplit('.mdd', 1)[0]
+      self.reload_snapshot(filename)
+      return self.active_file_data
     if filename.endswith('.gz'):
       zip_mds=True
       mds_name=filename.rsplit('.', 1)[0]+'.mds.gz'
@@ -714,8 +723,13 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     dump_obj=self.create_snapshot_obj()
     print "Writing snapshot to file..."
     if not name:
-      dump_file=open(self.active_file_name+'.mdd', 'wb')
+      name=self.active_file_name
+    if name.endswith('.gz'):
+      import gzip
+      dump_file=gzip.open(name, 'wb')
     else:
+      if not (name.endswith('.mdd') or name.endswith('.mds')):
+        name+='.mdd'
       dump_file=open(name, 'wb')
     dump(dump_obj, dump_file, -1)
     dump_file.close()
@@ -725,13 +739,22 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Reload a snapshot created with store_snapshot.
     '''
     if not name:
-      if os.path.exists(self.active_file_name+'.mdd'):
-        dump_file=open(self.active_file_name+'.mdd', 'rb')
+      name=self.active_file_name
+    if name.endswith('.gz'):
+      import gzip
+      if os.path.exists(name):
+        dump_file=gzip.open(name, 'rb')
       else:
         print "No snapshot file found."
         return False
     else:
-      dump_file=open(name, 'rb')
+      if not (name.endswith('.mdd') or name.endswith('.mds')):
+        name+='.mdd'
+      if os.path.exists(name):
+        dump_file=open(name, 'rb')
+      else:
+        print "No snapshot file found."
+        return False
     print "Reading snapshot from file..."
     dump_obj=load(dump_file)
     dump_file.close()

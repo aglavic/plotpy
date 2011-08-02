@@ -85,6 +85,8 @@ class MeasurementData(object):
              # ( column , from , to , include )
   SPLIT_SENSITIVITY=0.01
   is_matrix_data=False
+  plot_together_zindex=0
+  fit_object=None
 
   def __init__(self, columns=[], const=[],x=0,y=1,yerror=-1,zdata=-1): 
     '''
@@ -125,8 +127,6 @@ class MeasurementData(object):
       self.const_data.append([con[0],PhysicalProperty(self.data[con[0]].dimension,self.data[con[0]].unit)])
       self.const_data[-1][1].append(con[1])
     self.plot_together=[self] # list of datasets, which will be plotted together
-    self.plot_together_zindex=0
-    self.fit_object=None
 
   def __iter__(self): # see next()
     '''
@@ -375,7 +375,18 @@ class MeasurementData(object):
       Define how to multiply the MeasurementData from the left.
     '''
     return self.__mul__(other)
-
+  
+  def __setstate__(self, state):
+    '''
+      For compatibility with old .mdd files.
+    '''
+    self.__dict__=state
+    if not hasattr(self, '_plot_options'):
+      self._plot_options=PlotOptions()
+    for i, col in enumerate(self.data):
+      if col.__class__ is PysicalProperty:
+        self.data[i]=PhysicalProperty(col.dimension, col.unit, col.values)
+  
   def _get_plot_options(self): return self._plot_options
   
   def _set_plot_options(self, input):
@@ -1134,7 +1145,7 @@ class HugeMD(MeasurementData):
     '''
       Unpickling the object will set a new temp file name.
     '''
-    self.__dict__=state
+    MeasurementData.__setstate__(state)
     global hmd_file_number
     self.tmp_export_file=os.path.join(TEMP_DIR, 'HMD_'+ str(hmd_file_number)+ '.tmp')
     hmd_file_number+=1

@@ -980,8 +980,9 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.set_current_folder(self.active_folder)
       file_dialog.set_current_name(self.active_session.active_file_name+'.mdd')
       filter = gtk.FileFilter()
-      filter.set_name("Snapshots (*.mdd)")
+      filter.set_name("Snapshots (*.mdd(.gz))")
       filter.add_pattern("*.mdd")
+      filter.add_pattern("*.mdd.gz")
       file_dialog.add_filter(filter)
       filter = gtk.FileFilter()
       filter.set_name("All Files")
@@ -991,7 +992,7 @@ class ApplicationMainWindow(gtk.Window):
       if response == gtk.RESPONSE_OK:
         self.active_folder=file_dialog.get_current_folder()
         name=unicode(file_dialog.get_filenames()[0], 'utf-8')
-        if not name.endswith(".mdd"):
+        if not (name.endswith(".mdd") or name.endswith(".mdd.gz")):
           name+=".mdd"
       elif response == gtk.RESPONSE_CANCEL:
         file_dialog.destroy()
@@ -1015,8 +1016,8 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
       filter = gtk.FileFilter()
-      filter.set_name("Snapshots (*.mdd)")
-      filter.add_pattern("*.mdd")
+      filter.set_name("Snapshots (*.mdd(.gz))")
+      filter.add_pattern("*.mdd.gz")
       file_dialog.add_filter(filter)
       filter = gtk.FileFilter()
       filter.set_name("All Files")
