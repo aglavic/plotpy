@@ -424,7 +424,9 @@ class SimpleEntryDialog(gtk.Dialog):
       @param entries a list of tuples containing the values name, start value and function for type conversion.
     '''
     # Initialize this dialog
-    gtk.Dialog.__init__(self, *args, title=title, buttons=('OK', 1, 'Cancel', 0), **opts)
+    opts['title']=title
+    opts['buttons']=('OK', 1, 'Cancel', 0)
+    gtk.Dialog.__init__(self, *args, **opts)
     self.entries={}
     self.values={}
     self.conversions={}
@@ -612,7 +614,8 @@ class MultipeakDialog(gtk.Dialog):
     self._evaluate_options(opts)
     opts['parent']=main_window
     # Initialize this dialog
-    gtk.Dialog.__init__(self, *args, buttons=('Pop Last',2, 'Finished', 1, 'Cancel', 0), **opts)
+    opts['buttons']=('Pop Last',2, 'Finished', 1, 'Cancel', 0)
+    gtk.Dialog.__init__(self, *args, **opts)
     self.set_icon_from_file(os.path.join(
                             os.path.split(
                            os.path.realpath(__file__))[0], 
