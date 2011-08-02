@@ -643,7 +643,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Function to iterate through the file_data dictionary. Object can be used in "for name in data:".
       Also changes the active_file_data and active_file_name.
     '''
-    # TODO: In GUI export all files at once.
     name_list=[item[0] for item in self.file_data.items()]
     name_list.sort()
     if self.index == len(name_list): # after last stop iteration and go to first again
@@ -766,7 +765,16 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Child classes can overwrite this to save additional parts in the snapshot.
       The main class only stores the active_file_data list.
     '''
-    return self.active_file_data
+    # create new type snapshot including version and supporting info
+    # gives the possiblity to add future features to the snapshots
+    # while keeping backwards compatibility
+    output={
+            'version': __version__,
+            'session': repr(self),
+            'origin': self.active_file_name,
+            'data': self.active_file_data,
+            }
+    return output
   
   def extract_snapshot_obj(self, dump_obj):
     '''
@@ -774,7 +782,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Child classes can overwrite this to load additional parts from the snapshot.
       The main class only loads the active_file_data list.
     '''
-    self.file_data[self.active_file_name]=dump_obj
+    if type(dump_obj) is dict:
+      # new type snapshot
+      self.file_data[self.active_file_name]=dump_obj['data']
+    else:
+      # old type snapshot
+      self.file_data[self.active_file_name]=dump_obj
     self.active_file_data=self.file_data[self.active_file_name]
   
   def get_active_file_info(self):
