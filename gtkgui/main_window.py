@@ -443,8 +443,7 @@ class ApplicationMainWindow(gtk.Window):
     
     # create the first plot
     try:
-      # for the first plot catch exception if gnuplot command is not found
-      self.replot()
+      self.active_session.initialize_gnuplot()
     except (RuntimeError, WindowsError), error_message:
       # user can select the gnuplot executable via a file selection dialog
       info_dialog=gtk.Dialog(parent=self, title='Gnuplot Error..', buttons=('Select Gnuplot Executable', 1, 
@@ -462,7 +461,7 @@ class ApplicationMainWindow(gtk.Window):
         if result==gtk.RESPONSE_OK:
           self.active_session.GNUPLOT_COMMAND=file_chooser.get_filename()
           file_chooser.destroy()
-          self.replot()
+          self.active_session.initialize_gnuplot()
           message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
             message_format='To make this executable persistent you need to change the GNUPLOT_COMMAND option in %s to %s' % \
               (os.path.join(config.__path__[0], 'gnuplot_preferences.py'), self.active_session.GNUPLOT_COMMAND))
@@ -475,6 +474,7 @@ class ApplicationMainWindow(gtk.Window):
         info_dialog.destroy()
         self.destroy()
         return
+    self.replot()
     self.geometry=(self.get_position(), self.get_size())
     self.check_for_updates()
     # open the plot tree dialog
@@ -4040,7 +4040,8 @@ set multiplot layout %i,1
     '''
     if not self.gnuplot_initialized:
       self.initialize_gnuplot()
-    output, variables= measurement_data_plotting.gnuplot_plot_script(session, 
+    try:
+      output, variables= measurement_data_plotting.gnuplot_plot_script(session, 
                                                          datasets,
                                                          file_name_prefix, 
                                                          self.script_suf, 
@@ -4052,6 +4053,12 @@ set multiplot layout %i,1
                                                          sample_name=sample_name, 
                                                          show_persistent=show_persistent, 
                                                          get_xy_ranges=self.mouse_mode)
+    except RuntimeError:
+      print "Gnuplot instance lost, try to restart ..."
+      # gnuplot instance was somehow killed, try to restart
+      self.active_session.initialize_gnuplot()
+      return self.splot(session, datasets, file_name_prefix, title, names, 
+            with_errorbars, output_file, fit_lorentz, sample_name, show_persistent)
     if output=='' and variables is not None and len(variables)==8:
       img_size=self.image.get_allocation()
       mr_x=variables[0]/img_size.width

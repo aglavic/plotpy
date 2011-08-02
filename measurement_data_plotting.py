@@ -28,9 +28,7 @@ persistene_plots=0
 maps_with_projection=False
 
 # open an instance of gnuplot on first import
-gnuplot_instance=subprocess.Popen(['gnuplot'], 
-                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-                                  shell=True)
+gnuplot_instance=None
 
 def check_gnuplot_version(session):
   '''
@@ -86,6 +84,7 @@ def gnuplot_plot_script(session,
     
     @return Gnuplot error message or empty string
   '''
+  global gnuplot_instance
   gp=gnuplot_preferences # short form for gnuplot_preferences
   file_numbers=[]
   if show_persistent:
@@ -167,7 +166,12 @@ def gnuplot_plot_script(session,
     except:
       raise RuntimeError, "\nProblem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s" % session.GNUPLOT_COMMAND
     return '', []
-  gnuplot_instance.stdin.write('reset\n')
+  try:
+    gnuplot_instance.stdin.write('reset\n')
+  except (IOError, ValueError), error:
+    # gnuplot instance closed due to an unknown problem
+    gnuplot_instance=None
+    raise RuntimeError, "gnuplot instance closed due to unknown problem: %s" % (error)
   gnuplot_instance.stdin.write(gnuplot_file_text)
   gnuplot_instance.stdin.write('\nset output\nprint "|||"\n')
   output=gnuplot_instance.stdout.read(3)

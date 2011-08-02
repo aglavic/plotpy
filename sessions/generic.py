@@ -226,7 +226,19 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         self.active_file_data=self.file_data[files[0]]
         self.active_file_name=files[0]
 
-  #---------------- class consturction over ---------------------
+  def initialize_gnuplot(self):
+    '''
+      Start a gnuplot instance for the main plotting.
+    '''
+    if measurement_data_plotting.gnuplot_instance is None:
+      program=config.gnuplot_preferences.GNUPLOT_COMMAND
+      try:
+        # run the real instance
+        measurement_data_plotting.gnuplot_instance=subprocess.Popen([program], 
+                                      stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
+                                      shell=False)
+      except:
+        raise RuntimeError, "Problem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s" % program
 
   def try_import_externals(self):
     '''
