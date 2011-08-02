@@ -254,9 +254,27 @@ class RedirectError(RedirectOutput):
     from glob import glob
     from cPickle import dumps
     if response_id==-5:
+      # open user input dialog for additional information
+      comment_dialog=gtk.Dialog(title='Supplementary Information:', 
+                                buttons=('Create Bugreport', 1))
+      textview=gtk.TextView()
+      buffer=textview.get_buffer()
+      buffer.set_text('''Name:
+email:
+action before error occured:
+  
+comment: ''')
+      comment_dialog.vbox.add(textview)
+      comment_dialog.set_default_size(600, 300)
+      comment_dialog.show_all()
+      comment_dialog.run()
+      text=buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
+      comment_dialog.destroy()
       debug_log=gzip.open('debug.log.gz', 'w')
-      debug_log.write('# This is a debug log file created by plot.py\n# The following error(s) have occured at %s.\n' % time.strftime('%m/%d/%y %H:%M:%S', time.localtime()))
+      debug_log.write('# This is a debug log file created by plot.py (%s)\n# The following error(s) have occured at %s.\n' % \
+                      (__version__, time.strftime('%m/%d/%y %H:%M:%S', time.localtime())))
       debug_log.write('# The script has been started with the options:\n %s \n' % ' ; '.join(sys.argv))
+      debug_log.write('\n# User information: \n\n' + text +'\n')
       debug_log.write('\n# Error Messages: \n\n')
       debug_log.write('\n'.join(self.content))
       debug_log.write('\n\n# Content of the Temporary Folder: \n')
