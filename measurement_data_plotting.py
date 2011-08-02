@@ -314,7 +314,7 @@ def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, fi
   '''
   gnuplot_file_text=''
   gp=gnuplot_preferences
-  if with_errorbars and datasets[0].yerror is not None:
+  if with_errorbars and (datasets[0].yerror>=0 or datasets[0].y.error is not None):
     plotting_param=gp.plotting_parameters_errorbars
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].yerror+1)
   else:
@@ -340,7 +340,7 @@ def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, fi
   for number in file_numbers[1:]:
     i, j=(int(number.split('-')[0]), int(number.split('-')[1]))
     if j==0:
-      if with_errorbars and datasets[i].yerror is not None:
+      if with_errorbars and (datasets[i].yerror>=0 or datasets[i].y.error is not None):
         plotting_param=gp.plotting_parameters_errorbars
         using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)+':'+str(datasets[i].yerror+1)
       else:
@@ -746,7 +746,7 @@ def mpl_plot(session,
     y=data[dataset.ydata]
     label=dataset.short_info
     if dataset.zdata<0:
-      if with_errorbars:
+      if with_errorbars and (dataset.yerror>=0 or dataset.y.error is not None):
         dy=data[dataset.yerror]
         plot.errorbar(x, y, yerr=dy, label=label)
       else:

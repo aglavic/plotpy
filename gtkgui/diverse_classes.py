@@ -270,6 +270,7 @@ comment: ''')
       comment_dialog.run()
       text=buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
       comment_dialog.destroy()
+      info=gtk.MessageDialog(type=gtk.MESSAGE_INFO, message_format='Writing debug information, please stay patient...')
       debug_log=gzip.open('debug.log.gz', 'w')
       debug_log.write('# This is a debug log file created by plot.py (%s)\n# The following error(s) have occured at %s.\n' % \
                       (__version__, time.strftime('%m/%d/%y %H:%M:%S', time.localtime())))
@@ -298,8 +299,10 @@ comment: ''')
           pass
         debug_log.write('\n#-----------------------------end of tempfile %s------------\n' % tempfile)
       debug_log.close()
-      msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log.gz has been created.\n\n"+\
-        "Please upload it to the bugreport at\n\nhttp://iffwww.iff.kfa-juelich.de/~glavic/plotwiki\n\nwith some additional information.")
+      info.destroy()
+      msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log.gz has been created in\n%s.\n\n" % (os.path.abspath('.'))+\
+        "Please upload it to the bugreport at\n\nhttp://iffwww.iff.kfa-juelich.de/~glavic/plotwiki\n\nwith some additional information,\n"+\
+        "or send an email to %s." % (__email__))
       msg.run()
       msg.destroy()
     else:
