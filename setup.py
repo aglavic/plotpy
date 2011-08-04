@@ -329,7 +329,6 @@ if "py2exe" in sys.argv and not py2exe_test:
                     (gtk_folder+'\\share\\themes', 'share\\themes'), 
                     (gtk_folder+'\\share\\icons', 'share\\icons'), 
                     (gtk_folder+'\\lib', 'lib'), 
-                    ('c:\\gnuplot', 'gnuplot'), 
                     ('config', 'config'), 
                     ]:
     xcopy_to_folder(src, dest)

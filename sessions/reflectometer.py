@@ -49,6 +49,9 @@ try:
 except ImportError: 
   class ReflectometerFitGUI: pass
 
+if not sys.platform.startswith('win'):
+  WindowsError=OSError
+
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
 __credits__ = []
@@ -302,10 +305,15 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
         call_params.append(config.reflectometer.FORTRAN_COMPILER_OPTIONS)
       if  config.reflectometer.FORTRAN_COMPILER_MARCH!=None:
         call_params.append(config.reflectometer.FORTRAN_COMPILER_MARCH)
-      subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL)
+      try:
+        subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL,  
+                      creationflags=config.gnuplot_preferences.PROCESS_FLAGS)
+      except (OSError, WindowsError), error:
+        raise RuntimeError, "Problem calling the fortran compile '%s': %s" % (config.reflectometer.FORTRAN_COMPILER, error)
       print 'Compiled'
     process = subprocess.Popen([exe, file_ent, file_res, file_out+'.ref', file_out+'.sim', str(max_iter)], 
-                        shell=config.gnuplot_preferences.EMMULATE_SHELL, 
+                        shell=config.gnuplot_preferences.EMMULATE_SHELL,  
+                        creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         cwd=self.TEMP_DIR, 

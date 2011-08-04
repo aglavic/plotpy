@@ -99,7 +99,6 @@ Options:
 \t-logy\t\tPlot logarithmic in y
 \t-logz\t\tPlot logarithmic in z
 \t-scp\t\tUse script mode, no GUI will be shown
-\t-mpl\t\tEXPERIMENTAL - Use matplot lib widget for plotting
 
 \tGeneral Data treatment:
 \t-ipy "[line]"\tAfter opening the GUI start the ipython console and execute a line given in "".
@@ -171,7 +170,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   TRANSFORMATIONS=[] # a list of unit TRANSFORMATIONS, that will be performed on the data
   read_directly=False # don't use pickled file, read the data diretly
   mds_create=True
-  USE_MATPLOTLIB=False
   ONLY_IMPORT_MULTIFILE=False
   DEBUG=False
   file_actions_addon={}
@@ -243,7 +241,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         # run the real instance
         measurement_data_plotting.gnuplot_instance=subprocess.Popen([program], 
                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-                  shell=config.gnuplot_preferences.EMMULATE_SHELL)
+                  shell=config.gnuplot_preferences.EMMULATE_SHELL, 
+                  creationflags=config.gnuplot_preferences.PROCESS_FLAGS)
       except:
         raise RuntimeError, "Problem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s" % program
 
@@ -258,7 +257,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         # replace os.popen function to make the output readable
         def new_popen(cmd, ignore, bufsize=0):
           proc=subprocess.Popen(cmd, 
-                                shell=True, 
+                                shell=config.gnuplot_preferences.EMMULATE_SHELL, 
+                                creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
                                 bufsize=bufsize, 
                                 stdin=subprocess.PIPE, 
                                 stdout=subprocess.PIPE, 
@@ -356,8 +356,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
           self.logz=True
         elif argument=='-p':
           self.print_plot=True
-        elif argument=='-mpl':
-          self.USE_MATPLOTLIB=True
         elif argument=='-scp':
           self.use_gui=False
         elif argument=='-no-trans':
@@ -426,7 +424,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       def replace_systemdependent( string): # replace backthlash by double backthlash for gnuplot under windows
         return string.replace('\\','\\\\').replace('\\\\\n','\\\n').replace('\\\\\\\\', '\\\\')
       self.replace_systemdependent=replace_systemdependent
-      config.gnuplot_preferences.EMMULATE_SHELL=True
+      try:
+        # if win32process module is installed Popen can be called withouth shell emmulation
+        import win32process
+        config.gnuplot_preferences.PROCESS_FLAGS=win32process.CREATE_NO_WINDOW
+      except ImportError:
+        config.gnuplot_preferences.EMMULATE_SHELL=True
     self.TEMP_DIR=self.TEMP_DIR+'plottingscript-'+self.OWN_PID+os.sep
     measurement_data_structure.TEMP_DIR=self.TEMP_DIR
     try:

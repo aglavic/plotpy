@@ -736,47 +736,6 @@ class FileActions:
     else:
       return (0., 1.)
   
-  def interpolate_to_regular_grid(self, dataset, grid_x, grid_y, use_matrix_data_output=False):
-    '''
-      Interpolate data into a regularly spaced grid.
-      
-      @param dataset MeasurementData object to be interpolated
-      @param grid_x  Array of x elements to be used for the grid
-      @param grid_y  Array of y elements to be used for the grid
-      
-      @return MeasurementData or KWS2MeasurementData object with the rebinned data
-    '''
-    xi, yi=numpy.meshgrid(numpy.array(grid_x), numpy.array(grid_y))
-    if dataset.zdata<0:
-      raise ValueError, 'Dataset needs to be 3 dimensional for interpolation'
-    # get the data
-    x=dataset.data[dataset.xdata][:]
-    y=dataset.data[dataset.ydata][:]
-    z=dataset.data[dataset.zdata][:]
-    # interpolate the square of the errors
-    dzq=dataset.data[dataset.yerror][:]**2
-    try:
-      from matplotlib import mlab
-    except ImportError:
-      raise ImportError, 'Need matplotlib module mlab for interpolation'
-    if use_matrix_data_output:
-      from read_data.kws2 import KWS2MeasurementData
-      output_data=KWS2MeasurementData([('x',''),('y',''),('z',''), ('dz', '')], [], 0,1,3,2)
-      output_data.is_matrix_data=True
-    else:
-      output_data=MeasurementData([('x',''),('y',''),('z',''), ('dz', '')], [], 0,1,3,2)
-    zi=mlab.griddata(x,y,z, xi, yi)
-    dzqi=mlab.griddata(x,y,dzq, xi, yi)
-    xout=xi.flatten().tolist()
-    yout=yi.flatten().tolist()
-    zout=numpy.nan_to_num(zi.data).flatten().tolist()
-    dzout=numpy.sqrt(numpy.nan_to_num(dzqi.data).flatten()).tolist()
-    output_data.data[0].values=xout
-    output_data.data[1].values=yout
-    output_data.data[2].values=zout
-    output_data.data[3].values=dzout
-    return output_data
-    
 def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix_data_output=False, fill_value=(0., 1.)):
   '''
     Fill a grid with datapoints from another grid, weighting the points with a gaussian up to a distance of

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''
   Script to import debug.log information to investigate the error messages.

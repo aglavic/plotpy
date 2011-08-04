@@ -47,6 +47,8 @@ PRINT_COMMAND="lpr -P IFF17c4 -J \'plot.py-output\' %s"
 GNUPLOT_COMMAND="gnuplot"
 # Emmulate a shell for gnuplot execution (subprocess.Popen)
 EMMULATE_SHELL=False
+# Creation flags for subprocess.Popen
+PROCESS_FLAGS=0
 
 # font path for export
 if exists('/usr/share/fonts/truetype/msttcorefonts'):

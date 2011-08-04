@@ -237,13 +237,10 @@ class ApplicationMainWindow(gtk.Window):
     align = gtk.Alignment(0.5, 0.5, 1, 1)
     align.add(self.frame1)
     # image object for the plots
-    if active_session.USE_MATPLOTLIB:
-      self.initialize_matplotlib()
-    else:
-      self.image=gtk.Image()    
-      self.image_shown=False # variable to decrease changes in picture size
-      self.image.set_size_request(0, 0)
-      self.image_do_resize=False
+    self.image=gtk.Image()    
+    self.image_shown=False # variable to decrease changes in picture size
+    self.image.set_size_request(0, 0)
+    self.image_do_resize=False
     # put image in an eventbox to catch e.g. mouse events
     self.event_box=gtk.EventBox()
     self.event_box.add(self.image)
@@ -464,7 +461,7 @@ class ApplicationMainWindow(gtk.Window):
           self.active_session.initialize_gnuplot()
           message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
             message_format='To make this executable persistent you need to change the GNUPLOT_COMMAND option in %s to %s' % \
-              (os.path.join(config.__path__[0], 'gnuplot_preferences.py'), self.active_session.GNUPLOT_COMMAND))
+              (os.path.join(config.__path__[0], 'gnuplot_preferences.py'), repr(self.active_session.GNUPLOT_COMMAND)))
           message.run()
           message.destroy()
         else:
@@ -2929,6 +2926,7 @@ set multiplot layout %i,1
         proc=subprocess.Popen([self.active_session.GNUPLOT_COMMAND, 
                          common_file_prefix+'.gp'], 
                         shell=gnuplot_preferences.EMMULATE_SHELL, 
+                        creationflags=gnuplot_preferences.PROCESS_FLAGS, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         stdin=subprocess.PIPE, 
@@ -4759,57 +4757,6 @@ set multiplot layout %i,1
     
   #---------------------Functions responsible for menus and toolbar----------------------#
   
-  #+++++++++ EXPERIMENTAL: usage of matplotlib widget for plotting ++++++++++++++++++++++#
-  
-  def initialize_matplotlib(self):
-    '''
-      Import and prepare everything for the use of matplotlib plotting widget.
-    '''
-    # supress the warning of matplotlib that configobj is already imported
-    import warnings
-    original_filters = warnings.filters[:]
-    # Ignore warnings.
-    warnings.simplefilter("ignore")
-    try:
-      # tell matplotlib to use gtk backend
-      import matplotlib
-      matplotlib.use('GTK')
-      
-      # import widget stuff
-      from matplotlib.figure import Figure
-      from matplotlib.axes import Subplot
-      from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
-      from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTKAgg as NavigationToolbar
-      from matplotlib.widgets import SpanSelector
-      # also toolbar throws warning
-      figure=Figure()
-      plot=figure.add_subplot(111)
-      self.active_session.mpl_plot=plot
-      mpl_widget=FigureCanvas(figure)
-      self.active_session.mpl_widget=mpl_widget
-      toolbar=NavigationToolbar(mpl_widget, self)
-    except ImportError:
-      raise ImportError, "Matplotlib is not installed."
-    finally:
-      # Restore the list of warning filters.
-      warnings.filters = original_filters      
-    vbox=gtk.VBox()
-    vbox.pack_start(mpl_widget, expand=True, fill=True, padding=0)
-    vbox.pack_end(toolbar, expand=False, fill=True, padding=0)
-    
-    self.image=vbox
-    # redefine functions to be used with mpl
-    self.plot=measurement_data_plotting.mpl_plot
-    def do_nothing(*ignore):
-      pass
-    self.set_image=do_nothing
-    self.update_picture=do_nothing
-    self.update_size=do_nothing
-    self.image_pixbuf=gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB,False,8,1,1)
-    self.image_do_resize=False
-    self.mouse_mode=False
-  
-  #--------- EXPERIMENTAL: usage of matplotlib widget for plotting ----------------------#
 
 #------------------------- ApplicationMainWindow Class ----------------------------------#
 

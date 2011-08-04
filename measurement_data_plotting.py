@@ -46,6 +46,7 @@ def check_gnuplot_version(session):
   try:
     proc = subprocess.Popen(params, 
                         shell=gnuplot_preferences.EMMULATE_SHELL, 
+                        creationflags=gnuplot_preferences.PROCESS_FLAGS, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         stdin=subprocess.PIPE, 
@@ -159,6 +160,7 @@ def gnuplot_plot_script(session,
     try:
       proc = subprocess.Popen(params, 
                           shell=gnuplot_preferences.EMMULATE_SHELL, 
+                          creationflags=gnuplot_preferences.PROCESS_FLAGS, 
                           stderr=subprocess.PIPE,
                           stdout=subprocess.PIPE, 
                           stdin=subprocess.PIPE, 
@@ -655,154 +657,3 @@ def further_replacement(string):
     String replacements done last, for example when an Item has empty unit replace [] with nothing.
   '''
   return string.replace('[]','')
-
-def mpl_plot(session,  
-            datasets,
-            file_name_prefix, 
-            title,
-            names,
-            with_errorbars,
-            output_file=gnuplot_preferences.output_file_name,
-            additional_info='',
-            fit_lorentz=False, 
-            sample_name=None, 
-            show_persistent=False): 
-  '''
-    Plot the data using a matplotlib plotting object.
-  '''
-  from matplotlib import pyplot
-  from matplotlib import mlab
-  import matplotlib.colors
-  import numpy
-  gp=gnuplot_preferences
-  # delete plotting area
-  plot=session.mpl_plot
-  figure=session.mpl_widget.figure
-  figure.set_axes([figure.axes[0]])
-  figure.subplots_adjust()
-  plot.clear()
-  # define global plot options
-  def prereplace(string):
-    return replace_ph(session, 
-                     string,
-                     datasets,
-                     file_name_prefix, 
-                     range(len(datasets)), 
-                     title,
-                     names,
-                     first.sample_name,
-                     (0, 0, 0))
-  first=datasets[0]
-  ix=first.xdata
-  iy=first.ydata
-  global_options=datasets[0].plot_options
-  if not getattr(global_options, 'colormap', False):
-    cmap={
-            'red': [
-                    (0., 0., 0.), 
-                    (0.2, 0., 0.), 
-                    (0.4, 1., 1.), 
-                    (0.6, 1., 1.), 
-                    (0.8, 0.5, 0.5), 
-                    (1.0, 0., 0.), 
-                    ], 
-          'green': [
-                    (0., 0., 0.), 
-                    (0.2, 1., 1.), 
-                    (0.4, 1., 1.), 
-                    (0.6, 0., 0.), 
-                    (0.8, 0., 0.), 
-                    (1.0, 0., 0.), 
-                    ], 
-           'blue': [
-                    (0., 1., 1.), 
-                    (0.2, 0., 0.), 
-                    (0.4, 0., 0.), 
-                    (0.6, 0., 0.), 
-                    (0.8, 0.5, 0.5), 
-                    (1.0, 0., 0.), 
-                    ]         
-          }
-    colormap=matplotlib.colors.LinearSegmentedColormap('default', cmap, N=512)
-    pyplot.register_cmap(name='default', cmap=colormap)
-    global_options.colormap='default'
-  plot.set_xlabel("$"+prereplace(gp.x_label).replace('Å','A')+"$")
-  plot.set_ylabel("$"+prereplace(gp.y_label).replace('Å','A')+"$")
-  plot.set_title(prereplace(gp.plot_title))
-  if first.logx:
-    plot.set_xscale('log')
-  else:
-    plot.set_xscale('linear')
-  if first.logy:
-    plot.set_yscale('log')
-  else:
-    plot.set_yscale('linear')
-  
-  zplot=False
-  # plot the datasets
-  for dataset in datasets:
-    data=dataset.get_filtered_data_matrix()
-    x=data[dataset.xdata]
-    y=data[dataset.ydata]
-    label=dataset.short_info
-    if dataset.zdata<0:
-      if with_errorbars and (dataset.yerror>=0 or dataset.y.error is not None):
-        dy=data[dataset.yerror]
-        plot.errorbar(x, y, yerr=dy, label=label)
-      else:
-        plot.plot(x, y, label=label)
-      # plot additional data e.g. fits
-      for adddata in dataset.plot_together[1:]:
-        data=adddata.get_filtered_data_matrix()
-        x=data[adddata.xdata]
-        y=data[adddata.ydata]
-        plot.plot(x, y, label=label)   
-    # 3d Plot
-    else:
-      zplot=True
-      z=data[dataset.zdata]
-      try:
-        len_x=x[1:].tolist().index(x[0])+1
-        if len_x==1:
-          len_y=y[1:].tolist().index(y[0])+1
-          len_x=len(x)//len_y
-        else:
-          len_y=len(x)//len_x
-        if len_x<100 or len_y <100:
-          raise RuntimeError, "Only to get in the except block."
-        x=x.reshape(len_x, len_y)
-        y=y.reshape(len_x, len_y)
-        z=z.reshape(len_x, len_y)
-      except:
-        xi=numpy.linspace(x.min(), x.max(), max(min(numpy.sqrt(len(z))*2, 1000), numpy.sqrt(len(z)), 200))
-        yi=numpy.linspace(y.min(), y.max(), max(min(numpy.sqrt(len(z))*2, 1000), numpy.sqrt(len(z)), 200))
-        X, Y=numpy.meshgrid(xi, yi)
-        Z=mlab.griddata(x, y, z, X, Y)   
-        x=X
-        y=Y
-        z=Z
-      if first.logz:
-        if global_options.zrange[0]>0:
-          z=numpy.maximum(z, global_options.zrange[0])
-        z=mlab.ma.masked_where(z<=0, z)
-        norm=matplotlib.colors.LogNorm()
-      else:
-        norm=None
-      pm=plot.pcolormesh(x, y, z, 
-                      vmin=global_options.zrange[0], vmax=global_options.zrange[1], 
-                      norm=norm,
-                      cmap = pyplot.get_cmap(global_options.colormap)
-                      )
-  
-  # options which need to be set after plotting
-  if len(datasets)>1:
-    plot.legend()
-  plot.set_xlim(global_options.xrange[0], global_options.xrange[1])
-  plot.set_ylim(global_options.yrange[0], global_options.yrange[1])
-  plot.set_ylim(global_options.yrange[0], global_options.yrange[1])
-  if zplot:
-    figure.colorbar(pm)
-
-  # redraw image
-  session.mpl_widget.draw_idle()
-  return ""

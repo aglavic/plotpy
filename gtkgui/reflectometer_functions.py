@@ -112,9 +112,10 @@ class ReflectometerFitGUI:
     '''
     def status_response(action, response, session, window):
       if response==1: # if the process is abborted, plot without fit
-        if subprocess.mswindows:
-          # on windows the fit program is executed in a shell, 
-          # which would be killed by proc.kill, so we kill it by name
+        import config.gnuplot_preferences
+        if subprocess.mswindows and config.gnuplot_preferences.EMMULATE_SHELL:
+          # on windows if the fit program is executed in a shell, 
+          # this shell would be killed by proc.kill, so we kill it by name
           subprocess.call(['taskkill', '/F', '/im', 'fit.o'], shell=True)
           self.proc.wait() # wait until process is actually terminated
         else:

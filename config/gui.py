@@ -18,17 +18,7 @@ __email__ = "a.glavic@fz-juelich.de"
 __status__ = "Development"
 
 #toolkit='wx'
-#toolkit='gtk'
-toolkit='auto'
+toolkit='gtk'
 
 DOWNLOAD_PAGE_URL='http://iffwww.iff.kfa-juelich.de/~glavic/plotupdate.py'
 
-if toolkit=='auto':
-  # try to automatically select the available toolkit (could be slower)
-  try:
-    import gtk
-    toolkit='gtk'
-  except ImportError:
-    import wx
-    toolkit='wx'
- 

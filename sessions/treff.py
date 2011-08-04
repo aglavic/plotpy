@@ -42,6 +42,8 @@ try:
 except ImportError: 
   class ReflectometerFitGUI: pass
 
+if not sys.platform.startswith('win'):
+  WindowsError=OSError
 
 __author__ = "Artur Glavic"
 __copyright__ = "Copyright 2008-2011"
@@ -605,7 +607,8 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
           call_params.append(config.treff.FORTRAN_COMPILER_OPTIONS)
         if  config.treff.FORTRAN_COMPILER_MARCH!=None:
           call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
-        subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL)  
+        subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL, 
+                         creationflags=config.gnuplot_preferences.PROCESS_FLAGS)  
         sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i' % (i+1, num_files))
         sys.stdout.flush()
       # compile the combination of all files
@@ -617,12 +620,17 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
         call_params.append(config.treff.FORTRAN_COMPILER_OPTIONS)
       if  config.treff.FORTRAN_COMPILER_MARCH!=None:
         call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
-      subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL)
+      try:
+        subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL,  
+                      creationflags=config.gnuplot_preferences.PROCESS_FLAGS)
+      except (OSError, WindowsError), error:
+        raise RuntimeError, "Problem calling the fortran compile '%s': %s" % (config.treff.FORTRAN_COMPILER, error)
       sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i\n' % (num_files, num_files))
       sys.stdout.flush()
       print 'Compiled'
     process = subprocess.Popen([exe, file_ent, str(self.max_iter)], 
-                        shell=config.gnuplot_preferences.EMMULATE_SHELL, 
+                        shell=config.gnuplot_preferences.EMMULATE_SHELL,  
+                        creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
                         cwd=self.TEMP_DIR, 
