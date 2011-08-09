@@ -268,10 +268,8 @@ def read_edf_file(file_name):
     if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
       setup=value
   
-  q_window=[-0.9, 0.9, -0.9, 0.9]
-  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ],
-                            [], 4, 5, 3, 2)
+  q_window=[-1000, 1000, -1000, 1000]
+  dataobj=KWS2MeasurementData([], [], 3, 4, -1, 2)
   # Get header information
   if setup['BACKGROUND']:
     if not setup['BACKGROUND'] in background_data:
@@ -280,7 +278,7 @@ def read_edf_file(file_name):
   else:
     background_array=None
 
-  if import_subframes:
+  if import_subframes or not '_im_' in file_name:
     input_array, header_settings, header_info=import_edf_file(file_name)
   else:
     # get a list of files, which belong together
@@ -289,12 +287,16 @@ def read_edf_file(file_name):
     if file_prefix in imported_edfs:
       return 'NULL'
     input_array, header_settings, header_info=import_edf_set(file_name)
-
-  if setup['CENTER_X']:
+  
+  if header_info['center_x'] is not None:
+    center_x=header_info['center_x']
+  elif setup['CENTER_X']:
     center_x=setup['CENTER_X']
   else:
     center_x=header_info['pixel_x']
-  if setup['CENTER_Y']:
+  if header_info['center_y'] is not None:
+    center_y=header_info['center_y']
+  elif setup['CENTER_Y']:
     center_y=setup['CENTER_Y']
   else:
     center_y=header_info['pixel_y']
@@ -304,9 +306,14 @@ def read_edf_file(file_name):
     input_array-=background_array*countingtime
   sys.stdout.write('\tData Processing ...')
   sys.stdout.flush()
+  # if data is scaled in file, rescale it to apply e.g. error calculations correctly
+  #if header_info['DataNormalization'] is not None:
+  #  input_array/=header_info['DataNormalization']
   # define other quantities for the input data
-  x_array=linspace(0, header_info['xdim']**2-1, header_info['xdim']**2)%header_info['ydim']
-  y_array=linspace(0, header_info['ydim']**2-1, header_info['ydim']**2)//header_info['ydim']
+  x_array=linspace(0, header_info['xdim']*header_info['ydim']-1,
+                    header_info['xdim']*header_info['ydim'])%header_info['xdim']
+  y_array=linspace(0, header_info['xdim']*header_info['ydim']-1,
+                    header_info['xdim']*header_info['ydim'])//header_info['xdim']
   error_array=sqrt(input_array)
   corrected_data_array=input_array/countingtime
   corrected_error_array=error_array/countingtime
@@ -316,18 +323,16 @@ def read_edf_file(file_name):
            sin(arctan((y_array-center_y)*header_info['pixelsize_y']/setup['DETECTOR_DISTANCE']/2.))
   use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
               (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
-  dataobj.data[0].values=x_array[use_indices].tolist()
-  dataobj.data[1].values=y_array[use_indices].tolist()
-  # convert indices to integers to save memory
-  dataobj.data[0]=dataobj.data[0]
-  dataobj.data[1]=dataobj.data[1]
-  dataobj.data[2].values=corrected_data_array[use_indices].tolist()
-  dataobj.data[3].values=corrected_error_array[use_indices].tolist()
-  dataobj.data[4].values=qy_array[use_indices].tolist()
-  dataobj.data[5].values=qz_array[use_indices].tolist()
+  # Insert columns
+  dataobj.data.append(PhysicalProperty('pixel_x', 'pix', x_array[use_indices]).astype(int16))
+  dataobj.data.append(PhysicalProperty('pixel_y', 'pix', y_array[use_indices]).astype(int16))
+  dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data_array[use_indices], 
+                                                    corrected_error_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('q_y', 'Å^{-1}', qy_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('q_z', 'Å^{-1}', qz_array[use_indices]))
   dataobj.sample_name=header_info['sample_name']
   dataobj.info="\n".join([item[0]+': '+item[1] for item in sorted(header_settings.items())])
-  if import_subframes:
+  if import_subframes or not '_im_' in file_name:
     dataobj.short_info=""
   else:
     dataobj.short_info="Sum of frames"
@@ -336,7 +341,7 @@ def read_edf_file(file_name):
   dataobj.logz=True
   sys.stdout.write('\b'*3+'complete!\n')
   sys.stdout.flush()
-  if not import_subframes:
+  if not import_subframes and '_im_' in file_name:
     print "\tImport complete, ignoring file names belonging to the same series."
   return [dataobj]
 
@@ -435,6 +440,9 @@ def read_edf_header(file_handler):
       'pixel_y': 512.5, 
       'pixelsize_y': 0.16696,#0.0914, 
       'detector_distance': 102., 
+      'DataNormalization': None, 
+      'center_x': None, 
+      'center_y': None, 
       }
   while '}' not in line:
     if "=" in line:
@@ -452,13 +460,31 @@ def read_edf_header(file_handler):
     info['ydim']=int(settings['Dim_2'])
   if 'Distance_sample-detector' in settings:
     info['detector_distance']=float(settings['Distance_sample-detector'].rstrip('mm'))
+  if 'SampleDistance' in settings:
+    info['detector_distance']=float(settings['SampleDistance'].rstrip('m'))*1000.
   if 'Monochromator_energy' in settings:
     energy=float(settings['Monochromator_energy'].rstrip('keV'))*1000.
     info['lambda_γ']= h_c/energy
+  if  'WaveLength' in settings:
+    info['lambda_γ']= float(settings['WaveLength'].rstrip('m'))*1e10
   if 'Sample_comments' in settings:
     info['sample_name']=settings['Sample_comments']
+  if 'ExperimentInfo' in settings:
+    info['sample_name']=settings['ExperimentInfo']
   if 'Exposure_time' in settings:
     info['time']=float(settings['Exposure_time'].rstrip('ms'))/1000.
+  if 'ExposureTime' in settings:
+    info['time']=float(settings['ExposureTime'].rstrip('s (Seconds)'))
+  if 'NormalizationFactor' in settings:
+    info['DataNormalization']=float(settings['NormalizationFactor'])
+  if 'Center_1' in settings:
+    info['center_x']=float(settings['Center_1'].rstrip('pixel'))
+  if 'Center_2' in settings:
+    info['center_y']=float(settings['Center_2'].rstrip('pixel'))
+  if 'PSize_1' in settings:
+    info['pixelsize_x']=float(settings['PSize_1'].rstrip('m'))*1e3
+  if 'PSize_2' in settings:
+    info['pixelsize_y']=float(settings['PSize_2'].rstrip('m'))*1e3
   return settings, info, header_lines
 
 def import_edf_file(file_name):
@@ -483,6 +509,11 @@ def import_edf_file(file_name):
     # load data as binary integer values
     input_array=array_module.array('i')
     input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*4))
+  elif header_settings['DataType']=='FloatValue':
+    # load data as binary integer values
+    input_array=array_module.array('f')
+    input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*4))
+    input_array=maximum(0., input_array)
   else:
     raise IOError, 'Unknown data format in header: %s' % header_settings['DataType']
   file_handler.close()

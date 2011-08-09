@@ -312,6 +312,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
             self.read_file=template
             self.FILE_WILDCARDS=[[template.name]+template.wildcards]
             # reset the addfile function to the standard
+            self.ONLY_IMPORT_MULTIFILE=False
             self.add_file=lambda *args, **opts: GenericSession.add_file(self, *args, **opts)
             last_argument_option=[False,'']
           elif last_argument_option[1]=='startuppath':
@@ -773,7 +774,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     # while keeping backwards compatibility
     output={
             'version': __version__,
-            'session': repr(self),
+            'session': str(self.__class__),
+            'module': str(self.__module__), 
             'origin': self.active_file_name,
             'data': self.active_file_data,
             }
@@ -798,3 +800,36 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Return a string with information about the active file.
     '''
     return "Data read from %s.\n" % (self.active_file_name)
+
+
+
+#+++++++++++ Additional functions for general usage ++++++++++++++
+
+def read_full_snapshot(name):
+    '''
+      Extract a python object that was pickled as snapshot to the associated objects.
+      For new style snapshots return the data with the associated namd,module and class
+      to start a new session, old style snapshots are read into a generic session.
+    '''
+    if not os.path.exists(name):
+      print "No snapshot file found."
+      return None
+    if name.endswith('.gz'):
+      import gzip
+      dump_file=gzip.open(name, 'rb')
+    else:
+      dump_file=open(name, 'rb')
+    print "Reading snapshot from file %s..." % name
+    dump_obj=load(dump_file)
+    dump_file.close()
+    if type(dump_obj) is dict:
+      data=dump_obj['data']
+      file_name=dump_obj['origin']
+      module=dump_obj['module']
+      session=dump_obj['session'].split(module+'.')[1]
+    else:
+      data=dump_obj
+      file_name=name.rsplit('.mdd', 1)[0]
+      module='sessions.generic'
+      session='GenericSession'
+    return data, file_name, (module, session)

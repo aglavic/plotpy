@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Name=Plot.py
+Name[de]=Plot.py
+Comment=Plotting and data manipulation
+Comment[de]=Plottet und verarbeitet Messdaten
+GenericName=Plot.py
+Terminal=false
+Icon=/usr/local/lib/python2.7/dist-packages/plot_script/config/logo.png
+Type=Application
+Exec=/usr/local/bin/plot.py %f -startuppath %d
+Categories=GTK;GNOME;Science;
+X-KDE-StartupNotify=true
+MimeType=text/plot_mdd;

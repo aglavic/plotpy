@@ -426,10 +426,18 @@ class SimpleEntryDialog(gtk.Dialog):
     # Initialize this dialog
     opts['title']=title
     opts['buttons']=('OK', 1, 'Cancel', 0)
+    if 'description' in opts:
+      description=gtk.Label(opts['description'])
+      del(opts['description'])
+    else:
+      description=None
     gtk.Dialog.__init__(self, *args, **opts)
     self.entries={}
     self.values={}
     self.conversions={}
+    if description is not None:
+      self.vbox.add(description)
+      description.show()
     self.table=gtk.Table(3, len(entries), False)
     self.table.show()
     self.vbox.add(self.table)
@@ -445,46 +453,61 @@ class SimpleEntryDialog(gtk.Dialog):
       Append labels and entries to the main table and the objects dictionaries and show them. 
     '''
     for i, entry_list in enumerate(entries):
-      if len(entry_list)<3 or len(entry_list)>4:
-        raise ValueError, "All entries have to be tuples with 3 or 4 items"
-      key=entry_list[0]
-      label=gtk.Label(key + ': ')
-      label.show()
-      # If entry is a list, there will be a dropdown menu to choose
-      if hasattr(entry_list[1], '__iter__'):
-        entry=gtk.combo_box_new_text()
-        for selection_entry in entry_list[1]:
-          entry.append_text(selection_entry)        
-        entry.set_active(entry_list[2])
-        entry.show()
-        self.entries[key]=entry
-        self.values[key]=entry_list[1][entry_list[2]]
-        self.conversions[key]=entry_list[1]
-      else:
-        entry=gtk.Entry()
-        entry.show()
-        entry.set_text(str(entry_list[1]))
-        entry.connect('activate', lambda *ignore: self.response(1))
-        self.entries[key]=entry
+      if len(entry_list)<2 or len(entry_list)>4:
+        raise ValueError, "All entries have to be tuples with 2,3 or 4 items"
+      if len(entry_list)==2:
+        # the entry should be a True/False option
+        key=entry_list[0]
+        checkbox=gtk.CheckButton(key, use_underline=False)
+        checkbox.show()
+        checkbox.set_active(entry_list[1])
+        self.entries[key]=checkbox
         self.values[key]=entry_list[1]
-        self.conversions[key]=entry_list[2]
-      self.table.attach(label, 
-            # X direction #          # Y direction
-            0, 1,                      i, i+1,
-            gtk.FILL,                       gtk.FILL,
-            0,                         0)
-      self.table.attach(entry, 
-            # X direction #          # Y direction
-            1, 2,                      i, i+1,
-            gtk.FILL|gtk.EXPAND,                       gtk.FILL,
-            0,                         0)
-      if len(entry_list)==4:
-        self.table.attach(entry_list[3], 
-            # X direction #          # Y direction
-            2, 3,                      i, i+1,
-            gtk.FILL,                       gtk.FILL,
-            0,                         0)
-        entry_list[3].show()
+        self.conversions[key]=None
+        self.table.attach(checkbox, 
+              # X direction #          # Y direction
+              0, 3,                      i, i+1,
+              gtk.FILL,                       gtk.FILL,
+              0,                         0)        
+      else:
+        key=entry_list[0]
+        label=gtk.Label(key + ': ')
+        label.show()
+        # If entry is a list, there will be a dropdown menu to choose from
+        if hasattr(entry_list[1], '__iter__'):
+          entry=gtk.combo_box_new_text()
+          for selection_entry in entry_list[1]:
+            entry.append_text(selection_entry)        
+          entry.set_active(entry_list[2])
+          entry.show()
+          self.entries[key]=entry
+          self.values[key]=entry_list[1][entry_list[2]]
+          self.conversions[key]=entry_list[1]
+        else:
+          entry=gtk.Entry()
+          entry.show()
+          entry.set_text(str(entry_list[1]))
+          entry.connect('activate', lambda *ignore: self.response(1))
+          self.entries[key]=entry
+          self.values[key]=entry_list[1]
+          self.conversions[key]=entry_list[2]
+        self.table.attach(label, 
+              # X direction #          # Y direction
+              0, 1,                      i, i+1,
+              gtk.FILL,                       gtk.FILL,
+              0,                         0)
+        self.table.attach(entry, 
+              # X direction #          # Y direction
+              1, 2,                      i, i+1,
+              gtk.FILL|gtk.EXPAND,                       gtk.FILL,
+              0,                         0)
+        if len(entry_list)==4:
+          self.table.attach(entry_list[3], 
+              # X direction #          # Y direction
+              2, 3,                      i, i+1,
+              gtk.FILL,                       gtk.FILL,
+              0,                         0)
+          entry_list[3].show()
   
   def run(self):
     '''
@@ -523,6 +546,8 @@ class SimpleEntryDialog(gtk.Dialog):
           self.values[key]=value
         except ValueError:
           pass
+      elif self.conversions[key] is None:
+        self.values[key]=entry.get_active()
       else:
         self.values[key]=self.conversions[key][entry.get_active()]
 

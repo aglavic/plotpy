@@ -1926,171 +1926,50 @@ class ApplicationMainWindow(gtk.Window):
     dimension_names.append(dims[data.xdata])
     dimension_names.append(dims[data.ydata])
     del(dims)
-    cs_dialog=gtk.Dialog(title='Create a cross-section:')
-    table=gtk.Table(3,7,False)
-    label=gtk.Label()
-    label.set_markup('Direction:')
-    table.attach(label,
-                # X direction #          # Y direction
-                0, 1,                      1, 3,
-                gtk.EXPAND | gtk.FILL,     gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup(dimension_names[0])
-    table.attach(label,
-                # X direction #          # Y direction
-                1, 2,                      1, 2,
-                0,                       gtk.FILL,
-                0,                         0);
-    line_x=gtk.Entry()
-    line_x.set_width_chars(6)
-    line_x.set_text('1')
-    table.attach(line_x,
-                # X direction #          # Y direction
-                2, 3,                      1, 2,
-                0,                       gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup(dimension_names[1])
-    table.attach(label,
-                # X direction #          # Y direction
-                1, 2,                      2, 3,
-                0,                       gtk.FILL,
-                0,                         0);
-    line_y=gtk.Entry()
-    line_y.set_width_chars(6)
-    line_y.set_text('0')
-    table.attach(line_y,
-                # X direction #          # Y direction
-                2, 3,                      2, 3,
-                0,                       gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup('Start Point:')
-    table.attach(label,
-                # X direction #          # Y direction
-                0, 1,                      3, 5,
-                gtk.EXPAND | gtk.FILL,     gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup(dimension_names[0])
-    table.attach(label,
-                # X direction #          # Y direction
-                1, 2,                      3, 4,
-                0,                       gtk.FILL,
-                0,                         0);
-    line_x0=gtk.Entry()
-    line_x0.set_width_chars(6)
-    line_x0.set_text('0')
-    table.attach(line_x0,
-                # X direction #          # Y direction
-                2, 3,                      3, 4,
-                0,                       gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup(dimension_names[1])
-    table.attach(label,
-                # X direction #          # Y direction
-                1, 2,                      4, 5,
-                0,                       gtk.FILL,
-                0,                         0);
-    line_y0=gtk.Entry()
-    line_y0.set_width_chars(6)
-    line_y0.set_text('0')
-    table.attach(line_y0,
-                # X direction #          # Y direction
-                2, 3,                      4, 5,
-                0,                       gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup('Width:')
-    table.attach(label,
-                # X direction #          # Y direction
-                0, 1,                      5, 6,
-                gtk.EXPAND | gtk.FILL,     gtk.FILL,
-                0,                         0);
-    line_width=gtk.Entry()
-    line_width.set_width_chars(6)
-    line_width.set_text('1')
-    table.attach(line_width,
-                # X direction #          # Y direction
-                1, 3,                      5, 6,
-                0,                       gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup('Binning:')
-    table.attach(label,
-                # X direction #          # Y direction
-                0, 1,                      6, 7,
-                gtk.EXPAND | gtk.FILL,     gtk.FILL,
-                0,                         0);
-    binning=gtk.Entry()
-    binning.set_width_chars(4)
-    binning.set_text('1')
-    table.attach(binning,
-                # X direction #          # Y direction
-                1, 3,                      6, 7,
-                0,                       gtk.FILL,
-                0,                         0);
-    weight=gtk.CheckButton(label='Gauss weighting, Sigma:', use_underline=True)
-    table.attach(weight,
-                # X direction #          # Y direction
-                0, 2,                      7, 8,
-                0,                       gtk.FILL,
-                0,                         0);
-    sigma=gtk.Entry()
-    sigma.set_width_chars(4)
-    sigma.set_text('1e10')
-    table.attach(sigma,
-                # X direction #          # Y direction
-                2, 3,                      7, 8,
-                0,                       gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup('Stepsize:\n(overwrites Binning)')
-    table.attach(label,
-                # X direction #          # Y direction
-                0, 1,                      8, 9,
-                gtk.EXPAND | gtk.FILL,     gtk.FILL,
-                0,                         0);
-    bin_distance=gtk.Entry()
-    bin_distance.set_width_chars(4)
-    bin_distance.set_text('None')
-    table.attach(bin_distance,
-                # X direction #          # Y direction
-                1, 3,                      8, 9,
-                0,                       gtk.FILL,
-                0,                         0);
-    table.show_all()
-    # Enty activation triggers calculation, too
-    line_x.connect('activate', lambda *ign: cs_dialog.response(1))
-    line_x0.connect('activate', lambda *ign: cs_dialog.response(1))
-    line_y.connect('activate', lambda *ign: cs_dialog.response(1))
-    line_y0.connect('activate', lambda *ign: cs_dialog.response(1))
-    line_width.connect('activate', lambda *ign: cs_dialog.response(1))
-    binning.connect('activate', lambda *ign: cs_dialog.response(1))
-    bin_distance.connect('activate', lambda *ign: cs_dialog.response(1))
-    sigma.connect('activate', lambda *ign: cs_dialog.response(1))
-    cs_dialog.vbox.add(table)
-    cs_dialog.add_button('OK', 1)
-    cs_dialog.add_button('Cancel', 0)
-    result=cs_dialog.run()
-    if result==1:
-      try:
-        bd=float(bin_distance.get_text())
-      except ValueError:
-        bd=None
+    cs_dialog=SimpleEntryDialog('Create a cross-section:', 
+                                [
+                                ('Direction-x ('+dimension_names[0]+')', 1, float), 
+                                ('Direction-y ('+dimension_names[1]+')', 0, float), 
+                                ('Origin-x ('+dimension_names[0]+')', 0, float), 
+                                ('Origin-y ('+dimension_names[1]+')', 0, float), 
+                                ('Width', 1, float), 
+                                ('Bin-type', ['Stepsize', 'Points'], 0), 
+                                ('Binning', 1, float), 
+                                ('Perform Gaussian weighting', False), 
+                                ('σ-Gauss', 1, float), 
+                                ('Append plot at end', False)
+                                ], 
+                                )
+    cs_dialog.register_mouse_callback(self, [[('Origin-x ('+dimension_names[0]+')', 0), 
+                                              ('Origin-y ('+dimension_names[1]+')', 1)]])
+    values, result=cs_dialog.run()
+    cs_dialog.destroy()
+    if result:
+      line_x=values['Direction-x ('+dimension_names[0]+')']
+      line_y=values['Direction-y ('+dimension_names[1]+')']
+      line_x0=values['Origin-x ('+dimension_names[0]+')']
+      line_y0=values['Origin-y ('+dimension_names[1]+')']
+      line_width=values['Width']
+      if values['Bin-type']=='Points':
+        binning=values['Binning']
+        bin_distance=None
+      else:
+        binning=1
+        bin_distance=values['Binning']
+      weight=values['Perform Gaussian weighting']
+      sigma=values['σ-Gauss']
+      append_plot=values['Append plot at end']
       gotit=self.file_actions.activate_action('cross-section', 
-                                        float(line_x.get_text()), 
-                                        float(line_x0.get_text()), 
-                                        float(line_y.get_text()), 
-                                        float(line_y0.get_text()), 
-                                        float(line_width.get_text()), 
-                                        int(binning.get_text()), 
-                                        weight.get_active(), 
-                                        float(sigma.get_text()), 
-                                        False, 
-                                        bd
+                                        line_x, 
+                                        line_x0, 
+                                        line_y, 
+                                        line_y0, 
+                                        line_width, 
+                                        binning, 
+                                        weight, 
+                                        sigma, 
+                                        append_plot, 
+                                        bin_distance
                                         )
       if not gotit:
         message=gtk.MessageDialog(parent=self, 
@@ -2119,100 +1998,23 @@ class ApplicationMainWindow(gtk.Window):
     dims=data.dimensions()
     dimension_names.append(dims[data.xdata])
     dimension_names.append(dims[data.ydata])
-    ri_dialog=gtk.Dialog(title='Create a radial integration:')
-    table=gtk.Table(3,7,False)
-    label=gtk.Label()
-    label.set_markup('Center Point:')
-    table.attach(label,
-                # X direction #          # Y direction
-                0, 1,                      0, 1,
-                gtk.EXPAND | gtk.FILL,     gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup(dimension_names[0])
-    table.attach(label,
-                # X direction #          # Y direction
-                1, 2,                      0, 1,
-                0,                       gtk.FILL,
-                0,                         0);
-    center_x0=gtk.Entry()
-    center_x0.set_width_chars(6)
-    center_x0.set_text('0')
-    table.attach(center_x0,
-                # X direction #          # Y direction
-                2, 3,                      0, 1, 
-                0,                       gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup(dimension_names[1])
-    table.attach(label,
-                # X direction #          # Y direction
-                1, 2,                      1, 2,
-                0,                       gtk.FILL,
-                0,                         0);
-    center_y0=gtk.Entry()
-    center_y0.set_width_chars(6)
-    center_y0.set_text('0')
-    table.attach(center_y0,
-                # X direction #          # Y direction
-                2, 3,                      1, 2,
-                0,                       gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup('Stepsize:')
-    table.attach(label,
-                # X direction #          # Y direction
-                0, 1,                      2, 3,
-                gtk.EXPAND | gtk.FILL,     gtk.FILL,
-                0,                         0);
-    delta_r=gtk.Entry()
-    delta_r.set_width_chars(4)
-    delta_r.set_text('0.001')
-    table.attach(delta_r,
-                # X direction #          # Y direction
-                1, 3,                      2, 3,
-                0,                       gtk.FILL,
-                0,                         0);
-    label=gtk.Label()
-    label.set_markup('Maximal Radius:')
-    table.attach(label,
-                # X direction #          # Y direction
-                0, 1,                      3, 4,
-                gtk.EXPAND | gtk.FILL,     gtk.FILL,
-                0,                         0);
-    max_r=gtk.Entry()
-    max_r.set_width_chars(4)
-    max_r.set_text('1e10')
-    table.attach(max_r,
-                # X direction #          # Y direction
-                1, 3,                      3, 4,
-                0,                       gtk.FILL,
-                0,                         0);
-    table.show_all()
-    # Enty activation triggers calculation, too
-    center_x0.connect('activate', lambda *ign: ri_dialog.response(1))
-    center_y0.connect('activate', lambda *ign: ri_dialog.response(1))
-    delta_r.connect('activate', lambda *ign: ri_dialog.response(1))
-    max_r.connect('activate', lambda *ign: ri_dialog.response(1))
-    ri_dialog.vbox.add(table)
-    ri_dialog.add_button('OK', 1)
-    ri_dialog.add_button('Cancel', 0)
-    result=ri_dialog.run()
-    if result==1:
-      try:
-        dr=float(delta_r.get_text())
-        x0=float(center_x0.get_text())
-        y0=float(center_y0.get_text())
-        mr=float(max_r.get_text())
-      except ValueError:
-        message=gtk.MessageDialog(parent=self, 
-                                  flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
-                                  type=gtk.MESSAGE_INFO, 
-                                  buttons=gtk.BUTTONS_CLOSE, 
-                                  message_format='No point in selected area.')
-        message.run()
-        message.destroy()
-        return False
+    ri_dialog=SimpleEntryDialog('Create a radial integration:', 
+                                [
+                                ('x0', 0, float), 
+                                ('y0', 0, float), 
+                                ('Δr', 0.001, float), 
+                                ('r_max', 1e10, float), 
+                                ], 
+                                description='Click on the graph to select a xy-position.'
+                                )
+    ri_dialog.register_mouse_callback(self, [[('x0', 0), ('y0', 1)]])
+    values, result=ri_dialog.run()
+    ri_dialog.destroy()
+    if result:
+      dr=values['Δr']
+      x0=values['x0']
+      y0=values['y0']
+      mr=values['r_max']
       gotit=self.file_actions.activate_action('radial_integration', 
                                         x0, y0, dr, mr, False
                                         )
@@ -2226,7 +2028,6 @@ class ApplicationMainWindow(gtk.Window):
         message.destroy()
     else:
       gotit=False
-    ri_dialog.destroy()
     if gotit:
       self.rebuild_menus()
       self.replot()      

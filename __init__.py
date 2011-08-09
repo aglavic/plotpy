@@ -149,13 +149,22 @@ def import_session_from_name(arguments, measurement_type):
                                       [measurement_type[1]]), measurement_type[1])
   return active_session_class(arguments)
 
+def import_session_from_module_info(module_info, arguments):
+  '''
+    Import a session object from two strings containing module name and class. 
+    
+    @return The class instance for the measurement type
+  '''
+  active_session_class = getattr(__import__(module_info[0], {}, {}, 
+                                      [module_info[1]]), module_info[1])
+  return active_session_class(arguments)
 
 def initialize(arguments):  
   ''' 
     initialize session and read data files 
   '''
   # parent class
-  from sessions.generic import GenericSession
+  from sessions.generic import GenericSession, read_full_snapshot
   if (len(arguments) == 0):
     # if no input parameter given, print the short help string
     #print GenericSession.SHORT_HELP
@@ -165,6 +174,14 @@ def initialize(arguments):
     # type is found in dictionary, using specific session
     measurement_type=known_measurement_types[arguments[0]]
     active_session=import_session_from_name(arguments[1:]+measurement_type[3], measurement_type)
+  elif (arguments[0].endswith('.mdd') or arguments[0].endswith('.mdd.gz')):
+    # open a snapshot with automatic session detection:
+    data, file_name, module_info=read_full_snapshot(arguments[0])
+    active_session=import_session_from_module_info(module_info, arguments[1:])
+    print "Starting session type read from snapshot: %s" % module_info[1]
+    active_session.file_data[file_name]=data
+    active_session.active_file_data=data
+    active_session.active_file_name=file_name
   else:
     found_sessiontype=False
     suffixes=map(lambda arg: arg.split('.')[-1], arguments)
