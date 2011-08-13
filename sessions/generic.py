@@ -462,6 +462,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     if len(plugins)>0:
       # already imported plugins
       return
+    # User plugin folder
     user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')
     if os.path.exists(user_folder) and os.path.exists(os.path.join(user_folder, 'plugins')):
       sys.path.append(os.path.join(user_folder, 'plugins'))
@@ -470,6 +471,9 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       for plugin_source in plugin_sources:
         plugin=__import__(plugin_source[:-3])
         plugins.append(plugin)
+    # Global plugin folder
+    from plugins import global_plugins
+    plugins+=global_plugins
 
   def replace_systemdependent(self, string):
     '''

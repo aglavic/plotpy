@@ -33,7 +33,7 @@ __scripts__=['plot.py']
 __py_modules__=[]
 __package_dir__={'plot_script': '.'}
 __packages__=['plot_script', 'plot_script.config', 'plot_script.read_data', 'plot_script.sessions', 
-            'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui'] #'plot_script.wxgui', 
+            'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui', 'plot_script.plugins'] #'plot_script.wxgui', 
 __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90', 
                             'fit/pnr_multi/*.f90', 'logo*.png'], 
                   'plot_script': ['doc/*.html', 'gpl.pdf'], 
@@ -48,8 +48,9 @@ if "py2app" in sys.argv:
               "app": ['__init__.py'], 
               "options": { "py2app": {
                            "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio", 
+                           #"excludes": "__init__", 
                            "optimize": 1, # Keep docstrings
-                           "packages": "encodings, gtk, sessions, read_data, gtkgui, scipy, IPython", 
+                           "packages": "encodings, gtk, sessions, read_data, gtkgui, IPython", 
                            "resources": glob("doc/*.html"), 
                            "iconfile": "config/logo.png", 
                            #"argv_emulation": True,
@@ -66,7 +67,7 @@ elif "py2exe" in sys.argv:
                               "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
                               "optimize": 1, # Keep docstring (e.g. IPython console usage)
                               "skip_archive": True, # setting not to move compiled code into library.zip file
-                              'packages':'encodings, gtk, sessions, read_data, gtkgui, scipy, IPython',
+                              'packages':'encodings, gtk, sessions, read_data, gtkgui, IPython',
                               "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'], 
                              }, 
                            }
@@ -75,7 +76,7 @@ else:
   __options__={"setup_requires":[], 
                 }
 
-__requires__=['pygtk', 'gobject', 'numpy', 'scipy']
+__requires__=['pygtk', 'gobject', 'numpy']
 from distutils.core import setup, Extension
 
 # extensions modules written in C
@@ -338,5 +339,5 @@ if "py2exe" in sys.argv and not py2exe_test:
     open(os.path.join('archiv', os.path.split(script_file)[1]), 'w').write(sf.replace('plot.py', 'plot'))
  
 # py2app specific stuff to make it work: 
-if "py2app" in sys.argv:
-  subprocess.call(['cp', '-r','config/*','archiv/plot-script.app/Contents/Resources/lib/python2.7/config'])
+#if "py2app" in sys.argv:
+#  subprocess.call(['cp', '-r','config/*','archiv/plot-script.app/Contents/Resources/lib/python2.7/config'])
