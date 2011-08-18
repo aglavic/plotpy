@@ -147,6 +147,9 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
         else:
           columns.append([count-2,mapping[1],mapping[2], line.index(mapping[3])])
     columns.sort(key=lambda x:x[1])
+  # filter empty first line
+  if input_file_lines[0].strip()=='':
+    input_file_lines.pop(0)
   # Find the columns of the types which can be used with this measurement.
   # The columns can be given by index or name, if the name is not present
   # the type is ignored.
