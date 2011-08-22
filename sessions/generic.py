@@ -469,8 +469,11 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       plugin_sources=os.listdir(os.path.join(user_folder, 'plugins'))
       plugin_sources=filter(lambda file: file.endswith('.py'), plugin_sources)
       for plugin_source in plugin_sources:
-        plugin=__import__(plugin_source[:-3])
-        plugins.append(plugin)
+        try:
+          plugin=__import__(plugin_source[:-3])
+          plugins.append(plugin)
+        except ImportError, error:
+          print "Error importing plugin %s, skipped. Error message: %s" % (plugin_source, error)
     # Global plugin folder
     from plugins import global_plugins
     plugins+=global_plugins
