@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2011-08-13, 15:32:32 -->
+<!-- Saved: 2011-08-22, 15:44:17 -->
 <!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -115,6 +115,8 @@
     <Other>install</Other>
     <Other>uninstall</Other>
     <Other>doc</Other>
+    <Other>/usr/share/eric/APIs/plotting.api</Other>
+    <Other>/home/glavic/Software/eric_api/plotting.api</Other>
   </Others>
   <MainScript>__init__.py</MainScript>
   <Vcs>
@@ -254,6 +256,12 @@
               </list>
             </value>
             <key>
+              <string>includePrivate</string>
+            </key>
+            <value>
+              <bool>True</bool>
+            </value>
+            <key>
               <string>languages</string>
             </key>
             <value>
@@ -265,7 +273,7 @@
               <string>outputFile</string>
             </key>
             <value>
-              <unicode>/usr/share/eric/APIs/plotting.api</unicode>
+              <unicode>/home/glavic/Software/eric_api/plotting.api</unicode>
             </value>
             <key>
               <string>useRecursion</string>
