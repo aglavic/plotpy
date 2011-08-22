@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2011-08-22, 15:44:17 -->
+<!-- Saved: 2011-08-22, 15:45:30 -->
 <!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -39,8 +39,6 @@
     <Source>read_data/dns.py</Source>
     <Source>sessions/dns.py</Source>
     <Source>config/dns.py</Source>
-    <Source>install</Source>
-    <Source>uninstall</Source>
     <Source>read_data/reflectometer.py</Source>
     <Source>read_data/squid.py</Source>
     <Source>read_data/treff.py</Source>
@@ -112,10 +110,7 @@
   <Interfaces>
   </Interfaces>
   <Others>
-    <Other>install</Other>
-    <Other>uninstall</Other>
     <Other>doc</Other>
-    <Other>/usr/share/eric/APIs/plotting.api</Other>
     <Other>/home/glavic/Software/eric_api/plotting.api</Other>
   </Others>
   <MainScript>__init__.py</MainScript>
