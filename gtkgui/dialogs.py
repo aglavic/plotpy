@@ -11,6 +11,7 @@ import sys, os
 from time import sleep
 from math import sqrt
 from config import gnuplot_preferences
+from measurement_data_structure import PlotStyle
 import config.templates
 
 #----------------------- importing modules --------------------------
@@ -1466,6 +1467,230 @@ class DataView(gtk.Dialog):
         self.treeview.get_selection().select_all()
 
 #------------------- Dialog to display the columns of a dataset -------------------------
+
+#+++++++++++++++++ Dialog to change the color and style of a plot +++++++++++++++++++++++
+
+class ColorDialog(gtk.ColorSelectionDialog):
+  '''
+    A specific color selection to select plot colors.
+  '''
+  _activation_callback=None
+  
+  def __init__(self, title='Select Color...', activation_callback=None, auto_apply=True):
+    '''
+      Create a new color selection dialog. If the activation_callback parameter is set
+      to a function which takes one parameter it is called on any color change with
+      the dialogs color selection as parameter.
+    '''
+    self._activation_callback=activation_callback
+    gtk.ColorSelectionDialog.__init__(self, title)
+    color_selection=self.get_color_selection()
+    color_selection.set_has_palette(True)
+    if activation_callback is not None:
+      if auto_apply:
+        color_selection.connect('color-changed', self._change_color)
+      else:
+        self.add_buttons('Apply', gtk.RESPONSE_APPLY)
+    
+  
+  def _change_color(self, widget):
+    '''
+      If defined call the function set on init.
+    '''
+    if self._activation_callback is not None:
+      self._activation_callback(self.get_color_selection())
+
+  def run(self):
+    '''
+      Keep running if apply button is pressed.
+    '''
+    result=gtk.ColorSelectionDialog.run(self)
+    while result==gtk.RESPONSE_APPLY:
+      self._change_color(None)
+      result=gtk.ColorSelectionDialog.run(self)
+    return result
+
+class StyleLine(gtk.Table):
+  '''
+    A line of options for plot styles.
+  '''
+  
+  def __init__(self, plot_options, callback):
+    '''
+      Show entries to select plot options.
+    '''
+    gtk.Table.__init__(self, rows=1, columns=9, homogeneous=False)
+    self.plot_options=plot_options
+    self.callback=callback
+    self._create_entries()
+    self._update_active_entries()
+    self._connect_events()
+  
+  def _create_entries(self):
+    '''
+      Fill the list with entries.
+    '''
+    if type(self.plot_options._special_plot_parameters) is PlotStyle:
+      style=self.plot_options._special_plot_parameters
+      options={
+               'lw': str(style.linewidth), 
+               'ps': str(style.pointsize), 
+               }
+    else:
+      options={
+               'lw': str(PlotStyle.linewidth), 
+               'ps': str(PlotStyle.pointsize), 
+               }
+    self.toggle_custom=gtk.CheckButton(label='Custom Style  ', use_underline=True)
+    self.toggle_custom.show()
+    self.attach(self.toggle_custom, 0, 1, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    if type(self.plot_options._special_plot_parameters) is PlotStyle:
+      self.toggle_custom.set_active(True)
+    self.toggle_custom.connect('toggled', self.toggle_custom_action)
+    # entries
+    entries={}
+    self.entries=entries
+    style_selection=gtk.combo_box_new_text()
+    for i, style in enumerate(sorted(PlotStyle._basic_styles.keys())):
+      style_selection.append_text(style)
+      if style==PlotStyle.style:
+        style_selection.set_active(i)
+    self.attach(style_selection, 1, 2, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    style_selection.show()
+    entries['style']=style_selection
+    
+    label=gtk.Label('Line Width:')
+    self.attach(label, 2, 3, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    label.show()
+    entries['lw-label']=label
+    entry=gtk.Entry()
+    entry.set_text(options['lw'])
+    self.attach(entry, 3, 4, 0, 1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=0, xpadding=0, ypadding=0)
+    entry.show()
+    entries['lw-entry']=entry
+    
+    label=gtk.Label('Color:')
+    self.attach(label, 4, 5, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    label.show()
+    entries['color-label']=label
+    color_button=gtk.Button('<auto>')
+    self.attach(color_button, 5, 6, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    color_button.show()
+    entries['color-button']=color_button
+    
+    pointtype_selection=gtk.combo_box_new_text()
+    for i, pointtype in enumerate(PlotStyle._point_types):
+      pointtype_selection.append_text("%i: %s" % (pointtype[1], pointtype[0]))
+      if pointtype[1]==PlotStyle.pointtype:
+        pointtype_selection.set_active(i)
+    self.attach(pointtype_selection, 6, 7, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    pointtype_selection.show()
+    entries['pointtype']=pointtype_selection
+    
+    label=gtk.Label('Point Size:')
+    self.attach(label, 7, 8, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    label.show()
+    entries['ps-label']=label
+    entry=gtk.Entry()
+    entry.set_text(options['ps'])
+    self.attach(entry, 8, 9, 0, 1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=0, xpadding=0, ypadding=0)
+    entry.show()
+    entries['ps-entry']=entry
+
+  def _update_active_entries(self):
+    '''
+      If the corresponding dataset has a style set,
+      make all usable entries active.
+    '''
+    if type(self.plot_options._special_plot_parameters) is PlotStyle:
+      ps=self.plot_options._special_plot_parameters
+      for entry in self.entries.values():
+        entry.set_sensitive(True)
+      if not ps.style in ps._has_points:
+        self.entries['ps-label'].set_sensitive(False)
+        self.entries['ps-entry'].set_sensitive(False)
+        self.entries['pointtype'].set_sensitive(False)
+    else:
+      for entry in self.entries.values():
+        entry.set_sensitive(False)
+
+  def _connect_events(self):
+    '''
+      Connect changes to the automated callback function.
+    '''
+    for key, entry in self.entries.items():
+      if type(entry) is gtk.Label:
+        continue
+      elif type(entry) is gtk.Entry:
+        entry.connect('activate', self.process_changes, key)
+      elif type(entry) is gtk.ComboBox:
+        entry.connect('changed', self.process_changes, key)
+      elif type(entry) is gtk.Button:
+        entry.connect('clicked', self.change_color)
+
+  def toggle_custom_action(self, widget):
+    '''
+      Activate or deactivate custom settings for the plot.
+    '''
+    if self.toggle_custom.get_active():
+      self.plot_options._special_plot_parameters=PlotStyle()
+      self.entries['color-button'].set_label('<auto>')
+    else:
+      self.plot_options._special_plot_parameters=None
+    self._update_active_entries()
+    self.callback()
+  
+  def process_changes(self, widget, key):
+    '''
+      Change style properties and activate the callback function.
+    '''
+    style=self.plot_options._special_plot_parameters
+    if key=='style':
+      style_list=sorted(PlotStyle._basic_styles.keys())
+      style.style=style_list[widget.get_active()]
+      self._update_active_entries()
+    if key=='pointtype':
+      style.pointtype=PlotStyle._point_types[widget.get_active()][1]
+    elif key=='lw-entry':
+      try:
+        lw=float(widget.get_text())
+        style.linewidth=lw
+      except ValueError:
+        return
+    elif key=='ps-entry':
+      try:
+        ps=float(widget.get_text())
+        style.pointsize=ps
+      except ValueError:
+        return
+    self.callback()
+
+  def change_color(self, widget):
+    '''
+      Open a color selection dialog.
+    '''
+    color_dia=ColorDialog(activation_callback=self._update_color, auto_apply=False)
+    result=color_dia.run()
+    if result==gtk.RESPONSE_OK:
+      selection=color_dia.get_color_selection()
+      self._update_color(selection)
+      color=selection.get_current_color()
+      self.entries['color-button'].set_label('#%.2X%.2X%.2X' % (
+                                                                   color.red_float*255,
+                                                                   color.green_float*255,
+                                                                   color.blue_float*255,
+                                                                   ))
+    else:
+      self._update_color(None)
+      self.entries['color-button'].set_label('<auto>')
+    color_dia.destroy()
+    self.callback()
+  
+  def _update_color(self, color_selection):
+    self.plot_options._special_plot_parameters.color=color_selection
+    self.callback()
+
+#----------------- Dialog to change the color and style of a plot -----------------------
 
 # import last as this uses some of the classes
 import main_window

@@ -24,7 +24,7 @@ from config import gnuplot_preferences
 from config.gui import DOWNLOAD_PAGE_URL
 import file_actions
 from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, \
-                    SimpleEntryDialog, DataView, PlotTree,  FileImportDialog
+                    SimpleEntryDialog, DataView, PlotTree,  FileImportDialog, StyleLine
 from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
 
 if not sys.platform.startswith('win'):
@@ -2380,6 +2380,21 @@ set multiplot layout %i,1
       self.replot()
     cps_dialog.destroy()
 
+  def change_plot_style(self, action):
+    '''
+      Open a Dialog to chang the style of the current plot.
+    '''
+    dialog=gtk.Dialog()
+    datasets=self.measurement[self.index_mess].plot_together
+    for i, dataset in enumerate(datasets):
+      label=gtk.Label('%i - %s' % (i+1, dataset.short_info))
+      label.show()
+      dialog.vbox.add(label)
+      line=StyleLine(dataset.plot_options, self.replot)
+      line.show()
+      dialog.vbox.add(line)
+    dialog.show()
+
   def fit_dialog(self,action, size=None, position=None):
     '''
       A dialog to fit the data with a set of functions.
@@ -4169,8 +4184,14 @@ set multiplot layout %i,1
           <menuitem action='SaveProfile' position="bottom"/>
           <menuitem action='DeleteProfile' position="bottom"/>
         </menu>
-        <menuitem action='SelectColor'/>
-        <separator name='static9'/>
+        '''
+    if self.measurement[self.index_mess].zdata>=0:    
+      output+='''<menuitem action='SelectColor'/>
+        '''
+    else:
+      output+='''<menuitem action='ChangeStyle'/>
+        '''      
+    output+='''<separator name='static9'/>
         <menuitem action='AddAll'/>
         <menuitem action='ClearMultiplot'/>
         <menu action='ToolbarActions'>
@@ -4418,6 +4439,10 @@ set multiplot layout %i,1
         "Show Tree of Datasets", "<control>T",#'i',                     # label, accelerator
         "Show Tree of Datasets...",                                    # tooltip
         self.show_plot_tree),
+      ( "ChangeStyle", None,                    # name, stock id
+        "Change Plot Style", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.change_plot_style),
       ( "FilterData", None,                    # name, stock id
         "Filter the data points", None,#'f',                     # label, accelerator
         None,                                    # tooltip

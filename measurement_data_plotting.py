@@ -364,10 +364,12 @@ def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, fi
                                    postscript_export,
                                    additional_info)
     else:
+      plotting_param=gp.plotting_parameters
       using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
                           str(datasets[i].plot_together[j].ydata+1)
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
-          '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + gp.plotting_parameters
+          '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + \
+          (datasets[i].plot_together[j].plot_options.special_plot_parameters or plotting_param)
       gnuplot_file_text=replace_ph(session, 
                                    gnuplot_file_text,
                                    datasets,

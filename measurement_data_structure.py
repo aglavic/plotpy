@@ -1262,7 +1262,7 @@ class PlotOptions(object):
   '''
     Object for storing information about the illustration of the data in the plot.
   '''
-  special_plot_parameters=None
+  _special_plot_parameters=None
   special_using_parameters=""
   splot=''
   is_polar=False
@@ -1421,7 +1421,82 @@ class PlotOptions(object):
   xrange=property(get_xrange, set_xrange)
   yrange=property(get_yrange, set_yrange)
   zrange=property(get_zrange, set_zrange)
+  
+  def _get_special_plot_parameters(self):
+    if self._special_plot_parameters is not None:
+      return str(self._special_plot_parameters)
+    else:
+      return None
 
+  def _set_special_plot_parameters(self, special_plot_parameters):
+    self._special_plot_parameters=special_plot_parameters
+  
+  special_plot_parameters=property(_get_special_plot_parameters, _set_special_plot_parameters)
+
+class PlotStyle(object):
+  '''
+    Class to define the plot style of one line. Automatically
+    creates the "with" settings for gnuplot according to some options.
+  '''
+  
+  _basic_styles={
+                 'lines': 'lines', 
+                 'points': 'points', 
+                 'linespoints': 'linespoints', 
+                 }
+  
+  _has_points=['points', 'linespoints']
+  _point_types=[
+                ('+', 1), 
+                ('x', 2), 
+                ('*', 3), 
+                ('⊡', 4), 
+                ('◼', 5), 
+                ('⨀', 6), 
+                ('●', 7), 
+                ('◬', 8), 
+                ('▲', 9), 
+                ]
+  
+  linewidth=1.5
+  pointsize=1
+  pointtype=7
+  _color=None
+  style='lines'
+  
+  def __str__(self):
+    output='w '
+    output+=self._basic_styles[self.style]+' '
+    output+='lw %g ' % self.linewidth
+    if self._color is not None:
+      output+='lc rgb "#%.2X%.2X%.2X" ' % tuple(self._color)
+    if self.style in self._has_points:
+      output+='pt %i ps %g ' % (self.pointtype, self.pointsize)
+    return output
+  
+  def _get_color(self):
+    return self._color
+  
+  def _set_color(self, color):
+    if color is None:
+      # unset color specification
+      self._color=None
+    elif hasattr(color, 'get_current_color'):
+      # use gtk.ColorSelection to retrieve the color to be set
+      colorspec=color.get_current_color()
+      self._color=( colorspec.red_float*255, colorspec.green_float*255, colorspec.blue_float*255 )
+    elif hasattr(color, '__iter__'):
+      if len(color)!=3:
+        raise ValueError, 'color tuple needs to have 3 items'
+      if not (color[0]>=0 and color[0]<=255 and \
+              color[1]>=0 and color[1]<=255 and \
+              color[2]>=0 and color[2]<=255 ):
+        raise ValueError, 'all color entries need to be numbers between 0 and 255'
+      self._color=color        
+    else:
+      raise ValueError, 'color needs to be a tuple of 3 numbers, a gtk.ColorSelection or None'
+
+  color=property(_get_color, _set_color)
 
 derivatives={# derivatives to numpy base functions for error propagation
              numpy.sin.__str__(): numpy.cos, 
