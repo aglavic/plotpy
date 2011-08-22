@@ -1432,6 +1432,14 @@ class PlotOptions(object):
     self._special_plot_parameters=special_plot_parameters
   
   special_plot_parameters=property(_get_special_plot_parameters, _set_special_plot_parameters)
+  
+  def _get_werror(self):
+    if type(self._special_plot_parameters) is PlotStyle:
+      return self._special_plot_parameters.with_errorbars
+    else:
+      return None
+  
+  with_errorbars=property(_get_werror)
 
 class PlotStyle(object):
   '''
@@ -1443,9 +1451,12 @@ class PlotStyle(object):
                  'lines': 'lines', 
                  'points': 'points', 
                  'linespoints': 'linespoints', 
+                 'errorbars': 'errorbars', 
+                 'errorlines': 'errorlines', 
                  }
   
-  _has_points=['points', 'linespoints']
+  _has_points=['points', 'linespoints', 'errorbars', 'errorlines']
+  _has_errors=['errorbars', 'errorlines']
   _point_types=[
                 ('+', 1), 
                 ('x', 2), 
@@ -1459,7 +1470,7 @@ class PlotStyle(object):
                 ]
   
   linewidth=1.5
-  pointsize=1
+  pointsize=0.5
   pointtype=7
   _color=None
   style='lines'
@@ -1496,7 +1507,11 @@ class PlotStyle(object):
     else:
       raise ValueError, 'color needs to be a tuple of 3 numbers, a gtk.ColorSelection or None'
 
+  def _get_werror(self):
+    return self.style in self._has_errors
+  
   color=property(_get_color, _set_color)
+  with_errorbars=property(_get_werror)
 
 derivatives={# derivatives to numpy base functions for error propagation
              numpy.sin.__str__(): numpy.cos, 

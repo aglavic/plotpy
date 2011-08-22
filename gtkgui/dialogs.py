@@ -1535,11 +1535,20 @@ class StyleLine(gtk.Table):
       options={
                'lw': str(style.linewidth), 
                'ps': str(style.pointsize), 
+               'style': style.style, 
+               'pointtype': style.pointtype, 
                }
+      if style._color is None:
+        options['color']= '<auto>'
+      else:
+        options['color']="#%.2X%.2X%.2X" % tuple(style.color)
     else:
       options={
                'lw': str(PlotStyle.linewidth), 
                'ps': str(PlotStyle.pointsize), 
+               'style': PlotStyle.style, 
+               'color': '<auto>', 
+               'pointtype': PlotStyle.pointtype, 
                }
     self.toggle_custom=gtk.CheckButton(label='Custom Style  ', use_underline=True)
     self.toggle_custom.show()
@@ -1553,7 +1562,7 @@ class StyleLine(gtk.Table):
     style_selection=gtk.combo_box_new_text()
     for i, style in enumerate(sorted(PlotStyle._basic_styles.keys())):
       style_selection.append_text(style)
-      if style==PlotStyle.style:
+      if style==options['style']:
         style_selection.set_active(i)
     self.attach(style_selection, 1, 2, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     style_selection.show()
@@ -1567,13 +1576,14 @@ class StyleLine(gtk.Table):
     entry.set_text(options['lw'])
     self.attach(entry, 3, 4, 0, 1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=0, xpadding=0, ypadding=0)
     entry.show()
+    entry.set_width_chars(5)
     entries['lw-entry']=entry
     
     label=gtk.Label('Color:')
     self.attach(label, 4, 5, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     label.show()
     entries['color-label']=label
-    color_button=gtk.Button('<auto>')
+    color_button=gtk.Button(options['color'])
     self.attach(color_button, 5, 6, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     color_button.show()
     entries['color-button']=color_button
@@ -1581,7 +1591,7 @@ class StyleLine(gtk.Table):
     pointtype_selection=gtk.combo_box_new_text()
     for i, pointtype in enumerate(PlotStyle._point_types):
       pointtype_selection.append_text("%i: %s" % (pointtype[1], pointtype[0]))
-      if pointtype[1]==PlotStyle.pointtype:
+      if pointtype[1]==options['pointtype']:
         pointtype_selection.set_active(i)
     self.attach(pointtype_selection, 6, 7, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     pointtype_selection.show()
@@ -1595,6 +1605,7 @@ class StyleLine(gtk.Table):
     entry.set_text(options['ps'])
     self.attach(entry, 8, 9, 0, 1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=0, xpadding=0, ypadding=0)
     entry.show()
+    entry.set_width_chars(5)
     entries['ps-entry']=entry
 
   def _update_active_entries(self):

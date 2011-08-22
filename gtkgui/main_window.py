@@ -2384,16 +2384,33 @@ set multiplot layout %i,1
     '''
       Open a Dialog to chang the style of the current plot.
     '''
-    dialog=gtk.Dialog()
-    datasets=self.measurement[self.index_mess].plot_together
-    for i, dataset in enumerate(datasets):
-      label=gtk.Label('%i - %s' % (i+1, dataset.short_info))
-      label.show()
-      dialog.vbox.add(label)
-      line=StyleLine(dataset.plot_options, self.replot)
-      line.show()
-      dialog.vbox.add(line)
+    dialog=gtk.Dialog(title='Plot style settings...', parent=self)
+    if self.active_multiplot:
+      for plotlist in self.multiplot:
+        itemlist=[item[0] for item in plotlist]
+        if not self.measurement[self.index_mess] in itemlist:
+          continue
+      i=0
+      for item in itemlist:
+        for dataset in item.plot_together:
+          label=gtk.Label('%i - %s' % (i+1, dataset.short_info))
+          label.show()
+          dialog.vbox.add(label)
+          line=StyleLine(dataset.plot_options, self.replot)
+          line.show()
+          dialog.vbox.add(line)    
+          i+=1
+    else:
+      datasets=self.measurement[self.index_mess].plot_together
+      for i, dataset in enumerate(datasets):
+        label=gtk.Label('%i - %s' % (i+1, dataset.short_info))
+        label.show()
+        dialog.vbox.add(label)
+        line=StyleLine(dataset.plot_options, self.replot)
+        line.show()
+        dialog.vbox.add(line)
     dialog.show()
+    self.open_windows.append(dialog)
 
   def fit_dialog(self,action, size=None, position=None):
     '''
