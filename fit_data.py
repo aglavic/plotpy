@@ -10,7 +10,7 @@ import numpy
 from mpfit import mpfit
 from math import pi, sqrt,  tanh, sin, asin, exp
 # import own modules
-from measurement_data_structure import MeasurementData
+from measurement_data_structure import MeasurementData, PlotOptions
 # import gui functions for active config.gui.toolkit
 import config.gui
 try:
@@ -142,6 +142,7 @@ class FitFunction(FitFunctionGUI):
     self.refine_parameters=range(len(self.parameters))
     if self.constrains is not None:
       self.constrains=dict(self.constrains)
+    self._plot_options=PlotOptions()
 
   def residuals(self, params, y, x, yerror=None):
     '''
@@ -2962,6 +2963,7 @@ class FitSession(FitSessionGUI):
           result.append((fit_x[i], fit_y[i]))
         function_text=function[0].fit_function_text_eval
         result.short_info=function_text
+        result.plot_options=function[0]._plot_options
         plot_list.append(result)
     self.data.plot_together=[self.data] + plot_list  
 

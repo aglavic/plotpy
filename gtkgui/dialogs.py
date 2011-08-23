@@ -1519,7 +1519,7 @@ class StyleLine(gtk.Table):
     '''
       Show entries to select plot options.
     '''
-    gtk.Table.__init__(self, rows=1, columns=9, homogeneous=False)
+    gtk.Table.__init__(self, rows=1, columns=10, homogeneous=False)
     self.plot_options=plot_options
     self.callback=callback
     self._create_entries()
@@ -1536,6 +1536,7 @@ class StyleLine(gtk.Table):
                'lw': str(style.linewidth), 
                'ps': str(style.pointsize), 
                'style': style.style, 
+               'substyle': style.substyle, 
                'pointtype': style.pointtype, 
                }
       if style._color is None:
@@ -1547,6 +1548,7 @@ class StyleLine(gtk.Table):
                'lw': str(PlotStyle.linewidth), 
                'ps': str(PlotStyle.pointsize), 
                'style': PlotStyle.style, 
+               'substyle': PlotStyle.substyle, 
                'color': '<auto>', 
                'pointtype': PlotStyle.pointtype, 
                }
@@ -1567,24 +1569,33 @@ class StyleLine(gtk.Table):
     self.attach(style_selection, 1, 2, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     style_selection.show()
     entries['style']=style_selection
+    style_selection=gtk.combo_box_new_text()
+    if options['style'] in PlotStyle._substyles:
+      for i, style in enumerate(sorted(PlotStyle._substyles[options['style']].keys())):
+        style_selection.append_text(style)
+        if style==options['substyle']:
+          style_selection.set_active(i)
+      style_selection.show()
+    self.attach(style_selection, 2, 3, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    entries['substyle']=style_selection
     
     label=gtk.Label('Line Width:')
-    self.attach(label, 2, 3, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    self.attach(label, 3, 4, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     label.show()
     entries['lw-label']=label
     entry=gtk.Entry()
     entry.set_text(options['lw'])
-    self.attach(entry, 3, 4, 0, 1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=0, xpadding=0, ypadding=0)
+    self.attach(entry, 4, 5, 0, 1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=0, xpadding=0, ypadding=0)
     entry.show()
     entry.set_width_chars(5)
     entries['lw-entry']=entry
     
     label=gtk.Label('Color:')
-    self.attach(label, 4, 5, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    self.attach(label, 5, 6, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     label.show()
     entries['color-label']=label
     color_button=gtk.Button(options['color'])
-    self.attach(color_button, 5, 6, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    self.attach(color_button, 6, 7, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     color_button.show()
     entries['color-button']=color_button
     
@@ -1593,17 +1604,17 @@ class StyleLine(gtk.Table):
       pointtype_selection.append_text("%i: %s" % (pointtype[1], pointtype[0]))
       if pointtype[1]==options['pointtype']:
         pointtype_selection.set_active(i)
-    self.attach(pointtype_selection, 6, 7, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    self.attach(pointtype_selection, 7, 8, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     pointtype_selection.show()
     entries['pointtype']=pointtype_selection
     
     label=gtk.Label('Point Size:')
-    self.attach(label, 7, 8, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
+    self.attach(label, 8, 9, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     label.show()
     entries['ps-label']=label
     entry=gtk.Entry()
     entry.set_text(options['ps'])
-    self.attach(entry, 8, 9, 0, 1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=0, xpadding=0, ypadding=0)
+    self.attach(entry, 9, 10, 0, 1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=0, xpadding=0, ypadding=0)
     entry.show()
     entry.set_width_chars(5)
     entries['ps-entry']=entry
@@ -1635,7 +1646,10 @@ class StyleLine(gtk.Table):
       elif type(entry) is gtk.Entry:
         entry.connect('activate', self.process_changes, key)
       elif type(entry) is gtk.ComboBox:
-        entry.connect('changed', self.process_changes, key)
+        if key=='substyle':
+          self._substyle_handler=entry.connect('changed', self.process_changes, key)
+        else:
+          entry.connect('changed', self.process_changes, key)
       elif type(entry) is gtk.Button:
         entry.connect('clicked', self.change_color)
 
@@ -1659,6 +1673,22 @@ class StyleLine(gtk.Table):
     if key=='style':
       style_list=sorted(PlotStyle._basic_styles.keys())
       style.style=style_list[widget.get_active()]
+      if style.style in style._substyles:
+        style_selection=self.entries['substyle']
+        style_selection.handler_block(self._substyle_handler)
+        # clear all entries:
+        for i in range(20):
+          style_selection.remove_text(0)
+        style_selection.show()
+        for i, items in enumerate(sorted(style._substyles[style.style].keys())):
+          style_selection.append_text(items)
+          if items==style.substyle:
+            style_selection.set_active(i)
+        style_selection.show()
+        style_selection.handler_unblock(self._substyle_handler)
+      else:
+        style.substyle='default'
+        self.entries['substyle'].hide()
       self._update_active_entries()
     if key=='pointtype':
       style.pointtype=PlotStyle._point_types[widget.get_active()][1]
@@ -1674,6 +1704,9 @@ class StyleLine(gtk.Table):
         style.pointsize=ps
       except ValueError:
         return
+    elif key=='substyle':
+      substyle_list=sorted(style._substyles[style.style].keys())
+      style.substyle=substyle_list[widget.get_active()]
     self.callback()
 
   def change_color(self, widget):

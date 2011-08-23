@@ -1287,6 +1287,7 @@ class PlotOptions(object):
     other._zrange=deepcopy(self._zrange)
     other.free_input=deepcopy(self.free_input)
     other.settings=deepcopy(self.settings)
+    other._special_plot_parameters=deepcopy(self._special_plot_parameters)
     return other
 
   def __str__(self):
@@ -1453,7 +1454,24 @@ class PlotStyle(object):
                  'linespoints': 'linespoints', 
                  'errorbars': 'errorbars', 
                  'errorlines': 'errorlines', 
+                 'dots': 'dots', 
+                 'bars': 'boxes', 
+                 'steps': 'histeps', 
+                 'filled': 'filledcurves', 
                  }
+  _substyles={
+              'filled': {
+                         'default': 'x1 fillstyle transparent solid 0.5', 
+                         's. bottom': 'x1', 
+                         's. top': 'x2', 
+                         's. left': 'y1', 
+                         's. right': 'y2', 
+                         't. bottom': 'x1 fillstyle transparent solid 0.5', 
+                         't. top': 'x2 fillstyle transparent solid 0.5', 
+                         't. left': 'y1 fillstyle transparent solid 0.5', 
+                         't. right': 'y2 fillstyle transparent solid 0.5', 
+                         }
+              }
   
   _has_points=['points', 'linespoints', 'errorbars', 'errorlines']
   _has_errors=['errorbars', 'errorlines']
@@ -1474,10 +1492,13 @@ class PlotStyle(object):
   pointtype=7
   _color=None
   style='lines'
+  substyle='default'
   
   def __str__(self):
     output='w '
     output+=self._basic_styles[self.style]+' '
+    if self.style in self._substyles:
+      output+=self._substyles[self.style][self.substyle]+' '
     output+='lw %g ' % self.linewidth
     if self._color is not None:
       output+='lc rgb "#%.2X%.2X%.2X" ' % tuple(self._color)
