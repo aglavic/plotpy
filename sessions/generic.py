@@ -221,8 +221,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         self.active_file_data=[]
         self.active_file_name="None"
       else:
-        self.active_file_data=self.file_data[files[0]]
-        self.active_file_name=files[0]
+        try:
+          self.active_file_data=self.file_data[files[0]]
+          self.active_file_name=files[0]
+        except KeyError:
+          self.active_file_data=self.file_data[files[0].rsplit('.mdd', 1)[0].rsplit('.mds', 1)[0]]
+          self.active_file_name=files[0].rsplit('.mdd', 1)[0].rsplit('.mds', 1)[0]      
 
   def initialize_gnuplot(self):
     '''
@@ -465,7 +469,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     # User plugin folder
     user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')
     if os.path.exists(user_folder) and os.path.exists(os.path.join(user_folder, 'plugins')):
-      sys.path.append(os.path.join(user_folder, 'plugins'))
+      if not os.path.join(user_folder, 'plugins') in sys.path:
+        sys.path.append(os.path.join(user_folder, 'plugins'))
       plugin_sources=os.listdir(os.path.join(user_folder, 'plugins'))
       plugin_sources=filter(lambda file: file.endswith('.py'), plugin_sources)
       for plugin_source in plugin_sources:
@@ -826,6 +831,11 @@ def read_full_snapshot(name):
       dump_file=gzip.open(name, 'rb')
     else:
       dump_file=open(name, 'rb')
+    # prepare plugin folders
+    user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')
+    if not os.path.join(user_folder, 'plugins') in sys.path:
+      sys.path.append(os.path.join(user_folder, 'plugins'))
+    from plugins import global_plugins
     print "Reading snapshot from file %s..." % name
     dump_obj=load(dump_file)
     dump_file.close()

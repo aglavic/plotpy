@@ -1145,7 +1145,7 @@ class HugeMD(MeasurementData):
     '''
       Unpickling the object will set a new temp file name.
     '''
-    MeasurementData.__setstate__(state)
+    MeasurementData.__setstate__(self, state)
     global hmd_file_number
     self.tmp_export_file=os.path.join(TEMP_DIR, 'HMD_'+ str(hmd_file_number)+ '.tmp')
     hmd_file_number+=1
