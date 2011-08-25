@@ -1266,6 +1266,7 @@ class PlotOptions(object):
   special_using_parameters=""
   splot=''
   is_polar=False
+  bar_endmarks=True
   
   def __init__(self, initial_text=""):
     '''
@@ -1310,6 +1311,8 @@ class PlotOptions(object):
       output+=("set yrange [%s:%s]\n" % (self._yrange[0], self._yrange[1] )).replace("None", "")
       output+=("set zrange [%s:%s]\n" % (self._zrange[0], self._zrange[1] )).replace("None", "")
       output+=("set cbrange [%s:%s]\n" % (self._zrange[0], self._zrange[1] )).replace("None", "")
+    if not self.bar_endmarks:
+      output+='set bars small\n'
     return output
   
   def __add__(self, input_string):
@@ -1458,6 +1461,7 @@ class PlotStyle(object):
                  'bars': 'boxes', 
                  'steps': 'histeps', 
                  'filled': 'filledcurves', 
+                 #'circles': 'circles', 
                  }
   _substyles={
               'filled': {
@@ -1470,12 +1474,19 @@ class PlotStyle(object):
                          't. top': 'x2 fillstyle transparent solid 0.5', 
                          't. left': 'y1 fillstyle transparent solid 0.5', 
                          't. right': 'y2 fillstyle transparent solid 0.5', 
-                         }
+                         }, 
+              #'circles': {
+                         #'default': 'fillstyle transparent solid 0.5', 
+                         #'empty': '', 
+                         #'transparent': 'fillstyle transparent solid 0.5', 
+                         #'full': 'fillstyle solid 1.', 
+                         #}
               }
   
   _has_points=['points', 'linespoints', 'errorbars', 'errorlines']
-  _has_errors=['errorbars', 'errorlines']
+  _has_errors=['errorbars', 'errorlines', 'circles']
   _point_types=[
+                (' ', 0), 
                 ('+', 1), 
                 ('x', 2), 
                 ('*', 3), 
