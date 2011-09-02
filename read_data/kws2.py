@@ -256,7 +256,7 @@ def read_cmb_file(file_name):
   sys.stdout.flush()
   return [dataobj]
  
-def read_edf_file(file_name):
+def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items=None):
   '''
     Read the binary .edf (european data format) file including header.
     The data is taken from many pictures and summed up. To prevent double
@@ -278,7 +278,9 @@ def read_edf_file(file_name):
   else:
     background_array=None
 
-  if import_subframes or not '_im_' in file_name:
+  if full_data_items is not None:
+    input_array, header_settings, header_info=full_data_items
+  elif import_subframes or not '_im_' in file_name:
     input_array, header_settings, header_info=import_edf_file(file_name)
   else:
     # get a list of files, which belong together
@@ -300,36 +302,49 @@ def read_edf_file(file_name):
     center_y=setup['CENTER_Y']
   else:
     center_y=header_info['pixel_y']
+  if header_info['detector_distance'] is not None:
+    detector_distance=header_info['detector_distance']
+  else:
+    detector_distance=setup['DETECTOR_DISTANCE']
   countingtime=header_info['time']
   # subtract background
   if setup['BACKGROUND']:
     input_array-=background_array*countingtime
   sys.stdout.write('\tData Processing ...')
   sys.stdout.flush()
-  # if data is scaled in file, rescale it to apply e.g. error calculations correctly
-  #if header_info['DataNormalization'] is not None:
-  #  input_array/=header_info['DataNormalization']
-  # define other quantities for the input data
-  x_array=linspace(0, header_info['xdim']*header_info['ydim']-1,
-                    header_info['xdim']*header_info['ydim'])%header_info['xdim']
-  y_array=linspace(0, header_info['xdim']*header_info['ydim']-1,
-                    header_info['xdim']*header_info['ydim'])//header_info['xdim']
   error_array=sqrt(input_array)
   corrected_data_array=input_array/countingtime
   corrected_error_array=error_array/countingtime
-  qy_array=4.*pi/header_info['lambda_γ']*\
-           sin(arctan((x_array-center_x)*header_info['pixelsize_x']/setup['DETECTOR_DISTANCE']/2.))
-  qz_array=-4.*pi/header_info['lambda_γ']*\
-           sin(arctan((y_array-center_y)*header_info['pixelsize_y']/setup['DETECTOR_DISTANCE']/2.))
-  use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
-              (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
-  # Insert columns
-  dataobj.data.append(PhysicalProperty('pixel_x', 'pix', x_array[use_indices]).astype(int16))
-  dataobj.data.append(PhysicalProperty('pixel_y', 'pix', y_array[use_indices]).astype(int16))
-  dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data_array[use_indices], 
-                                                    corrected_error_array[use_indices]))
-  dataobj.data.append(PhysicalProperty('q_y', 'Å^{-1}', qy_array[use_indices]))
-  dataobj.data.append(PhysicalProperty('q_z', 'Å^{-1}', qz_array[use_indices]))
+  if baseitem is None:
+    # if data is scaled in file, rescale it to apply e.g. error calculations correctly
+    #if header_info['DataNormalization'] is not None:
+    #  input_array/=header_info['DataNormalization']
+    # define other quantities for the input data
+    x_array=linspace(0, header_info['xdim']*header_info['ydim']-1,
+                      header_info['xdim']*header_info['ydim'])%header_info['xdim']
+    y_array=linspace(0, header_info['xdim']*header_info['ydim']-1,
+                      header_info['xdim']*header_info['ydim'])//header_info['xdim']
+    qy_array=4.*pi/header_info['lambda_γ']*\
+             sin(arctan((x_array-center_x)*header_info['pixelsize_x']/detector_distance)/2.)
+    qz_array=-4.*pi/header_info['lambda_γ']*\
+             sin(arctan((y_array-center_y)*header_info['pixelsize_y']/detector_distance)/2.)
+    use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
+                (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
+    # Insert columns
+    dataobj.data.append(PhysicalProperty('pixel_x', 'pix', x_array[use_indices]).astype(int16))
+    dataobj.data.append(PhysicalProperty('pixel_y', 'pix', y_array[use_indices]).astype(int16))
+    dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data_array[use_indices], 
+                                                      corrected_error_array[use_indices]))
+    dataobj.data.append(PhysicalProperty('q_y', 'Å^{-1}', qy_array[use_indices]))
+    dataobj.data.append(PhysicalProperty('q_z', 'Å^{-1}', qz_array[use_indices]))
+  else:
+    dataobj.data=deepcopy(baseitem.data)
+    if baseuseindices is None:
+      dataobj.data[2]=PhysicalProperty('intensity', 'counts/s', corrected_data_array, 
+                                                      corrected_error_array)      
+    else:
+      dataobj.data[2]=PhysicalProperty('intensity', 'counts/s', corrected_data_array[baseuseindices], 
+                                                      corrected_error_array[baseuseindices])
   dataobj.sample_name=header_info['sample_name']
   dataobj.info="\n".join([item[0]+': '+item[1] for item in sorted(header_settings.items())])
   if import_subframes or not '_im_' in file_name:
@@ -351,16 +366,22 @@ def import_edf_set(file_name):
     
     @return array of sum of the data and changed header settings.
   '''
-  # get a list of files, which belong together
-  file_prefix, file_ending=file_name.split('_im_')
-  file_postfix=file_ending.split('.', 1)[1] # remove number
-  if file_prefix in imported_edfs:
-    return 'NULL'
-  imported_edfs.append(file_prefix)
-  file_list=glob(file_prefix+'_im_'+'*'+'.edf')+glob(file_prefix+'_im_'+'*'+'.edf.gz')
-  file_list.sort()
-  if file_prefix+'_im_full.edf' in file_list:
-    return import_edf_file(file_prefix+'_im_full.edf')
+  if hasattr(file_name, '__iter__'):
+    file_list=list(file_name)
+    file_list.sort()
+    is_list=True
+  else:
+    # get a list of files, which belong together
+    file_prefix, file_ending=file_name.split('_im_')
+    file_postfix=file_ending.split('.', 1)[1] # remove number
+    if file_prefix in imported_edfs:
+      return 'NULL'
+    imported_edfs.append(file_prefix)
+    file_list=glob(file_prefix+'_im_'+'*'+'.edf')+glob(file_prefix+'_im_'+'*'+'.edf.gz')
+    file_list.sort()
+    if file_prefix+'_im_full.edf' in file_list:
+      return import_edf_file(file_prefix+'_im_full.edf')
+    is_list=False
   file_name=file_list[0]
   sys.stdout.write('\tReading file 1/%i' % len(file_list))
   sys.stdout.flush()
@@ -374,9 +395,10 @@ def import_edf_set(file_name):
     # add the collected data to the already imported
     input_array+=input_array_tmp
     header_info['time']+=header_info_tmp['time']
-  sys.stdout.write('\b'*(len(str(i+2))+len(str(len(file_list))))+'\breadout complete, writing sum to %s!\n' % (file_prefix+'_im_full.edf'))
-  sys.stdout.flush()
-  write_edf_file(file_prefix, input_array, header_info['time'])
+  if not is_list:
+    sys.stdout.write('\b'*(len(str(i+2))+len(str(len(file_list))))+'\breadout complete, writing sum to %s!\n' % (file_prefix+'_im_full.edf'))
+    sys.stdout.flush()
+    write_edf_file(file_prefix, input_array, header_info['time'])
   return input_array, header_settings, header_info
   
 def read_background_edf(background_file_name):
@@ -439,7 +461,7 @@ def read_edf_header(file_handler):
       'pixelsize_x': 0.16696,#0.0914, 
       'pixel_y': 512.5, 
       'pixelsize_y': 0.16696,#0.0914, 
-      'detector_distance': 102., 
+      'detector_distance': None, 
       'DataNormalization': None, 
       'center_x': None, 
       'center_y': None, 
@@ -469,8 +491,8 @@ def read_edf_header(file_handler):
     info['lambda_γ']= float(settings['WaveLength'].rstrip('m'))*1e10
   if 'Sample_comments' in settings:
     info['sample_name']=settings['Sample_comments']
-  if 'ExperimentInfo' in settings:
-    info['sample_name']=settings['ExperimentInfo']
+  if 'Title' in settings:
+    info['sample_name']=settings['Title'].split('( hai')[0]
   if 'Exposure_time' in settings:
     info['time']=float(settings['Exposure_time'].rstrip('ms'))/1000.
   if 'ExposureTime' in settings:

@@ -768,6 +768,7 @@ class ApplicationMainWindow(gtk.Window):
               'SQUID/PPMS': ('squid', 'SquidSession'), 
               '4-Circle': ('circle', 'CircleSession'), 
               'DNS': ('dns', 'DNSSession'), 
+              'SAS': ('sas', 'SASSession'), 
               'GISAS': ('kws2', 'KWS2Session'), 
               'Reflectometer': ('reflectometer', 'ReflectometerSession'), 
               'TREFF/MARIA': ('treff', 'TreffSession'), 
@@ -3466,30 +3467,28 @@ set multiplot layout %i,1
       return None
     script_data=download_page.read()
     exec(script_data)
-    if self.config_object['Update']['CheckBeta']:
-      if __version__ != BETA_HISTORY[-1]:
-        dialog=gtk.MessageDialog(parent=self, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_OK_CANCEL , 
-          message_format="There is a new version (%s) ready to download. Do you want to install it?" % (BETA_HISTORY[-1]))
-        result=dialog.run()
-        dialog.destroy()
-        if result==gtk.RESPONSE_OK:
-          # run update function defined on the webpage
-          perform_update_gtk(__version__, BETA_HISTORY[-1])
-      else:
-        print "Softwar is up to date."
+    if __version__ not in VERSION_HISTORY:
+      version_index=0
     else:
-      if __version__ != VERSION_HISTORY[-1]:
-        dialog=gtk.MessageDialog(parent=self, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_OK_CANCEL , 
-          message_format="There is a new version (%s) ready to download. Do you want to install it?" % (BETA_HISTORY[-1]))
-        result=dialog.run()
-        dialog.destroy()
-        if result==gtk.RESPONSE_OK:
-          # run update function defined on the webpage
-          perform_update_gtk(__version__, VERSION_HISTORY[-1])        
-      else:
-        print "Softwar is up to date."
+      version_index=VERSION_HISTORY.index(__version__)
+    if self.config_object['Update']['CheckBeta']:
+      check_index=VERSION_HISTORY.index(BETA_UPDATE)
+      update_item=BETA_UPDATE
+    else:
+      check_index=VERSION_HISTORY.index(NORMAL_UPDATE)
+      update_item=NORMAL_UPDATE
+    if version_index<check_index:
+      dialog=gtk.MessageDialog(parent=self, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_OK_CANCEL , 
+        message_format="There is a new version (%s) ready to download. Do you want to install it?" % (update_item))
+      result=dialog.run()
+      dialog.destroy()
+      if result==gtk.RESPONSE_OK:
+        # run update function defined on the webpage
+        perform_update_gtk(__version__, NORMAL_UPDATE)        
+    else:
+      print "Softwar is up to date."
 
-  def check_for_updates(self):
+  def check_for_updates(self, action=None):
     '''
       Function to check for upates if this was selected and to show a dialog,
       if an updat is possible.
@@ -3512,7 +3511,7 @@ set multiplot layout %i,1
                                     'CheckBeta': cb, 
                                     }
       dia.destroy()
-    if self.config_object['Update']['Check'] and time()>self.config_object['Update']['NextCheck']:
+    if (self.config_object['Update']['Check'] and time()>self.config_object['Update']['NextCheck']) or action is not None:
       print "Checking for new Version."
       self.config_object['Update']['NextCheck']=time()+24.*60.*60
       new_version=self.check_for_update_now()  
@@ -4202,7 +4201,7 @@ set multiplot layout %i,1
           <menuitem action='DeleteProfile' position="bottom"/>
         </menu>
         '''
-    if self.measurement[self.index_mess].zdata>=0:    
+    if len(self.measurement)==0 or self.measurement[self.index_mess].zdata>=0:    
       output+='''<menuitem action='SelectColor'/>
         '''
     else:
@@ -4277,6 +4276,7 @@ set multiplot layout %i,1
       <menu action='HelpMenu'>
         <menuitem action='ShowConfigPath'/>
         <menuitem action='APIReference'/>
+        <menuitem action='CheckForUpdate'/>
       <separator name='help1'/>
         <menuitem action='About'/>
         '''
@@ -4576,6 +4576,10 @@ set multiplot layout %i,1
         "Select between data and fits to plot", None,                     # label, accelerator
         "Select between data and fits to plot",                                    # tooltip
         self.toggle_plotfit),
+      ( "CheckForUpdate", None,                    # name, stock id
+        "Check for Update", None,                     # label, accelerator
+        "Check for Update",                                    # tooltip
+        self.check_for_updates),
     )+self.added_items;
     # Create the menubar and toolbar
     action_group = gtk.ActionGroup("AppWindowActions")
