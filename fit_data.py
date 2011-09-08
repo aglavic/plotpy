@@ -475,6 +475,7 @@ class FitSum(FitFunction):
     if func2.constrains is None:
       func2.constrains={}
     self.constrains=ConnectedDict(func1.constrains, func2.constrains, len(func1.parameters))
+    self._plot_options=PlotOptions()
 
   def fit_function(self, p, x):
     '''
@@ -536,6 +537,7 @@ class FitMultiply(FitFunction):
     if func2.constrains is None:
       func2.constrains={}
     self.constrains=ConnectedDict(func1.constrains, func2.constrains, len(func1.parameters))
+    self._plot_options=PlotOptions()
 
   def fit_function(self, p, x):
     '''
@@ -605,6 +607,7 @@ class FitFunction3D(FitFunctionGUI):
     self.refine_parameters=range(len(self.parameters))
     if self.constrains is not None:
       self.constrains=dict(self.constrains)
+    self._plot_options=PlotOptions()
 
 
   def residuals(self, params, z, y, x, zerror=None):
@@ -931,6 +934,7 @@ class FitSum3D(FitFunction3D):
     if func2.constrains is None:
       func2.constrains={}
     self.constrains=ConnectedDict(func1.constrains, func2.constrains, len(func1.parameters))
+    self._plot_options=PlotOptions()
 
   def fit_function(self, p, x, y):
     '''
@@ -992,6 +996,7 @@ class FitMultiply3D(FitFunction3D):
     if func2.constrains is None:
       func2.constrains={}
     self.constrains=ConnectedDict(func1.constrains, func2.constrains, len(func1.parameters))
+    self._plot_options=PlotOptions()
 
   def fit_function(self, p, x, y):
     '''
