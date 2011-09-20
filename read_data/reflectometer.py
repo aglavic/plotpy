@@ -59,7 +59,7 @@ def read_data(file_name, DATA_COLUMNS):
           two_theta_start=float(sequence.info.split('2THETA=')[1].split("\n")[0])
           th=(sequence.x-sequence.x[0])+two_theta_start*0.5
           sequence.data.append( (4.*pi/1.54*sin(th))//('q_z', 'Å^{-1}') )
-        elif "DRIVE='2THETA'" in sequence.info:
+        elif "DRIVE='2THETA'" in sequence.info or "DRIVE='COUPLED'" in sequence.info:
           th=sequence.x*0.5
           sequence.data.append( (4.*pi/1.54*sin(th))//('q_z', 'Å^{-1}') )
         measurement_data.append(sequence)
