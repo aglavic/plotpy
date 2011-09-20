@@ -1,0 +1,22 @@
+# -*- encoding: utf-8 -*-
+'''
+ Some general settings for the template framework
+'''
+
+__author__ = "Artur Glavic"
+__copyright__ = "Copyright 2008-2011"
+__credits__ = []
+__license__ = "GPL v3"
+<<<<<<< HEAD
+__version__ = "0.7.10"
+=======
+__version__ = "0.7.9.2"
+>>>>>>> master
+__maintainer__ = "Artur Glavic"
+__email__ = "a.glavic@fz-juelich.de"
+__status__ = "Development"
+
+import os
+
+# Path for the template file
+TEMPLATE_DIRECTORY=os.path.expanduser(os.path.join('~','.plotting_gui','templates'))
