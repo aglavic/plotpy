@@ -225,7 +225,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     from scipy.interpolate import interp1d
     from measurement_data_structure import MeasurementData, PhysicalProperty
     from fit_data import FitPolynomialPowerlaw
-    dataset.unit_trans([['q','Å^{-1}', lambda_x/4./np.pi**2*180.,0.,'Θ', '°'], 
+    dataset.unit_trans([['Q','Å^{-1}', lambda_x/4./np.pi**2*180.,0.,'Θ', '°'], 
                         ['2Θ', '°', 0.5,0.,'Θ', '°']])
     region=np.where(dataset.x>theta_c)
     # Change x to sqrt(Θ²-Θc²)/λ and interpolate it to even spaced data
@@ -417,8 +417,8 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       #------------------- create fit parameters object -------------------
     self.active_file_data.fit_object.set_fit_constrains() # set constrained parameters for multilayer
       # convert x values from angle to q
-    dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
-                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])
+    dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'Q','Å^{-1}'], \
+                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'Q','Å^{-1}']])
       # first guess for scaling factor is the maximum intensity
     self.active_file_data.fit_object.scaling_factor=(dataset.max(xstart=0.005)[1]/1e5)
       # first guess for the background is the minimum intensity
@@ -426,8 +426,8 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     #+++++ Try to refine the scaling factorn and roughnesses +++++
     if self.try_refine: 
       print "Try to refine scaling"
-      dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
-                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
+      dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'Q','Å^{-1}'], \
+                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'Q','Å^{-1}']])    
       self.refine_scaling(dataset)
       print "Try to refine roughnesses"
       self.refine_roughnesses(dataset)

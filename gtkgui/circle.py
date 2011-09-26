@@ -119,13 +119,13 @@ class CircleGUI:
     if dataset.fit_object is None:
       window.file_actions.activate_action('create_fit_object')
     if dataset.x.dimension=='h':
-      dataset.xdata=dataset.dimensions().index('q_x')
+      dataset.xdata=dataset.dimensions().index('Q_x')
       window.replot()
     if dataset.x.dimension=='k':
-      dataset.xdata=dataset.dimensions().index('q_y')
+      dataset.xdata=dataset.dimensions().index('Q_y')
       window.replot()
     if dataset.x.dimension=='l':
-      dataset.xdata=dataset.dimensions().index('q_z')
+      dataset.xdata=dataset.dimensions().index('Q_z')
       window.replot()
     dialog=dialogs.MultipeakDialog(fit_data.FitCuK, 
                                    dataset.fit_object, 

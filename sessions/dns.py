@@ -868,7 +868,7 @@ class DNSSession(GUI, GenericSession):
                  [[scan.dimensions()[j], scan.units()[j]] for j in range(1, len(scan.units())+1-sub)]+\
                  [['I_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-sub)/2)]+\
                  [['error_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-sub)/2)]+\
-                 [['q_x', 'Å^{-1}'], ['q_y', 'Å^{-1}'], ['Filenumber', '']]
+                 [['Q_x', 'Å^{-1}'], ['Q_y', 'Å^{-1}'], ['Filenumber', '']]
         self.file_data[file].append(DNSMeasurementData(columns, [], 1, 3, (len(scan.units())-sub)/2+5, zdata=5))
         # set some parameters for the object
         active_map=self.file_data[file][i]
@@ -1180,8 +1180,8 @@ class DNSSession(GUI, GenericSession):
     d_star_x=2.*pi/self.D_SPACING_X
     d_star_y=2.*pi/self.D_SPACING_Y
     self.TRANSFORMATIONS=[\
-      ['q_x','Å^{-1}',1./d_star_x,0,self.D_NAME_X,'r.l.u.'],\
-      ['q_y','Å^{-1}',1/d_star_y,0,self.D_NAME_Y,'r.l.u.'],\
+      ['Q_x','Å^{-1}',1./d_star_x,0,self.D_NAME_X,'r.l.u.'],\
+      ['Q_y','Å^{-1}',1/d_star_y,0,self.D_NAME_Y,'r.l.u.'],\
                           ]
   
   def read_vana_bg_nicr_files(self):
@@ -1742,8 +1742,8 @@ class DNSMeasurementData(MeasurementData):
       self.process_function(angle_to_wavevector)
       self.data[qx_index].unit='Å^{-1}'
       self.data[qy_index].unit='Å^{-1}'
-      self.data[qx_index].dimension='q_x'
-      self.data[qy_index].dimension='q_y'
+      self.data[qx_index].dimension='Q_x'
+      self.data[qy_index].dimension='Q_y'
       self.xdata=qx_index
       self.ydata=qy_index
     else:
@@ -1762,7 +1762,7 @@ class DNSMeasurementData(MeasurementData):
       self.process_function(angle_to_wavevector)
       self.data[q_index].unit='Å^{-1}'
       self.data[d_index].unit='Å'
-      self.data[q_index].dimension='q'
+      self.data[q_index].dimension='Q'
       self.data[d_index].dimension='d'
       self.xdata=q_index
   

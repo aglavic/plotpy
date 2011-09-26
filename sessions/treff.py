@@ -359,9 +359,9 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       self.file_data[key]=FitList(self.file_data[key])
       if key=='simulation':
         self.file_data[key].fit_datasets=[ds for ds in self.file_data[key]]
-    config.transformations.known_transformations.append(['Θ', '°', config.treff.PI_4_OVER_LAMBDA*config.treff.GRAD_TO_RAD, 0., 'q', 'Å^{-1}'])
-    config.transformations.known_transformations.append(['Θ', 'rad', config.treff.PI_4_OVER_LAMBDA, 0., 'q', 'Å^{-1}'])
-    config.transformations.known_transformations.append(['Θ', 'mrad', config.treff.PI_4_OVER_LAMBDA/1000., 0., 'q', 'Å^{-1}'])
+    config.transformations.known_transformations.append(['Θ', '°', config.treff.PI_4_OVER_LAMBDA*config.treff.GRAD_TO_RAD, 0., 'Q', 'Å^{-1}'])
+    config.transformations.known_transformations.append(['Θ', 'rad', config.treff.PI_4_OVER_LAMBDA, 0., 'Q', 'Å^{-1}'])
+    config.transformations.known_transformations.append(['Θ', 'mrad', config.treff.PI_4_OVER_LAMBDA/1000., 0., 'Q', 'Å^{-1}'])
     try:
       self.active_file_data=self.file_data[self.active_file_name]
     except KeyError:

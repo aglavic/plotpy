@@ -49,14 +49,14 @@ def read_data(file_name, script_path, import_images, return_detector_images):
       except ValueError:
         print "\tNot numeric string in %s[%i], ignoreing block." % (name, i+1)
       floats=filter(lambda line: line[1]!=0., floats)
-      dataset=MeasurementData([['q', 'Å^{-1}'], ['I', 'a.u.'], ['dI', 'a.u.']], [], 0, 1, 2)
+      dataset=MeasurementData([['Q', 'Å^{-1}'], ['I', 'a.u.'], ['dI', 'a.u.']], [], 0, 1, 2)
       map(dataset.append, floats)
       dataset.sample_name=name
       dataset.logy=True
       dataset.short_info=''
       # (from dim, from unit, multiplier, offset, to dim, to unit)
-      dataset.data.append(dataset.data[0]//'q2')
-      dataset.unit_trans([['q2', 'Å^{-1}', 1000./PI_4_OVER_LAMBDA, 0., 'Θ{4.73Å}', 'mrad']])
+      dataset.data.append(dataset.data[0]//'Q_2')
+      dataset.unit_trans([['Q_2', 'Å^{-1}', 1000./PI_4_OVER_LAMBDA, 0., 'Θ{4.73Å}', 'mrad']])
       if len(dataset.data[0])>1:
         output.append(dataset)
       else:
