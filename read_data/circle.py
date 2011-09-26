@@ -171,13 +171,13 @@ ${comments}
     ''').substitute(scan_header)
   if 'h' in output.dimensions():
     index=output.dimensions().index('h')
-    output.data.append( (output.data[index]*scan_header['rl'][0])//('q_x', 'Å^{-1}') )
+    output.data.append( (output.data[index]*scan_header['rl'][0])//('Q_x', 'Å^{-1}') )
   if 'k' in output.dimensions():
     index=output.dimensions().index('k')
-    output.data.append( (output.data[index]*scan_header['rl'][1])//('q_y', 'Å^{-1}') )
+    output.data.append( (output.data[index]*scan_header['rl'][1])//('Q_y', 'Å^{-1}') )
   if 'l' in output.dimensions():
     index=output.dimensions().index('l')
-    output.data.append( (output.data[index]*scan_header['rl'][2])//('q_z', 'Å^{-1}') )
+    output.data.append( (output.data[index]*scan_header['rl'][2])//('Q_z', 'Å^{-1}') )
   recheck_type(output, scan_header)
   return output, scan_header['comments']
 

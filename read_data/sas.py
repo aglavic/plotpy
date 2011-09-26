@@ -34,7 +34,7 @@ def read_data(file_name):
   data_cols=data_array.transpose()
   dataset=MeasurementData(x=0, y=1, yerror=-1)
   output=[dataset]
-  q=PhysicalProperty('q', '', data_cols[0])
+  q=PhysicalProperty('Q', '', data_cols[0])
   I=PhysicalProperty('I', 'a.u.', data_cols[1])
   filter_indices=numpy.where(I>0.)
   q=q[filter_indices]

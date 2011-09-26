@@ -346,8 +346,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                ['α_f', 'mrad'], 
                                ['α_i+α_f', 'mrad'], 
                                ['α_i-α_f', 'mrad'], 
-                               ['q_x', 'Å^{-1}'], 
-                               ['q_z', 'Å^{-1}'], 
+                               ['Q_x', 'Å^{-1}'], 
+                               ['Q_z', 'Å^{-1}'], 
                                ['Intensity', 'a.u.'], 
                                ['error','a.u.']], 
                               [], 0, 1, 7, 6)  
@@ -758,7 +758,7 @@ def create_img_object(data, alphai=0., alphaf_center=0., cnt_time=1.):
   '''
   from kws2 import KWS2MeasurementData
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+                           ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
   # remove colmuns not part of the detector
   data_array=numpy.array(data)
@@ -822,10 +822,10 @@ def read_d17_processed_data(file_name):
   aimaf=alphai-alphaf
   aimaf.dimension='α_i-α_f'
   qx=PI_2_OVER_LAMBDA*(numpy.cos(alphaf) - numpy.cos(alphai))
-  qx.dimension='q_x'
+  qx.dimension='Q_x'
   qx.unit='Å^{-1}'
   qz=PI_2_OVER_LAMBDA*(numpy.sin(alphai) + numpy.sin(alphaf))
-  qz.dimension='q_z'
+  qz.dimension='Q_z'
   qz.unit='Å^{-1}'
   channels=int(file_lines[first_block+scan_points*2+2].split('(')[1].split('arrays')[0])
   # import the data for the channels
@@ -1014,8 +1014,8 @@ def read_d17_raw_data(file_from, file_to):
       alphaf=dataset.data[1]
       dataset.append_column((alphai+alphaf)//'α_i+α_f')
       dataset.append_column((alphai-alphaf)//'α_i-α_f')
-      dataset.append_column((PI_2_OVER_LAMBDA*(numpy.cos(alphaf) - numpy.cos(alphai)))//('q_x', 'Å^{-1}'))
-      dataset.append_column((PI_2_OVER_LAMBDA*(numpy.sin(alphai) + numpy.sin(alphaf)))//('q_z', 'Å^{-1}'))
+      dataset.append_column((PI_2_OVER_LAMBDA*(numpy.cos(alphaf) - numpy.cos(alphai)))//('Q_x', 'Å^{-1}'))
+      dataset.append_column((PI_2_OVER_LAMBDA*(numpy.sin(alphai) + numpy.sin(alphaf)))//('Q_z', 'Å^{-1}'))
       dataset.logz=True
       dataset.scan_line=1
       dataset.scan_line_constant=0

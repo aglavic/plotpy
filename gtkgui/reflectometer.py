@@ -697,8 +697,8 @@ class ReflectometerGUI:
     '''
     dataset=window.measurement[window.index_mess]
       # convert x values from angle to q
-    dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}'], \
-                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'q','Å^{-1}']])    
+    dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'Q','Å^{-1}'], \
+                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'Q','Å^{-1}']])    
     data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', print_info=False, only_fitted_columns=True, xfrom=self.x_from, xto=self.x_to)
     self.active_file_data.fit_object.number_of_points=data_lines
     self.active_file_data.fit_object.set_fit_constrains()
@@ -871,7 +871,7 @@ class ReflectometerGUI:
     if dataset.fit_object is None:
       window.file_actions.activate_action('create_fit_object')
     if dataset.x.dimension=='Θ' or dataset.x.dimension=='2Θ':
-      dataset.xdata=dataset.dimensions().index('q_z')
+      dataset.xdata=dataset.dimensions().index('Q_z')
       window.replot()
     dialog=dialogs.MultipeakDialog(fit_data.FitCuK, 
                                    dataset.fit_object, 

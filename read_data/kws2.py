@@ -94,7 +94,7 @@ def create_dataobj(data_lines, header_lines, countingtime, setup):
     Create a MeasurementData object form the input datalines.
   '''
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+                           ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
   data_joined=" ".join(data_lines)
   data_array=array(map(float, data_joined.split()))
@@ -204,7 +204,7 @@ def read_cmb_file(file_name):
   center_y=setup['CENTER_Y'] #498.5 pix
   q_window=[-0.23, 0.23, -0.05, 0.35]
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                           ['q_y', 'Å^{-1}'], ['q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+                           ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
   if file_name.endswith('.gz'):
     file_handler=gzip.open(file_name, 'rb')
@@ -335,8 +335,8 @@ def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items
     dataobj.data.append(PhysicalProperty('pixel_y', 'pix', y_array[use_indices]).astype(int16))
     dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data_array[use_indices], 
                                                       corrected_error_array[use_indices]))
-    dataobj.data.append(PhysicalProperty('q_y', 'Å^{-1}', qy_array[use_indices]))
-    dataobj.data.append(PhysicalProperty('q_z', 'Å^{-1}', qz_array[use_indices]))
+    dataobj.data.append(PhysicalProperty('Q_y', 'Å^{-1}', qy_array[use_indices]))
+    dataobj.data.append(PhysicalProperty('Q_z', 'Å^{-1}', qz_array[use_indices]))
   else:
     dataobj.data=deepcopy(baseitem.data)
     if baseuseindices is None:
@@ -630,8 +630,8 @@ def read_p08_binary(file_name):
               (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
   dataobj.data.append(PhysicalProperty('pixel_x', 'pix', y_array[use_indices]))
   dataobj.data.append(PhysicalProperty('pixel_y', 'pix', z_array[use_indices]))
-  dataobj.data.append(PhysicalProperty('q_y', 'Å^{-1}', qy_array[use_indices]))
-  dataobj.data.append(PhysicalProperty('q_z', 'Å^{-1}', qz_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('Q_y', 'Å^{-1}', qy_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('Q_z', 'Å^{-1}', qz_array[use_indices]))
   dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data[use_indices]))
   dataobj.data[-1].error=corrected_error[use_indices]
   #dataobj.data[3]=PhysicalProperty('raw_int', 'counts', data_array[use_indices])
