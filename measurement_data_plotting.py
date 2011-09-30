@@ -482,7 +482,10 @@ def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_fi
                     'unset key\n'
   for i, subdata in enumerate(datasets[0].plot_together):
     # Subplot title
-    gnuplot_file_text+='set title "%s"\n' % (subdata.sample_name+' '+subdata.short_info)
+    title=subdata.sample_name
+    if subdata.plot_options.short_info_in_title:
+      title+=' '+subdata.short_info
+    gnuplot_file_text+='set title "%s"\n' % (title)
     gnuplot_file_text+='set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
     gnuplot_file_text=replace_ph(session, 
                              gnuplot_file_text,
@@ -532,7 +535,10 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
   output_file_prefix=os.path.normpath(output_file_prefix)
   projections_name=output_file_prefix+file_numbers[0]+'.xy'
   
-  gnuplot_file_text+='set multiplot title "%s"\n' % (dataset.sample_name + dataset.short_info)
+  title=dataset.sample_name
+  if dataset.plot_options.short_info_in_title:
+    title+=dataset.short_info
+  gnuplot_file_text+='set multiplot title "%s"\n' % ( title )
   if dataset.logz:
     gnuplot_file_text+='set log x2\n'
     gnuplot_file_text+='set format x2 "10^{%L}\n'

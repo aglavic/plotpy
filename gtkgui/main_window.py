@@ -2394,9 +2394,17 @@ set multiplot layout %i,1
       i=0
       for item in itemlist:
         for dataset in item.plot_together:
-          label=gtk.Label('%i - %s' % (i+1, dataset.short_info))
-          label.show()
-          dialog.vbox.add(label)
+          title=gtk.HBox()
+          title.show()
+          entry=gtk.Label('%i' % (i+1))
+          entry.show()
+          tentry=gtk.Entry()
+          tentry.set_text('%s' % (dataset.short_info))
+          tentry.show()
+          title.add(entry)
+          title.add(tentry)
+          dialog.vbox.add(title)
+          tentry.connect('activate', self.change_plot_shortinfo, dataset)
           line=StyleLine(dataset.plot_options, self.replot)
           line.show()
           dialog.vbox.add(line)    
@@ -2404,15 +2412,55 @@ set multiplot layout %i,1
     else:
       datasets=self.measurement[self.index_mess].plot_together
       for i, dataset in enumerate(datasets):
-        label=gtk.Label('%i - %s' % (i+1, dataset.short_info))
-        label.show()
-        dialog.vbox.add(label)
+        title=gtk.HBox()
+        title.show()
+        entry=gtk.Label('%i' % (i+1))
+        entry.show()
+        tentry=gtk.Entry()
+        tentry.set_text('%s' % (dataset.short_info))
+        tentry.show()
+        tentry.connect('activate', self.change_plot_shortinfo, dataset)
+        title.add(entry)
+        title.add(tentry)
+        dialog.vbox.add(title)
         line=StyleLine(dataset.plot_options, self.replot)
         line.show()
         dialog.vbox.add(line)
     dialog.show()
     self.open_windows.append(dialog)
-
+  
+  def change_plot_shortinfo(self, widget, dataset):
+    short_info=widget.get_text()
+    dataset.short_info=short_info
+    self.replot()
+  
+  def change_xyaxis_style(self, action):
+    dataset=self.measurement[self.index_mess]
+    def float_or_none(value):
+      try:
+        return float(value)
+      except ValueError:
+        return None
+    dialog=SimpleEntryDialog('Change label settings...', [
+                             ['x-Dimension', dataset.x.dimension, str], 
+                             ['x-Unit', dataset.x.unit, str], 
+                             ['x-tics', dataset.plot_options.tics[0] or 'auto', float_or_none], 
+                             ['y-Dimension', dataset.y.dimension, str], 
+                             ['y-Unit', dataset.y.unit, str], 
+                             ['y-tics', dataset.plot_options.tics[1] or 'auto', float_or_none], 
+                             ]
+                             )
+    value, result=dialog.run()
+    if result:
+      dataset.x.dimension=value['x-Dimension']
+      dataset.x.unit=value['x-Unit']
+      dataset.y.dimension=value['y-Dimension']
+      dataset.y.unit=value['y-Unit']
+      dataset.plot_options.tics[0]=value['x-tics']
+      dataset.plot_options.tics[1]=value['y-tics']
+      self.replot()
+    dialog.destroy()
+  
   def fit_dialog(self,action, size=None, position=None):
     '''
       A dialog to fit the data with a set of functions.
@@ -3714,6 +3762,13 @@ set multiplot layout %i,1
         self.x_range_in.set_text('')
         self.y_range_in.set_text('')
         self.replot()
+      if 'GDK_2BUTTON_PRESS' == action.type.value_name:
+        # double klick event
+        if action.button==1:
+          if position is None:
+            return self.change_xyaxis_style(None)
+          else:
+            return self.change_plot_style(None)
     else:
       # shift pressed during button press leads to label or arrow
       # to be added to the plot

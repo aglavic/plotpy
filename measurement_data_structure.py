@@ -1267,6 +1267,10 @@ class PlotOptions(object):
   splot=''
   is_polar=False
   bar_endmarks=True
+  short_info_in_title=True
+  labels=[]
+  arrows=[]
+  tics=[None, None, None]
   
   def __init__(self, initial_text=""):
     '''
@@ -1278,6 +1282,9 @@ class PlotOptions(object):
     self._yrange=[None, None]
     self._zrange=[None, None]
     self.input_string(initial_text)
+    self.labels=[]
+    self.arrows=[]
+    self.tics=[None, None, None]
   
   def overwrite_copy(self, other):
     '''
@@ -1289,11 +1296,14 @@ class PlotOptions(object):
     other.free_input=deepcopy(self.free_input)
     other.settings=deepcopy(self.settings)
     other._special_plot_parameters=deepcopy(self._special_plot_parameters)
+    other.labels=deepcopy(self.labels)
+    other.arrows=deepcopy(self.arrows)
+    other.tics=deepcopy(self.tics)
     return other
 
   def __str__(self):
     '''
-      Return the settings as a string.
+      Return the settings as a string., "arrow", "label", "xtics", "ytics", "ztics"
     '''
     output=""
     for key, items in self.settings.items():
@@ -1313,6 +1323,16 @@ class PlotOptions(object):
       output+=("set cbrange [%s:%s]\n" % (self._zrange[0], self._zrange[1] )).replace("None", "")
     if not self.bar_endmarks:
       output+='set bars small\n'
+    for label in self.labels:
+      output+='set label "%s" at %f,%f front\n' % (label[0], label[1], label[2])
+    for arrow in self.arrows:
+      output+='set arrow from %f,%f to %f,%f front' % (arrow[0], arrow[1], arrow[2], arrow[3])
+      if arrow[4]:
+        output+=' nohead'
+      output+='\n'
+    for i, tics in zip(['x', 'y', 'cb'], self.tics):
+      if tics is not None:
+        output+='set %stics %f\n' % (i, tics)
     return output
   
   def __add__(self, input_string):
