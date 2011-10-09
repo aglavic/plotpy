@@ -94,6 +94,7 @@ KNOWN_COLUMNS={
                'Drain/Mon': ('I_{drain_{norm}}', 'mA/monitor'), 
                'Monitor': ('monitor', 'a.u.'), 
                'Detector': ('I', 'counts'), 
+               'Det/Atten': ('I_{det/atten}', 'counts'), 
                'Integrated Intensity': ('I_{int}', 'counts'), 
                'xsample': ('x_{sample}', 'mm'), 
                'ysample': ('y_{sample}', 'mm'), 

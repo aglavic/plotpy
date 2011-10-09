@@ -178,6 +178,11 @@ ${comments}
   if 'l' in output.dimensions():
     index=output.dimensions().index('l')
     output.data.append( (output.data[index]*scan_header['rl'][2])//('Q_z', 'Å^{-1}') )
+  if 'I_{det/atten}' in output.dimensions() and 'I' in output.dimensions():
+    # calculate 4-circle monitor error
+    index=output.dimensions().index('I_{det/atten}')
+    count_idx=output.dimensions().index('I')
+    output.data[index].error=output.data[index]/output.data[count_idx]*output.data[count_idx].error
   recheck_type(output, scan_header)
   return output, scan_header['comments']
 

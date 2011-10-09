@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2011-08-22, 15:45:30 -->
+<!-- Saved: 2011-10-01, 18:22:22 -->
 <!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -100,6 +100,7 @@
     <Source>sessions/shg.py</Source>
     <Source>read_data/shg.py</Source>
     <Source>plugins/__init__.py</Source>
+    <Source>read_data/generic.py</Source>
   </Sources>
   <Forms>
   </Forms>

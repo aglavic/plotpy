@@ -581,8 +581,8 @@ def read_p08_binary(file_name):
   countingtime=1.
   detector_distance=setup['DETECTOR_DISTANCE'] #mm
   join_pixels=4.
-  pixelsize_x= 0.015 * join_pixels#mm
-  pixelsize_y= 0.015 * join_pixels#mm
+  pixelsize_x= 0.01953125 * join_pixels#mm
+  pixelsize_y= 0.01953125 * join_pixels#mm
   sample_name=''
   center_x=setup['CENTER_X']/join_pixels
   center_y=setup['CENTER_Y']/join_pixels
@@ -663,7 +663,7 @@ def read_p08_binarydata(file_name):
     header=file_handler.read(216)
     data=fromstring(file_handler.read(), uint16).reshape(4096, 4096)
     file_handler.close()
-  return header, data.astype(int16)
+  return header, data.astype(float32)
   
 class KWS2MeasurementData(HugeMD):
   '''
