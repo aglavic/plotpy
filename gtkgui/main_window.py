@@ -2434,14 +2434,14 @@ set multiplot layout %i,1
     dataset.short_info=short_info
     self.replot()
   
-  def change_xyaxis_style(self, action):
+  def change_xyzaxis_style(self, action):
     dataset=self.measurement[self.index_mess]
     def float_or_none(value):
       try:
         return float(value)
       except ValueError:
         return None
-    dialog=SimpleEntryDialog('Change label settings...', [
+    entries=[
                              ['x-Dimension', dataset.x.dimension, str], 
                              ['x-Unit', dataset.x.unit, str], 
                              ['x-tics', dataset.plot_options.tics[0] or 'auto', float_or_none], 
@@ -2449,6 +2449,14 @@ set multiplot layout %i,1
                              ['y-Unit', dataset.y.unit, str], 
                              ['y-tics', dataset.plot_options.tics[1] or 'auto', float_or_none], 
                              ]
+    if self.measurement[self.index_mess].zdata>=0:
+      entries+=[
+                             ['z-Dimension', dataset.z.dimension, str], 
+                             ['z-Unit', dataset.z.unit, str], 
+                             ['z-tics', dataset.plot_options.tics[2] or 'auto', float_or_none], 
+                ]
+    dialog=SimpleEntryDialog('Change label settings...', 
+                             entries
                              )
     value, result=dialog.run()
     if result:
@@ -2458,6 +2466,10 @@ set multiplot layout %i,1
       dataset.y.unit=value['y-Unit']
       dataset.plot_options.tics[0]=value['x-tics']
       dataset.plot_options.tics[1]=value['y-tics']
+      if self.measurement[self.index_mess].zdata>=0:
+        dataset.z.dimension=value['z-Dimension']
+        dataset.z.unit=value['z-Unit']
+        dataset.plot_options.tics[2]=value['z-tics']
       self.replot()
     dialog.destroy()
   
@@ -3766,9 +3778,12 @@ set multiplot layout %i,1
         # double klick event
         if action.button==1:
           if position is None:
-            return self.change_xyaxis_style(None)
+            return self.change_xyzaxis_style(None)
           else:
-            return self.change_plot_style(None)
+            if self.measurement[self.index_mess].zdata<0:
+              return self.change_plot_style(None)
+            else:
+              return self.change_color_pattern(None)
     else:
       # shift pressed during button press leads to label or arrow
       # to be added to the plot
@@ -4261,8 +4276,9 @@ set multiplot layout %i,1
         '''
     else:
       output+='''<menuitem action='ChangeStyle'/>
-        '''      
-    output+='''<separator name='static9'/>
+        '''
+    output+='''<menuitem action='ChangeXYZLabel'/>
+        <separator name='static9'/>
         <menuitem action='AddAll'/>
         <menuitem action='ClearMultiplot'/>
         <menu action='ToolbarActions'>
@@ -4515,6 +4531,10 @@ set multiplot layout %i,1
         "Change Plot Style", None,                     # label, accelerator
         None,                                    # tooltip
         self.change_plot_style),
+      ( "ChangeXYZLabel", None,                    # name, stock id
+        "Change Plot XYZ-Labels", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.change_xyzaxis_style),
       ( "FilterData", None,                    # name, stock id
         "Filter the data points", None,#'f',                     # label, accelerator
         None,                                    # tooltip
