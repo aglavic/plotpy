@@ -87,6 +87,7 @@ class MeasurementData(object):
   is_matrix_data=False
   plot_together_zindex=0
   fit_object=None
+  _functional=None
 
   def __init__(self, columns=[], const=[],x=0,y=1,yerror=-1,zdata=-1): 
     '''
@@ -386,6 +387,35 @@ class MeasurementData(object):
     for i, col in enumerate(self.data):
       if col.__class__ is PysicalProperty:
         self.data[i]=PhysicalProperty(col.dimension, col.unit, col.values)
+  
+  def __call__(self, x):
+    '''
+      Makes it possible to use the measurment data as a function by interpolating
+      measured values for any x value.
+      If a functional representation created with scipy.interpolate is present, 
+      it is used for the interpolation.
+    '''
+    if self.zdata>=0:
+      raise NotImplementedError, "Calling a MeasurementData object is only implemented for 2d data at the moment"
+    if any(x<=self.x.min()) or any(x>=self.x.max()):
+      raise ValueError, "x not in measured range"
+    if self._functional is not None:
+      return self._functional(x)
+    xm=self.x
+    ym=self.y
+    if hasattr(x,'__iter__'):
+      idx=numpy.where(xm<x[0])[0][-1]
+      # calculate the interpolation
+      out=((ym[idx+1]*(x[0]-xm[idx])+ym[idx]*(xm[idx+1]-x[0]))/(xm[idx+1]-xm[idx])).copy()
+      for xi in x[1:]:
+	idx=numpy.where(xm<xi)[0][-1]
+	# calculate the interpolation
+	out.append((ym[idx+1]*(xi-xm[idx])+ym[idx]*(xm[idx+1]-xi))/(xm[idx+1]-xm[idx]))
+    else:
+      idx=numpy.where(xm<x)[0][-1]
+      # calculate the interpolation
+      out=float((ym[idx+1]*(x-xm[idx])+ym[idx]*(xm[idx+1]-x))/(xm[idx+1]-xm[idx]))
+    return out
   
   def _get_plot_options(self): return self._plot_options
   
