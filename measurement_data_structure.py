@@ -408,19 +408,19 @@ class MeasurementData(object):
     if hasattr(x,'__iter__'):
       # scipy interpolation is much better for arrays, try to create it:
       try:
-	from scipy.interpolate import interp1d
-      except ImportError:	
-	idx=numpy.where(xm<x[0])[0][-1]
-	# calculate the interpolation
-	out=((ym[idx+1]*(x[0]-xm[idx])+ym[idx]*(xm[idx+1]-x[0]))/(xm[idx+1]-xm[idx])).copy()
-	for xi in x[1:]:
-	  idx=numpy.where(xm<xi)[0][-1]
-	  # calculate the interpolation
-	  out.append((ym[idx+1]*(xi-xm[idx])+ym[idx]*(xm[idx+1]-xi))/(xm[idx+1]-xm[idx]))
+        from scipy.interpolate import interp1d
+      except ImportError:       
+        idx=numpy.where(xm<x[0])[0][-1]
+        # calculate the interpolation
+        out=((ym[idx+1]*(x[0]-xm[idx])+ym[idx]*(xm[idx+1]-x[0]))/(xm[idx+1]-xm[idx])).copy()
+        for xi in x[1:]:
+          idx=numpy.where(xm<xi)[0][-1]
+          # calculate the interpolation
+          out.append((ym[idx+1]*(xi-xm[idx])+ym[idx]*(xm[idx+1]-xi))/(xm[idx+1]-xm[idx]))
       else:
-	print "Creating interpolation with scipy."
-	self.create_interpolation()
-	return self(x)
+        print "Creating interpolation with scipy."
+        self.create_interpolation()
+        return self(x)
     else:
       idx=numpy.where(xm<x)[0][-1]
       # calculate the interpolation
@@ -436,10 +436,10 @@ class MeasurementData(object):
       raise NotImplementedError, "Calling a MeasurementData object is only implemented for 2d data at the moment"    
     from scipy.interpolate import interp1d
     self._functional=interp1d(self.x.view(numpy.ndarray), 
-			      self.y.view(numpy.ndarray),
-			      kind='cubic',
-			      bounds_error=True,
-			      fill_value=numpy.nan)
+                              self.y.view(numpy.ndarray),
+                              kind='cubic',
+                              bounds_error=True,
+                              fill_value=numpy.nan)
   
   def _get_plot_options(self): return self._plot_options
   
