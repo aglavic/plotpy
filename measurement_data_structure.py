@@ -175,6 +175,7 @@ class MeasurementData(object):
       Define how the class is pickled and copied.
     '''
     self.preview=None
+    self._functional=None
     return self.__dict__
  
   def __len__(self): 
@@ -400,22 +401,45 @@ class MeasurementData(object):
     if any(x<=self.x.min()) or any(x>=self.x.max()):
       raise ValueError, "x not in measured range"
     if self._functional is not None:
-      return self._functional(x)
+      out=self._functional(x)
+      return PhysicalProperty(self.y.unit, self.y.dimension, out)
     xm=self.x
     ym=self.y
     if hasattr(x,'__iter__'):
-      idx=numpy.where(xm<x[0])[0][-1]
-      # calculate the interpolation
-      out=((ym[idx+1]*(x[0]-xm[idx])+ym[idx]*(xm[idx+1]-x[0]))/(xm[idx+1]-xm[idx])).copy()
-      for xi in x[1:]:
-	idx=numpy.where(xm<xi)[0][-1]
+      # scipy interpolation is much better for arrays, try to create it:
+      try:
+	from scipy.interpolate import interp1d
+      except ImportError:	
+	idx=numpy.where(xm<x[0])[0][-1]
 	# calculate the interpolation
-	out.append((ym[idx+1]*(xi-xm[idx])+ym[idx]*(xm[idx+1]-xi))/(xm[idx+1]-xm[idx]))
+	out=((ym[idx+1]*(x[0]-xm[idx])+ym[idx]*(xm[idx+1]-x[0]))/(xm[idx+1]-xm[idx])).copy()
+	for xi in x[1:]:
+	  idx=numpy.where(xm<xi)[0][-1]
+	  # calculate the interpolation
+	  out.append((ym[idx+1]*(xi-xm[idx])+ym[idx]*(xm[idx+1]-xi))/(xm[idx+1]-xm[idx]))
+      else:
+	print "Creating interpolation with scipy."
+	self.create_interpolation()
+	return self(x)
     else:
       idx=numpy.where(xm<x)[0][-1]
       # calculate the interpolation
       out=float((ym[idx+1]*(x-xm[idx])+ym[idx]*(xm[idx+1]-x))/(xm[idx+1]-xm[idx]))
     return out
+   
+  def create_interpolation(self):
+    '''
+      Use scipy.interpolate to create a functional representation
+      of the data.
+    '''
+    if self.zdata>=0:
+      raise NotImplementedError, "Calling a MeasurementData object is only implemented for 2d data at the moment"    
+    from scipy.interpolate import interp1d
+    self._functional=interp1d(self.x.view(numpy.ndarray), 
+			      self.y.view(numpy.ndarray),
+			      kind='cubic',
+			      bounds_error=True,
+			      fill_value=numpy.nan)
   
   def _get_plot_options(self): return self._plot_options
   
