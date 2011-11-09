@@ -72,6 +72,7 @@ KNOWN_COLUMNS={
                'H': ('h', ''), 
                'K': ('k', ''), 
                'L': ('l', ''), 
+               'Angle': ('ξ', '°'), 
                'Epoch': ('Epoch', 's'), 
                'Seconds': ('time', 's'), 
                'T-diode': ('T_{sample}', 'K'), 

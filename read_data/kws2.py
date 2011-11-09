@@ -581,8 +581,8 @@ def read_p08_binary(file_name):
   countingtime=1.
   detector_distance=setup['DETECTOR_DISTANCE'] #mm
   join_pixels=4.
-  pixelsize_x= 0.01953125 * join_pixels#mm
-  pixelsize_y= 0.01953125 * join_pixels#mm
+  pixelsize_x= 0.015 * join_pixels#mm
+  pixelsize_y= 0.015 * join_pixels#mm
   sample_name=''
   center_x=setup['CENTER_X']/join_pixels
   center_y=setup['CENTER_Y']/join_pixels
