@@ -150,6 +150,101 @@ class AsciiImportFilter(object):
       return self._8create_mds()
     else:
       return self._data_arrays, self._extracted_data
+  
+  def simulate_readout(self, input_file=None, 
+                       step_function=None, 
+                       report=None):
+    '''
+      Read a file using step by step try/except blocks.
+      The data is not returned but a report is created and returned,
+      which can be used to analyze any error or to check if the options
+      lead to the correct import.
+    '''
+    steps=8.
+    if step_function is None:
+      # if no function is given ignore any call
+      def step_function(fraction, step): pass
+    if report is None:
+      report=self._create_report
+    step_function(0., '')
+    if input_file is not None:
+      self._1clear_all()
+      step_function(1/steps, 'Reading file text')
+      try:
+        self._2read_lines(input_file)
+      except Exception, error:
+        return report(2, error)
+      step_function(2/steps, 'Identify header/data/footer lines')
+    try:
+      self._3get_head_data_foot()
+    except Exception, error:
+      return report(3, error)
+    step_function(3/steps, 'Splitting sequences')
+    try:
+      self._4split_sequences()
+    except Exception, error:
+      return report(4, error)
+    step_function(4/steps, 'Remove comment lines')
+    try:
+      self._5remove_comments()
+    except Exception, error:
+      return report(5, error)
+    step_function(5/steps, 'Extracting meta-info')
+    try:
+      self._6collect_metainfo()
+    except Exception, error:
+      return report(6, error)
+    step_function(6/steps, 'Extracting data')
+    try:
+      self._7extract_data()
+    except Exception, error:
+      return report(7, error)
+    if CREATE_MDS:
+      step_function(7/steps, 'Creating MeasurementData objects')
+      try:
+        result=self._8create_mds()
+      except Exception, error:
+        return report(8, error)
+    step_function(8/steps, 'Finished')
+    return report(8, None, result)
+  
+  def _create_report(self, step, error, result=None):
+    if error is None:
+      output= "Readout successfull.\n\n"
+    else:
+      output="Error encountered in step %i:\n" % (step)
+      output+="\t%s: %s\n\n" % (type(error).__name__, error.message)
+    output+="    Header/Data/Footer:   %i/%i/%i Lines\n" % (len(self._header_lines),
+                                                           len(self._data_lines), 
+                                                           len(self._footer_lines))
+    output+="        Data Sequences:   %i\n" % (len(self._splited_data))
+    if len(self._data_arrays)>0:
+      output+="   First Sequence Data:   %i/%i Lines/Columns" % (len(self._data_arrays[0]),
+                                                                 len(self._data_arrays[0][0]))
+    elif len(self._splited_data)>0:
+      output+="   Sequence first line: \n%s" % self._splited_data[0][0].replace('\n', '\\n').replace('\t', '\\t')
+    
+    output+="\n\tExtracted metainfo:\n"
+    output+="\n".join(["% 40s: '%s' (%s)" % ("'"+str(item[0])+"'", item[1], 
+                       type(item[1]).__name__) for item in sorted(self._extracted_data.items())])
+    return output
+  
+  def _return_report_data(self, step, error, result=None):
+    output={'Step': step, 
+            'Error': error }
+    
+    output['header']=len(self._header_lines)
+    output['footer']=len(self._footer_lines)
+    output['data']=len(self._data_lines)
+    output['sequences']=len(self._splited_data)
+    if len(self._data_arrays)>0:
+      output['first_lines']=len(self._data_arrays[0])
+      output['first_cols']=len(self._data_arrays[0][0])
+    else:
+      output['first_lines']=0
+      output['first_cols']=0
+    output['metainfo']=self._extracted_data
+    return output
     
   ### The steps performed to extract the data are split to make it possible
   ### to execute them one by one for testing purpose.
@@ -260,7 +355,6 @@ class AsciiImportFilter(object):
     # Define header
     if self.header_lines==0:
       head_end=self.header_lines.value
-      print head_end
     elif self.header_lines==1:
       sep=self.separator.value
       for i, line in enumerate(file_lines):

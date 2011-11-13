@@ -1837,9 +1837,14 @@ class SettingsNotebook(gtk.Notebook):
                         gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL)
       i+=1
     page_table.show()
+    sw=gtk.ScrolledWindow()
+    sw.add_with_viewport(page_table)
+    sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+    sw.show()
+    
     label=gtk.Label(page_name)
     label.show()
-    self.append_page(page_table, label)
+    self.append_page(sw, label)
   
   def get_settings_entry(self, parameter):
     '''
@@ -1914,7 +1919,9 @@ class ImportWizard(gtk.Dialog):
     gtk.Dialog.__init__(self, 
                         title=title, 
                         buttons=('Preview', 2, 'Finish', 1, 'Cancel', 0))
+    self.set_default_size(600, 600)                        
     self.import_filter=AsciiImportFilter('Untitled', presets)
+    self.file_name=file_name
     # Insert upper level widgets
     self.notebook=SettingsNotebook(self.import_filter, [ # pages of the notebook
                                                         ['General settings', 
@@ -1944,15 +1951,73 @@ class ImportWizard(gtk.Dialog):
                                                          None], 
                                                         ])
     self.notebook.show()
-    sw=gtk.ScrolledWindow()
-    sw.add_with_viewport(self.notebook)
-    sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
-    sw.show()
-    self.vbox.add(sw)
+    self.vbox.add(self.notebook)
     self.info_box=gtk.Table()
     self.info_box.show()
     self.vbox.pack_end(self.info_box, False)
+    
+    self.file_text=gtk.TextView()
+    self.file_text.set_editable(False)
+    self.file_text.show()
+    sw=gtk.ScrolledWindow()
+    sw.add_with_viewport(self.file_text)
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.show()
+    self.notebook.append_page(sw, gtk.Label('Text'))
+    
+    self.progressbar=gtk.ProgressBar()
+    self.progressbar.show()
+    self.vbox.pack_end(self.progressbar, False)
+    
+    self._set_filetext()
   
+  def _set_filetext(self):
+    buffer=self.file_text.get_buffer()
+    if self.file_name.endswith('.gz'):
+      import gzip
+      text=gzip.open(self.file_name, 'r').read()
+    else:
+      text=open(self.file_name, 'r').read()
+    line_text=""
+    for i, line in enumerate(text.splitlines()):
+      line_text+="%03i:%s\n" % (i, line)
+    buffer.set_text(line_text)
+  
+  def run(self):
+    '''
+      Until OK or Cancel is pressed test the filter as preview.
+    '''
+    result=gtk.Dialog.run(self)
+    while result==2:
+      self.preview()
+      result=gtk.Dialog.run(self)
+    return result
+  
+  def preview(self):
+    result=self.import_filter.simulate_readout(
+               input_file=self.file_name, 
+               step_function=self._step_function, 
+               report=None)
+    d=gtk.Dialog(title='Preview...', parent=self, flags=0, buttons=('Close', 0))
+    d.set_default_size(600, 600)
+    tv=gtk.TextView()
+    tv.set_editable(False)
+    tv.get_buffer().set_text(result)
+    sw=gtk.ScrolledWindow()
+    sw.add_with_viewport(tv)
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.show()
+    d.vbox.add(sw)
+    d.show_all()
+    d.run()
+    d.destroy()
+  
+  def _step_function(self, fraction, step):
+    self.progressbar.set_fraction(fraction)
+    self.progressbar.set_text(step)
+    while gtk.events_pending():
+      gtk.main_iteration(False)
+
 
 
 #----------- Wizard dialog to import data using the AsciiImportFilter -------------------

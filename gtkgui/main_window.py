@@ -24,7 +24,7 @@ from config import gnuplot_preferences
 from config.gui import DOWNLOAD_PAGE_URL
 import file_actions
 from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, \
-                    SimpleEntryDialog, DataView, PlotTree,  FileImportDialog, StyleLine
+                    SimpleEntryDialog, DataView, PlotTree,  FileImportDialog, StyleLine, ImportWizard
 from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
 
 if not sys.platform.startswith('win'):
@@ -961,6 +961,39 @@ class ApplicationMainWindow(gtk.Window):
       self.plot_tree.add_data()
       self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
     return True
+
+  def ascii_import(self, action=None, hide_status=True):
+    '''
+      Import one or more new datafiles of the same type.
+      
+      @return List of names that have been imported.
+    '''
+    file_names=[]
+    #++++++++++++++++File selection dialog+++++++++++++++++++#
+    file_dialog=FileImportDialog(self.active_folder, 
+                                 self.active_session.FILE_WILDCARDS)
+    file_names, folder, template=file_dialog.run()
+    file_dialog.destroy()
+    if file_names is None:
+      # process canceled
+      return
+    file_names=map(unicode, file_names)
+    folder=unicode(folder)
+    self.active_folder=folder
+    #----------------File selection dialog-------------------#
+    wiz=ImportWizard(file_names[0])
+    result=wiz.run()
+    if result==1:
+      import_filter=wiz.import_filter
+      for file_name in file_names:
+        self.active_session.file_data[file_name]=import_filter.read_data(file_name)
+      self.active_session.active_file_name=file_name
+      self.active_session.active_file_data=self.active_session.file_data[file_name]
+      self.measurement=self.active_session.active_file_data
+      self.index_mess=0
+      self.rebuild_menus()
+      self.replot()
+    wiz.destroy()
 
   def save_snapshot(self, action):
     '''
@@ -4186,6 +4219,7 @@ set multiplot layout %i,1
     <menubar name='MenuBar'>
       <menu action='FileMenu'>
         <menuitem action='OpenDatafile'/>
+        <menuitem action='ImportDatafile'/>
         <menuitem action='SaveGPL'/>
         <menu action='SnapshotSub'>
           <menuitem action='SaveSnapshot'/>
@@ -4424,6 +4458,10 @@ set multiplot layout %i,1
         "_Open File","<control>O",                      # label, accelerator
         "Open a new datafile",                       # tooltip
         self.add_file ),
+      ( "ImportDatafile", None,                    # name, stock id
+        "_Import ASCII File...","<control><shift>I",                      # label, accelerator
+        "",                       # tooltip
+        self.ascii_import ),
       ( "SnapshotSub", gtk.STOCK_EDIT,                    # name, stock id
         "Snapshots", None,                      # label, accelerator
         None, None),                       # tooltip
