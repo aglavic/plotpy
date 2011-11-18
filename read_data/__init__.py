@@ -43,10 +43,15 @@ class AsciiImportFilter(object):
   separator=None
   
   # options to enamle fast readout on cost of stability
-  disable_datacheck=True # don't check if all data lines contain float values
+  disable_datacheck=False # don't check if all data lines contain float values
   skip_colcheck=False    # don't check if each line has the same number of columns
                          # ignored if disable_datacheck is True
   skip_linestripping=False# don't strip empty strings from each line
+  
+  # define the columns to plot
+  select_x=0
+  select_y=1
+  select_z=-1
   
   # Define calculations to be performed after data readout
   post_calc_errors=[]    # List of tuples (index, function)
@@ -92,6 +97,15 @@ class AsciiImportFilter(object):
                                                'split string', 'unit start', '/ end'])), 
                                       ], 
                                      "Columns")
+    self.select_x=OptionSwitch(0, [(int, 'Column index', 0), 
+                                          (str, 'Column name')], 
+                                          "x-column") # define x-column
+    self.select_y=OptionSwitch(1, [(int, 'Column index', 0), 
+                                          (str, 'Column name')], 
+                                          "y-column") # define x-column
+    self.select_z=OptionSwitch(-1, [(int, 'Column index', 0), 
+                                          (str, 'Column name')], 
+                                          "z-column") # define x-column
     self.post_calc_errors=PatternList([], [int, str], ['Column', 'Function (e.g. "[1]+[2]")'])
     self.post_calc_columns=PatternList([], [str, str, str], ['Function (e.g. "[1]+[2]")', 'Dimension', 'Unit'])
     self.post_recalc_columns=PatternList([], [int, str], ['Column', 'Function (e.g. "[1]+[2]")'])
@@ -360,10 +374,10 @@ class AsciiImportFilter(object):
       for i, line in enumerate(file_lines):
         try: 
           float(line.strip().split(sep)[0])
-        except ValueError:
+        except (ValueError, IndexError):
           continue
         else:
-          head_end=i+1
+          head_end=i
           break
     else:
       raise NotImplementedError, "not defined for this option: %s" % self.header_lines
@@ -375,10 +389,10 @@ class AsciiImportFilter(object):
       for i, line in reversed(enumerate(file_lines)):
         try: 
           float(line.strip().split(sep)[0])
-        except ValueError:
+        except (ValueError, IndexError):
           continue
         else:
-          foot_start=i+1
+          foot_start=i
           break
     else:
       raise NotImplementedError, "not defined for this option: %s" % self.footer_lines
@@ -398,7 +412,9 @@ class AsciiImportFilter(object):
       return file_lines
     for line in file_lines:
       ls=line.strip()
-      if comment==1:
+      if ls=="":
+        continue
+      if comment==0:
         if ls.startswith(comment.value):
           continue
       else:
@@ -412,7 +428,16 @@ class AsciiImportFilter(object):
     '''
       Split different sequences of one file.
     '''
-    return [data_lines]
+    output=[]
+    if self.split_sequences==1: # split by string
+      splitstring=self.split_sequences.value
+      istart=0
+      for i, line in enumerate(data_lines):
+        if splitstring in line:
+          output.append(data_lines[istart:i])
+          istart=i+1
+      output.append(data_lines[istart:])
+    return output, [[] for i in output]
   
   def _extract_file_information(self, file_name):
     '''
@@ -475,8 +500,8 @@ class AsciiImportFilter(object):
       return data
     # Check data line by line
     data=[]
-    for line in split_data:
-      if line.strip()=="":
+    for i, line in enumerate(split_data):
+      if data_lines[i].strip()=="":
         # skip empty lines
         continue
       try:
@@ -521,6 +546,25 @@ class AsciiImportFilter(object):
                        units)
       except:
         pass
+    elif self.columns==2:
+      # search for a key string and define columns from the following characters
+      keystr, line_offset, char_offset, split_str, unit_start, unit_end=self.columns.value
+      for i, line in enumerate(header_lines):
+        if keystr in line:
+          colstr=header_lines[i+line_offset][char_offset:]
+          cols=colstr.split(split_str)
+          dims, units=[], []
+          for col in cols:
+            scol=col.split(unit_start)
+            dims.append(scol[0])
+            if len(scol)>1:
+              units.append(scol[1].split(unit_end)[0])
+            else:
+              units.append('')
+          num_columns=min(num_columns, len(dims))
+          dimensions=dims[:num_columns]
+          units=units[:num_columns]
+          break
     else:
       # extrac the columns from header
       raise NotImplementedError, "Blub"
