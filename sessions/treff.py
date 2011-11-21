@@ -633,6 +633,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
                         creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
                         stderr=subprocess.PIPE,
                         stdout=subprocess.PIPE, 
+                        stdin=subprocess.PIPE, 
                         cwd=self.TEMP_DIR, 
                         )
     return process

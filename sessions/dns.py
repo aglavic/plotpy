@@ -1651,7 +1651,7 @@ class DNSMeasurementData(MeasurementData):
     __doc__+=MeasurementData.__doc__
   except:
     pass
-  SPLIT_SENSITIVITY=0.01
+  SPLIT_SENSITIVITY=0.1
   dns_info={}
   scan_line=1
   scan_line_constant=3

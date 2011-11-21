@@ -104,7 +104,9 @@ z_label='[z-dim] [[z-unit]]'
 # title for the whole picture
 plot_title='[sample] [title_add]'
 # parameters for the courve
-plotting_parameters='w lines lw 1.5' # plotting x-y
+plotting_parameters_lines='w lines lw 1.5' # plotting x-y
+plotting_parameters_linespoints='w linespoints lw 1 pt 7' # plotting x-y
+plotting_parameters=plotting_parameters_lines
 plotting_parameters_errorbars='w errorbars pt 5 ps 0.5 lw 1.5' # plotting with errorbars
 plotting_parameters_3d='w pm3d' # plotting 3d
 plotting_parameters_fit='w lines lw 3'
