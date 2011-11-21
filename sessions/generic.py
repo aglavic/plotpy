@@ -35,12 +35,8 @@ import config.transformations
 # importing own modules
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2011"
 __credits__ = []
-__license__ = "GPL v3"
-__version__ = "0.7.10.1"
-__maintainer__ = "Artur Glavic"
-__email__ = "a.glavic@fz-juelich.de"
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
 __status__ = "Production"
 
 # if python version < 2.5 set the sys.exit function as exit

@@ -21,10 +21,7 @@ import subprocess
 
 __name__='plot-script'
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2011"
-__license__ = "GPL v3"
-__version__ = "0.7.10.1"
-__email__ = "a.glavic@fz-juelich.de"
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
 __author_email__ = __email__
 __url__ = "http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki"
 __description__='''Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.'''

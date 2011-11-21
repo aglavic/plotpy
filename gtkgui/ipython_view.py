@@ -27,7 +27,7 @@ try:
 except Exception,e:
         raise RuntimeError, "Error importing IPython (%s)" % str(e)
 
-__version__ = "0.7.10.1"
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
 
 ansi_colors =  {'0;30': 'Black',
                 '0;31': 'Red',
