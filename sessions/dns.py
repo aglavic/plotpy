@@ -36,12 +36,8 @@ except ImportError:
   class GUI: pass
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2011"
 __credits__ = ["Werner Schweika"]
-__license__ = "GPL v3"
-__version__ = "0.7.11"
-__maintainer__ = "Artur Glavic"
-__email__ = "a.glavic@fz-juelich.de"
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
 __status__ = "Production"
 
 # functions for evaluation of polarized neutron measurements
@@ -1651,7 +1647,7 @@ class DNSMeasurementData(MeasurementData):
     __doc__+=MeasurementData.__doc__
   except:
     pass
-  SPLIT_SENSITIVITY=0.01
+  SPLIT_SENSITIVITY=0.1
   dns_info={}
   scan_line=1
   scan_line_constant=3

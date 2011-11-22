@@ -4,12 +4,8 @@
 '''
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2011"
 __credits__ = []
-__license__ = "GPL v3"
-__version__ = "0.7.11"
-__maintainer__ = "Artur Glavic"
-__email__ = "a.glavic@fz-juelich.de"
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
 __status__ = "Development"
 
 # how many header lines

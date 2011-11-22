@@ -5,6 +5,8 @@
   for the plot and diverse import modes of plot.py.
 '''
 
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+
 # as the configuration files could be in a folder without user write access,
 # we test if it is possible to write to the configuration folder and otherwise
 # copy the files to our home directory and relink the module. This makes

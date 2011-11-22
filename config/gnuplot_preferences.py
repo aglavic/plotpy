@@ -8,12 +8,8 @@ from os.path import exists, split
 from os.path import join as join_path
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2011"
 __credits__ = []
-__license__ = "GPL v3"
-__version__ = "0.7.11"
-__maintainer__ = "Artur Glavic"
-__email__ = "a.glavic@fz-juelich.de"
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
 __status__ = "Production"
 
 #
@@ -104,7 +100,9 @@ z_label='[z-dim] [[z-unit]]'
 # title for the whole picture
 plot_title='[sample] [title_add]'
 # parameters for the courve
-plotting_parameters='w lines lw 1.5' # plotting x-y
+plotting_parameters_lines='w lines lw 1.5' # plotting x-y
+plotting_parameters_linespoints='w linespoints lw 1 pt 7' # plotting x-y
+plotting_parameters=plotting_parameters_lines
 plotting_parameters_errorbars='w errorbars pt 5 ps 0.5 lw 1.5' # plotting with errorbars
 plotting_parameters_3d='w pm3d' # plotting 3d
 plotting_parameters_fit='w lines lw 3'

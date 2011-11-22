@@ -33,13 +33,9 @@ if not sys.platform.startswith('win'):
 
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2011"
 __credits__ = ['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika', 
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
-__license__ = "GPL v3"
-__version__ = "0.7.11"
-__maintainer__ = "Artur Glavic"
-__email__ = "a.glavic@fz-juelich.de"
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
 __status__ = "Production"
 
 def main_loop(session):
@@ -2468,7 +2464,7 @@ set multiplot layout %i,1
     self.replot()
   
   def change_xyzaxis_style(self, action):
-    dataset=self.measurement[self.index_mess]
+    dataset=self.get_first_in_mp()
     def float_or_none(value):
       try:
         return float(value)
@@ -3779,7 +3775,8 @@ set multiplot layout %i,1
     if not self.mouse_mode:
       return
     position=self.get_position_on_plot()
-    if 'GDK_CONTROL_MASK' in action.state.value_names and self.measurement[self.index_mess].zdata<0:
+    dataset=self.get_first_in_mp()
+    if 'GDK_CONTROL_MASK' in action.state.value_names and dataset.zdata<0:
       # control was pressed during button press
       # fit a peak function to the active mouse position
       if position is not None:
@@ -3802,8 +3799,8 @@ set multiplot layout %i,1
         self.mouse_position_callback(position)
       if action.button==2:
         # unzoom the plot
-        self.measurement[self.index_mess].plot_options.xrange=[None, None]
-        self.measurement[self.index_mess].plot_options.yrange=[None, None]
+        dataset.plot_options.xrange=[None, None]
+        dataset.plot_options.yrange=[None, None]
         self.x_range_in.set_text('')
         self.y_range_in.set_text('')
         self.replot()
@@ -3813,7 +3810,7 @@ set multiplot layout %i,1
           if position is None:
             return self.change_xyzaxis_style(None)
           else:
-            if self.measurement[self.index_mess].zdata<0:
+            if dataset.zdata<0:
               return self.change_plot_style(None)
             else:
               return self.change_color_pattern(None)
@@ -3821,7 +3818,7 @@ set multiplot layout %i,1
       # shift pressed during button press leads to label or arrow
       # to be added to the plot
       if position is not None:
-        ds=self.measurement[self.index_mess]
+        ds=dataset
         if action.button==1:
           dialog=SimpleEntryDialog
           parameters, result=SimpleEntryDialog('Enter Label...', 
@@ -3847,12 +3844,13 @@ set multiplot layout %i,1
       Catch mouse release event.
     '''
     position=self.get_position_on_plot()
+    dataset=self.get_first_in_mp()
     if self.active_zoom_from is not None:
       # Zoom in to the selected Area
       if position is None or abs(position[2]-self.active_zoom_from[2])<0.1 and abs(position[3]-self.active_zoom_from[3])<0.1:
         # if mouse is outside the ploted region, use the last position where it was inside
         position=self.active_zoom_last_inside
-      dsp=self.measurement[self.index_mess].plot_options
+      dsp=dataset.plot_options
       x0=min(position[0], self.active_zoom_from[0])
       x1=max(position[0], self.active_zoom_from[0])
       y0=min(position[1], self.active_zoom_from[1])
@@ -3866,14 +3864,14 @@ set multiplot layout %i,1
       start=self.mouse_arrow_starting_point
       self.mouse_arrow_starting_point=None
       if position is not None:
-        self.measurement[self.index_mess].plot_options+='set arrow from %g,%g,1. to %g,%g,1. front\n' % (start[0], start[1], position[0], position[1])
+        dataset.plot_options+='set arrow from %g,%g,1. to %g,%g,1. front\n' % (start[0], start[1], position[0], position[1])
         self.replot()
     if self.active_fit_selection_from is not None:
       start=self.active_fit_selection_from
       self.active_fit_selection_from=None
-      if position is None:
+      if position is None or self.active_multiplot:
         return
-      ds=self.measurement[self.index_mess]
+      ds=dataset
       if ds.zdata>=0:
         return
       if (abs(start[2]-position[2])+abs(start[3]-position[3]))<0.03:
@@ -3892,9 +3890,9 @@ set multiplot layout %i,1
         x_0=(end_range-start_range)/2.+start_range
         I=abs(position[1]-start[1])/4.
         bg=min(position[1], start[1])
-      if (ds.fit_object==None):
-        self.file_actions.activate_action('create_fit_object')
       import fit_data
+      if (ds.fit_object==None):
+        ds.fit_object=fit_data.FitSession(ds)
       if action.button==1:
         gaussian=fit_data.FitGaussian([ I, x_0, width, bg])
         gaussian.x_from=start_range
@@ -4056,6 +4054,59 @@ set multiplot layout %i,1
       ds.plot_together_zindex+=1
       if ds.plot_together_zindex==len(ds.plot_together):
         ds.plot_together_zindex=0
+    self.replot()
+  
+  def get_first_in_mp(self):
+    '''
+      Return the first dataset in an active multiplot.
+    '''
+    active_ds=self.measurement[self.index_mess]
+    if not self.active_multiplot:
+      return active_ds
+    for multiplot in self.multiplot:
+      for ds, name in multiplot:
+        if active_ds is ds:
+          return multiplot[0][0]
+    return active_ds
+  
+  def change_plot_appearance(self, action):
+    name=action.get_name()
+    dataset=self.get_first_in_mp()
+    settings=dataset.plot_options.settings
+    if name=='PlotKeyLeft':
+      settings['key']=['left']
+    elif name=='PlotKeyRight':
+      settings['key']=['right']
+    elif name=='PlotKeyBottomLeft':
+      settings['key']=['bottom left']
+    elif name=='PlotKeyBottomRight':
+      settings['key']=['bottom right']
+    elif name=='PlotToggleGrid':
+      # toggle through different grid styles
+      if 'grid' in settings:
+        if settings['grid']==['back']:
+          settings['grid']=['xtics ytics mxtics mytics back ls 1 lc 0,ls 0 lc 0']
+          settings['mxtics']=['5']
+          settings['mytics']=['5']
+        elif settings['grid']==['xtics ytics mxtics mytics back ls 1 lc 0,ls 0 lc 0']:
+          del(settings['mxtics'])
+          del(settings['mytics'])
+          settings['grid']=['front']
+        elif settings['grid']==['front']:
+          settings['grid']=['xtics ytics mxtics mytics front ls 1 lc 0,ls 0 lc 0']
+          settings['mxtics']=['5']
+          settings['mytics']=['5']
+        else:
+          del(settings['mxtics'])
+          del(settings['mytics'])
+          del(settings['grid'])
+      else:
+        settings['grid']=['back']
+    elif name=='PlotToggleLinespoints':
+      if gnuplot_preferences.plotting_parameters==gnuplot_preferences.plotting_parameters_lines:
+        gnuplot_preferences.plotting_parameters=gnuplot_preferences.plotting_parameters_linespoints
+      else:
+        gnuplot_preferences.plotting_parameters=gnuplot_preferences.plotting_parameters_lines
     self.replot()
 
   def replot(self):
@@ -4325,6 +4376,14 @@ set multiplot layout %i,1
           <menuitem action='AddMulti'/>
           <menuitem action='MultiPlot'/>
           <menuitem action='Apply'/>
+        </menu>
+        <menu action='PlotAppearance'>
+          <menuitem action='PlotKeyLeft'/>
+          <menuitem action='PlotKeyRight'/>
+          <menuitem action='PlotKeyBottomLeft'/>
+          <menuitem action='PlotKeyBottomRight'/>
+          <menuitem action='PlotToggleGrid'/>
+          <menuitem action='PlotToggleLinespoints'/>
         </menu>
         <separator name='static4'/>
         <menuitem action='ShowPlotTree'/>
@@ -4693,6 +4752,36 @@ set multiplot layout %i,1
         "Check for Update", None,                     # label, accelerator
         "Check for Update",                                    # tooltip
         self.check_for_updates),
+
+      ( "PlotAppearance", None, 
+        "Plot Appearance", None, 
+        "Plot Appearance", 
+        None), 
+      ( "PlotKeyLeft", None,                    # name, stock id
+        "Key on top left", 'F7',                     # label, accelerator
+        "Key on top left",                                    # tooltip
+        self.change_plot_appearance),
+      ( "PlotKeyRight", None,                    # name, stock id
+        "Key on top right", 'F8',                     # label, accelerator
+        "Key on top right",                                    # tooltip
+        self.change_plot_appearance),
+      ( "PlotKeyBottomLeft", None,                    # name, stock id
+        "Key on bottom left", '<shift>F7',                     # label, accelerator
+        "Key on bottom left",                                    # tooltip
+        self.change_plot_appearance),
+      ( "PlotKeyBottomRight", None,                    # name, stock id
+        "Key on bottom right", '<shift>F8',                     # label, accelerator
+        "Key on bottom right",                                    # tooltip
+        self.change_plot_appearance),
+      ( "PlotToggleGrid", None,                    # name, stock id
+        "Toggle grid", 'F4',                     # label, accelerator
+        "Toggle grid",                                    # tooltip
+        self.change_plot_appearance),
+      ( "PlotToggleLinespoints", None,                    # name, stock id
+        "Toggle lines/linespoints", 'F6',                     # label, accelerator
+        "Toggle lines/linespoints",                                    # tooltip
+        self.change_plot_appearance),
+
     )+self.added_items;
     # Create the menubar and toolbar
     action_group = gtk.ActionGroup("AppWindowActions")

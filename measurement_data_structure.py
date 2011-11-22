@@ -16,12 +16,8 @@ from tempfile import gettempdir
 from config.transformations import known_unit_transformations
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2011"
 __credits__ = []
-__license__ = "GPL v3"
-__version__ = "0.7.11"
-__maintainer__ = "Artur Glavic"
-__email__ = "a.glavic@fz-juelich.de"
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
 __status__ = "Production"
 
 hmd_file_number=0
@@ -83,7 +79,7 @@ class MeasurementData(object):
   view_z=30
   filters=[] # a list of filters to be applied when returning the data, the format is:
              # ( column , from , to , include )
-  SPLIT_SENSITIVITY=0.01
+  SPLIT_SENSITIVITY=0.05
   is_matrix_data=False
   plot_together_zindex=0
   fit_object=None
@@ -925,8 +921,8 @@ class MeasurementData(object):
         sorted_y=data.transpose()[y_sort_indices].transpose()
         #max_dx=(data[xd][1:]-data[xd][:-1]).max()
         #max_dy=(data[xd][1:]-data[xd][:-1]).max()
-        split_indices_x=numpy.where(sorted_x[yd][:-1]>sorted_x[yd][1:])[0]
-        split_indices_y=numpy.where(sorted_y[xd][:-1]>sorted_y[xd][1:])[0]
+        split_indices_x=numpy.where(sorted_x[yd][:-1]<sorted_x[yd][1:])[0]
+        split_indices_y=numpy.where(sorted_y[xd][:-1]<sorted_y[xd][1:])[0]
         if len(split_indices_x)<=len(split_indices_y):
           split_indices=split_indices_x+1
           data=sorted_x
@@ -936,7 +932,7 @@ class MeasurementData(object):
       else:
         sort_indices=self.rough_sort(data[self.scan_line_constant], data[self.scan_line], SPLIT_SENSITIVITY)
         data=data.transpose()[sort_indices].transpose()
-        split_indices=numpy.where(data[self.scan_line][:-1]>data[self.scan_line][1:])[0]+1
+        split_indices=numpy.where(data[self.scan_line][:-1]<data[self.scan_line][1:])[0]+1
     split_indices=split_indices.tolist()+[len(data[0])]
     data=data.transpose()
     # write data to file
@@ -970,16 +966,16 @@ class MeasurementData(object):
       Return the sorting indices from a first and second column ignoring small
       differences.
     '''
-    srt_run1=numpy.lexsort(keys=(ds2, ds1))
+    srt_run1=numpy.argsort(ds1)
     ds1_run1=ds1[srt_run1]
     max_step=(ds1_run1[1:]-ds1_run1[:-1]).max()
     abs_sensitivity=max_step*sensitivity
     small_step_indices=numpy.where(((ds1_run1[1:]-ds1_run1[:-1])<abs_sensitivity)*((ds1_run1[:-1]-ds1_run1[1:])!=0))
-    for i, index in enumerate(small_step_indices[1:]):
-      from_data=ds1_run1[i+1]
-      to_data=ds1_run1[i]
+    for index in small_step_indices[0][1:]:
+      from_data=ds1_run1[index+1]
+      to_data=ds1_run1[index]
       ds1=numpy.where(ds1==from_data, ds1, to_data)
-    srt_run2=numpy.lexsort(keys=(ds2, ds1))
+    srt_run2=numpy.lexsort(keys=(ds1, ds2))
     return srt_run2
 
   def string_from_data_matrix(self, seperator, data, split_indices):

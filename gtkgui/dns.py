@@ -15,12 +15,8 @@ import config.dns
 
 
 __author__ = "Artur Glavic"
-__copyright__ = "Copyright 2008-2011"
 __credits__ = []
-__license__ = "GPL v3"
-__version__ = "0.7.11"
-__maintainer__ = "Artur Glavic"
-__email__ = "a.glavic@fz-juelich.de"
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
 __status__ = "Production"
 
 
@@ -46,6 +42,7 @@ class DNSGUI:
         <menuitem action='SeperatePreset' />
         <separator name='dns1' />
         <menuitem action='ReloadActive' />
+        <menuitem action='ChangeMeshmode' />
       </menu>
     '''
     # Create actions for the menu
@@ -90,6 +87,10 @@ class DNSGUI:
                 "Reload Active Measurement", 'F5',                    # label, accelerator
                 None,               # tooltip
                 self.reload_active_measurement ),
+            ( "ChangeMeshmode", None,                             # name, stock id
+                "Switch Plotmode", '<ctrl>F8',                    # label, accelerator
+                None,               # tooltip
+                self.change_mesh_mode ),
              )
     return string,  actions
 
@@ -532,3 +533,22 @@ class DNSGUI:
     '''
     self.read_files(self.active_file_name.rsplit('|raw_data')[0])
     window.change_active_file_object((self.active_file_name, self.file_data[self.active_file_name]))
+
+  def change_mesh_mode(self, action, window):
+    '''
+      Change the scan line for mesh creation from ω to 2Θ or back.
+    '''
+    import config.gnuplot_preferences as gp
+    datasets=self.active_file_data
+    if datasets[0].scan_line==3:
+      if 'pm3d' in gp.plotting_parameters_3d:
+        gp.plotting_parameters_3d=gp.plotting_parameters_3d.replace('pm3d', 'points palette pt 5')
+      elif 'points palette pt 5' in gp.plotting_parameters_3d:
+        gp.plotting_parameters_3d=gp.plotting_parameters_3d.replace('points palette pt 5', 'lines palette')
+      elif 'lines palette' in gp.plotting_parameters_3d:
+        gp.plotting_parameters_3d=gp.plotting_parameters_3d.replace('lines palette', 'pm3d')
+    for ds in datasets:
+      slold=ds.scan_line, ds.scan_line_constant
+      ds.scan_line_constant, ds.scan_line=slold
+    window.replot()
+    
