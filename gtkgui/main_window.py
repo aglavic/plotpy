@@ -1878,7 +1878,15 @@ class ApplicationMainWindow(gtk.Window):
                                         )
     cd_dialog.destroy()
     self.rebuild_menus()
-    self.replot()      
+    self.replot() 
+
+  def integrate_data(self, action):
+    '''
+      Integrate dataset using the trapezoidal rule.
+    '''
+    self.file_actions.activate_action('integral')
+    self.rebuild_menus()
+    self.replot()
 
   def derivate_data(self, action):
     '''
@@ -1887,32 +1895,57 @@ class ApplicationMainWindow(gtk.Window):
     '''
     parameters, result=SimpleEntryDialog('Derivate Data...', 
                                          [('Select Method',
-                                          ['Spectral Estimate (Noisy or Periodic Data)', 'Moving Window (Low Errorbars)'], 
+                                          ['Default 1st-Order (Moving Window)', 
+                                          '1st-Order (Discrete)', 
+                                          'Default 2nd-Order', 
+                                          'Moving Window (Low Errorbars, Equally Spaced)', 
+                                          'Spectral Estimate (Noisy or Periodic Data)'], 
                                           0)]
                                          ).run()
     if not result:
       return
-    if parameters['Select Method']=='Moving Window (Low Errorbars)':
-      parameters, result=SimpleEntryDialog('Derivate Data - Moving Window Filter...', 
-                                           (('Window Size', 5, int), 
-                                              ('Polynomial Order', 2, int), 
-                                              ('Derivative', 1, int))).run()
-      if parameters['Polynomial Order']>parameters['Window Size']-2:
-        parameters['Polynomial Order']=parameters['Window Size']-2
-      if parameters['Derivative']+1>parameters['Polynomial Order']:
-        parameters['Derivative']=parameters['Polynomial Order']-1
-      if result:
-        # create a new dataset with the smoothed data and all derivatives till the selected order
-        self.file_actions.activate_action('savitzky_golay', 
-                          parameters['Window Size'], 
-                          parameters['Polynomial Order'], 
-                          parameters['Derivative'])
-        self.rebuild_menus()
-        self.replot()
+    if parameters['Select Method']=='1st-Order (Discrete)':
+      self.file_actions.activate_action('discrete_derivative')
+      self.rebuild_menus()
+      self.replot()
+    elif parameters['Select Method'] in ['Default 1st-Order (Moving Window)', 
+                                          'Default 2nd-Order', 
+                                          'Moving Window (Low Errorbars, Equally Spaced)']:
+      if  parameters['Select Method']=='Moving Window (Low Errorbars, Equally Spaced)':
+        parameters, result=SimpleEntryDialog('Derivate Data - Moving Window Filter...', 
+                                             (('Window Size', 5, int), 
+                                                ('Polynomial Order', 2, int), 
+                                                ('Derivative', 1, int))).run()
+        if parameters['Polynomial Order']>parameters['Window Size']-2:
+          parameters['Polynomial Order']=parameters['Window Size']-2
+        if parameters['Derivative']+1>parameters['Polynomial Order']:
+          parameters['Derivative']=parameters['Polynomial Order']-1
+        if not result:
+          return
+      elif  parameters['Select Method']=='Default 1st-Order (Moving Window)':
+        parameters={
+                    'Derivative': 1, 
+                    'Polynomial Order': 2, 
+                    'Window Size': 5, 
+                    }
+      else:
+        parameters={
+                    'Derivative': 2, 
+                    'Polynomial Order': 3, 
+                    'Window Size': 7, 
+                    }
+      
+      # create a new dataset with the smoothed data and all derivatives till the selected order
+      self.file_actions.activate_action('savitzky_golay', 
+                        parameters['Window Size'], 
+                        parameters['Polynomial Order'], 
+                        parameters['Derivative'])
+      self.rebuild_menus()
+      self.replot()
     else:
       parameters, result=SimpleEntryDialog('Derivate Data - Spectral Estimate Method...', 
-                                           (('Filter Steepness', 6, int), 
-                                              ('Noise Filter Frequency (0,1]', 0.5, float), 
+                                           (('Filter Steepness', 4, int), 
+                                              ('Noise Filter Frequency (0,1]', 0.25, float), 
                                               ('Derivative', 1, int))).run()
       if result:
         # create a new dataset with the smoothed data and all derivatives till the selected order
@@ -3999,8 +4032,8 @@ set multiplot layout %i,1
       mr_height=(variables[3]-variables[2])/img_size.height
       mr_y=(variables[3])/img_size.height-mr_height
       self.mouse_data_range=((mr_x, mr_width, mr_y, mr_height), variables[4:]+[
-                                          self.measurement[self.index_mess].logx, 
-                                          self.measurement[self.index_mess].logy])    
+                                          self.get_first_in_mp().logx, 
+                                          self.get_first_in_mp().logy])    
     return output
 
   def plot_persistent(self, action=None):
@@ -4421,6 +4454,7 @@ set multiplot layout %i,1
           <placeholder name='z-actions'/>
           <placeholder name='y-actions'>
           <menuitem action='CombinePoints'/>
+          <menuitem action='Integrate'/>
           <menuitem action='Derivate'/>
           <menuitem action='ColorcodePoints'/>
           </placeholder>'''
@@ -4668,6 +4702,10 @@ set multiplot layout %i,1
         "Derivate or Smoothe", '<control>D',                     # label, accelerator
         None,                                    # tooltip
         self.derivate_data),
+      ( "Integrate", None,                    # name, stock id
+        "Integrate", '<control><shift>D',                     # label, accelerator
+        None,                                    # tooltip
+        self.integrate_data),
       ( "ColorcodePoints", None,                    # name, stock id
         "Show Colorcoded Points", None,                     # label, accelerator
         None,                                    # tooltip
