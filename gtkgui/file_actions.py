@@ -968,7 +968,11 @@ def calculate_savitzky_golay(dataset, window_size=5, order=2, derivative=1):
   x=numpy.array(xlist)
   y=numpy.array(ylist)
   error=numpy.array(elist)
-  output.data[0].values=xlist
+  sort_idx=numpy.argsort(x)
+  x=x[sort_idx]
+  y=y[sort_idx]
+  error=error[sort_idx]
+  output.data[0].values=x
   # calculate smoothed data and derivatives
   dx=numpy.array([x[1]-x[0]]+(x[1:]-x[:-1]).tolist())
   for i in range(derivative+1):
@@ -995,8 +999,9 @@ def calculate_butterworth(dataset, filter_steepness=6, filter_cutoff=0.5, deriva
     
     @return a dataset containing the derivated data
   '''
-  x=dataset.x.copy()
-  y=dataset.y.copy()
+  sort_idx=numpy.argsort(dataset.x)
+  x=dataset.x[sort_idx].copy()
+  y=dataset.y[sort_idx].copy()
   output=MeasurementData(x=0, y=2)
   output.append_column(x)
   # create a dataset with even number of elements.
@@ -1016,7 +1021,8 @@ def calculate_butterworth(dataset, filter_steepness=6, filter_cutoff=0.5, deriva
     yout=yout[:-1]
   output.append_column(PhysicalProperty(y.dimension, y.unit, yout))
   #deriv=numpy.fft.irfft(((2.j*numpy.pi*k)/x[:len(x)//2+1].view(numpy.ndarray))**derivative * F_B)
-  deriv=numpy.fft.irfft((1.j*k)**derivative * F_B)
+  stepk=(1./(x[1:].view(numpy.ndarray)-x[:-1].view(numpy.ndarray)).mean())/len(x)
+  deriv=numpy.fft.irfft(((2.j*numpy.pi*k)*stepk)**derivative * F_B)
   if crop_last:
     deriv=deriv[:-1]
   output.append_column(PhysicalProperty(y.dimension+"\\047"*derivative, 
@@ -1038,6 +1044,9 @@ def calculate_discrete_derivative(dataset, points=5):
     raise 'ValueError', 'points need to be 2,3 or 5'
   x=dataset.x.copy()
   y=dataset.y.copy()
+  sort_idx=numpy.argsort(x)
+  x=x[sort_idx]
+  y=y[sort_idx]
   output=MeasurementData()
   output.append_column(x)
   if points==2:
@@ -1065,6 +1074,9 @@ def calculate_integral(dataset):
   '''
   x=dataset.x.copy()
   y=dataset.y.copy()
+  sort_idx=numpy.argsort(x)
+  x=x[sort_idx]
+  y=y[sort_idx]
   output=MeasurementData()
   output.append_column(x)
   xa=x.view(numpy.ndarray)

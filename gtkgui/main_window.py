@@ -1898,8 +1898,9 @@ class ApplicationMainWindow(gtk.Window):
                                           ['Default 1st-Order (Moving Window)', 
                                           '1st-Order (Discrete)', 
                                           'Default 2nd-Order', 
-                                          'Moving Window (Low Errorbars, Equally Spaced)', 
-                                          'Spectral Estimate (Noisy or Periodic Data)'], 
+                                          'Moving Window (Low Errorbars)', 
+                                          'Spectral Estimate (Noisy or Periodic Data, Equally Spaced)', 
+                                          ], 
                                           0)]
                                          ).run()
     if not result:
@@ -1910,8 +1911,8 @@ class ApplicationMainWindow(gtk.Window):
       self.replot()
     elif parameters['Select Method'] in ['Default 1st-Order (Moving Window)', 
                                           'Default 2nd-Order', 
-                                          'Moving Window (Low Errorbars, Equally Spaced)']:
-      if  parameters['Select Method']=='Moving Window (Low Errorbars, Equally Spaced)':
+                                          'Moving Window (Low Errorbars)']:
+      if  parameters['Select Method']=='Moving Window (Low Errorbars)':
         parameters, result=SimpleEntryDialog('Derivate Data - Moving Window Filter...', 
                                              (('Window Size', 5, int), 
                                                 ('Polynomial Order', 2, int), 
