@@ -1012,14 +1012,18 @@ def calculate_butterworth(dataset, filter_steepness=6, filter_cutoff=0.5, deriva
     crop_last=True
   else:
     crop_last=False
+  # Perform fast fourier transform (for real input)
   F=numpy.fft.rfft(y)
+  # filter the higher frequencies with a cutt-off function
   k=numpy.arange(len(y)//2+1)
   k_0=len(y)/2.*filter_cutoff+1.
   F_B=(1./(1.+(k/k_0)**filter_steepness))*F
+  # apply inverse fourier transform to calculate smoothed data
   yout=PhysicalProperty(y.dimension, y.unit, numpy.fft.irfft(F_B))
   if crop_last:
     yout=yout[:-1]
   output.append_column(PhysicalProperty(y.dimension, y.unit, yout))
+  # Calculate the derivative in fourier space by multiplying with 2πik and transform back to real space
   #deriv=numpy.fft.irfft(((2.j*numpy.pi*k)/x[:len(x)//2+1].view(numpy.ndarray))**derivative * F_B)
   stepk=(1./(x[1:].view(numpy.ndarray)-x[:-1].view(numpy.ndarray)).mean())/len(x)
   deriv=numpy.fft.irfft(((2.j*numpy.pi*k)*stepk)**derivative * F_B)
