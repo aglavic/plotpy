@@ -238,12 +238,13 @@ def initialize_debug(log_file='debug.log'):
   '''
   import plotting_debug
   if '--logmodules' in sys.argv:
+    # log additional module functions and class methods
     idx=sys.argv.index('--logmodules')
     modules=sys.argv[idx+1:]
     plotting_debug.initialize(log_file, level='DEBUG', modules=modules)
     sys.argv=sys.argv[:idx]
   else:
-    plotting_debug.initialize(log_file, level='INFO')
+    plotting_debug.initialize(log_file, level='DEBUG')
   
 def _run():
   '''

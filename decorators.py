@@ -107,6 +107,8 @@ def log_call(func, *args, **kw):
   if logger is None:
     return func(*args, **kw)
   infodict=getinfo(func)
+  if inspect.ismethod(func):
+    infodict['name']=func.im_class.__name__+'.'+infodict['name']
   logger.debug('call to %s.%s' % (infodict['module'], infodict['name']))
   return func(*args, **kw)
 
@@ -118,6 +120,8 @@ def log_input(func, *args, **kw):
   if logger is None:
     return func(*args, **kw)
   infodict=getinfo(func)
+  if inspect.ismethod(func):
+    infodict['name']=func.im_class.__name__+'.'+infodict['name']
   logstr='call to %s.%s(' % (infodict['module'], infodict['name'])
   for i, arg in enumerate(args):
     logstr+='\n'+' '*36+'% 10s=%15s (%s)' % (infodict['argnames'][i], str(arg), type(arg).__name__)
@@ -135,6 +139,31 @@ def log_output(func, *args, **kw):
   '''
   if logger is None:
     return func(*args, **kw)
+  output=func(*args, **kw)
+  infodict=getinfo(func)
+  logstr='return from %s.%s' % (infodict['module'], infodict['name'])
+  logstr+='\n'+' '*44+'-> %15s (%s)' % (str(output), type(output).__name__)
+  logger.debug(logstr)
+  return output
+
+@decorator
+def log_both(func, *args, **kw):
+  '''
+    Decoratore to log a method call with input and output.
+  '''
+  if logger is None:
+    return func(*args, **kw)
+  infodict=getinfo(func)
+  if inspect.ismethod(func):
+    infodict['name']=func.im_class.__name__+'.'+infodict['name']
+  logstr='call to %s.%s(' % (infodict['module'], infodict['name'])
+  for i, arg in enumerate(args):
+    logstr+='\n'+' '*36+'% 10s=%15s (%s)' % (infodict['argnames'][i], str(arg), type(arg).__name__)
+  for key, value in sorted(kw.items()):
+    logstr+='\n'+' '*36+'% 10s=%15s (%s)' % (key, str(value), type(value).__name__)
+  logstr+='\n'+' '*36+')'
+  logger.debug(logstr)
+  # call the function
   output=func(*args, **kw)
   infodict=getinfo(func)
   logstr='return from %s.%s' % (infodict['module'], infodict['name'])

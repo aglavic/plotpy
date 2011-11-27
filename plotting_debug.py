@@ -1,16 +1,31 @@
 # -*- encoding: utf-8 -*-
 '''
-  Module to log all interesting events in a debugging session. With the --debug and --logall option even function calls
-  are stored in the log file.
+  Module to log all interesting events in a debugging session. With the --debug and --logmodules or --logall option 
+  even function calls are stored in the log file. Single functions can be recorded using decorators.
   
   CAREFUL: The --logall option can create a huge amount of data, be sure not to reproduce errors rapidly after starting
            the program to let the file size stay at a minimum. (a 1MB log file just after starting the Program is not 
            unlikely)
+           
+  Example of the decorator usage:
+  
+# logging for debug
+from decorators import log_call, log_input, log_output, log_both
+@log_call
+def some_function(some_bla):
+  ...
+   .
+  ...
+  return whatever
+
 '''
 
 import logging
 import sys, os
 from glob import glob
+from types import FunctionType, BuiltinFunctionType
+import decorators
+from decorators import log_call, log_input, log_output, log_both
 
 __author__ = "Artur Glavic"
 __credits__ = []
@@ -21,9 +36,8 @@ logger=logging
 
 class RedirectOutput(object):
   '''
-    Class to redirect all print statements to the statusbar when useing the GUI.
+    Class to redirect all print statements to the logger.
   '''
-  second_output=None
 
   def __init__(self, obj, connection, connect_on_keyword=[]):
     '''
@@ -48,7 +62,7 @@ class RedirectOutput(object):
       for keyword, connect in self.connect_on_keyword:
         if keyword in self.buffer:
           connection=connect
-      connection(self.buffer.replace("\n", ''))
+      connection(self.buffer)
       self.buffer=""
     #self.file_object.write(string)
   
@@ -60,166 +74,45 @@ class RedirectOutput(object):
     for keyword, connect in self.connect_on_keyword:
       if keyword in self.buffer:
         connection=connect
-    connection(self.buffer.replace("\n", ''))
+    connection(self.buffer)
     self.buffer=""
     self.file_object.flush()
   
   def fileno(self):
     return self.file_object.fileno()
 
-class LogFunction(object):
-  '''
-    A class that can be called as if it would be a function.
-    When constructed a function is supplied, for every call to the object
-    the function gets called and a line is written to a log file.
-    
-    Very useful to trace calls to specific functions or even all functions of
-    some modules of interest.
-  '''
-  log_function=True
-  
-  def __init__(self, function, overwrite_name=None):
-    '''
-      Construct the module by connecting the function.
-      
-      @param name Name written in the log for every function call.
-      @param function The function to be used.
-    '''      
-    if overwrite_name:
-      self.name=overwrite_name
-      logger.debug('Logging %s' % self.name)
-    else:
-      self.name=function.__name__
-      logger.debug('Logging %s' % function.__module__+'.'+function.__name__)
-    self.function=function
-  
-  def __call__(self, *params, **opts):
-    '''
-      Write a function call with its parameters and options to
-      the log file.
-    '''
-    # use this call to check if an exception has been found
-    # this only works if this function is called in the "except" block.
-    exc_info=sys.exc_info()[1]
-    if exc_info:
-      logger.warning('Cought exception %s' % str(exc_info))
-    return_value=None
-    write_string=self.name + "("
-    i=0
-    # add parameter information
-    for i, param in enumerate(params):
-      if i!=0:
-        write_string+=", "
-      write_string+=repr(param)
-    # add optional parameter informations
-    for j, item in enumerate(opts.items()):
-      if j+i!=0:
-        write_string+=", "
-      write_string+=item[0] + "=" + repr(item[1])
-    # write the function call with maximum of 150 characters 
-    if len(write_string)>150:
-      write_string=write_string[:150]+'...'
-    write_string+=")"
-    logger.debug(write_string)
-    return self.function(*params, **opts)
 
-def single_call_log(function, class_name):
-  def tmpfunc(*params, **options):
-    logger.debug(class_name+'('+str(params)+str(options)+')')
-    return function(*params, **options)
-  return tmpfunc
-
-def create_log_class(old_class):
-  '''
-    Create a new class where all method calls are logged.
-    
-    Uses online attribute lookup to create a function which loggs the function inputs.
-  '''
-  class OutputClass(old_class, object):
-    def __getattribute__(self, attribute):
-      if 'method' in str(type(old_class.__getattribute__(self, attribute))):
-        return single_call_log(old_class.__getattribute__(self, attribute), old_class.__name__+'.'+attribute)
-      else:
-        return old_class.__getattribute__(self, attribute)
-      
-  return OutputClass
-
-class LogClass:
-  '''
-    Class that creates instances of other classes with logging possibilities.
-  '''
-  
-  def __init__(self, old_class):
-    '''
-      Store the old class in this object
-    '''
-    #self.old_class=old_class
-    #self.old_class_functions=[]
-    #class_name=old_class.__name__
-    #logger.debug('Logging Class %s' % old_class.__module__+'.'+old_class.__name__)
-    #logging.disable(logging.INFO)
-    #keys=old_class.__dict__.keys()
-    #for item in keys:
-      #if item.startswith('_'):
-        #keys.remove(item)
-    #for key in keys:
-      #if 'instancemethod' in str(type(getattr(old_class, key))):
-        #method=getattr(old_class, key)
-        #setattr(old_class, key, LogFunction(method, overwrite_name=class_name+'.'+method.__name__))
-      #else:
-        #pass
-    #logging.disable(None)
-  #
-  #def __call__(self, *params, **opts):
-    #'''
-      #Call the class constructor and log the call.
-    #'''
-    #write_string=self.old_class.__name__+'.__init__(self, '
-    ## add parameter information
-    #i=0
-    #for i, param in enumerate(params):
-      #if i!=0:
-        #write_string+=", "
-      #write_string+=repr(param)
-    ## add optional parameter informations
-    #for j, item in enumerate(opts.items()):
-      #if j+i!=0:
-        #write_string+=", "
-      #write_string+=item[0] + "=" + repr(item[1])
-    ## write the function call
-    #write_string+=") -> "
-    #new_class=self.old_class(*params, **opts)
-    #logger.debug(write_string+repr(new_class))
-    #return new_class
-
-class EmptyClass:
-  pass
-
-def logon(module):
+def logon(module, log_decorator=log_call):
   '''
    Start logging function calls for all functions of one module.
    
    @param module A module whose function calls should be logged.
   '''
+  module_dict=module.__dict__
   # get all functions/build-in-function of the module not starting with underscore
-  modfunctions=filter(lambda key: type(getattr(module, key)) in [type(logon), type(getattr)] and not key.startswith('_'),
-                      module.__dict__.keys())
+  modfunctions=filter(lambda key: type(module_dict[key]) in [FunctionType, BuiltinFunctionType] and not \
+                                  key.startswith('_'), module_dict.keys())
   modclasses=filter(lambda key: ('class' in str(type(getattr(module, key))) or \
                                 "'type'" in str(type(getattr(module, key)))) and not key.startswith('_'),
-                      module.__dict__.keys())
+                      module_dict.keys())
   for function_name in modfunctions:
     # get the function
-    function=getattr(module, function_name)
-    # replace the function by a LogFunction object
+    function=module_dict[function_name]
+    # replace the function by a decorated version
     # only replace if the function is originally defined in this module
     if function.__module__==module.__name__:
-      setattr(module, function_name, LogFunction( function ))
+      module_dict[function_name]=log_decorator( function )
+      # store real function as private
+      module_dict['_'+function_name]=function
   for cls_name in modclasses:
-    cls=getattr(module, cls_name)
-    # replace the class by a LogClass object
-    # only replace if the function is originally defined in this module
+    # get the class
+    cls=module_dict[cls_name]
     if cls.__module__==module.__name__:
-      setattr(module, cls_name, create_log_class(cls))
+      clsdict=cls.__dict__
+      # create decorated methods for the class
+      clsfunctions=filter(lambda key: type(clsdict[key]) in [FunctionType], clsdict.keys())
+      for func_name in clsfunctions:
+        setattr(cls, func_name, log_decorator(getattr(cls, func_name)))
 
 def initialize(log_file, level='INFO', modules=[]):
   '''
@@ -246,11 +139,25 @@ def initialize(log_file, level='INFO', modules=[]):
   if level==logging.DEBUG:
     # In complete debug mode function calls of defined modules get logged, too
     logger.debug("Beginning initialize logging for all modules...")
-    sys.exc_clear=LogFunction(sys.exc_clear)
+    #sys.exc_clear=log_call(sys.exc_clear)
     for module in modules:
+      if module.startswith('*'):
+        if module.endswith('*'):
+          module=module.strip('*')
+          log_decorator=log_both
+        else:
+          module=module.strip('*')
+          log_decorator=log_input
+      elif module.endswith('*'):
+        module=module.strip('*')
+        log_decorator=log_output
+      else:
+        log_decorator=log_call
       if len(module.split('.'))>1:
         imported_module=__import__(module, globals(), locals(), fromlist=(module.split('.')[-1]))
       else:
         imported_module=__import__(module, globals(), locals())
-      logon(imported_module)
+      logger.debug('    logging moduel %s' % imported_module.__name__)
+      logon(imported_module, log_decorator=log_decorator)
     logger.debug("... ready initializing the debug system.")
+    decorators.logger=logger
