@@ -326,6 +326,7 @@ if "py2exe" in sys.argv and not py2exe_test:
                     (gtk_folder+'\\share\\locale', 'share\\locale'), 
                     (gtk_folder+'\\share\\themes', 'share\\themes'), 
                     (gtk_folder+'\\share\\icons', 'share\\icons'), 
+                    (gtk_folder+'\\bin', 'bin'), 
                     (gtk_folder+'\\lib', 'lib'), 
                     ('config', 'config'), 
                     ]:

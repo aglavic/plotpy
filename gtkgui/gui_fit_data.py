@@ -132,6 +132,17 @@ class FitSessionGUI:
     # Add progressbar to the table
     self.progress_bar=gtk.ProgressBar()
     self.progress_bar.set_text('Status Information (INFO: <control>+click on parameter for advanced options>)')
+    self.progress_bar.show()
+    # a button to stop the fit after any iteration
+    def click_stop_button(widget):
+      self._stop_refinement=True
+    stop_button=gtk.Button('Stop Refinement')
+    stop_button.connect('clicked', click_stop_button)
+    stop_button.show()
+    progress_bar_hbox=gtk.HBox()
+    progress_bar_hbox.add(self.progress_bar)
+    progress_bar_hbox.pack_end(stop_button, False)
+    progress_bar_hbox.show()
     # Options for new functions
     new_function=gtk.combo_box_new_text()
     add_button=gtk.Button(label='Add Function')
@@ -142,6 +153,9 @@ class FitSessionGUI:
     add_button.connect('clicked', self.add_function_dialog, new_function, dialog, window)
     sum_button.connect('clicked', self.combine_dialog, dialog, window)
     fit_button.connect('clicked', self.fit_from_dialog, entries, dialog, window)
+    for subentries in entries:
+      for entry in subentries[:-2]:
+        entry.connect('activate', self._activate_entry, entries, dialog, window)
     align=gtk.Alignment(0.5, 0., 0, 0) # the table is centered in the dialog window
     align.add(align_table)
     def toggle_show_covariance(action, self):
@@ -154,7 +168,7 @@ class FitSessionGUI:
     toggle_region=gtk.CheckButton(label='region')
     toggle_region.set_active(self.restrict_to_region)
     toggle_region.connect('toggled', toggle_show_region, self)
-    return align, [toggle_region, toggle_covariance, new_function, add_button, sum_button, fit_button], self.progress_bar
+    return align, [toggle_region, toggle_covariance, new_function, add_button, sum_button, fit_button], progress_bar_hbox
   
   def function_line(self, function, dialog, window):
     '''
@@ -247,6 +261,37 @@ class FitSessionGUI:
                                gtk.EXPAND, gtk.EXPAND, 0, 0)
     return table, entries
 
+  def _activate_entry(self, action, entries, dialog, window):
+    def get_entry_values(entry, if_not=0):
+      '''
+        Help function to evaluate the entry boxes. Skippes entries with no numbers
+        and converts ',' to '.'.
+      '''
+      try: 
+        return float(entry.get_text().replace(',', '.'))
+      except ValueError:
+        return if_not
+    for i, function in enumerate(self.functions):
+      # Set all function parameters according to the entries
+      values=[]
+      if function[0].is_3d:
+        for entry in entries[i][:-6]:
+          values.append(get_entry_values(entry))
+        values.append(get_entry_values(entries[i][-6], if_not=None))
+        values.append(get_entry_values(entries[i][-5], if_not=None))
+        values.append(get_entry_values(entries[i][-4], if_not=None))
+        values.append(get_entry_values(entries[i][-3], if_not=None))
+        values.append(entries[i][-2].get_text())        
+      else:
+        for entry in entries[i][:-4]:
+          values.append(get_entry_values(entry))
+        values.append(get_entry_values(entries[i][-4], if_not=None))
+        values.append(get_entry_values(entries[i][-3], if_not=None))
+        values.append(entries[i][-2].get_text())
+      window.file_actions.activate_action('set_function_parameters', i, values)
+    window.file_actions.activate_action('simmulate_functions')
+    window.replot()    
+
   def advanced_parameter_options(self, entry, event, i, function):
     '''
       Open advanced options dialog on double klick on Entries.
@@ -322,7 +367,7 @@ class FitSessionGUI:
   
   def set_function_parameters(self, func_index, values):
     '''
-      Set the parameters of one functio object in the list.
+      Set the parameters of one function object in the list.
     
       @param func_index List index of the function to be altered
       @param values List of values for the parameters to be set
@@ -423,6 +468,10 @@ class FitSessionGUI:
     self.progress_bar.set_text(text)
     while gtk.events_pending():
       gtk.main_iteration(False)
+    if self._stop_refinement:
+      return -1
+    else:
+      return 0
 
   def combine_dialog(self, action, dialog, window):
     '''
