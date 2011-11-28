@@ -71,6 +71,7 @@ class ApplicationMainWindow(gtk.Window):
   garbage=[]
   plot_tree=None
   open_windows=[]
+  _ignore_change=False
   
   def get_active_dataset(self):
     # convenience method to get the active dataset
@@ -664,6 +665,8 @@ class ApplicationMainWindow(gtk.Window):
       
       @param action The action that triggered the event
     '''
+    if self._ignore_change:
+      return
     # change the plotted columns
     if action.get_name()=='x-number':
       self.measurement[self.index_mess].xdata=-1
@@ -714,12 +717,7 @@ class ApplicationMainWindow(gtk.Window):
         self.measurement[self.index_mess].short_info=self.label2.get_text()
     # change log settings
     elif action in (self.logx, self.logy, self.logz):
-      logitems=self.measurement[self.index_mess]
-      if self.active_multiplot:
-        for mp in self.multiplot:
-          for mpi, mpname in mp:
-            if self.measurement[self.index_mess] is mpi:
-              logitems=mp[0][0]
+      logitems=self.get_first_in_mp()
       logitems.logx=self.logx.get_active()
       logitems.logy=self.logy.get_active()
       logitems.logz=self.logz.get_active()
@@ -4164,9 +4162,12 @@ set multiplot layout %i,1
       if (self.z_range_in.get_text()=="") and ((options.zrange[0] is not None) or (options.zrange[1] is not None)):
         range=str(options.zrange[0])+':'+str(options.zrange[1])
         self.z_range_in.set_text(range.replace('None', ''))
+    # make sure the change is ignored
+    self._ignore_change=True
     self.logx.set_active(logitems.logx)
     self.logy.set_active(logitems.logy)
     self.logz.set_active(logitems.logz)
+    self._ignore_change=False
     
     # wait for all gtk events to finish to get the right size
     print "Plotting"
