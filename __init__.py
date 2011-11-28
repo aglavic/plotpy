@@ -44,6 +44,7 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 # python modules
 import sys, os
+import warnings
 exit=sys.exit
 from glob import glob
 try:
@@ -159,6 +160,15 @@ def initialize(arguments):
   ''' 
     initialize session and read data files 
   '''
+  if not '--debug' in sys.argv:
+    try:
+      import numpy
+      # don't write numpy information on errors to stdout
+      numpy.seterr(all='ignore')
+    except:
+      pass
+    # ignore python warnings
+    warnings.simplefilter('ignore')
   # parent class
   from sessions.generic import GenericSession, read_full_snapshot
   if (len(arguments) == 0):
@@ -208,10 +218,6 @@ def initialize_gui_toolkit():
       print "Setting GUI toolkit to %s." % toolkit
   if config.gui.toolkit=='wx':
     sys.argv.append('--debug')
-  if sys.platform.startswith('win') and '--debug' not in sys.argv:
-    # For windows ignore any warnigs (mostly from gtk)
-    import warnings
-    warnings.simplefilter("ignore")
   global gui_main, status_dialog
   gui_main=__import__( config.gui.toolkit+'gui.main_window' , fromlist=["main_window"])
   if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:

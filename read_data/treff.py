@@ -69,11 +69,6 @@ class MeasurementDataTREFF(MeasurementData):
       
       @return Another MeasurementDataTREFF instance.
     '''
-    # ignore warning from numpy.unique1d
-    import warnings
-    original_filters = warnings.filters[:]
-    # Ignore warnings.
-    warnings.simplefilter("ignore")
     
     if join_type==1:
       new=deepcopy(other)
@@ -89,8 +84,6 @@ class MeasurementDataTREFF(MeasurementData):
     for i, col in enumerate(new.data):
       col.append(add_obj.data[i])
       new.data[i]=col[indices]
-    # restore old warning filters
-    warnings.filters = original_filters
     return new
 
 def read_data(file_name, script_path, import_images, return_detector_images):

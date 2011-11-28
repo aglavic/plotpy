@@ -21,6 +21,7 @@ def some_function(some_bla):
 '''
 
 import logging
+import warnings
 import sys, os
 from glob import glob
 from types import FunctionType, BuiltinFunctionType
@@ -114,6 +115,10 @@ def logon(module, log_decorator=log_call):
       for func_name in clsfunctions:
         setattr(cls, func_name, log_decorator(getattr(cls, func_name)))
 
+
+def numpy_error_handler(type, flag):
+  logger.warning("Numpy floating point error (%s), with flag %s" % (type, flag))
+
 def initialize(log_file, level='INFO', modules=[]):
   '''
     Start logging of all modules of the plot-script.
@@ -130,12 +135,24 @@ def initialize(log_file, level='INFO', modules=[]):
   file_handle.setFormatter(formatter)  
   console_handle=logging.StreamHandler()
   console_handle.setLevel(logging.INFO)
-  logger=logging.getLogger('plot')
+  logger=logging.getLogger() # get the root logger
   logger.setLevel(logging.DEBUG)
   logger.addHandler(console_handle)
   logger.addHandler(file_handle)
   sys.stdout=RedirectOutput(sys.stdout, logger.info)
   sys.stderr=RedirectOutput(sys.stderr, logger.error, connect_on_keyword=[('Warning', logger.warning)])
+  try:
+    import numpy
+  except:
+    pass  
+  else:
+    # log numpy errors as warnings
+    numpy.seterrcall(numpy_error_handler)
+    numpy.seterr(all='call')
+  # redirect warnigs to the logger
+  warnings.resetwarnings()
+  warnings.simplefilter('always')
+  logging.captureWarnings(True)
   if level==logging.DEBUG:
     # In complete debug mode function calls of defined modules get logged, too
     logger.debug("Beginning initialize logging for all modules...")

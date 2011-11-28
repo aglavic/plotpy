@@ -10,7 +10,6 @@ import subprocess
 import gobject
 import gtk
 import numpy
-import warnings
 from time import sleep, time
 from copy import deepcopy
 # own modules
@@ -3666,9 +3665,6 @@ set multiplot layout %i,1
     if self.mouse_mode and self.measurement[self.index_mess].zdata>=0:
       try:
         # estimate the size of the plot by searching for lines with low pixel intensity (Black)
-        original_filters = warnings.filters[:]
-        # Ignore warnings.
-        warnings.simplefilter("ignore")
         try:
           pixbuf_data=pixbuf.get_pixels_array()[:,:,:3]
         except RuntimeError:
@@ -3683,7 +3679,6 @@ set multiplot layout %i,1
           # create 3d color array
           pixbuf_data=pixbuf_data.transpose().reshape(len(pixbuf_data[0]), len(pixbuf_data)/3, 3)
           self.pixbuf_data=pixbuf_data
-        warnings.filters=original_filters
         black_values=(numpy.mean(pixbuf_data, axis=2)==0.)
         # as first step get the region inside all captions including colorbar
         ysum=numpy.sum(black_values, axis=0)*1.
