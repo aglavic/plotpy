@@ -9,11 +9,15 @@ from numpy import *
 import os
 
 from option_types import *
+
 try: # For the use in external programs where no MeasurementData objects are available
   from measurement_data_structure import MeasurementData, PhysicalProperty
   CREATE_MDS=True
 except ImportError:
   CREATE_MDS=False
+  config=None
+  
+defined_filters=[]
 
 #+++++++++++++++++++++++++++++++++++AbstractImportFilter-Class+++++++++++++++++++++++++++++++++++++++++++++++++++#
 
@@ -98,17 +102,17 @@ class AsciiImportFilter(object):
                                       ], 
                                      "Columns")
     self.select_x=OptionSwitch(0, [(int, 'Column index', 0), 
-                                          (str, 'Column name')], 
-                                          "x-column") # define x-column
-    self.select_y=OptionSwitch(1, [(int, 'Column index', 0), 
-                                          (str, 'Column name')], 
+                                    (StringList, 'Column names', StringList([]))], 
+                                    "x-column") # define x-column
+    self.select_y=OptionSwitch(1, [(int, 'Column index', 1), 
+                                   (StringList, 'Column names', StringList([]))], 
                                           "y-column") # define x-column
-    self.select_z=OptionSwitch(-1, [(int, 'Column index', 0), 
-                                          (str, 'Column name')], 
+    self.select_z=OptionSwitch(-1, [(int, 'Column index', -1), 
+                                    (StringList, 'Column names', StringList([]))], 
                                           "z-column") # define x-column
-    self.post_calc_errors=PatternList([], [int, str], ['Column', 'Function (e.g. "[1]+[2]")'])
+    self.post_calc_errors=PatternList([], [str, str], ['Column', 'Function (e.g. "[1]+[2]")'])
     self.post_calc_columns=PatternList([], [str, str, str], ['Function (e.g. "[1]+[2]")', 'Dimension', 'Unit'])
-    self.post_recalc_columns=PatternList([], [int, str], ['Column', 'Function (e.g. "[1]+[2]")'])
+    self.post_recalc_columns=PatternList([], [str, str], ['Column', 'Function (e.g. "[1]+[2]")'])
     self.header_search=PatternList([], [str, str, str, int, str, StrType], 
                                        ['name', 'search string', 'presplit', 'offset', 'endsplit', 'info_type'])
     self.footer_search=PatternList([], [str, str, str, int, str, StrType], 
@@ -123,7 +127,7 @@ class AsciiImportFilter(object):
                                         (type(None), 'Whitespace')], 
                                         "Column separator") # define how header is extracted
     if presets is not None:
-      self.load_presets(presets)
+      self.set_presets(presets)
     
   def __repr__(self):
     return '<AsciiImportFilter "%s"(%s)>' % (
@@ -131,17 +135,58 @@ class AsciiImportFilter(object):
                                            ", ".join(self.file_types)
                                            )
   
-  def load_presets(self, preset):
+  # items to be used for preset load and save
+  _dict_items=[
+                            'sample_name', 
+                            'short_info', 
+                            'file_types', 
+                            'name', 
+                            'post_calc_errors', 
+                            'post_calc_columns', 
+                            'post_recalc_columns', 
+                            'header_search', 
+                            'footer_search', 
+                    
+                            'header_lines', 
+                            'footer_lines', 
+                            'split_sequences', 
+                            'comment_string', 
+                            'columns', 
+                            'select_x', 
+                            'select_y', 
+                            'select_z', 
+                            'auto_search', 
+                            'separator', 
+                              
+                               ]
+                               
+  
+  def set_presets(self, preset):
     '''
       Load preset options from a dictionary.
     '''
-    pass
+    dict_items=self._dict_items
+    for input_type, value in preset.items():
+      old_item=getattr(self, input_type)
+      etype=type(old_item)
+      if type(value) is etype:
+        setattr(self, input_type, etype(value))
+      elif hasattr(old_item, 'from_dict'):
+        old_item.from_dict(value)
+      else:
+        setattr(self, input_type, value)
   
-  def save_presets(self, preset):
+  def get_presets(self):
     '''
       Save preset options to a dictionary.
     '''
     output={}
+    for std_type in self._dict_items:
+      item=getattr(self, std_type)
+      if hasattr(item, 'to_dict'):
+        output[std_type]=item.to_dict()
+      else:
+        output[std_type]=item
     return output
   
   def read_data(self, input_file):
@@ -153,6 +198,7 @@ class AsciiImportFilter(object):
       
       @param input_file Name of the file or file like object to be read from.
     '''
+    print "Trying to import ASCII (%s) '%s'." % (self.name, input_file)
     self._1clear_all()
     self._2read_lines(input_file)
     self._3get_head_data_foot()
@@ -237,7 +283,13 @@ class AsciiImportFilter(object):
                                                                  len(self._data_arrays[0][0]))
     elif len(self._splited_data)>0:
       output+="   Sequence first line: \n%s" % self._splited_data[0][0].replace('\n', '\\n').replace('\t', '\\t')
-    
+    if error is None:
+      output+="\n\tFirst extracted dataset:"
+      output+="\n\t\tObject: "+result[0].__repr__()
+      output+="\n\t\tSample Name: " + result[0].sample_name
+      output+="\n\t\tInfo: " + result[0].short_info
+      output+="\n\t\tColumns:\n\t\t\t Dimensions: "+", ".join(result[0].dimensions())
+      output+="\n\t\t\t Units: "+", ".join(result[0].units())
     output+="\n\tExtracted metainfo:\n"
     output+="\n".join(["% 40s: '%s' (%s)" % ("'"+str(item[0])+"'", item[1], 
                        type(item[1]).__name__) for item in sorted(self._extracted_data.items())])
@@ -331,7 +383,6 @@ class AsciiImportFilter(object):
     '''
     output=[]
     for j, data_lines in enumerate(self._splited_data):
-      self._extracted_data['sequence']=j
       data_array=self._extract_data(data_lines)
       output.append(data_array)
     self._data_arrays=output
@@ -340,8 +391,9 @@ class AsciiImportFilter(object):
   def _8create_mds(self):
     output=[]
     for j, data_array in enumerate(self._data_arrays):
+      self._extracted_data['sequence']=j
       num_columns=len(data_array[0])
-      col_indices, dimensions, units, errors=self._get_columns(num_columns, self._header_lines)
+      col_indices, dimensions, units, errors=self._get_columns(num_columns, self._header_lines+self._sequence_headers[j])
       columns=[]
       for i in col_indices:
         columns.append(PhysicalProperty(dimensions[i], units[i], data_array[:, i]))
@@ -356,10 +408,34 @@ class AsciiImportFilter(object):
       dataset.sample_name=str(eval(self.sample_name, globals(), dict(locals().items()+ self._extracted_data.items())))
       dataset.short_info=str(eval(self.short_info, globals(), dict(locals().items()+ self._extracted_data.items())))
       
+      # define the x,y and z columns
+      dimensions=dataset.dimensions()
+      if self.select_x==0:
+        dataset.xdata=self.select_x.value
+      else:
+        for col_name in self.select_x.value:
+          if col_name in dimensions:
+            dataset.xdata=dimensions.index(col_name)
+            break
+      if self.select_y==0:
+        dataset.ydata=self.select_y.value
+      else:
+        for col_name in self.select_y.value:
+          if col_name in dimensions:
+            dataset.ydata=dimensions.index(col_name)
+            break
+      if self.select_z==0:
+        dataset.zdata=self.select_z.value
+      else:
+        for col_name in self.select_z.value:
+          if col_name in dimensions:
+            dataset.zdata=dimensions.index(col_name)
+            break
+        
       output.append(dataset)
     return output
-    
-  
+
+
   def _split_head_data_foot(self, file_lines):
     '''
       Split the header and footer lines from the data area.
@@ -429,15 +505,21 @@ class AsciiImportFilter(object):
       Split different sequences of one file.
     '''
     output=[]
+    headers=[]
     if self.split_sequences==1: # split by string
       splitstring=self.split_sequences.value
       istart=0
       for i, line in enumerate(data_lines):
         if splitstring in line:
-          output.append(data_lines[istart:i])
+          sequence_lines=data_lines[istart:i]
+          header, data, foot=self._split_head_data_foot(sequence_lines)
+          output.append(data)
+          headers.append(header+foot)
           istart=i+1
-      output.append(data_lines[istart:])
-    return output, [[] for i in output]
+      header, data, foot=self._split_head_data_foot(data_lines[istart:])
+      output.append(data)
+      headers.append(header+foot)      
+    return output, headers
   
   def _extract_file_information(self, file_name):
     '''
@@ -561,10 +643,9 @@ class AsciiImportFilter(object):
               units.append(scol[1].split(unit_end)[0])
             else:
               units.append('')
-          num_columns=min(num_columns, len(dims))
-          dimensions=dims[:num_columns]
-          units=units[:num_columns]
-          break
+      num_columns=min(num_columns, len(dims))
+      dimensions=dims[:num_columns]
+      units=units[:num_columns]
     else:
       # extrac the columns from header
       raise NotImplementedError, "Blub"
@@ -584,18 +665,61 @@ class AsciiImportFilter(object):
     column_calcs=self.post_calc_columns
     column_recalcs=self.post_recalc_columns
     for index, function in error_calcs:
-      function=function.replace('[', 'columns[')
+      function=self._turn_name_to_index(function, columns)
+      index=self._str_to_column_index(index, columns)
       columns[index].error=eval(function, globals(), dict(locals().items()+ self._extracted_data.items()))
     for function, dim, unit in column_calcs:
-      function=function.replace('[', 'columns[')
+      function=self._turn_name_to_index(function, columns)
       col=eval(function, globals(), dict(locals().items()+ self._extracted_data.items()))
       if dim is not None and unit is not None:
-        col.dimension=dim
+        col.unit=dim
         col.dimension=unit
       columns.append(col)
     for index, function in column_recalcs:
-      function=function.replace('[', 'columns[')
+      function=self._turn_name_to_index(function, columns)
+      index=self._str_to_column_index(index, columns)
       columns[index]=eval(function, globals(), dict(locals().items()+ self._extracted_data.items()))
   
+  def _turn_name_to_index(self, code, columns):
+    '''
+      Change column names in a code snipet to column indices.
+    '''
+    names=[column.dimension for column in columns]
+    for i, name in enumerate(names):
+      code=code.replace('[%s]' % name, '[%i]' % i)
+      code=code.replace('[%i]' % i, 'columns[%i]' % i)
+    return code
+  
+  def _str_to_column_index(self, index, columns):
+    '''
+      Change index string or name to the column index.
+    '''
+    try:
+      return int(index)
+    except ValueError:
+      names=[column.dimension for column in columns]
+      for i, name in enumerate(names):
+        if name==index:
+          return i
+  
 #-----------------------------------AbstractImportFilter-Class---------------------------------------------------#
+
+def append_filter(filter):
+  '''
+    Add a filter to the list of known import filters.
+  '''
+  if filter in defined_filters:
+    return
+  defined_filters.append(filter)
+  if config is not None:
+    config[filter.name]=filter.get_presets()
+    config.write()
+
+try:
+  from configobj import ConfigObj
+  config=ConfigObj(os.path.expanduser('~')+'/.plotting_gui/ascii_importer.ini', unrepr=True, indent_type='\t')
+  for name, presets in config.items():
+    defined_filters.append(AsciiImportFilter(name, presets=presets))
+except ImportError:
+  config=None  
 

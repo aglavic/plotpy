@@ -89,7 +89,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('reflectometer','*.[Uu][Xx][Dd]','*.[Uu][Xx][Dd].gz'), ]
+  FILE_WILDCARDS=[('D8 reflectometer','*.[Uu][Xx][Dd]','*.[Uu][Xx][Dd].gz'), ('Philips X\'Pert', '*.txt')]
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['fit', 'ref']
   #options:
   show_counts=False # dont convert to conts/s
@@ -178,7 +178,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
         self.units=dataset.units()
         dataset.process_function(self.counts_to_cps)
         dataset.unit_trans([['counts',1,0,'counts/s']])
-      dataset.short_info=' started at Θ='+str(round(th,4))+' 2Θ='+str(round(twoth,4))+' φ='+str(round(phi,4))
+      #dataset.short_info=' started at Θ='+str(round(th,4))+' 2Θ='+str(round(twoth,4))+' φ='+str(round(phi,4))
       if self.export_for_fit: # export fit files
         self.export_fit(dataset,  filename)
         simu=read_data.reflectometer.read_simulation(self.TEMP_DIR+'fit_temp.sim')
@@ -260,7 +260,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     '''
     output_data=input_data
     counts_column=[]
-    for i,unit in enumerate(self.units): 
+    for i,unit in enumerate(self.units[:len(input_data)]): 
   # selection of the columns for counts
       if unit=='counts':
         counts_column.append(i)

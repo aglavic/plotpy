@@ -12,7 +12,7 @@ import math
 import measurement_data_structure
 import codecs
 from copy import deepcopy
-from numpy import array, sqrt, pi, sin
+from numpy import array, sqrt, pi, sin, float32, argsort
 
 __author__ = "Artur Glavic"
 __credits__ = []
@@ -31,6 +31,9 @@ def read_data(file_name, DATA_COLUMNS):
   '''
   measurement_data=[]
   if os.path.exists(file_name):
+    if file_name.endswith('.txt'):
+      # Philips X'Pert data files
+      return read_data_philips(file_name)
     global sample_name
     sample_name=''
     if file_name.endswith('.gz'):
@@ -162,6 +165,57 @@ def read_simulation(file_name):
       point.append(0.0)
       data.append(point)
   return data
+
+def read_data_philips(file_name):
+  '''
+    Read the data of a philips X'Pert diffractometer file, exported as text files.
+  '''
+  file_handler=open(file_name, 'r')
+  file_string=file_handler.read()
+  # decode file text and change german numbers to point notation
+  input_file_lines=codecs.decode(file_string, "ISO 8859-15", 'ignore').replace(',', '.').splitlines()
+  file_handler.close()
+  input_file_lines=map(unicode.strip, input_file_lines)
+  input_file_lines=filter(lambda line: line!="", input_file_lines)
+  header_info, data_lines, header_lines=read_philips_header(input_file_lines)
+  # convert data
+  data_lines=map(lambda line: line.split('\t'), data_lines)
+  data_array=array(data_lines, dtype=float32)
+  dataset=MeasurementData()
+  angles=[]
+  I=[]
+  for i, col_i in enumerate(header_info['I-columns']):
+    angles.append(data_array[:, 0]+float(col_i.strip('°')))
+    I.append(data_array[:, i+1])
+  angles=array(angles).flatten()
+  I=array(I).flatten()
+  sorting=argsort(angles)
+  angles=angles[sorting]
+  I=I[sorting]
+  if header_info['Scan axis'].strip()=='Omega-2Theta':
+    col=measurement_data_structure.PhysicalProperty('Θ', '°', angles)
+  else:
+    col=measurement_data_structure.PhysicalProperty(header_info['Scan axis'].strip(), '°', angles)
+  dataset.data.append(col)
+  count_time=float(header_info['Time per step (s)'])
+  col=measurement_data_structure.PhysicalProperty('I', 'counts/s', I/count_time, 
+                                                  sqrt(I)/count_time)
+  dataset.data.append(col)
+  dataset.sample_name=header_info['Diffraction measurement']
+  dataset.info="\n".join(header_lines)
+  return [dataset]
+
+def read_philips_header(input_file_lines):
+  header_info={}
+  for i, line in enumerate(input_file_lines):
+    if line.startswith('Angle\t'):
+      header_info['I-columns']=line.split('\t')[1:]
+      return header_info, input_file_lines[i+1:], input_file_lines[:i]
+    if ':' in line:
+      key, value=line.split(':', 1)
+      header_info[key.strip()]=value.strip()
+  return header_info, [], []
+  
 
 class MeasurementData(measurement_data_structure.MeasurementData):
   '''

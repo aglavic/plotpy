@@ -25,6 +25,7 @@ import file_actions
 from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, \
                     SimpleEntryDialog, DataView, PlotTree,  FileImportDialog, StyleLine, ImportWizard
 from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
+import read_data
 
 if not sys.platform.startswith('win'):
   WindowsError=RuntimeError
@@ -885,7 +886,7 @@ class ApplicationMainWindow(gtk.Window):
     file_names=[]
     #++++++++++++++++File selection dialog+++++++++++++++++++#
     file_dialog=FileImportDialog(self.active_folder, self.active_session.FILE_WILDCARDS)
-    file_names, folder, template=file_dialog.run()
+    file_names, folder, template, ascii_filter=file_dialog.run()
     file_dialog.destroy()
     if file_names is None:
       # process canceled
@@ -908,13 +909,51 @@ class ApplicationMainWindow(gtk.Window):
       sys.stdout.second_output=status_dialog
     # try to import the selected files and append them to the active sesssion
     if template is None:
-      if self.active_session.ONLY_IMPORT_MULTIFILE:
-        self.active_session.add_file(file_names, append=True)
-      else:
+      if ascii_filter==-3:
+        # normal import
+        if self.active_session.ONLY_IMPORT_MULTIFILE:
+          self.active_session.add_file(file_names, append=True)
+        else:
+          for file_name in file_names:
+            datasets=self.active_session.add_file(file_name, append=True)
+            if len(datasets)>0:
+              self.active_session.change_active(name=file_name)
+      elif ascii_filter==-2:
+        session=self.active_session
+        # import with fitting filter
         for file_name in file_names:
-          datasets=self.active_session.add_file(file_name, append=True)
-          if len(datasets)>0:
-            self.active_session.change_active(name=file_name)
+          file_type=file_name.rsplit('.', 1)[1]
+          for filter in read_data.defined_filters:
+            if file_type in filter.file_types:
+              ds=filter.read_data(file_name)
+              ds=session.create_numbers(ds)
+              session.add_data(ds, file_name, True)
+              session.new_file_data_treatment(ds)
+              session.active_file_data=session.file_data[file_name]
+              session.active_file_name=file_name
+              break
+      else:
+        # import with new or selected filter
+        if ascii_filter==-1:
+          filter=self.new_ascii_import_filter(file_names[0])
+          if filter is None:
+            # Dialog was canceled
+            if type(sys.stdout)!=file:
+              sys.stdout.second_output=None
+              if hide_status:
+                status_dialog.hide()
+            return
+          read_data.append_filter(filter)
+        else:
+          filter=read_data.defined_filters[ascii_filter]
+        session=self.active_session
+        for file_name in file_names:
+          ds=filter.read_data(file_name)
+          ds=session.create_numbers(ds)
+          session.add_data(ds, file_name, True)
+          session.new_file_data_treatment(ds)
+        session.active_file_data=session.file_data[file_names[0]]
+        session.active_file_name=file_names[0]
     else:
       # if a template was selected, read the files using this template
       session=self.active_session
@@ -955,38 +994,25 @@ class ApplicationMainWindow(gtk.Window):
       self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
     return True
 
-  def ascii_import(self, action=None, hide_status=True):
+  def new_ascii_import_filter(self, file_name):
     '''
       Import one or more new datafiles of the same type.
       
       @return List of names that have been imported.
     '''
-    file_names=[]
-    #++++++++++++++++File selection dialog+++++++++++++++++++#
-    file_dialog=FileImportDialog(self.active_folder, 
-                                 self.active_session.FILE_WILDCARDS)
-    file_names, folder, template=file_dialog.run()
-    file_dialog.destroy()
-    if file_names is None:
-      # process canceled
-      return
-    file_names=map(unicode, file_names)
-    folder=unicode(folder)
-    self.active_folder=folder
-    #----------------File selection dialog-------------------#
-    wiz=ImportWizard(file_names[0])
+    wiz=ImportWizard(file_name)
     result=wiz.run()
-    if result==1:
-      import_filter=wiz.import_filter
-      for file_name in file_names:
-        self.active_session.file_data[file_name]=import_filter.read_data(file_name)
-      self.active_session.active_file_name=file_name
-      self.active_session.active_file_data=self.active_session.file_data[file_name]
-      self.measurement=self.active_session.active_file_data
-      self.index_mess=0
-      self.rebuild_menus()
-      self.replot()
+    if result!=1:
+      wiz.destroy()
+      return None
+    import_filter=wiz.import_filter
     wiz.destroy()
+    return import_filter
+  
+  def change_ascii_import_filter(self, action):
+    '''
+      
+    '''
 
   def save_snapshot(self, action):
     '''
@@ -4233,9 +4259,9 @@ set multiplot layout %i,1
         self.measurement[self.index_mess].preview=self.image_pixbuf.scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
     self.plot_options_buffer.set_text(str(self.measurement[self.index_mess].plot_options))
     text=self.active_session.get_active_file_info()+self.measurement[self.index_mess].get_info()
-    self.info_label.set_markup(text.replace('<', '[').replace('>', ']'))
+    self.info_label.set_markup(text.replace('<', '[').replace('>', ']').replace('&', 'and'))
 
-  def reset_statusbar(self): 
+  def reset_statusbar(self):
     '''
       Clear the statusbar.
     '''
@@ -4300,7 +4326,6 @@ set multiplot layout %i,1
     <menubar name='MenuBar'>
       <menu action='FileMenu'>
         <menuitem action='OpenDatafile'/>
-        <menuitem action='ImportDatafile'/>
         <menuitem action='SaveGPL'/>
         <menu action='SnapshotSub'>
           <menuitem action='SaveSnapshot'/>
@@ -4548,10 +4573,6 @@ set multiplot layout %i,1
         "_Open File","<control>O",                      # label, accelerator
         "Open a new datafile",                       # tooltip
         self.add_file ),
-      ( "ImportDatafile", None,                    # name, stock id
-        "_Import ASCII File...","<control><shift>I",                      # label, accelerator
-        "",                       # tooltip
-        self.ascii_import ),
       ( "SnapshotSub", gtk.STOCK_EDIT,                    # name, stock id
         "Snapshots", None,                      # label, accelerator
         None, None),                       # tooltip

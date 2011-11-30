@@ -13,7 +13,7 @@ from math import sqrt
 from config import gnuplot_preferences
 from measurement_data_structure import PlotStyle
 from option_types import *
-from read_data import AsciiImportFilter
+from read_data import AsciiImportFilter, defined_filters
 import config.templates
 
 #----------------------- importing modules --------------------------
@@ -932,6 +932,7 @@ class ExportFileChooserDialog(gtk.FileChooserDialog):
 #------------------- FileChooserDialog with entries for width and height ----------------
 
 #+++++++++++++++++++ FileImportDialog with additions for template import ++++++++++++++++
+last_filter=None
 
 class FileImportDialog(gtk.FileChooserDialog):
   '''
@@ -961,10 +962,13 @@ class FileImportDialog(gtk.FileChooserDialog):
     self.starting_folder=current_folder
     self.template_folder=template_folder
     self.set_current_folder(current_folder)
+    # Define filters for the file types.
     filter = gtk.FileFilter()
     filter.set_name('All Files')
     filter.add_pattern('*')
     self.add_filter(filter)
+    if last_filter=='All Files':
+      self.set_filter(filter)
     filter = gtk.FileFilter()
     filter.set_name('Binary Plot.py')
     filter.add_pattern('*.mdd')
@@ -972,7 +976,10 @@ class FileImportDialog(gtk.FileChooserDialog):
     filter.add_pattern('*.mds')
     filter.add_pattern('*.mds.gz')
     self.add_filter(filter)
+    if last_filter=='Binary Plot.py':
+      self.set_filter(filter)
     self.add_wildcards(wildcards)
+    self.add_ascii_wildcards()
     self.set_icon_from_file(os.path.join(
                             os.path.split(
                            os.path.realpath(__file__))[0], 
@@ -984,6 +991,7 @@ class FileImportDialog(gtk.FileChooserDialog):
       
       @param wildcards sequance of items (name, pattern1, pattern2, ...).
     '''
+    global last_filter
     # the first wildcard will be active
     wildcard=wildcards[0]
     filter = gtk.FileFilter()
@@ -991,13 +999,52 @@ class FileImportDialog(gtk.FileChooserDialog):
     for pattern in wildcard[1:]:
       filter.add_pattern(pattern)
     self.add_filter(filter)
-    self.set_filter(filter)
+    if last_filter is None or last_filter==wildcard[0]:
+      self.set_filter(filter)
     for wildcard in wildcards[1:]:
       filter = gtk.FileFilter()
       filter.set_name(wildcard[0])
       for pattern in wildcard[1:]:
         filter.add_pattern(pattern)
       self.add_filter(filter)
+      if last_filter==wildcard[0]:
+        self.set_filter(filter)
+  
+  def add_ascii_wildcards(self):
+    '''
+      Add a list of wildcards for known ascii import filters.
+    '''
+    self.ascii_filters=[]
+    # selection to autodetect the filter to use
+    if len(defined_filters)>0:
+      filter = gtk.FileFilter()
+      filter.set_name('ASCII-import (auto-select)')
+      for afilter in defined_filters:
+        for ftype in afilter.file_types:
+          filter.add_pattern('*.'+ftype)
+      self.add_filter(filter)
+      if last_filter in ['ASCII-import (auto-select)', 'ASCII-import (new)']:
+        self.set_filter(filter)
+      self.ascii_filters.append(filter)
+    else:
+      self.ascii_filters.append(None)
+    # selection for single filter
+    for afilter in defined_filters:
+      filter = gtk.FileFilter()
+      filter.set_name('ASCII-import (%s)' % afilter.name)
+      for ftype in afilter.file_types:
+        filter.add_pattern('*.'+ftype)
+      self.add_filter(filter)
+      if last_filter=='ASCII-import (%s)' % afilter.name:
+        self.set_filter(filter)
+      self.ascii_filters.append(filter)
+    # create a new filter
+    filter = gtk.FileFilter()
+    filter.set_name('ASCII-import (new)')
+    filter.add_pattern('*.*')
+    self.add_filter(filter)
+    self.ascii_filters.insert(1, filter)
+    
   
   def clear_wildcards(self):
     '''
@@ -1012,6 +1059,7 @@ class FileImportDialog(gtk.FileChooserDialog):
       Open the dialog and wait for response. Returns the selected
       files, folder, template name.
     '''
+    global last_filter
     files=[]
     folder=self.starting_folder
     self.show_all()
@@ -1019,12 +1067,20 @@ class FileImportDialog(gtk.FileChooserDialog):
     if response == gtk.RESPONSE_OK:
       folder=self.get_current_folder()
       files=self.get_filenames()
-      return files, folder, self.template
+      filter=self.get_filter()
+      last_filter=filter.get_name()
+      # define filter status (-3: none, -2: auto, -1: new, +i: index for filter in list)
+      if filter in self.ascii_filters:
+        fidx=self.ascii_filters.index(filter)
+        ascii_filter=fidx-2
+      else:
+        ascii_filter=-3
+      return files, folder, self.template, ascii_filter
     elif response == 66:
       self.run_template_chooser()
       return self.run()
     else:
-      return None, None, None
+      return None, None, None, -3
 
   def run_template_chooser(self):
     '''
@@ -1917,6 +1973,8 @@ class ImportWizard(gtk.Dialog):
                         buttons=('Preview', 2, 'Finish', 1, 'Cancel', 0))
     self.set_default_size(600, 600)                        
     self.import_filter=AsciiImportFilter('Untitled', presets)
+    if presets is None:
+      self.import_filter.file_types.append(file_name.rsplit('.', 1)[1])
     self.file_name=file_name
     # Insert upper level widgets
     self.notebook=SettingsNotebook(self.import_filter, [ # pages of the notebook
@@ -1934,7 +1992,11 @@ class ImportWizard(gtk.Dialog):
                                                           ], 
                                                          None], 
                                                         ['Columns', 
-                                                         [('Column definition', 'columns'), 
+                                                         [
+                                                          ('Column definition', 'columns'), 
+                                                          ('Column selection-x', 'select_x'), 
+                                                          ('Column selection-y', 'select_y'), 
+                                                          ('Column selection-z', 'select_z'), 
                                                           ('Calculate errors', 'post_calc_errors'), 
                                                           ('Calculate new columns', 'post_calc_columns'), 
                                                           ('Recalculate columns', 'post_recalc_columns'), 

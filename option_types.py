@@ -95,6 +95,21 @@ class Selection(object):
     '''
     return self._selection<=other
 
+  def to_dict(self):
+    '''
+      Define how this can be stored in a dictionary.
+    '''
+    return {
+            'selection': self.selection
+            }
+  
+  def from_dict(self, in_dict):
+    '''
+      Define how this is restored from a dictionary.
+    '''
+    self.selection=in_dict['selection']
+
+
 class FixedList(list):
   def __init__(self, items, entry_names):
     list.__init__(self, items)
@@ -102,6 +117,21 @@ class FixedList(list):
   
   def append(self, item):
     raise IndexError, "cannot append to FixedList objects"
+
+  def to_dict(self):
+    '''
+      Define how this can be stored in a dictionary.
+    '''
+    return {
+            'values': list(self)
+            }
+  
+  def from_dict(self, in_dict):
+    '''
+      Define how this is restored from a dictionary.
+    '''
+    self[:]=in_dict['values']
+
 
 class MultiSelection(object):
   '''
@@ -206,6 +236,20 @@ class StringList(list):
   
   def __setslice__(self, i, j, slice):
     list.__setslice__(self, i, j, map(str, slice))
+  
+  def to_dict(self):
+    '''
+      Define how this can be stored in a dictionary.
+    '''
+    return {
+            'values': list(self)
+            }
+  
+  def from_dict(self, in_dict):
+    '''
+      Define how this is restored from a dictionary.
+    '''
+    self[:]=in_dict['values']
 
 class PatternList(list):
   '''
@@ -253,16 +297,36 @@ class PatternList(list):
     return list.__repr__(self)
 
   def append(self, item):
-    list.append(self, [patterni(item[i]) for i, patterni in enumerate(self._pattern)])
+    list.append(self, [patterni(item[idx]) for idx, patterni in enumerate(self._pattern)])
   
   def __setitem__(self, i, item):
-    list.__setitem__(self, i, [patterni(item[i]) for i, patterni in enumerate(self._pattern)])
+    list.__setitem__(self, i, [patterni(item[idx]) for idx, patterni in enumerate(self._pattern)])
   
   def __setslice__(self, i, j, slice):
     filtered_slice=[]
     for item in slice:
-      filtered_slice.append([patterni(item[i]) for i, patterni in enumerate(self._pattern)])    
+      filtered_slice.append([patterni(item[idx]) for idx, patterni in enumerate(self._pattern)])
     list.__setslice__(self, i, j, filtered_slice)
+  
+  def to_dict(self):
+    '''
+      Define how this can be stored in a dictionary.
+    '''
+    values=list(self)
+    for value in values:
+      for i, item in enumerate(value):
+        if type(item) is type:
+          value[i]=item.__name__
+    return {
+            'values': values
+            }
+  
+  def from_dict(self, in_dict):
+    '''
+      Define how this is restored from a dictionary.
+    '''
+    self[:]=in_dict['values']
+    
 
 class StrType(type):
   def __new__(cls, input=""):
@@ -364,3 +428,32 @@ class OptionSwitch(object):
                                             )
     return output
 
+
+  def to_dict(self):
+    '''
+      Define how the object is stored in a dictionary.
+    '''
+    value=self.value
+    if hasattr(value, 'to_dict'):
+      value=value.to_dict()
+    return {
+            'selection': self.switch, 
+            'value': value, 
+            }
+  
+  def from_dict(self, in_dict):
+    '''
+      Define how the object is restored from a dicitonary.
+    '''
+    if self.switch==in_dict['selection']:
+      if hasattr(self.value, 'from_dict'):
+        self.value.from_dict(in_dict['value'])
+      else:
+        self.value=in_dict['value']
+    else:
+      switch=in_dict['selection']
+      if self.value_defaults[switch] is None:
+        self.value=in_dict['value']
+      else:
+        self.value=self.value_defaults[switch]
+        self.value.from_dict(in_dict['value'])
