@@ -3630,7 +3630,7 @@ set multiplot layout %i,1
       dialog.destroy()
       if result==gtk.RESPONSE_OK:
         # run update function defined on the webpage
-        perform_update_gtk(__version__, NORMAL_UPDATE)        
+        perform_update_gtk(__version__, update_item)        
     else:
       print "Softwar is up to date."
 
