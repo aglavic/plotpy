@@ -12,6 +12,8 @@ from time import sleep
 from math import sqrt
 from config import gnuplot_preferences
 from measurement_data_structure import PlotStyle
+from option_types import *
+from read_data import AsciiImportFilter, defined_filters
 import config.templates
 
 #----------------------- importing modules --------------------------
@@ -930,6 +932,7 @@ class ExportFileChooserDialog(gtk.FileChooserDialog):
 #------------------- FileChooserDialog with entries for width and height ----------------
 
 #+++++++++++++++++++ FileImportDialog with additions for template import ++++++++++++++++
+last_filter=None
 
 class FileImportDialog(gtk.FileChooserDialog):
   '''
@@ -959,10 +962,13 @@ class FileImportDialog(gtk.FileChooserDialog):
     self.starting_folder=current_folder
     self.template_folder=template_folder
     self.set_current_folder(current_folder)
+    # Define filters for the file types.
     filter = gtk.FileFilter()
     filter.set_name('All Files')
     filter.add_pattern('*')
     self.add_filter(filter)
+    if last_filter=='All Files':
+      self.set_filter(filter)
     filter = gtk.FileFilter()
     filter.set_name('Binary Plot.py')
     filter.add_pattern('*.mdd')
@@ -970,7 +976,10 @@ class FileImportDialog(gtk.FileChooserDialog):
     filter.add_pattern('*.mds')
     filter.add_pattern('*.mds.gz')
     self.add_filter(filter)
+    if last_filter=='Binary Plot.py':
+      self.set_filter(filter)
     self.add_wildcards(wildcards)
+    self.add_ascii_wildcards()
     self.set_icon_from_file(os.path.join(
                             os.path.split(
                            os.path.realpath(__file__))[0], 
@@ -982,6 +991,7 @@ class FileImportDialog(gtk.FileChooserDialog):
       
       @param wildcards sequance of items (name, pattern1, pattern2, ...).
     '''
+    global last_filter
     # the first wildcard will be active
     wildcard=wildcards[0]
     filter = gtk.FileFilter()
@@ -989,13 +999,52 @@ class FileImportDialog(gtk.FileChooserDialog):
     for pattern in wildcard[1:]:
       filter.add_pattern(pattern)
     self.add_filter(filter)
-    self.set_filter(filter)
+    if last_filter is None or last_filter==wildcard[0]:
+      self.set_filter(filter)
     for wildcard in wildcards[1:]:
       filter = gtk.FileFilter()
       filter.set_name(wildcard[0])
       for pattern in wildcard[1:]:
         filter.add_pattern(pattern)
       self.add_filter(filter)
+      if last_filter==wildcard[0]:
+        self.set_filter(filter)
+  
+  def add_ascii_wildcards(self):
+    '''
+      Add a list of wildcards for known ascii import filters.
+    '''
+    self.ascii_filters=[]
+    # selection to autodetect the filter to use
+    if len(defined_filters)>0:
+      filter = gtk.FileFilter()
+      filter.set_name('ASCII-import (auto-select)')
+      for afilter in defined_filters:
+        for ftype in afilter.file_types:
+          filter.add_pattern('*.'+ftype)
+      self.add_filter(filter)
+      if last_filter in ['ASCII-import (auto-select)', 'ASCII-import (new)']:
+        self.set_filter(filter)
+      self.ascii_filters.append(filter)
+    else:
+      self.ascii_filters.append(None)
+    # selection for single filter
+    for afilter in defined_filters:
+      filter = gtk.FileFilter()
+      filter.set_name('ASCII-import (%s)' % afilter.name)
+      for ftype in afilter.file_types:
+        filter.add_pattern('*.'+ftype)
+      self.add_filter(filter)
+      if last_filter=='ASCII-import (%s)' % afilter.name:
+        self.set_filter(filter)
+      self.ascii_filters.append(filter)
+    # create a new filter
+    filter = gtk.FileFilter()
+    filter.set_name('ASCII-import (new)')
+    filter.add_pattern('*.*')
+    self.add_filter(filter)
+    self.ascii_filters.insert(1, filter)
+    
   
   def clear_wildcards(self):
     '''
@@ -1010,6 +1059,7 @@ class FileImportDialog(gtk.FileChooserDialog):
       Open the dialog and wait for response. Returns the selected
       files, folder, template name.
     '''
+    global last_filter
     files=[]
     folder=self.starting_folder
     self.show_all()
@@ -1017,12 +1067,20 @@ class FileImportDialog(gtk.FileChooserDialog):
     if response == gtk.RESPONSE_OK:
       folder=self.get_current_folder()
       files=self.get_filenames()
-      return files, folder, self.template
+      filter=self.get_filter()
+      last_filter=filter.get_name()
+      # define filter status (-3: none, -2: auto, -1: new, +i: index for filter in list)
+      if filter in self.ascii_filters:
+        fidx=self.ascii_filters.index(filter)
+        ascii_filter=fidx-2
+      else:
+        ascii_filter=-3
+      return files, folder, self.template, ascii_filter
     elif response == 66:
       self.run_template_chooser()
       return self.run()
     else:
-      return None, None, None
+      return None, None, None, -3
 
   def run_template_chooser(self):
     '''
@@ -1463,6 +1521,570 @@ class DataView(gtk.Dialog):
         self.treeview.get_selection().select_all()
 
 #------------------- Dialog to display the columns of a dataset -------------------------
+
+#+++++++++++ Wizard dialog to import data using the AsciiImportFilter +++++++++++++++++++
+
+class OptionSwitchSelection(gtk.Table):
+  '''
+    A widget containing a radio button selector to choose
+    between different subentries. Every not selected entries
+    are deactivated.
+  '''
+  _init_complet=False
+  
+  def __init__(self, options):
+    '''
+      Constructor, which creates the radio buttons etc.
+    '''
+    gtk.Table.__init__(self)
+    self.button_group=None
+    self.options=options
+    self._create_entries()
+    self._create_buttons()
+    self._init_complet=True
+  
+  def _create_entries(self):
+    '''
+      Create a set of entries according to the type of options given.
+    '''
+    options=self.options
+    entries=[]
+    for active, name, vtype, default in options.items():
+      if vtype is type(None):
+        entries.append((name, []))
+      elif vtype is float:
+        entry=gtk.SpinButton(climb_rate=0.1, digits=2)
+        entry.set_increments(0.1, 1)
+        entry.set_range(-1e10, 1e10)
+        if active:
+          entry.set_value(options.value)
+        elif default is not None:
+          entry.set_value(default)
+        entry.connect('value-changed', self._value_set, float)
+        entries.append((name, [entry]))
+      elif vtype is int:
+        entry=gtk.SpinButton(climb_rate=1, digits=0)
+        entry.set_increments(1, 1)
+        entry.set_range(-1e10, 1e10)
+        if active:
+          entry.set_value(options.value)
+        elif default is not None:
+          entry.set_value(default)
+        entry.connect('value-changed', self._value_set, int)
+        entries.append((name, [entry]))
+      elif vtype is str:
+        entry=gtk.Entry()
+        if active:
+          entry.set_text(options.value)
+        elif default is not None:
+          entry.set_text(default)
+        entry.connect('changed', self._entry_set)          
+        entries.append((name, [entry]))
+      elif vtype is list:
+        entries.append((name, value))
+      elif vtype is tuple:
+        pass
+      elif vtype is bool:
+        button=gtk.CheckButton()
+        entries.append((name, [button]))
+      elif vtype is StringList:
+        entry=StringListEntry(default)
+        entries.append((name, [entry]))
+      elif vtype is PatternList:
+        entry=PatternListEntry(default)
+        entries.append((name, [entry]))
+      elif vtype is FixedList:
+        entry=FixedListEntry(default)
+        entries.append((name, [entry]))
+      else:
+        raise NotImplementedError, "Type %s not defined for this widget" % vtype
+    self._entries=entries
+  
+  def _create_buttons(self):
+    '''
+      Create all buttons and place them next to the according entries.
+    '''
+    buttons=[]
+    options=self.options
+    group=self.button_group
+    entries=self._entries
+    for i, entry in enumerate(entries):
+      name, widgets=entry
+      button=gtk.RadioButton(group, name)
+      group=button
+      button.show()
+      buttons.append(button)
+      button.connect("clicked", self._button_clicked)
+      self.attach(button,
+                  0, 1, i, i+1,
+                  gtk.FILL, gtk.FILL
+                  )
+      for j, widget in enumerate(widgets):
+        self.attach(widget, 
+                  j+1, j+2, i, i+1, 
+                  gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL
+                  )
+        widget.show()
+    self.button_group=buttons[0]
+    self.buttons=buttons
+    for i in range(len(entries)):
+      if i==options:
+        buttons[i].set_active(True)
+    self._button_clicked(None)
+  
+  def _button_clicked(self, widget):
+    '''
+      Called when one of the RadioButtons get pressed.
+      Sets all widgets insensitive except the ones after
+      the active button.
+    '''
+    buttons=self.buttons
+    for j, entry in enumerate(self._entries):
+      active=buttons[j].get_active()
+      for widget in entry[1]:
+        widget.set_sensitive(active)
+      if self._init_complet and active:
+        if self.options.value_types[j] is type(None):
+          self.options.value=None
+        elif type(widget) is StringListEntry:
+          self.options.value=widget.string_list
+        elif type(widget) is PatternListEntry:
+          self.options.value=widget.pattern_list
+        elif self.options.value_defaults[j] is not None:
+          self.options.value=self.options.value_defaults[j]
+
+  def _value_set(self, widget, vtype):
+    '''
+      Change the options value to a numeric value.
+    '''
+    self.options.value=vtype(widget.get_value())
+  
+  def _entry_set(self, widget):
+    '''
+      Change the options value to a string value.
+    '''
+    self.options.value=widget.get_text()
+
+class StringListEntry(gtk.Table):
+  '''
+    An entry for string lists which contains entries and add/remove buttons.
+  '''
+  
+  def __init__(self, string_list):
+    '''
+      Class constructor creating the table structure.
+    '''
+    self.string_list=string_list
+    gtk.Table.__init__(self)
+    self._entries=[]
+    self._create_entries()
+  
+  def _create_entries(self):
+    '''
+      Creat two buttons and entries for the strings.
+    '''
+    button=gtk.Button('-')
+    button.show()
+    self.attach(button, 0, 1, 0, 1, gtk.FILL, gtk.FILL)
+    button.connect('clicked', self._remove_button_press)
+    button=gtk.Button('+')
+    button.show()
+    self.attach(button, 1, 2, 0, 1, gtk.FILL, gtk.FILL)
+    button.connect('clicked', self._add_button_press)
+    for i, item in enumerate(self.string_list):
+      entry=gtk.Entry()
+      entry.set_text(item)
+      entry.show()
+      entry.set_width_chars(1)
+      self._entries.append(entry)
+      self.attach(entry, 2+i, 3+i, 0, 1, gtk.EXPAND|gtk.FILL, gtk.FILL)
+      entry.connect('changed', self._change_entry, i)
+    
+  
+  def _add_button_press(self, widget):
+    '''
+      Create a new text entry.
+    '''
+    i=len(self.string_list)
+    self.string_list.append("")
+    entry=gtk.Entry()
+    self._entries.append(entry)
+    entry.show()
+    entry.set_width_chars(1)
+    self.attach(entry, 2+i, 3+i, 0, 1, gtk.EXPAND|gtk.FILL, gtk.FILL)
+    entry.connect('changed', self._change_entry, i)
+  
+  def _remove_button_press(self, widget):
+    '''
+      Remove the last entry from the list.
+    '''
+    self.string_list.pop(-1)
+    self.remove(self._entries.pop(-1))
+    
+  
+  def _change_entry(self, widget, index):
+    '''
+      Change a text entry.
+    '''
+    self.string_list[index]=widget.get_text()
+
+
+class PatternListEntry(gtk.Table):
+  '''
+    An entry for string lists which contains entries and add/remove buttons.
+  '''
+  
+  def __init__(self, pattern_list):
+    '''
+      Class constructor creating the table structure.
+    '''
+    self.pattern_list=pattern_list
+    gtk.Table.__init__(self)
+    self._entries=[]
+    self._create_entries()
+  
+  def _create_entries(self):
+    '''
+      Creat two buttons and entries for the strings.
+    '''
+    button=gtk.Button('-')
+    button.show()
+    self.attach(button, 0, 1, 0, 1, gtk.FILL, gtk.FILL)
+    button.connect('clicked', self._remove_button_press)
+    button=gtk.Button('+')
+    button.show()
+    self.attach(button, 1, 2, 0, 1, gtk.FILL, gtk.FILL)
+    button.connect('clicked', self._add_button_press)
+    for i, item in enumerate(self.pattern_list.description):
+      label=gtk.Label(item)
+      label.show()
+      self.attach(label, 2+i, 3+i, 0, 1, gtk.FILL, gtk.FILL)
+    for j, items in enumerate(self.pattern_list):
+      entry_list=[]
+      self._entries.append(entry_list)
+      for i, item in enumerate(items):
+        entry=gtk.Entry()
+        entry.set_text(str(item))
+        entry.show()
+        entry.set_width_chars(1)
+        entry_list.append(entry)
+        self.attach(entry, 2+i, 3+i, 1+j, 2+j, gtk.EXPAND|gtk.FILL, gtk.FILL)
+        entry.connect('changed', self._change_entry, i, j)
+    
+  
+  def _add_button_press(self, widget):
+    '''
+      Create a new text entry.
+    '''
+    j=len(self.pattern_list)
+    self.pattern_list.append(map(lambda item: item(), self.pattern_list.pattern))
+    entry_list=[]
+    self._entries.append(entry_list)
+    items=self.pattern_list[-1]
+    for i, item in enumerate(items):
+      entry=gtk.Entry()
+      entry.set_text(str(item))
+      entry.show()
+      entry.set_width_chars(1)
+      entry_list.append(entry)
+      self.attach(entry, 2+i, 3+i, 1+j, 2+j, gtk.EXPAND|gtk.FILL, gtk.FILL)
+      entry.connect('changed', self._change_entry, i, j)
+  
+  def _remove_button_press(self, widget):
+    '''
+      Remove the last entry from the list.
+    '''
+    self.pattern_list.pop(-1)
+    items=self._entries.pop(-1)
+    for item in items:
+      self.remove(item)
+    
+  
+  def _change_entry(self, widget, i, j):
+    '''
+      Change a text entry.
+    '''
+    try:
+      widget.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse('black'))
+      self.pattern_list[j][i]=self.pattern_list.pattern[i](widget.get_text())
+    except:
+      widget.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse('red'))
+
+class FixedListEntry(gtk.Table):
+  '''
+    Multiple item entry with labels.
+  '''
+  
+  def __init__(self, fixed_list):
+    '''
+      Class constructor creating the table structure.
+    '''
+    self.fixed_list=fixed_list
+    gtk.Table.__init__(self)
+    self._entry_types=[]
+    self._create_entries()
+  
+  def _create_entries(self):
+    items=zip(self.fixed_list.entry_names, self.fixed_list)
+    for i, item in enumerate(items):
+      label=gtk.Label(item[0])
+      label.show()
+      entry=gtk.Entry()
+      entry.set_text(str(item[1]))
+      entry.set_width_chars(1)
+      entry.show()
+      entry.connect('changed', self._entry_changed, i)
+      self.attach(label, i, i+1, 0, 1, gtk.FILL)
+      self.attach(entry, i, i+1, 1, 2, gtk.EXPAND|gtk.FILL)
+      self._entry_types.append(type(item[1]))
+  
+  def _entry_changed(self, widget, i):
+    try:
+      self.fixed_list[i]=self._entry_types[i](widget.get_text())
+      widget.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse('black'))
+    except:
+      widget.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse('red'))
+
+class SettingsNotebook(gtk.Notebook):
+  '''
+    A notebook widget which automatically build entries
+    for a supplied object with a defined set of parameter names.
+    The objects parameters are automatically changed when entries
+    are changed.
+  '''
+  origin_object=None
+  
+  def __init__(self, object, pages):
+    '''
+      Create the notebook with defined pages.
+    '''
+    self.origin_object=object
+    gtk.Notebook.__init__(self)
+    for name, page, page_info in pages:
+      self.add_settings_page(name, page, page_info)
+  
+  def add_settings_page(self, page_name, page, page_info):
+    '''
+      Add page with entries for each parameter supplied
+      as a list (name, parameter).
+    '''
+    page_table=gtk.Table()
+    i=0
+    if page_info is not None:
+      label=gtk.Label(page_info)
+      page_table.attach(label, 
+                        0, 1, 0, 2, 
+                        gtk.EXPAND|gtk.FILL, 0)
+      i=1
+    for name, parameter in page:
+      label=gtk.Label(name)
+      label.show()
+      page_table.attach(label, 
+                        0, 1, i*2, i*2+1, 
+                        gtk.EXPAND|gtk.FILL, 0)
+      entry=self.get_settings_entry(parameter)
+      entry.show()
+      page_table.attach(entry, 
+                        0, 1, i*2+1, i*2+2, 
+                        gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL)
+      i+=1
+    page_table.show()
+    sw=gtk.ScrolledWindow()
+    sw.add_with_viewport(page_table)
+    sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+    sw.show()
+    
+    label=gtk.Label(page_name)
+    label.show()
+    self.append_page(sw, label)
+  
+  def get_settings_entry(self, parameter):
+    '''
+      Retrieve an attribute of the origin object and
+      add an entry according to the type of the attribute.
+    '''
+    attrib=getattr(self.origin_object, parameter)
+    atype=type(attrib)
+    # Standart types
+    if atype is int:
+      entry=gtk.SpinButton(climb_rate=1, digits=0)
+      entry.set_increments(1, 10)
+      entry.set_range(-1e10, 1e10)
+      entry.set_value(attrib)
+      entry.connect('value-changed', self._spin_value_changed, parameter, int)
+    elif atype is float:
+      entry=gtk.SpinButton(climb_rate=0.1, digits=2)
+      entry.set_increments(0.1, 10)
+      entry.set_range(-1e10, 1e10)
+      entry.set_value(attrib)
+      entry.connect('value-changed', self._spin_value_changed, parameter, float)
+    elif atype is str:
+      entry=gtk.Entry()
+      entry.set_text(attrib)
+      entry.connect('changed', self._entry_changed, parameter)
+    # Custom types
+    elif atype is Selection:
+      entry=gtk.combo_box_new_text()
+      for i, item in enumerate(attrib.items):
+        entry.append_text(item)
+        if i==attrib:
+          entry.set_active(i)
+      entry.connect('changed', self._selection_changed, parameter)
+    elif atype is StringList:
+      entry=StringListEntry(attrib)
+    elif atype is PatternList:
+      entry=PatternListEntry(attrib)
+    elif atype is OptionSwitch:
+      entry=OptionSwitchSelection(attrib)
+    elif atype is FixedList:
+      entry=FixedListEntry(attrib)
+    else:
+      raise NotImplementedError, "No widget defined for type '%s'" % atype.__name__
+    return entry
+
+  def _spin_value_changed(self, widget, parameter, atyp):
+    '''
+      Called when the value of a spinner entry changes.
+    '''
+    setattr(self.origin_object, parameter, atyp(widget.get_value()))
+  
+  def _entry_changed(self, widget, parameter):
+    '''
+      Called when the value of a spinner entry changes.
+    '''
+    setattr(self.origin_object, parameter, widget.get_text())
+  
+  def _selection_changed(self, widget, parameter):
+    getattr(self.origin_object, parameter).selection=widget.get_active()
+
+class ImportWizard(gtk.Dialog):
+  '''
+    A wizard dialog to import data using an AsciiImportFilter object.
+    The results can be interactively observed while changing settings.
+  '''
+  
+  
+  def __init__(self, file_name, title='Define ASCII import filter...', presets=None):
+    '''
+      Constructor creating the dialog and all entry widgets needed.
+    '''
+    gtk.Dialog.__init__(self, 
+                        title=title, 
+                        buttons=('Preview', 2, 'Finish', 1, 'Cancel', 0))
+    self.set_default_size(600, 600)                        
+    self.import_filter=AsciiImportFilter('Untitled', presets)
+    if presets is None:
+      self.import_filter.file_types.append(file_name.rsplit('.', 1)[1])
+    self.file_name=file_name
+    # Insert upper level widgets
+    self.notebook=SettingsNotebook(self.import_filter, [ # pages of the notebook
+                                                        ['General settings', 
+                                                         [('Name', 'name'), 
+                                                          ('File Types', 'file_types'), 
+                                                          ], 
+                                                         None], 
+                                                        ['Splitting', 
+                                                         [('Header', 'header_lines'), 
+                                                          ('Footer', 'footer_lines'), 
+                                                          ('Sequences', 'split_sequences'), 
+                                                          ('Column separator', 'separator'), 
+                                                          ('Comment', 'comment_string'), 
+                                                          ], 
+                                                         None], 
+                                                        ['Columns', 
+                                                         [
+                                                          ('Column definition', 'columns'), 
+                                                          ('Column selection-x', 'select_x'), 
+                                                          ('Column selection-y', 'select_y'), 
+                                                          ('Column selection-z', 'select_z'), 
+                                                          ('Calculate errors', 'post_calc_errors'), 
+                                                          ('Calculate new columns', 'post_calc_columns'), 
+                                                          ('Recalculate columns', 'post_recalc_columns'), 
+                                                          ], 
+                                                         None], 
+                                                        ['Metainfo', 
+                                                         [('Search in header', 'header_search'), 
+                                                          ('Search in footer', 'footer_search'), 
+                                                          ('Autoextract', 'auto_search'), 
+                                                          ], 
+                                                         None], 
+                                                        ['Naming', 
+                                                         [('Sample name', 'sample_name'), 
+                                                          ('Measurement info', 'short_info'), 
+                                                          ], 
+                                                         None], 
+                                                        ])
+    self.notebook.show()
+    self.vbox.add(self.notebook)
+    self.info_box=gtk.Table()
+    self.info_box.show()
+    self.vbox.pack_end(self.info_box, False)
+    
+    self.file_text=gtk.TextView()
+    self.file_text.set_editable(False)
+    self.file_text.show()
+    sw=gtk.ScrolledWindow()
+    sw.add_with_viewport(self.file_text)
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.show()
+    self.notebook.append_page(sw, gtk.Label('Text'))
+    
+    self.progressbar=gtk.ProgressBar()
+    self.progressbar.show()
+    self.vbox.pack_end(self.progressbar, False)
+    
+    self._set_filetext()
+  
+  def _set_filetext(self):
+    buffer=self.file_text.get_buffer()
+    if self.file_name.endswith('.gz'):
+      import gzip
+      text=gzip.open(self.file_name, 'r').read()
+    else:
+      text=open(self.file_name, 'r').read()
+    line_text=""
+    for i, line in enumerate(text.splitlines()):
+      line_text+="%03i:%s\n" % (i, line)
+    buffer.set_text(line_text)
+  
+  def run(self):
+    '''
+      Until OK or Cancel is pressed test the filter as preview.
+    '''
+    result=gtk.Dialog.run(self)
+    while result==2:
+      self.preview()
+      result=gtk.Dialog.run(self)
+    return result
+  
+  def preview(self):
+    result=self.import_filter.simulate_readout(
+               input_file=self.file_name, 
+               step_function=self._step_function, 
+               report=None)
+    d=gtk.Dialog(title='Preview...', parent=self, flags=0, buttons=('Close', 0))
+    d.set_default_size(600, 600)
+    tv=gtk.TextView()
+    tv.set_editable(False)
+    tv.get_buffer().set_text(result)
+    sw=gtk.ScrolledWindow()
+    sw.add_with_viewport(tv)
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.show()
+    d.vbox.add(sw)
+    d.show_all()
+    d.run()
+    d.destroy()
+  
+  def _step_function(self, fraction, step):
+    self.progressbar.set_fraction(fraction)
+    self.progressbar.set_text(step)
+    while gtk.events_pending():
+      gtk.main_iteration(False)
+
+
+
+#----------- Wizard dialog to import data using the AsciiImportFilter -------------------
 
 #+++++++++++++++++ Dialog to change the color and style of a plot +++++++++++++++++++++++
 

@@ -199,12 +199,6 @@ class RedirectError(RedirectOutput):
     # make sure all error messages get reported if the program exits
     import atexit
     atexit.register(self.flush)
-    try:
-      import numpy
-      # don't write numpy information on errors to stdout
-      self.old_numpy_settings=numpy.seterr(all='ignore')
-    except:
-      pass
   
   def write(self, string):
     '''

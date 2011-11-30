@@ -298,7 +298,7 @@ class FitFunction(FitFunctionGUI):
       def iterfunct(myfunct, p, iter, fnorm, functkw=None,
                   parinfo=None, quiet=0, dof=None):
         # perform custom iteration update   
-        progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    Chi²=%4f' % (iter, fnorm))
+        return progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    Chi²=%4f' % (iter, fnorm))
     else:
       iterfunct=None
     # call the fit routine
@@ -308,6 +308,8 @@ class FitFunction(FitFunctionGUI):
                  fastnorm=1, # faster computation of Chi², can be less stable
                  quiet=1
                  )
+    if result.status==-1:
+      result.status=5
     self.last_fit_output=result
     if progress_bar_update is not None:
       progress_bar_update(step_add=1.)
@@ -773,7 +775,7 @@ class FitFunction3D(FitFunctionGUI):
       def iterfunct(myfunct, p, iter, fnorm, functkw=None,
                   parinfo=None, quiet=0, dof=None):
         # perform custom iteration update   
-        progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    Chi²=%4f' % (iter, fnorm))
+        return progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    Chi²=%4f' % (iter, fnorm))
     else:
       iterfunct=None
     # call the fit routine
@@ -783,6 +785,8 @@ class FitFunction3D(FitFunctionGUI):
                  fastnorm=1, # faster computation of Chi², can be less stable
                  quiet=1
                  )
+    if result.status==-1:
+      result.status=5
     self.last_fit_output=result
     if progress_bar_update is not None:
       progress_bar_update(step_add=1.)
@@ -2768,6 +2772,7 @@ class FitSession(FitSessionGUI):
     covariance_matices=[]
     for i, function in enumerate(self.functions):
       pgu=None
+      self._stop_refinement=False
       if self.progress_bar is not None:
         self.update_progress(item=[i+1, len(self.functions)])
         pgu=self.update_progress
@@ -2803,6 +2808,7 @@ class FitSession(FitSessionGUI):
     covariance_matices=[]
     for i, function in enumerate(self.functions):
       pgu=None
+      self._stop_refinement=False
       if self.progress_bar is not None:
         self.update_progress(item=[i+1, len(self.functions)])
         pgu=self.update_progress

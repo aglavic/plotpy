@@ -37,21 +37,21 @@ def read_data(file_name):
     
     @return MeasurementData object with the file data
   '''
-  if not os.path.exists(file_name):
-    print 'File '+file_name+' does not exist.'
-    return 'NULL'
   if file_name.endswith('.cmb') or file_name.endswith('.cmb.gz'):
     #config.gnuplot_preferences.plotting_parameters_3d='w points palette pt 5'
-    config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 5,5', '')
+    config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
     return read_cmb_file(file_name)
+  elif not os.path.exists(file_name):
+    print 'File '+file_name+' does not exist.'
+    return 'NULL'
   elif file_name.endswith('.edf') or file_name.endswith('.edf.gz'):
     # Read .edf GISAXS data (Soleil)
     #config.gnuplot_preferences.plotting_parameters_3d='w points palette pt 5'
-    config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 5,5', '')
+    config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
     return read_edf_file(file_name)
   elif file_name.endswith('.bin') or file_name.endswith('.bin.gz') or file_name.endswith('.tif'):
     # Read .bin data (p08)
-    config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 5,5', '')
+    config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
     return read_p08_binary(file_name)
   folder, rel_file_name=os.path.split(os.path.realpath(file_name))
   setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
@@ -182,8 +182,38 @@ def read_cmb_file(file_name):
   '''
     Read the binary .cmb file format.
   '''
+  if '.cmb-' in file_name or '.cmb.gz-' in file_name:
+    folder, combname=os.path.split(file_name)
+    if '.cmb-' in file_name:
+      first_name, last_name=combname.split('.cmb-')
+      first_name=first_name+'.cmb'
+    else:
+      first_name, last_name=combname.split('.cmb.gz-')
+      first_name=first_name+'.cmb.gz'
+    first_name=os.path.join(folder, first_name)
+    last_name=os.path.join(folder, last_name)
+    files=glob(os.path.join(folder, '*.cmb'))+\
+          glob(os.path.join(folder, '*.cmb.gz'))
+    files.sort()
+    if not (first_name in files and last_name in files):
+      print '\t%s and/or %s not found'
+      return 'NULL'
+    first_idx=files.index(first_name)
+    last_idx=files.index(last_name)
+    file_names=files[first_idx:last_idx+1]
+  else:
+    if not os.path.exists(file_name):
+      print 'File '+file_name+' does not exist.'
+      return 'NULL'
+    file_names=[file_name]
+  return read_cmb_files(file_names)
+  
+def read_cmb_files(file_names):
+  '''
+    Read a list of .cmb files and sum them up in one dataset.
+  '''
   # Read configurations
-  folder, rel_file_name=os.path.split(os.path.realpath(file_name))
+  folder, rel_file_name=os.path.split(os.path.realpath(file_names[0]))
   setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
   for key, value in setups.items():
     if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
@@ -195,48 +225,60 @@ def read_cmb_file(file_name):
   detector_distance=setup['DETECTOR_DISTANCE']#1435. #mm
   pixelsize_x= 0.2171 #mm
   pixelsize_y= 0.2071 #mm
-  sample_name=''
   center_x=setup['CENTER_X'] #345. pix
   center_y=setup['CENTER_Y'] #498.5 pix
-  q_window=[-0.23, 0.23, -0.05, 0.35]
+  lambda_x=setup['LAMBDA_N'] #1.54
+  q_window=[-10., 10., -10., 10.]
   dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
                            ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
-  if file_name.endswith('.gz'):
-    file_handler=gzip.open(file_name, 'rb')
-  else:
-    file_handler=open(file_name, 'rb')
-  header=file_handler.read(256)
-  file_handler.read(256)
-  data_array=array_module.array('i')
-  data_array.fromfile(file_handler, 1024**2)
-  # read additional info from end of file
-  lines=file_handler.readlines()
-  for line in lines:
-    if line.startswith('#sca'):
-      countingtime=float(line.split()[1])
-    #elif line.startswith('#dst'):
-    #  detector_distance=float(line.split()[1])
-    elif line.startswith('#txt'):
-      sample_name+=" ".join(line.split()[1:])
+  data_array=None
+  countingtime=0.
+  for i, file_name in enumerate(file_names):
+    if len(file_names)>1:
+      sys.stdout.write("\b\b\b% 3i" % i)
+      sys.stdout.flush()
+    sample_name=''
+    if file_name.endswith('.gz'):
+      file_handler=gzip.open(file_name, 'rb')
+    else:
+      file_handler=open(file_name, 'rb')
+    header=file_handler.read(256)
+    file_handler.read(256)
+    raw_array=array_module.array('i')
+    raw_array.fromfile(file_handler, 1024**2)
+    # read additional info from end of file
+    lines=file_handler.readlines()
+    for line in lines:
+      if line.startswith('#sca'):
+        countingtime+=float(line.split()[1])
+      #elif line.startswith('#dst'):
+      #  detector_distance=float(line.split()[1])
+      elif line.startswith('#txt'):
+        sample_name+=" ".join(line.split()[1:])
+      elif line.startswith('#lam'):
+        lambda_x=float(line.split()[1])
+    data_arrayi=array(raw_array)
+    if data_array is None:
+      data_array=data_arrayi
+    else:
+      data_array+=data_arrayi
   sys.stdout.write( "\b\b\b done!\n\tProcessing...")
   sys.stdout.flush()
-  data_array=array(data_array)
   z_array=linspace(0, 1024**2-1, 1024**2)%1024
   y_array=linspace(0, 1024**2-1, 1024**2)//1024
   error_array=sqrt(data_array)
   corrected_data=data_array/countingtime
   corrected_error=error_array/countingtime
-  lambda_x=setup['LAMBDA_N'] #1.54
   qy_array=4.*pi/lambda_x*\
-           sin(arctan((y_array-center_y)*pixelsize_y/detector_distance/2.))
+           sin(arctan((y_array-center_y)*pixelsize_y/detector_distance)/2.)
   qz_array=4.*pi/lambda_x*\
-           sin(arctan((z_array-center_x)*pixelsize_x/detector_distance/2.))
+           sin(arctan((z_array-center_x)*pixelsize_x/detector_distance)/2.)
 
   use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
               (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
-  dataobj.data[0].values=y_array[use_indices].tolist()
-  dataobj.data[1].values=z_array[use_indices].tolist()
+  dataobj.data[0].values=z_array[use_indices].tolist()
+  dataobj.data[1].values=y_array[use_indices].tolist()
   dataobj.data[2].values=corrected_data[use_indices].tolist()
   dataobj.data[3].values=corrected_error[use_indices].tolist()
   dataobj.data[4].values=qy_array[use_indices].tolist()
@@ -577,8 +619,8 @@ def read_p08_binary(file_name):
   countingtime=1.
   detector_distance=setup['DETECTOR_DISTANCE'] #mm
   join_pixels=4.
-  pixelsize_x= 0.01953125 * join_pixels#mm
-  pixelsize_y= 0.01953125 * join_pixels#mm
+  pixelsize_x= 0.015 * join_pixels#mm
+  pixelsize_y= 0.015 * join_pixels#mm
   sample_name=''
   center_x=setup['CENTER_X']/join_pixels
   center_y=setup['CENTER_Y']/join_pixels

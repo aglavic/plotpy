@@ -69,11 +69,6 @@ class MeasurementDataTREFF(MeasurementData):
       
       @return Another MeasurementDataTREFF instance.
     '''
-    # ignore warning from numpy.unique1d
-    import warnings
-    original_filters = warnings.filters[:]
-    # Ignore warnings.
-    warnings.simplefilter("ignore")
     
     if join_type==1:
       new=deepcopy(other)
@@ -89,8 +84,6 @@ class MeasurementDataTREFF(MeasurementData):
     for i, col in enumerate(new.data):
       col.append(add_obj.data[i])
       new.data[i]=col[indices]
-    # restore old warning filters
-    warnings.filters = original_filters
     return new
 
 def read_data(file_name, script_path, import_images, return_detector_images):
@@ -348,8 +341,8 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
                                ['error','a.u.']], 
                               [], 0, 1, 7, 6)  
   # alpha_i is used as main column for the line splitteng used for pm3d
-  data_object.scan_line_constant=0
-  data_object.scan_line=1
+  data_object.scan_line_constant=1
+  data_object.scan_line=0
   data_list=[]
   scan_data_list=[]
   if (import_images  or return_detector_images):

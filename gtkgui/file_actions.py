@@ -49,6 +49,8 @@ class FileActions:
                   'integrate_intensities': self.integrate_intensities, 
                   'savitzky_golay': self.get_savitzky_golay, 
                   'butterworth': self.get_butterworth, 
+                  'discrete_derivative': self.get_discrete_derivative, 
+                  'integral': self.get_integral, 
                   'interpolate_and_smooth': self.do_interpolate_and_smooth, 
                   'rebin_2d': self.do_rebin_2d, 
                   }
@@ -226,6 +228,38 @@ class FileActions:
       self.window.index_mess=len(self.window.measurement)-1
     else:
       self.window.measurement.insert(self.window.index_mess+1, bw_object)
+      self.window.index_mess+=1
+    return True    
+
+  def get_discrete_derivative(self, at_end=False):
+    '''
+      See calculate_discrete_derivative.
+    '''
+    data=self.window.measurement[self.window.index_mess]
+    deriv_object=calculate_discrete_derivative(data, 5.)
+    deriv_object.number=data.number
+    deriv_object.info=data.info
+    if at_end:
+      self.window.measurement.append(deriv_object)
+      self.window.index_mess=len(self.window.measurement)-1
+    else:
+      self.window.measurement.insert(self.window.index_mess+1, deriv_object)
+      self.window.index_mess+=1
+    return True    
+
+  def get_integral(self, at_end=False):
+    '''
+      See calculate_integral.
+    '''
+    data=self.window.measurement[self.window.index_mess]
+    int_object=calculate_integral(data)
+    int_object.number=data.number
+    int_object.info=data.info
+    if at_end:
+      self.window.measurement.append(int_object)
+      self.window.index_mess=len(self.window.measurement)-1
+    else:
+      self.window.measurement.insert(self.window.index_mess+1, int_object)
       self.window.index_mess+=1
     return True    
 
@@ -899,7 +933,7 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
   output_data.data[2].error=newdz
   return output_data
 
-def calculate_savitzky_golay(dataset, window_size=5, order=4, derivative=1):
+def calculate_savitzky_golay(dataset, window_size=5, order=2, derivative=1):
   '''
     Calculate smoothed dataset with savitzky golay filter up to a maximal derivative.
     
@@ -934,11 +968,19 @@ def calculate_savitzky_golay(dataset, window_size=5, order=4, derivative=1):
   x=numpy.array(xlist)
   y=numpy.array(ylist)
   error=numpy.array(elist)
-  output.data[0].values=xlist
+  sort_idx=numpy.argsort(x)
+  x=x[sort_idx]
+  y=y[sort_idx]
+  error=error[sort_idx]
+  output.data[0].values=x
   # calculate smoothed data and derivatives
+  dx=numpy.array([x[1]-x[0]]+(x[1:]-x[:-1]).tolist())
   for i in range(derivative+1):
-    output.data[i+1].values=savitzky_golay(y, window_size, order, i).tolist()
-  output.short_info=dataset.short_info+' filtered with savitzky golay'
+    output.data[i+1].values=(savitzky_golay(y, window_size, order, i)/dx**i).tolist()
+  if derivative==0:
+    output.short_info=dataset.short_info+' filtered with moving-window'
+  else:
+    output.short_info=dataset.short_info+' derivative-%i' % derivative
   output.sample_name=dataset.sample_name
   return output
 
@@ -957,8 +999,9 @@ def calculate_butterworth(dataset, filter_steepness=6, filter_cutoff=0.5, deriva
     
     @return a dataset containing the derivated data
   '''
-  x=dataset.x.copy()
-  y=dataset.y.copy()
+  sort_idx=numpy.argsort(dataset.x)
+  x=dataset.x[sort_idx].copy()
+  y=dataset.y[sort_idx].copy()
   output=MeasurementData(x=0, y=2)
   output.append_column(x)
   # create a dataset with even number of elements.
@@ -969,22 +1012,89 @@ def calculate_butterworth(dataset, filter_steepness=6, filter_cutoff=0.5, deriva
     crop_last=True
   else:
     crop_last=False
+  # Perform fast fourier transform (for real input)
   F=numpy.fft.rfft(y)
+  # filter the higher frequencies with a cutt-off function
   k=numpy.arange(len(y)//2+1)
   k_0=len(y)/2.*filter_cutoff+1.
   F_B=(1./(1.+(k/k_0)**filter_steepness))*F
-  xout=PhysicalProperty(y.dimension, y.unit, numpy.fft.irfft(F_B))
+  # apply inverse fourier transform to calculate smoothed data
+  yout=PhysicalProperty(y.dimension, y.unit, numpy.fft.irfft(F_B))
   if crop_last:
-    xout=xout[:-1]
-  output.append_column(PhysicalProperty(y.dimension, y.unit, xout))
-  deriv=numpy.fft.irfft(((2.j*numpy.pi*k)/x[numpy.arange(0, len(x)//2+1, 1)].view(numpy.ndarray))**derivative * F_B)
+    yout=yout[:-1]
+  output.append_column(PhysicalProperty(y.dimension, y.unit, yout))
+  # Calculate the derivative in fourier space by multiplying with 2πik and transform back to real space
+  #deriv=numpy.fft.irfft(((2.j*numpy.pi*k)/x[:len(x)//2+1].view(numpy.ndarray))**derivative * F_B)
+  stepk=(1./(x[1:].view(numpy.ndarray)-x[:-1].view(numpy.ndarray)).mean())/len(x)
+  deriv=numpy.fft.irfft(((2.j*numpy.pi*k)*stepk)**derivative * F_B)
   if crop_last:
     deriv=deriv[:-1]
   output.append_column(PhysicalProperty(y.dimension+"\\047"*derivative, 
                                  y.unit/x.unit**derivative, 
                                  deriv))
   output.sample_name=dataset.sample_name
-  output.short_info=dataset.short_info+' filtered with butterworth low-pass'
+  if derivative==0:
+    output.short_info=dataset.short_info+' filtered with spectral-estimate'
+  else:
+    output.short_info=dataset.short_info+' spectral-estimate derivative-%i' % derivative
+  return output
+
+def calculate_discrete_derivative(dataset, points=5):
+  '''
+    Calculate the derivative of a dataset using step-by-step calculations.
+    Not so nice results as the other methods but stable and independent of x-spacing.
+  '''
+  if not points in [2, 3, 5]:
+    raise 'ValueError', 'points need to be 2,3 or 5'
+  x=dataset.x.copy()
+  y=dataset.y.copy()
+  sort_idx=numpy.argsort(x)
+  x=x[sort_idx]
+  y=y[sort_idx]
+  output=MeasurementData()
+  output.append_column(x)
+  if points==2:
+    dy=(y[1:]-y[:-1])/(x[1:]-x[:-1])
+    dy=PhysicalProperty(dy.dimension, dy.unit, dy.tolist()+[float(dy[-1])])
+    output.append_column(dy)
+  elif points==3:
+    dy=(y[2:]-y[:-2])/(x[2:]-x[:-2])
+    dy=PhysicalProperty(dy.dimension, dy.unit, [float(dy[0])]+dy.tolist()+[float(dy[-1])])
+    output.append_column(dy)
+  elif points==5:
+    dy= (-y[4:]+8*y[3:-1]-8*y[1:-3]+y[:-4])/\
+        (3.*(x[4:]-x[:-4]))
+    left=float(dy[0])
+    right=float(dy[0])
+    dy=PhysicalProperty(dy.dimension, dy.unit, [left, left]+dy.tolist()+[right, right])
+    output.append_column(dy)
+  output.sample_name=dataset.sample_name
+  output.short_info=dataset.short_info+' discrete derivative'
+  return output
+  
+def calculate_integral(dataset):
+  '''
+    Calculate the integral of a dataset using the trapezoidal rule.
+  '''
+  x=dataset.x.copy()
+  y=dataset.y.copy()
+  sort_idx=numpy.argsort(x)
+  x=x[sort_idx]
+  y=y[sort_idx]
+  output=MeasurementData()
+  output.append_column(x)
+  xa=x.view(numpy.ndarray)
+  ya=y.view(numpy.ndarray)
+  inty=[ya[0]*(xa[1]-xa[0])]
+  for i in range(1, len(x)):
+    inty.append(numpy.trapz(ya[:i], xa[:i]))
+  output.append_column(PhysicalProperty(
+                                        'int('+y.dimension+')', 
+                                        y.unit*x.unit, 
+                                        inty
+                                        ))
+  output.sample_name=dataset.sample_name
+  output.short_info=dataset.short_info+' integrated'
   return output
 
   #-------- Functions not directly called as actions ------

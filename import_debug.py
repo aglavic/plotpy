@@ -31,10 +31,11 @@ if __name__=='__main__':
   from gtkgui.dialogs import StatusDialog
   sd=StatusDialog(title='Error Text', initial_text=m)
   sd.set_default_size(800, 800)
-  sd2=StatusDialog(title='Tempfile Contents', initial_text=t)
-  sd2.set_default_size(800, 800)
+  if t.strip()!='':
+    sd2=StatusDialog(title='Tempfile Contents', initial_text=t)
+    sd2.set_default_size(800, 800)
+    sd2.show()
   sd.show()
-  sd2.show()
   import sessions.generic
   active_session=sessions.generic.GenericSession(None)
   active_session.file_data={'import from log': d}

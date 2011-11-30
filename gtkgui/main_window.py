@@ -10,7 +10,6 @@ import subprocess
 import gobject
 import gtk
 import numpy
-import warnings
 from time import sleep, time
 from copy import deepcopy
 # own modules
@@ -24,8 +23,9 @@ from config import gnuplot_preferences
 from config.gui import DOWNLOAD_PAGE_URL
 import file_actions
 from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, \
-                    SimpleEntryDialog, DataView, PlotTree,  FileImportDialog, StyleLine
+                    SimpleEntryDialog, DataView, PlotTree,  FileImportDialog, StyleLine, ImportWizard
 from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
+import read_data
 
 if not sys.platform.startswith('win'):
   WindowsError=RuntimeError
@@ -72,6 +72,7 @@ class ApplicationMainWindow(gtk.Window):
   garbage=[]
   plot_tree=None
   open_windows=[]
+  _ignore_change=False
   
   def get_active_dataset(self):
     # convenience method to get the active dataset
@@ -665,6 +666,8 @@ class ApplicationMainWindow(gtk.Window):
       
       @param action The action that triggered the event
     '''
+    if self._ignore_change:
+      return
     # change the plotted columns
     if action.get_name()=='x-number':
       self.measurement[self.index_mess].xdata=-1
@@ -715,12 +718,7 @@ class ApplicationMainWindow(gtk.Window):
         self.measurement[self.index_mess].short_info=self.label2.get_text()
     # change log settings
     elif action in (self.logx, self.logy, self.logz):
-      logitems=self.measurement[self.index_mess]
-      if self.active_multiplot:
-        for mp in self.multiplot:
-          for mpi, mpname in mp:
-            if self.measurement[self.index_mess] is mpi:
-              logitems=mp[0][0]
+      logitems=self.get_first_in_mp()
       logitems.logx=self.logx.get_active()
       logitems.logy=self.logy.get_active()
       logitems.logz=self.logz.get_active()
@@ -888,7 +886,7 @@ class ApplicationMainWindow(gtk.Window):
     file_names=[]
     #++++++++++++++++File selection dialog+++++++++++++++++++#
     file_dialog=FileImportDialog(self.active_folder, self.active_session.FILE_WILDCARDS)
-    file_names, folder, template=file_dialog.run()
+    file_names, folder, template, ascii_filter=file_dialog.run()
     file_dialog.destroy()
     if file_names is None:
       # process canceled
@@ -911,13 +909,51 @@ class ApplicationMainWindow(gtk.Window):
       sys.stdout.second_output=status_dialog
     # try to import the selected files and append them to the active sesssion
     if template is None:
-      if self.active_session.ONLY_IMPORT_MULTIFILE:
-        self.active_session.add_file(file_names, append=True)
-      else:
+      if ascii_filter==-3:
+        # normal import
+        if self.active_session.ONLY_IMPORT_MULTIFILE:
+          self.active_session.add_file(file_names, append=True)
+        else:
+          for file_name in file_names:
+            datasets=self.active_session.add_file(file_name, append=True)
+            if len(datasets)>0:
+              self.active_session.change_active(name=file_name)
+      elif ascii_filter==-2:
+        session=self.active_session
+        # import with fitting filter
         for file_name in file_names:
-          datasets=self.active_session.add_file(file_name, append=True)
-          if len(datasets)>0:
-            self.active_session.change_active(name=file_name)
+          file_type=file_name.rsplit('.', 1)[1]
+          for filter in read_data.defined_filters:
+            if file_type in filter.file_types:
+              ds=filter.read_data(file_name)
+              ds=session.create_numbers(ds)
+              session.add_data(ds, file_name, True)
+              session.new_file_data_treatment(ds)
+              session.active_file_data=session.file_data[file_name]
+              session.active_file_name=file_name
+              break
+      else:
+        # import with new or selected filter
+        if ascii_filter==-1:
+          filter=self.new_ascii_import_filter(file_names[0])
+          if filter is None:
+            # Dialog was canceled
+            if type(sys.stdout)!=file:
+              sys.stdout.second_output=None
+              if hide_status:
+                status_dialog.hide()
+            return
+          read_data.append_filter(filter)
+        else:
+          filter=read_data.defined_filters[ascii_filter]
+        session=self.active_session
+        for file_name in file_names:
+          ds=filter.read_data(file_name)
+          ds=session.create_numbers(ds)
+          session.add_data(ds, file_name, True)
+          session.new_file_data_treatment(ds)
+        session.active_file_data=session.file_data[file_names[0]]
+        session.active_file_name=file_names[0]
     else:
       # if a template was selected, read the files using this template
       session=self.active_session
@@ -957,6 +993,26 @@ class ApplicationMainWindow(gtk.Window):
       self.plot_tree.add_data()
       self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
     return True
+
+  def new_ascii_import_filter(self, file_name):
+    '''
+      Import one or more new datafiles of the same type.
+      
+      @return List of names that have been imported.
+    '''
+    wiz=ImportWizard(file_name)
+    result=wiz.run()
+    if result!=1:
+      wiz.destroy()
+      return None
+    import_filter=wiz.import_filter
+    wiz.destroy()
+    return import_filter
+  
+  def change_ascii_import_filter(self, action):
+    '''
+      
+    '''
 
   def save_snapshot(self, action):
     '''
@@ -1845,7 +1901,15 @@ class ApplicationMainWindow(gtk.Window):
                                         )
     cd_dialog.destroy()
     self.rebuild_menus()
-    self.replot()      
+    self.replot() 
+
+  def integrate_data(self, action):
+    '''
+      Integrate dataset using the trapezoidal rule.
+    '''
+    self.file_actions.activate_action('integral')
+    self.rebuild_menus()
+    self.replot()
 
   def derivate_data(self, action):
     '''
@@ -1854,32 +1918,58 @@ class ApplicationMainWindow(gtk.Window):
     '''
     parameters, result=SimpleEntryDialog('Derivate Data...', 
                                          [('Select Method',
-                                          ['Spectral Estimate (Noisy or Periodic Data)', 'Moving Window (Low Errorbars)'], 
+                                          ['Default 1st-Order (Moving Window)', 
+                                          '1st-Order (Discrete)', 
+                                          'Default 2nd-Order', 
+                                          'Moving Window (Low Errorbars)', 
+                                          'Spectral Estimate (Noisy or Periodic Data, Equally Spaced)', 
+                                          ], 
                                           0)]
                                          ).run()
     if not result:
       return
-    if parameters['Select Method']=='Moving Window (Low Errorbars)':
-      parameters, result=SimpleEntryDialog('Derivate Data - Moving Window Filter...', 
-                                           (('Window Size', 5, int), 
-                                              ('Polynomial Order', 2, int), 
-                                              ('Derivative', 1, int))).run()
-      if parameters['Polynomial Order']>parameters['Window Size']-2:
-        parameters['Polynomial Order']=parameters['Window Size']-2
-      if parameters['Derivative']+1>parameters['Polynomial Order']:
-        parameters['Derivative']=parameters['Polynomial Order']-1
-      if result:
-        # create a new dataset with the smoothed data and all derivatives till the selected order
-        self.file_actions.activate_action('savitzky_golay', 
-                          parameters['Window Size'], 
-                          parameters['Polynomial Order'], 
-                          parameters['Derivative'])
-        self.rebuild_menus()
-        self.replot()
+    if parameters['Select Method']=='1st-Order (Discrete)':
+      self.file_actions.activate_action('discrete_derivative')
+      self.rebuild_menus()
+      self.replot()
+    elif parameters['Select Method'] in ['Default 1st-Order (Moving Window)', 
+                                          'Default 2nd-Order', 
+                                          'Moving Window (Low Errorbars)']:
+      if  parameters['Select Method']=='Moving Window (Low Errorbars)':
+        parameters, result=SimpleEntryDialog('Derivate Data - Moving Window Filter...', 
+                                             (('Window Size', 5, int), 
+                                                ('Polynomial Order', 2, int), 
+                                                ('Derivative', 1, int))).run()
+        if parameters['Polynomial Order']>parameters['Window Size']-2:
+          parameters['Polynomial Order']=parameters['Window Size']-2
+        if parameters['Derivative']+1>parameters['Polynomial Order']:
+          parameters['Derivative']=parameters['Polynomial Order']-1
+        if not result:
+          return
+      elif  parameters['Select Method']=='Default 1st-Order (Moving Window)':
+        parameters={
+                    'Derivative': 1, 
+                    'Polynomial Order': 2, 
+                    'Window Size': 5, 
+                    }
+      else:
+        parameters={
+                    'Derivative': 2, 
+                    'Polynomial Order': 3, 
+                    'Window Size': 7, 
+                    }
+      
+      # create a new dataset with the smoothed data and all derivatives till the selected order
+      self.file_actions.activate_action('savitzky_golay', 
+                        parameters['Window Size'], 
+                        parameters['Polynomial Order'], 
+                        parameters['Derivative'])
+      self.rebuild_menus()
+      self.replot()
     else:
       parameters, result=SimpleEntryDialog('Derivate Data - Spectral Estimate Method...', 
-                                           (('Filter Steepness', 6, int), 
-                                              ('Noise Filter Frequency (0,1]', 0.5, float), 
+                                           (('Filter Steepness', 4, int), 
+                                              ('Noise Filter Frequency (0,1]', 0.25, float), 
                                               ('Derivative', 1, int))).run()
       if result:
         # create a new dataset with the smoothed data and all derivatives till the selected order
@@ -3540,7 +3630,7 @@ set multiplot layout %i,1
       dialog.destroy()
       if result==gtk.RESPONSE_OK:
         # run update function defined on the webpage
-        perform_update_gtk(__version__, NORMAL_UPDATE)        
+        perform_update_gtk(__version__, update_item)        
     else:
       print "Softwar is up to date."
 
@@ -3599,9 +3689,6 @@ set multiplot layout %i,1
     if self.mouse_mode and self.measurement[self.index_mess].zdata>=0:
       try:
         # estimate the size of the plot by searching for lines with low pixel intensity (Black)
-        original_filters = warnings.filters[:]
-        # Ignore warnings.
-        warnings.simplefilter("ignore")
         try:
           pixbuf_data=pixbuf.get_pixels_array()[:,:,:3]
         except RuntimeError:
@@ -3616,7 +3703,6 @@ set multiplot layout %i,1
           # create 3d color array
           pixbuf_data=pixbuf_data.transpose().reshape(len(pixbuf_data[0]), len(pixbuf_data)/3, 3)
           self.pixbuf_data=pixbuf_data
-        warnings.filters=original_filters
         black_values=(numpy.mean(pixbuf_data, axis=2)==0.)
         # as first step get the region inside all captions including colorbar
         ysum=numpy.sum(black_values, axis=0)*1.
@@ -3966,8 +4052,8 @@ set multiplot layout %i,1
       mr_height=(variables[3]-variables[2])/img_size.height
       mr_y=(variables[3])/img_size.height-mr_height
       self.mouse_data_range=((mr_x, mr_width, mr_y, mr_height), variables[4:]+[
-                                          self.measurement[self.index_mess].logx, 
-                                          self.measurement[self.index_mess].logy])    
+                                          self.get_first_in_mp().logx, 
+                                          self.get_first_in_mp().logy])    
     return output
 
   def plot_persistent(self, action=None):
@@ -4102,9 +4188,12 @@ set multiplot layout %i,1
       if (self.z_range_in.get_text()=="") and ((options.zrange[0] is not None) or (options.zrange[1] is not None)):
         range=str(options.zrange[0])+':'+str(options.zrange[1])
         self.z_range_in.set_text(range.replace('None', ''))
+    # make sure the change is ignored
+    self._ignore_change=True
     self.logx.set_active(logitems.logx)
     self.logy.set_active(logitems.logy)
     self.logz.set_active(logitems.logz)
+    self._ignore_change=False
     
     # wait for all gtk events to finish to get the right size
     print "Plotting"
@@ -4170,9 +4259,9 @@ set multiplot layout %i,1
         self.measurement[self.index_mess].preview=self.image_pixbuf.scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
     self.plot_options_buffer.set_text(str(self.measurement[self.index_mess].plot_options))
     text=self.active_session.get_active_file_info()+self.measurement[self.index_mess].get_info()
-    self.info_label.set_markup(text.replace('<', '[').replace('>', ']'))
+    self.info_label.set_markup(text.replace('<', '[').replace('>', ']').replace('&', 'and'))
 
-  def reset_statusbar(self): 
+  def reset_statusbar(self):
     '''
       Clear the statusbar.
     '''
@@ -4387,6 +4476,7 @@ set multiplot layout %i,1
           <placeholder name='z-actions'/>
           <placeholder name='y-actions'>
           <menuitem action='CombinePoints'/>
+          <menuitem action='Integrate'/>
           <menuitem action='Derivate'/>
           <menuitem action='ColorcodePoints'/>
           </placeholder>'''
@@ -4630,6 +4720,10 @@ set multiplot layout %i,1
         "Derivate or Smoothe", '<control>D',                     # label, accelerator
         None,                                    # tooltip
         self.derivate_data),
+      ( "Integrate", None,                    # name, stock id
+        "Integrate", '<control><shift>D',                     # label, accelerator
+        None,                                    # tooltip
+        self.integrate_data),
       ( "ColorcodePoints", None,                    # name, stock id
         "Show Colorcoded Points", None,                     # label, accelerator
         None,                                    # tooltip
