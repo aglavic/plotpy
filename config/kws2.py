@@ -36,3 +36,10 @@ setup_config_riso={'CENTER_X' :345.,
               #'DETECTOR_SENSITIVITY' : None, 
               'LAMBDA_N': 1.54, 
               }
+
+# Setup parameters and defaults
+#setup_parameter_config={
+#              'edf': [
+#                      ('CENTER_X', )
+#                      ]
+#              }

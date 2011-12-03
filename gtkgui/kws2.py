@@ -26,7 +26,7 @@ class KWS2GUI:
     '''
       Create a new intrumental setup.
     '''
-    file_type=file_name.rsplit('.', 1)[-1]
+    file_type=file_name.rsplit('.gz', 1)[0].rsplit('.', 1)[-1]
     if file_type == 'cmb':
       # riso dataset
       setup=dict(config.kws2.setup_config_riso)
@@ -38,7 +38,7 @@ class KWS2GUI:
     label_center_x=gtk.Label('Horizontal Beamcenter:')
     label_center_y=gtk.Label('Vertical Beamcenter:')
     label_detector_distance=gtk.Label('Detector distance:')
-    if file_type in ['edf', 'cmb', 'bin']:
+    if file_type in ['edf', 'cmb', 'bin', 'tif']:
       label_lambda_n=gtk.Label('X-ray Wavelength λ:')
     else:
       label_lambda_n=gtk.Label('Neutron Wavelength λ:')
@@ -69,29 +69,49 @@ class KWS2GUI:
     entry_background.set_text('None')
     button_background=gtk.Button(None, gtk.STOCK_OPEN)
     button_background.connect('clicked', self.select_file, folder, entry_background)
+    entry_width_x=gtk.Entry()
+    entry_width_x.set_text(str(30.))
+    entry_width_y=gtk.Entry()
+    entry_width_y.set_text(str(30.))
+    label_width_x=gtk.Label('Detector size horizontal:')
+    label_width_y=gtk.Label('Detector size vertical:')
+    rl_width_x=gtk.Label('mm')
+    rl_width_y=gtk.Label('mm')
+    if file_type == 'tif':
+      # add to table
+      table.attach(label_width_x, 0,1, 2,3, gtk.FILL,0, 0,0);
+      table.attach(label_width_y, 0,1, 3,4, gtk.FILL,0, 0,0);
+      table.attach(entry_width_x, 1,2, 2,3, gtk.FILL,0, 0,0);
+      table.attach(entry_width_y, 1,2, 3,4, gtk.FILL,0, 0,0);
+      table.attach(rl_width_x, 2,3, 2,3, gtk.FILL,0, 0,0);
+      table.attach(rl_width_y, 2,3, 3,4, gtk.FILL,0, 0,0);
+      
     # add to table
     table.attach(label_center_x, 0,1, 0,1, gtk.FILL,0, 0,0);
     table.attach(label_center_y, 0,1, 1,2, gtk.FILL,0, 0,0);
-    table.attach(label_detector_distance, 0,1, 2,3, gtk.FILL,0, 0,0);
-    table.attach(label_lambda_n, 0,1, 3,4, gtk.FILL,0, 0,0);
-    if not file_type in ['cmb']:
-      table.attach(label_detector_sensitivity, 0,1, 5,6, gtk.FILL,0, 0,0);
-      table.attach(label_background, 0,1, 6,7, gtk.FILL,0, 0,0);
-      table.attach(toggle_button_swapyz, 1,3, 4,5, gtk.EXPAND|gtk.FILL,0, 0,0);
-      table.attach(entry_detector_sensitivity, 1,2, 5,6, gtk.EXPAND|gtk.FILL,0, 0,0);
-      table.attach(entry_background, 1,2, 6,7, gtk.EXPAND|gtk.FILL,0, 0,0);
-      table.attach(button_detector_sensitivity, 2,3, 5,6, gtk.FILL,0, 0,0);  
-      table.attach(button_background, 2,3, 6,7, gtk.FILL,0, 0,0);  
-    table.attach(label_apply, 0,1, 7,8, gtk.FILL,0, 0,0);
+    table.attach(toggle_button_swapyz, 1,3, 6,7, gtk.EXPAND|gtk.FILL,0, 0,0);
+    if not file_type in ['cmb', 'tif']:
+      table.attach(label_background, 0,1, 8,9, gtk.FILL,0, 0,0);
+      table.attach(entry_background, 1,2, 8,9, gtk.EXPAND|gtk.FILL,0, 0,0);
+      table.attach(button_background, 2,3, 8,9, gtk.FILL,0, 0,0);  
+      if not file_type in ['edf', 'bin']:
+        table.attach(label_detector_sensitivity, 0,1, 7,8, gtk.FILL,0, 0,0);
+        table.attach(entry_detector_sensitivity, 1,2, 7,8, gtk.EXPAND|gtk.FILL,0, 0,0);
+        table.attach(button_detector_sensitivity, 2,3, 7,8, gtk.FILL,0, 0,0);  
+    table.attach(label_apply, 0,1, 9,10, gtk.FILL,0, 0,0);
     table.attach(entry_center_x, 1,2, 0,1, 0,0, 0,0);
     table.attach(entry_center_y, 1,2, 1,2, 0,0, 0,0);
-    table.attach(entry_detector_distance, 1,2, 2,3, 0,0, 0,0);
-    table.attach(entry_lambda_n, 1,2, 3,4, 0,0, 0,0);
-    table.attach(entry_apply, 1,2, 7,8, gtk.EXPAND|gtk.FILL,0, 0,0);
+    if not file_type in ['edf']:
+      table.attach(label_detector_distance, 0,1, 4,5, gtk.FILL,0, 0,0);
+      table.attach(entry_detector_distance, 1,2, 4,5, 0,0, 0,0);
+      table.attach(rl_detector_distance, 2,3, 4,5, gtk.FILL,0, 0,0);  
+    table.attach(entry_apply, 1,2, 9,10, gtk.EXPAND|gtk.FILL,0, 0,0);
     table.attach(rl_center_x, 2,3, 0,1, gtk.FILL,0, 0,0);
     table.attach(rl_center_y, 2,3, 1,2, gtk.FILL,0, 0,0);
-    table.attach(rl_detector_distance, 2,3, 2,3, gtk.FILL,0, 0,0);  
-    table.attach(rl_lambda_n, 2,3, 3,4, gtk.FILL,0, 0,0);  
+    if not file_type in ['edf']:
+      table.attach(label_lambda_n, 0,1, 5,6, gtk.FILL,0, 0,0);
+      table.attach(entry_lambda_n, 1,2, 5,6, 0,0, 0,0);
+      table.attach(rl_lambda_n, 2,3, 5,6, gtk.FILL,0, 0,0);  
     
     dialog.vbox.add(table)
     dialog.show_all()
@@ -123,6 +143,14 @@ class KWS2GUI:
       pass
     try:
       setup['DETECTOR_DISTANCE']=float(entry_detector_distance.get_text())
+    except:
+      pass
+    try:
+      setup['SIZE_X']=float(entry_width_x.get_text())
+    except:
+      pass
+    try:
+      setup['SIZE_Y']=float(entry_width_y.get_text())
     except:
       pass
     setup['SWAP_YZ']=toggle_button_swapyz.get_active()

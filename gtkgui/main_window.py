@@ -3612,7 +3612,7 @@ set multiplot layout %i,1
       print 'Error accessing update server: %s' % ertext
       return None
     script_data=download_page.read()
-    exec(script_data)
+    exec script_data
     if __version__ not in VERSION_HISTORY:
       version_index=0
     else:
@@ -3630,7 +3630,7 @@ set multiplot layout %i,1
       dialog.destroy()
       if result==gtk.RESPONSE_OK:
         # run update function defined on the webpage
-        perform_update_gtk(__version__, update_item)        
+        perform_update_gtk(__version__, update_item)
     else:
       print "Softwar is up to date."
 

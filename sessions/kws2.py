@@ -126,7 +126,7 @@ class KWS2Session(GUI, GenericSession):
     zarray=z[:]
     length=len(zarray)
     # get maximal power of 10 for the background
-    max_index=map(lambda i: ((zarray<10**i).sum()>length/fraction), range(-20, 10)).index(True)-20
+    max_index=map(lambda i: ((zarray<10**i).sum()>length/fraction), range(-20, 10)).index(True)-21
     rough_background=10**(max_index)*(map(lambda i: ((zarray<(10**(max_index)*i)).sum())>length/fraction, 
                                           range(2,11)).index(True)+1)
     fine_background=rough_background+10**(max_index-1)*(map(lambda i: (zarray<(rough_background+10**(max_index-1)*i)).sum()>length/fraction, 
