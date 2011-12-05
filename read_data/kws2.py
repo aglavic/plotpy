@@ -232,7 +232,7 @@ def read_cmb_files(file_names):
   center_y=setup['CENTER_Y'] #498.5 pix
   lambda_x=setup['LAMBDA_N'] #1.54
   q_window=[-10., 10., -10., 10.]
-  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
+  dataobj=HugeMD([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
                            ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
   data_array=None
@@ -315,7 +315,7 @@ def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items
       setup=value
   
   q_window=[-1000, 1000, -1000, 1000]
-  dataobj=KWS2MeasurementData([], [], 3, 4, -1, 2)
+  dataobj=HugeMD([], [], 3, 4, -1, 2)
   # Get header information
   if setup['BACKGROUND']:
     if not setup['BACKGROUND'] in background_data:
@@ -638,7 +638,7 @@ def read_p08_binary(file_name):
   center_x=setup['CENTER_X']/join_pixels
   center_y=setup['CENTER_Y']/join_pixels
   q_window=[-1000., 1000., -1000., 1000.]
-  dataobj=KWS2MeasurementData([], 
+  dataobj=HugeMD([], 
                             [], 2, 3, -1, 4)
   # read the data
   sys.stdout.write( "\b\b\b binary...")
@@ -730,10 +730,10 @@ def read_tif_data(file_name):
   center_x=setup['CENTER_X']
   center_y=setup['CENTER_Y']
   q_window=[-1000., 1000., -1000., 1000.]
-  dataobj=KWS2MeasurementData([], 
+  dataobj=HugeMD([], 
                             [], 2, 3, -1, 4)
   # read the data
-  sys.stdout.write( "\b\b\b binary...")
+  sys.stdout.write( "\b\b\b TIFF image...")
   sys.stdout.flush()  
   
   data_array=read_raw_tif_data(file_name)
@@ -810,7 +810,7 @@ class KWS2MeasurementData(HugeMD):
     '''
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
-    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)+array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2+array(other.data[3].values)**2)).tolist()
     out.data[6].values=(array(self.data[6].values)+array(other.data[6].values)).tolist()    
@@ -824,7 +824,7 @@ class KWS2MeasurementData(HugeMD):
     '''
     out=deepcopy(self)
     out.short_info=self.short_info+'-'+other.short_info
-    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)-array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2+array(other.data[3].values)**2)).tolist()
     out.data[6].values=(array(self.data[6].values)-array(other.data[6].values)).tolist()    
@@ -837,7 +837,7 @@ class KWS2MeasurementData(HugeMD):
       Add two measurements together.
     '''
     out=deepcopy(self)
-    out.tmp_export_file=self.tmp_export_file+'_'+str(other)
+    #out.tmp_export_file=self.tmp_export_file+'_'+str(other)
     out.data[2].values=(other*array(self.data[2].values)).tolist()    
     out.data[3].values=(other*array(self.data[3].values)).tolist()    
     out.data[6].values=(other*array(self.data[6].values)).tolist()    
@@ -853,7 +853,7 @@ class KWS2MeasurementData(HugeMD):
       return self.__rmul__(other)
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
-    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)*array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2*array(other.data[2].values)**2+\
                              array(other.data[3].values)**2*array(self.data[2].values)**2)).tolist()
@@ -871,7 +871,7 @@ class KWS2MeasurementData(HugeMD):
       return self.__rmul__(1./other)
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
-    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)/array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2/array(other.data[2].values)**2+\
                              array(other.data[3].values)**2*array(self.data[2].values)**2\

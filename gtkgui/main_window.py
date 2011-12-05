@@ -15,7 +15,7 @@ from copy import deepcopy
 # own modules
 # Module to save and load variables from/to config files
 from configobj import ConfigObj
-from measurement_data_structure import MeasurementData
+from measurement_data_structure import MeasurementData, HugeMD
 import measurement_data_plotting
 from config.gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
 import config
@@ -4260,6 +4260,9 @@ set multiplot layout %i,1
     self.plot_options_buffer.set_text(str(self.measurement[self.index_mess].plot_options))
     text=self.active_session.get_active_file_info()+self.measurement[self.index_mess].get_info()
     self.info_label.set_markup(text.replace('<', '[').replace('>', ']').replace('&', 'and'))
+    # make sure hugeMD objects are removed from memory after plotting
+    if hasattr(self.measurement[self.index_mess], 'tmp_export_file'):
+      self.measurement[self.index_mess].store_data()
 
   def reset_statusbar(self):
     '''

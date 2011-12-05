@@ -1129,7 +1129,9 @@ class HugeMD(MeasurementData):
       self._units=None
       self._dimensions=None
       self._len=None
+      #os.remove(self.tmp_export_file)
     return self._data
+
   def set_data_object(self, object):
     self._data=object
     self.store_data()
@@ -1187,9 +1189,11 @@ class HugeMD(MeasurementData):
       Define how the class is pickled and copied.
     '''
     self.changed_after_export=True
-    # restore saved data
+    # restore saved data, get the object state and save the data again
     self.data
-    return MeasurementData.__getstate__(self)
+    output=MeasurementData.__getstate__(self)
+    self.store_data()
+    return output
  
   def __setstate__(self, state):
     '''
@@ -1207,7 +1211,14 @@ class HugeMD(MeasurementData):
       Get object information without reloading the data.
     '''
     if self._data is None:
-      output="<HugeMD at %s, points=%i, state stored in: '%s'>" % (hex(id(self)), self._len, self.tmp_export_file)
+      output="<HugeMD at %s, points=%i" % (hex(id(self)), self._len)
+      x, y, z=self.xdata, self.ydata, self.zdata
+      dimensions=self.dimensions()
+      if z<0:
+        output+=", x='%s', y='%s'" % (dimensions[x], dimensions[y])
+      else:
+        output+=", x='%s', y='%s', z='%s'" % (dimensions[x], dimensions[y], dimensions[z])
+      output+=", state stored in: '%s'>" % self.tmp_export_file
     else:
       '''
         Define the string representation of the object. Just some useful information for debugging/IPython console
@@ -1263,15 +1274,36 @@ class HugeMD(MeasurementData):
       self.last_export_output=self.do_export(self.tmp_export_file+'.gptmp', print_info, seperator, xfrom, xto, only_fitted_columns)
       self.changed_after_export=False
       self.last_export_zrange=self.plot_options.zrange
-      self.store_data()
+    #self.store_data()
     copyfile(self.tmp_export_file+'.gptmp',  file_name)
     return self.last_export_output
   
   def export_matrix(self, file_name):
     MeasurementData.export_matrix(self, file_name)
-    self.store_data()    
+    #self.store_data()    
 
   do_export=MeasurementData.export
+  
+  def __add__(self, other):
+    output=MeasurementData.__add__(self, other)
+    output.store_data()
+    return output
+
+  def __sub__(self, other):
+    output=MeasurementData.__sub__(self, other)
+    output.store_data()
+    return output
+
+  def __mul__(self, other):
+    output=MeasurementData.__mul__(self, other)
+    output.store_data()
+    return output
+
+  def __div__(self, other):
+    output=MeasurementData.__div__(self, other)
+    output.store_data()
+    return output
+
 
 #--------------------------------------    HugeMD-Class     -----------------------------------------------------#
 
