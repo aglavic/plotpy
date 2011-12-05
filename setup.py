@@ -61,10 +61,10 @@ elif "py2exe" in sys.argv:
                 #"console": [ "__init__.py"], # set the executable for py2exe
                 "windows": [ "__init__.py" ], # executable for py2exe is windows application            
                 "options": {  "py2exe": {
-                              "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio, Image",
+                              "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio, Image, TiffImagePlugin",
                               "optimize": 1, # Keep docstring (e.g. IPython console usage)
                               "skip_archive": True, # setting not to move compiled code into library.zip file
-                              'packages':'encodings, gtk, sessions, read_data, gtkgui, IPython',
+                              'packages':'encodings, gtk, sessions, read_data, gtkgui, IPython, PIL',
                               "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'], 
                              }, 
                            }

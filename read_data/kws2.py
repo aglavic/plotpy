@@ -788,9 +788,11 @@ def read_tif_data(file_name):
   return [dataobj]
   
 def read_raw_tif_data(file_name):
-  header=''
   # use PIL image readout
   import Image
+  # py2exe hack
+  import TiffImagePlugin
+  Image._initialized=2
   img=Image.open(file_name)
   data_array=asarray(img.getdata())
   data_array=data_array.reshape(*img.size)
