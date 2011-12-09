@@ -296,17 +296,35 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       tmp_file.write(code_tmp)
       tmp_file.close()
       print 'Compiling fit program!'
+      callopts=dict(
+                      stderr=subprocess.PIPE,
+                      stdout=subprocess.PIPE, 
+                      stdin=subprocess.PIPE,                      
+                     )
+      
       call_params=[config.reflectometer.FORTRAN_COMPILER, os.path.join(self.TEMP_DIR, 'fit_tmp.f90'), '-o', exe]
       if  config.reflectometer.FORTRAN_COMPILER_OPTIONS!=None:
         call_params.append(config.reflectometer.FORTRAN_COMPILER_OPTIONS)
       if  config.reflectometer.FORTRAN_COMPILER_MARCH!=None:
         call_params.append(config.reflectometer.FORTRAN_COMPILER_MARCH)
+      if sys.argv[0].endswith('.exe'):
+        # fix gfortran error when binary folder is not the first in path
+        call_params[0]=os.path.join(self.SCRIPT_PATH, 'gfortran\\bin\\gfortran.exe')
+        tmpenv=dict(os.environ)
+        tmpenv['PATH']=os.path.join(self.SCRIPT_PATH, 'gfortran\\bin')
+        callopts['env']=tmpenv
       try:
-        subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL,  
-                      creationflags=config.gnuplot_preferences.PROCESS_FLAGS)
+        proc=subprocess.Popen(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL,  
+                      creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
+                      **callopts
+                      )
+        result=proc.communicate()
       except (OSError, WindowsError), error:
         raise RuntimeError, "Problem calling the fortran compile '%s': %s" % (config.reflectometer.FORTRAN_COMPILER, error)
-      print 'Compiled'
+      if result!=('', ''):
+        raise RuntimeError, "Problem compiling fortran program: %s" % (result[0]+result[1])
+      else:
+        print 'Compiled'
     process = subprocess.Popen([exe, file_ent, file_res, file_out+'.ref', file_out+'.sim', str(max_iter)], 
                         shell=config.gnuplot_preferences.EMMULATE_SHELL,  
                         creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 

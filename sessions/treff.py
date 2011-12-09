@@ -590,11 +590,23 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       num_files=len(subcode_files)+2
       sys.stdout.write('Compiling fit program %2i/%2i' % (0, num_files))
       sys.stdout.flush()
+      callopts=dict(
+                      stderr=subprocess.PIPE,
+                      stdout=subprocess.PIPE, 
+                      stdin=subprocess.PIPE,                      
+                     )
+      fortran_compiler=config.treff.FORTRAN_COMPILER
+      if sys.argv[0].endswith('.exe'):
+        # fix gfortran error when binary folder is not the first in path
+        fortran_compiler=os.path.join(self.SCRIPT_PATH, 'gfortran\\bin\\gfortran.exe')
+        tmpenv=dict(os.environ)
+        tmpenv['PATH']=os.path.join(self.SCRIPT_PATH, 'gfortran\\bin')
+        callopts['env']=tmpenv
       for i, file in enumerate([param_code_file]+subcode_files):
         # compile each source file separately
         ofile=os.path.join(self.TEMP_DIR, os.path.split(file)[1].rsplit('.', 1)[0]+'.o')
         ofiles.append(ofile)
-        call_params=[config.treff.FORTRAN_COMPILER, 
+        call_params=[fortran_compiler, 
                      config.treff.FORTRAN_PRECOMPILE_OPTION, file, 
                      config.treff.FORTRAN_OUTPUT_OPTION, 
                      ofile, 
@@ -603,12 +615,20 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
           call_params.append(config.treff.FORTRAN_COMPILER_OPTIONS)
         if  config.treff.FORTRAN_COMPILER_MARCH!=None:
           call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
-        subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL, 
-                         creationflags=config.gnuplot_preferences.PROCESS_FLAGS)  
+        try:
+          proc=subprocess.Popen(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL, 
+                           creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
+                           **callopts
+                           )  
+          result=proc.communicate()
+        except (OSError, WindowsError), error:
+          raise RuntimeError, "Problem calling the fortran compile '%s': %s" % (fortran_compiler, error)
+        if result!=('', ''):
+          raise RuntimeError, "Problem compiling fortran program: %s" % (result[0]+result[1])
         sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i' % (i+1, num_files))
         sys.stdout.flush()
       # compile the combination of all files
-      call_params=[config.treff.FORTRAN_COMPILER]+ofiles+\
+      call_params=[fortran_compiler]+ofiles+\
                     [config.treff.FORTRAN_OUTPUT_OPTION, 
                      exe, 
                      ]
@@ -617,10 +637,14 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       if  config.treff.FORTRAN_COMPILER_MARCH!=None:
         call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
       try:
-        subprocess.call(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL,  
-                      creationflags=config.gnuplot_preferences.PROCESS_FLAGS)
+        proc=subprocess.Popen(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL,  
+                      creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
+                      **callopts)
+        result=proc.communicate()
       except (OSError, WindowsError), error:
-        raise RuntimeError, "Problem calling the fortran compile '%s': %s" % (config.treff.FORTRAN_COMPILER, error)
+        raise RuntimeError, "Problem calling the fortran compile '%s': %s" % (fortran_compiler, error)
+      if result!=('', ''):
+        raise RuntimeError, "Problem compiling fortran program: %s" % (result[0]+result[1])
       sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i\n' % (num_files, num_files))
       sys.stdout.flush()
       print 'Compiled'

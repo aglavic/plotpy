@@ -250,10 +250,6 @@ class FitFunction(FitFunctionGUI):
       residuals=self.residuals_log
     else:
       residuals=self.residuals
-    if dy is None:
-      fit_args=(y, x)
-    else:
-      fit_args=(y, x, dy)
     return self.refine_mpfit(residuals, parameters, x, y, dy, progress_bar_update)
   
   def refine_mpfit(self, residuals, parameters, x, y, dy, progress_bar_update=None):
@@ -262,6 +258,7 @@ class FitFunction(FitFunctionGUI):
       Sequential Least SQuares Programming algorithm.
       
       The constrains can be boundaries, equalitiy and inequality fuctions.
+      progress_bar_update can be an optional function, which is called after each iteration.
     '''
     constrains=self.constrains
     def function(p, fjac=None, x=None, y=None, dy=None):
@@ -272,6 +269,7 @@ class FitFunction(FitFunctionGUI):
       parinfo=None
     else:
       parinfo = []
+      # Define constrains of the fit for each parameter
       for i in range(len(parameters)):
         parinfo.append({'limited':[0,0], 'limits':[0.,0.]})
         if self.refine_parameters[i] in constrains:
@@ -308,7 +306,9 @@ class FitFunction(FitFunctionGUI):
                  fastnorm=1, # faster computation of Chi², can be less stable
                  quiet=1
                  )
+    # evaluate the fit result
     if result.status==-1:
+      # The fit was stopped by the user, treat as if the maximum iterations were reached
       result.status=5
     self.last_fit_output=result
     if progress_bar_update is not None:
@@ -437,7 +437,15 @@ class FitFunction(FitFunctionGUI):
         else:
           function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (self.parameters[i]))
     return function_text
-    
+  
+  def __repr__(self):
+    output="<"+self.__class__.__name__+ "  "
+    for i in range(len(self.parameters)//4):
+      output+=" ".join(["%-10.10s" % name for name in self.parameter_names])
+      output+="\n "+" "*len(self.__class__.__name__)+"  "
+      output+=" ".join(["%.4e" % value for value in self.parameters])
+    output+=" >"
+    return output
   
   fit_function_text_eval=property(_get_function_text)
 
@@ -2500,7 +2508,7 @@ class FitLorentzian3D(FitFunction3D):
                          'x_0': 'Peak x-Position', 
                          'y_0': 'Peak y-Position', 
                          'γ_x': 'HWHM in x-direction', 
-                         'γ_y': 'HWHM in x-direction', 
+                         'γ_y': 'HWHM in y-direction', 
                          'tilt': 'Tilting angle of the data x-axis to the function x-axis', 
                          'C':'Offset'}
   fit_function_text='Lorentzian'
@@ -2518,19 +2526,19 @@ class FitLorentzian3D(FitFunction3D):
       It is calculated using the complex error function,
       see Wikipedia articel on Voigt-profile for the details.
     '''
-    x=numpy.float64(numpy.array(x))
-    y=numpy.float64(numpy.array(y))
-    p=numpy.float64(numpy.array(p))
+    x=numpy.array(x, copy=False, dtype=numpy.float64)
+    y=numpy.array(y, copy=False, dtype=numpy.float64)
+    p=numpy.array(p, dtype=numpy.float64)
     I=p[0]
     x0=p[1]
     y0=p[2]
     gamma_x=p[3]
     gamma_y=p[4]
     tilt=p[5]*numpy.pi/180.
-    tb=numpy.sin(p[5])
     ta=numpy.cos(p[5])
-    xdist=(numpy.array(x)-x0)
-    ydist=(numpy.array(y)-y0)
+    tb=numpy.sin(p[5])
+    xdist=(x-x0)
+    ydist=(y-y0)
     xdif=numpy.abs(xdist*ta-ydist*tb)
     ydif=numpy.abs(ydist*ta+xdist*tb)
     c=p[6]
