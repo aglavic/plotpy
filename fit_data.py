@@ -17,8 +17,8 @@ try:
   FitSessionGUI=__import__( config.gui.toolkit+'gui.gui_fit_data', fromlist=['FitSessionGUI']).FitSessionGUI
   FitFunctionGUI=__import__( config.gui.toolkit+'gui.gui_fit_data', fromlist=['FitFunctionGUI']).FitFunctionGUI
 except ImportError: 
-  class FitSessionGUI: pass
-  class FitFunctionGUI: pass
+  class FitSessionGUI(object): pass
+  class FitFunctionGUI(object): pass
 
 __author__ = "Artur Glavic"
 __credits__ = []
@@ -296,7 +296,7 @@ class FitFunction(FitFunctionGUI):
       def iterfunct(myfunct, p, iter, fnorm, functkw=None,
                   parinfo=None, quiet=0, dof=None):
         # perform custom iteration update   
-        return progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    Chi²=%4f' % (iter, fnorm))
+        return progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    χ²=%.6e' % (iter, fnorm))
     else:
       iterfunct=None
     # call the fit routine
@@ -440,10 +440,12 @@ class FitFunction(FitFunctionGUI):
   
   def __repr__(self):
     output="<"+self.__class__.__name__+ "  "
-    for i in range(len(self.parameters)//4):
-      output+=" ".join(["%-10.10s" % name for name in self.parameter_names])
-      output+="\n "+" "*len(self.__class__.__name__)+"  "
-      output+=" ".join(["%.4e" % value for value in self.parameters])
+    for i in range((len(self.parameters)+3)//4):
+      if i>0:
+        output+="\n "+" "*len(self.__class__.__name__)+"  "
+      output+=" ".join([u"%-10.10s" % name for name in self.parameter_names[i*4:(i+1)*4]])
+      output+="\n "+" "*len(self.__class__.__name__)+" "
+      output+=" ".join([u"% .3e" % value for value in self.parameters[i*4:(i+1)*4]])
     output+=" >"
     return output
   
@@ -907,6 +909,16 @@ class FitFunction3D(FitFunctionGUI):
           function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (self.parameters[i]))
     return function_text
     
+  def __repr__(self):
+    output="<"+self.__class__.__name__+ "  "
+    for i in range((len(self.parameters)+3)//4):
+      if i>0:
+        output+="\n "+" "*len(self.__class__.__name__)+"  "
+      output+=" ".join([u"%-10.10s" % name for name in self.parameter_names[i*4:(i+1)*4]])
+      output+="\n "+" "*len(self.__class__.__name__)+" "
+      output+=" ".join([u"% .3e" % value for value in self.parameters[i*4:(i+1)*4]])
+    output+=" >"
+    return output
   
   fit_function_text_eval=property(_get_function_text)
 
@@ -1048,6 +1060,8 @@ class FitLinear(FitFunction):
   parameter_description={'a': 'Slope', 'b': 'Offset'}
   fit_function=lambda self, p, x: p[0] * numpy.array(x) + p[1]
   fit_function_text='[a]·x + [b]'
+
+
 
 class ThetaCorrection(FitFunction):
   '''

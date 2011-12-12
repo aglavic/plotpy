@@ -56,6 +56,9 @@ def read_data(file_name):
   elif file_name.endswith('.tif'):
     config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
     return read_tif_data(file_name)
+  elif file_name.endswith('.bmp'):
+    config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
+    return read_bmp_data(file_name)
   folder, rel_file_name=os.path.split(os.path.realpath(file_name))
   setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
   for key, value in setups.items():
@@ -792,6 +795,114 @@ def read_raw_tif_data(file_name):
   import Image
   # py2exe hack
   import TiffImagePlugin
+  Image._initialized=2
+  img=Image.open(file_name)
+  data_array=asarray(img.getdata())
+  data_array=data_array.reshape(*img.size)
+  data_array=data_array.astype(float32)
+  return data_array
+  
+def read_bmp_data(file_name):
+  '''
+    Read a tif datafile.
+  '''
+  folder, rel_file_name=os.path.split(os.path.realpath(file_name))
+  setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
+  for key, value in setups.items():
+    if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
+      setup=value
+  sys.stdout.write( "\tReading...")
+  sys.stdout.flush()
+  # read the data
+  sys.stdout.write( "\b\b\b BMP Image...")
+  sys.stdout.flush()
+  data_array=read_raw_bmp_data(file_name)
+  pixels_x, pixels_y=data_array.shape
+  data_array=data_array.reshape(pixels_y, pixels_x)
+  pixels_x, pixels_y=data_array.shape
+  if data_array[0][0]==255:
+    data_array=255-data_array
+  countingtime=1.
+  detector_distance=setup['DETECTOR_DISTANCE'] #mm
+  join_pixels=max(1, pixels_x//1024)
+  if 'SIZE_X' in setup and 'SIZE_Y' in setup:
+    pixelsize_x= setup['SIZE_X']/pixels_x*join_pixels
+    pixelsize_y= setup['SIZE_Y']/pixels_y*join_pixels
+  else:
+    pixelsize_x= 30./pixels_x*join_pixels
+    pixelsize_y= 30./pixels_y*join_pixels
+  sample_name=''
+  center_x=setup['CENTER_X']/join_pixels
+  center_y=setup['CENTER_Y']/join_pixels
+  q_window=[-1000., 1000., -1000., 1000.]
+  dataobj=HugeMD([], 
+                            [], 2, 3, -1, 4)
+  if setup['BACKGROUND'] is not None:
+    sys.stdout.write( "\b\b\b subtracting background %s..." % setup['BACKGROUND'])
+    sys.stdout.flush()
+    data_array-=read_raw_bmp_data(setup['BACKGROUND'])[1]
+  # averadge ixi pixels
+  sys.stdout.write( "\b\b\b, joining %ix%i pixels..." % (join_pixels, join_pixels))
+  sys.stdout.flush()
+  # neighboring pixels
+  use_idsx=arange(pixels_x//join_pixels).astype(int)*int(join_pixels)
+  use_idsy=arange(pixels_y//join_pixels).astype(int)*int(join_pixels)
+  data_array2=zeros((pixels_x//join_pixels, pixels_y//join_pixels))
+  #print use_idsx, use_idsy
+  for i in range(int(join_pixels)):
+    for j in range(int(join_pixels)):
+      data_array2+=data_array[use_idsx+i][:,use_idsy+j]
+  data_array=data_array2.flatten()
+  sys.stdout.write( "\b\b\b, calculating q-positions and joining data...")
+  sys.stdout.flush()
+  # read additional info from end of file
+  z_array=linspace(0,  (pixels_x//join_pixels)*(pixels_y//join_pixels)-1, 
+                   (pixels_x//join_pixels)*(pixels_y//join_pixels))//(pixels_y//join_pixels)
+  y_array=linspace(0, (pixels_x//join_pixels)*(pixels_y//join_pixels)-1,
+                   (pixels_x//join_pixels)*(pixels_y//join_pixels))%(pixels_y//join_pixels)
+  #print data_array2.shape, y_array, z_array
+  error_array=sqrt(data_array)
+  corrected_data=data_array/countingtime
+  corrected_error=error_array/countingtime
+  lambda_x=1.54#setup['LAMBDA_N']
+  qy_array=4.*pi/lambda_x*\
+           sin(arctan((y_array-center_y)*pixelsize_y/detector_distance/2.))
+  if 'tth' in setup:
+    tth_offset=setup['tth']
+  else:
+    tth_offset=0.
+  qz_array=4.*pi/lambda_x*\
+           sin(arctan((z_array-center_x)*pixelsize_x/detector_distance/2.)+tth_offset/360.*pi)
+  if setup['SWAP_YZ']:
+    # swap the directions
+    tmp=qz_array
+    qz_array=qy_array
+    qy_array=tmp
+
+  #use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
+  #            (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
+  dataobj.data.append(PhysicalProperty('pixel_x', 'pix', y_array))
+  dataobj.data.append(PhysicalProperty('pixel_y', 'pix', z_array))
+  dataobj.data.append(PhysicalProperty('Q_y', 'Å^{-1}', qy_array))
+  dataobj.data.append(PhysicalProperty('Q_z', 'Å^{-1}', qz_array))
+  dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data))
+  dataobj.data[-1].error=corrected_error
+  #dataobj.data[3]=PhysicalProperty('raw_int', 'counts', data_array[use_indices])
+  #dataobj.data[3].error=error_array[use_indices]
+
+  dataobj.sample_name=sample_name
+  dataobj.scan_line=1
+  dataobj.scan_line_constant=0
+  dataobj.logz=True
+  sys.stdout.write( "\b\b\b done!\n")
+  sys.stdout.flush()
+  return [dataobj]
+  
+def read_raw_bmp_data(file_name):
+  # use PIL image readout
+  import Image
+  # py2exe hack
+  import BmpImagePlugin
   Image._initialized=2
   img=Image.open(file_name)
   data_array=asarray(img.getdata())

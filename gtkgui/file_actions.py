@@ -145,8 +145,8 @@ class FileActions:
       @return If the extraction has been sucessful
     '''
     dataset=self.window.measurement[self.window.index_mess]
+    cs_object=self.create_cross_section(x, x_0, y, y_0, w, binning, gauss_weighting, sigma_gauss, bin_distance)
     try:
-      cs_object=self.create_cross_section(x, x_0, y, y_0, w, binning, gauss_weighting, sigma_gauss, bin_distance)
       if cs_object is None:
         return False
       cs_object.number=dataset.number
@@ -493,11 +493,11 @@ class FileActions:
     sqrt=numpy.sqrt
     exp=numpy.exp
     dataset=self.window.measurement[self.window.index_mess]
-    xdata=dataset.x.view(numpy.ndarray)
-    ydata=dataset.y.view(numpy.ndarray)
-    zdata=dataset.z.view(numpy.ndarray)
+    xdata=numpy.array(dataset.x)
+    ydata=numpy.array(dataset.y)
+    zdata=numpy.array(dataset.z)
     if dataset._yerror>=0:
-      dzdata=dataset.data[dataset.yerror].view(numpy.ndarray)
+      dzdata=numpy.array(dataset.data[dataset.yerror])
     else:
       dzdata=dataset.z.error
     # Einheitsvector of line

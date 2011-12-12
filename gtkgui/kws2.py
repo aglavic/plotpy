@@ -97,13 +97,13 @@ class KWS2GUI:
         table.attach(entry_detector_sensitivity, 1,2, 7,8, gtk.EXPAND|gtk.FILL,0, 0,0);
         table.attach(button_detector_sensitivity, 2,3, 7,8, gtk.FILL,0, 0,0);  
     table.attach(label_apply, 0,1, 9,10, gtk.FILL,0, 0,0);
+    table.attach(label_center_x, 0,1, 0,1, gtk.FILL,0, 0,0);
+    table.attach(label_center_y, 0,1, 1,2, gtk.FILL,0, 0,0);
+    table.attach(entry_center_x, 1,2, 0,1, 0,0, 0,0);
+    table.attach(entry_center_y, 1,2, 1,2, 0,0, 0,0);
+    table.attach(rl_center_x, 2,3, 0,1, gtk.FILL,0, 0,0);
+    table.attach(rl_center_y, 2,3, 1,2, gtk.FILL,0, 0,0);
     if not file_type in ['edf']:
-      table.attach(label_center_x, 0,1, 0,1, gtk.FILL,0, 0,0);
-      table.attach(label_center_y, 0,1, 1,2, gtk.FILL,0, 0,0);
-      table.attach(entry_center_x, 1,2, 0,1, 0,0, 0,0);
-      table.attach(entry_center_y, 1,2, 1,2, 0,0, 0,0);
-      table.attach(rl_center_x, 2,3, 0,1, gtk.FILL,0, 0,0);
-      table.attach(rl_center_y, 2,3, 1,2, gtk.FILL,0, 0,0);
       table.attach(label_detector_distance, 0,1, 4,5, gtk.FILL,0, 0,0);
       table.attach(entry_detector_distance, 1,2, 4,5, 0,0, 0,0);
       table.attach(rl_detector_distance, 2,3, 4,5, gtk.FILL,0, 0,0);  
