@@ -75,7 +75,6 @@ if not "--nolimit" in sys.argv:
 
 # set default encoding
 #try:
-  ## TODO: try to fix unicode handling
   ## this is just a hack as wx can lead to unicode errors
   ## the site.py module removes sys.setdefaultencoding
   ## so we reload it to use the function until we get this fixed
@@ -251,7 +250,75 @@ def initialize_debug(log_file='debug.log'):
     sys.argv=sys.argv[:idx]
   else:
     plotting_debug.initialize(log_file, level='DEBUG')
+
+def ipdrop(session):
+  '''
+    Inizialize some convenience functions and drop to an IPython console.
+  '''
+  import sys, os
+  import numpy as np
+  import measurement_data_plotting as mdp
+  import measurement_data_structure as mds
+  from glob import glob
+  index_mess=0
+  errorbars=False
   
+  # convenience functions
+  def plot(ds, output_file):
+    mdp.gnuplot_plot_script(session, 
+                           [ds],
+                           'temp_plot', 
+                           '.png', 
+                           ds.sample_name+ds.short_info,
+                           [ds.short_info],
+                           errorbars,
+                           output_file, 
+                           sample_name=ds.sample_name) 
+    
+  def replot(index=None):
+    if index is None:
+      index=_user_namespace['index_mess']
+    # Plot the selected active file
+    ds=session.active_file_data[index]
+    _user_namespace['dataset']=ds
+    plot(ds, None)
+  def select_file(name=None):
+    # change the active plotted file
+    if name is None:
+      print "\n".join(["% 3i: %s" % item for item in enumerate(sorted(session.file_data.keys()))])
+      index=int(raw_input('\tSelect new active file: '))
+      name=sorted(session.file_data.keys())[index]
+    session.active_file_data=session.file_data[name]
+    session.active_file_name=name
+    _user_namespace['index_mess']=0
+    replot()
+  def import_files(glob_pattern):
+    # read all files fitting a given glob pattern and plot the last
+    file_names=glob(glob_pattern)
+    for file_name in file_names:
+      session.add_file(file_name)
+    select_file(file_names[-1])
+  def next():
+    # switch to next plot
+    _user_namespace['index_mess']=(_user_namespace['index_mess']+1)%len(session.active_file_data)
+    replot()
+    print _user_namespace['index_mess']
+  def logy():
+    # set/unset logscale
+    session.active_file_data[_user_namespace['index_mess']].logy=\
+       not session.active_file_data[_user_namespace['index_mess']].logy
+    replot()
+  
+  _user_namespace={
+                         }
+  _user_namespace.update(locals())
+  _user_namespace.update({'_user_namespace':_user_namespace})
+  
+  sys.argv=sys.argv[:1]
+  session.initialize_gnuplot()
+  import IPython.Shell
+  IPython.Shell.start(_user_namespace).mainloop(0)
+
 def _run():
   '''
     Start the program.
@@ -261,14 +328,17 @@ def _run():
     sys.argv=map(lambda arg: unicode(arg.decode('mbcs')), sys.argv)
   if '--debug' in sys.argv:
     initialize_debug()
-  if not '-scp' in sys.argv:
+  if not ('-scp' in sys.argv or '-ipdrop' in sys.argv):
     initialize_gui_toolkit()
   active_session=initialize(sys.argv[1:])
   if active_session is None or active_session.use_gui: # start a new gui session
     plotting_session=initialize_gui(active_session, status_dialog)
     gui_main.main_loop(plotting_session)
   else: # in command line mode, just plot the selected data.
-    active_session.plot_all()
+    if '-ipdrop' in sys.argv:
+      ipdrop(active_session)
+    else:
+      active_session.plot_all()
   # delete temporal files and folders after the program ended
   if active_session is None:
     # if the session is initialized in the gui, use the active gui session for cleanup

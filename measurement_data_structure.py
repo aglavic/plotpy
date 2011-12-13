@@ -933,7 +933,6 @@ class MeasurementData(object):
       for i in range(len(self.data)):
         columns=columns+' '+self.dimensions()[i]+'['+self.units()[i]+']'
       write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
-    #self.write_data_matrix(write_file, data, split_indices)
     # Convert the data from matrix format to a string which can be written to a file
     data_string=self.string_from_data_matrix(seperator, data, split_indices, format_string=format_string)
     write_file.write(data_string)

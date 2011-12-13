@@ -726,6 +726,7 @@ set size square
     detector_images.append(detector_image_xx)
   for mapi in maps:
     mapi.logz=True
+    mapi.SPLIT_SENSITIVITY=0.0001
     mapi.plot_options='set cbrange [1e-4:]\nset zrange [1e-4:]\n'
   for scan in scans:
     scan.logy=True

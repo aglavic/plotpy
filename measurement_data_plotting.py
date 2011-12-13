@@ -107,7 +107,10 @@ def gnuplot_plot_script(session,
     datasets[0].export_projections(projections_name)    
   if not sample_name:
     sample_name=datasets[0].sample_name
-  if output_file.rsplit('.',1)[1]=='ps':
+  if output_file is None:
+    postscript_export=False
+    terminal=gp.set_output_terminal_ps
+  elif output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
   else:
@@ -622,6 +625,9 @@ def script_header(show_persistent, datasets, output_file):
   if show_persistent:
     postscript_export=True
     terminal=gp.set_output_terminal_wxt
+  elif output_file is None:
+    postscript_export=False
+    terminal=gp.set_output_terminal_wxt
   elif output_file.rsplit('.',1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
@@ -632,7 +638,7 @@ def script_header(show_persistent, datasets, output_file):
       terminal+=' nocrop'
   gnuplot_file_text=gp.GNUPLOT_FILE_HEAD+\
                     'set term '+terminal+'\n'
-  if not show_persistent:
+  if not show_persistent and output_file is not None:
     gnuplot_file_text+='set output "'+output_file+'"\n'
   if datasets[0].plot_options.is_polar:
     gnuplot_file_text+='set encoding '+gp.ENCODING+'\n'+\

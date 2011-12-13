@@ -101,6 +101,7 @@ Options:
 \t-ipr script.py\tSame as '-ipy "run -i script.py"'
 \t\t\tThis option can be given multiple times to define a sequence of lines to be executed.
 \t\t\tI would recomand writing a script and just adding the option '-ipy "run -i script.py"'.
+\t-ipdrop \tRead data and drop to IPython console without running the GUI
 \t-no-trans\tdon't make a unit transformation
 
 \tAdvanced settings:
@@ -141,7 +142,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   FILE_WILDCARDS=[('All', '*')] # wildcards for the file open dialog of the GUI
   # known command line options list
   COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 
-                        'template','no-trans', '-help', '-debug', '-nolimit', 'startuppath', 'mpl','ipy', 'ipr']
+                        'template','no-trans', '-help', '-debug', '-nolimit', 'startuppath', 'mpl','ipy', 'ipr', 'ipdrop']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -168,6 +169,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   mds_create=True
   ONLY_IMPORT_MULTIFILE=False
   DEBUG=False
+  ipdrop=False
   file_actions_addon={}
   ipython_commands=[]
   plugins=[]
@@ -185,10 +187,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     if type(arguments) is list:
       #++++++++++++++++ evaluate command line +++++++++++++++++++++++
       files=self.read_arguments(arguments) # get filenames and set options
-      if files==None: # read_arguments returns none, if help option is set
+      if files is None: # read_arguments returns none, if help option is set
         print self.LONG_HELP + self.SPECIFIC_HELP + self.LONG_HELP_END
         exit()
-      elif len(files) < 1 and not self.use_gui: # show help, if there is no file in the list
+      elif len(files) < 1 and not self.use_gui and not self.ipdrop: # show help, if there is no file in the list
         print self.SHORT_HELP
         exit()
     else:
@@ -210,7 +212,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     
     if type(arguments) is list:
       if len(files) == 0: # show help, if there is no valid file in the list
-        if not self.use_gui:
+        if not self.use_gui and not self.ipdrop:
           print "No valid datafile found!"
           print self.SHORT_HELP
           exit()
@@ -357,8 +359,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
           self.logz=True
         elif argument=='-p':
           self.print_plot=True
-        elif argument=='-scp':
+        elif argument in ['-scp', '-ipdrop']:
           self.use_gui=False
+          if argument == '-ipdrop':
+            self.ipdrop=True
         elif argument=='-no-trans':
           self.unit_transformation=False
         elif argument=='--help':
@@ -669,7 +673,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
       Plots the active datasets.
     '''
-    output=''
     if not self.single_picture:
       for dataset in self.active_file_data:
         self.plot(dataset.plot_together, self.active_file_name, dataset.short_info, ['' for i in range(len(dataset.plot_together))])
