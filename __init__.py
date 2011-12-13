@@ -109,7 +109,7 @@ known_measurement_types={
                          'dns': ('dns', 'DNSSession', ['d_dat'], []), 
                          'kws2': ('kws2', 'KWS2Session', ['DAT'], []),                         
                          'sas': ('sas', 'SASSession', ['___'], []),                         
-                         'gisas': ('kws2', 'KWS2Session', ['DAT', 'edf', 'cmb'], []),                         
+                         'gisas': ('kws2', 'KWS2Session', ['DAT', 'edf', 'cmb', 'tif', 'bmp'], []),
                          'shg': ('shg', 'SHGSession', ['par'], []),                         
                          #'scd': ('single_diff', 'SingleDiffSession', ['___']), 
                          'generic': ('generic', 'GenericSession', ['___'], []), 
