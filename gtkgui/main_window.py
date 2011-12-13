@@ -1451,9 +1451,10 @@ class ApplicationMainWindow(gtk.Window):
                          fit_lorentz=False)
     # create a dialog to show the plot text for the active data
     param_dialog=gtk.Dialog(title='Last plot parameters:')
-    param_dialog.set_default_size(600,400)
+    param_dialog.set_default_size(600,600)
     # alignment table
-    table=gtk.Table(1,4,False)
+    table=gtk.Table(1,2,False)
+    paned=gtk.VPaned()
     
     # Label
     label=gtk.Label()
@@ -1469,13 +1470,15 @@ class ApplicationMainWindow(gtk.Window):
     text_filed=gtk.Label()
     text_filed.set_markup(plot_text.replace('<', '[').replace('>', ']'))
     sw.add_with_viewport(text_filed) # add textbuffer view widget
-    table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0);
+    table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0)
+    paned.add(table)
     # errors of the last plot
     if self.last_plot_text!='':
+      table=gtk.Table(1,2,False)
       # Label
       label=gtk.Label()
       label.set_markup('Error during execution:')
-      table.attach(label, 0, 1, 2, 3, 0, 0, 0, 0);
+      table.attach(label, 0, 1, 0, 1, 0, 0, 0, 0);
       sw = gtk.ScrolledWindow()
       # Set the adjustments for horizontal and vertical scroll bars.
       # POLICY_AUTOMATIC will automatically decide whether you need
@@ -1484,8 +1487,10 @@ class ApplicationMainWindow(gtk.Window):
       text_filed=gtk.Label()
       text_filed.set_markup(self.last_plot_text)
       sw.add_with_viewport(text_filed) # add textbuffer view widget
-      table.attach(sw, 0, 1, 3, 4, gtk.EXPAND|gtk.FILL, gtk.FILL, 0, 0);
-    param_dialog.vbox.add(table)
+      table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0)
+      paned.add(table)
+      paned.set_position(400)
+    param_dialog.vbox.add(paned)
     param_dialog.show_all()
     # connect dialog to main window
     self.open_windows.append(param_dialog)
@@ -3682,7 +3687,6 @@ set multiplot layout %i,1
       if os.path.getsize(self.active_session.TEMP_DIR + 'plot_temp.png') < 1000:
         # if this was not successful stop trying.
         return False
-    # TODO: errorhandling
     self.image_pixbuf=gtk.gdk.pixbuf_new_from_file(self.active_session.TEMP_DIR + 'plot_temp.png')
     s_alloc=self.image.get_allocation()
     pixbuf=self.image_pixbuf.scale_simple(s_alloc.width, s_alloc.height, gtk.gdk.INTERP_BILINEAR)
