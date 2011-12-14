@@ -257,15 +257,18 @@ def ipdrop(session):
   '''
   import sys, os
   import numpy as np
-  import measurement_data_plotting as mdp
-  import measurement_data_structure as mds
+  import scipy as sp
+  import sessions.generic
+  mdp=sessions.generic.measurement_data_plotting
+  mds=sessions.generic.measurement_data_structure
   from glob import glob
   index_mess=0
   errorbars=False
   
+  autoplot=True
   # convenience functions
   def plot(ds, output_file):
-    mdp.gnuplot_plot_script(session, 
+    result=mdp.gnuplot_plot_script(session, 
                            [ds],
                            'temp_plot', 
                            '.png', 
@@ -274,13 +277,16 @@ def ipdrop(session):
                            errorbars,
                            output_file, 
                            sample_name=ds.sample_name) 
+    if result!=('', []):
+      print result[0]
     
   def replot(index=None):
     if index is None:
       index=_user_namespace['index_mess']
     # Plot the selected active file
     ds=session.active_file_data[index]
-    _user_namespace['dataset']=ds
+    _user_namespace['ds']=ds
+    _user_namespace['plot_options']=ds.plot_options
     plot(ds, None)
   def select_file(name=None):
     # change the active plotted file
@@ -291,33 +297,58 @@ def ipdrop(session):
     session.active_file_data=session.file_data[name]
     session.active_file_name=name
     _user_namespace['index_mess']=0
-    replot()
+    if _user_namespace['autoplot']:
+      replot()
   def import_files(glob_pattern):
     # read all files fitting a given glob pattern and plot the last
     file_names=glob(glob_pattern)
     for file_name in file_names:
       session.add_file(file_name)
     select_file(file_names[-1])
-  def next():
+  def next(rel=1):
     # switch to next plot
-    _user_namespace['index_mess']=(_user_namespace['index_mess']+1)%len(session.active_file_data)
-    replot()
+    _user_namespace['index_mess']=(_user_namespace['index_mess']+rel)%len(session.active_file_data)
+    if _user_namespace['autoplot']:
+      replot()
     print _user_namespace['index_mess']
   def logy():
     # set/unset logscale
     session.active_file_data[_user_namespace['index_mess']].logy=\
        not session.active_file_data[_user_namespace['index_mess']].logy
-    replot()
+    if _user_namespace['autoplot']:
+      replot()
+  def dataset():
+    # return active dataset
+    return session.active_file_data[_user_namespace['index_mess']]
+  class plot_gui:
+    def rebuild_menus():
+      pass
+    
   
   _user_namespace={
                          }
   _user_namespace.update(locals())
   _user_namespace.update({'_user_namespace':_user_namespace})
+  # remove read_data modules from sys.modules
+  # fixes problems with importing modules
+  items=filter(lambda item: item.startswith('plot_script'), sys.modules.keys())
+  for item in items:
+    del(sys.modules[item])
   
-  sys.argv=sys.argv[:1]
   session.initialize_gnuplot()
-  import IPython.Shell
-  IPython.Shell.start(_user_namespace).mainloop(0)
+  import IPython
+  if IPython.__version__ <'0.11':
+    import IPython.Shell
+    shell = IPython.Shell.IPShellEmbed(argv='', banner='', user_ns=_user_namespace)
+    if len(session.ipython_commands)>0:
+      # exectue commands
+      shell.IP.runlines("\n".join(session.ipython_commands))
+    shell(header='')
+  else:
+    from IPython.frontend.terminal.embed import InteractiveShellEmbed
+    shell = InteractiveShellEmbed(user_ns=_user_namespace)
+    shell()
+  
 
 def _run():
   '''

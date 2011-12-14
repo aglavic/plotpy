@@ -285,7 +285,7 @@ if ('install' in sys.argv) and len(sys.argv)==2:
 if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
   print "Adding module directory to python path in plot.py script."
   script=open(os.path.join(sys.argv[sys.argv.index('--install-scripts')+1], 'plot.py'), 'r')
-  text=script.read().replace('##---add_python_path_here---##','sys.path.append("'+\
+  text=script.read().replace('##---add_python_path_here---##','sys.path.insert(1,"'+\
                     glob(os.path.join(sys.argv[sys.argv.index('--prefix')+1], 'lib/python2.?/site-packages'))[-1]\
                     +'")')
   script.close()

@@ -26,7 +26,7 @@ exit=sys.exit
 import math
 from time import sleep
 import subprocess
-from cPickle import load, dump
+from cPickle import load, dumps, dump
 import measurement_data_structure
 import measurement_data_plotting
 import config.gnuplot_preferences
@@ -736,8 +736,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
     dump_obj=self.create_snapshot_obj()
     print "Writing snapshot to file..."
+    dump_str=dumps(dump_obj, -1)
     if not name:
-      name=self.active_file_name
+      if len(dump_str)>(1024*1024*10):
+        name=self.active_file_name+'.mdd.gz'
+      else:
+        name=self.active_file_name+'.mdd'
     if name.endswith('.gz'):
       import gzip
       dump_file=gzip.open(name, 'wb')
@@ -745,7 +749,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       if not (name.endswith('.mdd') or name.endswith('.mds')):
         name+='.mdd'
       dump_file=open(name, 'wb')
-    dump(dump_obj, dump_file, -1)
+    dump_file.write(dump_str)
     dump_file.close()
 
   def reload_snapshot(self, name=None):
@@ -753,7 +757,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Reload a snapshot created with store_snapshot.
     '''
     if not name:
-      name=self.active_file_name
+      if os.path.exists(self.active_file_name+'.mdd'):
+        name=self.active_file_name+'.mdd'
+      elif os.path.exists(self.active_file_name+'.mdd.gz'):
+        name=self.active_file_name+'.mdd.gz'
+      else:
+        name=self.active_file_name
     if name.endswith('.gz'):
       import gzip
       if os.path.exists(name):
