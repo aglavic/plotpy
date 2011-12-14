@@ -299,7 +299,7 @@ def ipdrop(session):
     _user_namespace['index_mess']=0
     if _user_namespace['autoplot']:
       replot()
-  def import_files(glob_pattern):
+  def read_files(glob_pattern):
     # read all files fitting a given glob pattern and plot the last
     file_names=glob(glob_pattern)
     for file_name in file_names:
@@ -336,6 +336,12 @@ def ipdrop(session):
     del(sys.modules[item])
   
   session.initialize_gnuplot()
+  gnuplot_version, terminals=mdp.check_gnuplot_version(session)
+  if not sys.platform == 'darwin' and 'pngcairo' in terminals:
+    config.gnuplot_preferences.set_output_terminal_png=config.gnuplot_preferences.set_output_terminal_pngcairo
+  if not 'wxt' in terminals and 'x11' in terminals:
+    # if no wxt support is compiled
+    config.gnuplot_preferences.set_output_terminal_wxt=config.gnuplot_preferences.set_output_terminal_x11
   import IPython
   if IPython.__version__ <'0.11':
     import IPython.Shell

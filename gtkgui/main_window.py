@@ -3269,7 +3269,13 @@ set multiplot layout %i,1
       In debug mode this opens a window with an IPython console,
       which has direct access to all important objects.
     '''
-    from ipython_view import IPythonView, MenuWrapper, FitWrapper
+    import IPython
+    if IPython.__version__<'0.11':
+      from ipython_view import IPythonView, MenuWrapper, FitWrapper
+      import IPython.ipapi as ipapi
+    else:
+      from ipython_view_new import IPythonView, MenuWrapper, FitWrapper
+      import IPython.core.ipapi as ipapi
     import measurement_data_structure
     import pango
     import sys
@@ -3281,7 +3287,6 @@ set multiplot layout %i,1
     from copy import deepcopy
     from glob import glob
     from fit_data import register_function
-    import IPython.ipapi
     
     if getattr(self, 'active_ipython', False):
       # if there is already an ipython console, show it and exit
@@ -3358,7 +3363,10 @@ set multiplot layout %i,1
     ipython_dialog.connect('destroy', self.closed_ipy_console, oldstd)
     # lets the widget propagate <control>+Key and <alt>+key to this window
     ipview.propagate_key_parent=self
-    ip=IPython.ipapi.get()
+    if IPython.__version__<'0.11':
+      ip=ipapi.get()
+    else:
+      ip=ipview.IP
     ip.magic("colors Linux")
     # create functions for the use with ipython
     def getxyz():
@@ -3463,7 +3471,8 @@ set multiplot layout %i,1
       # reload namespace of an earlier session
       ipview.updateNamespace(self.ipython_user_namespace)
       ipview.IP.user_ns['In']+=self.ipython_user_history
-      ipview.IP.outputcache.prompt_count=len(self.ipython_user_history)
+      if IPython.__version__<'0.11':
+        ipview.IP.outputcache.prompt_count=len(self.ipython_user_history)
       if sys.platform.startswith('win'):
         ipview.externalExecute('color_info')
       else:
@@ -3476,21 +3485,22 @@ set multiplot layout %i,1
         ipview.externalExecute(command)
     self.active_ipview=ipview
     # redefine ls and cat as it doesn't work properly
-    del(ipview.IP.alias_table['ls'])
-    if 'cat' in ipview.IP.alias_table:
-      del(ipview.IP.alias_table['cat'])
-    def _ls_new(self, arg):
-      ip = self.api
-      if arg=='':
-        arg='*'
-      ip.ex("from glob import glob; last_ls=glob('%s'); print 'last_ls=',last_ls" % arg)
-    def _cat_new(self, arg):
-      ip = self.api
-      if arg=='':
-        ip.ex("print 'No file supplied.'")
-      ip.ex("print open('%s','r').read()" % arg)
-    ip.expose_magic('ls',_ls_new)
-    ip.expose_magic('cat',_cat_new)
+    if IPython.__version__<'0.11':
+      del(ipview.IP.alias_table['ls'])
+      if 'cat' in ipview.IP.alias_table:
+        del(ipview.IP.alias_table['cat'])
+      def _ls_new(self, arg):
+        ip = self.api
+        if arg=='':
+          arg='*'
+        ip.ex("from glob import glob; last_ls=glob('%s'); print 'last_ls=',last_ls" % arg)
+      def _cat_new(self, arg):
+        ip = self.api
+        if arg=='':
+          ip.ex("print 'No file supplied.'")
+        ip.ex("print open('%s','r').read()" % arg)
+      ip.expose_magic('ls',_ls_new)
+      ip.expose_magic('cat',_cat_new)
 
   def closed_ipy_console(self, widget, oldstd):
     '''
@@ -4013,12 +4023,15 @@ set multiplot layout %i,1
       Check gnuplot version for capabilities.
     '''
     self.gnuplot_initialized=True
-    gnuplot_version=measurement_data_plotting.check_gnuplot_version(self.active_session)
+    gnuplot_version, terminals=measurement_data_plotting.check_gnuplot_version(self.active_session)
     if gnuplot_version[0]<4.4:
       # mouse mode only works with version 4.4 and higher
       self.mouse_mode=False
-    elif not sys.platform == 'darwin':
+    elif not sys.platform == 'darwin' and 'pngcairo' in terminals:
       gnuplot_preferences.set_output_terminal_png=gnuplot_preferences.set_output_terminal_pngcairo
+    if not 'wxt' in terminals and 'x11' in terminals:
+      # if no wxt support is compiled
+      gnuplot_preferences.set_output_terminal_wxt=gnuplot_preferences.set_output_terminal_x11
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
             with_errorbars, output_file=gnuplot_preferences.output_file_name, 

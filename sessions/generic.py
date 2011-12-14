@@ -735,7 +735,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       the active_file_data list and stores it in active_file_name.mdd.
     '''
     dump_obj=self.create_snapshot_obj()
-    print "Writing snapshot to file..."
     dump_str=dumps(dump_obj, -1)
     if not name:
       if len(dump_str)>(1024*1024*10):
@@ -749,6 +748,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       if not (name.endswith('.mdd') or name.endswith('.mds')):
         name+='.mdd'
       dump_file=open(name, 'wb')
+    print "Writing snapshot to file %s..." % (os.path.split(name)[1])
     dump_file.write(dump_str)
     dump_file.close()
 

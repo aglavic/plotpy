@@ -35,6 +35,7 @@ def check_gnuplot_version(session):
   write_file.write( '''
         print GPVAL_VERSION
         print GPVAL_PATCHLEVEL
+        print GPVAL_TERMINALS
       '''
                     )
   write_file.close()
@@ -48,10 +49,11 @@ def check_gnuplot_version(session):
                         stdin=subprocess.PIPE, 
                         )
     output = proc.communicate()[1]
-    version, patchlevel=output.splitlines()
-    return float(version), float(patchlevel)
+    version, patchlevel, terminals=output.splitlines()
+    terminals=terminals.split()
+    return (float(version), float(patchlevel)), terminals
   except:
-    return 0., 0.
+    return (0., 0.), []
 
 def gnuplot_plot_script(session,  
                         datasets,

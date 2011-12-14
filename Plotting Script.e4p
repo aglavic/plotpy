@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2011-12-10, 09:30:48 -->
+<!-- Saved: 2011-12-14, 16:35:35 -->
 <!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -104,6 +104,8 @@
     <Source>option_types.py</Source>
     <Source>plotpy_info.py</Source>
     <Source>decorators.py</Source>
+    <Source>gtkgui/ipython_view_new.py</Source>
+    <Source>config/default_templates/__init__.py</Source>
   </Sources>
   <Forms>
   </Forms>
