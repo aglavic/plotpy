@@ -152,7 +152,10 @@ def initialize(log_file, level='INFO', modules=[]):
   # redirect warnigs to the logger
   warnings.resetwarnings()
   warnings.simplefilter('always')
-  logging.captureWarnings(True)
+  try:
+    logging.captureWarnings(True)
+  except AttributeError:
+    pass
   if level==logging.DEBUG:
     # In complete debug mode function calls of defined modules get logged, too
     logger.debug("Beginning initialize logging for all modules...")

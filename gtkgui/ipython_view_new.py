@@ -79,7 +79,6 @@ class IterableIPShell:
     self.IP.system = self.IP.system_piped#lambda cmd: self.shell(self.IP.var_expand(cmd),
                                           #  header='IPython system call: ',
                                            # verbose=self.IP.rc.system_verbose)
-    
     # perhaps a bit hackkish, review...
     sys.stdout, sys.stderr=old_std
     # perhaps a bit hackkish, review...
@@ -99,8 +98,8 @@ class IterableIPShell:
     sys.stderr = IPython.utils.io.stderr
     try:
       line = self.getCurrentLine()#IPython.utils.io.raw_input_ext()#self.IP.raw_input()
-      if self.IP.autoindent:
-        self.IP.readline_startup_hook(None)
+      #if self.IP.autoindent:
+      #  self.IP.readline_startup_hook(None)
     except KeyboardInterrupt:
       self.IP.write('\nKeyboardInterrupt\n')
       self.IP.resetbuffer()
@@ -119,13 +118,13 @@ class IterableIPShell:
           self.IP.rc.autoedit_syntax):
         self.IP.edit_syntax_error()
     if self.iter_more:
-      self.prompt = str(self.IP.displayhook.prompt2).strip()
-      if self.IP.autoindent:
-        self.IP.readline_startup_hook(self.IP.pre_readline)
+      self.prompt = str(self.IP.prompt_manager.render('in2')).strip()
+      #if self.IP.autoindent:
+      #  self.IP.readline_startup_hook(lambda : self.IP.input_splitter.indent_spaces*' ')#(self.IP.pre_readline)
     else:
       source_raw = self.IP.input_splitter.source_raw_reset()[1]
-      self.IP.run_cell(source_raw)
-      self.prompt = str(self.IP.displayhook.prompt1).strip()
+      self.IP.run_cell(source_raw, store_history=True)
+      self.prompt = str(self.IP.prompt_manager.render('in')).strip()
     sys.stdout, sys.stderr = orig_stdout
 
   def historyBack(self):
@@ -138,7 +137,8 @@ class IterableIPShell:
 
   def _getHistory(self):
     try:
-      rv = self.IP.user_ns['In'][self.history_level].strip('\n')
+      #rv = self.IP.user_ns['In'][self.history_level].strip('\n')
+      rv = self.IP.history_manager.input_hist_raw[self.history_level].strip('\n')
     except IndexError:
       self.history_level = 0
       rv = ''
@@ -249,6 +249,7 @@ class ConsoleView(gtk.TextView):
       self.write('\n')
     self.showPrompt(self.prompt)
     self.text_buffer.move_mark(self.line_start,self.text_buffer.get_end_iter())
+    self.write(self.IP.input_splitter.indent_spaces*' ', True)
     self.text_buffer.place_cursor(self.text_buffer.get_end_iter())
 
   def _onKeypress(self, obj, event):

@@ -29,6 +29,7 @@ import subprocess
 from cPickle import load, dumps, dump
 import measurement_data_structure
 import measurement_data_plotting
+import parallel
 import config.gnuplot_preferences
 import config.transformations
 
@@ -101,10 +102,11 @@ Options:
 \t-ipr script.py\tSame as '-ipy "run -i script.py"'
 \t\t\tThis option can be given multiple times to define a sequence of lines to be executed.
 \t\t\tI would recomand writing a script and just adding the option '-ipy "run -i script.py"'.
-\t-ipdrop \tRead data and drop to IPython console without running the GUI
 \t-no-trans\tdon't make a unit transformation
 
 \tAdvanced settings:
+\t-ipdrop \tRead data and drop to IPython console without running the GUI
+\t-ipmp \tConnect to IPython multiprocessing cluster for e.g. faster fit calculation
 \t--nolimit\tDon't limit the amount of memory consumed by the program so there will not be a MemoryError 
 \t\t\t(be carefull, can lead to a non responsive system from operations causing to high memory usage)
 \t--debug\t\tDon't redirect the output to any GUI windows but show it on the command line, writes additional 
@@ -142,7 +144,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   FILE_WILDCARDS=[('All', '*')] # wildcards for the file open dialog of the GUI
   # known command line options list
   COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 
-                        'template','no-trans', '-help', '-debug', '-nolimit', 'startuppath', 'mpl','ipy', 'ipr', 'ipdrop']
+                        'template','no-trans', '-help', '-debug', '-nolimit', 'startuppath', 'mpl', 
+                        'ipy', 'ipr', 'ipdrop', 'ipmp']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -363,6 +366,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
           self.use_gui=False
           if argument == '-ipdrop':
             self.ipdrop=True
+        elif argument=='-ipmp':
+          parallel.connect()
         elif argument=='-no-trans':
           self.unit_transformation=False
         elif argument=='--help':
