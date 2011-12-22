@@ -605,15 +605,29 @@ set size square
     headers[-1].insert(1, headers[-1][0][1:])
   columns_line=headers[-1][1:]
   for i, column in enumerate(columns_line):
-    column_name=column.rsplit('[', 1)[0]
+    column_name=column.rsplit('[', 1)[0].rsplit('__', 1)[0]
     if column_name in COLUMNS_MAPPING:
       columns[COLUMNS_MAPPING[column_name]]=i
   # get the columns of interest
   if not 'Image' in columns:
-    import_images=False
+    if file_name.endswith('.dat'):
+      # new MARIA format
+      path, name=os.path.split(file_name)
+      name=name.rsplit('.dat', 1)[0]
+      img_file_names=glob(os.path.join(path, name+'_*.gz'))
+      img_numbers=map(lambda item: int(item.rsplit('_', 1)[1].split('.')[0]), img_file_names)
+      joint=zip(img_numbers, img_file_names)
+      joint.sort()
+      img_file_names=[item[1] for item in joint]
+      columns['Image']=len(data_lines[0])
+      data_lines=[data_lines[i]+[img_file_names[i]] for i in range(len(data_lines))]
+    else:
+      import_images=False
   global negative_omega
   negative_omega=False
   const_information={}
+  # define the type of scan used
+  columns['Scantype']='omega'
   for i, line in enumerate(headers):
     if ['#Scan','command','arguments:'] == line:
       arguments=" ".join(headers[i+1]).split('+-')[1].split()
@@ -626,7 +640,6 @@ set size square
         else:
           columns['Scantype']=COLUMNS_MAPPING['Time[sec]']
       break
-
   if 'Wavelength' in columns:
     global PI_4_OVER_LAMBDA
     lambda_n=float(data_lines[0][columns['Wavelength']])

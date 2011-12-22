@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2011-12-19, 16:26:23 -->
+<!-- Saved: 2011-12-22, 11:44:39 -->
 <!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -114,6 +114,7 @@
     <Source>config/default_templates/afm.py</Source>
     <Source>config/parallel.py</Source>
     <Source>parallel.py</Source>
+    <Source>ipkernel_handler.py</Source>
   </Sources>
   <Forms>
   </Forms>
