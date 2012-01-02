@@ -405,7 +405,10 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
       # Create object for the detector image
       imgobj=create_img_object(detector_image, alphai, alphaf_center, float(line[columns['Time']]))
       imgobj.sample_name='Detector Image '+line[columns['Image']].rsplit('.', 1)[0]
-      imgobj.short_info=line[columns['Image']].rsplit('.', 1)[1]
+      try:
+        imgobj.short_info=line[columns['Image']].rsplit('.', 1)[1]
+      except IndexError:
+        imgobj.short_info=line[columns['Image']]
       imgobj.number=str(index)
       # write the data of the object to a file to save memory
       imgobj.store_data()

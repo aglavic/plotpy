@@ -31,10 +31,11 @@ def getinfo(func):
         argnames.append(varkwargs)
     signature = inspect.formatargspec(regargs, varargs, varkwargs, defaults,
                                       formatvalue=lambda value: "")[1:-1]
-    return dict(name=func.__name__, argnames=argnames, signature=signature,
+    output=dict(name=func.__name__, argnames=argnames, signature=signature,
                 defaults = func.func_defaults, doc=func.__doc__,
                 module=func.__module__, dict=func.__dict__,
                 globals=func.func_globals, closure=func.func_closure)
+    return output
 
 def update_wrapper(wrapper, wrapped, create=False):
     """
@@ -63,6 +64,7 @@ def update_wrapper(wrapper, wrapped, create=False):
     wrapper.__dict__.update(infodict['dict'])
     wrapper.func_defaults = infodict['defaults']
     return wrapper
+
 
 # the real meat is here
 def _decorator(caller, func):
@@ -107,9 +109,10 @@ def log_call(func, *args, **kw):
   if logger is None:
     return func(*args, **kw)
   infodict=getinfo(func)
-  if inspect.ismethod(func):
-    infodict['name']=func.im_class.__name__+'.'+infodict['name']
-  logger.debug('call to %s.%s' % (infodict['module'], infodict['name']))
+  if len(infodict['argnames'])>0 and infodict['argnames'][0]=='self':
+    logger.debug('call to %s.%s.%s' % (infodict['module'], args[0].__class__.__name__, infodict['name']))
+  else:
+    logger.debug('call to %s.%s' % (infodict['module'], infodict['name']))
   return func(*args, **kw)
 
 @decorator
@@ -120,14 +123,16 @@ def log_input(func, *args, **kw):
   if logger is None:
     return func(*args, **kw)
   infodict=getinfo(func)
-  if inspect.ismethod(func):
-    infodict['name']=func.im_class.__name__+'.'+infodict['name']
-  logstr='call to %s.%s(' % (infodict['module'], infodict['name'])
+  if len(infodict['argnames'])>0 and infodict['argnames'][0]=='self':
+    logstr='call to %s.%s.%s' % (infodict['module'], args[0].__class__.__name__, infodict['name'])
+  else:
+    logstr='call to %s.%s(' % (infodict['module'], infodict['name'])
   for i, arg in enumerate(args):
-    logstr+='\n'+' '*36+'% 10s=%15s (%s)' % (infodict['argnames'][i], str(arg), type(arg).__name__)
+    logstr+='\n'+'% 10s=%15s (%s)' % (infodict['argnames'][i], repr(arg), type(arg).__name__)
   for key, value in sorted(kw.items()):
-    logstr+='\n'+' '*36+'% 10s=%15s (%s)' % (key, str(value), type(value).__name__)
-  logstr+='\n'+' '*36+')'
+    logstr+='\n'+'% 10s=%15s (%s)' % (key, repr(value), type(value).__name__)
+  logstr+='\n)'
+  logstr=logstr.replace('\n', '\n'+' '*44)
   logger.debug(logstr)
   return func(*args, **kw)
 
@@ -141,8 +146,12 @@ def log_output(func, *args, **kw):
     return func(*args, **kw)
   output=func(*args, **kw)
   infodict=getinfo(func)
-  logstr='return from %s.%s' % (infodict['module'], infodict['name'])
-  logstr+='\n'+' '*44+'-> %15s (%s)' % (str(output), type(output).__name__)
+  if len(infodict['argnames'])>0 and infodict['argnames'][0]=='self':
+    logstr='return from %s.%s.%s' % (infodict['module'], args[0].__class__.__name__, infodict['name'])
+  else:
+    logstr='return from %s.%s' % (infodict['module'], infodict['name'])
+  logstr+='\n-> %15s (%s)' % (repr(output), type(output).__name__)
+  logstr=logstr.replace('\n', '\n'+' '*44)
   logger.debug(logstr)
   return output
 
@@ -154,20 +163,26 @@ def log_both(func, *args, **kw):
   if logger is None:
     return func(*args, **kw)
   infodict=getinfo(func)
-  if inspect.ismethod(func):
-    infodict['name']=func.im_class.__name__+'.'+infodict['name']
-  logstr='call to %s.%s(' % (infodict['module'], infodict['name'])
+  if len(infodict['argnames'])>0 and infodict['argnames'][0]=='self':
+    logstr='call to %s.%s.%s' % (infodict['module'], args[0].__class__.__name__, infodict['name'])
+  else:
+    logstr='call to %s.%s(' % (infodict['module'], infodict['name'])
   for i, arg in enumerate(args):
-    logstr+='\n'+' '*36+'% 10s=%15s (%s)' % (infodict['argnames'][i], str(arg), type(arg).__name__)
+    logstr+='\n'+'% 10s=%15s (%s)' % (infodict['argnames'][i], repr(arg), type(arg).__name__)
   for key, value in sorted(kw.items()):
-    logstr+='\n'+' '*36+'% 10s=%15s (%s)' % (key, str(value), type(value).__name__)
-  logstr+='\n'+' '*36+')'
+    logstr+='\n'+'% 10s=%15s (%s)' % (key, repr(value), type(value).__name__)
+  logstr+='\n)'
+  logstr=logstr.replace('\n', '\n'+' '*44)
   logger.debug(logstr)
   # call the function
   output=func(*args, **kw)
   infodict=getinfo(func)
-  logstr='return from %s.%s' % (infodict['module'], infodict['name'])
-  logstr+='\n'+' '*44+'-> %15s (%s)' % (str(output), type(output).__name__)
+  if len(infodict['argnames'])>0 and infodict['argnames'][0]=='self':
+    logstr='return from %s.%s.%s' % (infodict['module'], args[0].__class__.__name__, infodict['name'])
+  else:
+    logstr='return from %s.%s' % (infodict['module'], infodict['name'])
+  logstr+='\n-> %15s (%s)' % (repr(output), type(output).__name__)
+  logstr=logstr.replace('\n', '\n'+' '*44)
   logger.debug(logstr)
   return output
 
