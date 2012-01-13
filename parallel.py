@@ -28,7 +28,11 @@ def connect():
   global client, dview, lview
   from IPython.parallel import Client
   from IPython.parallel.error import CompositeError
-  client=Client(**config.parallel.CLIENT_KW)
+  try:
+    client=Client(**config.parallel.CLIENT_KW)
+  except Exception, error:
+    print "Could not connect to cluster:\n  %s - %s" % (type(error).__name__, error)
+    return False
   print "\tconnected to controller with %i engines" % len(client.ids)
   dview=client[:]
   lview=client.load_balanced_view()
@@ -62,7 +66,15 @@ sys.path.append(os.path.join(user_folder, 'plugins'));''',
       print "Encountered an error on the remote machine!"
       e.raise_exception()
   print "\n\tFinished!"
-  
+  return True
+
+def disconnect():
+  global client, dview, lview
+  client=None
+  dview=None
+  lview=None
+  print "Disconnected!"
+
 def add_actions(actions):
   global additional_actions
   if dview is None:

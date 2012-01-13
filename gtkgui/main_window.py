@@ -3545,6 +3545,29 @@ set multiplot layout %i,1
       widget.add_data()
     else:
       self.replot()
+  
+  def connect_cluster(self, action):
+    '''
+      Open a dialog to connect to IPython Cluster.
+    '''
+    import config.parallel
+    import parallel
+    if parallel.dview is not None:
+      parallel.disconnect()
+      return
+    
+    parameters, result=SimpleEntryDialog('IPython Cluster Options...', 
+                                         [('params', 'timeout=5, ', str)]
+                                         ).run()
+    if result:
+      config.parallel.CLIENT_KW=eval( 'dict('+parameters['params']+')' )
+      status_dialog=self.status_dialog
+      status_dialog.show()
+      sys.stdout.second_output=status_dialog
+      connected=parallel.connect()
+      sys.stdout.second_output=None
+      if connected:
+        status_dialog.hide()
 
   #--------------------------Menu/Toolbar Events---------------------------------#
 
@@ -3887,7 +3910,6 @@ set multiplot layout %i,1
       if position is not None:
         ds=dataset
         if action.button==1:
-          dialog=SimpleEntryDialog
           parameters, result=SimpleEntryDialog('Enter Label...', 
                                          [('Text', 'Label', str)]
                                          ).run()
@@ -3897,7 +3919,6 @@ set multiplot layout %i,1
           self.mouse_arrow_starting_point=position
           self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
         if action.button==3:
-          dialog=SimpleEntryDialog
           parameters, result=SimpleEntryDialog('Enter Label...', 
                                          [('Text', '(%g,%g)' % (position[0], position[1]), str)]
                                          ).run()
@@ -4511,6 +4532,8 @@ set multiplot layout %i,1
         <menuitem action='OpenConsole'/>
         <separator name='extras1'/>
         <menuitem action='OpenDataView'/>
+        <separator name='extras2'/>
+        <menuitem action='ConnectIPython'/>
       </menu>
       <separator name='static13'/>
       <menu action='HelpMenu'>
@@ -4808,6 +4831,10 @@ set multiplot layout %i,1
         "Show/Edit Data", "<control><shift>D",                     # label, accelerator
         None,                                    # tooltip
         self.open_dataview_dialog),
+      ( "ConnectIPython", None,                    # name, stock id
+        "IP-Cluster...", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.connect_cluster),        
       ( "ShowPersistent", gtk.STOCK_FULLSCREEN,                    # name, stock id
         "Open Persistent Gnuplot Window", None,                     # label, accelerator
         "Open Persistent Gnuplot Window",                                    # tooltip

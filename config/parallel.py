@@ -20,7 +20,7 @@ CLIENT_KW=dict(
             #profile='netcluster', 
             #profile_dir=None, 
             #sshserver='glavic@192.168.2.2', 
-            #timeout=10, 
+            timeout=5, 
             #
            )
 

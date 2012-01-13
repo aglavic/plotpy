@@ -34,6 +34,8 @@ def read_data(file_name, DATA_COLUMNS):
     if file_name.endswith('.txt'):
       # Philips X'Pert data files
       return read_data_philips(file_name)
+    if file_name.endswith('.xrdml'):
+      return read_data_xrdml:
     global sample_name
     sample_name=''
     if file_name.endswith('.gz'):
@@ -66,7 +68,7 @@ def read_data(file_name, DATA_COLUMNS):
         return 'NULL'
     return measurement_data
   else:
-    print 'File '+input_file+' does not exist.'
+    print 'File '+file_name+' does not exist.'
     return measurement_data
 
 def read_header(input_file_lines): 
@@ -215,6 +217,8 @@ def read_philips_header(input_file_lines):
       key, value=line.split(':', 1)
       header_info[key.strip()]=value.strip()
   return header_info, [], []
+
+def read_data_xrdml(input_file):
   
 
 class MeasurementData(measurement_data_structure.MeasurementData):
