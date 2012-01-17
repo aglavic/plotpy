@@ -439,12 +439,13 @@ class FitSessionGUI:
           text+='\n\n%i - %s:' % (i, function[0].name)
           if function[0].last_fit_output is not None:
             result=function[0].last_fit_output
-            text+='\n%i iterations, %i function evaluations, exit status %i' % (result.niter, result.nfev, result.status)
-            if result.status<=0:
-              text+='\n%s' % result.errmsg
+            text+='\n  χ² after refinement was %g' % result.fnorm
+            text+='\n  %i iterations, %i function evaluations' % (result.niter, result.nfev)
+            if result.errmsg!='':
+              text+='\n  Message: "%s"' % result.errmsg
           for j, pj in enumerate(function[0].parameter_names):
             error=numpy.sqrt(covariance_matices[i][j][j])
-            text+='\n%s = %g' % (pj, function[0].parameters[j])
+            text+='\n  %s = %g' % (pj, function[0].parameters[j])
             if error != 0:
               text+=' ± %g' % error
       info_dialog=gtk.MessageDialog(parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT, 

@@ -12,7 +12,7 @@ import math
 import measurement_data_structure
 import codecs
 from copy import deepcopy
-from numpy import array, sqrt, pi, sin, float32, argsort
+from numpy import array, sqrt, pi, sin, float32, argsort, linspace
 
 __author__ = "Artur Glavic"
 __credits__ = []
@@ -34,6 +34,8 @@ def read_data(file_name, DATA_COLUMNS):
     if file_name.endswith('.txt'):
       # Philips X'Pert data files
       return read_data_philips(file_name)
+    if file_name.endswith('.xrdml'):
+      return read_data_xrdml(file_name)
     global sample_name
     sample_name=''
     if file_name.endswith('.gz'):
@@ -66,7 +68,7 @@ def read_data(file_name, DATA_COLUMNS):
         return 'NULL'
     return measurement_data
   else:
-    print 'File '+input_file+' does not exist.'
+    print 'File '+file_name+' does not exist.'
     return measurement_data
 
 def read_header(input_file_lines): 
@@ -215,7 +217,74 @@ def read_philips_header(input_file_lines):
       key, value=line.split(':', 1)
       header_info[key.strip()]=value.strip()
   return header_info, [], []
-  
+
+def read_data_xrdml(input_file):
+    PhysicalProperty=measurement_data_structure.PhysicalProperty
+    from xml.dom.minidom import parse
+    xml_data=parse(input_file).firstChild
+    
+    # retrieve data
+    try:
+      sample_name=xml_data.getElementsByTagName('sample')[0].getElementsByTagName('name')[0].firstChild.nodeValue
+    except AttributeError:
+      sample_name=os.path.split(input_file)[1].rsplit('.', 1)[0]
+    scan=xml_data.getElementsByTagName('xrdMeasurement')[0].getElementsByTagName('scan')[0].getElementsByTagName('dataPoints')[0]
+    header=xml_data.getElementsByTagName('xrdMeasurement')[0].getElementsByTagName('scan')[0].getElementsByTagName('header')[0]
+    start_time=header.getElementsByTagName('startTimeStamp')[0].firstChild.nodeValue
+    try:
+      user=header.getElementsByTagName('author')[0].getElementsByTagName('name')[0].firstChild.nodeValue
+    except AttributeError:
+      user=''
+    
+    
+    fixed_positions={}
+    moving_positions={}
+    for motor in scan.getElementsByTagName('positions'):
+      axis=motor.attributes['axis'].value
+      if axis=='2Theta':
+        axis='2Θ'
+      if axis=='Omega':
+        axis='Θ'
+      unit=motor.attributes['unit'].value
+      if unit=='deg':
+        unit='°'
+      if len(motor.getElementsByTagName('commonPosition'))==0:
+        start=float(motor.getElementsByTagName('startPosition')[0].firstChild.nodeValue)
+        end=float(motor.getElementsByTagName('endPosition')[0].firstChild.nodeValue)
+        moving_positions[axis]=(unit, start, end)
+      else:
+        pos=float(motor.getElementsByTagName('commonPosition')[0].firstChild.nodeValue)
+        fixed_positions[axis]=(unit, pos)
+    
+    atten_factors=scan.getElementsByTagName('beamAttenuationFactors')[0].firstChild.nodeValue
+    time=float(scan.getElementsByTagName('commonCountingTime')[0].firstChild.nodeValue)
+    data=scan.getElementsByTagName('intensities')[0].firstChild.nodeValue
+    atten_factors=map(float, atten_factors.split())
+    data=map(float, data.split())
+    I=array(data)
+    atten=array(atten_factors)
+    dI=sqrt(I*atten)
+    I/=time
+    dI/=time
+    cols=[PhysicalProperty( 'Intensity', 'counts/s', I, dI )]
+    if 'Θ' in moving_positions:
+      angles=linspace(moving_positions['Θ'][1], moving_positions['Θ'][2], len(data))
+      cols.append(PhysicalProperty( 'Θ',  moving_positions['Θ'][0], angles ))
+      del(moving_positions['Θ'])
+    for key, value in sorted(moving_positions.items()):
+      angles=linspace(value[1], value[2], len(data))
+      cols.append(PhysicalProperty( key,  value[0], angles ))
+    dataset=measurement_data_structure.MeasurementData(x=1, y=0)
+    dataset.data=cols
+    dataset.number='0'
+    dataset.sample_name=sample_name
+    dataset.info='User: %s\nStart Time: %s\n\nMotor Positions:\n' % (user, start_time)
+    for key, value in sorted(moving_positions.items()):
+      dataset.info+='% 10s = %g-%g %s\n' % (key, value[1], value[2], value[0])
+    for key, value in sorted(fixed_positions.items()):
+      dataset.info+='% 10s = %g %s\n' % (key, value[1], value[0])
+    
+    return [dataset]
 
 class MeasurementData(measurement_data_structure.MeasurementData):
   '''

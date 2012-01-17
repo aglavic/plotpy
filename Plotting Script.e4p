@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project Plotting Script -->
-<!-- Saved: 2011-11-27, 21:29:25 -->
+<!-- Saved: 2011-12-22, 11:44:39 -->
 <!-- Copyright (C) 2011 Artur Glavic, a.glavic@fz-juelich.de -->
 <Project version="4.6">
   <Language></Language>
@@ -79,7 +79,6 @@
     <Source>sessions/reflectometer_fit/treff.py</Source>
     <Source>sessions/templates.py</Source>
     <Source>config/templates.py</Source>
-    <Source>config/default_template.py</Source>
     <Source>gtkgui/generic.py</Source>
     <Source>measurement_data_functions.c</Source>
     <Source>measurement_data_functions.h</Source>
@@ -104,6 +103,18 @@
     <Source>option_types.py</Source>
     <Source>plotpy_info.py</Source>
     <Source>decorators.py</Source>
+    <Source>gtkgui/ipython_view_new.py</Source>
+    <Source>config/default_templates/__init__.py</Source>
+    <Source>config/default_templates/default_template.py</Source>
+    <Source>config/default_templates/xrd_10keV.py</Source>
+    <Source>config/default_templates/xrd_theta.py</Source>
+    <Source>config/default_templates/xrd.py</Source>
+    <Source>config/default_templates/ccms.py</Source>
+    <Source>config/default_templates/afm_histo.py</Source>
+    <Source>config/default_templates/afm.py</Source>
+    <Source>config/parallel.py</Source>
+    <Source>parallel.py</Source>
+    <Source>ipkernel_handler.py</Source>
   </Sources>
   <Forms>
   </Forms>
@@ -250,7 +261,6 @@
             </key>
             <value>
               <list>
-                <unicode>py2exe_imports.py</unicode>
                 <unicode>setup.py</unicode>
               </list>
             </value>

@@ -15,7 +15,7 @@ from copy import deepcopy
 # own modules
 # Module to save and load variables from/to config files
 from configobj import ConfigObj
-from measurement_data_structure import MeasurementData
+from measurement_data_structure import MeasurementData, HugeMD
 import measurement_data_plotting
 from config.gnuplot_preferences import output_file_name,PRINT_COMMAND,titles
 import config
@@ -1029,11 +1029,17 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
       file_dialog.set_current_name(self.active_session.active_file_name+'.mdd')
-      filter = gtk.FileFilter()
-      filter.set_name("Snapshots (*.mdd(.gz))")
-      filter.add_pattern("*.mdd")
-      filter.add_pattern("*.mdd.gz")
-      file_dialog.add_filter(filter)
+      if action.get_name()=='SaveSnapshotAs':
+        filter = gtk.FileFilter()
+        filter.set_name("Snapshots (*.mdd(.gz))")
+        filter.add_pattern("*.mdd")
+        filter.add_pattern("*.mdd.gz")
+        file_dialog.add_filter(filter)
+      else:
+        filter = gtk.FileFilter()
+        filter.set_name("Numpy Archive (*.npz)")
+        filter.add_pattern("*.npz")
+        file_dialog.add_filter(filter)
       filter = gtk.FileFilter()
       filter.set_name("All Files")
       filter.add_pattern("*")
@@ -1042,14 +1048,18 @@ class ApplicationMainWindow(gtk.Window):
       if response == gtk.RESPONSE_OK:
         self.active_folder=file_dialog.get_current_folder()
         name=unicode(file_dialog.get_filenames()[0], 'utf-8')
-        if not (name.endswith(".mdd") or name.endswith(".mdd.gz")):
-          name+=".mdd"
+        if action.get_name()=='SaveSnapshotAs':
+          if not (name.endswith(".mdd") or name.endswith(".mdd.gz")):
+            name+=".mdd"
       elif response == gtk.RESPONSE_CANCEL:
         file_dialog.destroy()
         return False
       file_dialog.destroy()
       #----------------File selection dialog-------------------#
-    self.active_session.store_snapshot(name)
+    if action.get_name()=='SaveSnapshotNumpy':
+      self.measurement[self.index_mess].export_npz(name)
+    else:
+      self.active_session.store_snapshot(name)
   
   def load_snapshot(self, action):
     '''
@@ -1078,7 +1088,7 @@ class ApplicationMainWindow(gtk.Window):
       if response == gtk.RESPONSE_OK:
         self.active_folder=file_dialog.get_current_folder()
         name=unicode(file_dialog.get_filenames()[0], 'utf-8')
-        if not name.endswith(u".mdd"):
+        if not name.endswith(u".mdd") and not name.endswith(u".mdd.gz") :
           name+=u".mdd"
       elif response == gtk.RESPONSE_CANCEL:
         file_dialog.destroy()
@@ -1451,9 +1461,10 @@ class ApplicationMainWindow(gtk.Window):
                          fit_lorentz=False)
     # create a dialog to show the plot text for the active data
     param_dialog=gtk.Dialog(title='Last plot parameters:')
-    param_dialog.set_default_size(600,400)
+    param_dialog.set_default_size(600,600)
     # alignment table
-    table=gtk.Table(1,4,False)
+    table=gtk.Table(1,2,False)
+    paned=gtk.VPaned()
     
     # Label
     label=gtk.Label()
@@ -1469,13 +1480,15 @@ class ApplicationMainWindow(gtk.Window):
     text_filed=gtk.Label()
     text_filed.set_markup(plot_text.replace('<', '[').replace('>', ']'))
     sw.add_with_viewport(text_filed) # add textbuffer view widget
-    table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0);
+    table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0)
+    paned.add(table)
     # errors of the last plot
     if self.last_plot_text!='':
+      table=gtk.Table(1,2,False)
       # Label
       label=gtk.Label()
       label.set_markup('Error during execution:')
-      table.attach(label, 0, 1, 2, 3, 0, 0, 0, 0);
+      table.attach(label, 0, 1, 0, 1, 0, 0, 0, 0);
       sw = gtk.ScrolledWindow()
       # Set the adjustments for horizontal and vertical scroll bars.
       # POLICY_AUTOMATIC will automatically decide whether you need
@@ -1484,8 +1497,10 @@ class ApplicationMainWindow(gtk.Window):
       text_filed=gtk.Label()
       text_filed.set_markup(self.last_plot_text)
       sw.add_with_viewport(text_filed) # add textbuffer view widget
-      table.attach(sw, 0, 1, 3, 4, gtk.EXPAND|gtk.FILL, gtk.FILL, 0, 0);
-    param_dialog.vbox.add(table)
+      table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0)
+      paned.add(table)
+      paned.set_position(400)
+    param_dialog.vbox.add(paned)
     param_dialog.show_all()
     # connect dialog to main window
     self.open_windows.append(param_dialog)
@@ -3264,7 +3279,13 @@ set multiplot layout %i,1
       In debug mode this opens a window with an IPython console,
       which has direct access to all important objects.
     '''
-    from ipython_view import IPythonView, MenuWrapper, FitWrapper
+    import IPython
+    if IPython.__version__<'0.11':
+      from ipython_view import IPythonView, MenuWrapper, FitWrapper
+      import IPython.ipapi as ipapi
+    else:
+      from ipython_view_new import IPythonView, MenuWrapper, FitWrapper
+      import IPython.core.ipapi as ipapi
     import measurement_data_structure
     import pango
     import sys
@@ -3276,7 +3297,6 @@ set multiplot layout %i,1
     from copy import deepcopy
     from glob import glob
     from fit_data import register_function
-    import IPython.ipapi
     
     if getattr(self, 'active_ipython', False):
       # if there is already an ipython console, show it and exit
@@ -3353,7 +3373,10 @@ set multiplot layout %i,1
     ipython_dialog.connect('destroy', self.closed_ipy_console, oldstd)
     # lets the widget propagate <control>+Key and <alt>+key to this window
     ipview.propagate_key_parent=self
-    ip=IPython.ipapi.get()
+    if IPython.__version__<'0.11':
+      ip=ipapi.get()
+    else:
+      ip=ipview.IP
     ip.magic("colors Linux")
     # create functions for the use with ipython
     def getxyz():
@@ -3458,7 +3481,8 @@ set multiplot layout %i,1
       # reload namespace of an earlier session
       ipview.updateNamespace(self.ipython_user_namespace)
       ipview.IP.user_ns['In']+=self.ipython_user_history
-      ipview.IP.outputcache.prompt_count=len(self.ipython_user_history)
+      if IPython.__version__<'0.11':
+        ipview.IP.outputcache.prompt_count=len(self.ipython_user_history)
       if sys.platform.startswith('win'):
         ipview.externalExecute('color_info')
       else:
@@ -3471,21 +3495,22 @@ set multiplot layout %i,1
         ipview.externalExecute(command)
     self.active_ipview=ipview
     # redefine ls and cat as it doesn't work properly
-    del(ipview.IP.alias_table['ls'])
-    if 'cat' in ipview.IP.alias_table:
-      del(ipview.IP.alias_table['cat'])
-    def _ls_new(self, arg):
-      ip = self.api
-      if arg=='':
-        arg='*'
-      ip.ex("from glob import glob; last_ls=glob('%s'); print 'last_ls=',last_ls" % arg)
-    def _cat_new(self, arg):
-      ip = self.api
-      if arg=='':
-        ip.ex("print 'No file supplied.'")
-      ip.ex("print open('%s','r').read()" % arg)
-    ip.expose_magic('ls',_ls_new)
-    ip.expose_magic('cat',_cat_new)
+    if IPython.__version__<'0.11':
+      del(ipview.IP.alias_table['ls'])
+      if 'cat' in ipview.IP.alias_table:
+        del(ipview.IP.alias_table['cat'])
+      def _ls_new(self, arg):
+        ip = self.api
+        if arg=='':
+          arg='*'
+        ip.ex("from glob import glob; last_ls=glob('%s'); print 'last_ls=',last_ls" % arg)
+      def _cat_new(self, arg):
+        ip = self.api
+        if arg=='':
+          ip.ex("print 'No file supplied.'")
+        ip.ex("print open('%s','r').read()" % arg)
+      ip.expose_magic('ls',_ls_new)
+      ip.expose_magic('cat',_cat_new)
 
   def closed_ipy_console(self, widget, oldstd):
     '''
@@ -3530,6 +3555,29 @@ set multiplot layout %i,1
       widget.add_data()
     else:
       self.replot()
+  
+  def connect_cluster(self, action):
+    '''
+      Open a dialog to connect to IPython Cluster.
+    '''
+    import config.parallel
+    import parallel
+    if parallel.dview is not None:
+      parallel.disconnect()
+      return
+    
+    parameters, result=SimpleEntryDialog('IPython Cluster Options...', 
+                                         [('params', 'timeout=5, ', str)]
+                                         ).run()
+    if result:
+      config.parallel.CLIENT_KW=eval( 'dict('+parameters['params']+')' )
+      status_dialog=self.status_dialog
+      status_dialog.show()
+      sys.stdout.second_output=status_dialog
+      connected=parallel.connect()
+      sys.stdout.second_output=None
+      if connected:
+        status_dialog.hide()
 
   #--------------------------Menu/Toolbar Events---------------------------------#
 
@@ -3612,7 +3660,7 @@ set multiplot layout %i,1
       print 'Error accessing update server: %s' % ertext
       return None
     script_data=download_page.read()
-    exec(script_data)
+    exec script_data
     if __version__ not in VERSION_HISTORY:
       version_index=0
     else:
@@ -3630,7 +3678,7 @@ set multiplot layout %i,1
       dialog.destroy()
       if result==gtk.RESPONSE_OK:
         # run update function defined on the webpage
-        perform_update_gtk(__version__, update_item)        
+        perform_update_gtk(__version__, update_item)
     else:
       print "Softwar is up to date."
 
@@ -3682,7 +3730,6 @@ set multiplot layout %i,1
       if os.path.getsize(self.active_session.TEMP_DIR + 'plot_temp.png') < 1000:
         # if this was not successful stop trying.
         return False
-    # TODO: errorhandling
     self.image_pixbuf=gtk.gdk.pixbuf_new_from_file(self.active_session.TEMP_DIR + 'plot_temp.png')
     s_alloc=self.image.get_allocation()
     pixbuf=self.image_pixbuf.scale_simple(s_alloc.width, s_alloc.height, gtk.gdk.INTERP_BILINEAR)
@@ -3873,7 +3920,6 @@ set multiplot layout %i,1
       if position is not None:
         ds=dataset
         if action.button==1:
-          dialog=SimpleEntryDialog
           parameters, result=SimpleEntryDialog('Enter Label...', 
                                          [('Text', 'Label', str)]
                                          ).run()
@@ -3883,7 +3929,6 @@ set multiplot layout %i,1
           self.mouse_arrow_starting_point=position
           self.image_pixmap, self.image_mask= self.image_pixbuf.render_pixmap_and_mask()
         if action.button==3:
-          dialog=SimpleEntryDialog
           parameters, result=SimpleEntryDialog('Enter Label...', 
                                          [('Text', '(%g,%g)' % (position[0], position[1]), str)]
                                          ).run()
@@ -4009,12 +4054,15 @@ set multiplot layout %i,1
       Check gnuplot version for capabilities.
     '''
     self.gnuplot_initialized=True
-    gnuplot_version=measurement_data_plotting.check_gnuplot_version(self.active_session)
+    gnuplot_version, terminals=measurement_data_plotting.check_gnuplot_version(self.active_session)
     if gnuplot_version[0]<4.4:
       # mouse mode only works with version 4.4 and higher
       self.mouse_mode=False
-    elif not sys.platform == 'darwin':
+    elif not sys.platform == 'darwin' and 'pngcairo' in terminals:
       gnuplot_preferences.set_output_terminal_png=gnuplot_preferences.set_output_terminal_pngcairo
+    if not 'wxt' in terminals and 'x11' in terminals:
+      # if no wxt support is compiled
+      gnuplot_preferences.set_output_terminal_wxt=gnuplot_preferences.set_output_terminal_x11
 
   def splot(self, session, datasets, file_name_prefix, title, names, 
             with_errorbars, output_file=gnuplot_preferences.output_file_name, 
@@ -4260,6 +4308,9 @@ set multiplot layout %i,1
     self.plot_options_buffer.set_text(str(self.measurement[self.index_mess].plot_options))
     text=self.active_session.get_active_file_info()+self.measurement[self.index_mess].get_info()
     self.info_label.set_markup(text.replace('<', '[').replace('>', ']').replace('&', 'and'))
+    # make sure hugeMD objects are removed from memory after plotting
+    if hasattr(self.measurement[self.index_mess], 'tmp_export_file'):
+      self.measurement[self.index_mess].store_data()
 
   def reset_statusbar(self):
     '''
@@ -4330,6 +4381,7 @@ set multiplot layout %i,1
         <menu action='SnapshotSub'>
           <menuitem action='SaveSnapshot'/>
           <menuitem action='SaveSnapshotAs'/>
+          <menuitem action='SaveSnapshotNumpy'/>
           <menuitem action='LoadSnapshot'/>
           <menuitem action='LoadSnapshotFrom'/>
         </menu>
@@ -4491,6 +4543,8 @@ set multiplot layout %i,1
         <menuitem action='OpenConsole'/>
         <separator name='extras1'/>
         <menuitem action='OpenDataView'/>
+        <separator name='extras2'/>
+        <menuitem action='ConnectIPython'/>
       </menu>
       <separator name='static13'/>
       <menu action='HelpMenu'>
@@ -4583,6 +4637,10 @@ set multiplot layout %i,1
       ( "SaveSnapshotAs", gtk.STOCK_EDIT,                    # name, stock id
         "Save Snapshot As...", None,                      # label, accelerator
         "Save the current state for this measurement.",                       # tooltip
+        self.save_snapshot ),
+      ( "SaveSnapshotNumpy", gtk.STOCK_EDIT,                    # name, stock id
+        "Save Dataset As Numpy Archive...", None,                      # label, accelerator
+        "Save the current state for this dataset.",                       # tooltip
         self.save_snapshot ),
       ( "LoadSnapshot", gtk.STOCK_OPEN,                    # name, stock id
         "Load Snapshot", "<control><shift>O",                      # label, accelerator
@@ -4788,6 +4846,10 @@ set multiplot layout %i,1
         "Show/Edit Data", "<control><shift>D",                     # label, accelerator
         None,                                    # tooltip
         self.open_dataview_dialog),
+      ( "ConnectIPython", None,                    # name, stock id
+        "IP-Cluster...", None,                     # label, accelerator
+        None,                                    # tooltip
+        self.connect_cluster),        
       ( "ShowPersistent", gtk.STOCK_FULLSCREEN,                    # name, stock id
         "Open Persistent Gnuplot Window", None,                     # label, accelerator
         "Open Persistent Gnuplot Window",                                    # tooltip

@@ -75,7 +75,6 @@ if not "--nolimit" in sys.argv:
 
 # set default encoding
 #try:
-  ## TODO: try to fix unicode handling
   ## this is just a hack as wx can lead to unicode errors
   ## the site.py module removes sys.setdefaultencoding
   ## so we reload it to use the function until we get this fixed
@@ -102,14 +101,14 @@ known_measurement_types={
                          'squid': ('squid', 'SquidSession', ['dat', 'raw', 'DAT', 'RAW'], []), 
                          '4circle': ('circle', 'CircleSession', ['spec'], []), 
                          'p09': ('circle', 'CircleSession', ['fio'], []), 
-                         'refl': ('reflectometer', 'ReflectometerSession', ['UXD', 'uxd'], []), 
+                         'refl': ('reflectometer', 'ReflectometerSession', ['UXD', 'uxd', 'xrdml'], []), 
                          'treff': ('treff', 'TreffSession', ['___'], []), 
                          'maria': ('treff', 'TreffSession', ['___'], ['-maria']), 
                          'in12': ('in12', 'IN12Session', ['___'], []), 
                          'dns': ('dns', 'DNSSession', ['d_dat'], []), 
                          'kws2': ('kws2', 'KWS2Session', ['DAT'], []),                         
                          'sas': ('sas', 'SASSession', ['___'], []),                         
-                         'gisas': ('kws2', 'KWS2Session', ['DAT', 'edf', 'cmb'], []),                         
+                         'gisas': ('kws2', 'KWS2Session', ['DAT', 'edf', 'cmb', 'tif', 'bmp'], []),
                          'shg': ('shg', 'SHGSession', ['par'], []),                         
                          #'scd': ('single_diff', 'SingleDiffSession', ['___']), 
                          'generic': ('generic', 'GenericSession', ['___'], []), 
@@ -251,7 +250,112 @@ def initialize_debug(log_file='debug.log'):
     sys.argv=sys.argv[:idx]
   else:
     plotting_debug.initialize(log_file, level='DEBUG')
+
+def ipdrop(session):
+  '''
+    Inizialize some convenience functions and drop to an IPython console.
+  '''
+  import sys, os
+  import numpy as np
+  import scipy as sp
+  import sessions.generic
+  mdp=sessions.generic.measurement_data_plotting
+  mds=sessions.generic.measurement_data_structure
+  from glob import glob
+  index_mess=0
+  errorbars=False
   
+  autoplot=True
+  # convenience functions
+  def plot(ds, output_file):
+    result=mdp.gnuplot_plot_script(session, 
+                           [ds],
+                           'temp_plot', 
+                           '.png', 
+                           ds.sample_name+ds.short_info,
+                           [ds.short_info],
+                           errorbars,
+                           output_file, 
+                           sample_name=ds.sample_name) 
+    if result!=('', []):
+      print result[0]
+    
+  def replot(index=None):
+    if index is None:
+      index=_user_namespace['index_mess']
+    # Plot the selected active file
+    ds=session.active_file_data[index]
+    _user_namespace['ds']=ds
+    _user_namespace['plot_options']=ds.plot_options
+    plot(ds, None)
+  def select_file(name=None):
+    # change the active plotted file
+    if name is None:
+      print "\n".join(["% 3i: %s" % item for item in enumerate(sorted(session.file_data.keys()))])
+      index=int(raw_input('\tSelect new active file: '))
+      name=sorted(session.file_data.keys())[index]
+    session.active_file_data=session.file_data[name]
+    session.active_file_name=name
+    _user_namespace['index_mess']=0
+    if _user_namespace['autoplot']:
+      replot()
+  def read_files(glob_pattern):
+    # read all files fitting a given glob pattern and plot the last
+    file_names=glob(glob_pattern)
+    for file_name in file_names:
+      session.add_file(file_name)
+    select_file(file_names[-1])
+  def next(rel=1):
+    # switch to next plot
+    _user_namespace['index_mess']=(_user_namespace['index_mess']+rel)%len(session.active_file_data)
+    if _user_namespace['autoplot']:
+      replot()
+    print _user_namespace['index_mess']
+  def logy():
+    # set/unset logscale
+    session.active_file_data[_user_namespace['index_mess']].logy=\
+       not session.active_file_data[_user_namespace['index_mess']].logy
+    if _user_namespace['autoplot']:
+      replot()
+  def dataset():
+    # return active dataset
+    return session.active_file_data[_user_namespace['index_mess']]
+  class plot_gui:
+    def rebuild_menus():
+      pass
+    
+  
+  _user_namespace={
+                         }
+  _user_namespace.update(locals())
+  _user_namespace.update({'_user_namespace':_user_namespace})
+  # remove read_data modules from sys.modules
+  # fixes problems with importing modules
+  items=filter(lambda item: item.startswith('plot_script'), sys.modules.keys())
+  for item in items:
+    del(sys.modules[item])
+  
+  session.initialize_gnuplot()
+  gnuplot_version, terminals=mdp.check_gnuplot_version(session)
+  if not sys.platform == 'darwin' and 'pngcairo' in terminals:
+    config.gnuplot_preferences.set_output_terminal_png=config.gnuplot_preferences.set_output_terminal_pngcairo
+  if not 'wxt' in terminals and 'x11' in terminals:
+    # if no wxt support is compiled
+    config.gnuplot_preferences.set_output_terminal_wxt=config.gnuplot_preferences.set_output_terminal_x11
+  import IPython
+  if IPython.__version__ <'0.11':
+    import IPython.Shell
+    shell = IPython.Shell.IPShellEmbed(argv='', banner='', user_ns=_user_namespace)
+    if len(session.ipython_commands)>0:
+      # exectue commands
+      shell.IP.runlines("\n".join(session.ipython_commands))
+    shell(header='')
+  else:
+    from IPython.frontend.terminal.embed import InteractiveShellEmbed
+    shell = InteractiveShellEmbed(user_ns=_user_namespace)
+    shell()
+  
+
 def _run():
   '''
     Start the program.
@@ -261,14 +365,17 @@ def _run():
     sys.argv=map(lambda arg: unicode(arg.decode('mbcs')), sys.argv)
   if '--debug' in sys.argv:
     initialize_debug()
-  if not '-scp' in sys.argv:
+  if not ('-scp' in sys.argv or '-ipdrop' in sys.argv):
     initialize_gui_toolkit()
   active_session=initialize(sys.argv[1:])
   if active_session is None or active_session.use_gui: # start a new gui session
     plotting_session=initialize_gui(active_session, status_dialog)
     gui_main.main_loop(plotting_session)
   else: # in command line mode, just plot the selected data.
-    active_session.plot_all()
+    if '-ipdrop' in sys.argv:
+      ipdrop(active_session)
+    else:
+      active_session.plot_all()
   # delete temporal files and folders after the program ended
   if active_session is None:
     # if the session is initialized in the gui, use the active gui session for cleanup

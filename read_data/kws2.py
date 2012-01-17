@@ -8,7 +8,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import os, sys
 from copy import deepcopy
-from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where, int8, float32, uint16, int16, fromstring, arange, meshgrid, zeros
+from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where, int8, float32, uint16, int16, fromstring, arange, meshgrid, zeros, asarray
 from configobj import ConfigObj
 from glob import glob
 from measurement_data_structure import MeasurementData, HugeMD, PhysicalProperty
@@ -49,10 +49,16 @@ def read_data(file_name):
     #config.gnuplot_preferences.plotting_parameters_3d='w points palette pt 5'
     config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
     return read_edf_file(file_name)
-  elif file_name.endswith('.bin') or file_name.endswith('.bin.gz') or file_name.endswith('.tif'):
+  elif file_name.endswith('.bin') or file_name.endswith('.bin.gz'):
     # Read .bin data (p08)
     config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
     return read_p08_binary(file_name)
+  elif file_name.endswith('.tif'):
+    config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
+    return read_tif_data(file_name)
+  elif file_name.endswith('.bmp'):
+    config.gnuplot_preferences.settings_3dmap=config.gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
+    return read_bmp_data(file_name)
   folder, rel_file_name=os.path.split(os.path.realpath(file_name))
   setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
   for key, value in setups.items():
@@ -229,7 +235,7 @@ def read_cmb_files(file_names):
   center_y=setup['CENTER_Y'] #498.5 pix
   lambda_x=setup['LAMBDA_N'] #1.54
   q_window=[-10., 10., -10., 10.]
-  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
+  dataobj=HugeMD([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
                            ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
                             [], 4, 5, 3, 2)
   data_array=None
@@ -274,6 +280,11 @@ def read_cmb_files(file_names):
            sin(arctan((y_array-center_y)*pixelsize_y/detector_distance)/2.)
   qz_array=4.*pi/lambda_x*\
            sin(arctan((z_array-center_x)*pixelsize_x/detector_distance)/2.)
+  if setup['SWAP_YZ']:
+    # swap the directions
+    tmp=qz_array
+    qz_array=qy_array
+    qy_array=tmp
 
   use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
               (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
@@ -307,7 +318,7 @@ def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items
       setup=value
   
   q_window=[-1000, 1000, -1000, 1000]
-  dataobj=KWS2MeasurementData([], [], 3, 4, -1, 2)
+  dataobj=HugeMD([], [], 3, 4, -1, 2)
   # Get header information
   if setup['BACKGROUND']:
     if not setup['BACKGROUND'] in background_data:
@@ -366,6 +377,11 @@ def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items
              sin(arctan((x_array-center_x)*header_info['pixelsize_x']/detector_distance)/2.)
     qz_array=-4.*pi/header_info['lambda_γ']*\
              sin(arctan((y_array-center_y)*header_info['pixelsize_y']/detector_distance)/2.)
+    if setup['SWAP_YZ']:
+      # swap the directions
+      tmp=qz_array
+      qz_array=qy_array
+      qy_array=tmp
     use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
                 (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
     # Insert columns
@@ -625,7 +641,7 @@ def read_p08_binary(file_name):
   center_x=setup['CENTER_X']/join_pixels
   center_y=setup['CENTER_Y']/join_pixels
   q_window=[-1000., 1000., -1000., 1000.]
-  dataobj=KWS2MeasurementData([], 
+  dataobj=HugeMD([], 
                             [], 2, 3, -1, 4)
   # read the data
   sys.stdout.write( "\b\b\b binary...")
@@ -640,7 +656,6 @@ def read_p08_binary(file_name):
   sys.stdout.flush()
   # neighboring pixels
   use_ids=arange(4096/join_pixels).astype(int)*int(join_pixels)
-  grid=meshgrid(use_ids, use_ids)
   data_array2=zeros((4096/join_pixels, 4096/join_pixels))
   for i in range(int(join_pixels)):
     for j in range(int(join_pixels)):
@@ -663,6 +678,11 @@ def read_p08_binary(file_name):
     tth_offset=0.
   qz_array=4.*pi/lambda_x*\
            sin(arctan((z_array-center_x)*pixelsize_x/detector_distance/2.)+tth_offset/360.*pi)
+  if setup['SWAP_YZ']:
+    # swap the directions
+    tmp=qz_array
+    qz_array=qy_array
+    qy_array=tmp
 
   use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
               (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
@@ -687,21 +707,208 @@ def read_p08_binarydata(file_name):
   '''
     Read the raw data of p08 file.
   '''
-  if file_name.endswith('.tif'):
-    header=''
-    import Image
-    image=Image.open(file_name)
-    data=fromstring(image.tostring(), uint16)
-    data=data.reshape(4096,  4096)
+  if file_name.endswith('.gz'):
+    file_handler=gzip.open(file_name, 'rb')
   else:
-    if file_name.endswith('.gz'):
-      file_handler=gzip.open(file_name, 'rb')
-    else:
-      file_handler=open(file_name, 'rb')
-    header=file_handler.read(216)
-    data=fromstring(file_handler.read(), uint16).reshape(4096, 4096)
-    file_handler.close()
+    file_handler=open(file_name, 'rb')
+  header=file_handler.read(216)
+  data=fromstring(file_handler.read(), uint16).reshape(4096, 4096)
+  file_handler.close()
   return header, data.astype(float32)
+
+def read_tif_data(file_name):
+  '''
+    Read a tif datafile.
+  '''
+  folder, rel_file_name=os.path.split(os.path.realpath(file_name))
+  setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
+  for key, value in setups.items():
+    if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
+      setup=value
+  sys.stdout.write( "\tReading...")
+  sys.stdout.flush()
+  countingtime=1.
+  detector_distance=setup['DETECTOR_DISTANCE'] #mm
+  sample_name=''
+  center_x=setup['CENTER_X']
+  center_y=setup['CENTER_Y']
+  q_window=[-1000., 1000., -1000., 1000.]
+  dataobj=HugeMD([], 
+                            [], 2, 3, -1, 4)
+  # read the data
+  sys.stdout.write( "\b\b\b TIFF image...")
+  sys.stdout.flush()  
+  
+  data_array=read_raw_tif_data(file_name)
+  if 'SIZE_X' in setup and 'SIZE_Y' in setup:
+    pixelsize_x= setup['SIZE_X']/data_array.shape[0]
+    pixelsize_y= setup['SIZE_Y']/data_array.shape[1]
+  else:
+    pixelsize_x= 30./data_array.shape[0]
+    pixelsize_y= 30./data_array.shape[0]
+  
+  sys.stdout.write( "\b\b\b, calculating q-positions and joining data...")
+  sys.stdout.flush()
+  # read additional info from end of file
+  y_array=linspace((data_array.shape[0])**2-1, 0, (data_array.shape[0])**2)%(data_array.shape[1])
+  z_array=linspace((data_array.shape[1])**2-1, 0, (data_array.shape[1])**2)//(data_array.shape[0])
+  data_array=data_array.flatten()
+  error_array=sqrt(data_array)
+  corrected_data=data_array/countingtime
+  corrected_error=error_array/countingtime
+  lambda_x=setup['LAMBDA_N']
+  qy_array=4.*pi/lambda_x*\
+           sin(arctan((y_array-center_x)*pixelsize_x/detector_distance/2.))
+  if 'tth' in setup:
+    tth_offset=setup['tth']
+  else:
+    tth_offset=0.
+  qz_array=4.*pi/lambda_x*\
+           sin(arctan((z_array-center_y)*pixelsize_y/detector_distance/2.)+tth_offset/360.*pi)
+  if setup['SWAP_YZ']:
+    # swap the directions
+    tmp=qz_array
+    qz_array=qy_array
+    qy_array=tmp
+
+  use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
+              (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
+  dataobj.data.append(PhysicalProperty('pixel_x', 'pix', y_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('pixel_y', 'pix', z_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('Q_y', 'Å^{-1}', qy_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('Q_z', 'Å^{-1}', qz_array[use_indices]))
+  dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data[use_indices]))
+  dataobj.data[-1].error=corrected_error[use_indices]
+  #dataobj.data[3]=PhysicalProperty('raw_int', 'counts', data_array[use_indices])
+  #dataobj.data[3].error=error_array[use_indices]
+
+  dataobj.sample_name=sample_name
+  dataobj.scan_line=1
+  dataobj.scan_line_constant=0
+  dataobj.logz=True
+  sys.stdout.write( "\b\b\b done!\n")
+  sys.stdout.flush()
+  return [dataobj]
+  
+def read_raw_tif_data(file_name):
+  # use PIL image readout
+  import Image
+  # py2exe hack
+  import TiffImagePlugin
+  Image._initialized=2
+  img=Image.open(file_name)
+  data_array=asarray(img.getdata())
+  data_array=data_array.reshape(*img.size)
+  data_array=data_array.astype(float32)
+  return data_array
+  
+def read_bmp_data(file_name):
+  '''
+    Read a tif datafile.
+  '''
+  folder, rel_file_name=os.path.split(os.path.realpath(file_name))
+  setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
+  for key, value in setups.items():
+    if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
+      setup=value
+  sys.stdout.write( "\tReading...")
+  sys.stdout.flush()
+  # read the data
+  sys.stdout.write( "\b\b\b BMP Image...")
+  sys.stdout.flush()
+  data_array=read_raw_bmp_data(file_name)
+  pixels_x, pixels_y=data_array.shape
+  data_array=data_array.reshape(pixels_y, pixels_x)
+  pixels_x, pixels_y=data_array.shape
+  if data_array[0][0]==255:
+    data_array=255-data_array
+  countingtime=1.
+  detector_distance=setup['DETECTOR_DISTANCE'] #mm
+  join_pixels=max(1, pixels_x//1024)
+  if 'SIZE_X' in setup and 'SIZE_Y' in setup:
+    pixelsize_x= setup['SIZE_X']/pixels_x*join_pixels
+    pixelsize_y= setup['SIZE_Y']/pixels_y*join_pixels
+  else:
+    pixelsize_x= 30./pixels_x*join_pixels
+    pixelsize_y= 30./pixels_y*join_pixels
+  sample_name=''
+  center_x=setup['CENTER_X']/join_pixels
+  center_y=setup['CENTER_Y']/join_pixels
+  q_window=[-1000., 1000., -1000., 1000.]
+  dataobj=HugeMD([], 
+                            [], 2, 3, -1, 4)
+  if setup['BACKGROUND'] is not None:
+    sys.stdout.write( "\b\b\b subtracting background %s..." % setup['BACKGROUND'])
+    sys.stdout.flush()
+    data_array-=read_raw_bmp_data(setup['BACKGROUND'])[1]
+  # averadge ixi pixels
+  sys.stdout.write( "\b\b\b, joining %ix%i pixels..." % (join_pixels, join_pixels))
+  sys.stdout.flush()
+  # neighboring pixels
+  use_idsx=arange(pixels_x//join_pixels).astype(int)*int(join_pixels)
+  use_idsy=arange(pixels_y//join_pixels).astype(int)*int(join_pixels)
+  data_array2=zeros((pixels_x//join_pixels, pixels_y//join_pixels))
+  #print use_idsx, use_idsy
+  for i in range(int(join_pixels)):
+    for j in range(int(join_pixels)):
+      data_array2+=data_array[use_idsx+i][:,use_idsy+j]
+  data_array=data_array2.flatten()
+  sys.stdout.write( "\b\b\b, calculating q-positions and joining data...")
+  sys.stdout.flush()
+  # read additional info from end of file
+  z_array=linspace(0,  (pixels_x//join_pixels)*(pixels_y//join_pixels)-1, 
+                   (pixels_x//join_pixels)*(pixels_y//join_pixels))//(pixels_y//join_pixels)
+  y_array=linspace(0, (pixels_x//join_pixels)*(pixels_y//join_pixels)-1,
+                   (pixels_x//join_pixels)*(pixels_y//join_pixels))%(pixels_y//join_pixels)
+  #print data_array2.shape, y_array, z_array
+  error_array=sqrt(data_array)
+  corrected_data=data_array/countingtime
+  corrected_error=error_array/countingtime
+  lambda_x=1.54#setup['LAMBDA_N']
+  qy_array=4.*pi/lambda_x*\
+           sin(arctan((y_array-center_y)*pixelsize_y/detector_distance/2.))
+  if 'tth' in setup:
+    tth_offset=setup['tth']
+  else:
+    tth_offset=0.
+  qz_array=4.*pi/lambda_x*\
+           sin(arctan((z_array-center_x)*pixelsize_x/detector_distance/2.)+tth_offset/360.*pi)
+  if setup['SWAP_YZ']:
+    # swap the directions
+    tmp=qz_array
+    qz_array=qy_array
+    qy_array=tmp
+
+  #use_indices=where(((qy_array<q_window[0])+(qy_array>q_window[1])+\
+  #            (qz_array<q_window[2])+(qz_array>q_window[3]))==0)[0]
+  dataobj.data.append(PhysicalProperty('pixel_x', 'pix', y_array))
+  dataobj.data.append(PhysicalProperty('pixel_y', 'pix', z_array))
+  dataobj.data.append(PhysicalProperty('Q_y', 'Å^{-1}', qy_array))
+  dataobj.data.append(PhysicalProperty('Q_z', 'Å^{-1}', qz_array))
+  dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data))
+  dataobj.data[-1].error=corrected_error
+  #dataobj.data[3]=PhysicalProperty('raw_int', 'counts', data_array[use_indices])
+  #dataobj.data[3].error=error_array[use_indices]
+
+  dataobj.sample_name=sample_name
+  dataobj.scan_line=1
+  dataobj.scan_line_constant=0
+  dataobj.logz=True
+  sys.stdout.write( "\b\b\b done!\n")
+  sys.stdout.flush()
+  return [dataobj]
+  
+def read_raw_bmp_data(file_name):
+  # use PIL image readout
+  import Image
+  # py2exe hack
+  import BmpImagePlugin
+  Image._initialized=2
+  img=Image.open(file_name)
+  data_array=asarray(img.getdata())
+  data_array=data_array.reshape(*img.size)
+  data_array=data_array.astype(float32)
+  return data_array
   
 class KWS2MeasurementData(HugeMD):
   '''
@@ -714,7 +921,7 @@ class KWS2MeasurementData(HugeMD):
     '''
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
-    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)+array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2+array(other.data[3].values)**2)).tolist()
     out.data[6].values=(array(self.data[6].values)+array(other.data[6].values)).tolist()    
@@ -728,7 +935,7 @@ class KWS2MeasurementData(HugeMD):
     '''
     out=deepcopy(self)
     out.short_info=self.short_info+'-'+other.short_info
-    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)-array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2+array(other.data[3].values)**2)).tolist()
     out.data[6].values=(array(self.data[6].values)-array(other.data[6].values)).tolist()    
@@ -741,7 +948,7 @@ class KWS2MeasurementData(HugeMD):
       Add two measurements together.
     '''
     out=deepcopy(self)
-    out.tmp_export_file=self.tmp_export_file+'_'+str(other)
+    #out.tmp_export_file=self.tmp_export_file+'_'+str(other)
     out.data[2].values=(other*array(self.data[2].values)).tolist()    
     out.data[3].values=(other*array(self.data[3].values)).tolist()    
     out.data[6].values=(other*array(self.data[6].values)).tolist()    
@@ -757,7 +964,7 @@ class KWS2MeasurementData(HugeMD):
       return self.__rmul__(other)
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
-    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)*array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2*array(other.data[2].values)**2+\
                              array(other.data[3].values)**2*array(self.data[2].values)**2)).tolist()
@@ -775,7 +982,7 @@ class KWS2MeasurementData(HugeMD):
       return self.__rmul__(1./other)
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
-    out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
+    #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
     out.data[2].values=(array(self.data[2].values)/array(other.data[2].values)).tolist()    
     out.data[3].values=(sqrt(array(self.data[3].values)**2/array(other.data[2].values)**2+\
                              array(other.data[3].values)**2*array(self.data[2].values)**2\

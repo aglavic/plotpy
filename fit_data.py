@@ -13,12 +13,23 @@ from math import pi, sqrt,  tanh, sin, asin, exp
 from measurement_data_structure import MeasurementData, PlotOptions
 # import gui functions for active config.gui.toolkit
 import config.gui
+import parallel
+parallel.add_actions([
+                      'import numpy', 
+                      'from mpfit import mpfit', 
+                      'from math import pi, sqrt,  tanh, sin, asin, exp', 
+                      'from measurement_data_structure import MeasurementData, PlotOptions', 
+                      'import config.gui', 
+                      'import parallel', 
+                      'from scipy.special import wofz', 
+                              ])
+
 try:
   FitSessionGUI=__import__( config.gui.toolkit+'gui.gui_fit_data', fromlist=['FitSessionGUI']).FitSessionGUI
   FitFunctionGUI=__import__( config.gui.toolkit+'gui.gui_fit_data', fromlist=['FitFunctionGUI']).FitFunctionGUI
 except ImportError: 
-  class FitSessionGUI: pass
-  class FitFunctionGUI: pass
+  class FitSessionGUI(object): pass
+  class FitFunctionGUI(object): pass
 
 __author__ = "Artur Glavic"
 __credits__ = []
@@ -250,10 +261,6 @@ class FitFunction(FitFunctionGUI):
       residuals=self.residuals_log
     else:
       residuals=self.residuals
-    if dy is None:
-      fit_args=(y, x)
-    else:
-      fit_args=(y, x, dy)
     return self.refine_mpfit(residuals, parameters, x, y, dy, progress_bar_update)
   
   def refine_mpfit(self, residuals, parameters, x, y, dy, progress_bar_update=None):
@@ -262,6 +269,7 @@ class FitFunction(FitFunctionGUI):
       Sequential Least SQuares Programming algorithm.
       
       The constrains can be boundaries, equalitiy and inequality fuctions.
+      progress_bar_update can be an optional function, which is called after each iteration.
     '''
     constrains=self.constrains
     def function(p, fjac=None, x=None, y=None, dy=None):
@@ -272,6 +280,7 @@ class FitFunction(FitFunctionGUI):
       parinfo=None
     else:
       parinfo = []
+      # Define constrains of the fit for each parameter
       for i in range(len(parameters)):
         parinfo.append({'limited':[0,0], 'limits':[0.,0.]})
         if self.refine_parameters[i] in constrains:
@@ -298,9 +307,30 @@ class FitFunction(FitFunctionGUI):
       def iterfunct(myfunct, p, iter, fnorm, functkw=None,
                   parinfo=None, quiet=0, dof=None):
         # perform custom iteration update   
-        return progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    Chi²=%4f' % (iter, fnorm))
+        return progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    χ²=%.6e' % (iter, fnorm))
     else:
       iterfunct=None
+    # parallel version
+    if parallel.dview is not None:
+      dview=parallel.dview
+      function_keywords={}
+      dview.scatter('x', x)
+      dview.scatter('y', y)
+      if dy is None:
+        dview.execute('dy=None')
+      else:
+        dview.scatter('dy', dy)
+      dview['self']=self
+      if self.fit_logarithmic:
+        def function(p, fjac=None, x=None, y=None, dy=None):
+          dview['p']=p
+          dview.execute('err=self.residuals_log(p,y,x,dy)')
+          return [0, dview.gather('err')]
+      else:
+        def function(p, fjac=None, x=None, y=None, dy=None):
+          dview['p']=p
+          dview.execute('err=self.residuals(p,y,x,dy)')
+          return [0, dview.gather('err')]
     # call the fit routine
     result=mpfit(function, xall=parameters, functkw=function_keywords, 
                  parinfo=parinfo, 
@@ -308,7 +338,9 @@ class FitFunction(FitFunctionGUI):
                  fastnorm=1, # faster computation of Chi², can be less stable
                  quiet=1
                  )
+    # evaluate the fit result
     if result.status==-1:
+      # The fit was stopped by the user, treat as if the maximum iterations were reached
       result.status=5
     self.last_fit_output=result
     if progress_bar_update is not None:
@@ -334,6 +366,9 @@ class FitFunction(FitFunctionGUI):
         else:
           cov_out[i].append(0.)
     mesg=result.errmsg
+    if parallel.dview is not None:
+      # free memory on remote processes
+      dview.execute('del(x);del(y);del(err);del(dy)')
     return mesg, cov_out
 
   def set_parameters(self, new_params):
@@ -365,6 +400,8 @@ class FitFunction(FitFunctionGUI):
     
       @return simulated y-values for a list of giver x-values.
     '''
+    if parallel.dview is not None:
+      return self.simulate_mp(x, interpolate=5, inside_fitrange=False)
     x=numpy.array(x, dtype=numpy.float64, copy=False)
     if inside_fitrange:
       x_from=self.x_from
@@ -389,6 +426,37 @@ class FitFunction(FitFunctionGUI):
       y=self.fit_function(self.parameters, numpy.array(xint, dtype=numpy.float64, copy=False))
     except TypeError, error:
       raise ValueError, "Could not execute function with numpy array: "+str(error)
+    return xint, y
+
+  def simulate_mp(self, x, interpolate=5, inside_fitrange=False):
+    '''
+      Multiprocessing version of simulate.
+    '''
+    dview=parallel.dview
+    x=numpy.array(x, dtype=numpy.float64, copy=False)
+    if inside_fitrange:
+      x_from=self.x_from
+      x_to=self.x_to
+      if x_from is None:
+        x_from=x.min()
+      if x_to is None:
+        x_to=x.max()
+      filter=numpy.where((x>=x_from)*(x<=x_to))[0]
+      x=x[filter]
+    if interpolate > 1:
+      # Add interpolation points to x
+      xint=[]
+      dx=(x[1:]-x[:-1])/interpolate
+      for j in range(interpolate):
+        xint.append(x[:-1] + dx * j)
+      xint=numpy.array(xint, dtype=numpy.float64).transpose().flatten()
+      xint=numpy.append(xint, x[-1])
+    else:
+      xint=x
+    dview.scatter('xint', xint)
+    dview['self']=self
+    dview.execute('y=self.fit_function(self.parameters, numpy.array(xint, dtype=numpy.float64, copy=False))')
+    y=dview.gather('y')
     return xint, y
   
   def __call__(self, x):
@@ -437,7 +505,17 @@ class FitFunction(FitFunctionGUI):
         else:
           function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (self.parameters[i]))
     return function_text
-    
+  
+  def __repr__(self):
+    output="<"+self.__class__.__name__+ "  "
+    for i in range((len(self.parameters)+3)//4):
+      if i>0:
+        output+="\n "+" "*len(self.__class__.__name__)+"  "
+      output+=" ".join([u"%-10.10s" % name for name in self.parameter_names[i*4:(i+1)*4]])
+      output+="\n "+" "*len(self.__class__.__name__)+" "
+      output+=" ".join([u"% .3e" % value for value in self.parameters[i*4:(i+1)*4]])
+    output+=" >"
+    return output
   
   fit_function_text_eval=property(_get_function_text)
 
@@ -778,6 +856,28 @@ class FitFunction3D(FitFunctionGUI):
         return progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    Chi²=%4f' % (iter, fnorm))
     else:
       iterfunct=None
+    # parallel version
+    if parallel.dview is not None:
+      dview=parallel.dview
+      function_keywords={}
+      dview.scatter('x', x)
+      dview.scatter('y', y)
+      dview.scatter('z', z)
+      if dz is None:
+        dview.execute('dz=None')
+      else:
+        dview.scatter('dz', dz)
+      dview['self']=self
+      if self.fit_logarithmic:
+        def function(p, fjac=None, x=None, y=None, z=None, dz=None):
+          dview['p']=p
+          dview.execute('err=self.residuals_log(p,z,y,x,dz)')
+          return [0, dview.gather('err')]
+      else:
+        def function(p, fjac=None, x=None, y=None, z=None, dz=None):
+          dview['p']=p
+          dview.execute('err=self.residuals(p,z,y,x,dz)')
+          return [0, dview.gather('err')]
     # call the fit routine
     result=mpfit(function, xall=parameters, functkw=function_keywords, 
                  parinfo=parinfo, 
@@ -811,6 +911,9 @@ class FitFunction3D(FitFunctionGUI):
         else:
           cov_out[i].append(0.)
     mesg=result.errmsg
+    if parallel.dview is not None:
+      # free memory on remote processes
+      dview.execute('del(x);del(y);del(z);del(err);del(dz)')
     return mesg, cov_out
 
   def set_parameters(self, new_params):
@@ -841,6 +944,8 @@ class FitFunction3D(FitFunctionGUI):
     
       @return simulated y-values for a list of giver x-values.
     '''
+    if parallel.dview is not None:
+      return self.simulate_mp(y, x)
     try:
       x=numpy.array(x, dtype=numpy.float64, copy=False)
       y=numpy.array(y, dtype=numpy.float64, copy=False)
@@ -851,7 +956,21 @@ class FitFunction3D(FitFunctionGUI):
     except TypeError:
       raise TypeError, "Fit functions need to be defined for numpy arrays!"
     return x, y, z
-  
+
+  def simulate_mp(self, y, x):
+    '''
+      Multiprocessing version of simulate.
+    '''
+    dview=parallel.dview
+    x=numpy.array(x, dtype=numpy.float64, copy=False)
+    y=numpy.array(y, dtype=numpy.float64, copy=False)
+    dview.scatter('x', x)
+    dview.scatter('y', y)
+    dview['self']=self
+    dview.execute('z=self.fit_function(self.parameters, x, y)')
+    z=dview.gather('z')
+    return x, y, z
+
   def __call__(self, x, y):
     '''
       Calling the object returns the z values corresponding to the given x and y values.
@@ -899,6 +1018,16 @@ class FitFunction3D(FitFunctionGUI):
           function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (self.parameters[i]))
     return function_text
     
+  def __repr__(self):
+    output="<"+self.__class__.__name__+ "  "
+    for i in range((len(self.parameters)+3)//4):
+      if i>0:
+        output+="\n "+" "*len(self.__class__.__name__)+"  "
+      output+=" ".join([u"%-10.10s" % name for name in self.parameter_names[i*4:(i+1)*4]])
+      output+="\n "+" "*len(self.__class__.__name__)+" "
+      output+=" ".join([u"% .3e" % value for value in self.parameters[i*4:(i+1)*4]])
+    output+=" >"
+    return output
   
   fit_function_text_eval=property(_get_function_text)
 
@@ -1040,6 +1169,8 @@ class FitLinear(FitFunction):
   parameter_description={'a': 'Slope', 'b': 'Offset'}
   fit_function=lambda self, p, x: p[0] * numpy.array(x) + p[1]
   fit_function_text='[a]·x + [b]'
+
+
 
 class ThetaCorrection(FitFunction):
   '''
@@ -2500,7 +2631,7 @@ class FitLorentzian3D(FitFunction3D):
                          'x_0': 'Peak x-Position', 
                          'y_0': 'Peak y-Position', 
                          'γ_x': 'HWHM in x-direction', 
-                         'γ_y': 'HWHM in x-direction', 
+                         'γ_y': 'HWHM in y-direction', 
                          'tilt': 'Tilting angle of the data x-axis to the function x-axis', 
                          'C':'Offset'}
   fit_function_text='Lorentzian'
@@ -2518,19 +2649,19 @@ class FitLorentzian3D(FitFunction3D):
       It is calculated using the complex error function,
       see Wikipedia articel on Voigt-profile for the details.
     '''
-    x=numpy.float64(numpy.array(x))
-    y=numpy.float64(numpy.array(y))
-    p=numpy.float64(numpy.array(p))
+    x=numpy.array(x, copy=False, dtype=numpy.float64)
+    y=numpy.array(y, copy=False, dtype=numpy.float64)
+    p=numpy.array(p, dtype=numpy.float64)
     I=p[0]
     x0=p[1]
     y0=p[2]
     gamma_x=p[3]
     gamma_y=p[4]
     tilt=p[5]*numpy.pi/180.
-    tb=numpy.sin(p[5])
     ta=numpy.cos(p[5])
-    xdist=(numpy.array(x)-x0)
-    ydist=(numpy.array(y)-y0)
+    tb=numpy.sin(p[5])
+    xdist=(x-x0)
+    ydist=(y-y0)
     xdif=numpy.abs(xdist*ta-ydist*tb)
     ydif=numpy.abs(ydist*ta+xdist*tb)
     c=p[6]

@@ -26,9 +26,10 @@ exit=sys.exit
 import math
 from time import sleep
 import subprocess
-from cPickle import load, dump
+from cPickle import load, dumps, dump
 import measurement_data_structure
 import measurement_data_plotting
+import parallel
 import config.gnuplot_preferences
 import config.transformations
 
@@ -104,6 +105,8 @@ Options:
 \t-no-trans\tdon't make a unit transformation
 
 \tAdvanced settings:
+\t-ipdrop \tRead data and drop to IPython console without running the GUI
+\t-ipmp \tConnect to IPython multiprocessing cluster for e.g. faster fit calculation
 \t--nolimit\tDon't limit the amount of memory consumed by the program so there will not be a MemoryError 
 \t\t\t(be carefull, can lead to a non responsive system from operations causing to high memory usage)
 \t--debug\t\tDon't redirect the output to any GUI windows but show it on the command line, writes additional 
@@ -141,7 +144,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   FILE_WILDCARDS=[('All', '*')] # wildcards for the file open dialog of the GUI
   # known command line options list
   COMMANDLINE_OPTIONS=['s','s2','i','gs','rd', 'no-mds', 'o','ni','c','sc','st','sxy','e', 'logx', 'logy', 'logz','scp', 
-                        'template','no-trans', '-help', '-debug', '-nolimit', 'startuppath', 'mpl','ipy', 'ipr']
+                        'template','no-trans', '-help', '-debug', '-nolimit', 'startuppath', 'mpl', 
+                        'ipy', 'ipr', 'ipdrop', 'ipmp']
   # options:
   use_gui=True # activate graphical user interface
   seq=[1, 10000] # use sequences from 1 to 10 000
@@ -168,6 +172,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   mds_create=True
   ONLY_IMPORT_MULTIFILE=False
   DEBUG=False
+  ipdrop=False
   file_actions_addon={}
   ipython_commands=[]
   plugins=[]
@@ -185,10 +190,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     if type(arguments) is list:
       #++++++++++++++++ evaluate command line +++++++++++++++++++++++
       files=self.read_arguments(arguments) # get filenames and set options
-      if files==None: # read_arguments returns none, if help option is set
+      if files is None: # read_arguments returns none, if help option is set
         print self.LONG_HELP + self.SPECIFIC_HELP + self.LONG_HELP_END
         exit()
-      elif len(files) < 1 and not self.use_gui: # show help, if there is no file in the list
+      elif len(files) < 1 and not self.use_gui and not self.ipdrop: # show help, if there is no file in the list
         print self.SHORT_HELP
         exit()
     else:
@@ -210,7 +215,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     
     if type(arguments) is list:
       if len(files) == 0: # show help, if there is no valid file in the list
-        if not self.use_gui:
+        if not self.use_gui and not self.ipdrop:
           print "No valid datafile found!"
           print self.SHORT_HELP
           exit()
@@ -357,8 +362,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
           self.logz=True
         elif argument=='-p':
           self.print_plot=True
-        elif argument=='-scp':
+        elif argument in ['-scp', '-ipdrop']:
           self.use_gui=False
+          if argument == '-ipdrop':
+            self.ipdrop=True
+        elif argument=='-ipmp':
+          parallel.connect()
         elif argument=='-no-trans':
           self.unit_transformation=False
         elif argument=='--help':
@@ -669,7 +678,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
       Plots the active datasets.
     '''
-    output=''
     if not self.single_picture:
       for dataset in self.active_file_data:
         self.plot(dataset.plot_together, self.active_file_name, dataset.short_info, ['' for i in range(len(dataset.plot_together))])
@@ -732,9 +740,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       the active_file_data list and stores it in active_file_name.mdd.
     '''
     dump_obj=self.create_snapshot_obj()
-    print "Writing snapshot to file..."
+    dump_str=dumps(dump_obj, -1)
     if not name:
-      name=self.active_file_name
+      if len(dump_str)>(1024*1024*10):
+        name=self.active_file_name+'.mdd.gz'
+      else:
+        name=self.active_file_name+'.mdd'
     if name.endswith('.gz'):
       import gzip
       dump_file=gzip.open(name, 'wb')
@@ -742,7 +753,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       if not (name.endswith('.mdd') or name.endswith('.mds')):
         name+='.mdd'
       dump_file=open(name, 'wb')
-    dump(dump_obj, dump_file, -1)
+    print "Writing snapshot to file %s..." % (os.path.split(name)[1])
+    dump_file.write(dump_str)
     dump_file.close()
 
   def reload_snapshot(self, name=None):
@@ -750,7 +762,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Reload a snapshot created with store_snapshot.
     '''
     if not name:
-      name=self.active_file_name
+      if os.path.exists(self.active_file_name+'.mdd'):
+        name=self.active_file_name+'.mdd'
+      elif os.path.exists(self.active_file_name+'.mdd.gz'):
+        name=self.active_file_name+'.mdd.gz'
+      else:
+        name=self.active_file_name
     if name.endswith('.gz'):
       import gzip
       if os.path.exists(name):

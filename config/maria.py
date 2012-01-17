@@ -46,4 +46,21 @@ COLUMNS_MAPPING={
                  'Coinc[counts]':'DetectorTotal', 
                  'image_file[]': 'Image', 
                  'tx[mm]': 'Position_x', 
+    # only new format:
+                 'roi1': '2DWindow', 
+                 'roi2': '2DWindow2', 
+                 'roi3': '2DWindow3', 
+                 'roi4': '2DWindow4', 
+                 'roi5': '2DWindow5', 
+                 'roi6': '2DWindow6', 
+                 'roi7': '2DWindow7', 
+                 'roi8': 'DetectorTotal', 
+                 'wavelength': 'Wavelength', 
+                 'monitor1': 'Monitor', 
+                 'full': 'DetectorTotal', 
+                 'time': 'Time', 
+                 'pflipper': 'PolarizerFlipped', 
+                 'aflipper': 'AnalyzerFlipped',                  
+                 
+
 }

@@ -140,7 +140,7 @@ class MeasurementData(object):
       @return numpy array of point lists
     '''
     #try:
-    data=numpy.array(self.data+[item.error.tolist() for item in self.data if item.has_error])#numpy.array([col.values for col in self.data])
+    data=numpy.vstack(self.data+[item.error for item in self.data if item.has_error])#numpy.array([col.values for col in self.data])
     #except ValueError:
      # min_length=min([len(col.values) for col in self.data])
       #data=numpy.array([col.values[:min_length] for col in self.data])
@@ -156,14 +156,14 @@ class MeasurementData(object):
           filter_from=filter_column.min()
         if filter_to is None:
           filter_to=filter_column.max()
-        data_indices=numpy.where(1-((filter_column<filter_from)+(filter_column>filter_to)))
+        data_indices=numpy.where((filter_column>=filter_from) & (filter_column<=filter_to))
       else:
         if filter_from is None:
           filter_from=filter_column.max()
         if filter_to is None:
           filter_to=filter_column.min()
-        data_indices=numpy.where(((filter_column>filter_to)+(filter_column<filter_from)))
-      data=data.transpose()[data_indices].transpose()
+        data_indices=numpy.where((filter_column>=filter_to) | (filter_column<=filter_from))
+      data=data[:, data_indices[0]]
     return data
 
   def __getstate__(self):
@@ -853,7 +853,9 @@ class MeasurementData(object):
     for i, data in enumerate(self.data):
       self.data[i]=data[sort_indices]
 
-  def export(self,file_name,print_info=True,seperator=' ',xfrom=None,xto=None, only_fitted_columns=False): 
+  def export(self,file_name,print_info=True,seperator=' ',
+             xfrom=None,xto=None, only_fitted_columns=False, 
+             format_string="%g"): 
     '''
       Write data in text file.
       
@@ -866,6 +868,12 @@ class MeasurementData(object):
       
       @return The number of data lines exported
     '''
+    # The procedure is extremely optimized for fast exports
+    # the bottleneck is the conversion from data array to string. (5/6)
+    # Tried all ideas from e.g.
+    # http://stackoverflow.com/questions/2721521/fastest-way-to-generate-delimited-string-from-1d-numpy-array
+    # http://www.skymind.com/~ocrow/python_string/
+    # TODO: Try to improve this string conversion further
     xd=self.xdata
     yd=self.ydata
     zd=self.zdata
@@ -874,8 +882,8 @@ class MeasurementData(object):
     data=self.get_filtered_data_matrix()
     if not xto:
       xto=data[xd].max()
-    data_window=numpy.where((1-((data[xd]<xfrom) + (data[xd]>xto))))[0]
-    data=data.transpose()[data_window].transpose()
+    data_window=numpy.where((data[xd]>=xfrom) & (data[xd]<=xto))[0]
+    data=data[:, data_window]
     if only_fitted_columns:
       if zd>=0:
         data=data[numpy.array([xd, yd, zd, ed])]
@@ -897,32 +905,14 @@ class MeasurementData(object):
             absmin=1e-10
         data[zd]=numpy.where(data[zd]>=absmin, data[zd], absmin)
         data[zd]=numpy.where(data[zd]<=absmax, data[zd], absmax)
-      # for large datasets just export points lying in the plotted region
-      #if len(data[0])>10000:
-        #xrange=self.plot_options.xrange
-        #yrange=self.plot_options.yrange
-        #if xrange[0] is not None:
-          #indices=numpy.where(data[xd]>=xrange[0])[0]
-          #data=data.transpose()[indices].transpose()
-        #if xrange[1] is not None:
-          #indices=numpy.where(data[xd]<=xrange[1])[0]
-          #data=data.transpose()[indices].transpose()
-        #if yrange[0] is not None:
-          #indices=numpy.where(data[yd]>=yrange[0])[0]
-          #data=data.transpose()[indices].transpose()
-        #if yrange[1] is not None:
-          #indices=numpy.where(data[yd]<=yrange[1])[0]
-          #data=data.transpose()[indices].transpose()
       # get the best way to sort and split the data for gnuplot
       if self.scan_line_constant<0:
         x_sort_indices=self.rough_sort(data[xd], data[yd], SPLIT_SENSITIVITY)
         y_sort_indices=self.rough_sort(data[yd], data[xd], SPLIT_SENSITIVITY)
-        sorted_x=data.transpose()[x_sort_indices].transpose()
-        sorted_y=data.transpose()[y_sort_indices].transpose()
-        #max_dx=(data[xd][1:]-data[xd][:-1]).max()
-        #max_dy=(data[xd][1:]-data[xd][:-1]).max()
-        split_indices_x=numpy.where(sorted_x[yd][:-1]<sorted_x[yd][1:])[0]
-        split_indices_y=numpy.where(sorted_y[xd][:-1]<sorted_y[xd][1:])[0]
+        sorted_x=data[:, x_sort_indices]
+        sorted_y=data[:, y_sort_indices]
+        split_indices_x=numpy.where(sorted_x[yd, :-1]<sorted_x[yd, 1:])[0]
+        split_indices_y=numpy.where(sorted_y[xd, :-1]<sorted_y[xd, 1:])[0]
         if len(split_indices_x)<=len(split_indices_y):
           split_indices=split_indices_x+1
           data=sorted_x
@@ -931,10 +921,9 @@ class MeasurementData(object):
           data=sorted_y
       else:
         sort_indices=self.rough_sort(data[self.scan_line_constant], data[self.scan_line], SPLIT_SENSITIVITY)
-        data=data.transpose()[sort_indices].transpose()
-        split_indices=numpy.where(data[self.scan_line][:-1]<data[self.scan_line][1:])[0]+1
+        data=data[:, sort_indices]
+        split_indices=numpy.where(data[self.scan_line, :-1]<data[self.scan_line, 1:])[0]+1
     split_indices=split_indices.tolist()+[len(data[0])]
-    data=data.transpose()
     # write data to file
     write_file=open(file_name,'w')
     if print_info:
@@ -944,22 +933,39 @@ class MeasurementData(object):
       for i in range(len(self.data)):
         columns=columns+' '+self.dimensions()[i]+'['+self.units()[i]+']'
       write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
-    #self.write_data_matrix(write_file, data, split_indices)
     # Convert the data from matrix format to a string which can be written to a file
-    data_string=self.string_from_data_matrix(seperator, data, split_indices)
+    data_string=self.string_from_data_matrix(seperator, data, split_indices, format_string=format_string)
     write_file.write(data_string)
     write_file.write('\n')
     write_file.close()
-    return split_indices[-1] # return the number of exported data lines
+    return data.shape[1] # return the number of exported data lines
 
   def export_matrix(self, file_name):
     '''
       Quick export only the xyz values as binary file.
     '''
     # Create data as list of x1,y1,z1,x2,y2,z2...,xn,yn,zn
-    xyz=numpy.append(numpy.append(self.x, self.y), self.z).astype(numpy.float32)\
-          .reshape(3,len(self.x)).transpose().flatten()
+    xyz=numpy.vstack([self.x, self.y, self.z]).astype(numpy.float32).transpose().flatten()
     xyz.tofile(open(file_name, 'wb'))
+
+  def export_npz(self, file_name):
+    '''
+      Export data into a numpy npz file.
+    '''
+    cols=self.get_filtered_data_matrix()
+    items={
+           'dimensions': self.dimensions(), 
+           'units': self.units(),
+           'x': self.dimensions()[self.xdata],
+           'y': self.dimensions()[self.ydata],
+           }
+    if self.zdata>=0:
+      items['z']=self.dimensions()[self.zdata]
+    if self.yerror>=0:
+      items['error']=self.dimensions()[self.yerror]
+    for i, dim in enumerate(self.dimensions()):
+      items[dim]=cols[i]
+    numpy.savez(file_name, **items)
 
   def rough_sort(self, ds1, ds2, sensitivity):
     '''
@@ -978,23 +984,26 @@ class MeasurementData(object):
     srt_run2=numpy.lexsort(keys=(ds1, ds2))
     return srt_run2
 
-  def string_from_data_matrix(self, seperator, data, split_indices):
+  def string_from_data_matrix(self, seperator, data, split_indices, format_string="%g"):
     '''
       Create a string that can be written to a file from a given data matrix.
       The function may look quite strange because of a lot of optimization,
-      thus the result is almost as fast as c-code (faster if the c-code is not optimized).
+      thus the result is almost as fast as c-code (faster if the c-code is not optimized)
+      while having the flexibility to define empty line indices and format options.
       
       @param seperator A string to seperate each data value.
       @param data A matrix of data points
       @param split_indices Index of the points where empty lines should be added
+      @param format_string Specifies the format option to be used for string conversion of the numbers
       
       @return A string with the data.
     '''
-    lines, cols=data.shape
+    cols, lines=data.shape
+    data=data.transpose()
     # convert data to a long 1d array
-    data=numpy.nan_to_num(data.reshape(lines*cols))
+    data=numpy.nan_to_num(data.flatten())
     # create the format string for one line of data
-    output_line=(("%g"+seperator)*cols)[:-len(seperator)]
+    output_line=((format_string+seperator)*cols)[:-len(seperator)]
     # join format string line by line
     output_list=["\n".join([output_line for j in range(split_indices[0])])]
     for i, split_i in enumerate(split_indices[1:]):
@@ -1129,7 +1138,9 @@ class HugeMD(MeasurementData):
       self._units=None
       self._dimensions=None
       self._len=None
+      #os.remove(self.tmp_export_file)
     return self._data
+
   def set_data_object(self, object):
     self._data=object
     self.store_data()
@@ -1187,17 +1198,20 @@ class HugeMD(MeasurementData):
       Define how the class is pickled and copied.
     '''
     self.changed_after_export=True
-    # restore saved data
+    # restore saved data, get the object state and save the data again
     self.data
-    return MeasurementData.__getstate__(self)
+    output=dict(MeasurementData.__getstate__(self))
+    self.store_data()
+    return output
  
   def __setstate__(self, state):
     '''
       Unpickling the object will set a new temp file name.
     '''
-    MeasurementData.__setstate__(self, state)
     global hmd_file_number
-    self.tmp_export_file=os.path.join(TEMP_DIR, 'HMD_'+ str(hmd_file_number)+ '.tmp')
+    tmp_export_file=os.path.join(TEMP_DIR, 'HMD_'+ str(hmd_file_number)+ '.tmp')
+    state['tmp_export_file']=tmp_export_file
+    MeasurementData.__setstate__(self, state)
     hmd_file_number+=1
     self.store_data()
     self.changed_after_export=True
@@ -1207,7 +1221,14 @@ class HugeMD(MeasurementData):
       Get object information without reloading the data.
     '''
     if self._data is None:
-      output="<HugeMD at %s, points=%i, state stored in: '%s'>" % (hex(id(self)), self._len, self.tmp_export_file)
+      output="<HugeMD at %s, points=%i" % (hex(id(self)), self._len)
+      x, y, z=self.xdata, self.ydata, self.zdata
+      dimensions=self.dimensions()
+      if z<0:
+        output+=", x='%s', y='%s'" % (dimensions[x], dimensions[y])
+      else:
+        output+=", x='%s', y='%s', z='%s'" % (dimensions[x], dimensions[y], dimensions[z])
+      output+=", state stored in: '%s'>" % self.tmp_export_file
     else:
       '''
         Define the string representation of the object. Just some useful information for debugging/IPython console
@@ -1263,15 +1284,36 @@ class HugeMD(MeasurementData):
       self.last_export_output=self.do_export(self.tmp_export_file+'.gptmp', print_info, seperator, xfrom, xto, only_fitted_columns)
       self.changed_after_export=False
       self.last_export_zrange=self.plot_options.zrange
-      self.store_data()
+    #self.store_data()
     copyfile(self.tmp_export_file+'.gptmp',  file_name)
     return self.last_export_output
   
   def export_matrix(self, file_name):
     MeasurementData.export_matrix(self, file_name)
-    self.store_data()    
+    #self.store_data()    
 
   do_export=MeasurementData.export
+  
+  def __add__(self, other):
+    output=MeasurementData.__add__(self, other)
+    output.store_data()
+    return output
+
+  def __sub__(self, other):
+    output=MeasurementData.__sub__(self, other)
+    output.store_data()
+    return output
+
+  def __mul__(self, other):
+    output=MeasurementData.__mul__(self, other)
+    output.store_data()
+    return output
+
+  def __div__(self, other):
+    output=MeasurementData.__div__(self, other)
+    output.store_data()
+    return output
+
 
 #--------------------------------------    HugeMD-Class     -----------------------------------------------------#
 

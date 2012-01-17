@@ -1724,15 +1724,14 @@ class DNSMeasurementData(MeasurementData):
       qy_index=qx_index+1
       lambda_n=self.dns_info['lambda_n']
       two_pi_over_lambda=2.*pi/lambda_n
-      grad_to_rad=1.#pi/180.
       # calculation of the wavevector, also works with arrays
       def angle_to_wavevector(point):
         output=point
-        output[qx_index]=(cos(-point[1]*grad_to_rad)-\
-                  cos(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
+        output[qx_index]=(cos(-point[1])-\
+                  cos(-point[1] + point[3]))*\
                   two_pi_over_lambda
-        output[qy_index]=(sin(-point[1]*grad_to_rad)-\
-                  sin(-point[1]*grad_to_rad + point[3]*grad_to_rad))*\
+        output[qy_index]=(sin(-point[1])-\
+                  sin(-point[1] + point[3]))*\
                   two_pi_over_lambda
         return output    
       self.process_function(angle_to_wavevector)
@@ -1748,11 +1747,10 @@ class DNSMeasurementData(MeasurementData):
       d_index=q_index+1
       lambda_n=self.dns_info['lambda_n']
       two_pi_over_lambda=2.*pi/lambda_n
-      grad_to_rad=pi/180.
       # calculation of the wavevector, also works with arrays
       def angle_to_wavevector(point):
         output=point
-        output[q_index]=sin(0.5*point[3]*grad_to_rad)*2.*two_pi_over_lambda
+        output[q_index]=2.*two_pi_over_lambda*sin(0.5*point[3])
         output[d_index]=2.*pi/output[q_index]
         return output    
       self.process_function(angle_to_wavevector)

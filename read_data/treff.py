@@ -405,7 +405,10 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
       # Create object for the detector image
       imgobj=create_img_object(detector_image, alphai, alphaf_center, float(line[columns['Time']]))
       imgobj.sample_name='Detector Image '+line[columns['Image']].rsplit('.', 1)[0]
-      imgobj.short_info=line[columns['Image']].rsplit('.', 1)[1]
+      try:
+        imgobj.short_info=line[columns['Image']].rsplit('.', 1)[1]
+      except IndexError:
+        imgobj.short_info=line[columns['Image']]
       imgobj.number=str(index)
       # write the data of the object to a file to save memory
       imgobj.store_data()
@@ -605,15 +608,29 @@ set size square
     headers[-1].insert(1, headers[-1][0][1:])
   columns_line=headers[-1][1:]
   for i, column in enumerate(columns_line):
-    column_name=column.rsplit('[', 1)[0]
+    column_name=column.rsplit('[', 1)[0].rsplit('__', 1)[0]
     if column_name in COLUMNS_MAPPING:
       columns[COLUMNS_MAPPING[column_name]]=i
   # get the columns of interest
   if not 'Image' in columns:
-    import_images=False
+    if file_name.endswith('.dat'):
+      # new MARIA format
+      path, name=os.path.split(file_name)
+      name=name.rsplit('.dat', 1)[0]
+      img_file_names=glob(os.path.join(path, name+'_*.gz'))
+      img_numbers=map(lambda item: int(item.rsplit('_', 1)[1].split('.')[0]), img_file_names)
+      joint=zip(img_numbers, img_file_names)
+      joint.sort()
+      img_file_names=[item[1] for item in joint]
+      columns['Image']=len(data_lines[0])
+      data_lines=[data_lines[i]+[img_file_names[i]] for i in range(len(data_lines))]
+    else:
+      import_images=False
   global negative_omega
   negative_omega=False
   const_information={}
+  # define the type of scan used
+  columns['Scantype']='omega'
   for i, line in enumerate(headers):
     if ['#Scan','command','arguments:'] == line:
       arguments=" ".join(headers[i+1]).split('+-')[1].split()
@@ -626,7 +643,6 @@ set size square
         else:
           columns['Scantype']=COLUMNS_MAPPING['Time[sec]']
       break
-
   if 'Wavelength' in columns:
     global PI_4_OVER_LAMBDA
     lambda_n=float(data_lines[0][columns['Wavelength']])
@@ -726,6 +742,7 @@ set size square
     detector_images.append(detector_image_xx)
   for mapi in maps:
     mapi.logz=True
+    mapi.SPLIT_SENSITIVITY=0.0001
     mapi.plot_options='set cbrange [1e-4:]\nset zrange [1e-4:]\n'
   for scan in scans:
     scan.logy=True
@@ -840,8 +857,8 @@ def read_d17_processed_data(file_name):
     dataset.logz=True
     dataset.sample_name=sample_name
     dataset.short_info=pol_channels[i]
-    dataset.scan_line=1
-    dataset.scan_line_constant=0
+    dataset.scan_line=0
+    dataset.scan_line_constant=1
     min_int=min(min_int, intensity[numpy.where(intensity>0)].min())
     max_int=max(max_int, intensity.max())
     datasets.append(dataset)
@@ -1006,8 +1023,8 @@ def read_d17_raw_data(file_from, file_to):
       dataset.append_column((PI_2_OVER_LAMBDA*(numpy.cos(alphaf) - numpy.cos(alphai)))//('Q_x', 'Å^{-1}'))
       dataset.append_column((PI_2_OVER_LAMBDA*(numpy.sin(alphai) + numpy.sin(alphaf)))//('Q_z', 'Å^{-1}'))
       dataset.logz=True
-      dataset.scan_line=1
-      dataset.scan_line_constant=0
+      dataset.scan_line=0
+      dataset.scan_line_constant=1
       absmin=numpy.minimum(absmin, dataset.z.view(numpy.ndarray)[numpy.where(dataset.z!=0)].min())
       absmax=numpy.maximum(absmax, dataset.z.view(numpy.ndarray).max())
       output.append(dataset)

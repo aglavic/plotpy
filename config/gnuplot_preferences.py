@@ -80,14 +80,12 @@ set_output_terminal_ps='postscript landscape enhanced colour "Arial" 16 solid lw
 
 # terminal for external gnuplot window
 if "linux" in platform:
-  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\
-                          '" 16'
+  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]',  'Arial.ttf')+'" 16'
 elif "darwin" in platform:
-  set_output_terminal_wxt='aqua enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\
-                          '" 16'
+  set_output_terminal_wxt='aqua enhanced font "'+join_path('[font-path]',  'Arial.ttf')+'" 16'
 else:
-  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]',  'Arial.ttf')+\
-                          '" 16'
+  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]',  'Arial.ttf')+'" 16'
+set_output_terminal_x11='x11 enhanced font "'+join_path('[font-path]',  'Arial.ttf')+'" 16'
 
 # set output file name, the postfix has to be chosen consistant to the 'set term' statement
 output_file_name='[name]_[add_info][nr].png'

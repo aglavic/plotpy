@@ -29,7 +29,8 @@ __description__='''Program to plot measured data with Gnuplot. Provides a GUI in
 __scripts__=['plot.py']
 __py_modules__=[]
 __package_dir__={'plot_script': '.'}
-__packages__=['plot_script', 'plot_script.config', 'plot_script.read_data', 'plot_script.sessions', 
+__packages__=['plot_script', 'plot_script.config', 'plot_script.config.default_templates', 
+            'plot_script.read_data', 'plot_script.sessions', 
             'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui', 'plot_script.plugins'] #'plot_script.wxgui', 
 __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90', 
                             'fit/pnr_multi/*.f90', 'logo*.png'], 
@@ -61,10 +62,10 @@ elif "py2exe" in sys.argv:
                 #"console": [ "__init__.py"], # set the executable for py2exe
                 "windows": [ "__init__.py" ], # executable for py2exe is windows application            
                 "options": {  "py2exe": {
-                              "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
+                              "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio, Image, TiffImagePlugin",
                               "optimize": 1, # Keep docstring (e.g. IPython console usage)
                               "skip_archive": True, # setting not to move compiled code into library.zip file
-                              'packages':'encodings, gtk, sessions, read_data, gtkgui, IPython',
+                              'packages':'encodings, gtk, sessions, read_data, gtkgui, IPython, PIL',
                               "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'], 
                              }, 
                            }
@@ -101,44 +102,6 @@ if 'install' not in sys.argv:
   # Remove MANIFEST befor distributing to be sure no file is missed
   if os.path.exists('MANIFEST'):
     os.remove('MANIFEST')
-
-if 'sdist' in sys.argv:
-  # Test if every file has the right version for distributing.
-  # This is only to remind the developer to check all files before every new version.
-  # If the versions do not match a alpha/beta can be added to the version name of the distribution.
-  versions_fit=True
-  for module in __py_modules__:
-    mod=__import__(module, globals(), locals(), ['__version__'], -1)
-    try:
-      if mod.__version__!=__version__:
-        print "File %s.py has version %s not equal to distribution version %s." % (module, mod.__version__, __version__)
-        versions_fit=False
-    except AttributeError:
-        print "File %s.py has no version number." % (module)
-        versions_fit=False
-  # test modules in packages
-  for package in __packages__[1:]:
-    package=package.split('.', 1)[1]
-    modules=filter(lambda file: file[-3:]=='.py',os.listdir(package.replace(".", "/")))
-    modules.remove('__init__.py')
-    for module in modules:
-      mod=__import__(package + '.' + module[:-3], globals(), locals(), ['__version__'], -1)
-      try:
-        if mod.__version__!=__version__:
-          print "File %s/%s has version %s not equal to distribution version %s." % (
-                                        package, module, mod.__version__, __version__)
-          versions_fit=False
-      except AttributeError:
-          print "File %s/%s.py has no version number." % (package, module)
-          versions_fit=False
-  if not versions_fit:
-    answer=raw_input('Not all file versions match the distribution version.\nDo you still want to distribute as alpha/beta/normal/cancel? (a/b/y/any): ')
-    if answer=='a':
-      __version__=__version__ + 'alpha'
-    elif answer=='b':
-      __version__=__version__ + 'beta'
-    elif answer!='y':
-      exit()
 
 #__py_modules__.append('configobj')
 
@@ -285,7 +248,7 @@ if ('install' in sys.argv) and len(sys.argv)==2:
 if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
   print "Adding module directory to python path in plot.py script."
   script=open(os.path.join(sys.argv[sys.argv.index('--install-scripts')+1], 'plot.py'), 'r')
-  text=script.read().replace('##---add_python_path_here---##','sys.path.append("'+\
+  text=script.read().replace('##---add_python_path_here---##','sys.path.insert(1,"'+\
                     glob(os.path.join(sys.argv[sys.argv.index('--prefix')+1], 'lib/python2.?/site-packages'))[-1]\
                     +'")')
   script.close()
