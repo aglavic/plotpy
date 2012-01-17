@@ -1029,11 +1029,17 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
       file_dialog.set_current_name(self.active_session.active_file_name+'.mdd')
-      filter = gtk.FileFilter()
-      filter.set_name("Snapshots (*.mdd(.gz))")
-      filter.add_pattern("*.mdd")
-      filter.add_pattern("*.mdd.gz")
-      file_dialog.add_filter(filter)
+      if action.get_name()=='SaveSnapshotAs':
+        filter = gtk.FileFilter()
+        filter.set_name("Snapshots (*.mdd(.gz))")
+        filter.add_pattern("*.mdd")
+        filter.add_pattern("*.mdd.gz")
+        file_dialog.add_filter(filter)
+      else:
+        filter = gtk.FileFilter()
+        filter.set_name("Numpy Archive (*.npz)")
+        filter.add_pattern("*.npz")
+        file_dialog.add_filter(filter)
       filter = gtk.FileFilter()
       filter.set_name("All Files")
       filter.add_pattern("*")
@@ -1042,14 +1048,18 @@ class ApplicationMainWindow(gtk.Window):
       if response == gtk.RESPONSE_OK:
         self.active_folder=file_dialog.get_current_folder()
         name=unicode(file_dialog.get_filenames()[0], 'utf-8')
-        if not (name.endswith(".mdd") or name.endswith(".mdd.gz")):
-          name+=".mdd"
+        if action.get_name()=='SaveSnapshotAs':
+          if not (name.endswith(".mdd") or name.endswith(".mdd.gz")):
+            name+=".mdd"
       elif response == gtk.RESPONSE_CANCEL:
         file_dialog.destroy()
         return False
       file_dialog.destroy()
       #----------------File selection dialog-------------------#
-    self.active_session.store_snapshot(name)
+    if action.get_name()=='SaveSnapshotNumpy':
+      self.measurement[self.index_mess].export_npz(name)
+    else:
+      self.active_session.store_snapshot(name)
   
   def load_snapshot(self, action):
     '''
@@ -1078,7 +1088,7 @@ class ApplicationMainWindow(gtk.Window):
       if response == gtk.RESPONSE_OK:
         self.active_folder=file_dialog.get_current_folder()
         name=unicode(file_dialog.get_filenames()[0], 'utf-8')
-        if not name.endswith(u".mdd"):
+        if not name.endswith(u".mdd") and not name.endswith(u".mdd.gz") :
           name+=u".mdd"
       elif response == gtk.RESPONSE_CANCEL:
         file_dialog.destroy()
@@ -4371,6 +4381,7 @@ set multiplot layout %i,1
         <menu action='SnapshotSub'>
           <menuitem action='SaveSnapshot'/>
           <menuitem action='SaveSnapshotAs'/>
+          <menuitem action='SaveSnapshotNumpy'/>
           <menuitem action='LoadSnapshot'/>
           <menuitem action='LoadSnapshotFrom'/>
         </menu>
@@ -4626,6 +4637,10 @@ set multiplot layout %i,1
       ( "SaveSnapshotAs", gtk.STOCK_EDIT,                    # name, stock id
         "Save Snapshot As...", None,                      # label, accelerator
         "Save the current state for this measurement.",                       # tooltip
+        self.save_snapshot ),
+      ( "SaveSnapshotNumpy", gtk.STOCK_EDIT,                    # name, stock id
+        "Save Dataset As Numpy Archive...", None,                      # label, accelerator
+        "Save the current state for this dataset.",                       # tooltip
         self.save_snapshot ),
       ( "LoadSnapshot", gtk.STOCK_OPEN,                    # name, stock id
         "Load Snapshot", "<control><shift>O",                      # label, accelerator

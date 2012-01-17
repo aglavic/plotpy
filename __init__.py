@@ -101,7 +101,7 @@ known_measurement_types={
                          'squid': ('squid', 'SquidSession', ['dat', 'raw', 'DAT', 'RAW'], []), 
                          '4circle': ('circle', 'CircleSession', ['spec'], []), 
                          'p09': ('circle', 'CircleSession', ['fio'], []), 
-                         'refl': ('reflectometer', 'ReflectometerSession', ['UXD', 'uxd'], []), 
+                         'refl': ('reflectometer', 'ReflectometerSession', ['UXD', 'uxd', 'xrdml'], []), 
                          'treff': ('treff', 'TreffSession', ['___'], []), 
                          'maria': ('treff', 'TreffSession', ['___'], ['-maria']), 
                          'in12': ('in12', 'IN12Session', ['___'], []), 

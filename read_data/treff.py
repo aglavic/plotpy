@@ -857,8 +857,8 @@ def read_d17_processed_data(file_name):
     dataset.logz=True
     dataset.sample_name=sample_name
     dataset.short_info=pol_channels[i]
-    dataset.scan_line=1
-    dataset.scan_line_constant=0
+    dataset.scan_line=0
+    dataset.scan_line_constant=1
     min_int=min(min_int, intensity[numpy.where(intensity>0)].min())
     max_int=max(max_int, intensity.max())
     datasets.append(dataset)
@@ -1023,8 +1023,8 @@ def read_d17_raw_data(file_from, file_to):
       dataset.append_column((PI_2_OVER_LAMBDA*(numpy.cos(alphaf) - numpy.cos(alphai)))//('Q_x', 'Å^{-1}'))
       dataset.append_column((PI_2_OVER_LAMBDA*(numpy.sin(alphai) + numpy.sin(alphaf)))//('Q_z', 'Å^{-1}'))
       dataset.logz=True
-      dataset.scan_line=1
-      dataset.scan_line_constant=0
+      dataset.scan_line=0
+      dataset.scan_line_constant=1
       absmin=numpy.minimum(absmin, dataset.z.view(numpy.ndarray)[numpy.where(dataset.z!=0)].min())
       absmax=numpy.maximum(absmax, dataset.z.view(numpy.ndarray).max())
       output.append(dataset)

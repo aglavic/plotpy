@@ -948,6 +948,25 @@ class MeasurementData(object):
     xyz=numpy.vstack([self.x, self.y, self.z]).astype(numpy.float32).transpose().flatten()
     xyz.tofile(open(file_name, 'wb'))
 
+  def export_npz(self, file_name):
+    '''
+      Export data into a numpy npz file.
+    '''
+    cols=self.get_filtered_data_matrix()
+    items={
+           'dimensions': self.dimensions(), 
+           'units': self.units(),
+           'x': self.dimensions()[self.xdata],
+           'y': self.dimensions()[self.ydata],
+           }
+    if self.zdata>=0:
+      items['z']=self.dimensions()[self.zdata]
+    if self.yerror>=0:
+      items['error']=self.dimensions()[self.yerror]
+    for i, dim in enumerate(self.dimensions()):
+      items[dim]=cols[i]
+    numpy.savez(file_name, **items)
+
   def rough_sort(self, ds1, ds2, sensitivity):
     '''
       Return the sorting indices from a first and second column ignoring small
