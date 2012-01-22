@@ -23,6 +23,7 @@ from config.gui import DOWNLOAD_PAGE_URL
 import file_actions
 from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, \
                     SimpleEntryDialog, DataView, PlotTree, FileImportDialog, StyleLine, ImportWizard
+from multiplots import MultiplotCanvas
 from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
 import read_data
 
@@ -135,7 +136,6 @@ class ApplicationMainWindow(gtk.Window):
     self.input_file_name=active_session.active_file_name # name of source data file
     self.script_suf=script_suf # suffix for script mode gnuplot input data
     self.index_mess=0 # which data sequence is plotted at the moment
-    self.multiplot=[] # list for sequences combined in multiplot
     self.x_range='set autoscale x'
     self.y_range='set autoscale y'
     self.z_range='set autoscale z\nset autoscale cb'
@@ -261,13 +261,15 @@ class ApplicationMainWindow(gtk.Window):
     #---------- create image region and image for the plot ----------
 
     # Create region for multiplot list
-    self.multi_list=gtk.Label();
-    self.multi_list.set_markup(' Multiplot List: ')
-    align=gtk.Alignment(0, 0.05, 1, 0) # align top
-    align.add(self.multi_list)
+    self.multiplot=MultiplotCanvas()
+    self.multiplot.show()
+    #self.multi_list=gtk.Label();
+    #self.multi_list.set_markup(' Multiplot List: ')
+    #align=gtk.Alignment(0, 0.05, 1, 0) # align top
+    #align.add(self.multi_list)
     sw=gtk.ScrolledWindow()
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    sw.add_with_viewport(align)
+    sw.add_with_viewport(self.multiplot)
     sw.show()
     # put multiplot list
     self.frame1.append_page(sw, gtk.Label("Multiplot List"))
@@ -595,15 +597,9 @@ class ApplicationMainWindow(gtk.Window):
     action_name=action.get_name()
     # change number for active plot put it in the plot page entry box at the bottom
     self.file_actions.activate_action('iterate_through_measurements', action_name)
-    # check for valid number
-    if self.index_mess>=len(self.measurement):
-      self.index_mess=len(self.measurement)-1
-    if self.index_mess<0:
-      self.index_mess=0
     # close all open dialogs
     for window in self.open_windows:
       window.destroy()
-    self.active_multiplot=False
     # recreate the menus, if the columns for this dataset aren't the same
     self.rebuild_menus()
     self.reset_statusbar()
@@ -724,10 +720,8 @@ class ApplicationMainWindow(gtk.Window):
     # change plot title labels
     elif action==self.label or action==self.label2:
       if self.active_multiplot:
-        for plotlist in self.multiplot:
-          if self.active_dataset in [item[0] for item in plotlist]:
-            plotlist.sample_name=self.label.get_text()
-            plotlist.title=self.label2.get_text()
+        self.multiplot.sample_name=self.label.get_text()
+        self.multiplot.title=self.label2.get_text()
       else:
         self.active_dataset.sample_name=self.label.get_text()
         self.active_dataset.short_info=self.label2.get_text()
@@ -1143,10 +1137,7 @@ class ApplicationMainWindow(gtk.Window):
     # change ranges
     plot_options=self.active_dataset.plot_options
     if self.active_multiplot:
-      for mp in self.multiplot:
-        for mpi, mpname in mp:
-          if self.active_dataset is mpi:
-            plot_options=mp[0][0].plot_options
+      self.multiplot.plot_options=mp[0][0].plot_options
     if len(xin)==2:
       try:
         plot_options.xrange=xin
@@ -1351,14 +1342,11 @@ class ApplicationMainWindow(gtk.Window):
     if action==1:
       found=False
       if self.active_multiplot:
-        for mp in self.multiplot:
-          for mpi, mpname in mp:
-            if self.active_dataset is mpi:
-              mp[0][0].plot_options=\
-                self.plot_options_buffer.get_text(\
-                  self.plot_options_buffer.get_start_iter(), \
-                  self.plot_options_buffer.get_end_iter())
-              found=True
+        self.multiplot.plot_options=\
+                 self.plot_options_buffer.get_text(\
+                 self.plot_options_buffer.get_start_iter(), \
+                 self.plot_options_buffer.get_end_iter())
+        found=True
       if not found:
         self.active_dataset.plot_options=\
           self.plot_options_buffer.get_text(\
@@ -1451,19 +1439,18 @@ class ApplicationMainWindow(gtk.Window):
     '''
     global errorbars
     if self.active_multiplot:
-      for plotlist in self.multiplot:
-        itemlist=[item[0] for item in plotlist]
-        if self.active_dataset in itemlist:
-          plot_text=measurement_data_plotting.create_plot_script(
-                                        self.active_session,
-                                        [item[0] for item in plotlist],
-                                        self.active_session.active_file_name,
-                                        '',
-                                        plotlist[0][0].short_info,
-                                        [item[0].short_info for item in plotlist],
-                                        errorbars,
-                                        self.active_session.TEMP_DIR+'plot_temp.png',
-                                        fit_lorentz=False)
+      itemlist=[item[0] for item in self.multiplot]
+      if self.active_dataset in itemlist:
+        plot_text=measurement_data_plotting.create_plot_script(
+                          self.active_session,
+                          [item[0] for item in self.multiplot],
+                          self.active_session.active_file_name,
+                          '',
+                          self.multiplot[0][0].short_info,
+                          [item[0].short_info for item in self.multiplot],
+                          errorbars,
+                          self.active_session.TEMP_DIR+'plot_temp.png',
+                          fit_lorentz=False)
     else:
       plot_text=measurement_data_plotting.create_plot_script(
                          self.active_session,
@@ -2504,10 +2491,7 @@ set multiplot layout %i,1
     '''
     dialog=gtk.Dialog(title='Plot style settings...', parent=self)
     if self.active_multiplot:
-      for plotlist in self.multiplot:
-        itemlist=[item[0] for item in plotlist]
-        if not self.active_dataset in itemlist:
-          continue
+      itemlist=[item[0] for item in self.multiplot]
       i=0
       for item in itemlist:
         for dataset in item.plot_together:
@@ -2738,69 +2722,41 @@ set multiplot layout %i,1
       which is a list of plotnumbers of the same Type.
     '''
     # TODO: Review the multiplot stuff!
-    if (action.get_name()=='AddAll')&(len(self.measurement)<40): # dont autoadd more than 40
+    if (action.get_name()=='AddAllMultiplot')&(len(self.measurement)<40): # dont autoadd more than 40
       for i in range(len(self.measurement)):
         self.do_add_multiplot(i)
     elif action.get_name()=='ClearMultiplot':
       self.clear_multiplot()
+    elif action.get_name()=='NewMultiplot':
+      self.multiplot.new_item()
+      self.do_add_multiplot(self.index_mess)
     else:
       self.do_add_multiplot(self.index_mess)
 
   def clear_multiplot(self):
-      self.multiplot=[]
+      self.multiplot.clear()
       self.active_multiplot=False
       self.replot()
       print "Multiplots cleared."
-      self.multi_list.set_markup(' Multiplot List: \n')
 
   def do_add_multiplot(self, index):
     '''
       Add one item to multiplot list devided by plots of the same type.
     '''
-    changed=False
-    active_data=self.measurement[index]
-    for plotlist in self.multiplot:
-      itemlist=[item[0] for item in plotlist]
-      if active_data in itemlist:
-        plotlist.pop(itemlist.index(active_data))
-        self.reset_statusbar()
-        print 'Plot '+active_data.number+' removed.'
-        changed=True
-        if len(plotlist)==0:
-          self.multiplot.remove(plotlist)
-        break
+    if self.active_multiplot:
+      return
+    active_data=self.active_dataset
+    if active_data in self.multiplot:
+      self.multiplot.remove(active_data)
+      print 'Plot '+active_data.number+' removed.'
+    else:
+      appended=self.multiplot.append((active_data, self.active_session.active_file_name))
+      if appended:
+        print 'Plot '+active_data.number+' added.'
       else:
-        xi=active_data.xdata
-        xj=plotlist[0][0].xdata
-        yi=active_data.ydata
-        yj=plotlist[0][0].ydata
-        if ((active_data.units()[xi]==plotlist[0][0].units()[xj]) and \
-            ((active_data.zdata==-1) or \
-            (active_data.units()[yi]==plotlist[0][0].units()[yj]))):
-          plotlist.append((active_data, self.active_session.active_file_name))
-          self.reset_statusbar()
-          print 'Plot '+active_data.number+' added.'
-          changed=True
-          break
-    # recreate the shown multiplot list
-    if not changed:
-      self.multiplot.append(MultiplotList([(active_data, self.active_session.active_file_name)]))
-      self.reset_statusbar()
-      print 'Plot '+active_data.number+' added.'
-    mp_list=''
-    for i, plotlist in enumerate(self.multiplot):
-      if i>0:
-        mp_list=mp_list+'\n-------'
-      plotlist.sort(lambda item1, item2: cmp(item1[0].number, item2[0].number))
-      plotlist.sort(lambda item1, item2: cmp(item1[1], item2[1]))
-      last_name=plotlist[0][1]
-      mp_list+='\n'+last_name
-      for item in plotlist:
-        if item[1]!=last_name:
-          last_name=item[1]
-          mp_list+='\n'+last_name
-        mp_list+='\n'+item[0].number
-    self.multi_list.set_markup(' Multiplot List: \n'+mp_list)
+        self.multiplot.new_item()
+        self.multiplot.append((active_data, self.active_session.active_file_name))
+        print 'New Multiplot created and Plot '+active_data.number+' added.'
 
   def toggle_error_bars(self, action):
     '''
@@ -2829,7 +2785,7 @@ set multiplot layout %i,1
     global errorbars
     self.active_session.picture_width='1600'
     self.active_session.picture_height='1200'
-    if action.get_name()=='MultiPlot':
+    if action.get_name()=='Multiplot':
       if len(self.multiplot)>0:
         self.active_multiplot=not self.active_multiplot
       else:
@@ -4179,14 +4135,10 @@ set multiplot layout %i,1
     '''
       Return the first dataset in an active multiplot.
     '''
-    active_ds=self.active_dataset
-    if not self.active_multiplot:
-      return active_ds
-    for multiplot in self.multiplot:
-      for ds, name in multiplot:
-        if active_ds is ds:
-          return multiplot[0][0]
-    return active_ds
+    if self.active_multiplot:
+      return self.multiplot[0][0]
+    else:
+      return self.active_dataset
 
   def change_plot_appearance(self, action):
     name=action.get_name()
@@ -4238,10 +4190,7 @@ set multiplot layout %i,1
     # set log checkbox according to active measurement
     logitems=self.active_dataset
     if self.active_multiplot:
-      for mp in self.multiplot:
-        for mpi, mpname in mp:
-          if self.active_dataset is mpi:
-            logitems=mp[0][0]
+      logitems=self.multiplot[0][0]
     else:
       options=self.active_dataset.plot_options
       # If the dataset has ranges but the input settings are empty, fill them
@@ -4271,25 +4220,24 @@ set multiplot layout %i,1
     self.active_session.picture_width=str(self.image.get_allocation().width)
     self.active_session.picture_height=str(self.image.get_allocation().height)
     if self.active_multiplot:
-      for plotlist in self.multiplot:
-        itemlist=[item[0] for item in plotlist]
-        if self.active_dataset in itemlist:
-          self.last_plot_text=self.plot(self.active_session,
-                                        [item[0] for item in plotlist],
-                                        plotlist[0][1],
-                                        #plotlist[0][0].short_info,
-                                        plotlist.title,
-                                        [item[0].short_info for item in plotlist],
-                                        errorbars,
-                                        self.active_session.TEMP_DIR+'plot_temp.png',
-                                        fit_lorentz=False,
-                                        sample_name=plotlist.sample_name)
-          self.label.set_width_chars(min(len(plotlist.sample_name)+5,
-                                         40))
-          self.label.set_text(plotlist.sample_name)
-          self.label2.set_width_chars(min(len(plotlist.title)+5,
-                                          40))
-          self.label2.set_text(plotlist.title)
+      multiplot=self.multiplot
+      itemlist=[item[0] for item in multiplot]
+      self.last_plot_text=self.plot(self.active_session,
+                                    itemlist,
+                                    multiplot[0][1],
+                                    #plotlist[0][0].short_info,
+                                    multiplot.title,
+                                    [item.short_info for item in itemlist],
+                                    errorbars,
+                                    self.active_session.TEMP_DIR+'plot_temp.png',
+                                    fit_lorentz=False,
+                                    sample_name=multiplot.sample_name)
+      self.label.set_width_chars(min(len(multiplot.sample_name)+5,
+                                     40))
+      self.label.set_text(multiplot.sample_name)
+      self.label2.set_width_chars(min(len(multiplot.title)+5,
+                                      40))
+      self.label2.set_text(multiplot.title)
     else:
       self.label.set_width_chars(min(len(self.active_dataset.sample_name)+5,
                                                           40))
@@ -4490,8 +4438,13 @@ set multiplot layout %i,1
         '''
     output+='''<menuitem action='ChangeXYZLabel'/>
         <separator name='static9'/>
-        <menuitem action='AddAll'/>
-        <menuitem action='ClearMultiplot'/>
+        <menu action='MultiplotMenu'>
+          <menuitem action='Multiplot'/>
+          <menuitem action='AddMultiplot'/>
+          <menuitem action='AddAllMultiplot'/>
+          <menuitem action='NewMultiplot'/>
+          <menuitem action='ClearMultiplot'/>
+        </menu>
         <menu action='ToolbarActions'>
           <menuitem action='Next'/>
           <menuitem action='Prev'/>
@@ -4499,8 +4452,6 @@ set multiplot layout %i,1
           <menuitem action='Last'/>
           <separator name='static3'/>
           <menuitem action='ErrorBars'/>
-          <menuitem action='AddMulti'/>
-          <menuitem action='MultiPlot'/>
           <menuitem action='Apply'/>
         </menu>
         <menu action='PlotAppearance'>
@@ -4608,8 +4559,8 @@ set multiplot layout %i,1
       '''
     output+='''<toolitem action='ToggleMousemode' />
       <separator name='static11'/>
-      <toolitem action='AddMulti'/>
-      <toolitem action='MultiPlot'/>
+      <toolitem action='AddMultiplot'/>
+      <toolitem action='Multiplot'/>
       <separator name='static12'/>
       <toolitem action='SaveSnapshot'/>
       <toolitem action='LoadSnapshot'/>
@@ -4638,7 +4589,7 @@ set multiplot layout %i,1
       ("ViewMenu", None, "_View"), # name, stock id, label
       ("AxesMenu", None, "_Axes"), # name, stock id, label
       ("TreatmentMenu", None, "_Data treatment"), # name, stock id, label
-      ("ExtrasMenu", None, "_Extras"), # name, stock id, label
+      ("ExtrasMenu", None, "E_xtras"), # name, stock id, label
       ("HelpMenu", None, "_Help"), # name, stock id, label
       ("ToolBar", None, "Toolbar"), # name, stock id, label
       ("ToolbarActions", None, "Toolbar Actions"), # name, stock id, label
@@ -4650,23 +4601,23 @@ set multiplot layout %i,1
         "Snapshots", None, # label, accelerator
         None, None), # tooltip
       ("SaveSnapshot", gtk.STOCK_EDIT, # name, stock id
-        "Save Snapshot", "<control><shift>S", # label, accelerator
+        "Save Snapshot", "<alt>S", # label, accelerator
         "Save the current state for this measurement.", # tooltip
         self.save_snapshot),
       ("SaveSnapshotAs", gtk.STOCK_EDIT, # name, stock id
-        "Save Snapshot As...", None, # label, accelerator
+        "Save Snapshot As...", "<alt><shift>S", # label, accelerator
         "Save the current state for this measurement.", # tooltip
         self.save_snapshot),
       ("SaveSnapshotNumpy", gtk.STOCK_EDIT, # name, stock id
-        "Save Dataset As Numpy Archive...", None, # label, accelerator
+        "Save Dataset As Numpy Archive...", "<alt><shift>N", # label, accelerator
         "Save the current state for this dataset.", # tooltip
         self.save_snapshot),
       ("LoadSnapshot", gtk.STOCK_OPEN, # name, stock id
-        "Load Snapshot", "<control><shift>O", # label, accelerator
+        "Load Snapshot", "<alt>O", # label, accelerator
         "Load a state for this measurement stored before.", # tooltip
         self.load_snapshot),
       ("LoadSnapshotFrom", gtk.STOCK_OPEN, # name, stock id
-        "Load Snapshot From...", None, # label, accelerator
+        "Load Snapshot From...", "<alt><shift>O", # label, accelerator
         "Load a state for this measurement stored before.", # tooltip
         self.load_snapshot),
       ("SaveGPL", gtk.STOCK_SAVE, # name, stock id
@@ -4722,7 +4673,7 @@ set multiplot layout %i,1
         "Run Makro", # tooltip
         self.run_action_makro),
       ("LastMakro", None, # name, stock id
-        "Run Last Makro", "<control>M", # label, accelerator
+        "Run Last Makro", "<control>R", # label, accelerator
         "Run Last Makro", # tooltip
         self.run_last_action_makro),
       ("First", gtk.STOCK_GOTO_FIRST, # name, stock id
@@ -4814,28 +4765,40 @@ set multiplot layout %i,1
         "Apply current plot settings to all sequences", # tooltip
         self.apply_to_all),
       ("ExportAll", gtk.STOCK_EXECUTE, # name, stock id
-        "Exp. Selection...", None, # label, accelerator
+        "Exp. Selection...", "<alt><shift>E", # label, accelerator
         "Export a selection of plots", # tooltip
         self.export_plot),
       ("ErrorBars", gtk.STOCK_ADD, # name, stock id
-        "E.Bars", None, #'e',                     # label, accelerator
+        "E.Bars", "<alt>E", #'e',                     # label, accelerator
         "Toggle errorbars", # tooltip
         self.toggle_error_bars),
       ("XYProjections", gtk.STOCK_FULLSCREEN, # name, stock id
         "XY-Proj.", None, #'e',                     # label, accelerator
         "Toggle xy-projections", # tooltip
         self.toggle_xyprojections),
-      ("AddMulti", gtk.STOCK_JUMP_TO, # name, stock id
+      ("Multiplot", gtk.STOCK_YES, # name, stock id
+        "Toggle Multiplot", '<control>M', #'m',                     # label, accelerator
+        "Switch between Multiplot and Singleplot mode", # tooltip
+        self.export_plot),
+      ("MultiplotMenu", None, # name, stock id
+        "Multiplot", None, # label, accelerator
+        "Multiplot", # tooltip
+        self.export_plot),
+      ("AddMultiplot", gtk.STOCK_JUMP_TO, # name, stock id
         "_Add", '<alt>a', # label, accelerator
         "Add/Remove plot to/from multi-plot list", # tooltip
         self.add_multiplot),
-      ("AddAll", gtk.STOCK_JUMP_TO, # name, stock id
+      ("AddAllMultiplot", gtk.STOCK_JUMP_TO, # name, stock id
         "Add all to Multiplot", '<alt><shift>a', # label, accelerator
         "Add/Remove all sequences to/from multi-plot list", # tooltip
         self.add_multiplot),
-      ("ClearMultiplot", gtk.STOCK_JUMP_TO, # name, stock id
-        "Clear Multiplot List", None, #'c',                     # label, accelerator
+      ("ClearMultiplot", gtk.STOCK_DELETE, # name, stock id
+        "Clear Multiplot List", '<control><alt>a', #'c',                     # label, accelerator
         "Remove all multi-plot list entries", # tooltip
+        self.add_multiplot),
+      ("NewMultiplot", gtk.STOCK_NEW, # name, stock id
+        "Add to New Multiplot List", '<control><shift>M', #'c',                     # label, accelerator
+        "Create a new Multiplot List and add the active plot", # tooltip
         self.add_multiplot),
       ("RemovePlot", None, # name, stock id
         "Remove the active Plot (no way back!)", None, # label, accelerator
@@ -4846,14 +4809,10 @@ set multiplot layout %i,1
         "Dialog for fitting of a function to the active dataset.", # tooltip
         self.fit_dialog),
       ("MultiFitData", None, # name, stock id
-        "Fit _Multiple datasets...", "<control><shift>M", # label, accelerator
+        "Fit _Multiple datasets...", None, # label, accelerator
         "Dialog for fitting of a function to the active dataset.", # tooltip
         self.multi_fit_dialog),
-      ("MultiPlot", gtk.STOCK_YES, # name, stock id
-        "Multi", None, #'m',                     # label, accelerator
-        "Show Multi-plot", # tooltip
-        self.export_plot),
-      ("MultiPlotExport", None, # name, stock id
+      ("MultiplotExport", None, # name, stock id
         "Export Multi-plots", None, # label, accelerator
         "Export Multi-plots", # tooltip
         self.export_plot),
@@ -4911,7 +4870,7 @@ set multiplot layout %i,1
         "Key on bottom right", # tooltip
         self.change_plot_appearance),
       ("PlotToggleGrid", None, # name, stock id
-        "Toggle grid", 'F4', # label, accelerator
+        "Toggle grid", 'F5', # label, accelerator
         "Toggle grid", # tooltip
         self.change_plot_appearance),
       ("PlotToggleLinespoints", None, # name, stock id

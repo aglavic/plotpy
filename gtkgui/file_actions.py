@@ -311,24 +311,41 @@ class FileActions:
     '''
       Change the active plotted sequence.
     '''
-    if action_name=='Prev':
-      self.window.index_mess=max(0, self.window.index_mess-1)
-      self.window.plot_page_entry.set_text(str(self.window.index_mess))
-    elif action_name=='First':
-      self.window.index_mess=0
-      self.window.plot_page_entry.set_text(str(self.window.index_mess))
-    elif action_name=='Last':
-      self.window.index_mess=len(self.window.measurement)-1
-      self.window.plot_page_entry.set_text(str(self.window.index_mess))
-    elif action_name=='Next':
-      self.window.index_mess=min(len(self.window.measurement)-1, self.window.index_mess+1)
-      self.window.plot_page_entry.set_text(str(self.window.index_mess))
+    if self.window.active_multiplot:
+      mp=self.window.multiplot
+      if action_name=='Prev':
+        mp.select_item(max(0, mp.item_index-1))
+      elif action_name=='First':
+        mp.select_item(0)
+      elif action_name=='Last':
+        mp.select_item(-1)
+      elif action_name=='Next':
+        mp.select_item(min(len(mp)-1, mp.item_index+1))
+      else:
+        try:
+          if len(mp)>int(self.window.plot_page_entry.get_text()) and\
+            int(self.window.plot_page_entry.get_text())>=0:
+            mp.select_item(int(self.window.plot_page_entry.get_text()))
+        except ValueError:
+          pass
+      self.window.plot_page_entry.set_text(str(mp.item_index))
     else:
-      try:
-        if len(self.window.measurement)>int(self.window.plot_page_entry.get_text()):
-          self.window.index_mess=int(self.window.plot_page_entry.get_text())
-      except ValueError:
-        self.window.plot_page_entry.set_text(str(self.window.index_mess))
+      if action_name=='Prev':
+        self.window.index_mess=max(0, self.window.index_mess-1)
+      elif action_name=='First':
+        self.window.index_mess=0
+      elif action_name=='Last':
+        self.window.index_mess=len(self.window.measurement)-1
+      elif action_name=='Next':
+        self.window.index_mess=min(len(self.window.measurement)-1,
+                                   self.window.index_mess+1)
+      else:
+        try:
+          if len(self.window.measurement)>int(self.window.plot_page_entry.get_text()):
+            self.window.index_mess=int(self.window.plot_page_entry.get_text())
+        except ValueError:
+          pass
+      self.window.plot_page_entry.set_text(str(self.window.index_mess))
 
   def create_fit_object(self):
     '''

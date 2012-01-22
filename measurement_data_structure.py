@@ -2835,6 +2835,53 @@ constants={
            }
 
 
+class MultiplotList(list):
+  '''
+    A list of measurements for a multiplot.
+  '''
+  def __init__(self, input_list=None):
+    self.title="Multiplot"
+    if input_list is None:
+      self.sample_name=''
+      list.__init__(self)
+
+    else:
+      self.sample_name=str(input_list[0][0].sample_name)
+      list.__init__(self, input_list)
+
+  def append(self, dataset):
+    if len(dataset)!=2:
+      raise ValueError, 'items of a MultiplotList need to be (MeasurementData, file_name) sets'
+    if dataset[0] in [item[0] for item in self]:
+      # do not add the same dataset twice
+      return
+    dataset=tuple(dataset)
+    if len(self)==0:
+      list.append(self, dataset)
+      self.sample_name=dataset[0].sample_name
+    elif (self[0][0].x.unit==dataset[0].x.unit and\
+          self[0][0].y.unit==dataset[0].y.unit):
+      list.append(self, dataset)
+    else:
+      raise ValueError, 'only items with units "%s" vs. "%s" can be added to this multiplot'%(
+                            self[0][0].x.unit, self[0][0].y.unit)
+  def __contains__(self, item):
+    if hasattr(item, '__iter__') and len(item)==2:
+      return item in self
+    else:
+      return item in [i[0] for i in self]
+
+  def remove(self, item):
+    index=self.index(item)
+    self.pop(index)
+
+  def index(self, item):
+    if hasattr(item, '__iter__') and len(item)==2:
+      return list.index(self, item)
+    else:
+      return [i[0] for i in self].index(item)
+
+
 #################### Old psd #######################
 class PysicalProperty:
   '''
