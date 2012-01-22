@@ -8,33 +8,35 @@
 # import mathematic functions and least square fit which uses the Levenberg-Marquardt algorithm.
 import numpy
 from mpfit import mpfit
-from math import pi, sqrt,  tanh, sin, asin, exp
+from math import pi, sin, asin, exp
 # import own modules
 from measurement_data_structure import MeasurementData, PlotOptions
 # import gui functions for active config.gui.toolkit
 import config.gui
 import parallel
 parallel.add_actions([
-                      'import numpy', 
-                      'from mpfit import mpfit', 
-                      'from math import pi, sqrt,  tanh, sin, asin, exp', 
-                      'from measurement_data_structure import MeasurementData, PlotOptions', 
-                      'import config.gui', 
-                      'import parallel', 
-                      'from scipy.special import wofz', 
+                      'import numpy',
+                      'from mpfit import mpfit',
+                      'from math import pi, sqrt,  tanh, sin, asin, exp',
+                      'from measurement_data_structure import MeasurementData, PlotOptions',
+                      'import config.gui',
+                      'import parallel',
+                      'from scipy.special import wofz',
                               ])
 
 try:
-  FitSessionGUI=__import__( config.gui.toolkit+'gui.gui_fit_data', fromlist=['FitSessionGUI']).FitSessionGUI
-  FitFunctionGUI=__import__( config.gui.toolkit+'gui.gui_fit_data', fromlist=['FitFunctionGUI']).FitFunctionGUI
-except ImportError: 
+  FitSessionGUI=__import__(config.gui.toolkit+'gui.gui_fit_data',
+                            fromlist=['FitSessionGUI']).FitSessionGUI
+  FitFunctionGUI=__import__(config.gui.toolkit+'gui.gui_fit_data',
+                             fromlist=['FitFunctionGUI']).FitFunctionGUI
+except ImportError:
   class FitSessionGUI(object): pass
   class FitFunctionGUI(object): pass
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__status__="Production"
 
 class ConnectedDict(dict):
   '''
@@ -42,12 +44,12 @@ class ConnectedDict(dict):
   '''
   split_index=None
   origin_dicts=None
-  
+
   def __init__(self, dict1, dict2, split_index):
     dict.__init__(self)
     self.split_index=split_index
     self.origin_dicts=(dict1, dict2)
-  
+
   def __setitem__(self, index, value):
     if index>=self.split_index:
       if 'tied' in value:
@@ -78,7 +80,7 @@ class ConnectedDict(dict):
       if 'tied' in output:
         output['tied']=output['tied'].replace(']', '1]')
     return output
-  
+
   def items(self):
     combine_dict=dict(self.origin_dicts[0].items())
     for index, item in self.origin_dicts[1].items():
@@ -102,14 +104,14 @@ class ConnectedDict(dict):
     for index, item in dict.items(self):
       combine_dict[index]=item
     return combine_dict.values()
-  
+
   def __contains__(self, index):
     if dict.__contains__(self, index):
       return True
     if index>=self.split_index:
       return (index-self.split_index) in self.origin_dicts[1]
     else:
-      return index in self.origin_dicts[0]      
+      return index in self.origin_dicts[0]
 
 class FitFunction(FitFunctionGUI):
   '''
@@ -131,7 +133,7 @@ class FitFunction(FitFunctionGUI):
   fit_logarithmic=False
   constrains=None
   max_iter=200. # maximum numer of iterations for fitting (should be lowered for slow functions)
-  
+
   def __init__(self, initial_parameters=[]):
     '''
       Constructor setting the initial values of the parameters.
@@ -144,7 +146,7 @@ class FitFunction(FitFunctionGUI):
       self.parameters=map(numpy.float64, self.parameters)
     else:
       # Make sure a wrong number of parameters doesn't get silently ignored
-      raise ValueError, "Wrong number of parameters, got %i need %i" % (len(initial_parameters), len(self.parameters))
+      raise ValueError, "Wrong number of parameters, got %i need %i"%(len(initial_parameters), len(self.parameters))
     # As default all parameters get fitted
     self.refine_parameters=range(len(self.parameters))
     if self.constrains is not None:
@@ -179,7 +181,7 @@ class FitFunction(FitFunctionGUI):
       err=function(function_parameters, x)-y
     else:
       err=(function(function_parameters, x)-y)/yerror
-    return err      
+    return err
 
   def residuals_log(self, params, y, x, yerror=None):
     '''
@@ -216,7 +218,7 @@ class FitFunction(FitFunctionGUI):
       err=numpy.log10(function(function_parameters, x))-numpy.log10(y)
     return err
 
-  def refine(self,  dataset_x,  dataset_y, dataset_yerror=None, progress_bar_update=None):
+  def refine(self, dataset_x, dataset_y, dataset_yerror=None, progress_bar_update=None):
     '''
       Do the least square refinement to the given dataset. If the fit converges
       the new parameters are stored.
@@ -241,11 +243,11 @@ class FitFunction(FitFunctionGUI):
       x_from=x.min()
     if x_to is None:
       x_to=x.max()
-    filter=numpy.where((x>=x_from)*(x<=x_to))[0]
-    x=x[filter]
-    y=y[filter]
+    filter_indices=numpy.where((x>=x_from)*(x<=x_to))[0]
+    x=x[filter_indices]
+    y=y[filter_indices]
     if dy is not None:
-      dy=dy[filter]
+      dy=dy[filter_indices]
     # remove errors which are zero
     if dy is not None:
       zero_elements=numpy.where(dy==0.)[0]
@@ -262,7 +264,7 @@ class FitFunction(FitFunctionGUI):
     else:
       residuals=self.residuals
     return self.refine_mpfit(residuals, parameters, x, y, dy, progress_bar_update)
-  
+
   def refine_mpfit(self, residuals, parameters, x, y, dy, progress_bar_update=None):
     '''
       Refine the function using a constrained fit with the 
@@ -279,10 +281,10 @@ class FitFunction(FitFunctionGUI):
     if constrains is None:
       parinfo=None
     else:
-      parinfo = []
+      parinfo=[]
       # Define constrains of the fit for each parameter
       for i in range(len(parameters)):
-        parinfo.append({'limited':[0,0], 'limits':[0.,0.]})
+        parinfo.append({'limited':[0, 0], 'limits':[0., 0.]})
         if self.refine_parameters[i] in constrains:
           constrains_i=constrains[self.refine_parameters[i]]
           parinfo_i=parinfo[i]
@@ -297,17 +299,17 @@ class FitFunction(FitFunctionGUI):
             expression=constrains_i['tied']
             for j, pj in enumerate(self.refine_parameters):
               name=self.parameter_names[pj]
-              expression=expression.replace('[%s]' % name, 'p[%i]' % j)
+              expression=expression.replace('[%s]'%name, 'p[%i]'%j)
             test=expression.replace('p[', '').replace(']', '').replace(' ', '').replace('.', '')\
                 .replace('*', '').replace('-', '').replace('/', '').replace('+', '')
             if not test.isdigit() and test!='':
               raise ValueError, 'Wrong syntax in constrains.'
             parinfo_i['tied']=expression
     if progress_bar_update is not None:
-      def iterfunct(myfunct, p, iter, fnorm, functkw=None,
+      def iterfunct(myfunct, p, iteration, fnorm, functkw=None,
                   parinfo=None, quiet=0, dof=None):
         # perform custom iteration update   
-        return progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    χ²=%.6e' % (iter, fnorm))
+        return progress_bar_update(step_add=float(iteration)/self.max_iter, info='Iteration %i    χ²=%.6e'%(iteration, fnorm))
     else:
       iterfunct=None
     # parallel version
@@ -332,9 +334,9 @@ class FitFunction(FitFunctionGUI):
           dview.execute('err=self.residuals(p,y,x,dy)')
           return [0, dview.gather('err')]
     # call the fit routine
-    result=mpfit(function, xall=parameters, functkw=function_keywords, 
-                 parinfo=parinfo, 
-                 maxiter=self.max_iter, iterfunct=iterfunct, 
+    result=mpfit(function, xall=parameters, functkw=function_keywords,
+                 parinfo=parinfo,
+                 maxiter=self.max_iter, iterfunct=iterfunct,
                  fastnorm=1, # faster computation of Chi², can be less stable
                  quiet=1
                  )
@@ -353,7 +355,7 @@ class FitFunction(FitFunctionGUI):
         if i in self.refine_parameters:
           new_function_parameters.append(new_params[self.refine_parameters.index(i)])
         else:
-          new_function_parameters.append(self.parameters[i])      
+          new_function_parameters.append(self.parameters[i])
       self.set_parameters(new_function_parameters)
     # covariance matrix for all parameters
     cov=result.covar
@@ -388,7 +390,7 @@ class FitFunction(FitFunctionGUI):
       self.refine_parameters.remove(index)
     else:
       self.refine_parameters.append(index)
-  
+
   def simulate(self, x, interpolate=5, inside_fitrange=False):
     '''
       Calculate the function for the active parameters for x values and some values
@@ -410,14 +412,14 @@ class FitFunction(FitFunctionGUI):
         x_from=x.min()
       if x_to is None:
         x_to=x.max()
-      filter=numpy.where((x>=x_from)*(x<=x_to))[0]
-      x=x[filter]
-    if interpolate > 1:
+      filter_indices=numpy.where((x>=x_from)*(x<=x_to))[0]
+      x=x[filter_indices]
+    if interpolate>1:
       # Add interpolation points to x
       xint=[]
       dx=(x[1:]-x[:-1])/interpolate
       for j in range(interpolate):
-        xint.append(x[:-1] + dx * j)
+        xint.append(x[:-1]+dx*j)
       xint=numpy.array(xint, dtype=numpy.float64).transpose().flatten()
       xint=numpy.append(xint, x[-1])
     else:
@@ -441,14 +443,14 @@ class FitFunction(FitFunctionGUI):
         x_from=x.min()
       if x_to is None:
         x_to=x.max()
-      filter=numpy.where((x>=x_from)*(x<=x_to))[0]
-      x=x[filter]
-    if interpolate > 1:
+      filter_indices=numpy.where((x>=x_from)*(x<=x_to))[0]
+      x=x[filter_indices]
+    if interpolate>1:
       # Add interpolation points to x
       xint=[]
       dx=(x[1:]-x[:-1])/interpolate
       for j in range(interpolate):
-        xint.append(x[:-1] + dx * j)
+        xint.append(x[:-1]+dx*j)
       xint=numpy.array(xint, dtype=numpy.float64).transpose().flatten()
       xint=numpy.append(xint, x[-1])
     else:
@@ -458,13 +460,13 @@ class FitFunction(FitFunctionGUI):
     dview.execute('y=self.fit_function(self.parameters, numpy.array(xint, dtype=numpy.float64, copy=False))')
     y=dview.gather('y')
     return xint, y
-  
+
   def __call__(self, x):
     '''
       Calling the object returns the y values corresponding to the given x values.
     '''
     return self.simulate(x, interpolate=1)[1] # return y values
-  
+
   def __add__(self, other):
     '''
       Define the addition of two FitFunction objects.
@@ -476,7 +478,7 @@ class FitFunction(FitFunctionGUI):
       Define the multiplication of two FitFunction objects.
     '''
     return FitMultiply(self, other)
-  
+
   def _get_function_text(self):
     function_text=self.fit_function_text
     for i in range(len(self.parameters)):
@@ -495,47 +497,47 @@ class FitFunction(FitFunctionGUI):
           digits=4
         pow_10i=int(pow_10)
         if pow_10i>(digits-1):
-          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}"%(digits-1))%\
                                                 (self.parameters[i]/10.**pow_10i, pow_10i))
         elif pow_10<0:
           if pow_10i==pow_10:
             pow_10i+=1
-          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}"%(digits-1))%\
                                                 (self.parameters[i]/10.**(pow_10i-1), (pow_10i-1)))
         else:
-          function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (self.parameters[i]))
+          function_text=function_text.replace(replacement, ("%%.%if"%(digits-1-pow_10i))%(self.parameters[i]))
     return function_text
-  
+
   def __repr__(self):
-    output="<"+self.__class__.__name__+ "  "
+    output="<"+self.__class__.__name__+"  "
     for i in range((len(self.parameters)+3)//4):
       if i>0:
         output+="\n "+" "*len(self.__class__.__name__)+"  "
-      output+=" ".join([u"%-10.10s" % name for name in self.parameter_names[i*4:(i+1)*4]])
+      output+=" ".join([u"%-10.10s"%name for name in self.parameter_names[i*4:(i+1)*4]])
       output+="\n "+" "*len(self.__class__.__name__)+" "
-      output+=" ".join([u"% .3e" % value for value in self.parameters[i*4:(i+1)*4]])
+      output+=" ".join([u"% .3e"%value for value in self.parameters[i*4:(i+1)*4]])
     output+=" >"
     return output
-  
+
   fit_function_text_eval=property(_get_function_text)
 
 class FitSum(FitFunction):
   '''
     Fit the Sum of two FitFunctions.
   '''
-  
+
   func_len=(None, None)
-  
-  def __init__(self, func1,  func2):
+
+  def __init__(self, func1, func2):
     '''
       Construct a sum of two functions to use for fit.
       
       @param funci the functions to add together
     '''
-    self.name=func1.name + ' + ' + func2.name
-    self.parameters=func1.parameters + func2.parameters
-    self.parameter_names=[name + '1' for name in func1.parameter_names] + [name + '2' for name in func2.parameter_names]
-    self.refine_parameters=func1.refine_parameters + [index + len(func1.parameters) for index in func2.refine_parameters]
+    self.name=func1.name+' + '+func2.name
+    self.parameters=func1.parameters+func2.parameters
+    self.parameter_names=[name+'1' for name in func1.parameter_names]+[name+'2' for name in func2.parameter_names]
+    self.refine_parameters=func1.refine_parameters+[index+len(func1.parameters) for index in func2.refine_parameters]
     function_text=func1.fit_function_text
     for i in range(len(func1.parameters)):
       function_text=function_text.replace(func1.parameter_names[i], func1.parameter_names[i]+'1')
@@ -543,8 +545,8 @@ class FitSum(FitFunction):
     function_text=func2.fit_function_text
     for i in range(len(func2.parameters)):
       function_text=function_text.replace(func2.parameter_names[i], func2.parameter_names[i]+'2')
-    self.fit_function_text+=' + ' + function_text
-    self.func_len = (len(func1.parameters), len(func2.parameters))
+    self.fit_function_text+=' + '+function_text
+    self.func_len=(len(func1.parameters), len(func2.parameters))
     self.origin=(func1, func2)
     if func1.constrains is None:
       func1.constrains={}
@@ -559,9 +561,9 @@ class FitSum(FitFunction):
     '''
     func1=self.origin[0].fit_function
     func2=self.origin[1].fit_function
-    len1, len2=self.func_len
-    return func1(p[0:len1], x) + func2(p[len1:], x)
-  
+    len1, ignore=self.func_len
+    return func1(p[0:len1], x)+func2(p[len1:], x)
+
   def set_parameters(self, new_params):
     '''
       Set new parameters and pass them to origin functions.
@@ -576,28 +578,28 @@ class FitSum(FitFunction):
       Change the refined parameters in the origin functions.
     '''
     FitFunction.toggle_refine_parameter(self, action, index)
-    if index < len(self.origin[0].parameters):
+    if index<len(self.origin[0].parameters):
       self.origin[0].toggle_refine_parameter(action, index)
     else:
       self.origin[1].toggle_refine_parameter(action, index-len(self.origin[0].parameters))
-  
+
 class FitMultiply(FitFunction):
   '''
     Fit the Multiplication of two FitFunctions.
   '''
-  
+
   func_len=(None, None)
-  
-  def __init__(self, func1,  func2):
+
+  def __init__(self, func1, func2):
     '''
       Construct a sum of two functions to use for fit.
       
       @param funci the functions to add together
     '''
-    self.name=func1.name + ' * ' + func2.name
-    self.parameters=func1.parameters + func2.parameters
-    self.parameter_names=[name + '1' for name in func1.parameter_names] + [name + '2' for name in func2.parameter_names]
-    self.refine_parameters=func1.refine_parameters + [index + len(func1.parameters) for index in func2.refine_parameters]
+    self.name=func1.name+' * '+func2.name
+    self.parameters=func1.parameters+func2.parameters
+    self.parameter_names=[name+'1' for name in func1.parameter_names]+[name+'2' for name in func2.parameter_names]
+    self.refine_parameters=func1.refine_parameters+[index+len(func1.parameters) for index in func2.refine_parameters]
     function_text=func1.fit_function_text
     for i in range(len(func1.parameters)):
       function_text=function_text.replace(func1.parameter_names[i], func1.parameter_names[i]+'1')
@@ -605,8 +607,8 @@ class FitMultiply(FitFunction):
     function_text=func2.fit_function_text
     for i in range(len(func2.parameters)):
       function_text=function_text.replace(func2.parameter_names[i], func2.parameter_names[i]+'2')
-    self.fit_function_text+=' * ' + function_text
-    self.func_len = (len(func1.parameters), len(func2.parameters))
+    self.fit_function_text+=' * '+function_text
+    self.func_len=(len(func1.parameters), len(func2.parameters))
     self.origin=(func1, func2)
     if func1.constrains is None:
       func1.constrains={}
@@ -621,9 +623,9 @@ class FitMultiply(FitFunction):
     '''
     func1=self.origin[0].fit_function
     func2=self.origin[1].fit_function
-    len1, len2=self.func_len
-    return func1(p[0:len1], x) * func2(p[len1:], x)
-  
+    len1, ignore=self.func_len
+    return func1(p[0:len1], x)*func2(p[len1:], x)
+
   def set_parameters(self, new_params):
     '''
       Set new parameters and pass them to origin functions.
@@ -638,7 +640,7 @@ class FitMultiply(FitFunction):
       Change the refined parameters in the origin functions.
     '''
     FitFunction.toggle_refine_parameter(self, action, index)
-    if index < len(self.origin[0].parameters):
+    if index<len(self.origin[0].parameters):
       self.origin[0].toggle_refine_parameter(action, index)
     else:
       self.origin[1].toggle_refine_parameter(action, index-len(self.origin[0].parameters))
@@ -647,7 +649,7 @@ class FitFunction3D(FitFunctionGUI):
   '''
     Root class for fittable functions with x,y and z data. Parant of all other functions.
   '''
-  
+
   # define class variables, will be overwritten from childs.
   name="Unnamed"
   parameters=[]
@@ -666,7 +668,7 @@ class FitFunction3D(FitFunctionGUI):
   fit_logarithmic=False
   constrains=None
   max_iter=200. # maximum numer of iterations for fitting (should be lowered for slow functions)
-  
+
   def __init__(self, initial_parameters):
     '''
       Constructor setting the initial values of the parameters.
@@ -679,7 +681,7 @@ class FitFunction3D(FitFunctionGUI):
       self.parameters=map(numpy.float64, self.parameters)
     else:
       # Make sure a wrong number of parameters doesn't get silently ignored
-      raise ValueError, "Wrong number of parameters, got %i need %i" % (len(initial_parameters), len(self.parameters))
+      raise ValueError, "Wrong number of parameters, got %i need %i"%(len(initial_parameters), len(self.parameters))
     self.refine_parameters=range(len(self.parameters))
     if self.constrains is not None:
       self.constrains=dict(self.constrains)
@@ -713,7 +715,7 @@ class FitFunction3D(FitFunctionGUI):
       err=function(function_parameters, x, y)-z
     else:
       err=(function(function_parameters, x, y)-z)/zerror
-    return err      
+    return err
 
   def residuals_log(self, params, z, y, x, zerror=None):
     '''
@@ -751,7 +753,7 @@ class FitFunction3D(FitFunctionGUI):
       err=numpy.log10(function(function_parameters, x, y))-numpy.log10(z)
     return err
 
-  def refine(self,  dataset_x,  dataset_y, dataset_z, dataset_zerror=None, progress_bar_update=None):
+  def refine(self, dataset_x, dataset_y, dataset_z, dataset_zerror=None, progress_bar_update=None):
     '''
       Do the least square refinement to the given dataset. If the fit converges
       the new parameters are stored.
@@ -796,10 +798,10 @@ class FitFunction3D(FitFunctionGUI):
     z=z[filter2]
     if dz is not None:
       dz=dz[filter2]
-    if dz is None:
-      fit_args=(z, y, x)
-    else:
-      fit_args=(z, y, x, dz)
+#    if dz is None:
+#      fit_args=(z, y, x)
+#    else:
+#      fit_args=(z, y, x, dz)
     # remove errors which are zero
     if dz is not None:
       zero_elements=numpy.where(dz==0.)[0]
@@ -826,9 +828,9 @@ class FitFunction3D(FitFunctionGUI):
     if constrains is None:
       parinfo=None
     else:
-      parinfo = []
+      parinfo=[]
       for i in range(len(parameters)):
-        parinfo.append({'limited':[0,0], 'limits':[0.,0.]})
+        parinfo.append({'limited':[0, 0], 'limits':[0., 0.]})
         if self.refine_parameters[i] in constrains:
           constrains_i=constrains[self.refine_parameters[i]]
           parinfo_i=parinfo[i]
@@ -843,17 +845,18 @@ class FitFunction3D(FitFunctionGUI):
             expression=constrains_i['tied']
             for j, pj in enumerate(self.refine_parameters):
               name=self.parameter_names[pj]
-              expression=expression.replace('[%s]' % name, 'p[%i]' % j)
+              expression=expression.replace('[%s]'%name, 'p[%i]'%j)
             test=expression.replace('p[', '').replace(']', '').replace(' ', '').replace('.', '')\
                 .replace('*', '').replace('-', '').replace('/', '').replace('+', '')
             if not test.isdigit() and test!='':
               raise ValueError, 'Wrong syntax in constrains.'
             parinfo_i['tied']=expression
     if progress_bar_update is not None:
-      def iterfunct(myfunct, p, iter, fnorm, functkw=None,
+      def iterfunct(myfunct, p, iteration, fnorm, functkw=None,
                   parinfo=None, quiet=0, dof=None):
         # perform custom iteration update   
-        return progress_bar_update(step_add=float(iter)/self.max_iter, info='Iteration %i    Chi²=%4f' % (iter, fnorm))
+        return progress_bar_update(step_add=float(iteration)/self.max_iter,
+                            info='Iteration %i    Chi²=%4f'%(iteration, fnorm))
     else:
       iterfunct=None
     # parallel version
@@ -879,9 +882,9 @@ class FitFunction3D(FitFunctionGUI):
           dview.execute('err=self.residuals(p,z,y,x,dz)')
           return [0, dview.gather('err')]
     # call the fit routine
-    result=mpfit(function, xall=parameters, functkw=function_keywords, 
-                 parinfo=parinfo, 
-                 maxiter=self.max_iter, iterfunct=iterfunct, 
+    result=mpfit(function, xall=parameters, functkw=function_keywords,
+                 parinfo=parinfo,
+                 maxiter=self.max_iter, iterfunct=iterfunct,
                  fastnorm=1, # faster computation of Chi², can be less stable
                  quiet=1
                  )
@@ -898,7 +901,7 @@ class FitFunction3D(FitFunctionGUI):
         if i in self.refine_parameters:
           new_function_parameters.append(new_params[self.refine_parameters.index(i)])
         else:
-          new_function_parameters.append(self.parameters[i])      
+          new_function_parameters.append(self.parameters[i])
       self.set_parameters(new_function_parameters)
     # covariance matrix for all parameters
     cov=result.covar
@@ -933,7 +936,7 @@ class FitFunction3D(FitFunctionGUI):
       self.refine_parameters.remove(index)
     else:
       self.refine_parameters.append(index)
-  
+
   def simulate(self, y, x):
     '''
       Calculate the function for the active parameters for x values and some values
@@ -950,7 +953,7 @@ class FitFunction3D(FitFunctionGUI):
       x=numpy.array(x, dtype=numpy.float64, copy=False)
       y=numpy.array(y, dtype=numpy.float64, copy=False)
     except TypeError:
-      raise TypeError, "Input needs to be a number or iterable not %s/%s" % (type(x), type(y))
+      raise TypeError, "Input needs to be a number or iterable not %s/%s"%(type(x), type(y))
     try:
       z=self.fit_function(self.parameters, x, y)
     except TypeError:
@@ -976,7 +979,7 @@ class FitFunction3D(FitFunctionGUI):
       Calling the object returns the z values corresponding to the given x and y values.
     '''
     return self.simulate(y, x)[2] # return z values
-  
+
   def __add__(self, other):
     '''
       Define the addition of two FitFunction objects.
@@ -1007,47 +1010,47 @@ class FitFunction3D(FitFunctionGUI):
           digits=4
         pow_10i=int(pow_10)
         if pow_10i>(digits-1):
-          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}"%(digits-1))%\
                                                 (self.parameters[i]/10.**pow_10i, pow_10i))
         elif pow_10<0:
           if pow_10i==pow_10:
             pow_10i+=1
-          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}" % (digits-1)) % \
+          function_text=function_text.replace(replacement, ("%%.%if·10^{%%i}"%(digits-1))%\
                                                 (self.parameters[i]/10.**(pow_10i-1), (pow_10i-1)))
         else:
-          function_text=function_text.replace(replacement, ("%%.%if" % (digits-1-pow_10i)) % (self.parameters[i]))
+          function_text=function_text.replace(replacement, ("%%.%if"%(digits-1-pow_10i))%(self.parameters[i]))
     return function_text
-    
+
   def __repr__(self):
-    output="<"+self.__class__.__name__+ "  "
+    output="<"+self.__class__.__name__+"  "
     for i in range((len(self.parameters)+3)//4):
       if i>0:
         output+="\n "+" "*len(self.__class__.__name__)+"  "
-      output+=" ".join([u"%-10.10s" % name for name in self.parameter_names[i*4:(i+1)*4]])
+      output+=" ".join([u"%-10.10s"%name for name in self.parameter_names[i*4:(i+1)*4]])
       output+="\n "+" "*len(self.__class__.__name__)+" "
-      output+=" ".join([u"% .3e" % value for value in self.parameters[i*4:(i+1)*4]])
+      output+=" ".join([u"% .3e"%value for value in self.parameters[i*4:(i+1)*4]])
     output+=" >"
     return output
-  
+
   fit_function_text_eval=property(_get_function_text)
 
 class FitSum3D(FitFunction3D):
   '''
     Fit the Sum of two FitFunctions3D.
   '''
-  
+
   func_len=(None, None)
-  
-  def __init__(self, func1,  func2):
+
+  def __init__(self, func1, func2):
     '''
       Construct a sum of two functions to use for fit.
       
       @param funci the functions to add together
     '''
-    self.name=func1.name + ' + ' + func2.name
-    self.parameters=func1.parameters + func2.parameters
-    self.parameter_names=[name + '1' for name in func1.parameter_names] + [name + '2' for name in func2.parameter_names]
-    self.refine_parameters=func1.refine_parameters + [index + len(func1.parameters) for index in func2.refine_parameters]
+    self.name=func1.name+' + '+func2.name
+    self.parameters=func1.parameters+func2.parameters
+    self.parameter_names=[name+'1' for name in func1.parameter_names]+[name+'2' for name in func2.parameter_names]
+    self.refine_parameters=func1.refine_parameters+[index+len(func1.parameters) for index in func2.refine_parameters]
     function_text=func1.fit_function_text
     for i in range(len(func1.parameters)):
       function_text=function_text.replace(func1.parameter_names[i], func1.parameter_names[i]+'1')
@@ -1055,8 +1058,8 @@ class FitSum3D(FitFunction3D):
     function_text=func2.fit_function_text
     for i in range(len(func2.parameters)):
       function_text=function_text.replace(func2.parameter_names[i], func2.parameter_names[i]+'2')
-    self.fit_function_text+=' + ' + function_text
-    self.func_len = (len(func1.parameters), len(func2.parameters))
+    self.fit_function_text+=' + '+function_text
+    self.func_len=(len(func1.parameters), len(func2.parameters))
     self.origin=(func1, func2)
     if func1.constrains is None:
       func1.constrains={}
@@ -1071,9 +1074,9 @@ class FitSum3D(FitFunction3D):
     '''
     func1=self.origin[0].fit_function
     func2=self.origin[1].fit_function
-    len1, len2=self.func_len
-    return func1(p[0:len1], x, y) + func2(p[len1:], x, y)
-  
+    len1, ignore=self.func_len
+    return func1(p[0:len1], x, y)+func2(p[len1:], x, y)
+
   def set_parameters(self, new_params):
     '''
       Set new parameters and pass them to origin functions.
@@ -1088,7 +1091,7 @@ class FitSum3D(FitFunction3D):
       Change the refined parameters in the origin functions.
     '''
     FitFunction3D.toggle_refine_parameter(self, action, index)
-    if index < len(self.origin[0].parameters):
+    if index<len(self.origin[0].parameters):
       self.origin[0].toggle_refine_parameter(action, index)
     else:
       self.origin[1].toggle_refine_parameter(action, index-len(self.origin[0].parameters))
@@ -1097,19 +1100,19 @@ class FitMultiply3D(FitFunction3D):
   '''
     Fit the Multiplication of two FitFunctions3D.
   '''
-  
+
   func_len=(None, None)
-  
-  def __init__(self, func1,  func2):
+
+  def __init__(self, func1, func2):
     '''
       Construct a sum of two functions to use for fit.
       
       @param funci the functions to add together
     '''
-    self.name=func1.name + ' * ' + func2.name
-    self.parameters=func1.parameters + func2.parameters
-    self.parameter_names=[name + '1' for name in func1.parameter_names] + [name + '2' for name in func2.parameter_names]
-    self.refine_parameters=func1.refine_parameters + [index + len(func1.parameters) for index in func2.refine_parameters]
+    self.name=func1.name+' * '+func2.name
+    self.parameters=func1.parameters+func2.parameters
+    self.parameter_names=[name+'1' for name in func1.parameter_names]+[name+'2' for name in func2.parameter_names]
+    self.refine_parameters=func1.refine_parameters+[index+len(func1.parameters) for index in func2.refine_parameters]
     function_text=func1.fit_function_text
     for i in range(len(func1.parameters)):
       function_text=function_text.replace(func1.parameter_names[i], func1.parameter_names[i]+'1')
@@ -1117,8 +1120,8 @@ class FitMultiply3D(FitFunction3D):
     function_text=func2.fit_function_text
     for i in range(len(func2.parameters)):
       function_text=function_text.replace(func2.parameter_names[i], func2.parameter_names[i]+'2')
-    self.fit_function_text+=' * ' + function_text
-    self.func_len = (len(func1.parameters), len(func2.parameters))
+    self.fit_function_text+=' * '+function_text
+    self.func_len=(len(func1.parameters), len(func2.parameters))
     self.origin=(func1, func2)
     if func1.constrains is None:
       func1.constrains={}
@@ -1133,9 +1136,9 @@ class FitMultiply3D(FitFunction3D):
     '''
     func1=self.origin[0].fit_function
     func2=self.origin[1].fit_function
-    len1, len2=self.func_len
-    return func1(p[0:len1], x, y) * func2(p[len1:], x, y)
-  
+    len1, ignore=self.func_len
+    return func1(p[0:len1], x, y)*func2(p[len1:], x, y)
+
   def set_parameters(self, new_params):
     '''
       Set new parameters and pass them to origin functions.
@@ -1150,7 +1153,7 @@ class FitMultiply3D(FitFunction3D):
       Change the refined parameters in the origin functions.
     '''
     FitFunction3D.toggle_refine_parameter(self, action, index)
-    if index < len(self.origin[0].parameters):
+    if index<len(self.origin[0].parameters):
       self.origin[0].toggle_refine_parameter(action, index)
     else:
       self.origin[1].toggle_refine_parameter(action, index-len(self.origin[0].parameters))
@@ -1161,13 +1164,13 @@ class FitLinear(FitFunction):
   '''
     Fit a linear regression.
   '''
-  
+
   # define class variables.
   name="Linear Regression"
   parameters=[1, 0]
   parameter_names=['a', 'b']
   parameter_description={'a': 'Slope', 'b': 'Offset'}
-  fit_function=lambda self, p, x: p[0] * numpy.array(x) + p[1]
+  fit_function=lambda self, p, x: p[0]*numpy.array(x)+p[1]
   fit_function_text='[a]·x + [b]'
 
 
@@ -1176,7 +1179,7 @@ class ThetaCorrection(FitFunction):
   '''
     Fit a function to peak positions to get a reciprocal lattice parameter and Θ-offset.
   '''
-  
+
   # define class variables.
   name="Peak Positions"
   parameters=[3., 0.]
@@ -1184,7 +1187,7 @@ class ThetaCorrection(FitFunction):
   parameter_description={'a*': 'Reciprocal Lattice Vector'}
   fit_function_text='a^*=[a*|6] [y-unit]    Θ_0=[Θ_0] °'
   lambda_factor=1.540/(4.*numpy.pi) # Cu-k_alpha prefactor
-  
+
   def fit_function(self, p, x):
     '''
       Fit a function to the peak positions.
@@ -1193,22 +1196,22 @@ class ThetaCorrection(FitFunction):
     theta0=p[1]/180.*numpy.pi
     # theoretical q positions q=h·a*
     q_theo=x*a_star
-    th_theo=numpy.arctan( q_theo*self.lambda_factor )
-    q_mess=q_theo + numpy.cos(th_theo)*numpy.sin(theta0)/self.lambda_factor
+    th_theo=numpy.arctan(q_theo*self.lambda_factor)
+    q_mess=q_theo+numpy.cos(th_theo)*numpy.sin(theta0)/self.lambda_factor
     return q_mess
 
 class FitDiamagnetism(FitFunction):
   '''
     Fit two linear functions with the same slope, an offset and a hole around zero.
   '''
-  
+
   # define class variables.
   name="Linear Asymptotes"
   parameters=[0, 0, 0, 1]
   parameter_names=['a', 'b', 'c', 'split']
-  parameter_description={'a': 'Slope', 
-                         'b': 'Offset of left to right part', 
-                         'c': 'Constant offset value', 
+  parameter_description={'a': 'Slope',
+                         'b': 'Offset of left to right part',
+                         'c': 'Constant offset value',
                          'split': 'Ignored region around 0'}
   fit_function_text='slope=[a]'
 
@@ -1218,7 +1221,7 @@ class FitDiamagnetism(FitFunction):
     '''
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(3)
-  
+
   def fit_function(self, p, x):
     '''
       Two linear functions with different offsets,
@@ -1226,34 +1229,34 @@ class FitDiamagnetism(FitFunction):
     '''
     # create an array with True at every xposition which is outside the split region
     switch=(x<-abs(p[3]))+(x>abs(p[3]))
-    output=numpy.where(switch, p[0] * x + numpy.sign(x) * p[1] + p[2], 0.)
+    output=numpy.where(switch, p[0]*x+numpy.sign(x)*p[1]+p[2], 0.)
     return switch*output
 
 class FitQuadratic(FitFunction):
   '''
     Fit a quadratic function.
   '''
-  
+
   # define class variables.
   name="Parabula"
-  parameters=[1, 0,  0]
+  parameters=[1, 0, 0]
   parameter_names=['a', 'b', 'c']
-  parameter_description={ 
-                         'a': 'Coefficient of x²', 
-                         'b': 'Coefficient of x', 
+  parameter_description={
+                         'a': 'Coefficient of x²',
+                         'b': 'Coefficient of x',
                          'c': 'Offset'
                          }
-  fit_function=lambda self, p, x: p[0] * numpy.array(x)**2 + p[1] * numpy.array(x) + p[2]
+  fit_function=lambda self, p, x: p[0]*numpy.array(x)**2+p[1]*numpy.array(x)+p[2]
   fit_function_text='[a]·x^2 + [b]·x + [c]'
 
 class FitPolynomialPowerlaw(FitFunction):
   '''
     Fit a quartic polynomial logarithmic function.
   '''
-  
+
   # define class variables.
   name="Powerlaw with Polynom"
-  parameters=[0., 0., 1., 0.,  0.]
+  parameters=[0., 0., 1., 0., 0.]
   parameter_names=['a', 'b', 'c', 'd', 'e']
   fit_function_text='exp([a]·x^4 + [b]·x^3 + [c]·x^2 + [d]·x + [e])'
 
@@ -1262,21 +1265,21 @@ class FitPolynomialPowerlaw(FitFunction):
     return 10.**(p[0]*x**4+p[1]*x**3+p[2]*x**2+p[3]*x+p[4])
 
   residuals=FitFunction.residuals_log
-  
+
 class FitSinus(FitFunction):
   '''
     Fit a sinus function.
   '''
-  
+
   # define class variables.
   name="Sinus"
-  parameters=[1., 1.,  0.,  0.]
-  parameter_names=['a', 'ω0','φ0', 'c']
-  parameter_description={'a': 'Prefactor', 
-                         'ω0': 'Frequency', 
-                         'φ0': 'Phase', 
+  parameters=[1., 1., 0., 0.]
+  parameter_names=['a', 'ω0', 'φ0', 'c']
+  parameter_description={'a': 'Prefactor',
+                         'ω0': 'Frequency',
+                         'φ0': 'Phase',
                          'c': 'Offset'}
-  fit_function=lambda self, p, x: p[0] * numpy.sin((numpy.array(x) * p[1] - p[2])*numpy.pi/180.) + p[3]
+  fit_function=lambda self, p, x: p[0]*numpy.sin((numpy.array(x)*p[1]-p[2])*numpy.pi/180.)+p[3]
   fit_function_text='[a]·sin([ω0|3]·x-[φ0|2])+[c]'
 
   def refine(self, dataset_x, dataset_y, dataset_yerror=None, progress_bar_update=None):
@@ -1292,84 +1295,84 @@ class FitExponential(FitFunction):
   '''
     Fit a exponential function.
   '''
-  
+
   # define class variables.
   name="Exponential"
   parameters=[1, 1, 0]
   parameter_names=['A', 'B', 'C']
   parameter_description={
-                         'A': 'Prefactor', 
-                         'B': 'Exponential prefactor', 
+                         'A': 'Prefactor',
+                         'B': 'Exponential prefactor',
                          'C': 'Offset'
                          }
-  fit_function=lambda self, p, x: p[0] * numpy.exp(p[1] * numpy.array(x)) + p[2]
+  fit_function=lambda self, p, x: p[0]*numpy.exp(p[1]*numpy.array(x))+p[2]
   fit_function_text='[A]·exp([B]·x) + [C]'
 
 class FitOneOverX(FitFunction):
   '''
     Fit a one over x function.
   '''
-  
+
   # define class variables.
   name="1/x"
   parameters=[1, 0, 0]
   parameter_names=['C', 'x0', 'D']
   parameter_description={
-                         'C': 'Scaling', 
-                         'x0': 'x-offset', 
+                         'C': 'Scaling',
+                         'x0': 'x-offset',
                          'D': 'Offset'
                          }
-  fit_function=lambda self, p, x: p[0] * 1 / (numpy.array(x) - p[1]) + p[2]
+  fit_function=lambda self, p, x: p[0]*1/(numpy.array(x)-p[1])+p[2]
   fit_function_text='[C]/(x-[x0|2]) + [D]'
 
 class FitGaussian(FitFunction):
   '''
     Fit a gaussian function.
   '''
-  
+
   # define class variables.
   name="Gaussian"
   parameters=[1, 0, 1, 0]
   parameter_names=['I', 'x0', 'σ', 'C']
-  parameter_description={'I': 'Scaling', 
-                         'x0': 'Peak Position', 
-                         'σ': 'Variance', 
+  parameter_description={'I': 'Scaling',
+                         'x0': 'Peak Position',
+                         'σ': 'Variance',
                          'C':'Offset'}
-  fit_function=lambda self, p, x: p[0] * numpy.exp(-0.5*((x - p[1])/p[2])**2) + p[3]
+  fit_function=lambda self, p, x: p[0]*numpy.exp(-0.5*((x-p[1])/p[2])**2)+p[3]
   fit_function_text='Gaussian: I=[I] x_0=[x0] σ=[σ|2]'
 
 class FitLorentzian(FitFunction):
   '''
     Fit a lorentz function.
   '''
-  
+
   # define class variables.
   name="Lorentzian"
   parameters=[1, 0, 1, 0]
   parameter_names=['I', 'x0', 'γ', 'C']
-  parameter_description={'I': 'Scaling', 
-                        'x0': 'Peak Position', 
-                        'γ': 'Half Width Half Maximum', 
+  parameter_description={'I': 'Scaling',
+                        'x0': 'Peak Position',
+                        'γ': 'Half Width Half Maximum',
                         'C':'Offset'}
-  fit_function=lambda self, p, x: p[0] / (1 + ((numpy.array(x)-p[1])/p[2])**2) + p[3]
+  fit_function=lambda self, p, x: p[0]/(1+((numpy.array(x)-p[1])/p[2])**2)+p[3]
   fit_function_text='Lorentzian: I=[I] x_0=[x0] γ=[γ|2]'
 
 class FitLorentzianAsymmetric(FitFunction):
   '''
     Fit a asymmetric lorentz function.
   '''
-  
+
   # define class variables.
   name="Asymmetric Lorentzian"
   parameters=[1, 0, 1, 0, 0]
   parameter_names=['I', 'x0', 'γ', 'C', 'ν']
-  parameter_description={'I': 'Scaling', 
-                        'x0': 'Peak Position', 
-                        'γ': 'Half Width Half Maximum', 
-                        'C':'Offset', 
+  parameter_description={'I': 'Scaling',
+                        'x0': 'Peak Position',
+                        'γ': 'Half Width Half Maximum',
+                        'C':'Offset',
                         'ν': 'Asymmetry'}
   fit_function_text='Asymmetric Lorentzian: I=[I] x_0=[x0] γ=[γ|2]'
-  
+
   def fit_function(self, p, x):
     I=p[0]
     x0=p[1]
@@ -1377,25 +1380,25 @@ class FitLorentzianAsymmetric(FitFunction):
     C=p[3]
     nu=p[4]
     gamma_asym=2.*gamma/(1+numpy.exp(nu*(x-x0)))
-    L=I / (1 + ((x-x0)/gamma_asym)**2) + C
+    L=I/(1+((x-x0)/gamma_asym)**2)+C
     return L
 
 class FitVoigtAsymmetric(FitFunction):
   '''
     Fit a voigt function using the representation as real part of the complex error function.
   '''
-  
+
   # define class variables.
   name="AsymmetricVoigt"
   parameters=[1, 0, 0.01, 0.01, 0, 0, 0]
   parameter_names=['I', 'x0', 'γ', 'σ', 'C', 'ν_γ', 'ν_σ']
-  parameter_description={'I': 'Scaling', 
-                         'x0': 'Peak Position', 
-                         'σ': 'Gaussian Variance', 
+  parameter_description={'I': 'Scaling',
+                         'x0': 'Peak Position',
+                         'σ': 'Gaussian Variance',
                          'γ': 'HWHM Lorentzian',
-                         'C':'Offset', 
-                         'ν_γ': 'Asymmetry Lorentzian', 
-                         'ν_σ': 'Asymmetry Gaussian', 
+                         'C':'Offset',
+                         'ν_γ': 'Asymmetry Lorentzian',
+                         'ν_σ': 'Asymmetry Gaussian',
                          }
   fit_function_text='Asymmetric Voigt: I=[I] x_0=[x0] σ=[σ|2] γ=[γ|2]'
   sqrt2=numpy.sqrt(2)
@@ -1406,9 +1409,6 @@ class FitVoigtAsymmetric(FitFunction):
       Initialize and import scipy function.
     '''
     FitFunction.__init__(self, initial_parameters)
-    global wofz
-    from scipy.special import wofz
-
 
   def fit_function(self, p, x):
     '''
@@ -1416,6 +1416,7 @@ class FitVoigtAsymmetric(FitFunction):
       It is calculated using the complex error function,
       see Wikipedia articel on Voigt-profile for the details.
     '''
+    from scipy.special import wofz
     I=p[0]
     x0=p[1]
     gamma=p[2]
@@ -1425,23 +1426,23 @@ class FitVoigtAsymmetric(FitFunction):
     nu_sigma=p[6]
     gamma_asym=2.*gamma/(1+numpy.exp(nu_gamma*(x-x0)))
     sigma_asym=2.*sigma/(1+numpy.exp(nu_sigma*(x-x0)))
-    z=(x - x0 + (abs(gamma_asym)*1j)) / abs(sigma_asym)/self.sqrt2
-    z0=(0. + (abs(gamma_asym)*1j)) / abs(sigma_asym)/self.sqrt2
-    value=I * wofz(z).real / wofz(z0).real + C
+    z=(x-x0+(abs(gamma_asym)*1j))/abs(sigma_asym)/self.sqrt2
+    z0=(0.+(abs(gamma_asym)*1j))/abs(sigma_asym)/self.sqrt2
+    value=I*wofz(z).real/wofz(z0).real+C
     return value
 
 class FitVoigt(FitFunction):
   '''
     Fit a voigt function using the representation as real part of the complex error function.
   '''
-  
+
   # define class variables.
   name="Voigt"
   parameters=[1, 0, 1, 1, 0]
   parameter_names=['I', 'x0', 'γ', 'σ', 'C']
-  parameter_description={'I': 'Scaling', 
-                         'x0': 'Peak Position', 
-                         'σ': 'Gaussian Variance', 
+  parameter_description={'I': 'Scaling',
+                         'x0': 'Peak Position',
+                         'σ': 'Gaussian Variance',
                          'γ': 'HWHM Lorentzian',
                          'C':'Offset'}
   fit_function_text='Voigt: I=[I] x_0=[x0] σ=[σ|2] γ=[γ|2]'
@@ -1453,8 +1454,6 @@ class FitVoigt(FitFunction):
       Initialize and import scipy function.
     '''
     FitFunction.__init__(self, initial_parameters)
-    global wofz
-    from scipy.special import wofz
 
 
   def fit_function(self, p, x):
@@ -1463,11 +1462,12 @@ class FitVoigt(FitFunction):
       It is calculated using the complex error function,
       see Wikipedia articel on Voigt-profile for the details.
     '''
+    from scipy.special import wofz
     x=numpy.float64(numpy.array(x))
     p=numpy.float64(numpy.array(p))
-    z=(x - p[1] + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
-    z0=(0. + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
-    value=p[0] * wofz(z).real / wofz(z0).real + p[4]
+    z=(x-p[1]+(abs(p[2])*1j))/abs(p[3])/self.sqrt2
+    z0=(0.+(abs(p[2])*1j))/abs(p[3])/self.sqrt2
+    value=p[0]*wofz(z).real/wofz(z0).real+p[4]
     return value
 
 class FitCuK(FitFunction):
@@ -1475,15 +1475,15 @@ class FitCuK(FitFunction):
     Simulate Cu-Kα radiation for fitting θ-2θ scans of x-ray diffraction as douple
     peak (α1,α2) with two coupled voigt profiles.
   '''
-  
+
   # define class variables.
   name="Cu K-radiation"
-  parameters=     [1000,   0,  0.00125, 0.001, 0,     2,      0.99752006]
+  parameters=[1000, 0, 0.00125, 0.001, 0, 2, 0.99752006]
   parameter_names=['I', 'x0', 'γ', 'σ', 'C', 'K_a1/K_a2', 'x01/x02']
-  parameter_description={'I': 'Scaling', 'x0': 'Peak Position', 'σ': 'Gaussian Variance', 
-                          'γ': 'Lorentzian HWHM of each Peak', 
+  parameter_description={'I': 'Scaling', 'x0': 'Peak Position', 'σ': 'Gaussian Variance',
+                          'γ': 'Lorentzian HWHM of each Peak',
                           'K_a1/K_a2': 'Intensity Ration of K_α1 to K_α2',
-                          'x01/x02': 'Relative Peak position of K_α1 and K_α2', 
+                          'x01/x02': 'Relative Peak position of K_α1 and K_α2',
                           'C':'Offset'}
   fit_function_text='K_α: I=[I] [y-unit]   x_0=[x0] [x-unit]   σ=[σ|2] [x-unit]'
   sqrt2=numpy.sqrt(2)
@@ -1495,15 +1495,14 @@ class FitCuK(FitFunction):
     '''
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=[0, 1, 3, 4]
-    global wofz
-    from scipy.special import wofz
-  
+
   def fit_function(self, p, x):
     '''
       Return the Voigt profile of x.
       It is calculated using the complex error function,
       see Wikipedia articel on Voigt-profile for the details.
     '''
+    from scipy.special import wofz
     x=numpy.float64(numpy.array(x))
     p=numpy.float64(numpy.array(p))
     if p[1]<20:
@@ -1511,12 +1510,12 @@ class FitCuK(FitFunction):
     else:
       # if x0 is larger than 20 assume it is the th angle,
       # for smaller values it doesn't change a lot
-      p2=asin( sin(p[1]*pi/180.)/p[6] )/pi*180.
-    z=(x - p[1] + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
-    z2=(x - p2 + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
-    z0=(0. + (abs(p[2])*1j)) / abs(p[3])/self.sqrt2
-    value=p[0] * wofz(z).real / wofz(z0).real + p[4]
-    value2=p[0]/p[5] * wofz(z2).real / wofz(z0).real + p[4]
+      p2=asin(sin(p[1]*pi/180.)/p[6])/pi*180.
+    z=(x-p[1]+(abs(p[2])*1j))/abs(p[3])/self.sqrt2
+    z2=(x-p2+(abs(p[2])*1j))/abs(p[3])/self.sqrt2
+    z0=(0.+(abs(p[2])*1j))/abs(p[3])/self.sqrt2
+    value=p[0]*wofz(z).real/wofz(z0).real+p[4]
+    value2=p[0]/p[5]*wofz(z2).real/wofz(z0).real+p[4]
     return value+value2
 
 
@@ -1524,17 +1523,17 @@ class FitCrystalLayer(FitFunction):
   '''
     Simulate diffraction from a crystal layer with finite size and roughness.
   '''
-  
+
   # define class variables.
   name="CrystalLayer"
   parameters=[1., 100., 5., 2., 3.]
-  parameter_description={'I': 'Scaling', 'd': 'Film Thickness', 
-                         'a': 'Film Crystal Parameter', 
+  parameter_description={'I': 'Scaling', 'd': 'Film Thickness',
+                         'a': 'Film Crystal Parameter',
                           'σ': 'Roughness', 'h':'r.l.u.'}
   parameter_names=['I', 'd', 'a', 'h', 'σ']
-  
+
   fit_function_text='d=[d] a=[a] σ=[σ|2]'
-  
+
   def fit_function(self, p, x):
     '''
       Return the Voigt profile of x.
@@ -1563,7 +1562,7 @@ class FitCrystalLayer(FitFunction):
     I_sim=I_sim/I_sim.max()
     result=I*I_sim
     return result
-  
+
   def amplitude(self, x, x_0, d, a):
     '''
       Return the aplitude of a scattered wave on a crystal layer.
@@ -1579,19 +1578,19 @@ class FitRelaxingCrystalLayer(FitFunction):
   '''
   # define class variables.
   name="RelaxingCrystalLayer"
-  parameters=[4.e5, 146., 6., 0., 5.76, 5.858, 200., 5.1765, 0.165, 0.0005, 0.5,  0.99752006, 1.]
-  parameter_names=['I',               # intensity (scaling factor)
-                   'd',               # layer thickness
-                   'σ_layer',         # layer roughness
-                   'σ_substrate',     # layer roughness
-                   'a_bottom',        # lattice parameter at the substrate interface
-                   'a_infinity',      # lattice parameter of bulk
-                   'ε',               # strain relaxation length of the lattice parameter
-                   'a_substrate',     # 
-                   'scaling_substrate',# 
-                   'μ',               # absorption coefficient 
-                   'I-Kα2', 'λ-Kα2',  # Relative intensity and wavelength of Cu-Kα2
-                   'BG',              # Background
+  parameters=[4.e5, 146., 6., 0., 5.76, 5.858, 200., 5.1765, 0.165, 0.0005, 0.5, 0.99752006, 1.]
+  parameter_names=['I', # intensity (scaling factor)
+                   'd', # layer thickness
+                   'σ_layer', # layer roughness
+                   'σ_substrate', # layer roughness
+                   'a_bottom', # lattice parameter at the substrate interface
+                   'a_infinity', # lattice parameter of bulk
+                   'ε', # strain relaxation length of the lattice parameter
+                   'a_substrate', # 
+                   'scaling_substrate', # 
+                   'μ', # absorption coefficient 
+                   'I-Kα2', 'λ-Kα2', # Relative intensity and wavelength of Cu-Kα2
+                   'BG', # Background
                    ]
   fit_function_text='d=[d] σ_{layer}=[σ_layer|2] a_{bottom}=[a_bottom|3] a_{inf}=[a_infinity|3]'
 
@@ -1621,8 +1620,7 @@ class FitRelaxingCrystalLayer(FitFunction):
       q=numpy.append(q, q*lambda_alpha2)
     # calculate some constants
     pi=numpy.pi
-    exp=numpy.exp
-    plain_spacings, plain_positions=self.get_strained_plains(a_bottom, a_inf, epsilon, d+3*sigma_l)
+    ignore, plain_positions=self.get_strained_plains(a_bottom, a_inf, epsilon, d+3*sigma_l)
     # calculate scattering amplitude up to d-3sigma
     fixed_planes=plain_positions[numpy.where(plain_positions<d-3*sigma_l)]
     A=self.get_amplitude(fixed_planes, q, mu).sum(axis=0)
@@ -1637,18 +1635,17 @@ class FitRelaxingCrystalLayer(FitFunction):
         # add amplitudes layer by layer
         A+=scaling_factors[i]*A_max_planes[:i+1].sum(axis=0)
     # substrate roughness is accounted for by multiplying the amplitudes with different offset phases
-    A*=numpy.sqrt(I_0) * self.calculate_substrate_roughness(q, sigma_s)
+    A*=numpy.sqrt(I_0)*self.calculate_substrate_roughness(q, sigma_s)
     if a_substrate!=0:
       A_substrate=self.get_substrate_amplitude(q, a_substrate, mu)
       I=numpy.abs(A+numpy.sqrt(scaling_substrate)*A_substrate)**2
     else:
       I=numpy.abs(A)**2
-      I/=scaling
     if I_alpha2!=0:
       items=len(q)/2
       I=(I[:items]+I_alpha2*I[items:])/(1.+I_alpha2)
     return I+background
-  
+
   def get_strained_plains(self, a_bottom, a_inf, epsilon, d):
     '''
       Return an array of plane distances, exponentially decaying.
@@ -1659,12 +1656,12 @@ class FitRelaxingCrystalLayer(FitFunction):
     i=1
     a_dif=a_bottom-a_inf
     # until the layersize is reached, add a new plain.
-    while ( plain_positions[-1] < d ):
+    while (plain_positions[-1]<d):
       plain_distances.append(a_dif*exp(-plain_positions[-1]/epsilon)+a_inf)
       plain_positions.append(plain_positions[-1]+plain_distances[-1])
       i+=1
     return numpy.array(plain_distances), numpy.array(plain_positions)
-  
+
   def get_amplitude(self, plane_positions, q, mu):
     '''
       Return the scattering amplitude from a set of layers.
@@ -1678,7 +1675,7 @@ class FitRelaxingCrystalLayer(FitFunction):
     else:
       return 0
     return A
-    
+
   def calculate_substrate_roughness(self, q, sigma):
     '''
       Calculate a sum of amplitudes with different offset phases.
@@ -1697,7 +1694,7 @@ class FitRelaxingCrystalLayer(FitFunction):
     else:
       P=1.
     return P
-  
+
   def get_substrate_amplitude(self, q, a_substrate, mu):
     '''
       Calculate the scattering amplitude of the substrate with a attenuation length of mu.
@@ -1724,24 +1721,24 @@ class FitSuperlattice(FitFunction):
       
       With additions from related publications, referenced in the paper mentioned above.
   '''
-  
+
   # define class variables.
   name="Superlattice"
-  parameters=[10, 1., 2.71, 1., 2.71 , 1., 3.01,10. , 0.5, 1.,  0.5, 2., 1.0, 0.01, 0.2, 6.]
-  parameter_names=['M', 'I-A','x_0-A', 'I-B', 'x_0-B', 'I-subs.', 'x_0-subs.', 
-                    'D_{xA+(1-x)B}', 'x', 'δ_AB', 'σ_AB', 'ω_AB','a*', 'sigma', 'C', 'F_select']
+  parameters=[10, 1., 2.71, 1., 2.71 , 1., 3.01, 10. , 0.5, 1., 0.5, 2., 1.0, 0.01, 0.2, 6.]
+  parameter_names=['M', 'I-A', 'x_0-A', 'I-B', 'x_0-B', 'I-subs.', 'x_0-subs.',
+                    'D_{xA+(1-x)B}', 'x', 'δ_AB', 'σ_AB', 'ω_AB', 'a*', 'sigma', 'C', 'F_select']
   fit_function_text='(params)'
 
   def __init__(self, initial_parameters):
     '''
       Constructor setting the initial values of the parameters.
     '''
-    self.parameters=[10, 1., 2.71, 1., 2.71 , 1., 3.01,10. , 0.5, 1.,  0.5, 2., 1.0, 0.01, 0.2, 6.]
+    self.parameters=[10, 1., 2.71, 1., 2.71 , 1., 3.01, 10. , 0.5, 1., 0.5, 2., 1.0, 0.01, 0.2, 6.]
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=[]
     self._parameter_dictionary={}
     self.rebuild_param_dictionary(self.parameters)
-  
+
   def rebuild_param_dictionary(self, p):
     '''
       Create a dictionary of the parameters for better readability of all funcions.
@@ -1776,7 +1773,7 @@ class FitSuperlattice(FitFunction):
     params['BG']=p[14]
     # select which structurefactor to return
     self.output_select=p[15]
-  
+
   def fit_function(self, p, q):
     '''
       Calculate the intensities of the multilayer at reciprocal lattice positions q.
@@ -1818,7 +1815,7 @@ class FitSuperlattice(FitFunction):
     if self.output_select>=0:
       I=self.convolute_with_resolutions(I, q)
     return numpy.float64(I+params['BG'])
-  
+
   def convolute_with_resolutions(self, I, q):
     '''
       Convolute the calculated intensity with the resolution function.
@@ -1827,7 +1824,7 @@ class FitSuperlattice(FitFunction):
       @param q Reciprocal lattice vector q
       
       @return Convoluted intensity
-    '''    
+    '''
     params=self._parameter_dictionary
     sigma_res=params['resolution']
     q_center=numpy.linspace(-((q.max()-q.min())/2.), (q.max()-q.min())/2., len(q))
@@ -1835,9 +1832,9 @@ class FitSuperlattice(FitFunction):
     resolution/=resolution.sum()
     output=numpy.convolve(I, resolution, 'same')
     return output
-  
+
   ###################################### Calculate structue factors #########################################
-  
+
   # slit function approach
   def calc_F_layer__(self, q, I, q0, t_j):
     '''
@@ -1851,7 +1848,6 @@ class FitSuperlattice(FitFunction):
       
       @return structure factor for this layer at the origin position.
     '''
-    params=self._parameter_dictionary
     # parameter for (q-q0)*width/2
     t=(q-q0)*0.5*t_j*numpy.pi
     # intensity scaling
@@ -1862,7 +1858,7 @@ class FitSuperlattice(FitFunction):
     NaNs=numpy.isnan(F_layer)
     F_layer=numpy.nan_to_num(F_layer)+I_layer*NaNs
     return F_layer
-  
+
   # structure factor approach
   def calc_F_layer_(self, q, I, q0, t_j):
     '''
@@ -1875,14 +1871,13 @@ class FitSuperlattice(FitFunction):
       
       @return structure factor for this layer at the origin position.
     '''
-    params=self._parameter_dictionary
     d=(numpy.pi*2./q0)
     planes=int(t_j/d)
     F_layer=numpy.zeros_like(q)
     for i in range(planes):
       F_layer+=numpy.exp(1j*q*i*d)
     return numpy.sqrt(I)*F_layer#*numpy.exp(1j*q*(t_j/d-planes)*0.5)
-  
+
   def calc_F_layer(self, q, I, q0, t_j):
     '''
       Calculate the structurefactor by summing up all unit cells in the region.
@@ -1894,12 +1889,11 @@ class FitSuperlattice(FitFunction):
       
       @return structure factor for this layer at the origin position.
     '''
-    params=self._parameter_dictionary
     d=(numpy.pi*2./q0)
     planes=int(t_j/d)
     F_layer=(1.-numpy.exp(1j*q*(planes+1)*d))/(1.-numpy.exp(1j*q*d))
     return numpy.sqrt(I)*F_layer
-  
+
 
   def calc_F_substrat(self, q):
     '''
@@ -1915,7 +1909,7 @@ class FitSuperlattice(FitFunction):
     # set the integrated intensity to I_substrate
     F_substrate*=numpy.sqrt(params['I_substrat']/(abs(F_substrate)**2).sum())
     return F_substrate
-  
+
   def calc_F_bilayer(self, q):
     '''
       Calculate the structure factor for a bilayer
@@ -1951,7 +1945,7 @@ class FitSuperlattice(FitFunction):
     #F_SL=sum(F_SLi)
     F_SL=(1.-exp(iq*(M+1)*x[1]))/(1.-exp(iq*x[1]))
     return F_SL*F_AB
-  
+
   def calc_F_ML_roughness(self, q):
     '''
       Calculate the avaraged structure factor for the multilayer with thickness variations.
@@ -1980,11 +1974,11 @@ class FitSuperlattice(FitFunction):
     params['t_A']=t_A0
     params['t_B']=t_B0
     return F_ML_roughness
-  
+
   ############# additional function for more complicated approach including roughness ##############
-  
-  
-  
+
+
+
   def calc_I_ML_fluctuation(self, q):
     '''
       Calculate the structure factor for a superlattice including fluctuations
@@ -2005,19 +1999,19 @@ class FitSuperlattice(FitFunction):
     t_A=params['t_A']
     t_B=params['t_B']
     # crystal lattice parameters
-    d_A=(numpy.pi*2./params['q0_A'])
-    d_B=(numpy.pi*2./params['q0_B'])
+#    d_A=(numpy.pi*2./params['q0_A'])
+#    d_B=(numpy.pi*2./params['q0_B'])
     # roughness parameter
     c=1./params['σ_AB']
-    a_avg=params['δ_AB']
+#    a_avg=params['δ_AB']
     LAMBDA=t_A+t_B
     I=M*(abs(A)**2+abs(B)**2+2.*abs(A*B)*exp(-q**2/(4.*c**2))*cos(q*LAMBDA/2.))
-    
+
     for m in range(1, M):
-      I+=2.*(M-m) * ( (abs(A)**2+abs(B)**2)*exp(-2.*m*q**2/(4.*c**2))*cos(2.*m*q*LAMBDA/2.) +\
-                    abs(A*B)*exp( -(2.*m+1)*q**2/(4.*c**2) )*cos((2.*m+1)*q*LAMBDA/2.) +\
-                    abs(A*B)*exp(-(2.*m-1)*q**2/(4.*c**2))*cos((2.*m-1)*q*LAMBDA/2.)   )
-    
+      I+=2.*(M-m)*((abs(A)**2+abs(B)**2)*exp(-2.*m*q**2/(4.*c**2))*cos(2.*m*q*LAMBDA/2.)+\
+                    abs(A*B)*exp(-(2.*m+1)*q**2/(4.*c**2))*cos((2.*m+1)*q*LAMBDA/2.)+\
+                    abs(A*B)*exp(-(2.*m-1)*q**2/(4.*c**2))*cos((2.*m-1)*q*LAMBDA/2.))
+
     return I
 
   def calc_I_ML_roughness(self, q):
@@ -2067,7 +2061,7 @@ class FitSuperlattice(FitFunction):
     # calculate the Intensity (eq(7) in paper)
     # there can still be an imaginary part becaus of calculation errors 
     I_0=abs(M*(I_A_avg+2.*(exp(psi)*abs(Phi_A_avg*F_B_avg)).real+I_B_avg))
-    I_1=  2.*((exp(-psi)*Phi_B_avg*F_A_avg/(T_A*T_B)+\
+    I_1=2.*((exp(-psi)*Phi_B_avg*F_A_avg/(T_A*T_B)+\
                Phi_B_avg*F_A_avg/T_A+\
                Phi_B_avg*F_B_avg/T_B+\
                exp(psi)*Phi_A_avg*F_B_avg)*\
@@ -2075,9 +2069,9 @@ class FitSuperlattice(FitFunction):
           (exp(2*psi)*T_A*T_B)**(M+1))/(1.-exp(2.*psi)*T_A*T_B)-M)).real
     return I_0+I_1
 
-  
+
   ######################################## calculate parameters ######################################
-  
+
   def calc_xj(self):
     '''
       Calculate xoffset of bilayer.
@@ -2090,7 +2084,7 @@ class FitSuperlattice(FitFunction):
     for j in range(params['M']-1):
       x.append(x[j]+params['t_A']+params['t_B'])
     return x
-  
+
   def calc_tj(self):
     '''
       Calculate deviation of thickness as discrete gaussians.
@@ -2107,7 +2101,7 @@ class FitSuperlattice(FitFunction):
     t_deltaj_A=numpy.linspace(-three_omega_A, three_omega_A, 2.*three_omega_A/dA+1)
     t_deltaj_B=numpy.linspace(-three_omega_B, three_omega_B, 2.*three_omega_B/dB+1)
     return t_deltaj_A, t_deltaj_B
-  
+
   def calc_Pj(self, tj):
     '''
       Calculate the propability for every thickness fluctuation tj.
@@ -2119,32 +2113,32 @@ class FitSuperlattice(FitFunction):
     P_j=numpy.exp(-tj**2/(2.*omega**2))
     P_j/=P_j.sum()
     return P_j
-  
+
   #################################### changed derived functions ######################################
-  
+
   def simulate(self, x, interpolate=5):
     output=FitFunction.simulate(self, x, interpolate)
     params=self._parameter_dictionary
     if "Å" in self.fit_function_text:
-      self.fit_function_text="%iXml: dA=%.2fÅ dB=%.2fÅ dS=%.2fÅ => tA=%iuc (+%.2g Å) tB=%iuc (+%.2g Å)" % (
-                    params['M'], 
-                    (numpy.pi*2./params['q0_A']), 
-                    (numpy.pi*2./params['q0_B']), 
-                    (numpy.pi*2./params['q0_substrat']), 
-                    int(params['t_A']/(numpy.pi*2./params['q0_A'])), 
+      self.fit_function_text="%iXml: dA=%.2fÅ dB=%.2fÅ dS=%.2fÅ => tA=%iuc (+%.2g Å) tB=%iuc (+%.2g Å)"%(
+                    params['M'],
+                    (numpy.pi*2./params['q0_A']),
+                    (numpy.pi*2./params['q0_B']),
+                    (numpy.pi*2./params['q0_substrat']),
+                    int(params['t_A']/(numpy.pi*2./params['q0_A'])),
                     (params['t_A']/(numpy.pi*2./params['q0_A'])-int(params['t_A']/(numpy.pi*2./params['q0_A'])))*(numpy.pi*2./params['q0_A']),
-                    int(params['t_B']/(numpy.pi*2./params['q0_B'])), 
+                    int(params['t_B']/(numpy.pi*2./params['q0_B'])),
                     (params['t_B']/(numpy.pi*2./params['q0_B'])-int(params['t_B']/(numpy.pi*2./params['q0_B'])))*(numpy.pi*2./params['q0_B'])
                                                                                   )
     else:
-      self.fit_function_text=self.fit_function_text.replace('(params)', "%iXml: dA=%.2fÅ dB=%.2fÅ dS=%.2fÅ => tA=%iuc (+%.2g Å) tB=%iuc (+%.2g Å)" % (
-                    params['M'], 
-                    (numpy.pi*2./params['q0_A']), 
-                    (numpy.pi*2./params['q0_B']), 
-                    (numpy.pi*2./params['q0_substrat']), 
-                    int(params['t_A']/(numpy.pi*2./params['q0_A'])), 
+      self.fit_function_text=self.fit_function_text.replace('(params)', "%iXml: dA=%.2fÅ dB=%.2fÅ dS=%.2fÅ => tA=%iuc (+%.2g Å) tB=%iuc (+%.2g Å)"%(
+                    params['M'],
+                    (numpy.pi*2./params['q0_A']),
+                    (numpy.pi*2./params['q0_B']),
+                    (numpy.pi*2./params['q0_substrat']),
+                    int(params['t_A']/(numpy.pi*2./params['q0_A'])),
                     (params['t_A']/(numpy.pi*2./params['q0_A'])-int(params['t_A']/(numpy.pi*2./params['q0_A'])))*(numpy.pi*2./params['q0_A']),
-                    int(params['t_B']/(numpy.pi*2./params['q0_B'])), 
+                    int(params['t_B']/(numpy.pi*2./params['q0_B'])),
                     (params['t_B']/(numpy.pi*2./params['q0_B'])-int(params['t_B']/(numpy.pi*2./params['q0_B'])))*(numpy.pi*2./params['q0_B'])
                                                                                   ))
     return output
@@ -2153,24 +2147,24 @@ class FitInterpolation(FitFunction):
   '''
     Fit a spline interpolation to up to 6 points.
   '''
-  
+
   # define class variables.
   name="Background Spline Interpolation"
   parameters=[0., 1., 1., 1., 2., 1., 3., 1., 0., 0., 0., 0.]
   parameter_names=['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3', 'x_4', 'y_4', 'x_5', 'y_5', 'x_6', 'y_6']
-  parameter_description=dict([('x_%i' % i, 'x-position of node %i' % i) for i in range(1, 7)]+\
-                             [('y_%i' % i, 'y-value of node %i' % i) for i in range(1, 7)])
+  parameter_description=dict([('x_%i'%i, 'x-position of node %i'%i) for i in range(1, 7)]+\
+                             [('y_%i'%i, 'y-value of node %i'%i) for i in range(1, 7)])
   fit_function_text='Spline'
-  
+
   constrains={
-              1: {'bounds': [0.,None], 'tied': ''},
-              3: {'bounds': [0.,None], 'tied': ''},
-              5: {'bounds': [0.,None], 'tied': ''},
-              7: {'bounds': [0.,None], 'tied': ''},
-              9: {'bounds': [0.,None], 'tied': ''},
-              11: {'bounds': [0.,None], 'tied': ''},              
+              1: {'bounds': [0., None], 'tied': ''},
+              3: {'bounds': [0., None], 'tied': ''},
+              5: {'bounds': [0., None], 'tied': ''},
+              7: {'bounds': [0., None], 'tied': ''},
+              9: {'bounds': [0., None], 'tied': ''},
+              11: {'bounds': [0., None], 'tied': ''},
               }
-  
+
   def __init__(self, initial_parameters=[], method='cubic'):
     FitFunction.__init__(self, initial_parameters)
     from scipy.interpolate import interp1d
@@ -2200,17 +2194,17 @@ class FitSQUIDSignal(FitFunction):
     Fit three gaussians to SQUID raw data to calculate magnetic moments.
   '''
   prefactor=numpy.sqrt(2.*numpy.pi)
-  from config.squid import squid_coil_distance, squid_factor
-  
+  #from config.squid import squid_coil_distance, squid_factor
+
   # define class variables.
   name="SQUID RAW-data"
   parameters=[1., 3., 1., 0., 0.]
   parameter_names=['Moment', 'x_0', 'sigma', 'off', 'incr']
-  fit_function=lambda self, p, x: p[4] * numpy.array(x) - p[0]/(p[2]*self.squid_factor*self.prefactor) * ( \
-                                          numpy.exp(-0.5*((numpy.array(x) - p[1] + self.squid_coil_distance)/p[2])**2)\
-                                          + numpy.exp(-0.5*((numpy.array(x) - p[1] - self.squid_coil_distance)/p[2])**2)\
-                                          - 2.* numpy.exp(-0.5*((numpy.array(x) - p[1])/p[2])**2) \
-                                          )+ p[3]
+  fit_function=lambda self, p, x: p[4]*numpy.array(x)-p[0]/(p[2]*self.squid_factor*self.prefactor)*(\
+                                          numpy.exp(-0.5*((numpy.array(x)-p[1]+self.squid_coil_distance)/p[2])**2)\
+                                          +numpy.exp(-0.5*((numpy.array(x)-p[1]-self.squid_coil_distance)/p[2])**2)\
+                                          -2.* numpy.exp(-0.5*((numpy.array(x)-p[1])/p[2])**2) \
+                                          )+p[3]
   fit_function_text='M=[Moment] ; pos=[x_0] ; s = [sigma]'
 
   def __init__(self, initial_parameters):
@@ -2225,11 +2219,11 @@ class FitFerromagnetic(FitFunction):
     Fit a Brillouine's function for the magnetic behaviour of a ferromagnet
     against temperature.
   '''
-  
+
   # define class variables.
   name="Ferromagnetic Orderparameter"
   parameters=[1.e16, 1., 2., 0.1, 1., 1e-5]
-  parameter_names=['N', 'J', 'g', 'H', 'lambda',  'StartValue']
+  parameter_names=['N', 'J', 'g', 'H', 'lambda', 'StartValue']
   fit_function_text='Parameters: N, J, g, H, lambda, StartValue'
   muB=9.27e-24 # [A·m²] mu_Bohr
   kB=1.38e-20  # [gm²/Ks²] k_Boltzmann
@@ -2241,25 +2235,23 @@ class FitFerromagnetic(FitFunction):
     self.parameters=[1.e16, 1., 2., 0.1, 1., 1e-5]
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=[0, 1, 2]
-    global fsolve
-    from scipy.optimize import fsolve
-  
+
   def simulate(self, x, ignore=None):
     return FitFunction.simulate(self, x, interpolate=1)
-  
+
   def residuals(self, params, y, x, yerror=None):
     '''
       As the fit with fsolve is quite slow we tell the user about
       the state of the fit.
     '''
     err=FitFunction.residuals(self, params, y, x, yerror=None)
-    print "End of function call %i, chi is now %.6g" % (self.iteration, sum(err))
+    print "End of function call %i, chi is now %.6g"%(self.iteration, sum(err))
     self.iteration+=1
     return err
-  
-  def refine(self,  dataset_x,  dataset_y, dataset_yerror=None, progress_bar_update=None):
+
+  def refine(self, dataset_x, dataset_y, dataset_yerror=None, progress_bar_update=None):
     self.iteration=1
-    return FitFunction.refine(self,  dataset_x,  dataset_y, dataset_yerror=None)
+    return FitFunction.refine(self, dataset_x, dataset_y, dataset_yerror=None)
 
   def brillouine(self, p, M, T):
     '''
@@ -2281,9 +2273,10 @@ class FitFerromagnetic(FitFunction):
     '''
       Return the brillouine function of T.
     '''
+    from scipy.optimize import fsolve
     T=numpy.array(T)
-    M=numpy.array([p[5] for i in range(len(T))])
-    M, info, ier, mesg=fsolve(lambda Mi: Mi-self.brillouine(p, Mi, T), M, full_output=True)
+    M=numpy.array([p[5] for ignore in range(len(T))])
+    M, _info, _ier, mesg=fsolve(lambda Mi: Mi-self.brillouine(p, Mi, T), M, full_output=True)
     self.last_mesg=mesg
     return M
 
@@ -2293,14 +2286,14 @@ def B_J(p, x):
   '''
   J=p[1]
   coth=lambda x: 1./numpy.tanh(x)
-  return numpy.nan_to_num((2.*J+1.)/(2.*J)*coth((2.*J+1.)/(2.*J)*x) - 1./(2.*J)*coth(1./(2.*J)*x) )
+  return numpy.nan_to_num((2.*J+1.)/(2.*J)*coth((2.*J+1.)/(2.*J)*x)-1./(2.*J)*coth(1./(2.*J)*x))
 
 class FitBrillouineB(FitFunction):
   '''
     Fit a Brillouine's function for the magnetic behaviour of a paramagnet
     against field.
   '''
-  
+
   # define class variables.
   name="Brillouine(B)"
   parameters=[1e16, 2, 2, 300]
@@ -2315,7 +2308,7 @@ class FitBrillouineB(FitFunction):
     '''
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(4)
-  
+
   def brillouine(self, p, B):
     '''
       Brillouine function of B.
@@ -2328,7 +2321,7 @@ class FitBrillouineB(FitFunction):
     kB=self.kB
     x=(g*muB*J*B)/(kB*T)
     return N*g*muB*J*B_J(p, x)
-  
+
   def fit_function(self, p, B):
     '''
       Return the brillouine function of B.
@@ -2343,7 +2336,7 @@ class FitBrillouineT(FitFunction):
     Fit a Brillouine's function for the magnetic behaviour of a paramagnet
     against field.
   '''
-  
+
   # define class variables.
   name="Brillouine(T)"
   parameters=[1e16, 2, 2, 0.1, 0.]
@@ -2359,7 +2352,7 @@ class FitBrillouineT(FitFunction):
     self.parameters=[1e16, 2, 2, 0.1, 0.]
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=range(5)
-  
+
   def brillouine(self, p, T):
     '''
       Brillouine function of B.
@@ -2372,7 +2365,7 @@ class FitBrillouineT(FitFunction):
     kB=self.kB
     x=(g*muB*J*B)/(kB*T)
     return N*g*muB*J*B_J(p, x)
-  
+
   def fit_function(self, p, T):
     '''
       Return the brillouine function of B.
@@ -2392,7 +2385,7 @@ class FitNanoparticleZFC(FitFunction):
   fit_function_text='Nanoparticle M_{ZFC}: K_{eff}=[K_eff|2] δr=[δr|2]'
   k_B=0.08617341 #meV∕K
   measured_M_FC=None
-  
+
   def M(self, M_0, tau, t):
     return M_0*numpy.exp(-t/tau)
 
@@ -2423,7 +2416,7 @@ class FitNanoparticleZFC(FitFunction):
       E_B=K_eff*4./3.*numpy.pi*r_i**3
       M_ZFC_out+=P_i*self.M_ZFC(M_FC, T, T_per_t, E_B)
     return M_ZFC_out
-      
+
   def fit_function(self, p, x):
     sort_idx=numpy.argsort(x)
     resort_idx=numpy.argsort(sort_idx)
@@ -2439,7 +2432,7 @@ class FitNanoparticleZFC(FitFunction):
     delta_r=p[5]
     self.M_start=p[6]
     return self.M_ZFC_dispersion(M_FC, T, T_per_t, K_eff, r, delta_r)[resort_idx]
-    
+
 class FitNanoparticleZFC2(FitFunction):
   '''
     Fit zero field cooled curves of Nanoparticles.
@@ -2451,7 +2444,7 @@ class FitNanoparticleZFC2(FitFunction):
   fit_function_text='Nanoparticle M_{ZFC}: T_{Block}=[T_B|3] δr=[δr|2]'
   k_B=0.08617341 #meV∕K
   measured_M_FC=None
-  
+
   def fit_function(self, p, x):
     '''
       Calculate the ZFC curve of a nanoparticle distribution.
@@ -2472,7 +2465,7 @@ class FitNanoparticleZFC2(FitFunction):
     FC=self.measured_M_FC(T)
     FC_2=H_factor*FC
     M_ZFC=numpy.zeros_like(FC)
-    for V_i, P_i in zip(V_array,  P_array):
+    for V_i, P_i in zip(V_array, P_array):
       M_ZFC+=P_i*numpy.where(V_i<=V_L_factor, FC, FC_2)
     return M_ZFC[resort_idx]
 
@@ -2483,28 +2476,28 @@ class FitGaussian3D(FitFunction3D):
   '''
     Fit a gaussian function of x and y.
   '''
-  
+
   # define class variables.
   name="Gaussian"
   parameters=[1., 0., 0., 0.1, 0.1, 0., 0.]
   parameter_names=['I', 'x_0', 'y_0', 'σ_x', 'σ_y', 'tilt', 'C']
   fit_function_text='Gaussian'
-  parameter_description={'I': 'Scaling', 
-                         'x_0': 'Peak x-Position', 
-                         'y_0': 'Peak y-Position', 
-                         'σ_x': 'Variance in x-direction', 
-                         'σ_y': 'Variance in x-direction', 
-                         'tilt': 'Tilting angle of the data x-axis to the function x-axis', 
+  parameter_description={'I': 'Scaling',
+                         'x_0': 'Peak x-Position',
+                         'y_0': 'Peak y-Position',
+                         'σ_x': 'Variance in x-direction',
+                         'σ_y': 'Variance in x-direction',
+                         'tilt': 'Tilting angle of the data x-axis to the function x-axis',
                          'C':'Offset'}
   constrains={
-              4: {'bounds': [None,None], 'tied': '[σ_x]'},
-              5: {'bounds': [-180., 180.], 'tied': ''},  
+              4: {'bounds': [None, None], 'tied': '[σ_x]'},
+              5: {'bounds': [-180., 180.], 'tied': ''},
               6: {'bounds': [0., None], 'tied': ''}
               }
-  
+
   def __init__(self, initial_parameters=[]):
     FitFunction3D.__init__(self, initial_parameters)
-    self.refine_parameters=[0, 1, 2, 3, 4, 6]  
+    self.refine_parameters=[0, 1, 2, 3, 4, 6]
 
   def fit_function(self, p, x, y):
     A=p[0]
@@ -2521,34 +2514,34 @@ class FitGaussian3D(FitFunction3D):
     xdif=xdist*ta-ydist*tb
     ydif=xdist*tb+ydist*ta
     exp=numpy.exp
-    return A * exp(-0.5*((xdif/sx)**2+((ydif/sy)**2))) + C
+    return A*exp(-0.5*((xdif/sx)**2+((ydif/sy)**2)))+C
 
 class FitPsdVoigt3D(FitFunction3D):
   '''
     Fit a voigt function using the representation as real part of the complex error function.
   '''
-  
+
   # define class variables.
   name="Psd. Voigt"
   parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0.01, 0., 0.5, 0.]
-  parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'σ_x', 'σ_y', 'tilt', 'eta','C']
-  parameter_description={'I': 'Scaling', 
-                         'x_0': 'Peak x-Position', 
-                         'y_0': 'Peak y-Position', 
-                         'σ_x': 'Gauss variance in x-direction', 
-                         'σ_y': 'Gauss variance in x-direction', 
-                         'γ_x': 'Lorentz HWHM in x-direction', 
-                         'γ_y': 'Lorentz HWHM in x-direction', 
-                         'tilt': 'Tilting angle of the data x-axis to the function x-axis', 
-                         'eta': 'Relative intensity of Lorentz', 
+  parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'σ_x', 'σ_y', 'tilt', 'eta', 'C']
+  parameter_description={'I': 'Scaling',
+                         'x_0': 'Peak x-Position',
+                         'y_0': 'Peak y-Position',
+                         'σ_x': 'Gauss variance in x-direction',
+                         'σ_y': 'Gauss variance in x-direction',
+                         'γ_x': 'Lorentz HWHM in x-direction',
+                         'γ_y': 'Lorentz HWHM in x-direction',
+                         'tilt': 'Tilting angle of the data x-axis to the function x-axis',
+                         'eta': 'Relative intensity of Lorentz',
                          'C':'Offset'}
   fit_function_text='Pseudo Voigt'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
   constrains={
-              4: {'bounds': [None,None], 'tied': '[γ_x]'},
-              7: {'bounds': [-180., 180.], 'tied': ''},  
-              8: {'bounds': [0., 1.], 'tied': ''}, 
+              4: {'bounds': [None, None], 'tied': '[γ_x]'},
+              7: {'bounds': [-180., 180.], 'tied': ''},
+              8: {'bounds': [0., 1.], 'tied': ''},
               9: {'bounds': [0., None], 'tied': ''}
               }
 
@@ -2576,7 +2569,7 @@ class FitPsdVoigt3D(FitFunction3D):
     c=p[9]
     G=numpy.exp(-numpy.log(2)*((xdif/sx)**2+(ydif/sy)**2))
     L=1./(1.+(xdif**2/gammax**2+ydif**2/gammay**2))
-    value = I * ((1.-eta)*G+eta*L) + c
+    value=I*((1.-eta)*G+eta*L)+c
     return value
 
 class FitCuK3D(FitPsdVoigt3D):
@@ -2594,7 +2587,7 @@ class FitCuK3D(FitPsdVoigt3D):
       Return the intensity of the x-ray radiaion for a wavelength 
     '''
     return numpy.where((x<1.2)*(x>0.5), 1., 0.)
-    
+
   def fit_function(self, p, x, y):
     import scipy.signal
     import scipy.interpolate
@@ -2604,7 +2597,7 @@ class FitCuK3D(FitPsdVoigt3D):
     # this is needed to use the generic convolution function
     region_min=min([region[0], region[2]])
     region_max=max([region[1], region[3]])
-    region_length=region_max-region_min
+    #region_length=region_max-region_min
     x_sim=numpy.linspace(region_min, region_max, steps)
     y_sim=numpy.linspace(region_min, region_max, steps)
     X_sim, Y_sim=numpy.meshgrid(x_sim, y_sim)
@@ -2622,27 +2615,27 @@ class FitLorentzian3D(FitFunction3D):
   '''
     Fit a voigt function using the representation as real part of the complex error function.
   '''
-  
+
   # define class variables.
   name="Lorentzian"
   parameters=[1, 0, 0, 0.01, 0.01, 0., 0.]
-  parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'tilt','C']
-  parameter_description={'I': 'Scaling', 
-                         'x_0': 'Peak x-Position', 
-                         'y_0': 'Peak y-Position', 
-                         'γ_x': 'HWHM in x-direction', 
-                         'γ_y': 'HWHM in y-direction', 
-                         'tilt': 'Tilting angle of the data x-axis to the function x-axis', 
+  parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'tilt', 'C']
+  parameter_description={'I': 'Scaling',
+                         'x_0': 'Peak x-Position',
+                         'y_0': 'Peak y-Position',
+                         'γ_x': 'HWHM in x-direction',
+                         'γ_y': 'HWHM in y-direction',
+                         'tilt': 'Tilting angle of the data x-axis to the function x-axis',
                          'C':'Offset'}
   fit_function_text='Lorentzian'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
   constrains={
-              4: {'bounds': [None,None], 'tied': '[γ_x]'},
-              5: {'bounds': [-180., 180.], 'tied': ''},  
+              4: {'bounds': [None, None], 'tied': '[γ_x]'},
+              5: {'bounds': [-180., 180.], 'tied': ''},
               6: {'bounds': [0., None], 'tied': ''}
               }
-  
+
   def fit_function(self, p, x, y):
     '''
       Return the 2d Voigt profile of x and y.
@@ -2657,7 +2650,7 @@ class FitLorentzian3D(FitFunction3D):
     y0=p[2]
     gamma_x=p[3]
     gamma_y=p[4]
-    tilt=p[5]*numpy.pi/180.
+    #tilt=p[5]*numpy.pi/180.
     ta=numpy.cos(p[5])
     tb=numpy.sin(p[5])
     xdist=(x-x0)
@@ -2666,25 +2659,25 @@ class FitLorentzian3D(FitFunction3D):
     ydif=numpy.abs(ydist*ta+xdist*tb)
     c=p[6]
     L=1./(1.+(xdif/gamma_x)**2+(ydif/gamma_y)**2)
-    value = I * L + c
+    value=I*L+c
     return value
 
 class FitVoigt3D(FitFunction3D):
   '''
     Fit a voigt function using the representation as real part of the complex error function.
   '''
-  
+
   # define class variables.
   name="Voigt"
   parameters=[1, 0, 0, 0.01, 0.01, 0.01, 0.01, 0.]
-  parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'σ_x','σ_y','C']
-  parameter_description={'I': 'Scaling', 
-                         'x_0': 'Peak x-Position', 
-                         'y_0': 'Peak y-Position', 
-                         'σ_x': 'Gauss variance in x-direction', 
-                         'σ_y': 'Gauss variance in x-direction', 
-                         'γ_x': 'Lorentz HWHM in x-direction', 
-                         'γ_y': 'Lorentz HWHM in x-direction', 
+  parameter_names=['I', 'x_0', 'y_0', 'γ_x', 'γ_y', 'σ_x', 'σ_y', 'C']
+  parameter_description={'I': 'Scaling',
+                         'x_0': 'Peak x-Position',
+                         'y_0': 'Peak y-Position',
+                         'σ_x': 'Gauss variance in x-direction',
+                         'σ_y': 'Gauss variance in x-direction',
+                         'γ_x': 'Lorentz HWHM in x-direction',
+                         'γ_y': 'Lorentz HWHM in x-direction',
                          'C':'Offset'}
   fit_function_text='Voigt'
   sqrt2=numpy.sqrt(2)
@@ -2695,15 +2688,14 @@ class FitVoigt3D(FitFunction3D):
       Constructor setting the initial values of the parameters.
     '''
     FitFunction3D.__init__(self, initial_parameters)
-    global signal
-    from scipy import signal
-  
+
   def fit_function(self, p, x, y):
     '''
       Return the 2d Voigt profile of x and y.
       It is calculated using the complex error function,
       see Wikipedia articel on Voigt-profile for the details.
     '''
+    from scipy import signal
     if x[1]!=x[0]:
       numx=list(x)[1:].index(x[0])+1
       numy=len(x)//numx
@@ -2719,8 +2711,8 @@ class FitVoigt3D(FitFunction3D):
     gamma_y=p[4]
     sigma_x=p[5]
     sigma_y=p[6]
-    xdist=x-x0
-    ydist=y-y0
+    #xdist=x-x0
+    #ydist=y-y0
     c=p[7]
     L=1./(1.+((x-x0)/gamma_x)**2+((y-y0)/gamma_y)**2)
     G=numpy.exp(-0.5*(((x-x.mean())/sigma_x)**2+((y-y.mean())/sigma_y)**2))
@@ -2730,7 +2722,7 @@ class FitVoigt3D(FitFunction3D):
     V=signal.fftconvolve(L, G, mode='same')
     # normalize convolution
     V/=V.max()
-    value = I * V + c
+    value=I*V+c
     return value.flatten()
 
 
@@ -2741,44 +2733,44 @@ class FitSession(FitSessionGUI):
     Class used to fit a set of functions to a given measurement_data_structure.
     Provides the interface between the MeasurementData and the FitFunction.
   '''
-  
+
   # class variables
   data=None
   # a dictionary of known fit functions for 2d datasets
   available_functions_2d={
-                       FitLinear.name: FitLinear, 
-                       FitInterpolation.name: FitInterpolation, 
+                       FitLinear.name: FitLinear,
+                       FitInterpolation.name: FitInterpolation,
                        #FitDiamagnetism.name: FitDiamagnetism, 
-                       FitQuadratic.name: FitQuadratic, 
-                       FitSinus.name: FitSinus, 
-                       FitExponential.name: FitExponential, 
-                       FitGaussian.name: FitGaussian, 
-                       FitVoigt.name: FitVoigt, 
-                       FitOneOverX.name: FitOneOverX, 
-                       FitLorentzian.name: FitLorentzian, 
-                       FitVoigtAsymmetric.name: FitVoigtAsymmetric, 
-                       FitSQUIDSignal.name: FitSQUIDSignal, 
-                       FitBrillouineB.name: FitBrillouineB, 
-                       FitBrillouineT.name: FitBrillouineT, 
-                       FitFerromagnetic.name: FitFerromagnetic, 
-                       FitCuK.name: FitCuK, 
-                       FitPolynomialPowerlaw.name: FitPolynomialPowerlaw, 
-                       FitCrystalLayer.name: FitCrystalLayer, 
-                       FitRelaxingCrystalLayer.name: FitRelaxingCrystalLayer, 
+                       FitQuadratic.name: FitQuadratic,
+                       FitSinus.name: FitSinus,
+                       FitExponential.name: FitExponential,
+                       FitGaussian.name: FitGaussian,
+                       FitVoigt.name: FitVoigt,
+                       FitOneOverX.name: FitOneOverX,
+                       FitLorentzian.name: FitLorentzian,
+                       FitVoigtAsymmetric.name: FitVoigtAsymmetric,
+                       FitSQUIDSignal.name: FitSQUIDSignal,
+                       FitBrillouineB.name: FitBrillouineB,
+                       FitBrillouineT.name: FitBrillouineT,
+                       FitFerromagnetic.name: FitFerromagnetic,
+                       FitCuK.name: FitCuK,
+                       FitPolynomialPowerlaw.name: FitPolynomialPowerlaw,
+                       FitCrystalLayer.name: FitCrystalLayer,
+                       FitRelaxingCrystalLayer.name: FitRelaxingCrystalLayer,
                        #FitNanoparticleZFC.name: FitNanoparticleZFC, 
                        #FitNanoparticleZFC2.name: FitNanoparticleZFC2, 
                        }
   # known fit functions for 3d datasets
   available_functions_3d={
-                       FitGaussian3D.name: FitGaussian3D, 
-                       FitPsdVoigt3D.name: FitPsdVoigt3D, 
+                       FitGaussian3D.name: FitGaussian3D,
+                       FitPsdVoigt3D.name: FitPsdVoigt3D,
                        #FitCuK3D.name: FitCuK3D, 
-                       FitVoigt3D.name: FitVoigt3D, 
-                       FitLorentzian3D.name: FitLorentzian3D, 
+                       FitVoigt3D.name: FitVoigt3D,
+                       FitLorentzian3D.name: FitLorentzian3D,
                           }
   progress_bar=None
-  
-  def __init__(self,  dataset):
+
+  def __init__(self, dataset):
     '''
       Constructor creating pointer to the dataset.
       
@@ -2805,7 +2797,7 @@ class FitSession(FitSessionGUI):
       del(dict_out['fit'])
       del(dict_out['simulate'])
     return dict_out
-  
+
   def __setstate__(self, dict_in):
     '''
       Reconstruct the object from dict.
@@ -2828,25 +2820,25 @@ class FitSession(FitSessionGUI):
       Add a function to the list of fitted functions.
     '''
     if function_name in self.available_functions:
-      self.functions.append([self.available_functions[function_name]([]), True, True,  False])
+      self.functions.append([self.available_functions[function_name]([]), True, True, False])
       return True
     else:
       return False
-  
+
   def del_function(self, function_obj):
     '''
       Delete a function to the list of fitted functions.
     '''
     self.functions=[func for func in self.functions if func[0]!=function_obj]
-  
+
   def get_functions(self):
     '''
       Return a list of the available functions.
     '''
-    list=self.available_functions.items()
-    list=[l[0] for l in list]
-    list.sort()
-    return list
+    funcs=self.available_functions.items()
+    funcs=[l[0] for l in funcs]
+    funcs.sort()
+    return funcs
 
   def sum(self, index_1, index_2):
     '''
@@ -2854,7 +2846,7 @@ class FitSession(FitSessionGUI):
       Function 1 and 2 are set not to be fitted.
     '''
     functions=self.functions
-    if (index_1 < len(functions)) and (index_2 < len(functions)):
+    if (index_1<len(functions)) and (index_2<len(functions)):
       if functions[index_1][0].is_3d:
         Sum=FitSum3D
         functions[index_1][2]=False
@@ -2864,14 +2856,14 @@ class FitSession(FitSessionGUI):
       functions.append([Sum(functions[index_1][0], functions[index_2][0]), True, True, False])
       functions[index_1][1]=False
       functions[index_2][1]=False
-  
+
   def multiply(self, index_1, index_2):
     '''
       Create a multiplication of the functions with index 1 and 2.
       Function 1 and 2 are set not to be fitted.
     '''
     functions=self.functions
-    if (index_1 < len(functions)) and (index_2 < len(functions)):
+    if (index_1<len(functions)) and (index_2<len(functions)):
       if functions[index_1][0].is_3d:
         Mul=FitMultiply3D
         functions[index_1][2]=False
@@ -2881,14 +2873,13 @@ class FitSession(FitSessionGUI):
       functions.append([Mul(functions[index_1][0], functions[index_2][0]), True, True, False])
       functions[index_1][1]=False
       functions[index_2][1]=False
-  
+
   def fit(self):
     '''
       Fit all funcions in the list where the fit parameter is set to True.
       
       @return The covariance matrices of the fits or [[None]]
     '''
-    from time import sleep
     if (self.data.yerror>=0) and (self.data.yerror!=self.data.ydata)\
         and (self.data.yerror!=self.data.xdata):
       data=self.data.list_err()
@@ -2909,9 +2900,9 @@ class FitSession(FitSessionGUI):
         pgu=self.update_progress
       if function[1]:
         if not function[3]:
-          mesg, cov_out=function[0].refine(data_x, data_y, data_yerror, progress_bar_update=pgu)
+          _mesg, cov_out=function[0].refine(data_x, data_y, data_yerror, progress_bar_update=pgu)
         else:
-          mesg, cov_out=function[0].refine(data_x, data_y, None, progress_bar_update=pgu)
+          _mesg, cov_out=function[0].refine(data_x, data_y, None, progress_bar_update=pgu)
         covariance_matices.append(cov_out)
       else:
         covariance_matices.append([[None]])
@@ -2945,9 +2936,9 @@ class FitSession(FitSessionGUI):
         pgu=self.update_progress
       if function[1]:
         if not function[3]:
-          mesg, cov_out=function[0].refine(data_x, data_y, data_z, data_zerror, progress_bar_update=pgu)
+          _mesg, cov_out=function[0].refine(data_x, data_y, data_z, data_zerror, progress_bar_update=pgu)
         else:
-          mesg, cov_out=function[0].refine(data_x, data_y, data_z, None, progress_bar_update=pgu)
+          _mesg, cov_out=function[0].refine(data_x, data_y, data_z, None, progress_bar_update=pgu)
         covariance_matices.append(cov_out)
       else:
         covariance_matices.append([[None]])
@@ -2971,7 +2962,7 @@ class FitSession(FitSessionGUI):
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
-                                                -1,   # yerror-column
+                                                -1, # yerror-column
                                                 2   # z-column
                                                 )
       fit.data[0]=data.x.copy()
@@ -2984,14 +2975,14 @@ class FitSession(FitSessionGUI):
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
-                                                -1,   # yerror-column
+                                                -1, # yerror-column
                                                 2   # z-column
                                                 )
         logdiv=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
-                                                -1,   # yerror-column
+                                                -1, # yerror-column
                                                 2   # z-column
                                                 )
         div.data[0]=data.x
@@ -3002,8 +2993,8 @@ class FitSession(FitSessionGUI):
         logdiv.data[2]=numpy.log10(data.z)
         div.plot_options=data.plot_options
         logdiv.plot_options=data.plot_options
-        div.short_info='data-%s' % function_text
-        logdiv.short_info='log(data)-log(%s)' % function_text
+        div.short_info='data-%s'%function_text
+        logdiv.short_info='log(data)-log(%s)'%function_text
       fit.plot_options=data.plot_options
       for function in self.functions:
         fd=function[0](data.x, data.y)
@@ -3026,28 +3017,28 @@ class FitSession(FitSessionGUI):
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
-                                                -1,   # yerror-column
+                                                -1, # yerror-column
                                                 2   # z-column
                                                 )
         div=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
-                                                -1,   # yerror-column
+                                                -1, # yerror-column
                                                 2   # z-column
                                                 )
         logdiv=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
                                                 1, # y-column
-                                                -1,   # yerror-column
+                                                -1, # yerror-column
                                                 2   # z-column
                                                 )
         self.result_data.append(fit)
         fit.plot_options=data.plot_options
         div.plot_options=data.plot_options
         logdiv.plot_options=data.plot_options
-        result=self.result_data[-1]
+        _result=self.result_data[-1]
         if function[2]:
           fit.data[0]=data.x
           fit.data[1]=data.y
@@ -3061,14 +3052,14 @@ class FitSession(FitSessionGUI):
           logdiv.data[2].values=10.**(numpy.log10(data.z)-numpy.log10(fd))
           function_text=function[0].fit_function_text_eval
           fit.short_info=function_text
-          div.short_info='data-%s' % function_text
-          logdiv.short_info='log(data)-log(%s)' % function_text
+          div.short_info='data-%s'%function_text
+          logdiv.short_info='log(data)-log(%s)'%function_text
           plot_list.append(fit)
           if function[1]:
             # show differences only when fitting
             plot_list.append(div)
             plot_list.append(logdiv)
-    self.data.plot_together=[self.data] + plot_list
+    self.data.plot_together=[self.data]+plot_list
     if len(plot_list)>0:
       self.data.plot_together_zindex=-1
 
@@ -3095,7 +3086,7 @@ class FitSession(FitSessionGUI):
         data_x=[d[0] for d in data_xy]
         # only interpolate if the number of points isn't too large
         use_interpolate=min(5, 5000/len(data_x))
-        fit_x, fit_y=function[0].simulate(data_x, inside_fitrange=getattr(self, 'restrict_to_region', False), 
+        fit_x, fit_y=function[0].simulate(data_x, inside_fitrange=getattr(self, 'restrict_to_region', False),
                                           interpolate=use_interpolate)
         for i in range(len(fit_x)):
           result.append((fit_x[i], fit_y[i]))
@@ -3103,7 +3094,7 @@ class FitSession(FitSessionGUI):
         result.short_info=function_text
         result.plot_options=function[0]._plot_options
         plot_list.append(result)
-    self.data.plot_together=[self.data] + plot_list  
+    self.data.plot_together=[self.data]+plot_list
 
 def register_class(function_class):
   '''
@@ -3127,7 +3118,7 @@ def register_function(function, function_parameter_names=None, function_paramete
   numargs=len(inspect.getargspec(function)[0])
   if function_parameter_names is None:
     if function_parameter_default is not None:
-      function_parameter_names=["P%02i" % i for i in range(len(function_parameter_default))]
+      function_parameter_names=["P%02i"%i for i in range(len(function_parameter_default))]
     else:
       # try to guess parameter numbers
       if numargs==2:
@@ -3136,8 +3127,8 @@ def register_function(function, function_parameter_names=None, function_paramete
         position=[1., 1.]
       for i in range(99):
         try:
-          out=function(*([range(i)]+position))
-          function_parameter_names=["P%02i" % i for i in range(i)]
+          _out=function(*([range(i)]+position))
+          function_parameter_names=["P%02i"%i for i in range(i)]
           break
         except IndexError:
           continue
@@ -3149,24 +3140,24 @@ def register_function(function, function_parameter_names=None, function_paramete
     class function_class(FitFunction):
       '''
         User defined FitFunction subclass named: %s
-      ''' % function_name
+      '''%function_name
       name=function_name
-      fit_function_text=function_name+":"+" ".join(["%s=[%s]" % (param, param) for param in function_parameter_names])
+      fit_function_text=function_name+":"+" ".join(["%s=[%s]"%(param, param) for param in function_parameter_names])
       parameters=list(function_parameter_default)
       parameter_names=list(function_parameter_names)
-      
+
       def fit_function(self, p, x):
         return function(p, x)
   else:
     class function_class(FitFunction3D):
       '''
         User defined FitFunction3D subclass named: %s
-      ''' % function_name
+      '''%function_name
       name=function_name
-      fit_function_text=function_name+":"+" ".join(["%s=[%s]" % (param, param) for param in function_parameter_names])
+      fit_function_text=function_name+":"+" ".join(["%s=[%s]"%(param, param) for param in function_parameter_names])
       parameters=list(function_parameter_default)
       parameter_names=list(function_parameter_names)
-      
+
       def fit_function(self, p, x, y):
         return function(p, x, y)
   register_class(function_class)

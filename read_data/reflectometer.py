@@ -7,25 +7,24 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 import os
-import sys
 import math
 import measurement_data_structure
 import codecs
 from copy import deepcopy
 from numpy import array, sqrt, pi, sin, float32, argsort, linspace
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__status__="Production"
 
 
-def read_data(file_name, DATA_COLUMNS): 
+def read_data(file_name, DATA_COLUMNS):
   '''
     Read the datafile.
     
     @param input_file Name of the file to import
-    @param DATA_COLUMNS List of columns to be importedd
+    @param DATA_COLUMNS List of columns to be imported
     
     @return List of MeasurementData objects with the file data
   '''
@@ -51,7 +50,7 @@ def read_data(file_name, DATA_COLUMNS):
       measurement_info=read_header(input_file_lines)
       if measurement_info=='NULL':
         return 'NULL'
-      sequence=read_data_lines(input_file_lines,measurement_info,DATA_COLUMNS)
+      sequence=read_data_lines(input_file_lines, measurement_info, DATA_COLUMNS)
       if sequence!='NULL':
         # filter 0 intensity points
         sequence.filters=[(1, 0.0, 0.0, False)]
@@ -59,10 +58,10 @@ def read_data(file_name, DATA_COLUMNS):
         if "DRIVE='THETA'" in sequence.info:
           two_theta_start=float(sequence.info.split('2THETA=')[1].split("\n")[0])
           th=(sequence.x-sequence.x[0])+two_theta_start*0.5
-          sequence.data.append( (4.*pi/1.54*sin(th))//('Q_z', 'Å^{-1}') )
+          sequence.data.append((4.*pi/1.54*sin(th))//('Q_z', 'Å^{-1}'))
         elif "DRIVE='2THETA'" in sequence.info or "DRIVE='COUPLED'" in sequence.info:
           th=sequence.x*0.5
-          sequence.data.append( (4.*pi/1.54*sin(th))//('Q_z', 'Å^{-1}') )
+          sequence.data.append((4.*pi/1.54*sin(th))//('Q_z', 'Å^{-1}'))
         measurement_data.append(sequence)
       else:
         return 'NULL'
@@ -71,7 +70,7 @@ def read_data(file_name, DATA_COLUMNS):
     print 'File '+file_name+' does not exist.'
     return measurement_data
 
-def read_header(input_file_lines): 
+def read_header(input_file_lines):
   '''
     Read header of datafile.
     
@@ -87,12 +86,12 @@ def read_header(input_file_lines):
       # remove comment lines
       while ";" in input_file_lines[0]:
         line=input_file_lines.pop(0)
-      return [output,scantype]
+      return [output, scantype]
     else:
       output=output+line.rstrip('\n').rstrip('\r').lstrip('_').lstrip(';')+'\n'
   return 'NULL'
 
-def read_data_lines(input_file_lines,info,DATA_COLUMNS): 
+def read_data_lines(input_file_lines, info, DATA_COLUMNS):
   '''
     Read data points line by line.
     
@@ -121,22 +120,32 @@ def read_data_lines(input_file_lines,info,DATA_COLUMNS):
   if scantype==None:
     print "Wrong file type, no 'DRIVE' defined in header!"
     return 'NULL'
-  data=MeasurementData([DATA_COLUMNS[scantype],DATA_COLUMNS['COUNTS'],['error','counts']],[],0,1,2)
+  data=MeasurementData([DATA_COLUMNS[scantype], DATA_COLUMNS['COUNTS']],
+                       [], 0, 1,-1)
   data.info=data_info
   data.sample_name=sample_name
+  raw_data=[]
   while len(input_file_lines)>0: # append data from one sequence to the object or create new object for the next sequence
     line=input_file_lines.pop(0)
     next_data=read_data_line(line)
     if len(next_data)==2 and next_data!='NULL':
-      data.append((start_angle+i*increment_angle, next_data[0], next_data[1]))
+      raw_data.append((start_angle+i*increment_angle, next_data[0], next_data[1]))
       i+=1
     elif next_data!='NULL':
-      data.append(next_data)
+      raw_data.append(next_data)
     else:
-      return data
+      break
+  x, y, dy=array(raw_data).transpose()
+  x=measurement_data_structure.PhysicalProperty(DATA_COLUMNS[scantype][0],
+                                                DATA_COLUMNS[scantype][1],
+                                                x)
+  y=measurement_data_structure.PhysicalProperty(DATA_COLUMNS['COUNTS'][0],
+                                                DATA_COLUMNS['COUNTS'][1],
+                                                y, dy)
+  data.data=[x, y]
   return data
 
-def read_data_line(input_file_line): 
+def read_data_line(input_file_line):
   '''
     Read one line and output data as list of floats.
   '''
@@ -148,7 +157,7 @@ def read_data_line(input_file_line):
       return 'NULL'
     elif len(line)==1:
       return [float(line[0]), math.sqrt(abs(float(line[0])))]
-    return [float(line[0]),float(line[1]),math.sqrt(abs(float(line[1])))]
+    return [float(line[0]), float(line[1]), math.sqrt(abs(float(line[1])))]
 
 def read_simulation(file_name):
   '''
@@ -156,14 +165,14 @@ def read_simulation(file_name):
     
     @return MeasurementData with the fitted dataset
   '''
-  sim_file=open(file_name,'r')
+  sim_file=open(file_name, 'r')
   sim_lines=sim_file.readlines()
   sim_file.close()
-  data=MeasurementData([['Q','Å^{-1}'],['Intensity','counts/s'],['error','counts']],[],0,1,2)
+  data=MeasurementData([['Q', 'Å^{-1}'], ['Intensity', 'counts/s'], ['error', 'counts']], [], 0, 1, 2)
   data.info='Simulation'
   for line in sim_lines:
     if len(line.split())>1:
-      point=map(float,line.split())
+      point=map(float, line.split())
       point.append(0.0)
       data.append(point)
   return data
@@ -200,7 +209,7 @@ def read_data_philips(file_name):
     col=measurement_data_structure.PhysicalProperty(header_info['Scan axis'].strip(), '°', angles)
   dataset.data.append(col)
   count_time=float(header_info['Time per step (s)'])
-  col=measurement_data_structure.PhysicalProperty('I', 'counts/s', I/count_time, 
+  col=measurement_data_structure.PhysicalProperty('I', 'counts/s', I/count_time,
                                                   sqrt(I)/count_time)
   dataset.data.append(col)
   dataset.sample_name=header_info['Diffraction measurement']
@@ -222,7 +231,7 @@ def read_data_xrdml(input_file):
     PhysicalProperty=measurement_data_structure.PhysicalProperty
     from xml.dom.minidom import parse
     xml_data=parse(input_file).firstChild
-    
+
     # retrieve data
     try:
       sample_name=xml_data.getElementsByTagName('sample')[0].getElementsByTagName('name')[0].firstChild.nodeValue
@@ -235,8 +244,8 @@ def read_data_xrdml(input_file):
       user=header.getElementsByTagName('author')[0].getElementsByTagName('name')[0].firstChild.nodeValue
     except AttributeError:
       user=''
-    
-    
+
+
     fixed_positions={}
     moving_positions={}
     for motor in scan.getElementsByTagName('positions'):
@@ -255,7 +264,7 @@ def read_data_xrdml(input_file):
       else:
         pos=float(motor.getElementsByTagName('commonPosition')[0].firstChild.nodeValue)
         fixed_positions[axis]=(unit, pos)
-    
+
     atten_factors=scan.getElementsByTagName('beamAttenuationFactors')[0].firstChild.nodeValue
     time=float(scan.getElementsByTagName('commonCountingTime')[0].firstChild.nodeValue)
     data=scan.getElementsByTagName('intensities')[0].firstChild.nodeValue
@@ -266,24 +275,24 @@ def read_data_xrdml(input_file):
     dI=sqrt(I*atten)
     I/=time
     dI/=time
-    cols=[PhysicalProperty( 'Intensity', 'counts/s', I, dI )]
+    cols=[PhysicalProperty('Intensity', 'counts/s', I, dI)]
     if 'Θ' in moving_positions:
       angles=linspace(moving_positions['Θ'][1], moving_positions['Θ'][2], len(data))
-      cols.append(PhysicalProperty( 'Θ',  moving_positions['Θ'][0], angles ))
+      cols.append(PhysicalProperty('Θ', moving_positions['Θ'][0], angles))
       del(moving_positions['Θ'])
     for key, value in sorted(moving_positions.items()):
       angles=linspace(value[1], value[2], len(data))
-      cols.append(PhysicalProperty( key,  value[0], angles ))
+      cols.append(PhysicalProperty(key, value[0], angles))
     dataset=measurement_data_structure.MeasurementData(x=1, y=0)
     dataset.data=cols
     dataset.number='0'
     dataset.sample_name=sample_name
-    dataset.info='User: %s\nStart Time: %s\n\nMotor Positions:\n' % (user, start_time)
+    dataset.info='User: %s\nStart Time: %s\n\nMotor Positions:\n'%(user, start_time)
     for key, value in sorted(moving_positions.items()):
-      dataset.info+='% 10s = %g-%g %s\n' % (key, value[1], value[2], value[0])
+      dataset.info+='% 10s = %g-%g %s\n'%(key, value[1], value[2], value[0])
     for key, value in sorted(fixed_positions.items()):
-      dataset.info+='% 10s = %g %s\n' % (key, value[1], value[0])
-    
+      dataset.info+='% 10s = %g %s\n'%(key, value[1], value[0])
+
     return [dataset]
 
 class MeasurementData(measurement_data_structure.MeasurementData):
@@ -296,29 +305,29 @@ class MeasurementData(measurement_data_structure.MeasurementData):
     '''
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
-    out.data[1].values=(array(self.data[1].values)+array(other.data[1].values)).tolist()    
+    out.data[1].values=(array(self.data[1].values)+array(other.data[1].values)).tolist()
     out.data[2].values=(sqrt(array(self.data[2].values)**2+array(other.data[2].values)**2)).tolist()
     return out
-  
+
   def __sub__(self, other):
     '''
       Subtract two measurements from another.
     '''
     out=deepcopy(self)
     out.short_info=self.short_info+'-'+other.short_info
-    out.data[1].values=(array(self.data[1].values)-array(other.data[1].values)).tolist()    
+    out.data[1].values=(array(self.data[1].values)-array(other.data[1].values)).tolist()
     out.data[2].values=(sqrt(array(self.data[2].values)**2+array(other.data[2].values)**2)).tolist()
     return out
-  
+
   def __rmul__(self, other):
     '''
       Multiply measurement with a scalar.
     '''
     out=deepcopy(self)
-    out.data[1].values=(other*array(self.data[1].values)).tolist()    
-    out.data[2].values=(other*array(self.data[2].values)).tolist()    
+    out.data[1].values=(other*array(self.data[1].values)).tolist()
+    out.data[2].values=(other*array(self.data[2].values)).tolist()
     return out
-  
+
   def __mul__(self, other):
     '''
       Multiply two measurements.
@@ -327,11 +336,11 @@ class MeasurementData(measurement_data_structure.MeasurementData):
       return self.__rmul__(other)
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
-    out.data[1].values=(array(self.data[1].values)*array(other.data[1].values)).tolist()    
+    out.data[1].values=(array(self.data[1].values)*array(other.data[1].values)).tolist()
     out.data[2].values=(sqrt(array(self.data[2].values)**2*array(other.data[1].values)**2+\
                              array(other.data[2].values)**2*array(self.data[1].values)**2)).tolist()
     return out
-  
+
   def __div__(self, other):
     '''
       Divide two measurements.
@@ -340,9 +349,9 @@ class MeasurementData(measurement_data_structure.MeasurementData):
       return self.__rmul__(1./other)
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
-    out.data[1].values=(array(self.data[1].values)/array(other.data[1].values)).tolist()    
+    out.data[1].values=(array(self.data[1].values)/array(other.data[1].values)).tolist()
     out.data[2].values=(sqrt(array(self.data[2].values)**2/array(other.data[1].values)**2+\
                              array(other.data[2].values)**2*array(self.data[1].values)**2\
                              /array(other.data[1].values)**4)).tolist()
     return out
-  
+

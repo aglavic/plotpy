@@ -8,10 +8,10 @@ from copy import deepcopy
 from configobj import ConfigObj
 from measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalUnit
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__status__="Development"
 
 class FileActions:
   '''
@@ -32,47 +32,47 @@ class FileActions:
     # action functions that can be executed from activate_action,
     # can be altered in runtime by the specific sessions
     self.actions={
-                  'change filter': self.change_data_filter, 
-                  'cross-section': self.cross_section, 
-                  'radial_integration': self.radial_integration, 
-                  'combine-data': self.combine_data_points, 
-                  'iterate_through_measurements': self.iterate_through_measurements, 
-                  'create_fit_object': self.create_fit_object, 
-                  'add_function': self.fit_functions['add'], 
-                  'sum_up_functions': self.fit_functions['sum'], 
-                  'multiply_functions': self.fit_functions['mul'], 
-                  'set_function_parameters': self.fit_functions['set_parameters'], 
-                  'fit_functions': self.fit_functions['fit'], 
-                  'simmulate_functions': self.fit_functions['simulate'], 
-                  'change_color_pattern': self.change_color_pattern, 
-                  'unit_transformations': self.unit_transformations, 
-                  'integrate_intensities': self.integrate_intensities, 
-                  'savitzky_golay': self.get_savitzky_golay, 
-                  'butterworth': self.get_butterworth, 
-                  'discrete_derivative': self.get_discrete_derivative, 
-                  'integral': self.get_integral, 
-                  'interpolate_and_smooth': self.do_interpolate_and_smooth, 
-                  'rebin_2d': self.do_rebin_2d, 
+                  'change filter': self.change_data_filter,
+                  'cross-section': self.cross_section,
+                  'radial_integration': self.radial_integration,
+                  'combine-data': self.combine_data_points,
+                  'iterate_through_measurements': self.iterate_through_measurements,
+                  'create_fit_object': self.create_fit_object,
+                  'add_function': self.fit_functions['add'],
+                  'sum_up_functions': self.fit_functions['sum'],
+                  'multiply_functions': self.fit_functions['mul'],
+                  'set_function_parameters': self.fit_functions['set_parameters'],
+                  'fit_functions': self.fit_functions['fit'],
+                  'simmulate_functions': self.fit_functions['simulate'],
+                  'change_color_pattern': self.change_color_pattern,
+                  'unit_transformations': self.unit_transformations,
+                  'integrate_intensities': self.integrate_intensities,
+                  'savitzky_golay': self.get_savitzky_golay,
+                  'butterworth': self.get_butterworth,
+                  'discrete_derivative': self.get_discrete_derivative,
+                  'integral': self.get_integral,
+                  'interpolate_and_smooth': self.do_interpolate_and_smooth,
+                  'rebin_2d': self.do_rebin_2d,
                   }
     # add session specific functions
     for key, item in window.active_session.file_actions_addon.items():
-      self.actions[key]=lambda *args: item(self, *args)
+      self.actions[key]=lambda*args: item(self, *args)
 
   def init_fit_functions(self):
     fit_functions={
-                 "add": lambda *args: \
-                  self.window.measurement[self.window.index_mess].fit_object.add_function(*args), 
-                 "sum": lambda *args: \
-                  self.window.measurement[self.window.index_mess].fit_object.sum(*args), 
-                 "mul": lambda *args: \
-                  self.window.measurement[self.window.index_mess].fit_object.multiply(*args), 
-                 "set_parameters": lambda *args: \
-                  self.window.measurement[self.window.index_mess].fit_object.set_function_parameters(*args), 
-                 "fit": lambda *args:  \
-                  self.window.measurement[self.window.index_mess].fit_object.fit(*args), 
-                 "simulate": lambda *args: \
-                  self.window.measurement[self.window.index_mess].fit_object.simulate(*args), 
-                 
+                 "add": lambda*args: \
+                  self.window.measurement[self.window.index_mess].fit_object.add_function(*args),
+                 "sum": lambda*args: \
+                  self.window.measurement[self.window.index_mess].fit_object.sum(*args),
+                 "mul": lambda*args: \
+                  self.window.measurement[self.window.index_mess].fit_object.multiply(*args),
+                 "set_parameters": lambda*args: \
+                  self.window.measurement[self.window.index_mess].fit_object.set_function_parameters(*args),
+                 "fit": lambda*args:  \
+                  self.window.measurement[self.window.index_mess].fit_object.fit(*args),
+                 "simulate": lambda*args: \
+                  self.window.measurement[self.window.index_mess].fit_object.simulate(*args),
+
                  }
     self.fit_functions=fit_functions
 
@@ -89,7 +89,7 @@ class FileActions:
     # Store the function name and parameters 
     self.history.append((action, args))
     return self.actions[action](*args)
-  
+
   def reactivate_action(self, action):
     '''
       Run an action without storing it in the history.
@@ -113,7 +113,7 @@ class FileActions:
     output=MakroRepr()
     conf.write(output)
     return output
-  
+
   def run_makro(self, makro):
     '''
       Execute the actions from a MakroRepr object.
@@ -131,7 +131,9 @@ class FileActions:
     '''
     self.window.measurement[self.window.index_mess].filters=filters
 
-  def cross_section(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10, at_end=False, bin_distance=None):
+  def cross_section(self, x, x_0, y, y_0, w, binning,
+                    gauss_weighting=False, sigma_gauss=1e10,
+                    at_end=False, bin_distance=None):
     '''
       Create a slice through a dataset using the create_cross_section function.
       This funcion is called as the action.
@@ -145,13 +147,15 @@ class FileActions:
       @return If the extraction has been sucessful
     '''
     dataset=self.window.measurement[self.window.index_mess]
-    cs_object=self.create_cross_section(x, x_0, y, y_0, w, binning, gauss_weighting, sigma_gauss, bin_distance)
+    cs_object=self.create_cross_section(x, x_0, y, y_0, w, binning,
+                                        gauss_weighting, sigma_gauss,
+                                        bin_distance)
     try:
       if cs_object is None:
         return False
       cs_object.number=dataset.number
-      cs_object.short_info='%s - Cross-Section through (%g,%g)+x*(%g,%g)' % (
-                           dataset.short_info, x_0, y_0, x,y) 
+      cs_object.short_info='%s - Cross-Section through (%g,%g)+x*(%g,%g)'%(
+                           dataset.short_info, x_0, y_0, x, y)
       cs_object.sample_name=dataset.sample_name
       cs_object.info=dataset.info
       if at_end:
@@ -181,8 +185,8 @@ class FileActions:
       if cs_object is None:
         return False
       cs_object.number=data.number
-      cs_object.short_info='%s - Radial integration around (%g,%g)' % (
-                           data.short_info, x_0, y_0) 
+      cs_object.short_info='%s - Radial integration around (%g,%g)'%(
+                           data.short_info, x_0, y_0)
       cs_object.sample_name=data.sample_name
       cs_object.info=data.info
       if at_end:
@@ -229,7 +233,7 @@ class FileActions:
     else:
       self.window.measurement.insert(self.window.index_mess+1, bw_object)
       self.window.index_mess+=1
-    return True    
+    return True
 
   def get_discrete_derivative(self, at_end=False):
     '''
@@ -245,7 +249,7 @@ class FileActions:
     else:
       self.window.measurement.insert(self.window.index_mess+1, deriv_object)
       self.window.index_mess+=1
-    return True    
+    return True
 
   def get_integral(self, at_end=False):
     '''
@@ -261,7 +265,7 @@ class FileActions:
     else:
       self.window.measurement.insert(self.window.index_mess+1, int_object)
       self.window.index_mess+=1
-    return True    
+    return True
 
   def combine_data_points(self, binning, bin_distance=None):
     '''
@@ -271,43 +275,33 @@ class FileActions:
     data=dataset.list_err()
     dims=dataset.dimensions()
     units=dataset.units()
-    if dataset.yerror is not None:
-      cols=(dataset.xdata, dataset.ydata, dataset.yerror)
-      new_cols=[(dims[col], units[col]) for col in cols]
-      output=MeasurementData(new_cols, 
-                             [], 
-                             0, 
-                             1, 
-                             2,
-                             )
-      def prepare_data(point):
-        return [point[0], point[0], point[0], point[1], point[2], 0]
-      def rebuild_data(point):
-        return [point[0], point[3], point[4]]
-    else:
-      cols=(dataset.xdata, dataset.ydata)
-      new_cols=[(dims[col], units[col]) for col in cols]
-      output=MeasurementData(new_cols, 
-                             [], 
-                             0, 
-                             1, 
-                             -1,
-                             )      
-      def prepare_data(point):
-        return [point[0], point[0], point[0], point[1], 0, 0]
-      def rebuild_data(point):
-        return [point[0], point[3]]
+    cols=(dataset.xdata, dataset.ydata)
+    new_cols=[(dims[col], units[col]) for col in cols]
+    output=MeasurementData(new_cols,
+                           [],
+                           0,
+                           1,
+                           -1,
+                           )
+    def prepare_data(point):
+      return [point[0], point[0], point[0], point[1], point[2], 0]
     data2=map(prepare_data, data)
     data3=self.sort_and_bin(data2, binning, bin_distance=bin_distance)
-    data3=map(rebuild_data, data3)
-    map(output.append, data3)
+    x, y, dy=numpy.array(data3).transpose()[numpy.array([0, 3, 4])]
+    x=PhysicalProperty(dataset.x.dimension, dataset.x.unit, x)
+    y=PhysicalProperty(dataset.y.dimension, dataset.y.unit, y)
+    if dataset.yerror>=0:
+      y.error=dy
+    output.data=[x, y]
     output.number=dataset.number
+    output.logx=dataset.logx
+    output.logy=dataset.logy
     if not bin_distance:
-      output.short_info='%s - combined data points with %i binning' % (
-                           dataset.short_info, binning) 
+      output.short_info='%s - combined data points with %i binning'%(
+                           dataset.short_info, binning)
     else:
-      output.short_info='%s - combined data points every %g step' % (
-                     dataset.short_info, bin_distance) 
+      output.short_info='%s - combined data points every %g step'%(
+                     dataset.short_info, bin_distance)
     output.sample_name=dataset.sample_name
     output.info=dataset.info
     self.window.measurement.insert(self.window.index_mess+1, output)
@@ -318,7 +312,7 @@ class FileActions:
       Change the active plotted sequence.
     '''
     if action_name=='Prev':
-      self.window.index_mess=max(0,self.window.index_mess-1)
+      self.window.index_mess=max(0, self.window.index_mess-1)
       self.window.plot_page_entry.set_text(str(self.window.index_mess))
     elif action_name=='First':
       self.window.index_mess=0
@@ -327,14 +321,14 @@ class FileActions:
       self.window.index_mess=len(self.window.measurement)-1
       self.window.plot_page_entry.set_text(str(self.window.index_mess))
     elif action_name=='Next':
-      self.window.index_mess=min(len(self.window.measurement)-1,self.window.index_mess+1)
+      self.window.index_mess=min(len(self.window.measurement)-1, self.window.index_mess+1)
       self.window.plot_page_entry.set_text(str(self.window.index_mess))
     else:
       try:
         if len(self.window.measurement)>int(self.window.plot_page_entry.get_text()):
           self.window.index_mess=int(self.window.plot_page_entry.get_text())
       except ValueError:
-        self.window.plot_page_entry.set_text(str(self.window.index_mess))        
+        self.window.plot_page_entry.set_text(str(self.window.index_mess))
 
   def create_fit_object(self):
     '''
@@ -344,7 +338,7 @@ class FileActions:
     dataset=self.window.measurement[self.window.index_mess]
     from fit_data import FitSession
     dataset.fit_object=FitSession(dataset)
-  
+
   def change_color_pattern(self, pattern):
     '''
       Change the color palette used in pm3d plots.
@@ -357,14 +351,14 @@ class FileActions:
     for line in reversed(options_list_3d):
       if 'palette' in line:
         options_list_3d.remove(line)
-    options_list_3d.append('set palette ' + pattern)
+    options_list_3d.append('set palette '+pattern)
     for line in reversed(options_list_3dmap):
       if 'palette' in line:
         options_list_3dmap.remove(line)
-    options_list_3dmap.append('set palette ' + pattern)
-    gnuplot_preferences.settings_3d="\n".join(options_list_3d) + "\n"
-    gnuplot_preferences.settings_3dmap="\n".join(options_list_3dmap) + "\n"
-    
+    options_list_3dmap.append('set palette '+pattern)
+    gnuplot_preferences.settings_3d="\n".join(options_list_3d)+"\n"
+    gnuplot_preferences.settings_3dmap="\n".join(options_list_3dmap)+"\n"
+
   def unit_transformations(self, transformations):
     '''
       Make a unit transformation with the active dataset.
@@ -374,7 +368,7 @@ class FileActions:
     dataset=self.window.measurement[self.window.index_mess]
     dataset.unit_trans(transformations)
 
-  def integrate_intensities(self, x_pos, y_pos, radius, destination_dimension, destination_unit, 
+  def integrate_intensities(self, x_pos, y_pos, radius, destination_dimension, destination_unit,
                            dataset_indices, dataset_destination_values):
     '''
       Integrate the intensities of differt datasets around the position (x_pos, y_pos) up to a distance radius.
@@ -396,13 +390,13 @@ class FileActions:
     for dataset_index in dataset_indices:
       if dataset_index[0] not in file_data or \
          len(file_data[dataset_index[0]])<dataset_index[1]:
-        raise IndexError, "%s[%i] not in list" % (dataset_index[0], dataset_index[1])
+        raise IndexError, "%s[%i] not in list"%(dataset_index[0], dataset_index[1])
       dataset=file_data[dataset_index[0]][dataset_index[1]]
       if not y_dimunit:
-        y_dimunit=( dataset.dimensions()[dataset.zdata],
-                    dataset.units()[dataset.zdata] )
-        error_dimunit=( dataset.dimensions()[dataset.yerror],
-                    dataset.units()[dataset.yerror] )
+        y_dimunit=(dataset.dimensions()[dataset.zdata],
+                    dataset.units()[dataset.zdata])
+        error_dimunit=(dataset.dimensions()[dataset.yerror],
+                    dataset.units()[dataset.yerror])
         info_data=(dataset.dimensions()[dataset.xdata],
                    x_pos,
                    dataset.dimensions()[dataset.ydata],
@@ -410,12 +404,12 @@ class FileActions:
                    )
       integrated_values.append(self.integrate_around_point(x_pos, y_pos, radius, dataset))
     # add the data to a MeasurementData object
-    integrated_object=MeasurementData([(destination_dimension, destination_unit), y_dimunit, error_dimunit], 
-                                        [],0,1,2)
+    integrated_object=MeasurementData([(destination_dimension, destination_unit), y_dimunit, error_dimunit],
+                                        [], 0, 1, 2)
     for i, item in enumerate(integrated_values):
       integrated_object.append([dataset_destination_values[i], item[0], item[1]])
-    integrated_object.short_info='(%s=%.2g, %s=%.2g) ' % info_data
-    integrated_object.sample_name="Integrated intensity vs. %s" % str(destination_dimension)
+    integrated_object.short_info='(%s=%.2g, %s=%.2g) '%info_data
+    integrated_object.sample_name="Integrated intensity vs. %s"%str(destination_dimension)
     # paste the object in the active session
     if "Integrated intensities" in file_data:
       integrated_object.number=str(len(file_data["Integrated intensities"]))
@@ -429,7 +423,7 @@ class FileActions:
     self.window.active_session.active_file_name="Integrated intensities"
     self.window.rebuild_menus()
 
-  
+
   def do_interpolate_and_smooth(self, sigma_x, sigma_y, xfrom, xto, xsteps, yfrom, yto, ysteps, do_append=True):
     '''
       Interpolate the active dataset to a regular grid including smoothing using given parameters.
@@ -445,7 +439,7 @@ class FileActions:
     print "Start interpolation."
     interpolated_dataset=interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix_data_output=False)
     interpolated_dataset.sample_name=dataset.sample_name
-    interpolated_dataset.short_info=dataset.short_info+' - interpolated on (%i,%i)-grid' % (xsteps, ysteps)
+    interpolated_dataset.short_info=dataset.short_info+' - interpolated on (%i,%i)-grid'%(xsteps, ysteps)
     interpolated_dataset.plot_options=deepcopy(dataset.plot_options)
     interpolated_dataset.logx=dataset.logx
     interpolated_dataset.logy=dataset.logy
@@ -459,16 +453,17 @@ class FileActions:
 
   def do_rebin_2d(self, join_pixels_x, join_pixels_y=None, do_append=True):
     '''
-      Interpolate the active dataset to a regular grid including smoothing using given parameters.
+      Interpolate the active dataset to a regular grid 
+      including smoothing using given parameters.
     '''
     dataset=self.window.measurement[self.window.index_mess]
     if join_pixels_y is None:
       join_pixels_y=join_pixels_x
     print "Start rebinning."
-    rebinned_dataset=rebin_2d(dataset, join_pixels_x, join_pixels_y=join_pixels_y, 
+    rebinned_dataset=rebin_2d(dataset, join_pixels_x, join_pixels_y=join_pixels_y,
                               use_matrix_data_output=getattr(dataset, 'is_matrix_data', False))
     rebinned_dataset.sample_name=dataset.sample_name
-    rebinned_dataset.short_info=dataset.short_info+' - rebinned by %i,%i' % (join_pixels_x, join_pixels_y)
+    rebinned_dataset.short_info=dataset.short_info+' - rebinned by %i,%i'%(join_pixels_x, join_pixels_y)
     rebinned_dataset.plot_options=deepcopy(dataset.plot_options)
     rebinned_dataset.logx=dataset.logx
     rebinned_dataset.logy=dataset.logy
@@ -484,7 +479,7 @@ class FileActions:
 
 
   #++++++++ Functions not directly called as actions ++++++
-  
+
   def create_cross_section(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10, bin_distance=None):
     '''
       Create a cross-section of 3d-data along an arbitrary line. It is possible to
@@ -503,12 +498,12 @@ class FileActions:
     # Einheitsvector of line
     vec_e=(x/sqrt(x**2+y**2), y/sqrt(x**2+y**2))
     # Vector normal to the line
-    vec_n=(vec_e[1], -1*vec_e[0])
+    vec_n=(vec_e[1],-1*vec_e[0])
     # starting point of cross-section line
     origin=(x_0, y_0)
     # calculate distance to line
     v1=(xdata-origin[0], ydata-origin[1])
-    dist=abs(v1[0]*vec_n[0] + v1[1]*vec_n[1])
+    dist=abs(v1[0]*vec_n[0]+v1[1]*vec_n[1])
     # filter by distanc
     filter_indices=numpy.where(dist<=(w/2.))[0]
     xdata=xdata[filter_indices]
@@ -518,7 +513,7 @@ class FileActions:
       dzdata=dzdata[filter_indices]
     # sort data for position on the line
     len_vec=sqrt(x**2+y**2)
-    dist1=((xdata-x_0)*vec_e[0]+ (ydata-y_0)*vec_e[1])*len_vec
+    dist1=((xdata-x_0)*vec_e[0]+(ydata-y_0)*vec_e[1])*len_vec
     sort_idx=numpy.lexsort(keys=(dist1, ydata, xdata))
     xdata=xdata[sort_idx]
     ydata=ydata[sort_idx]
@@ -531,14 +526,17 @@ class FileActions:
       data=numpy.array([dist1, xdata, ydata, zdata, dzdata, dist]).transpose().tolist()
     else:
       data=numpy.array([dist1, xdata, ydata, zdata, dist]).transpose().tolist()
-    data=self.sort_and_bin(data, binning,  gauss_weighting, sigma_gauss, bin_distance)
+    if len(data)<3:
+      return None
+    data=self.sort_and_bin(data, binning, gauss_weighting,
+                           sigma_gauss, bin_distance)
     data=numpy.array(data).transpose()
     out_dataset=MeasurementData()
     out_dataset.yerror=-1
     first_dim=''
     first_unit=''
     if x!=0:
-      first_dim+='%g %s' % (x, dataset.x.dimension)
+      first_dim+='%g %s'%(x, dataset.x.dimension)
       if y==0:
         first_unit=dataset.x.unit
     if x!=0 and y!=0:
@@ -549,7 +547,7 @@ class FileActions:
       else:
         first_unit="Unknown"
     if y!=0:
-      first_dim+='%g %s' % (y, dataset.y.dimension)
+      first_dim+='%g %s'%(y, dataset.y.dimension)
       if x==0:
         first_unit=dataset.y.unit
     out_dataset.append_column(PhysicalProperty(first_dim, first_unit, data[0]))
@@ -560,7 +558,7 @@ class FileActions:
     out_dataset.append_column(PhysicalProperty(dataset.x.dimension, dataset.x.unit, data[1]))
     out_dataset.append_column(PhysicalProperty(dataset.y.dimension, dataset.y.unit, data[2]))
     return out_dataset
-  
+
   def create_cross_section_oll(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10, bin_distance=None):
     '''
       Create a cross-section of 3d-data along an arbitrary line. It is possible to
@@ -571,21 +569,21 @@ class FileActions:
     data=dataset.list_err()
     dims=dataset.dimensions()
     units=dataset.units()
-    cols=(dataset.xdata, 
-          dataset.ydata, 
-          dataset.zdata, 
+    cols=(dataset.xdata,
+          dataset.ydata,
+          dataset.zdata,
           dataset.yerror)
     new_cols=[(dims[col], units[col]) for col in cols]
     # Einheitsvector of line
     vec_e=(x/sqrt(x**2+y**2), y/sqrt(x**2+y**2))
     # Vector normal to the line
-    vec_n=(vec_e[1], -1*vec_e[0])
+    vec_n=(vec_e[1],-1*vec_e[0])
     # starting point of cross-section line
     origin=(x_0, y_0)
     first_dim=''
     first_unit=''
     if x!=0:
-      first_dim+='%g %s' % (x, new_cols[0][0])
+      first_dim+='%g %s'%(x, new_cols[0][0])
       if y==0:
         first_unit=new_cols[0][1]
     if x!=0 and y!=0:
@@ -596,14 +594,14 @@ class FileActions:
       else:
         first_unit="Unknown"
     if y!=0:
-      first_dim+='%g %s' % (y, new_cols[1][0])
+      first_dim+='%g %s'%(y, new_cols[1][0])
       if x==0:
         first_unit=new_cols[1][1]
     new_cols=[(first_dim, first_unit)]+new_cols+[('distance', first_unit)]
-    output=MeasurementData(new_cols, 
-                           [], 
-                           0, 
-                           3, 
+    output=MeasurementData(new_cols,
+                           [],
+                           0,
+                           3,
                            4,
                            )
     def point_filter(point):
@@ -613,7 +611,7 @@ class FileActions:
         @return Boolean
       '''
       v1=(point[0]-origin[0], point[1]-origin[1])
-      dist=abs(v1[0]*vec_n[0] + v1[1]*vec_n[1])
+      dist=abs(v1[0]*vec_n[0]+v1[1]*vec_n[1])
       if dist<=(w/2.):
         return True
       else:
@@ -623,12 +621,12 @@ class FileActions:
     if len(data2)==0:
       return None
     len_vec=sqrt(x**2+y**2)
-    data3=[[(vec_e[0]*dat[0]+vec_e[1]*dat[1])*len_vec, dat[0], dat[1], dat[2], dat[3], 
+    data3=[[(vec_e[0]*dat[0]+vec_e[1]*dat[1])*len_vec, dat[0], dat[1], dat[2], dat[3],
                                           (vec_n[0]*(dat[0]-origin[0])+vec_n[1]*(dat[1]-origin[1]))] for dat in data2]
-    data3=self.sort_and_bin(data3, binning,  gauss_weighting, sigma_gauss, bin_distance)
+    data3=self.sort_and_bin(data3, binning, gauss_weighting, sigma_gauss, bin_distance)
     map(output.append, data3)
     return output
-  
+
   def create_radial_integration(self, x_0, y_0, dr, max_r):
     '''
       Create a radial integration around one point (x_0,y_0)
@@ -642,9 +640,9 @@ class FileActions:
     data=self.window.measurement[self.window.index_mess].get_filtered_data_matrix()
     dims=self.window.measurement[self.window.index_mess].dimensions()
     units=self.window.measurement[self.window.index_mess].units()
-    cols=(self.window.measurement[self.window.index_mess].xdata, 
-          self.window.measurement[self.window.index_mess].ydata, 
-          self.window.measurement[self.window.index_mess].zdata, 
+    cols=(self.window.measurement[self.window.index_mess].xdata,
+          self.window.measurement[self.window.index_mess].ydata,
+          self.window.measurement[self.window.index_mess].zdata,
           self.window.measurement[self.window.index_mess].yerror)
     new_cols=[(dims[col], units[col]) for col in cols]
     # Distances to the point
@@ -655,10 +653,10 @@ class FileActions:
     first_dim="r"
     first_unit=units[cols[0]]
     new_cols=[(first_dim, first_unit), (dims[cols[2]], units[cols[2]]), (dims[cols[3]], units[cols[3]])]
-    output=MeasurementData(new_cols, 
-                           [], 
-                           0, 
-                           1, 
+    output=MeasurementData(new_cols,
+                           [],
+                           0,
+                           1,
                            2,
                            )
     # go from 0 to max_r in dr steps
@@ -675,14 +673,17 @@ class FileActions:
       #    dy_vals.append(errors[i])
       if len(y_vals)>0:
         y_val=y_vals.sum()/float(len(y_vals))
-        dy_val=sqrt( (dy_vals**2).sum()) /float(len(y_vals))
-        output.append( (x_val, y_val, dy_val) )
+        dy_val=sqrt((dy_vals**2).sum())/float(len(y_vals))
+        output.append((x_val, y_val, dy_val))
     if len(output)==0:
       return None
     else:
       return output
-  
-  def sort_and_bin(self, data, binning, gauss_weighting=False, sigma_gauss=1e10, bin_distance=None):
+
+  def sort_and_bin(self, data, binning,
+                   gauss_weighting=False,
+                   sigma_gauss=1e10,
+                   bin_distance=None):
     '''
       Sort a dataset and bin the datapoints together. Gaussian weighting if possible and
       errors are calculated.
@@ -701,11 +702,11 @@ class FileActions:
         for i, dat in enumerate(data_list):
           output+=dat*exp(-din[i][-1]**2/(2*sigma_gauss**2))
         return output
-    if bin_distance:
+    if bin_distance is not None:
       bin_dist_position=int(data[0][0]/bin_distance)
       din=[]
     for i, point in enumerate(data):
-      if bin_distance:
+      if bin_distance is not None:
         if point[0]<=bin_distance*(bin_dist_position+0.5):
           din.append([bin_dist_position*bin_distance]+point[1:])
         else:
@@ -727,18 +728,18 @@ class FileActions:
         g_sum=gauss_sum([1 for d in din])
         for j in range(4):
           dout.append(gauss_sum([d[j] for d in din])/g_sum)
-        if len(din)>5:
+        if len(din[0])>5:
           dout.append(sqrt(gauss_sum([d[4]**2 for d in din]))/g_sum)
-        dout.append(g_sum/len(din))          
+        dout.append(g_sum/len(din))
       else:
         for j in range(4):
           dout.append(sum([d[j] for d in din])/len(din))
-        if len(din)>5:
+        if len(din[0])>5:
           dout.append(sqrt(sum([d[4]**2 for d in din]))/len(din))
         dout.append(sum([d[-1] for d in din])/len(din))
       dat_tmp.append(dout)
     return dat_tmp
- 
+
   def integrate_around_point(self, x_pos, y_pos, radius, dataset):
     '''
       Integrate the intensities of dataset around the point (x_pos, y_pos) up to
@@ -754,18 +755,18 @@ class FileActions:
       dz=dataset.data[dataset.yerror].view(ndarray)
     else:
       dz=dataset.z.error
-    distances=sqrt((x-x_pos)**2 + (y-y_pos)**2)
+    distances=sqrt((x-x_pos)**2+(y-y_pos)**2)
     filter_ids=where(distances<=radius)[0]
     if len(filter_ids)>0:
       value=z[filter_ids].mean()
       if dz is not None:
-        error=sqrt((dz[filter_ids]**2).sum()) / len(filter_ids)
+        error=sqrt((dz[filter_ids]**2).sum())/len(filter_ids)
       else:
         error=1.
       return (value, error)
     else:
       return (0., 1.)
-  
+
 def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix_data_output=False, fill_value=(0., 1.)):
   '''
     Fill a grid with datapoints from another grid, weighting the points with a gaussian up to a distance of
@@ -779,7 +780,7 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix
     @return MeasurementData or KWS2MeasurementData object with the rebinned data
   '''
   if dataset.zdata<0:
-    raise ValueError, 'Dataset needs to be 3 dimensional for interpolation'    
+    raise ValueError, 'Dataset needs to be 3 dimensional for interpolation'
   gauss_factor_x=-0.5/sigma_x**2
   gauss_factor_y=-0.5/sigma_y**2
   three_sigma_x=3.*sigma_x
@@ -803,15 +804,15 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix
   dzout=[]
   dims=dataset.dimensions()
   units=dataset.units()
-  cols=[(dims[dataset.xdata], units[dataset.xdata]), 
-        (dims[dataset.ydata], units[dataset.ydata]), 
+  cols=[(dims[dataset.xdata], units[dataset.xdata]),
+        (dims[dataset.ydata], units[dataset.ydata]),
         (dims[dataset.zdata], units[dataset.zdata])]
   if use_matrix_data_output:
     from read_data.kws2 import KWS2MeasurementData
-    output_data=KWS2MeasurementData(cols, [], 0,1,-1,2)
+    output_data=KWS2MeasurementData(cols, [], 0, 1,-1, 2)
     output_data.is_matrix_data=True
   else:
-    output_data=MeasurementData(cols, [], 0,1,-1,2)
+    output_data=MeasurementData(cols, [], 0, 1,-1, 2)
   # Go through the new grid point by point and search for datapoints close to the new grid points
   for xi in grid_x:
     distances_x=abs(x-xi)
@@ -829,7 +830,7 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix
         # fill grid at points not in old grid
         output_data.append([xi, yi, (fill_value[0], fill_value[1])])
         continue
-      factors=exp(distances_x[indices]**2*gauss_factor_x + distances_y[sub_indices]**2*gauss_factor_y)
+      factors=exp(distances_x[indices]**2*gauss_factor_x+distances_y[sub_indices]**2*gauss_factor_y)
       scale=1./factors.sum()
       zi=(z[indices]*factors).sum()*scale
       dzi=sqrt((dzq[indices]*factors).sum())*scale
@@ -851,25 +852,25 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
   if dataset.zdata<0:
     raise ValueError, 'Dataset needs to be 3 dimensional for interpolation'
   # get the data
-  x=dataset.data[dataset.xdata][:]
-  y=dataset.data[dataset.ydata][:]
-  z=dataset.data[dataset.zdata][:]
-  if dataset.yerror<0 or dataset.yerror >= len(dataset.data):
+  x=dataset.x[:]
+  y=dataset.y[:]
+  z=dataset.z[:]
+  if dataset.yerror<0 or dataset.yerror>=len(dataset.data):
     dzq=dataset.z.error**2
   else:
     dzq=dataset.data[dataset.yerror][:]**2
   # create new object
   dims=dataset.dimensions()
   units=dataset.units()
-  cols=[(dims[dataset.xdata], units[dataset.xdata]), 
-        (dims[dataset.ydata], units[dataset.ydata]), 
+  cols=[(dims[dataset.xdata], units[dataset.xdata]),
+        (dims[dataset.ydata], units[dataset.ydata]),
         (dims[dataset.zdata], units[dataset.zdata])]
   if use_matrix_data_output:
     from read_data.kws2 import KWS2MeasurementData
-    output_data=KWS2MeasurementData(cols, [], 0,1,-1,2)
+    output_data=KWS2MeasurementData(cols, [], 0, 1,-1, 2)
     output_data.is_matrix_data=True
   else:
-    output_data=MeasurementData(cols, [], 0,1,3,2)
+    output_data=MeasurementData(cols, [], 0, 1, 3, 2)
   # Get indices to sort the data for x and y ascending
   #sort_idx_x=numpy.argsort(x)
   #sort_idx_y=numpy.argsort(y[sort_idx_x])
@@ -892,12 +893,12 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
       tmpy=join_pixels_x
       join_pixels_x=join_pixels_y
       join_pixels_y=tmpy
-      len_x=x[1:].tolist().index(x0)+1 
+      len_x=x[1:].tolist().index(x0)+1
       swapped=True
   except ValueError:
-    raise ValueError, "Can only rebin regular grid, no second item for x=%f found" % x0
+    raise ValueError, "Can only rebin regular grid, no second item for x=%f found"%x0
   if (len(x)%len_x)!=0:
-    raise ValueError, "Can only rebin regular grid, no integer number of points for grid width %i found" % len_x
+    raise ValueError, "Can only rebin regular grid, no integer number of points for grid width %i found"%len_x
   len_y=len(x)//len_x
   new_len_x=len_x//join_pixels_x
   new_len_y=len_x//join_pixels_y
@@ -954,7 +955,7 @@ def calculate_savitzky_golay(dataset, window_size=5, order=2, derivative=1):
   newcols=[[dims[xindex], units[xindex]], ['smoothed '+dims[yindex], units[yindex]]]
   derivative=min(order-1, derivative)
   for i in range(1, derivative+1):
-    newcols.append([dims[yindex]+("\\047"*i), 
+    newcols.append([dims[yindex]+("\\047"*i),
             PhysicalUnit(units[yindex])/PhysicalUnit(units[xindex]+'^%i'%i)])
   output=MeasurementData(newcols, [], 0, 1+derivative)
   xlist=[]
@@ -980,7 +981,7 @@ def calculate_savitzky_golay(dataset, window_size=5, order=2, derivative=1):
   if derivative==0:
     output.short_info=dataset.short_info+' filtered with moving-window'
   else:
-    output.short_info=dataset.short_info+' derivative-%i' % derivative
+    output.short_info=dataset.short_info+' derivative-%i'%derivative
   output.sample_name=dataset.sample_name
   return output
 
@@ -1026,17 +1027,17 @@ def calculate_butterworth(dataset, filter_steepness=6, filter_cutoff=0.5, deriva
   # Calculate the derivative in fourier space by multiplying with 2πik and transform back to real space
   #deriv=numpy.fft.irfft(((2.j*numpy.pi*k)/x[:len(x)//2+1].view(numpy.ndarray))**derivative * F_B)
   stepk=(1./(x[1:].view(numpy.ndarray)-x[:-1].view(numpy.ndarray)).mean())/len(x)
-  deriv=numpy.fft.irfft(((2.j*numpy.pi*k)*stepk)**derivative * F_B)
+  deriv=numpy.fft.irfft(((2.j*numpy.pi*k)*stepk)**derivative*F_B)
   if crop_last:
     deriv=deriv[:-1]
-  output.append_column(PhysicalProperty(y.dimension+"\\047"*derivative, 
-                                 y.unit/x.unit**derivative, 
+  output.append_column(PhysicalProperty(y.dimension+"\\047"*derivative,
+                                 y.unit/x.unit**derivative,
                                  deriv))
   output.sample_name=dataset.sample_name
   if derivative==0:
     output.short_info=dataset.short_info+' filtered with spectral-estimate'
   else:
-    output.short_info=dataset.short_info+' spectral-estimate derivative-%i' % derivative
+    output.short_info=dataset.short_info+' spectral-estimate derivative-%i'%derivative
   return output
 
 def calculate_discrete_derivative(dataset, points=5):
@@ -1062,7 +1063,7 @@ def calculate_discrete_derivative(dataset, points=5):
     dy=PhysicalProperty(dy.dimension, dy.unit, [float(dy[0])]+dy.tolist()+[float(dy[-1])])
     output.append_column(dy)
   elif points==5:
-    dy= (-y[4:]+8*y[3:-1]-8*y[1:-3]+y[:-4])/\
+    dy=(-y[4:]+8*y[3:-1]-8*y[1:-3]+y[:-4])/\
         (3.*(x[4:]-x[:-4]))
     left=float(dy[0])
     right=float(dy[0])
@@ -1071,7 +1072,7 @@ def calculate_discrete_derivative(dataset, points=5):
   output.sample_name=dataset.sample_name
   output.short_info=dataset.short_info+' discrete derivative'
   return output
-  
+
 def calculate_integral(dataset):
   '''
     Calculate the integral of a dataset using the trapezoidal rule.
@@ -1089,8 +1090,8 @@ def calculate_integral(dataset):
   for i in range(1, len(x)):
     inty.append(numpy.trapz(ya[:i], xa[:i]))
   output.append_column(PhysicalProperty(
-                                        'int('+y.dimension+')', 
-                                        y.unit*x.unit, 
+                                        'int('+y.dimension+')',
+                                        y.unit*x.unit,
                                         inty
                                         ))
   output.sample_name=dataset.sample_name
@@ -1105,39 +1106,39 @@ class MakroRepr:
     FileObject implementation to store makros in string representation.
     The class can be used to store general types with ConfigObj.
   '''
-  
+
   string=None #: Stringrepresentation of the data.
-  
+
   def __init__(self):
     '''
       Constructor creates an empty string.
     '''
     self.string=''
-  
+
   def write(self, string):
     '''
       As the write method from files this adds the input to it's own string.
     '''
     self.string+=string
-  
+
   def writelines(self, list_lines):
     '''
       Simulate writelines, see write.
     '''
     self.string+=''.join(list_lines)
-  
+
   def read(self):
     '''
       Simulate read from file object.
     '''
     return self.string
-  
+
   def close(self):
     '''
       Dummifunction to complete file object possibilities.
     '''
     pass
-  
+
   def readline(self):
     '''
       Simulate readline, see read.
@@ -1145,37 +1146,37 @@ class MakroRepr:
     splt=self.string.splitlines()
     for line in splt:
       yield line
-  
+
   def readlines(self):
     '''
       Simulate readlines, see read.
     '''
     return self.string.splitlines()
-  
+
   def flush(self):
     '''
       Dummifunction to complete file object possibilities.
     '''
     pass
-  
+
   def seek(self):
     '''
       Dummifunction to complete file object possibilities.
     '''
     pass
-  
+
   def tell(self):
     '''
       Dummifunction to complete file object possibilities.
     '''
     return 0
-  
+
   def next(self):
     '''
       Dummifunction to complete file object possibilities.
     '''
     return self
-  
+
   def __str__(self):
     '''
       String representation for the makro.
@@ -1187,7 +1188,7 @@ class MakroRepr:
       return item.split('=', 1)[1]
     out=map(getlines, out)
     return '\n'.join(out)
-  
+
   def from_string(self, string):
     '''
       Recreate makro from string representation.
@@ -1195,7 +1196,7 @@ class MakroRepr:
     lines=string.splitlines()
     new_lines=[]
     for i, line in enumerate(lines):
-      new_lines.append("%i = %s" % (i, line))
+      new_lines.append("%i = %s"%(i, line))
     self.string='\n'.join(new_lines)
 
 def savitzky_golay(y, window_size, order, deriv=0):
@@ -1232,24 +1233,24 @@ def savitzky_golay(y, window_size, order, deriv=0):
   '''
   np=numpy
   try:
-      window_size = np.abs(np.int(window_size))
-      order = np.abs(np.int(order))
+      window_size=np.abs(np.int(window_size))
+      order=np.abs(np.int(order))
   except ValueError, msg:
       raise ValueError("window_size and order have to be of type int")
-  if window_size % 2 != 1:
+  if window_size%2!=1:
     window_size-=1
-  if window_size < 1:
+  if window_size<1:
       raise TypeError("window_size size must be a positive odd number")
-  if window_size < order + 2:
+  if window_size<order+2:
       raise TypeError("window_size is too small for the polynomials order")
-  order_range = range(order+1)
-  half_window = (window_size -1) // 2
+  order_range=range(order+1)
+  half_window=(window_size-1)//2
   # precompute coefficients
-  b = np.mat([[k**i for i in order_range] for k in range(-half_window, half_window+1)])
-  m = np.linalg.pinv(b).A[deriv]*(-1.)**deriv
+  b=np.mat([[k**i for i in order_range] for k in range(-half_window, half_window+1)])
+  m=np.linalg.pinv(b).A[deriv]*(-1.)**deriv
   # pad the signal at the extremes with
   # values taken from the signal itself
-  firstvals = y[0] - np.abs( y[1:half_window+1][::-1] - y[0] )
-  lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
-  y = np.concatenate((firstvals, y, lastvals))
-  return np.convolve( m, y, mode='valid')
+  firstvals=y[0]-np.abs(y[1:half_window+1][::-1]-y[0])
+  lastvals=y[-1]+np.abs(y[-half_window-1:-1][::-1]-y[-1])
+  y=np.concatenate((firstvals, y, lastvals))
+  return np.convolve(m, y, mode='valid')
