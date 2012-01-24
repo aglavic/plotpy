@@ -6,6 +6,8 @@
 import os
 import gtk
 from measurement_data_structure import MultiplotList
+from dialogs import PreviewDialog
+from copy import deepcopy
 
 __author__="Artur Glavic"
 __credits__=[]
@@ -13,46 +15,56 @@ from plotpy_info import __copyright__, __license__, __version__, __maintainer__,
 __status__="Development"
 
 
-class MultiplotItem(gtk.Table):
+class MultiplotItem(gtk.HBox):
   '''
     A list which contains all subplots for a multiplot.
   '''
 
   def __init__(self, items=None):
-    gtk.Table.__init__(self, 1, 1, False)
+    gtk.HBox.__init__(self)
     if items is None:
       items=MultiplotList()
     self.items=items
     label=gtk.Label('   File:   \n   Info:   ')
     label.show()
-    self._labels=[label]
-    self.attach(label, 0, 1, 0, 1, 0, 0)
+    self._labels=[]
+    self.add(label)
+    for item in items:
+      self.append(item, just_labels=True)
 
-  def append(self, item):
+  def __getitem__(self, index):
+    return self.items[index]
+
+  def append(self, item, just_labels=False):
     '''
       Add a dataset to the list of items.
+      The dataset gets copied to make it possible
+      to change plot settings and columns multiplot specific.
     '''
-    self.items.append(item)
-    idx=len(self.items)
+    if not just_labels:
+      self.items.append(deepcopy(item))
     label=gtk.Label('%s\n%s'%(os.path.split(item[1])[1],
                                 item[0].short_info))
     label.show()
     self._labels.append(label)
-    self.attach(label,
-                idx, idx+1, 0, 1,
-                0, 0)
+    self.add(label)
+
+  def update_labels(self):
+    '''
+      Redefine the labesl for all datasets.
+    '''
+    labels=self._labels
+    for i, item in enumerate(self.items):
+      labels[i].set_text('%s\n%s'%(os.path.split(item[1])[1],
+                                item[0].short_info))
 
   def index(self, item):
     return self.items.index(item)
 
-  def clear(self):
-    '''
-      Remove all datasets from the list.
-    '''
-    pass
-
   def pop(self, index):
-    items=self.get_children()
+    item=self.items[index]
+    self.remove(item)
+    return item
 
   def __contains__(self, item):
     return item in self.items
@@ -60,15 +72,22 @@ class MultiplotItem(gtk.Table):
   def remove(self, item):
     index=self.items.index(item)
     children=self._labels
-    move=children[index+2:]
-    for label in children[index+1:]:
-      gtk.Table.remove(self, label)
-    for i, label in enumerate(move):
-      self.attach(label,
-                index+i+1, index+i+2, 0, 1,
-                0, 0)
+    gtk.HBox.remove(self, children[index])
     self.items.remove(item)
-    self._labels.pop(index+1)
+    self._labels.pop(index)
+
+  def reorder_child(self, child, position):
+    '''
+      Change the order of the MultiplotList and the displayed
+      items.
+    '''
+    index=self.items.index(child)
+    label=self._labels.pop(index)
+    self._labels.insert(position-1, label)
+    item=self.items.pop(index)
+    self.items.insert(position-1, item)
+    gtk.HBox.reorder_child(self, label, position)
+
 
 
 class MultiplotCanvas(gtk.Table):
@@ -79,7 +98,8 @@ class MultiplotCanvas(gtk.Table):
   button_group=None
   active_mp=None
 
-  def __init__(self):
+  def __init__(self, parent):
+    self.parent_gui=parent
     gtk.Table.__init__(self, 2, 2, False)
     self.multiplots=[]
     self.item_tables=[]
@@ -91,11 +111,14 @@ class MultiplotCanvas(gtk.Table):
                 gtk.EXPAND|gtk.FILL, gtk.EXPAND, gtk.FILL)
     self.new_item()
 
-  def new_item(self):
-    newitem=MultiplotItem()
+  def new_item(self, items=None):
+    '''
+      Add a new MultiplotItem to the list.
+    '''
+    newitem=MultiplotItem(items=items)
     self.active_mp=newitem
     self.multiplots.append(newitem)
-    table=gtk.Table(1, 3, False)
+    table=gtk.Table(1, 4, False)
     self.item_tables.append(table)
     selector=gtk.RadioButton(group=self.button_group, label='')
     self.selectors.append(selector)
@@ -104,23 +127,32 @@ class MultiplotCanvas(gtk.Table):
     self.button_group=selector
     delbutton=gtk.Button("Delete")
     delbutton.connect('clicked', self.delete_item, table)
+    addbutton=gtk.Button("Sort/Add")
+    addbutton.connect('clicked', self.sort_add, newitem)
 
     table.show()
     newitem.show()
     selector.show()
+    addbutton.show()
     delbutton.show()
     table.attach(selector,
                 0, 1, 0, 1,
                 0, 0)
     table.attach(newitem,
-                2, 3, 0, 1,
+                3, 4, 0, 1,
                gtk.EXPAND|gtk.FILL, 0)
     table.attach(delbutton,
+                2, 3, 0, 1,
+                0, 0)
+    table.attach(addbutton,
                 1, 2, 0, 1,
                 0, 0)
     self.item_box.add(table)
 
   def select_item(self, index):
+    '''
+      Define the active selection.
+    '''
     self.selectors[index].set_active(True)
 
   def _get_item_index(self):
@@ -131,7 +163,7 @@ class MultiplotCanvas(gtk.Table):
   item_index=property(_get_item_index, select_item)
 
   def __len__(self):
-    return len(self.multiplots)
+    return len(self.items.items)
 
   def select(self, button, item):
     if button.get_active():
@@ -148,16 +180,19 @@ class MultiplotCanvas(gtk.Table):
     elif selector.get_active():
       self.selectors[0].set_active(True)
 
-  def clear(self):
+  def clear(self, refill=True):
     for table in self.item_tables:
       self.item_box.remove(table)
     self.item_tables=[]
     self.selectors=[]
     self.multiplots=[]
+    if refill:
+      self.new_item()
 
   def append(self, dataset):
     try:
       self.items.append(dataset)
+      self.update_labels()
       return True
     except ValueError:
       return False
@@ -166,15 +201,19 @@ class MultiplotCanvas(gtk.Table):
     return item in self.items
 
   def __getitem__(self, item):
+    self.update_labels()
     return self.items.items[item]
 
   def __iter__(self):
+    self.update_labels()
     return self.items.items.__iter__()
 
   def remove(self, item):
     self.items.remove(item)
+    self.update_labels()
 
   def _get_item(self):
+    self.update_labels()
     return self.active_mp
 
   def _get_title(self):
@@ -193,8 +232,124 @@ class MultiplotCanvas(gtk.Table):
   title=property(_get_title, _set_title)
   sample_name=property(_get_sample_name, _set_sample_name)
 
-  def clear(self):
-    pass
+  def sort_add(self, ignore=None, items=None):
+    if items is None:
+      items=self.items
+      do_replot=True
+    else:
+      do_replot=False
+    dialog=ItemSortAdd(items, self.parent_gui, do_replot=do_replot)
+    dialog.run()
+    dialog.destroy()
 
+  def update_labels(self):
+    '''
+      Reload all labels of all MultiplotItem objects.
+    '''
+    for item in self.multiplots:
+      item.update_labels()
+
+  def get_list(self):
+    '''
+      Return a list of MultiplotList objects.
+    '''
+    return [item.items for item in self.multiplots]
+
+  def new_from_list(self, items_list):
+    '''
+      Clear all multiplots and creat new ones from a list of items.
+    '''
+    if len(items_list)==0:
+      return
+    self.clear(refill=False)
+    for items in items_list:
+      self.new_item(items=items)
+
+class ItemSortAdd(gtk.Dialog):
+  '''
+    A dialog to sort a MultiplotItem list or add new items.
+  '''
+
+  def __init__(self, items, parent, do_replot=True):
+    gtk.Dialog.__init__(self, title='Sort Multiplot List...',
+                        buttons=('Add...', 2, 'Exit', 0))
+    self.parent_gui=parent
+    self.items=items
+    self._do_replot=do_replot
+    self._item_list=[]
+    self._init_entries()
+
+  def run(self):
+    result=1
+    while result>0:
+      result=gtk.Dialog.run(self)
+      if result==2:
+        pd=PreviewDialog(self.parent_gui.active_session.file_data,
+                         show_previews=False, single_selection=False,
+                         buttons=('OK', 1, 'Cancel', 0))
+        result=pd.run()
+        if result:
+          items=pd.get_active_objects_with_key()
+          for name, dataset in items:
+            self.items.append([dataset, os.path.split(name)[1]])
+            self._add_item(self.items[-1])
+          if self._do_replot:
+            self.parent_gui.replot()
+        pd.destroy()
+    return result
+
+  def _init_entries(self):
+    for item in self.items.items:
+      self._add_item(item)
+
+  def _add_item(self, item):
+    hbox=gtk.HBox()
+    hbox.show()
+    self.vbox.add(hbox)
+    #self._item_list.append(hbox)
+    up=gtk.Button('↑')
+    up.connect('clicked', self._move_item, hbox,-1)
+    up.show()
+    hbox.pack_start(up, expand=False)
+    down=gtk.Button('↓')
+    down.connect('clicked', self._move_item, hbox,+1)
+    down.show()
+    hbox.pack_start(down, expand=False)
+    delbutton=gtk.Button('del')
+    delbutton.connect('clicked', self._delete_item, hbox)
+    delbutton.show()
+    hbox.pack_start(delbutton, expand=False)
+    label=gtk.Label(item[1])
+    label.show()
+    hbox.pack_start(label, expand=False)
+    entry=gtk.Entry()
+    entry.set_text(item[0].short_info)
+    #entry.set_width_chars(20)
+    entry.show()
+    entry.connect("activate", self._change_info, item[0])
+    hbox.pack_end(entry, expand=True)
+
+  def _move_item(self, button, hbox, direction):
+    index=self.vbox.get_children().index(hbox)
+    if (index+direction)<0 or (index+direction)>=len(self.vbox.get_children()):
+      return
+    self.vbox.reorder_child(hbox, index+direction+1)
+    item=self.items[index]
+    self.items.reorder_child(item, index+direction+1)
+    if self._do_replot:
+      self.parent_gui.replot()
+
+  def _delete_item(self, button, hbox):
+    index=self.vbox.get_children().index(hbox)
+    self.vbox.remove(hbox)
+    self.items.pop(index)
+    if self._do_replot:
+      self.parent_gui.replot()
+
+  def _change_info(self, entry, dataset):
+    print dataset
+    dataset.short_info=entry.get_text()
+    if self._do_replot:
+      self.parent_gui.replot()
 
 

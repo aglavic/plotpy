@@ -15,10 +15,10 @@ import subprocess
 from config import gnuplot_preferences
 from time import sleep
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__status__="Production"
 
 persistene_plots=0
 maps_with_projection=False
@@ -31,8 +31,8 @@ def check_gnuplot_version(session):
     Return the version of the installed gnuplot program.
   '''
   script_name=os.path.join(session.TEMP_DIR, 'check_version.gp')
-  write_file=open(script_name,'w')
-  write_file.write( '''
+  write_file=open(script_name, 'w')
+  write_file.write('''
         print GPVAL_VERSION
         print GPVAL_PATCHLEVEL
         print GPVAL_TERMINALS
@@ -41,33 +41,33 @@ def check_gnuplot_version(session):
   write_file.close()
   params=[session.GNUPLOT_COMMAND, script_name]
   try:
-    proc = subprocess.Popen(params, 
-                        shell=gnuplot_preferences.EMMULATE_SHELL, 
-                        creationflags=gnuplot_preferences.PROCESS_FLAGS, 
+    proc=subprocess.Popen(params,
+                        shell=gnuplot_preferences.EMMULATE_SHELL,
+                        creationflags=gnuplot_preferences.PROCESS_FLAGS,
                         stderr=subprocess.PIPE,
-                        stdout=subprocess.PIPE, 
-                        stdin=subprocess.PIPE, 
+                        stdout=subprocess.PIPE,
+                        stdin=subprocess.PIPE,
                         )
-    output = proc.communicate()[1]
+    output=proc.communicate()[1]
     version, patchlevel, terminals=output.splitlines()
     terminals=terminals.split()
     return (float(version), float(patchlevel)), terminals
   except:
     return (0., 0.), []
 
-def gnuplot_plot_script(session,  
+def gnuplot_plot_script(session,
                         datasets,
-                        file_name_prefix, 
-                        file_name_postfix, 
+                        file_name_prefix,
+                        file_name_postfix,
                         title,
                         names,
                         with_errorbars,
                         output_file=gnuplot_preferences.output_file_name,
                         additional_info='',
-                        fit_lorentz=False, 
-                        sample_name=None, 
-                        show_persistent=False, 
-                        get_xy_ranges=False): 
+                        fit_lorentz=False,
+                        sample_name=None,
+                        show_persistent=False,
+                        get_xy_ranges=False):
   '''
     Function to plot with an additional data and gnuplot file and calling to the gnuplot program.
     Files are stored in temporary folder set in gnuplot_preferences.
@@ -88,7 +88,7 @@ def gnuplot_plot_script(session,
   file_numbers=[]
   if show_persistent:
     global persistene_plots
-    tmp_name='tmp_data_p-%i_' % persistene_plots
+    tmp_name='tmp_data_p-%i_'%persistene_plots
     persistene_plots+=1
     output_file_prefix=session.TEMP_DIR+tmp_name
     postscript_export=True
@@ -106,41 +106,41 @@ def gnuplot_plot_script(session,
   if datasets[0].zdata>=0 and maps_with_projection:
     # export data of projections
     projections_name=output_file_prefix+file_numbers[0]+'.xy'
-    datasets[0].export_projections(projections_name)    
+    datasets[0].export_projections(projections_name)
   if not sample_name:
     sample_name=datasets[0].sample_name
   if output_file is None:
     postscript_export=False
     terminal=gp.set_output_terminal_ps
-  elif output_file.rsplit('.',1)[1]=='ps':
+  elif output_file.rsplit('.', 1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
   else:
     postscript_export=False
     terminal=gp.set_output_terminal_png
-  script_name=session.TEMP_DIR+replace_ph(session, 
+  script_name=session.TEMP_DIR+replace_ph(session,
                                           gp.gnuplot_file_name,
                                           datasets,
-                                          file_name_prefix, 
-                                          file_numbers, 
+                                          file_name_prefix,
+                                          file_numbers,
                                           title,
                                           names,
                                           sample_name,
                                           (0, 0, 0),
                                           postscript_export,
                                           additional_info)
-  gnuplot_file_text=create_plot_script(session, 
+  gnuplot_file_text=create_plot_script(session,
                                        datasets,
-                                       file_name_prefix, 
-                                       file_name_postfix, 
+                                       file_name_prefix,
+                                       file_name_postfix,
                                        title,
                                        names,
                                        with_errorbars,
                                        output_file,
                                        additional_info,
-                                       fit_lorentz, 
-                                       output_file_prefix=output_file_prefix, 
-                                       sample_name=sample_name, 
+                                       fit_lorentz,
+                                       output_file_prefix=output_file_prefix,
+                                       sample_name=sample_name,
                                        show_persistent=show_persistent)
   if get_xy_ranges:
     gnuplot_file_text+="""
@@ -154,31 +154,31 @@ def gnuplot_plot_script(session,
       print GPVAL_Y_MAX
       """
   if show_persistent:
-    write_file=open(script_name,'w')
-    write_file.write( gnuplot_file_text+'\n' )
+    write_file=open(script_name, 'w')
+    write_file.write(gnuplot_file_text+'\n')
     write_file.close()
-    params=[session.GNUPLOT_COMMAND, '-persist', script_name]      
+    params=[session.GNUPLOT_COMMAND, '-persist', script_name]
     try:
-      proc = subprocess.Popen(params, 
-                          shell=gnuplot_preferences.EMMULATE_SHELL, 
-                          creationflags=gnuplot_preferences.PROCESS_FLAGS, 
+      proc=subprocess.Popen(params,
+                          shell=gnuplot_preferences.EMMULATE_SHELL,
+                          creationflags=gnuplot_preferences.PROCESS_FLAGS,
                           stderr=subprocess.PIPE,
-                          stdout=subprocess.PIPE, 
-                          stdin=subprocess.PIPE, 
+                          stdout=subprocess.PIPE,
+                          stdin=subprocess.PIPE,
                           )
     except:
-      raise RuntimeError, "\nProblem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s" % session.GNUPLOT_COMMAND
+      raise RuntimeError, "\nProblem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s"%session.GNUPLOT_COMMAND
     return '', []
   try:
     gnuplot_instance.stdin.write('reset\n')
   except (IOError, ValueError), error:
     # gnuplot instance closed due to an unknown problem
     gnuplot_instance=None
-    raise RuntimeError, "gnuplot instance closed due to unknown problem: %s" % (error)
+    raise RuntimeError, "gnuplot instance closed due to unknown problem: %s"%(error)
   gnuplot_instance.stdin.write(gnuplot_file_text)
   gnuplot_instance.stdin.write('\nset output\nprint "|||"\n')
   output=gnuplot_instance.stdout.read(3)
-  while output[-3:] != '|||':
+  while output[-3:]!='|||':
     output+=gnuplot_instance.stdout.read(1)
   output=output[:-3].strip()
   if 'line' in output:
@@ -189,11 +189,11 @@ def gnuplot_plot_script(session,
     except ValueError:
       return output, []
 
-def replace_ph(session, 
+def replace_ph(session,
                string,
                datasets,
-               file_name_prefix, 
-               file_numbers, 
+               file_name_prefix,
+               file_numbers,
                title,
                names,
                sample_name,
@@ -209,60 +209,60 @@ def replace_ph(session,
   withnr=number[1]
   gp=gnuplot_preferences
   if '[titles_add]' in string:
-    titles_add=replace_ph(session, 
+    titles_add=replace_ph(session,
                                     names[number[2]],
-                                    datasets, 
-                                    file_name_prefix, 
-                                    file_numbers, 
-                                    title, 
-                                    names, 
-                                    sample_name, 
-                                    number, 
-                                    postscript_export, 
+                                    datasets,
+                                    file_name_prefix,
+                                    file_numbers,
+                                    title,
+                                    names,
+                                    sample_name,
+                                    number,
+                                    postscript_export,
                                     additional_info)
   else:
     titles_add=''
   string=string.\
-  replace('[font-path]',gp.FONT_PATH).\
-  replace('[width]',session.picture_width).\
-  replace('[height]',session.picture_height).\
-  replace('[font-size]',str(int(session.font_size/1000.*int(session.picture_height)))).\
-  replace('[name]',file_name_prefix).\
-  replace('[sample]',sample_name).\
-  replace('[nr]',datasets[datanr].number).\
-  replace('[add_info]',additional_info).\
-  replace('[info]',datasets[datanr].plot_together[withnr].info.replace('\n','\n#')).\
-  replace('[x-unit]',datasets[datanr].plot_together[withnr].xunit()).\
-  replace('[x-dim]',datasets[datanr].plot_together[withnr].xdim()).\
-  replace('[y-unit]',datasets[datanr].plot_together[withnr].yunit()).\
-  replace('[y-dim]',datasets[datanr].plot_together[withnr].ydim()).\
-  replace('[z-unit]',datasets[datanr].plot_together[withnr].zunit()).\
-  replace('[z-dim]',datasets[datanr].plot_together[withnr].zdim()).\
-  replace('[title_add]',title).\
-  replace('[titles_add]',titles_add).\
-  replace('[const_unit]',datasets[datanr].plot_together[withnr].units()[datasets[datanr].plot_together[withnr].type()]).\
-  replace('[const_dim]',datasets[datanr].plot_together[withnr].dimensions()[datasets[datanr].plot_together[withnr].type()]).\
-  replace('[const_value]',str(datasets[datanr].plot_together[withnr].last()[datasets[datanr].plot_together[withnr].type()]))
+  replace('[font-path]', gp.FONT_PATH).\
+  replace('[width]', session.picture_width).\
+  replace('[height]', session.picture_height).\
+  replace('[font-size]', str(int(session.font_size/1000.*int(session.picture_height)))).\
+  replace('[name]', file_name_prefix).\
+  replace('[sample]', sample_name).\
+  replace('[nr]', datasets[datanr].number).\
+  replace('[add_info]', additional_info).\
+  replace('[info]', datasets[datanr].plot_together[withnr].info.replace('\n', '\n#')).\
+  replace('[x-unit]', datasets[datanr].plot_together[withnr].xunit()).\
+  replace('[x-dim]', datasets[datanr].plot_together[withnr].xdim()).\
+  replace('[y-unit]', datasets[datanr].plot_together[withnr].yunit()).\
+  replace('[y-dim]', datasets[datanr].plot_together[withnr].ydim()).\
+  replace('[z-unit]', datasets[datanr].plot_together[withnr].zunit()).\
+  replace('[z-dim]', datasets[datanr].plot_together[withnr].zdim()).\
+  replace('[title_add]', title).\
+  replace('[titles_add]', titles_add).\
+  replace('[const_unit]', datasets[datanr].plot_together[withnr].units()[datasets[datanr].plot_together[withnr].type()]).\
+  replace('[const_dim]', datasets[datanr].plot_together[withnr].dimensions()[datasets[datanr].plot_together[withnr].type()]).\
+  replace('[const_value]', str(datasets[datanr].plot_together[withnr].last()[datasets[datanr].plot_together[withnr].type()]))
 # translations for postscript export (special characters other than in png export)
 # should be enlongated with other characters
   if postscript_export: # see gnuplot_preferences.py for this function
     string=postscript_replace(string)
   string=further_replacement(string)
   string=session.replace_systemdependent(string)
-  return string 
- 
-def create_plot_script(session, 
+  return string
+
+def create_plot_script(session,
                        datasets,
                        file_name_prefix,
-                       file_name_postfix, 
+                       file_name_postfix,
                        title,
                        names,
                        with_errorbars,
                        output_file=gnuplot_preferences.output_file_name,
                        additional_info='',
-                       fit_lorentz=False, 
-                       output_file_prefix=None, 
-                       sample_name=None, 
+                       fit_lorentz=False,
+                       output_file_prefix=None,
+                       sample_name=None,
                        show_persistent=False
                        ):
   '''
@@ -285,12 +285,12 @@ def create_plot_script(session,
         names.insert(j+inserted+1, attachedset.short_info)
         inserted+=1
   # Create global options
-  postscript_export, gnuplot_file_text= script_header(show_persistent, datasets, output_file)
-  gnuplot_file_text=replace_ph(session, 
+  postscript_export, gnuplot_file_text=script_header(show_persistent, datasets, output_file)
+  gnuplot_file_text=replace_ph(session,
                              gnuplot_file_text,
                              datasets,
-                             file_name_prefix, 
-                             file_numbers, 
+                             file_name_prefix,
+                             file_numbers,
                              title,
                              names,
                              sample_name,
@@ -300,17 +300,17 @@ def create_plot_script(session,
   # Creat plot/splot lines
   if datasets[0].zdata>=0:
     if maps_with_projection:
-      gnuplot_file_text+=script_plotlines_3d_projection(session, datasets, file_name_prefix, output_file_prefix, 
+      gnuplot_file_text+=script_plotlines_3d_projection(session, datasets, file_name_prefix, output_file_prefix,
                 file_numbers, title, names, sample_name, postscript_export, additional_info, with_errorbars)
     else:
-      gnuplot_file_text+=script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
+      gnuplot_file_text+=script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix, file_numbers,
                      title, names, sample_name, postscript_export, additional_info, with_errorbars)
   else:
-    gnuplot_file_text+=script_plotlines(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
+    gnuplot_file_text+=script_plotlines(session, datasets, file_name_prefix, output_file_prefix, file_numbers,
                      title, names, sample_name, postscript_export, additional_info, with_errorbars)
   return gnuplot_file_text
 
-def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
+def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, file_numbers,
                      title, names, sample_name, postscript_export, additional_info, with_errorbars):
   '''
     Plot lines for 2d plots. (x vs. y)
@@ -323,7 +323,7 @@ def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, fi
         using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].yerror+1)
     else:
       plotting_param=gp.plotting_parameters
-      using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)    
+      using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)
   elif with_errorbars and (datasets[0].yerror>=0 or datasets[0].y.error is not None):
     plotting_param=gp.plotting_parameters_errorbars
     using_cols=str(datasets[0].xdata+1)+':'+str(datasets[0].ydata+1)+':'+str(datasets[0].yerror+1)
@@ -336,11 +336,11 @@ def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, fi
                 datasets[0].plot_options.special_using_parameters+\
                 ' t "'+gp.titles+'" '+\
                 (datasets[0].plot_options.special_plot_parameters or plotting_param)
-  gnuplot_file_text=replace_ph(session, 
+  gnuplot_file_text=replace_ph(session,
                              gnuplot_file_text,
                              datasets,
-                             file_name_prefix, 
-                             file_numbers, 
+                             file_name_prefix,
+                             file_numbers,
                              title,
                              names,
                              sample_name,
@@ -356,7 +356,7 @@ def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, fi
             using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)+':'+str(datasets[i].yerror+1)
         else:
           plotting_param=gp.plotting_parameters
-          using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)    
+          using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)
       elif with_errorbars and (datasets[i].yerror>=0 or datasets[i].y.error is not None):
         plotting_param=gp.plotting_parameters_errorbars
         using_cols=str(datasets[i].xdata+1)+':'+str(datasets[i].ydata+1)+':'+str(datasets[i].yerror+1)
@@ -367,11 +367,11 @@ def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, fi
           '.out" u '+using_cols+\
           datasets[i].plot_options.special_using_parameters+\
           ' t "'+gp.titles+'" '+(datasets[i].plot_options.special_plot_parameters or plotting_param)
-      gnuplot_file_text=replace_ph(session, 
+      gnuplot_file_text=replace_ph(session,
                                    gnuplot_file_text,
                                    datasets,
                                    file_name_prefix,
-                                   file_numbers, 
+                                   file_numbers,
                                    title,
                                    names,
                                    sample_name,
@@ -383,13 +383,13 @@ def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, fi
       using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
                           str(datasets[i].plot_together[j].ydata+1)
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
-          '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + \
+          '.out" u '+using_cols_woerror+' t "'+gp.titles+'" '+\
           (datasets[i].plot_together[j].plot_options.special_plot_parameters or plotting_param)
-      gnuplot_file_text=replace_ph(session, 
+      gnuplot_file_text=replace_ph(session,
                                    gnuplot_file_text,
                                    datasets,
                                    file_name_prefix,
-                                   file_numbers, 
+                                   file_numbers,
                                    title,
                                    names,
                                    sample_name,
@@ -398,13 +398,13 @@ def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, fi
                                    additional_info)
   return gnuplot_file_text
 
-def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
+def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix, file_numbers,
                      title, names, sample_name, postscript_export, additional_info, with_errorbars):
   '''
     Plot lines for 3d plots. (x,y vs. z)
   '''
   gnuplot_file_text=''
-  gp=gnuplot_preferences  
+  gp=gnuplot_preferences
   plotting_param=gp.plotting_parameters_3d
   gnuplot_file_text+='set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
       'set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
@@ -414,7 +414,7 @@ def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix,
     gnuplot_file_text+=gp.settings_3d
   first_index=datasets[0].plot_together_zindex
   if first_index==-1:
-    return gnuplot_file_text+script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_file_prefix, 
+    return gnuplot_file_text+script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_file_prefix,
                       file_numbers, title, names, sample_name, postscript_export, additional_info, with_errorbars)
   using_cols=str(datasets[0].plot_together[first_index].xdata+1)+':'+\
               str(datasets[0].plot_together[first_index].ydata+1)+':'+\
@@ -429,11 +429,11 @@ def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix,
                 datasets[0].plot_options.special_using_parameters+\
                 ' t "'+gp.titles+'" '+\
                 (datasets[0].plot_options.special_plot_parameters or plotting_param)
-  gnuplot_file_text=replace_ph(session, 
+  gnuplot_file_text=replace_ph(session,
                              gnuplot_file_text,
                              datasets,
-                             file_name_prefix, 
-                             file_numbers, 
+                             file_name_prefix,
+                             file_numbers,
                              title,
                              names,
                              sample_name,
@@ -442,23 +442,23 @@ def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix,
                              additional_info)
   for i in range(len(datasets))[1:]:
     j=datasets[i].plot_together_zindex
-    number="%i-%i" % (i, j)
+    number="%i-%i"%(i, j)
     using_cols_woerror=str(datasets[i].plot_together[j].xdata+1)+':'+\
                         str(datasets[i].plot_together[j].ydata+1)+':'+\
                         str(datasets[i].plot_together[j].zdata+1)
     if getattr(datasets[i], 'is_matrix_data', False):
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
-        '.bin"  binary format="%float" u 1:2:3 t "' + gp.titles + '" ' + \
+        '.bin"  binary format="%float" u 1:2:3 t "'+gp.titles+'" '+\
           (datasets[i].plot_options.special_plot_parameters or plotting_param)
     else:
       gnuplot_file_text+=',\\\n"'+output_file_prefix+number+\
-        '.out" u ' + using_cols_woerror + ' t "' + gp.titles + '" ' + \
+        '.out" u '+using_cols_woerror+' t "'+gp.titles+'" '+\
           (datasets[i].plot_options.special_plot_parameters or plotting_param)
-    gnuplot_file_text=replace_ph(session, 
+    gnuplot_file_text=replace_ph(session,
                                  gnuplot_file_text,
                                  datasets,
                                  file_name_prefix,
-                                 file_numbers, 
+                                 file_numbers,
                                  title,
                                  names,
                                  sample_name,
@@ -467,7 +467,7 @@ def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix,
                                  additional_info)
   return gnuplot_file_text
 
-def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_file_prefix, 
+def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_file_prefix,
                     file_numbers, title, names, sample_name, postscript_export, additional_info, with_errorbars):
   '''
     Plot lines for 3d plots as multiplot layout (data, fit, data-fit, log(data)-log(fit)). (x,y vs. z)
@@ -479,20 +479,20 @@ def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_fi
   cols=int(log((len(datasets[0].plot_together))+1, 2))
   rows=(len(datasets[0].plot_together)-1)//cols+1
   gnuplot_file_text='# now the plotting functions in multiplot layout\n'+\
-                    'set multiplot layout %i,%i\n' % (cols, rows)+\
+                    'set multiplot layout %i,%i\n'%(cols, rows)+\
                     'unset key\n'
   for i, subdata in enumerate(datasets[0].plot_together):
     # Subplot title
     title=subdata.sample_name
     if subdata.plot_options.short_info_in_title:
       title+=' '+subdata.short_info
-    gnuplot_file_text+='set title "%s"\n' % (title)
+    gnuplot_file_text+='set title "%s"\n'%(title)
     gnuplot_file_text+='set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
-    gnuplot_file_text=replace_ph(session, 
+    gnuplot_file_text=replace_ph(session,
                              gnuplot_file_text,
                              datasets,
-                             file_name_prefix, 
-                             file_numbers, 
+                             file_name_prefix,
+                             file_numbers,
                              title,
                              names,
                              sample_name,
@@ -511,11 +511,11 @@ def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_fi
                   datasets[0].plot_options.special_using_parameters+\
                   ' t "'+gp.titles+'" '+\
                   (datasets[0].plot_options.special_plot_parameters or plotting_param)+'\n'
-    gnuplot_file_text=replace_ph(session, 
+    gnuplot_file_text=replace_ph(session,
                              gnuplot_file_text,
                              datasets,
-                             file_name_prefix, 
-                             file_numbers, 
+                             file_name_prefix,
+                             file_numbers,
                              title,
                              names,
                              sample_name,
@@ -523,8 +523,8 @@ def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_fi
                              postscript_export,
                              additional_info)
   return gnuplot_file_text+'unset multiplot\n'
-    
-def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_file_prefix, file_numbers, 
+
+def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_file_prefix, file_numbers,
                      title, names, sample_name, postscript_export, additional_info, with_errorbars):
   '''
     Plot lines for 3d plots with projections on the axes. (x,y vs. z)
@@ -535,11 +535,11 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
   dataset=datasets[0]
   output_file_prefix=os.path.normpath(output_file_prefix)
   projections_name=output_file_prefix+file_numbers[0]+'.xy'
-  
+
   title=dataset.sample_name
   if dataset.plot_options.short_info_in_title:
     title+=dataset.short_info
-  gnuplot_file_text+='set multiplot title "%s"\n' % ( title )
+  gnuplot_file_text+='set multiplot title "%s"\n'%(title)
   if dataset.logz:
     gnuplot_file_text+='set log x2\n'
     gnuplot_file_text+='set format x2 "10^{%L}\n'
@@ -557,34 +557,34 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
   if zrange[1] is None:
     zrange=(zrange[0], float(dataset.z.max()))
   gnuplot_file_text+="set autoscale x\n"
-  gnuplot_file_text+= ("set x2range [%s:%s]\n" % (zrange[0], zrange[1] )).replace("None", "")
-  gnuplot_file_text+='set yrange [%f:%f]\n' % (yrange[0], yrange[1])
+  gnuplot_file_text+=("set x2range [%s:%s]\n"%(zrange[0], zrange[1])).replace("None", "")
+  gnuplot_file_text+='set yrange [%f:%f]\n'%(yrange[0], yrange[1])
   gnuplot_file_text+='unset xtics\n'
   gnuplot_file_text+='set x2tics rotate by -90 offset 0,1.4\n'
   gnuplot_file_text+='unset xlabel\n'
   gnuplot_file_text+='set lmargin at screen 0.15\nset rmargin at screen 0.3\n'
   gnuplot_file_text+='set bmargin at screen 0.3\nset tmargin at screen 0.85\n'
-  gnuplot_file_text+='plot "%s" u 4:3 axes x2y1 w lines\n' % projections_name
+  gnuplot_file_text+='plot "%s" u 4:3 axes x2y1 w lines\n'%projections_name
   if dataset.logz:
     gnuplot_file_text+='unset log x\n'
     gnuplot_file_text+='set log y\n'
     gnuplot_file_text+='set format y "10^{%L}\n'
-  gnuplot_file_text+='set xrange [%f:%f]\n' % (xrange[0], xrange[1])
+  gnuplot_file_text+='set xrange [%f:%f]\n'%(xrange[0], xrange[1])
   gnuplot_file_text+='set autoscale y\n'
-  gnuplot_file_text+=("set yrange [%s:%s]\n" % (zrange[0], zrange[1] )).replace("None", "")
+  gnuplot_file_text+=("set yrange [%s:%s]\n"%(zrange[0], zrange[1])).replace("None", "")
   #gnuplot_file_text+='unset ytics\n'
   gnuplot_file_text+='unset x2tics\n'
   gnuplot_file_text+='set xtics\n'
-  gnuplot_file_text+='set xlabel "%s"\n' % gp.x_label
+  gnuplot_file_text+='set xlabel "%s"\n'%gp.x_label
   gnuplot_file_text+='unset ylabel\n'
   gnuplot_file_text+='set lmargin at screen 0.3\nset rmargin at screen 0.8\n'
   gnuplot_file_text+='set bmargin at screen 0.15\nset tmargin at screen 0.3\n'
-  gnuplot_file_text+='plot "%s" u 1:2 w lines\n' % projections_name
+  gnuplot_file_text+='plot "%s" u 1:2 w lines\n'%projections_name
   if dataset.logz:
     gnuplot_file_text+='unset log y\n'
-  
-  gnuplot_file_text+='set xrange [%f:%f]\n' % (xrange[0], xrange[1])
-  gnuplot_file_text+='set yrange [%f:%f]\n' % (yrange[0], yrange[1])
+
+  gnuplot_file_text+='set xrange [%f:%f]\n'%(xrange[0], xrange[1])
+  gnuplot_file_text+='set yrange [%f:%f]\n'%(yrange[0], yrange[1])
   gnuplot_file_text+='unset xtics\n'
   gnuplot_file_text+='unset ytics\n'
   gnuplot_file_text+='unset xtics\n'
@@ -606,11 +606,11 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
                 datasets[0].plot_options.special_using_parameters+\
                 ' t "'+gp.titles+'" '+\
                 (datasets[0].plot_options.special_plot_parameters or plotting_param)
-  gnuplot_file_text=replace_ph(session, 
+  gnuplot_file_text=replace_ph(session,
                              gnuplot_file_text,
                              datasets,
-                             file_name_prefix, 
-                             file_numbers, 
+                             file_name_prefix,
+                             file_numbers,
                              title,
                              names,
                              sample_name,
@@ -630,7 +630,7 @@ def script_header(show_persistent, datasets, output_file):
   elif output_file is None:
     postscript_export=False
     terminal=gp.set_output_terminal_wxt
-  elif output_file.rsplit('.',1)[1]=='ps':
+  elif output_file.rsplit('.', 1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
   else:
@@ -647,7 +647,7 @@ def script_header(show_persistent, datasets, output_file):
                      'set xlabel "'+gp.y_label+'"\n'+\
                      'set ylabel "'+gp.y_label+'"\n'+\
                      'set title "'+gp.plot_title+'"\n'
-    if datasets[0].x.unit == '°':
+    if datasets[0].x.unit=='°':
       gnuplot_file_text+='set angle degree\n'
   else:
     gnuplot_file_text+='set encoding '+gp.ENCODING+'\n'+\
@@ -667,7 +667,7 @@ def script_header(show_persistent, datasets, output_file):
 
 
 def plot_matrix(dataset, file_name):
-  return 'plot "%s" binary format="%%float" u 1:2:3 w image\n' % (file_name, )
+  return 'plot "%s" binary format="%%float" u 1:2:3 w image\n'%(file_name,)
 
 def postscript_replace(string):
   '''
@@ -682,4 +682,4 @@ def further_replacement(string):
   '''
     String replacements done last, for example when an Item has empty unit replace [] with nothing.
   '''
-  return string.replace('[]','')
+  return string.replace('[]', '')

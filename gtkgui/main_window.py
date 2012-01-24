@@ -261,7 +261,7 @@ class ApplicationMainWindow(gtk.Window):
     #---------- create image region and image for the plot ----------
 
     # Create region for multiplot list
-    self.multiplot=MultiplotCanvas()
+    self.multiplot=MultiplotCanvas(self)
     self.multiplot.show()
     #self.multi_list=gtk.Label();
     #self.multi_list.set_markup(' Multiplot List: ')
@@ -348,11 +348,32 @@ class ApplicationMainWindow(gtk.Window):
     align_table.attach(self.view_down, 7, 8, 1, 2, gtk.FILL, gtk.FILL, 0, 0)
     align_table.attach(self.view_right, 8, 9, 1, 2, gtk.FILL, gtk.FILL, 0, 0)
     align_table.attach(self.logz, 9, 10, 1, 2, gtk.FILL, gtk.FILL, 0, 0)
+    # options for 4d plots
+    self.y2_slicing=gtk.CheckButton(label='slicing', use_underline=True)
+    align_table.attach(self.y2_slicing, 14, 15, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
+    self.y2_width=gtk.Entry()
+    self.y2_width.set_text("0")
+    self.y2_width.set_width_chars(6)
+    self.y2_width.set_sensitive(False)
+    align_table.attach(self.y2_width, 15, 16, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
+    self.grid_4dx=gtk.Entry()
+    self.grid_4dx.set_text("100")
+    self.grid_4dx.set_width_chars(4)
+    align_table.attach(self.grid_4dx, 16, 17, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
+    self.grid_4dy=gtk.Entry()
+    self.grid_4dy.set_text("100")
+    self.grid_4dy.set_width_chars(4)
+    align_table.attach(self.grid_4dy, 17, 18, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
+    self.y2_center=gtk.HScale()
+    self.y2_center.set_draw_value(True)
+    self.y2_center.set_sensitive(False)
+    align_table.attach(self.y2_center, 14, 18, 1, 2, gtk.FILL|gtk.EXPAND, gtk.FILL, 0, 0)
+
     # add all those options
-    align=gtk.Alignment(0, 0, 0, 0) # align the table left
-    align.add(align_table)
+    #align=gtk.Alignment(0, 0, 0, 0) # align the table left
+    #align.add(align_table)
     # put plot settings below Plot
-    table.attach(align,
+    table.attach(align_table,
         # X direction           Y direction
         0, 2, 4, 5,
         gtk.FILL, gtk.FILL,
@@ -398,6 +419,11 @@ class ApplicationMainWindow(gtk.Window):
     self.logy.hide()
     self.plot_options_button.hide()
     self.logz.hide()
+    self.y2_center.hide()
+    self.y2_slicing.hide()
+    self.y2_width.hide()
+    self.grid_4dx.hide()
+    self.grid_4dy.hide()
     self.view_left.hide()
     self.view_up.hide()
     self.view_down.hide()
@@ -442,6 +468,11 @@ class ApplicationMainWindow(gtk.Window):
     self.plot_options_handler_id=self.plot_options_button.connect("clicked", self.open_plot_options_window)
     self.z_range_in.connect("activate", self.change_range)
     self.logz.connect("toggled", self.change)
+    self.y2_slicing.connect("toggled", self.change)
+    self.y2_width.connect("activate", self.change)
+    self.grid_4dx.connect("activate", self.change)
+    self.grid_4dy.connect("activate", self.change)
+    self.y2_center.connect("value-changed", self.change)
     self.view_left.connect("clicked", self.change)
     self.view_up.connect("clicked", self.change)
     self.view_down.connect("clicked", self.change)
@@ -687,6 +718,16 @@ class ApplicationMainWindow(gtk.Window):
     elif action.get_name()[0]=='x':
       dim=action.get_name()[2:]
       self.active_dataset.xdata=int(dim)
+    elif action.get_name()[0:2]=='y2':
+      dim=action.get_name()[3:]
+      self.active_dataset.y2data=int(dim)
+      if self.y2_slicing.get_active():
+        ds=self.active_dataset
+        ds.slice_center=ds.y2.min()+(ds.y2.max()-ds.y2.min())/2.
+        ds.slice_width=(ds.y2.max()-ds.y2.min())/2.
+        self.y2_center.set_range(ds.y2.min(), ds.y2.max())
+        self.y2_center.set_value(ds.slice_center)
+        self.y2_width.set_text("%g"%ds.slice_width)
     elif action.get_name()[0]=='y':
       dim=action.get_name()[2:]
       self.active_dataset.ydata=int(dim)
@@ -731,6 +772,39 @@ class ApplicationMainWindow(gtk.Window):
       logitems.logx=self.logx.get_active()
       logitems.logy=self.logy.get_active()
       logitems.logz=self.logz.get_active()
+    elif action is self.y2_slicing:
+      ds=self.active_dataset
+      if action.get_active():
+        ds.slice_center=ds.y2.min()+(ds.y2.max()-ds.y2.min())/2.
+        ds.slice_width=(ds.y2.max()-ds.y2.min())/2.
+        self.y2_center.set_sensitive(True)
+        self.y2_center.set_range(ds.y2.min(), ds.y2.max())
+        self.y2_center.set_value(ds.slice_center)
+        self.y2_width.set_sensitive(True)
+        self.y2_width.set_text("%g"%ds.slice_width)
+      else:
+        ds.slice_center=None
+        ds.slice_width=None
+        self.y2_center.set_sensitive(False)
+        self.y2_width.set_sensitive(False)
+    elif action is self.y2_width:
+      try:
+        width=float(action.get_text())
+      except ValueError:
+          return
+      else:
+        self.active_dataset.slice_width=width
+    elif action is self.y2_center:
+      self.active_dataset.slice_center=action.get_value()
+    elif action in [self.grid_4dx, self.grid_4dy]:
+      try:
+        gx=int(self.grid_4dx.get_text())
+        gy=int(self.grid_4dy.get_text())
+      except ValueError:
+        return
+      else:
+        self.active_dataset.gridsize_x=gx
+        self.active_dataset.gridsize_y=gy
     self.replot() # plot with new Settings
 
   def activate_plugins(self):
@@ -1027,13 +1101,51 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Save a snapshot of the active work.
     '''
+    if self.active_multiplot:
+      if not action.get_name()=='SaveSnapshotAs':
+        return
+      multiplot=self.multiplot
+      #++++++++++++++++File selection dialog+++++++++++++++++++#
+      file_dialog=gtk.FileChooserDialog(title='Save Snapshot to File...',
+                                        action=gtk.FILE_CHOOSER_ACTION_SAVE,
+                                        buttons=(gtk.STOCK_SAVE, gtk.RESPONSE_OK,
+                                                 gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+      file_dialog.set_select_multiple(False)
+      file_dialog.set_default_response(gtk.RESPONSE_OK)
+      file_dialog.set_current_folder(self.active_folder)
+      filter=gtk.FileFilter()
+      filter.set_name("Snapshots (*.mdd(.gz))")
+      filter.add_pattern("*.mdd")
+      filter.add_pattern("*.mdd.gz")
+      file_dialog.add_filter(filter)
+      file_dialog.set_current_name(
+            (multiplot.sample_name+'_'+multiplot.title+'.mdd').replace(' ', '')
+                                  )
+      filter=gtk.FileFilter()
+      filter.set_name("All Files")
+      filter.add_pattern("*")
+      file_dialog.add_filter(filter)
+      response=file_dialog.run()
+      if response==gtk.RESPONSE_OK:
+        self.active_folder=file_dialog.get_current_folder()
+        name=unicode(file_dialog.get_filenames()[0], 'utf-8')
+        if action.get_name()=='SaveSnapshotAs':
+          if not (name.endswith(".mdd") or name.endswith(".mdd.gz")):
+            name+=".mdd"
+        self.active_session.multiplots=self.multiplot.get_list()
+        self.active_session.store_snapshot(name, multiplots=True)
+      file_dialog.destroy()
+      #----------------File selection dialog-------------------#
+
+      return
     if action.get_name()=='SaveSnapshot':
       name=None
     else:
       #++++++++++++++++File selection dialog+++++++++++++++++++#
       file_dialog=gtk.FileChooserDialog(title='Save Snapshot to File...',
                                         action=gtk.FILE_CHOOSER_ACTION_SAVE,
-                                        buttons=(gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+                                        buttons=(gtk.STOCK_SAVE, gtk.RESPONSE_OK,
+                                                 gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
       file_dialog.set_select_multiple(False)
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
@@ -1105,8 +1217,12 @@ class ApplicationMainWindow(gtk.Window):
         return False
       file_dialog.destroy()
       #----------------File selection dialog-------------------#
-    self.active_session.reload_snapshot(name)
-    self.measurement=self.active_session.active_file_data
+    loaded_multiplot=self.active_session.reload_snapshot(name)
+    if loaded_multiplot:
+      self.multiplot.new_from_list(self.active_session.multiplots)
+      self.active_multiplot=True
+    else:
+      self.measurement=self.active_session.active_file_data
     self.replot()
 
   def change_range(self, action):
@@ -2683,6 +2799,31 @@ set multiplot layout %i,1
       self.view_up.hide()
       self.view_down.hide()
       self.view_right.hide()
+    if hasattr(self.active_dataset, 'y2data') and self.active_dataset.y2data>=0:
+      self.y2_slicing.show()
+      self.y2_center.show()
+      self.y2_width.show()
+      self.grid_4dx.show()
+      self.grid_4dy.show()
+      ds=self.active_dataset
+      if ds.slice_center is not None and ds.slice_width is not None:
+        self.y2_width.set_sensitive(True)
+        self.y2_width.set_text("%g"%ds.slice_width)
+        self.y2_center.set_sensitive(True)
+        self.y2_center.set_range(ds.y2.min(), ds.y2.max())
+        self.y2_center.set_value(ds.slice_center)
+        from math import log10
+        self.y2_center.set_digits(int(max(0,-log10(ds.y2.max())))+2)
+      else:
+        self.y2_center.set_sensitive(False)
+        self.y2_width.set_sensitive(False)
+    else:
+      self.y2_slicing.hide()
+      self.y2_center.hide()
+      self.y2_width.hide()
+      self.grid_4dx.hide()
+      self.grid_4dy.hide()
+
 
   def apply_to_all(self, action):
     '''
@@ -2721,17 +2862,19 @@ set multiplot layout %i,1
       Add or remove the active dataset from multiplot list, 
       which is a list of plotnumbers of the same Type.
     '''
-    # TODO: Review the multiplot stuff!
-    if (action.get_name()=='AddAllMultiplot')&(len(self.measurement)<40): # dont autoadd more than 40
-      for i in range(len(self.measurement)):
-        self.do_add_multiplot(i)
-    elif action.get_name()=='ClearMultiplot':
-      self.clear_multiplot()
-    elif action.get_name()=='NewMultiplot':
-      self.multiplot.new_item()
-      self.do_add_multiplot(self.index_mess)
-    else:
-      self.do_add_multiplot(self.index_mess)
+    if not self.active_multiplot:
+      if (action.get_name()=='AddAllMultiplot')&(len(self.measurement)<40): # dont autoadd more than 40
+        for i in range(len(self.measurement)):
+          self.do_add_multiplot(i)
+      elif action.get_name()=='ClearMultiplot':
+        self.clear_multiplot()
+      elif action.get_name()=='NewMultiplot':
+        self.multiplot.new_item()
+        self.do_add_multiplot(self.index_mess)
+      else:
+        self.do_add_multiplot(self.index_mess)
+    elif action.get_name()=='AddMultiplot':
+      self.multiplot.sort_add()
 
   def clear_multiplot(self):
       self.multiplot.clear()
@@ -2745,7 +2888,7 @@ set multiplot layout %i,1
     '''
     if self.active_multiplot:
       return
-    active_data=self.active_dataset
+    active_data=self.measurement[index]
     if active_data in self.multiplot:
       self.multiplot.remove(active_data)
       print 'Plot '+active_data.number+' removed.'
@@ -2800,9 +2943,10 @@ set multiplot layout %i,1
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
       if self.active_multiplot:
-        file_dialog.set_current_name(os.path.split(self.active_session.active_file_name+'_multi_')[1])
+        file_dialog.set_current_name((self.multiplot.sample_name+'_'+
+                              self.multiplot.title+'_.gp').replace(' ', ''))
       else:
-        file_dialog.set_current_name(os.path.split(self.active_session.active_file_name+'_')[1])
+        file_dialog.set_current_name(os.path.split(self.active_session.active_file_name+'_.gp')[1])
       # create the filters in the file selection dialog
       filter=gtk.FileFilter()
       filter.set_name("Gnuplot (.gp)")
@@ -2827,39 +2971,43 @@ set multiplot layout %i,1
         file_dialog.destroy()
         return None
       self.active_folder=unicode(file_dialog.get_current_folder(), 'utf-8')
-      common_folder, common_file_prefix=os.path.split(unicode(file_dialog.get_filename().rsplit('.gp', 1)[0], 'utf-8'))
+      common_folder, common_file_prefix=os.path.split(
+              unicode(file_dialog.get_filename().rsplit('.gp', 1)[0], 'utf-8'))
       if ps_box.get_active():
         picture_type='.ps'
       else:
         picture_type='.png'
       file_dialog.destroy()
       if self.active_multiplot:
-        for plotlist in self.multiplot:
-          itemlist=[item[0] for item in plotlist]
-          if self.active_dataset in itemlist:
-            plot_text=measurement_data_plotting.create_plot_script(
-                                          self.active_session,
-                                          [item[0] for item in plotlist],
-                                          common_file_prefix,
-                                          '',
-                                          plotlist.title,
-                                          [item[0].short_info for item in plotlist],
-                                          errorbars,
-                                          common_file_prefix+picture_type,
-                                          fit_lorentz=False,
-                                          output_file_prefix=common_file_prefix,
-                                          sample_name=plotlist.sample_name)
+        multiplot=self.multiplot
+        itemlist=[item[0] for item in multiplot]
+        plot_text=measurement_data_plotting.create_plot_script(
+                                      self.active_session,
+                                      itemlist,
+                                      common_file_prefix,
+                                      '',
+                                      multiplot.title,
+                                      [item.short_info for item in itemlist],
+                                      errorbars,
+                                      common_file_prefix+picture_type,
+                                      fit_lorentz=False,
+                                      sample_name=multiplot.sample_name,
+                                      output_file_prefix=common_file_prefix)
+
         file_numbers=[]
         for j, dataset in enumerate(itemlist):
           for i, attachedset in enumerate(dataset.plot_together):
             file_numbers.append(str(j)+'-'+str(i))
             if getattr(attachedset, 'is_matrix_data', False):
-              attachedset.export_matrix(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.bin'))
+              attachedset.export_matrix(os.path.join(common_folder,
+                                  common_file_prefix+str(j)+'-'+str(i)+'.bin'))
             else:
-              attachedset.export(os.path.join(common_folder, common_file_prefix+str(j)+'-'+str(i)+'.out'))
+              attachedset.export(os.path.join(common_folder,
+                                  common_file_prefix+str(j)+'-'+str(i)+'.out'))
         if itemlist[0].zdata>=0 and measurement_data_plotting.maps_with_projection:
           # export data of projections
-          projections_name=os.path.join(common_folder, common_file_prefix+str(0)+'-'+str(0)+'.xy')
+          projections_name=os.path.join(common_folder,
+                                    common_file_prefix+str(0)+'-'+str(0)+'.xy')
           itemlist[0].export_projections(projections_name)
       else:
         plot_text=measurement_data_plotting.create_plot_script(
@@ -2901,55 +3049,56 @@ set multiplot layout %i,1
                         )
       #----------------File selection dialog-------------------#      
     elif action.get_name()=='ExportAll':
-      self.export_all()
+      if not self.active_multiplot:
+        self.export_all()
     elif self.active_multiplot:
-      for plotlist in self.multiplot:
-        if not self.active_dataset in [item[0] for item in plotlist]:
-          continue
-        multi_file_name=plotlist[0][1]+'_multi_'+plotlist[0][0].number+'.'+self.set_file_type
-        if action.get_name()=='ExportAs':
-          #++++++++++++++++File selection dialog+++++++++++++++++++#
-          file_dialog=ExportFileChooserDialog(self.active_session.picture_width,
-                                            self.active_session.picture_height,
-                                            title='Export multi-plot as...')
-          file_dialog.set_default_response(gtk.RESPONSE_OK)
-          file_dialog.set_current_name(os.path.split(plotlist[0][1]+'_multi_'+\
-                                       plotlist[0][0].number+'.'+self.set_file_type)[1])
-          file_dialog.set_current_folder(self.active_folder)
-          # create the filters in the file selection dialog
-          filter=gtk.FileFilter()
-          filter.set_name("Images (png/ps)")
-          filter.add_mime_type("image/png")
-          filter.add_mime_type("image/ps")
-          filter.add_pattern("*.png")
-          filter.add_pattern("*.ps")
-          file_dialog.add_filter(filter)
-          filter=gtk.FileFilter()
-          filter.set_name("All files")
-          filter.add_pattern("*")
-          file_dialog.add_filter(filter)
-          response=file_dialog.run()
-          if response==gtk.RESPONSE_OK:
-            self.active_folder=file_dialog.get_current_folder()
-            self.active_session.picture_width, self.active_session.picture_height=file_dialog.get_with_height()
-            multi_file_name=unicode(file_dialog.get_filename(), 'utf-8')
-          file_dialog.destroy()
-          if response!=gtk.RESPONSE_OK:
-            return
-          #----------------File selection dialog-------------------#
-        self.last_plot_text=self.plot(self.active_session,
-                                      [item[0] for item in plotlist],
-                                      plotlist[0][1],
-                                      #plotlist[0][0].short_info, 
-                                      plotlist.title,
-                                      [item[0].short_info for item in plotlist],
-                                      errorbars,
-                                      multi_file_name,
-                                      fit_lorentz=False,
-                                      sample_name=plotlist.sample_name)
-        # give user information in Statusbar
-        self.reset_statusbar()
-        print 'Export multi-plot '+multi_file_name+'... Done!'
+      multiplot=self.multiplot
+      itemlist=[item[0] for item in multiplot]
+      multi_file_name=self.multiplot.sample_name+'_'+self.multiplot.title+'.'+self.set_file_type
+      multi_file_name=multi_file_name.replace(' ', '')
+      if not action.get_name()=='ExportAs':
+        return
+      #++++++++++++++++File selection dialog+++++++++++++++++++#
+      file_dialog=ExportFileChooserDialog(self.active_session.picture_width,
+                                        self.active_session.picture_height,
+                                        title='Export multi-plot as...')
+      file_dialog.set_default_response(gtk.RESPONSE_OK)
+      file_dialog.set_current_name(multi_file_name)
+      file_dialog.set_current_folder(self.active_folder)
+      # create the filters in the file selection dialog
+      filter=gtk.FileFilter()
+      filter.set_name("Images (png/ps)")
+      filter.add_mime_type("image/png")
+      filter.add_mime_type("image/ps")
+      filter.add_pattern("*.png")
+      filter.add_pattern("*.ps")
+      file_dialog.add_filter(filter)
+      filter=gtk.FileFilter()
+      filter.set_name("All files")
+      filter.add_pattern("*")
+      file_dialog.add_filter(filter)
+      response=file_dialog.run()
+      if response==gtk.RESPONSE_OK:
+        self.active_folder=file_dialog.get_current_folder()
+        self.active_session.picture_width, self.active_session.picture_height=file_dialog.get_with_height()
+        multi_file_name=unicode(file_dialog.get_filename(), 'utf-8')
+      file_dialog.destroy()
+      if response!=gtk.RESPONSE_OK:
+        return
+      #----------------File selection dialog-------------------#
+
+      self.last_plot_text=self.plot(self.active_session,
+                                    itemlist,
+                                    multiplot[0][1],
+                                    multiplot.title,
+                                    [item.short_info for item in itemlist],
+                                    errorbars,
+                                    multi_file_name,
+                                    fit_lorentz=False,
+                                    sample_name=multiplot.sample_name)
+      # give user information in Statusbar
+      self.reset_statusbar()
+      print 'Export multi-plot '+multi_file_name+'... Done!'
     else:
       new_name=output_file_name
       if action.get_name()=='ExportAs':
@@ -4190,6 +4339,9 @@ set multiplot layout %i,1
     # set log checkbox according to active measurement
     logitems=self.active_dataset
     if self.active_multiplot:
+      if len(self.multiplot)==0:
+        print "Empty multiplot!"
+        return
       logitems=self.multiplot[0][0]
     else:
       options=self.active_dataset.plot_options
@@ -4300,16 +4452,20 @@ set multiplot layout %i,1
       @return XML string for all menus and toolbar.
     '''
     self.added_items=(("xMenu", None, # name, stock id
-        "_x-axes", None, # label, accelerator
+        "_x-axis", None, # label, accelerator
         "xMenu", # tooltip
         None),
         ("yMenu", None, # name, stock id
-        "_y-axes", None, # label, accelerator
+        "_y-axis", None, # label, accelerator
         "yMenu", # tooltip
         None),
     ("zMenu", None, # name, stock id
-        "_z-axes", None, # label, accelerator
+        "_z-axis", None, # label, accelerator
         "zMenu", # tooltip
+        None),
+    ("y2Menu", None, # name, stock id
+        "y2-axis", None, # label, accelerator
+        "y2Menu", # tooltip
         None),
     ("dyMenu", None, # name, stock id
         "_error", None, # label, accelerator
@@ -4404,7 +4560,16 @@ set multiplot layout %i,1
         for i, dimension in enumerate(self.active_dataset.dimensions()):
           output+="          <menuitem action='z-"+str(i)+"'/>\n"
           self.added_items=self.added_items+(("z-"+str(i), None, dimension, None, None, self.change),)
-        output+="</menu></placeholder>\n"
+        if hasattr(self.active_dataset, 'y2data') and \
+           self.active_dataset.y2data>=0:
+          output+='''
+                </menu>
+                <menu action='y2Menu'>
+            '''
+          for i, dimension in enumerate(self.active_dataset.dimensions()):
+            output+="          <menuitem action='y2-"+str(i)+"'/>\n"
+            self.added_items=self.added_items+(("y2-"+str(i), None, dimension, None, None, self.change),)
+        output+="</menu>\n</placeholder>\n"
       else:
         output+='''
               </menu>      
@@ -4870,7 +5035,7 @@ set multiplot layout %i,1
         "Key on bottom right", # tooltip
         self.change_plot_appearance),
       ("PlotToggleGrid", None, # name, stock id
-        "Toggle grid", 'F5', # label, accelerator
+        "Toggle grid", 'F9', # label, accelerator
         "Toggle grid", # tooltip
         self.change_plot_appearance),
       ("PlotToggleLinespoints", None, # name, stock id

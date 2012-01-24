@@ -224,11 +224,15 @@ class MeasurementData(object):
     '''
       Define the string representation of the object. Just some useful information for debugging/IPython console
     '''
-    output="<MeasurementData at %s, cols=%i, points=%i"%(hex(id(self)), len(self.data), len(self))
+    output="<%s at %s, cols=%i, points=%i"%(self.__class__.__name__,
+                                            hex(id(self)), len(self.data),
+                                            len(self))
     if self.zdata<0:
       output+=", x='%s', y='%s'>"%(self.x.dimension, self.y.dimension)
     else:
-      output+=", x='%s', y='%s', z='%s'>"%(self.x.dimension, self.y.dimension, self.z.dimension)
+      output+=", x='%s', y='%s', z='%s'>"%(self.x.dimension,
+                                           self.y.dimension,
+                                           self.z.dimension)
     return output
 
   def __add__(self, other):
@@ -1315,6 +1319,134 @@ class HugeMD(MeasurementData):
 
 
 #--------------------------------------    HugeMD-Class     -----------------------------------------------------#
+
+class MeasurementData4D(MeasurementData):
+  '''
+    A dataset of x,y,z and I data which can be sliced or 
+    projected on a given grid. The grid can be a clolumn of the data or
+    calculated as a function of columns.
+  '''
+  def _get_imd(self): return True
+  def _set_imd(self): pass
+  is_matrix_data=property(_get_imd)
+
+  def __init__(self, columns=[], const=[], x=0, y=1, error=-1, z=3,
+               y2=-1, slice_width=None, slice_center=None,
+               gridsize_x=100, gridsize_y=100):
+    MeasurementData.__init__(self, columns, const, x, y, error, z)
+    self.y2data=y2
+    self.gridsize_x=gridsize_x
+    self.gridsize_y=gridsize_y
+    self.slice_width=slice_width
+    self.slice_center=slice_center
+
+  def _get_slice_width(self):
+    return self._slice_width
+
+
+  def _get_slice_center(self):
+    return self._slice_center
+
+
+  def _set_slice_width(self, value):
+    if value is not None and value<=0:
+      raise ValueError, 'slice_width needs to be a possitive numer or None'
+    self._slice_width=value
+
+
+  def _set_slice_center(self, value):
+    if value is not None and (value<self.y2.min() or value>self.y2.max()):
+      raise ValueError, '%g<slice_center<%g must be fullfilled'%(self.y2.min(),
+                                                                   self.y2.max())
+    self._slice_center=value
+
+  slice_width=property(_get_slice_width, _set_slice_width, None, "The width of the slice in y2 to plot")
+  slice_center=property(_get_slice_center, _set_slice_center, None, "The center in y2 to plot")
+
+
+  def _get_y2(self):
+    '''
+      Get the data for column y2
+    '''
+    if self.y2data>=0:
+      return self.data[self.y2data]
+    else:
+      return None
+
+  def _set_y2(self, item):
+    '''
+      Set the data for column y2
+    '''
+    if self.y2data>=0:
+      if len(item)!=len(self):
+        raise ValueError, "shape mismatch: y2 needs to have %i items"%len(self)
+      if hasattr(item, 'unit') and hasattr(item, 'dimension'):
+        self.data[self.y2data]=item
+      else:
+        self.data[self.y2data][:]=item
+    else:
+      raise IndexError, "y2-index not defined, can't set y2 data"
+
+  y2=property(_get_y2, _set_y2)
+
+  @classmethod
+  def from_md(cls, other, y2=-1):
+    '''
+      Create a new instance of this class using a MeasurementData object.
+    '''
+    new=cls(y2=y2)
+    for item in [
+                 'info',
+                 'short_info',
+                 'sample_name',
+                 'number',
+                 '_yerror',
+                 'logx',
+                 'logy',
+                 'view_x',
+                 'view_z',
+                 '_plot_options',
+                 'xdata',
+                 'ydata',
+                 'zdata',
+                 'sample_name',
+                 'data',
+                 'scan_line',
+                 'scan_line_constant',
+                 'filters',
+
+                ]:
+      setattr(new, item,
+              getattr(other, item))
+    new.plot_together=[new]
+    return new
+
+  def export_matrix(self, file_name):
+    '''
+      Export the filtered data points. If slicing is enabled the data are
+      filtered to be inside the slice.
+      The data is then projected onto a regular grid in x and y.
+    '''
+    data=MeasurementData.get_filtered_data_matrix(self)
+    x, y, y2, z=self.xdata, self.ydata, self.y2data, self.zdata
+    slice_width, slice_center=self.slice_width, self.slice_center
+    if slice_center is not None and slice_width is not None:
+      slice_idx=numpy.where((data[y2]>=(slice_center-slice_width/2.))&
+                            (data[y2]<=(slice_center+slice_width/2.)))[0]
+      data=data[:, slice_idx]
+    I, ignore, ignore=numpy.histogram2d(data[x], data[y], (self.gridsize_x, self.gridsize_y),
+                        weights=data[z])
+    count, x, y=numpy.histogram2d(data[x], data[y],
+                                            (self.gridsize_x, self.gridsize_y))
+    I/=numpy.maximum(1, count)
+    Y, X=numpy.meshgrid(y[1:]+(y[1]-y[0])/2., x[1:]+(x[1]-x[0])/2.)
+
+    # Create data as list of x1,y1,z1,x2,y2,z2...,xn,yn,zn
+    xyz=numpy.vstack([X.flatten(), Y.flatten(), I.flatten()]
+                    ).astype(numpy.float32).transpose().flatten()
+    xyz.tofile(open(file_name, 'wb'))
+
+
 
 def calculate_transformations(transformations):
   '''

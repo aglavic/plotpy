@@ -10,13 +10,13 @@
 import os
 import sys
 import math, numpy
-from measurement_data_structure import MeasurementData, PhysicalProperty
+from measurement_data_structure import MeasurementData, PhysicalProperty, MeasurementData4D
 from config.circle import *
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__status__="Production"
 
 def read_data(input_file):
   '''
@@ -41,11 +41,11 @@ def read_data(input_file):
       sample_name=''
     measurement_data=read_data_lines(input_file_lines, sample_name, last_comments)
     if len(measurement_data)==0:
-      print "No scan data found in file %s." % input_file
+      print "No scan data found in file %s."%input_file
     return measurement_data
   else:
     print 'File '+input_file+' does not exist.'
-    return []  
+    return []
 
 def read_file_header(input_file_lines):
   '''
@@ -55,8 +55,8 @@ def read_file_header(input_file_lines):
     
     @return The sample name defined in the file or None if the wron filetype.
   '''
-  if not (input_file_lines[0].startswith('#F') and 
-          input_file_lines[1].startswith('#E') and 
+  if not (input_file_lines[0].startswith('#F') and
+          input_file_lines[1].startswith('#E') and
           input_file_lines[2].startswith('#D')):
     return None, None
   try:
@@ -80,7 +80,7 @@ def read_file_header(input_file_lines):
   except:
     return None, None
 
-def read_scan_header(input_file_lines): 
+def read_scan_header(input_file_lines):
   '''
     Read header of datafile and return the columns present.
     
@@ -93,11 +93,11 @@ def read_scan_header(input_file_lines):
     line=input_file_lines.pop(0)
     if (line[0:2]=='#L'):
       columns=line[3:-1].split('  ')
-      return [output,columns]
+      return [output, columns]
     elif (line[0:2]=='#S'):
       output=line.replace('#S', 'Scan: ').rstrip('\n')
     elif output:
-      if line[0:3] in ['#N ','#G0', '#G2','#G3','#G4']:
+      if line[0:3] in ['#N ', '#G0', '#G2', '#G3', '#G4']:
         continue
       else:
         info=line.rstrip('\n').replace('#D', 'Date: ')
@@ -108,7 +108,7 @@ def read_scan_header(input_file_lines):
         output+='\n'+info
   return None
 
-def read_data_lines(input_file_lines, sample_name, last_comments): 
+def read_data_lines(input_file_lines, sample_name, last_comments):
   '''
     Read data points line by line.
     
@@ -126,7 +126,7 @@ def read_data_lines(input_file_lines, sample_name, last_comments):
   for i, j in zip(scan_indices[:], scan_indices[1:]+[len(input_file_lines)]):
       dataset, last_comments=read_scan(input_file_lines[i:j], last_comments)
       if dataset is not None:
-        dataset.sample_name=sample_name        
+        dataset.sample_name=sample_name
         output.append(dataset)
   return output
 
@@ -144,8 +144,13 @@ def read_scan(scan_lines, last_comments):
       columns.append(KNOWN_COLUMNS[col])
     else:
       columns.append((col, ''))
-  xcol, ycol, errorcol, zcol= get_type_columns(scan_header['type'], [col[0] for col in columns])
+  xcol, ycol, errorcol, zcol=get_type_columns(scan_header['type'], [col[0] for col in columns])
   output=MeasurementData(x=xcol, y=ycol, zdata=zcol, yerror=errorcol)
+  if scan_header['type'].split()[0]=='mesh3d':
+    output.scan_line_constant=0
+    output.scan_line=1
+    output.filters=[(9,-1.0, 0.5, False)]
+    output=MeasurementData4D.from_md(output, y2=2)
   data=numpy.array(map(lambda line: numpy.fromstring(line, sep=" "), scan_data)).transpose()
   for i, col in enumerate(columns):
     output.data.append(PhysicalProperty(col[0], col[1], data[i]))
@@ -167,13 +172,13 @@ ${comments}
     ''').substitute(scan_header)
   if 'h' in output.dimensions():
     index=output.dimensions().index('h')
-    output.data.append( (output.data[index]*scan_header['rl'][0])//('Q_x', 'Å^{-1}') )
+    output.data.append((output.data[index]*scan_header['rl'][0])//('Q_x', 'Å^{-1}'))
   if 'k' in output.dimensions():
     index=output.dimensions().index('k')
-    output.data.append( (output.data[index]*scan_header['rl'][1])//('Q_y', 'Å^{-1}') )
+    output.data.append((output.data[index]*scan_header['rl'][1])//('Q_y', 'Å^{-1}'))
   if 'l' in output.dimensions():
     index=output.dimensions().index('l')
-    output.data.append( (output.data[index]*scan_header['rl'][2])//('Q_z', 'Å^{-1}') )
+    output.data.append((output.data[index]*scan_header['rl'][2])//('Q_z', 'Å^{-1}'))
   if 'I_{det/atten}' in output.dimensions() and 'I' in output.dimensions():
     # calculate 4-circle monitor error
     index=output.dimensions().index('I_{det/atten}')
@@ -196,11 +201,11 @@ def get_type_columns(type_line, columns):
   if type=='hklscan':
     hklranges=map(float, options.strip().split())
     if abs(hklranges[1]-hklranges[0])>1e-5:
-      return columns.index('h'), intensity, intensity_error, -1
+      return columns.index('h'), intensity, intensity_error,-1
     if abs(hklranges[3]-hklranges[2])>1e-5:
-      return columns.index('k'), intensity, intensity_error, -1
+      return columns.index('k'), intensity, intensity_error,-1
     if abs(hklranges[5]-hklranges[4])>1e-5:
-      return columns.index('l'), intensity, intensity_error, -1
+      return columns.index('l'), intensity, intensity_error,-1
   elif type=='hklmesh':
     items=options.strip().split()
     return columns.index(items[0].lower()), columns.index(items[4].lower()), intensity_error, intensity
@@ -215,12 +220,23 @@ def get_type_columns(type_line, columns):
     first_index=columns.index(first_angle)
     second_index=columns.index(second_angle)
     return first_index, second_index, intensity_error, intensity
+  elif type=='mesh3d':
+    items=options.strip().split()
+    first_angle='Theta' #items[0]
+    if first_angle in KNOWN_COLUMNS:
+      first_angle=KNOWN_COLUMNS[first_angle][0]
+    second_angle='Chi' #items[4]
+    if second_angle in KNOWN_COLUMNS:
+      second_angle=KNOWN_COLUMNS[second_angle][0]
+    first_index=columns.index(first_angle)
+    second_index=columns.index(second_angle)
+    return first_index, second_index, intensity_error, intensity
   elif type=='timescan_cm' or type=='Escan':
-    return columns.index('E'), intensity, intensity_error, -1
+    return columns.index('E'), intensity, intensity_error,-1
   elif type=='ascan' and options.split()[0]=='lake':
-    return columns.index('T_{sample}'), intensity, intensity_error, -1
+    return columns.index('T_{sample}'), intensity, intensity_error,-1
   else:
-    return 0, intensity, intensity_error, -1
+    return 0, intensity, intensity_error,-1
 
 def recheck_type(dataset, scan_header):
   type_line=scan_header['type']
@@ -250,7 +266,7 @@ def get_scan_header(scan_lines):
       break
     elif (line[0:2]=='#S'):
       scan_header['index'], scan_header['type']=line[3:].strip().split('  ', 1)
-    elif line[0:3] in ['#N ','#G0', '#G2','#G3','#G4']:
+    elif line[0:3] in ['#N ', '#G0', '#G2', '#G3', '#G4']:
         continue
     elif line[0:2]=='#D':
       scan_header['date']=line[3:].strip()
@@ -262,7 +278,7 @@ def get_scan_header(scan_lines):
       scan_header['angles_start']=line[3:].strip()
     elif line[0:3]=='#G1':
       lp=line[3:].strip().split()
-      scan_header['lp']="a=%s b=%s c=%s α=%s β=%s γ=%s" % (lp[0], lp[1], lp[2], 
+      scan_header['lp']="a=%s b=%s c=%s α=%s β=%s γ=%s"%(lp[0], lp[1], lp[2],
                                                            lp[3], lp[4], lp[5])
       scan_header['rl']=map(float, (lp[6], lp[7], lp[8], lp[9], lp[10], lp[11]))
     elif line[0:2]=='#D':
@@ -272,13 +288,13 @@ def get_scan_header(scan_lines):
   data_lines=filter(lambda line: not (line.startswith('#') or line.strip()==''), data_lines)
   scan_header['comments']=''.join(comment_lines)
   return scan_header, data_lines
-  
+
 def read_data_p09(input_file):
   '''
     Read data aquired at P09 beamlime of PETRA III.
   '''
   if input_file.endswith('.gz'):
-    import gzip    
+    import gzip
     file_handle=gzip.open(input_file, 'r')
   else:
     file_handle=open(input_file, 'r')
@@ -321,10 +337,10 @@ def read_data_p09(input_file):
   output=MeasurementData(x=0, y=2)
   for i, column in enumerate(columns):
     if column[1]=='counts':
-      output.append_column( PhysicalProperty(column[0], column[1], data[i], numpy.sqrt(data[i])))
+      output.append_column(PhysicalProperty(column[0], column[1], data[i], numpy.sqrt(data[i])))
     else:
-      output.append_column( PhysicalProperty(column[0], column[1], data[i]))
-  I=PhysicalProperty('I', 'counts', data[columns.index(('I_{RAW}', 'counts'))], 
+      output.append_column(PhysicalProperty(column[0], column[1], data[i]))
+  I=PhysicalProperty('I', 'counts', data[columns.index(('I_{RAW}', 'counts'))],
                         numpy.sqrt(data[columns.index(('I_{RAW}', 'counts'))]))
   I*=data[columns.index(('Attenuation', ''))]
   output.append_column(I)
@@ -358,7 +374,7 @@ def read_data_4id(input_file):
   if not text.startswith('## mda2ascii'):
     print "No valid 4-ID ascii header found."
     return 'NULL'
-  header, data_with_head=text.split('# Column Descriptions:',1)
+  header, data_with_head=text.split('# Column Descriptions:', 1)
   header_info=extract_4id_headerinfo(header)
   type, file_columns, data=extract_4id_columns_and_data(data_with_head)
   if len(data)==0:
@@ -372,23 +388,23 @@ def read_data_4id(input_file):
       if column in ID4_MAPPING:
         column=ID4_MAPPING[column]
     if unit=='counts':
-      output.append_column( PhysicalProperty(column, unit, data[i], numpy.sqrt(data[i])))
+      output.append_column(PhysicalProperty(column, unit, data[i], numpy.sqrt(data[i])))
     else:
-      output.append_column( PhysicalProperty(column, unit, data[i]))
+      output.append_column(PhysicalProperty(column, unit, data[i]))
     used_columns.append(i)
   for i in range(len(file_columns)):
     if i not in used_columns:
       column, unit=file_columns[i]
-      column="% 2i: " % i +column
+      column="% 2i: "%i+column
       if column in ID4_MAPPING:
         column=ID4_MAPPING[column]
       if unit=='counts':
-        output.append_column( PhysicalProperty(column, unit, data[i], numpy.sqrt(data[i])))
+        output.append_column(PhysicalProperty(column, unit, data[i], numpy.sqrt(data[i])))
       else:
-        output.append_column( PhysicalProperty(column, unit, data[i]))
-  output.info="Started at: %s" % header_info['starting time']
-  output.info+='\n'+"\n".join(map(lambda item: "%s: \t%s" % (item[0], item[1]), header_info['status info']))
-  output.short_info="#%04i" % header_info['scan number']
+        output.append_column(PhysicalProperty(column, unit, data[i]))
+  output.info="Started at: %s"%header_info['starting time']
+  output.info+='\n'+"\n".join(map(lambda item: "%s: \t%s"%(item[0], item[1]), header_info['status info']))
+  output.short_info="#%04i"%header_info['scan number']
   output.sample_name=''
   return [output]
 
@@ -412,11 +428,11 @@ def extract_4id_headerinfo(header):
       info['status info'].append(('φ', line.split(',')[2].strip(' "')))
     elif '7T T sample' in line:
       temperature=float(line.split(',')[2].strip(' "'))
-      info['status info'].append(('T', "%.1f" % temperature))
+      info['status info'].append(('T', "%.1f"%temperature))
     elif '7T field' in line:
       field=float(line.split(',')[2].strip(' "'))*0.1
-      info['status info'].append(('H (T)', "%.3g" % field))
-      
+      info['status info'].append(('H (T)', "%.3g"%field))
+
   return info
 
 def extract_4id_columns_and_data(data_with_head):
@@ -427,7 +443,7 @@ def extract_4id_columns_and_data(data_with_head):
   lines=data_with_head.splitlines()
   columns=[]
   data_lines=[]
-  for i,  line in enumerate(lines):
+  for i, line in enumerate(lines):
     if not (line.startswith('#') or line.strip()==''):
       data_lines=lines[i:]
       break
@@ -436,13 +452,13 @@ def extract_4id_columns_and_data(data_with_head):
     if 'Positioner' in line:
       items=line.split(',')
       columns.append((
-                      items[1].strip(), 
+                      items[1].strip(),
                       items[3].strip()
                       ))
     if 'Detector' in line:
       items=line.split(',')
       columns.append((
-                      items[1].strip(), 
+                      items[1].strip(),
                       items[2].strip()
                       ))
   if 'M3C DS Y' in data_with_head:
@@ -454,5 +470,5 @@ def extract_4id_columns_and_data(data_with_head):
   data_lines=map(str.strip, data_lines)
   data=map(str.split, data_lines)
   data=numpy.array(data, dtype=numpy.float32)
-  data=data.transpose()  
+  data=data.transpose()
   return type, columns, data
