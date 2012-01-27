@@ -16,7 +16,7 @@ try: # For the use in external programs where no MeasurementData objects are ava
 except ImportError:
   CREATE_MDS=False
   config=None
-  
+
 defined_filters=[]
 
 #+++++++++++++++++++++++++++++++++++AbstractImportFilter-Class+++++++++++++++++++++++++++++++++++++++++++++++++++#
@@ -29,42 +29,41 @@ class AsciiImportFilter(object):
   '''
   file_types=StringList([])
   name='None'
-  
+
   header_lines=0
   header_ignore_comments=False
-  header_search=[] # list of tuples (name, search_string, presplit, offset, endsplit, info_type)
+  header_search=[]  # list of tuples (name, search_string, presplit, offset, endsplit, info_type)
   footer_lines=0
   footer_ignore_comments=False
-  footer_search=[] # list of tuples (name, search_string, presplit, offset, endsplit, info_type)
-  auto_search=None # tuple (left split, name/value splitter, right split)
-                 # e.g.  ("\n",":",None) for lines like "Name: value"
-  
+  footer_search=[]  # list of tuples (name, search_string, presplit, offset, endsplit, info_type)
+  auto_search=None  # tuple (left split, name/value splitter, right split)
+                    # e.g.  ("\n",":",None) for lines like "Name: value"
   split_sequences=None
   comment_string="#"
   columns=None
   error_cols={}
-  
+
   separator=None
-  
+
   # options to enamle fast readout on cost of stability
   disable_datacheck=False # don't check if all data lines contain float values
-  skip_colcheck=False    # don't check if each line has the same number of columns
-                         # ignored if disable_datacheck is True
+  skip_colcheck=False     # don't check if each line has the same number of columns
+                          # ignored if disable_datacheck is True
   skip_linestripping=False# don't strip empty strings from each line
-  
+
   # define the columns to plot
   select_x=0
   select_y=1
   select_z=-1
-  
+
   # Define calculations to be performed after data readout
   post_calc_errors=[]    # List of tuples (index, function)
   post_calc_columns=[]   # List of tuples (function, (dimension,unit)/None)
   post_recalc_columns=[] # List of tuples (index, function)
-  
+
   sample_name='file_name'
   short_info='"#%i" % (sequence+1)'
-  
+
   # Storing extracted information for further usage
   _extracted_data={}
   _header_columns=[]
@@ -80,87 +79,87 @@ class AsciiImportFilter(object):
     # Default settings that should work with most ascii files, which use white space separators
     self.file_types=StringList([])
     self.name=str(name)
-    self.header_lines=OptionSwitch(None, [(int, 'Fixed number of lines', 0), 
-                                          (type(None), 'Search for number')], 
+    self.header_lines=OptionSwitch(None, [(int, 'Fixed number of lines', 0),
+                                          (type(None), 'Search for number')],
                                           "Header lines") # define how header is extracted
-    self.footer_lines=OptionSwitch(0,    [(int, 'Fixed number of lines', 0), 
+    self.footer_lines=OptionSwitch(0, [(int, 'Fixed number of lines', 0),
                                           (type(None), 'Search for number')],
                                           "Footer lines") # define how footer is extracted
-    self.split_sequences=OptionSwitch(None, [(type(None), 'No splitting'), 
+    self.split_sequences=OptionSwitch(None, [(type(None), 'No splitting'),
                                              (str, 'Split by string')], "Split Sequences")
-    self.comment_string=OptionSwitch("#", [(str, 'Single string', "#"), 
-                                           (StringList, 'List of strings', StringList(['#','%'])), 
-                                           (type(None), 'No comments')], 
+    self.comment_string=OptionSwitch("#", [(str, 'Single string', "#"),
+                                           (StringList, 'List of strings', StringList(['#', '%'])),
+                                           (type(None), 'No comments')],
                                             "Comment Strings") # can be a list to define multiple comment types
-    self.columns=OptionSwitch(None, [(type(None), 'Numerated'), 
-                                     (PatternList, 'Fixed list', 
-                                      PatternList([], [str, str], ['Dimension','Unit'])), 
-                                     (FixedList, 'Read from header', 
-                                     FixedList(['[info]', 0, 0, ',', '[', ']'], 
-                                               ['Search string', 'offset lines', 'offset chars', 
-                                               'split string', 'unit start', '/ end'])), 
-                                      ], 
+    self.columns=OptionSwitch(None, [(type(None), 'Numerated'),
+                                     (PatternList, 'Fixed list',
+                                      PatternList([], [str, str], ['Dimension', 'Unit'])),
+                                     (FixedList, 'Read from header',
+                                     FixedList(['[info]', 0, 0, ',', '[', ']'],
+                                               ['Search string', 'offset lines', 'offset chars',
+                                               'split string', 'unit start', '/ end'])),
+                                      ],
                                      "Columns")
-    self.select_x=OptionSwitch(0, [(int, 'Column index', 0), 
-                                    (StringList, 'Column names', StringList([]))], 
+    self.select_x=OptionSwitch(0, [(int, 'Column index', 0),
+                                    (StringList, 'Column names', StringList([]))],
                                     "x-column") # define x-column
-    self.select_y=OptionSwitch(1, [(int, 'Column index', 1), 
-                                   (StringList, 'Column names', StringList([]))], 
+    self.select_y=OptionSwitch(1, [(int, 'Column index', 1),
+                                   (StringList, 'Column names', StringList([]))],
                                           "y-column") # define x-column
-    self.select_z=OptionSwitch(-1, [(int, 'Column index', -1), 
-                                    (StringList, 'Column names', StringList([]))], 
+    self.select_z=OptionSwitch(-1, [(int, 'Column index',-1),
+                                    (StringList, 'Column names', StringList([]))],
                                           "z-column") # define x-column
     self.post_calc_errors=PatternList([], [str, str], ['Column', 'Function (e.g. "[1]+[2]")'])
     self.post_calc_columns=PatternList([], [str, str, str], ['Function (e.g. "[1]+[2]")', 'Dimension', 'Unit'])
     self.post_recalc_columns=PatternList([], [str, str], ['Column', 'Function (e.g. "[1]+[2]")'])
-    self.header_search=PatternList([], [str, str, str, int, str, StrType], 
+    self.header_search=PatternList([], [str, str, str, int, str, StrType],
                                        ['name', 'search string', 'presplit', 'offset', 'endsplit', 'info_type'])
-    self.footer_search=PatternList([], [str, str, str, int, str, StrType], 
+    self.footer_search=PatternList([], [str, str, str, int, str, StrType],
                                        ['name', 'search string', 'presplit', 'offset', 'endsplit', 'info_type'])
-    self.auto_search=OptionSwitch(None, [(FixedList, 'On', FixedList(['\\n', '=', '\\n'], 
-                                                                     ['String before', 
-                                                                     'Name/Value splitter', 
-                                                                     'String after'])), 
-                                          (type(None), 'Off')], 
+    self.auto_search=OptionSwitch(None, [(FixedList, 'On', FixedList(['\\n', '=', '\\n'],
+                                                                     ['String before',
+                                                                     'Name/Value splitter',
+                                                                     'String after'])),
+                                          (type(None), 'Off')],
                                           "Auto search") # define how header is extracted
-    self.separator=OptionSwitch(None, [(str, 'Characters'), 
-                                        (type(None), 'Whitespace')], 
+    self.separator=OptionSwitch(None, [(str, 'Characters'),
+                                        (type(None), 'Whitespace')],
                                         "Column separator") # define how header is extracted
     if presets is not None:
       self.set_presets(presets)
-    
+
   def __repr__(self):
-    return '<AsciiImportFilter "%s"(%s)>' % (
-                                           self.name, 
+    return '<AsciiImportFilter "%s"(%s)>'%(
+                                           self.name,
                                            ", ".join(self.file_types)
                                            )
-  
+
   # items to be used for preset load and save
   _dict_items=[
-                            'sample_name', 
-                            'short_info', 
-                            'file_types', 
-                            'name', 
-                            'post_calc_errors', 
-                            'post_calc_columns', 
-                            'post_recalc_columns', 
-                            'header_search', 
-                            'footer_search', 
-                    
-                            'header_lines', 
-                            'footer_lines', 
-                            'split_sequences', 
-                            'comment_string', 
-                            'columns', 
-                            'select_x', 
-                            'select_y', 
-                            'select_z', 
-                            'auto_search', 
-                            'separator', 
-                              
+                            'sample_name',
+                            'short_info',
+                            'file_types',
+                            'name',
+                            'post_calc_errors',
+                            'post_calc_columns',
+                            'post_recalc_columns',
+                            'header_search',
+                            'footer_search',
+
+                            'header_lines',
+                            'footer_lines',
+                            'split_sequences',
+                            'comment_string',
+                            'columns',
+                            'select_x',
+                            'select_y',
+                            'select_z',
+                            'auto_search',
+                            'separator',
+
                                ]
-                               
-  
+
+
   def set_presets(self, preset):
     '''
       Load preset options from a dictionary.
@@ -175,7 +174,7 @@ class AsciiImportFilter(object):
         old_item.from_dict(value)
       else:
         setattr(self, input_type, value)
-  
+
   def get_presets(self):
     '''
       Save preset options to a dictionary.
@@ -188,7 +187,7 @@ class AsciiImportFilter(object):
       else:
         output[std_type]=item
     return output
-  
+
   def read_data(self, input_file):
     '''
       Load data from a datafile. The stepwise execution allows for better testing
@@ -198,7 +197,7 @@ class AsciiImportFilter(object):
       
       @param input_file Name of the file or file like object to be read from.
     '''
-    print "Trying to import ASCII (%s) '%s'." % (self.name, input_file)
+    print "Trying to import ASCII (%s) '%s'."%(self.name, input_file)
     self._1clear_all()
     self._2read_lines(input_file)
     self._3get_head_data_foot()
@@ -210,9 +209,9 @@ class AsciiImportFilter(object):
       return self._8create_mds()
     else:
       return self._data_arrays, self._extracted_data
-  
-  def simulate_readout(self, input_file=None, 
-                       step_function=None, 
+
+  def simulate_readout(self, input_file=None,
+                       step_function=None,
                        report=None):
     '''
       Read a file using step by step try/except blocks.
@@ -267,38 +266,38 @@ class AsciiImportFilter(object):
         return report(8, error)
     step_function(8/steps, 'Finished')
     return report(8, None, result)
-  
+
   def _create_report(self, step, error, result=None):
     if error is None:
-      output= "Readout successfull.\n\n"
+      output="Readout successfull.\n\n"
     else:
-      output="Error encountered in step %i:\n" % (step)
-      output+="\t%s: %s\n\n" % (type(error).__name__, error.message)
-    output+="    Header/Data/Footer:   %i/%i/%i Lines\n" % (len(self._header_lines),
-                                                           len(self._data_lines), 
+      output="Error encountered in step %i:\n"%(step)
+      output+="\t%s: %s\n\n"%(type(error).__name__, error.message)
+    output+="    Header/Data/Footer:   %i/%i/%i Lines\n"%(len(self._header_lines),
+                                                           len(self._data_lines),
                                                            len(self._footer_lines))
-    output+="        Data Sequences:   %i\n" % (len(self._splited_data))
+    output+="        Data Sequences:   %i\n"%(len(self._splited_data))
     if len(self._data_arrays)>0:
-      output+="   First Sequence Data:   %i/%i Lines/Columns" % (len(self._data_arrays[0]),
+      output+="   First Sequence Data:   %i/%i Lines/Columns"%(len(self._data_arrays[0]),
                                                                  len(self._data_arrays[0][0]))
     elif len(self._splited_data)>0:
-      output+="   Sequence first line: \n%s" % self._splited_data[0][0].replace('\n', '\\n').replace('\t', '\\t')
+      output+="   Sequence first line: \n%s"%self._splited_data[0][0].replace('\n', '\\n').replace('\t', '\\t')
     if error is None:
       output+="\n\tFirst extracted dataset:"
       output+="\n\t\tObject: "+result[0].__repr__()
-      output+="\n\t\tSample Name: " + result[0].sample_name
-      output+="\n\t\tInfo: " + result[0].short_info
+      output+="\n\t\tSample Name: "+result[0].sample_name
+      output+="\n\t\tInfo: "+result[0].short_info
       output+="\n\t\tColumns:\n\t\t\t Dimensions: "+", ".join(result[0].dimensions())
       output+="\n\t\t\t Units: "+", ".join(result[0].units())
     output+="\n\tExtracted metainfo:\n"
-    output+="\n".join(["% 40s: '%s' (%s)" % ("'"+str(item[0])+"'", item[1], 
+    output+="\n".join(["% 40s: '%s' (%s)"%("'"+str(item[0])+"'", item[1],
                        type(item[1]).__name__) for item in sorted(self._extracted_data.items())])
     return output
-  
+
   def _return_report_data(self, step, error, result=None):
-    output={'Step': step, 
+    output={'Step': step,
             'Error': error }
-    
+
     output['header']=len(self._header_lines)
     output['footer']=len(self._footer_lines)
     output['data']=len(self._data_lines)
@@ -311,7 +310,7 @@ class AsciiImportFilter(object):
       output['first_cols']=0
     output['metainfo']=self._extracted_data
     return output
-    
+
   ### The steps performed to extract the data are split to make it possible
   ### to execute them one by one for testing purpose.
   def _1clear_all(self):
@@ -324,7 +323,7 @@ class AsciiImportFilter(object):
     self._sequence_headers=[]
     self._splited_data=[]
     self._data_arrays=[]
-  
+
   def _2read_lines(self, input_file):
     '''
       Reads the raw ascii data from a text file, 
@@ -347,12 +346,12 @@ class AsciiImportFilter(object):
     self._file_data=input_file.read()
     if close_after:
       input_file.close()
-  
+
   def _3get_head_data_foot(self):
     # Process the raw lines
     file_lines=self._file_data.splitlines()
     self._header_lines, self._data_lines, self._footer_lines=self._split_head_data_foot(file_lines)
-  
+
   def _4split_sequences(self):
     # split data into different sequences
     header_lines, data_lines, footer_lines=self._header_lines, self._data_lines, self._footer_lines
@@ -371,12 +370,12 @@ class AsciiImportFilter(object):
       footer_lines=self._filter_comments(footer_lines)
     for i, data_lines in enumerate(splitted_data):
       splitted_data[i]=self._filter_comments(data_lines)
-  
+
   def _6collect_metainfo(self):
     # collect meta info
     self._extract_information(self._header_lines, self.header_search)
     self._extract_information(self._footer_lines, self.footer_search)
-    
+
   def _7extract_data(self):
     '''
       Converts the ascii data into a 2d array of floats.
@@ -387,7 +386,7 @@ class AsciiImportFilter(object):
       output.append(data_array)
     self._data_arrays=output
     return output
-  
+
   def _8create_mds(self):
     output=[]
     for j, data_array in enumerate(self._data_arrays):
@@ -400,14 +399,14 @@ class AsciiImportFilter(object):
         if i in errors:
           columns[-1].error=data_array[:, errors[i]]
       self._perform_postcalcs(columns)
-      
+
       dataset=MeasurementData()
       dataset.data=columns
       dataset.number=str(j)
       dataset.info="\n".join(self._header_lines)
-      dataset.sample_name=str(eval(self.sample_name, globals(), dict(locals().items()+ self._extracted_data.items())))
-      dataset.short_info=str(eval(self.short_info, globals(), dict(locals().items()+ self._extracted_data.items())))
-      
+      dataset.sample_name=str(eval(self.sample_name, globals(), dict(locals().items()+self._extracted_data.items())))
+      dataset.short_info=str(eval(self.short_info, globals(), dict(locals().items()+self._extracted_data.items())))
+
       # define the x,y and z columns
       dimensions=dataset.dimensions()
       if self.select_x==0:
@@ -431,7 +430,7 @@ class AsciiImportFilter(object):
           if col_name in dimensions:
             dataset.zdata=dimensions.index(col_name)
             break
-        
+
       output.append(dataset)
     return output
 
@@ -448,7 +447,7 @@ class AsciiImportFilter(object):
     elif self.header_lines==1:
       sep=self.separator.value
       for i, line in enumerate(file_lines):
-        try: 
+        try:
           float(line.strip().split(sep)[0])
         except (ValueError, IndexError):
           continue
@@ -456,14 +455,14 @@ class AsciiImportFilter(object):
           head_end=i
           break
     else:
-      raise NotImplementedError, "not defined for this option: %s" % self.header_lines
+      raise NotImplementedError, "not defined for this option: %s"%self.header_lines
     # Define footer
     if self.footer_lines==0:
       foot_start=len(file_lines)-self.footer_lines.value
     elif self.footer_lines==1:
       sep=self.separator.value
       for i, line in reversed(enumerate(file_lines)):
-        try: 
+        try:
           float(line.strip().split(sep)[0])
         except (ValueError, IndexError):
           continue
@@ -471,7 +470,7 @@ class AsciiImportFilter(object):
           foot_start=i
           break
     else:
-      raise NotImplementedError, "not defined for this option: %s" % self.footer_lines
+      raise NotImplementedError, "not defined for this option: %s"%self.footer_lines
     # Create lists
     header_lines=file_lines[0:head_end]
     data_lines=file_lines[head_end:foot_start]
@@ -518,9 +517,9 @@ class AsciiImportFilter(object):
           istart=i+1
       header, data, foot=self._split_head_data_foot(data_lines[istart:])
       output.append(data)
-      headers.append(header+foot)      
+      headers.append(header+foot)
     return output, headers
-  
+
   def _extract_file_information(self, file_name):
     '''
       Fill the information dictionary with file infos.
@@ -529,8 +528,8 @@ class AsciiImportFilter(object):
     info['file_name']=os.path.split(file_name)[1]
     info['file_type']=info['file_name'].rsplit('.', 1)[-1]
     info['file_folder']=os.path.split(os.path.abspath(file_name))[0]
-    
-  
+
+
   def _extract_information(self, info_lines, info_search):
     '''
       Extract defined information from the header,footer.
@@ -550,7 +549,7 @@ class AsciiImportFilter(object):
           except:
             pass
           break
-    if self.auto_search !=1:
+    if self.auto_search!=1:
       start_split, name_value_split, end_split=map(pystring, self.auto_search.value)
       start=0
       sstring="\n".join(info_lines)
@@ -607,7 +606,7 @@ class AsciiImportFilter(object):
     '''
     if self.columns==0:
       # Nothing defined
-      dimensions=["Col_%02i" % i for i in range(num_columns)]
+      dimensions=["Col_%02i"%i for i in range(num_columns)]
       units=["" for i in range(num_columns)]
     elif self.columns==1:
       # Columns defined as list of (dimensions,unit) tuples
@@ -617,14 +616,14 @@ class AsciiImportFilter(object):
       units=[cols[i][1] for i in range(num_columns)]
       # if the units are given as expressions, not strings they will be calculated
       try:
-        dimensions=map(lambda dim: 
-                       eval(dim, globals(), dict(locals().items()+ self._extracted_data.items())), 
+        dimensions=map(lambda dim:
+                       eval(dim, globals(), dict(locals().items()+self._extracted_data.items())),
                        dimensions)
       except:
         pass
       try:
-        units=map(lambda uni: 
-                       eval(uni, globals(), dict(locals().items()+ self._extracted_data.items())), 
+        units=map(lambda uni:
+                       eval(uni, globals(), dict(locals().items()+self._extracted_data.items())),
                        units)
       except:
         pass
@@ -667,10 +666,10 @@ class AsciiImportFilter(object):
     for index, function in error_calcs:
       function=self._turn_name_to_index(function, columns)
       index=self._str_to_column_index(index, columns)
-      columns[index].error=eval(function, globals(), dict(locals().items()+ self._extracted_data.items()))
+      columns[index].error=eval(function, globals(), dict(locals().items()+self._extracted_data.items()))
     for function, dim, unit in column_calcs:
       function=self._turn_name_to_index(function, columns)
-      col=eval(function, globals(), dict(locals().items()+ self._extracted_data.items()))
+      col=eval(function, globals(), dict(locals().items()+self._extracted_data.items()))
       if dim is not None and unit is not None:
         col.unit=dim
         col.dimension=unit
@@ -678,18 +677,18 @@ class AsciiImportFilter(object):
     for index, function in column_recalcs:
       function=self._turn_name_to_index(function, columns)
       index=self._str_to_column_index(index, columns)
-      columns[index]=eval(function, globals(), dict(locals().items()+ self._extracted_data.items()))
-  
+      columns[index]=eval(function, globals(), dict(locals().items()+self._extracted_data.items()))
+
   def _turn_name_to_index(self, code, columns):
     '''
       Change column names in a code snipet to column indices.
     '''
     names=[column.dimension for column in columns]
     for i, name in enumerate(names):
-      code=code.replace('[%s]' % name, '[%i]' % i)
-      code=code.replace('[%i]' % i, 'columns[%i]' % i)
+      code=code.replace('[%s]'%name, '[%i]'%i)
+      code=code.replace('[%i]'%i, 'columns[%i]'%i)
     return code
-  
+
   def _str_to_column_index(self, index, columns):
     '''
       Change index string or name to the column index.
@@ -701,7 +700,7 @@ class AsciiImportFilter(object):
       for i, name in enumerate(names):
         if name==index:
           return i
-  
+
 #-----------------------------------AbstractImportFilter-Class---------------------------------------------------#
 
 def append_filter(filter):
@@ -721,5 +720,5 @@ try:
   for name, presets in config.items():
     defined_filters.append(AsciiImportFilter(name, presets=presets))
 except ImportError:
-  config=None  
+  config=None
 

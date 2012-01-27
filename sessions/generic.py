@@ -337,10 +337,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
               last_argument_option=[False, '']
         elif argument=='-a':
           self.single_picture=True
-       # elif argument=='-l':
-       #   self.list_all=True
-       # elif argument=='-ls':
-       #   self.list_sequences=True
+        # elif argument=='-l':
+        #   self.list_all=True
+        # elif argument=='-ls':
+        #   self.list_sequences=True
         elif argument=='-gs':
           self.gnuplot_script=True
         elif argument=='-rd':
@@ -455,8 +455,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     # close gnuplot
     import measurement_data_plotting
     try:
-      measurement_data_plotting.gnuplot_instance.stdin.write('exit')
-      measurement_data_plotting.gnuplot_instance.communicate()
+      measurement_data_plotting.gnuplot_instance.stdin.write('exit') #@UndefinedVariable
+      measurement_data_plotting.gnuplot_instance.communicate() #@UndefinedVariable
     except:
       pass
     # remove temp files
@@ -706,13 +706,9 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       add_info='multi_'
     else:
       add_info=''
-    if self.gnuplot_script:
-      output=measurement_data_plotting.gnuplot_plot_script\
-        (self, datasets, file_name_prefix, '.out', title, names, self.plot_with_errorbars, additional_info=add_info)
-      return output
-    else:
-      return measurement_data_plotting.gnuplot_plot\
-        (self, datasets, file_name_prefix, title, names, self.plot_with_errorbars, additional_info=add_info)
+    output=measurement_data_plotting.gnuplot_plot_script\
+      (self, datasets, file_name_prefix, '.out', title, names, self.plot_with_errorbars, additional_info=add_info)
+    return output
 
   def change_active(self, object=None, name=None):
     '''

@@ -7,10 +7,10 @@ from sys import prefix, platform
 from os.path import exists, split
 from os.path import join as join_path
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__status__="Production"
 
 #
 # place holders:
@@ -71,7 +71,7 @@ else:
 # character encoding in gnuplot
 ENCODING='utf8'
 # set the terminal options for the gnuplot output (postscript could need other labels)
-set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[font-path]',  'Arial.ttf')+\
+set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[font-path]', 'Arial.ttf')+\
                           '" [font-size] lw 2' #transparent
 # since gnuplot 4.4 this is suppoerted
 set_output_terminal_pngcairo='pngcairo enhanced size [width],[height] font "Arial,[font-size]" lw 2' #transparent
@@ -80,12 +80,12 @@ set_output_terminal_ps='postscript landscape enhanced colour "Arial" 16 solid lw
 
 # terminal for external gnuplot window
 if "linux" in platform:
-  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]',  'Arial.ttf')+'" 16'
+  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]', 'Arial.ttf')+'" 16'
 elif "darwin" in platform:
-  set_output_terminal_wxt='aqua enhanced font "'+join_path('[font-path]',  'Arial.ttf')+'" 16'
+  set_output_terminal_wxt='aqua enhanced font "'+join_path('[font-path]', 'Arial.ttf')+'" 16'
 else:
-  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]',  'Arial.ttf')+'" 16'
-set_output_terminal_x11='x11 enhanced font "'+join_path('[font-path]',  'Arial.ttf')+'" 16'
+  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]', 'Arial.ttf')+'" 16'
+set_output_terminal_x11='x11 enhanced font "'+join_path('[font-path]', 'Arial.ttf')+'" 16'
 
 # set output file name, the postfix has to be chosen consistant to the 'set term' statement
 output_file_name='[name]_[add_info][nr].png'
@@ -105,7 +105,7 @@ plotting_parameters_errorbars='w errorbars pt 5 ps 0.5 lw 1.5' # plotting with e
 plotting_parameters_3d='w pm3d' # plotting 3d
 plotting_parameters_fit='w lines lw 3'
 settings_3d=\
-'''set style line 100 lt 6 lw 2
+'''set style line 100 lc 0 lw 0.5
 set pm3d hidden3d 100
 set ticslevel 0.05
 set palette defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")
@@ -117,44 +117,44 @@ set palette defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "bl
 set size square
 '''
 defined_color_patterns={
-                        'Default': 'defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black") model RGB', 
-                        'Default White Base': 'defined (0 "white", 0.001  "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")', 
-                        'GLI': 'functions (gray*5./6.<0.75)?0.75-gray*5./6.:1.75-gray*5./6., 0.857, 0.875 model HSV', 
-                        'Black to Red': 'defined (0 "black", 1 "purple", 2 "blue", 3 "green", 4 "yellow",  5 "red") model RGB', 
-                        'Grey Scale': 'gray model RGB', 
-                        'Blue,Green,Yellow,Red': 'defined (0 "blue",1 "green", 2 "yellow",3 "red") model RGB', 
-                        'Black to Yellow': 'defined (0 "black",1 "blue", 2 "red",3 "yellow") model RGB', 
-                        'Gnuplot std.': 'rgbformulae 7,5,15 model RGB', 
+                        'Default': 'defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black") model RGB',
+                        'Default White Base': 'defined (0 "white", 0.001  "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")',
+                        'GLI': 'functions (gray*5./6.<0.75)?0.75-gray*5./6.:1.75-gray*5./6., 0.857, 0.875 model HSV',
+                        'Black to Red': 'defined (0 "black", 1 "purple", 2 "blue", 3 "green", 4 "yellow",  5 "red") model RGB',
+                        'Grey Scale': 'gray model RGB',
+                        'Blue,Green,Yellow,Red': 'defined (0 "blue",1 "green", 2 "yellow",3 "red") model RGB',
+                        'Black to Yellow': 'defined (0 "black",1 "blue", 2 "red",3 "yellow") model RGB',
+                        'Gnuplot std.': 'rgbformulae 7,5,15 model RGB',
                         # MARIA color map from Stefan Mattauch
-                        'MARIA log': 'defined (0 0 0 0 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1) model RGB', 
-                        'MARIA lin': 'defined (0 1 1 1 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1) model RGB', 
-                        'fit2d': 'defined (0 "#000000", 1 "#0000d1", 2 "#c3c3ff", 3 "#9ee246", 4 "#fdfe78", 5.5 "#cc8800", 6.5 "#dc3ef7", 7.5 "#ffffff") model RGB', 
-                        'Rainbow': 'rgbformulae 22,13,-31 model RGB', 
-                        'Hot': 'rgbformulae 21,22,23 model RGB', 
-                        'Color, gray printable': 'rgbformulae 31,32,33 model RGB', 
-                        '+ and - peaks': 'defined (0 0 0 0.5, 1 0 0 1, 5 1 1 1, 9 1 0 0, 10 0.5 0 0) model RGB', 
+                        'MARIA log': 'defined (0 0 0 0 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1) model RGB',
+                        'MARIA lin': 'defined (0 1 1 1 , 1 0 1 0, 2 0 0 1, 3 1 0 0, 4 0 1 1 , 5 1 0 1, 6 1 1 0, 7 1 1 1) model RGB',
+                        'fit2d': 'defined (0 "#000000", 1 "#0000d1", 2 "#c3c3ff", 3 "#9ee246", 4 "#fdfe78", 5.5 "#cc8800", 6.5 "#dc3ef7", 7.5 "#ffffff") model RGB',
+                        'Rainbow': 'rgbformulae 22,13,-31 model RGB',
+                        'Hot': 'rgbformulae 21,22,23 model RGB',
+                        'Color, gray printable': 'rgbformulae 31,32,33 model RGB',
+                        '+ and - peaks': 'defined (0 0 0 0.5, 1 0 0 1, 5 1 1 1, 9 1 0 0, 10 0.5 0 0) model RGB',
                         }
 # title for a curve
 titles='[titles_add]'
 
-postscript_characters= [ 
-          ('µ','{/Symbol m}'), 
-          ('°','\\260'), 
-          ('·','\\267'), 
-          ('²','\\262'), 
-          ('α','{/Symbol a}'), 
-          ('β','{/Symbol b}'), 
-          ('γ','{/Symbol g}'), 
-          ('Γ','{/Symbol G}'), 
-          ('δ','{/Symbol d}'), 
-          ('φ','{/Symbol f}'), 
-          ('χ','{/Symbol c}'), 
-          ('π','{/Symbol p}'), 
-          ('σ','{/Symbol s}'), 
-          ('ω','{/Symbol w}'), 
-          ('Σ','{/Symbol S}'), 
-          ('Δ','{/Symbol D}'), 
-          ('Ω','{/Symbol W}'), 
-          ('Θ','{/Symbol Q}'), 
-          ('Å','A'), 
+postscript_characters=[
+          ('µ', '{/Symbol m}'),
+          ('°', '\\260'),
+          ('·', '\\267'),
+          ('²', '\\262'),
+          ('α', '{/Symbol a}'),
+          ('β', '{/Symbol b}'),
+          ('γ', '{/Symbol g}'),
+          ('Γ', '{/Symbol G}'),
+          ('δ', '{/Symbol d}'),
+          ('φ', '{/Symbol f}'),
+          ('χ', '{/Symbol c}'),
+          ('π', '{/Symbol p}'),
+          ('σ', '{/Symbol s}'),
+          ('ω', '{/Symbol w}'),
+          ('Σ', '{/Symbol S}'),
+          ('Δ', '{/Symbol D}'),
+          ('Ω', '{/Symbol W}'),
+          ('Θ', '{/Symbol Q}'),
+          ('Å', 'A'),
 ]

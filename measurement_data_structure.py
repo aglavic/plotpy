@@ -1043,49 +1043,80 @@ class MeasurementData(object):
     min_point=self.data[self.ydata].values.index(y[indices].min())
     return [self.data[self.xdata].values[min_point], self.data[self.ydata].values[min_point]]
 
-  def get_xprojection(self, numpoints=200):
+  def get_xprojection(self, numpoints):
     '''
       Return the projection of 3d data on the x-axis.
     '''
     if self.zdata<0:
       raise TypeError, "Only 3d datasets can be used to calculate a projection."
-    x=numpy.array(self.x, dtype=numpy.float32)
-    z=numpy.array(self.z, dtype=numpy.float32)
-    steps=numpy.linspace(float(x.min()), float(x.max()), numpoints)
-    dsteps=steps[1]-steps[0]
-    y=numpy.zeros_like(steps)
-    for i, step in enumerate(steps):
-      idx=numpy.where((x>=step)*(x<(step+dsteps)))[0]
-      if len(idx)==1:
-        y[i]=z[idx].sum()
-      elif len(idx)>1:
-        y[i]=z[idx].mean()
-    steps=steps[y!=0]
-    y=y[y!=0]
-    return PhysicalProperty(self.x.dimension, self.x.unit, steps), PhysicalProperty(self.z.dimension, self.z.unit, y)
+    # get the data columns
+    if not self.is_matrix_data:
+      data=self.get_filtered_data_matrix()
+      x=data[self.xdata]
+      y=data[self.ydata]
+      z=data[self.zdata]
+    else:
+      x=numpy.array(self.x, dtype=numpy.float32)
+      y=numpy.array(self.y, dtype=numpy.float32)
+      z=numpy.array(self.z, dtype=numpy.float32)
+    # filter the columns by xy-range
+    result=numpy.ones(x.shape, dtype=bool)
+    if self.plot_options.xrange[0] is not None:
+      result&=(x>=self.plot_options.xrange[0])
+    if self.plot_options.xrange[1] is not None:
+      result&=(x<=self.plot_options.xrange[1])
+    if self.plot_options.yrange[0] is not None:
+      result&=(y>=self.plot_options.yrange[0])
+    if self.plot_options.yrange[1] is not None:
+      result&=(y<=self.plot_options.yrange[1])
+    x=x[result]
+    z=z[result]
+    if numpoints is None:
+      numpoints=int(numpy.sqrt(len(x)))
+    projection, ignore=numpy.histogram(x, numpoints, weights=z)
+    counts, px=numpy.histogram(x, numpoints)
+    px=(px[:-1]+px[1:])/2.
+    py=projection/counts
+    return PhysicalProperty(self.x.dimension, self.x.unit, px), \
+            PhysicalProperty(self.z.dimension, self.z.unit, py)
 
-  def get_yprojection(self, numpoints=200):
+  def get_yprojection(self, numpoints):
     '''
-      Return the projection of 3d data on the x-axis.
+      Return the projection of 3d data on the y-axis.
     '''
     if self.zdata<0:
       raise TypeError, "Only 3d datasets can be used to calculate a projection."
-    x=numpy.array(self.y, dtype=numpy.float32)
-    z=numpy.array(self.z, dtype=numpy.float32)
-    steps=numpy.linspace(float(x.min()), float(x.max()), numpoints)
-    dsteps=steps[1]-steps[0]
-    y=numpy.zeros_like(steps)
-    for i, step in enumerate(steps):
-      idx=numpy.where((x>=step)*(x<(step+dsteps)))[0]
-      if len(idx)==1:
-        y[i]=z[idx].sum()
-      elif len(idx)>1:
-        y[i]=z[idx].mean()
-    steps=steps[y!=0]
-    y=y[y!=0]
-    return PhysicalProperty(self.y.dimension, self.y.unit, steps), PhysicalProperty(self.z.dimension, self.z.unit, y)
+    if not self.is_matrix_data:
+      data=self.get_filtered_data_matrix()
+      x=data[self.xdata]
+      y=data[self.ydata]
+      z=data[self.zdata]
+    else:
+      x=numpy.array(self.x, dtype=numpy.float32)
+      y=numpy.array(self.y, dtype=numpy.float32)
+      z=numpy.array(self.z, dtype=numpy.float32)
+    # filter the columns by xy-range
+    result=numpy.ones(x.shape, dtype=bool)
+    if self.plot_options.xrange[0] is not None:
+      result&=(x>=self.plot_options.xrange[0])
+    if self.plot_options.xrange[1] is not None:
+      result&=(x<=self.plot_options.xrange[1])
+    if self.plot_options.yrange[0] is not None:
+      result&=(y>=self.plot_options.yrange[0])
+    if self.plot_options.yrange[1] is not None:
+      result&=(y<=self.plot_options.yrange[1])
+    y=y[result]
+    z=z[result]
+    if numpoints is None:
+      numpoints=int(numpy.sqrt(len(y)))
+    projection, ignore=numpy.histogram(y, numpoints, weights=z)
+    counts, px=numpy.histogram(y, numpoints)
+    px=(px[:-1]+px[1:])/2.
+    py=projection/counts
+    return PhysicalProperty(self.y.dimension, self.y.unit, px), \
+            PhysicalProperty(self.z.dimension, self.z.unit, py)
 
-  def export_projections(self, file_name, numpoints=200):
+  def export_projections(self, file_name, numpoints=None):
     '''
       Export x and y projections to a 4-column file.
     '''
@@ -1101,7 +1132,7 @@ class MeasurementData(object):
     #file_handler.write('# Projection on x and y axes of %s-%s map\n' % (self.sample_name,self.short_info))
     #columns=' '.join(col.dimension+'['+col.units+']' for col in [xx, xy, yx, yy])
     #write_file.write('#\n#\n# Begin of Dataoutput:\n#'+columns+'\n')
-    data=numpy.array([xx.tolist(), xy.tolist(), yx.tolist(), yy.tolist()]).transpose()
+    data=numpy.vstack([xx, xy, yx, yy]).transpose()
     numpy.savetxt(file_name, data, fmt='%.10e')
 
 #--------------------------------------MeasurementData-Class-----------------------------------------------------#
@@ -1281,7 +1312,8 @@ class HugeMD(MeasurementData):
     self.store_data()
     return output
 
-  def export(self, file_name, print_info=True, seperator=' ', xfrom=None, xto=None, only_fitted_columns=False):
+  def export(self, file_name, print_info=True, seperator=' ',
+             xfrom=None, xto=None, only_fitted_columns=False):
     if self.changed_after_export or self.plot_options.zrange!=self.last_export_zrange:
       print "Exporting large dataset, please stay patient"
       self.last_export_output=self.do_export(self.tmp_export_file+'.gptmp', print_info, seperator, xfrom, xto, only_fitted_columns)

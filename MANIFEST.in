@@ -1,4 +1,5 @@
 recursive-include doc *.html
+recursive-include gtkgui/icons *.png
 include config/fit/fit.f90
 include config/logo*.*
 recursive-include config/fit/pnr_multi *.f90

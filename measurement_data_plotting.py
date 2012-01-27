@@ -13,11 +13,11 @@ import sys
 exit=sys.exit
 import subprocess
 from config import gnuplot_preferences
-from time import sleep
+#from time import sleep
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 persistene_plots=0
@@ -543,6 +543,8 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
   if dataset.logz:
     gnuplot_file_text+='set log x2\n'
     gnuplot_file_text+='set format x2 "10^{%L}\n'
+  if dataset.logy:
+    gnuplot_file_text+='set log y\n'
   xrange=list(dataset.plot_options._xrange)
   yrange=list(dataset.plot_options._yrange)
   if xrange[0] is None:
@@ -557,7 +559,7 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
   if zrange[1] is None:
     zrange=(zrange[0], float(dataset.z.max()))
   gnuplot_file_text+="set autoscale x\n"
-  gnuplot_file_text+=("set x2range [%s:%s]\n"%(zrange[0], zrange[1])).replace("None", "")
+  gnuplot_file_text+=("set x2range [:]#[%s:%s]\n"%(zrange[0], zrange[1])).replace("None", "")
   gnuplot_file_text+='set yrange [%f:%f]\n'%(yrange[0], yrange[1])
   gnuplot_file_text+='unset xtics\n'
   gnuplot_file_text+='set x2tics rotate by -90 offset 0,1.4\n'
@@ -569,9 +571,15 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
     gnuplot_file_text+='unset log x\n'
     gnuplot_file_text+='set log y\n'
     gnuplot_file_text+='set format y "10^{%L}\n'
+  else:
+    gnuplot_file_text+='unset log y\n'
+  if dataset.logx:
+    gnuplot_file_text+='set log x\n'
+  else:
+    gnuplot_file_text+='unset log x\n'
   gnuplot_file_text+='set xrange [%f:%f]\n'%(xrange[0], xrange[1])
   gnuplot_file_text+='set autoscale y\n'
-  gnuplot_file_text+=("set yrange [%s:%s]\n"%(zrange[0], zrange[1])).replace("None", "")
+  gnuplot_file_text+=("set yrange [:]#[%s:%s]\n"%(zrange[0], zrange[1])).replace("None", "")
   #gnuplot_file_text+='unset ytics\n'
   gnuplot_file_text+='unset x2tics\n'
   gnuplot_file_text+='set xtics\n'
@@ -582,7 +590,8 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
   gnuplot_file_text+='plot "%s" u 1:2 w lines\n'%projections_name
   if dataset.logz:
     gnuplot_file_text+='unset log y\n'
-
+  if dataset.logy:
+    gnuplot_file_text+='set log y\n'
   gnuplot_file_text+='set xrange [%f:%f]\n'%(xrange[0], xrange[1])
   gnuplot_file_text+='set yrange [%f:%f]\n'%(yrange[0], yrange[1])
   gnuplot_file_text+='unset xtics\n'

@@ -1,7 +1,7 @@
- # -*- encoding: utf-8 -*-
+# -*- encoding: utf-8 -*-
 '''
   Treff GTK gui class.
-''' 
+'''
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
@@ -17,10 +17,10 @@ from dialogs import SimpleEntryDialog
 #----------------------- importing modules --------------------------
 
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Production"
 
 
 class TreffGUI:
@@ -54,52 +54,52 @@ class TreffGUI:
       '''
     # Create actions for the menu
     actions=(
-            ( "TreffMenu", None,                             # name, stock id
-                "TREFF", None,                    # label, accelerator
-                None,                                   # tooltip
-                None ),
-            ( "TreffFit", None,                             # name, stock id
-                "Fit...", "<control><shift>F",                    # label, accelerator
-                None,                                   # tooltip
-                self.fit_window ),
-            ( "TreffSpecRef", None,                             # name, stock id
-                "Extract specular reflectivity...", '<control>R',                    # label, accelerator
-                None,                                   # tooltip
-                self.extract_specular_reflectivity), 
-            ( "TreffSelectPol", None,                             # name, stock id
-                "Select polarization channels...", None,                    # label, accelerator
-                None,                                   # tooltip
-                self.select_fittable_sequences), 
-            ( "TreffExportFit", None,                             # name, stock id
-                "Export Fit...", None,                    # label, accelerator
-                None,                                   # tooltip
-                self.export_fit_dialog), 
-            ( "TreffImportFit", None,                             # name, stock id
-                "Import Fit...", None,                    # label, accelerator
-                None,                                   # tooltip
-                self.import_fit_dialog), 
-            ( "GISANSMenu", None,                             # name, stock id
-                "GISANS", None,                    # label, accelerator
-                None,                                   # tooltip
-                None ),              
-            ( "SeperateScattering", None,                             # name, stock id
-                "Seperate Scattering", None,                    # label, accelerator
-                "Calculate seperated scattering parts from polarization directions.",                                   # tooltip
-                self.seperate_scattering ),
-            ( "TreffFR", None,                             # name, stock id
-                "Flipping Ration correction", None,                    # label, accelerator
-                "Calculate the correction for finite flipping ratio.",                                   # tooltip
-                self.separate_active_scattering_d17_dialog ),
-            ( "SmoothData", None,                             # name, stock id
-                "Gaussian Smoothing...", None,                    # label, accelerator
-                "Calculate convolution of data with gaussian.",                                   # tooltip
-                self.smooth_dataset_dialog ),
-            ( "TreffJoinDS", None,                             # name, stock id
-                "Join Datasets...", '<control>J',                    # label, accelerator
-                "Combine two datasets to one.",                                   # tooltip
-                self.join_datasets_dialog ),
+            ("TreffMenu", None, # name, stock id
+                "TREFF", None, # label, accelerator
+                None, # tooltip
+                None),
+            ("TreffFit", None, # name, stock id
+                "Fit...", "<control><shift>F", # label, accelerator
+                None, # tooltip
+                self.fit_window),
+            ("TreffSpecRef", None, # name, stock id
+                "Extract specular reflectivity...", '<control>R', # label, accelerator
+                None, # tooltip
+                self.extract_specular_reflectivity),
+            ("TreffSelectPol", None, # name, stock id
+                "Select polarization channels...", None, # label, accelerator
+                None, # tooltip
+                self.select_fittable_sequences),
+            ("TreffExportFit", None, # name, stock id
+                "Export Fit...", None, # label, accelerator
+                None, # tooltip
+                self.export_fit_dialog),
+            ("TreffImportFit", None, # name, stock id
+                "Import Fit...", None, # label, accelerator
+                None, # tooltip
+                self.import_fit_dialog),
+            ("GISANSMenu", None, # name, stock id
+                "GISANS", None, # label, accelerator
+                None, # tooltip
+                None),
+            ("SeperateScattering", None, # name, stock id
+                "Seperate Scattering", None, # label, accelerator
+                "Calculate seperated scattering parts from polarization directions.", # tooltip
+                self.seperate_scattering),
+            ("TreffFR", None, # name, stock id
+                "Flipping Ration correction", None, # label, accelerator
+                "Calculate the correction for finite flipping ratio.", # tooltip
+                self.separate_active_scattering_d17_dialog),
+            ("SmoothData", None, # name, stock id
+                "Gaussian Smoothing...", None, # label, accelerator
+                "Calculate convolution of data with gaussian.", # tooltip
+                self.smooth_dataset_dialog),
+            ("TreffJoinDS", None, # name, stock id
+                "Join Datasets...", '<control>J', # label, accelerator
+                "Combine two datasets to one.", # tooltip
+                self.join_datasets_dialog),
              )
-    return string,  actions
+    return string, actions
 
   def extract_specular_reflectivity(self, action, window):
     '''
@@ -112,58 +112,58 @@ class TreffGUI:
     data=window.measurement[window.index_mess]
     cs_dialog=gtk.Dialog(title='Create a cross-section:')
     cs_dialog.set_default_size(300, 150)
-    table=gtk.Table(3,7,False)
+    table=gtk.Table(3, 7, False)
     label=gtk.Label()
     label.set_markup('Width:')
     table.attach(label,
                 # X direction #          # Y direction
-                0, 1,                      5, 6,
-                gtk.EXPAND | gtk.FILL,     gtk.FILL,
-                0,                         0);
+                0, 1, 5, 6,
+                gtk.EXPAND|gtk.FILL, gtk.FILL,
+                0, 0);
     line_width=gtk.Entry()
     line_width.set_width_chars(6)
     line_width.set_text('0.08')
     table.attach(line_width,
                 # X direction #          # Y direction
-                1, 3,                      5, 6,
-                0,                       gtk.FILL,
-                0,                         0);
+                1, 3, 5, 6,
+                0, gtk.FILL,
+                0, 0);
     ext_all=gtk.CheckButton(label='Extract for all maps', use_underline=True)
     ext_all.set_active(True)
     table.attach(ext_all,
                 # X direction #          # Y direction
-                0, 1,                      8, 9,
-                0,                       gtk.FILL,
-                0,                         0);
-                
+                0, 1, 8, 9,
+                0, gtk.FILL,
+                0, 0);
+
     label=gtk.Label()
     label.set_markup('0-position offset:')
     table.attach(label,
                 # X direction #          # Y direction
-                0, 1,                      9, 10,
-                gtk.EXPAND | gtk.FILL,     gtk.FILL,
-                0,                         0);
+                0, 1, 9, 10,
+                gtk.EXPAND|gtk.FILL, gtk.FILL,
+                0, 0);
     offset_x=gtk.Entry()
     offset_x.set_width_chars(4)
     offset_x.set_text('0.0')
     table.attach(offset_x,
                 # X direction #          # Y direction
-                1, 2,                      9, 10,
-                0,                       gtk.FILL,
-                0,                         0);
+                1, 2, 9, 10,
+                0, gtk.FILL,
+                0, 0);
     offset_y=gtk.Entry()
     offset_y.set_width_chars(4)
     offset_y.set_text('0.0')
     table.attach(offset_y,
                 # X direction #          # Y direction
-                2, 3,                      9, 10,
-                0,                       gtk.FILL,
-                0,                         0);
+                2, 3, 9, 10,
+                0, gtk.FILL,
+                0, 0);
     table.show_all()
     # Enty activation triggers calculation, too
-    line_width.connect('activate', lambda *ign: cs_dialog.response(1))
-    offset_x.connect('activate', lambda *ign: cs_dialog.response(1))
-    offset_y.connect('activate', lambda *ign: cs_dialog.response(1))
+    line_width.connect('activate', lambda*ign: cs_dialog.response(1))
+    offset_x.connect('activate', lambda*ign: cs_dialog.response(1))
+    offset_y.connect('activate', lambda*ign: cs_dialog.response(1))
     cs_dialog.vbox.add(table)
     cs_dialog.add_button('OK', 1)
     cs_dialog.add_button('Cancel', 0)
@@ -183,7 +183,7 @@ class TreffGUI:
             extract_indices.append(i)
       try:
         args=('extract_specular_reflectivity',
-              float(line_width.get_text()), 
+              float(line_width.get_text()),
               (float(offset_x.get_text()), float(offset_y.get_text()))
               )
         gotit=True
@@ -191,12 +191,12 @@ class TreffGUI:
         gotit=False
       for i in extract_indices:
         window.index_mess=i
-        gotit=gotit and window.file_actions.activate_action(*args)        
+        gotit=gotit and window.file_actions.activate_action(*args)
       if not gotit:
-        message=gtk.MessageDialog(parent=self, 
-                                  flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
-                                  type=gtk.MESSAGE_INFO, 
-                                  buttons=gtk.BUTTONS_CLOSE, 
+        message=gtk.MessageDialog(parent=self,
+                                  flags=gtk.DIALOG_DESTROY_WITH_PARENT,
+                                  type=gtk.MESSAGE_INFO,
+                                  buttons=gtk.BUTTONS_CLOSE,
                                   message_format='Wrong parameter type.')
         message.run()
         message.destroy()
@@ -205,9 +205,9 @@ class TreffGUI:
     cs_dialog.destroy()
     if gotit:
       window.rebuild_menus()
-      window.replot()      
+      window.replot()
     return gotit
-  
+
   #+++++++++++++++++++++++ GUI functions +++++++++++++++++++++++
 
   def select_fittable_sequences(self, action, window):
@@ -231,21 +231,21 @@ class TreffGUI:
       object_box_3.append_text(str(i)+'-('+object.short_info+')')
       object_box_4.append_text(str(i)+'-('+object.short_info+')')
     text_filed=gtk.Label()
-    text_filed.set_markup('Up-Up-Channel: ')      
-    align_table.attach(text_filed, 0, 1,  0, 1, gtk.FILL, gtk.FILL, 0, 3)
-    align_table.attach(object_box_1, 1, 2,  0, 1, gtk.FILL, gtk.FILL, 0, 3)
+    text_filed.set_markup('Up-Up-Channel: ')
+    align_table.attach(text_filed, 0, 1, 0, 1, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(object_box_1, 1, 2, 0, 1, gtk.FILL, gtk.FILL, 0, 3)
     text_filed=gtk.Label()
-    text_filed.set_markup('Down-Down-Channel: ')      
-    align_table.attach(text_filed, 0, 1,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
-    align_table.attach(object_box_2, 1, 2,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
+    text_filed.set_markup('Down-Down-Channel: ')
+    align_table.attach(text_filed, 0, 1, 1, 2, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(object_box_2, 1, 2, 1, 2, gtk.FILL, gtk.FILL, 0, 3)
     text_filed=gtk.Label()
-    text_filed.set_markup('Up-Down-Channel: ')      
-    align_table.attach(text_filed, 0, 1,  2, 3, gtk.FILL, gtk.FILL, 0, 3)
-    align_table.attach(object_box_3, 1, 2,  2, 3, gtk.FILL, gtk.FILL, 0, 3)
+    text_filed.set_markup('Up-Down-Channel: ')
+    align_table.attach(text_filed, 0, 1, 2, 3, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(object_box_3, 1, 2, 2, 3, gtk.FILL, gtk.FILL, 0, 3)
     text_filed=gtk.Label()
-    text_filed.set_markup('Down-Up-Channel: ')      
-    align_table.attach(text_filed, 0, 1,  3, 4, gtk.FILL, gtk.FILL, 0, 3)
-    align_table.attach(object_box_4, 1, 2,  3, 4, gtk.FILL, gtk.FILL, 0, 3)
+    text_filed.set_markup('Down-Up-Channel: ')
+    align_table.attach(text_filed, 0, 1, 3, 4, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(object_box_4, 1, 2, 3, 4, gtk.FILL, gtk.FILL, 0, 3)
     if any(self.active_file_data.fit_datasets):
       indices=[]
       for item in self.active_file_data.fit_datasets:
@@ -278,11 +278,11 @@ class TreffGUI:
     selection_dialog.vbox.add(align_table)
     selection_dialog.set_default_size(200, 60)
     selection_dialog.show_all()
-    if selection_dialog.run() == 1:
-      set_list=[None] + self.active_file_data
-      self.active_file_data.fit_datasets=[set_list[object_box_1.get_active()], 
-                        set_list[object_box_2.get_active()], 
-                        set_list[object_box_3.get_active()], 
+    if selection_dialog.run()==1:
+      set_list=[None]+self.active_file_data
+      self.active_file_data.fit_datasets=[set_list[object_box_1.get_active()],
+                        set_list[object_box_2.get_active()],
+                        set_list[object_box_3.get_active()],
                         set_list[object_box_4.get_active()]]
       for object in self.active_file_data.fit_datasets:
         if object:
@@ -311,13 +311,13 @@ class TreffGUI:
     layer_index=0
     layer_params={}
     fit_params={
-              'wavelength':False, 
-              'polarizer_efficiancy': False, 
-              'analyzer_efficiancy': False, 
-              'flipper0_efficiancy': False, 
-              'flipper1_efficiancy': False, 
-              'scaling':False, 
-              'background':False, 
+              'wavelength':False,
+              'polarizer_efficiancy': False,
+              'analyzer_efficiancy': False,
+              'flipper0_efficiancy': False,
+              'flipper1_efficiancy': False,
+              'scaling':False,
+              'background':False,
               'actually':False
               }
   #+++++++++++++++++ Adding input fields +++++++++++++++++
@@ -329,104 +329,104 @@ class TreffGUI:
       layer_options[layer_index]=self.create_layer_options(layer, layer_index, layer_params, dialog, window)
       layer_index+=1
     #create table for widgets
-    table=gtk.Table(1, layer_index + 5, False)
+    table=gtk.Table(1, layer_index+5, False)
     table.set_row_spacings(10)
     # top parameter
     align_table=gtk.Table(5, 3, False)
     align_table.set_col_spacings(5)
     text_filed=gtk.Label()
     text_filed.set_markup('1st slit:')
-    align_table.attach(text_filed, 0, 1, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
+    align_table.attach(text_filed, 0, 1, 0, 1, gtk.FILL, gtk.FILL, 10, 0)
     first_slit=gtk.Entry()
     first_slit.set_width_chars(10)
     first_slit.set_text(str(self.active_file_data.fit_object.slits[0]))
     # activating the input will apply the settings, too
     first_slit.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(first_slit, 0, 1,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(first_slit, 0, 1, 1, 2, gtk.FILL, gtk.FILL, 0, 3)
     text_filed=gtk.Label()
     text_filed.set_markup('2nd slit:')
-    align_table.attach(text_filed, 1, 2, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
+    align_table.attach(text_filed, 1, 2, 0, 1, gtk.FILL, gtk.FILL, 10, 0)
     second_slit=gtk.Entry()
     second_slit.set_width_chars(10)
     second_slit.set_text(str(self.active_file_data.fit_object.slits[1]))
     # activating the input will apply the settings, too
     second_slit.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(second_slit, 1, 2,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(second_slit, 1, 2, 1, 2, gtk.FILL, gtk.FILL, 0, 3)
     text_filed=gtk.Label()
     text_filed.set_markup('Smpl length:')
-    align_table.attach(text_filed, 2, 3, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
+    align_table.attach(text_filed, 2, 3, 0, 1, gtk.FILL, gtk.FILL, 10, 0)
     length=gtk.Entry()
     length.set_width_chars(10)
     length.set_text(str(self.active_file_data.fit_object.sample_length))
     # activating the input will apply the settings, too
     length.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(length, 2, 3,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(length, 2, 3, 1, 2, gtk.FILL, gtk.FILL, 0, 3)
     text_filed=gtk.Label()
     text_filed.set_markup('Dist. to 1st:')
-    align_table.attach(text_filed, 3, 4, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
+    align_table.attach(text_filed, 3, 4, 0, 1, gtk.FILL, gtk.FILL, 10, 0)
     first_distance=gtk.Entry()
     first_distance.set_width_chars(10)
     first_distance.set_text(str(self.active_file_data.fit_object.distances[0]))
     # activating the input will apply the settings, too
     first_distance.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(first_distance, 3, 4,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(first_distance, 3, 4, 1, 2, gtk.FILL, gtk.FILL, 0, 3)
     text_filed=gtk.Label()
     text_filed.set_markup('Dist. to 2nd:')
-    align_table.attach(text_filed, 4, 5, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
+    align_table.attach(text_filed, 4, 5, 0, 1, gtk.FILL, gtk.FILL, 10, 0)
     second_distance=gtk.Entry()
     second_distance.set_width_chars(10)
     second_distance.set_text(str(self.active_file_data.fit_object.distances[1]))
     # activating the input will apply the settings, too
     second_distance.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(second_distance, 4, 5,  1, 2, gtk.FILL, gtk.FILL, 0, 3)
-    
+    align_table.attach(second_distance, 4, 5, 1, 2, gtk.FILL, gtk.FILL, 0, 3)
+
     wavelength_table=gtk.Table(4, 1, False)
     text_filed=gtk.Label()
     text_filed.set_markup('Wavelength:')
-    wavelength_table.attach(text_filed, 0, 1, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
+    wavelength_table.attach(text_filed, 0, 1, 0, 1, gtk.FILL, gtk.FILL, 10, 0)
     wavelength=gtk.Entry()
     wavelength.set_width_chars(5)
     wavelength.set_text(str(self.active_file_data.fit_object.wavelength[0]))
     # activating the input will apply the settings, too
     wavelength.connect('activate', self.dialog_activate, dialog)
-    wavelength_table.attach(wavelength, 1, 2,  0, 1, gtk.FILL, gtk.FILL, 0, 3)
+    wavelength_table.attach(wavelength, 1, 2, 0, 1, gtk.FILL, gtk.FILL, 0, 3)
     text_filed=gtk.Label()
     text_filed.set_markup('+/-')
-    wavelength_table.attach(text_filed, 2, 3, 0, 1, gtk.FILL,  gtk.FILL, 10, 0)
+    wavelength_table.attach(text_filed, 2, 3, 0, 1, gtk.FILL, gtk.FILL, 10, 0)
     delta_wavelength=gtk.Entry()
     delta_wavelength.set_width_chars(5)
     delta_wavelength.set_text(str(self.active_file_data.fit_object.wavelength[1]))
     # activating the input will apply the settings, too
     delta_wavelength.connect('activate', self.dialog_activate, dialog)
-    wavelength_table.attach(delta_wavelength, 3, 4,  0, 1, gtk.FILL, gtk.FILL, 0, 3)
-    align_table.attach(wavelength_table, 0, 2,  2, 3, gtk.FILL, gtk.FILL, 0, 0)
+    wavelength_table.attach(delta_wavelength, 3, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 3)
+    align_table.attach(wavelength_table, 0, 2, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
     text_filed=gtk.Label()
     text_filed.set_markup('x-region')
-    align_table.attach(text_filed, 2, 3,  2, 3, gtk.FILL, gtk.FILL, 0, 0)
+    align_table.attach(text_filed, 2, 3, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
     x_from=gtk.Entry()
     x_from.set_width_chars(10)
     x_from.set_text(str(self.x_from))
     # activating the input will apply the settings, too
     x_from.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(x_from, 3, 4,  2, 3, gtk.FILL, gtk.FILL, 0, 0)
+    align_table.attach(x_from, 3, 4, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
     x_to=gtk.Entry()
     x_to.set_width_chars(10)
     x_to.set_text(str(self.x_to))
     # activating the input will apply the settings, too
     x_to.connect('activate', self.dialog_activate, dialog)
     align_table.attach(x_to, 4, 5, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
-    frame = gtk.Frame()
+    frame=gtk.Frame()
     frame.set_shadow_type(gtk.SHADOW_IN)
     frame.add(align_table)
     table.attach(frame, 0, 1, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
-    
+
     # layer parameters in table
     for i in range(layer_index):
       table.attach(layer_options[i], 0, 1, i+1, i+2, gtk.FILL, gtk.FILL, 0, 0)
     # substrate parameters
     substrat_options=self.create_layer_options(self.active_file_data.fit_object.substrate, 0, fit_params, dialog, window, substrate=True)
-    table.attach(substrat_options, 0, 1, layer_index+2, layer_index+3, gtk.FILL,  gtk.FILL, 0, 0)
-    
+    table.attach(substrat_options, 0, 1, layer_index+2, layer_index+3, gtk.FILL, gtk.FILL, 0, 0)
+
     #bottom parameters
     align_table=gtk.Table(4, 8, False)
     align_table.set_col_spacings(10)
@@ -435,13 +435,13 @@ class TreffGUI:
     align_table.attach(text_filed, 0, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 5)
     background_x=gtk.CheckButton(label='Background: ', use_underline=True)
     background_x.connect('toggled', self.toggle_fit_bool_option, fit_params, 'background')
-    align_table.attach(background_x, 0, 1, 2, 3, gtk.FILL,  gtk.FILL, 0, 0)
+    align_table.attach(background_x, 0, 1, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
     background=gtk.Entry()
     background.set_width_chars(10)
     background.set_text(str(self.active_file_data.fit_object.background))
     # activating the input will apply the settings, too
     background.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(background, 1, 2, 2, 3, gtk.FILL, gtk.FILL, 0, 0)   
+    align_table.attach(background, 1, 2, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
     scaling_x=gtk.CheckButton(label='Scaling: ', use_underline=True)
     scaling_x.connect('toggled', self.toggle_fit_bool_option, fit_params, 'scaling')
     align_table.attach(scaling_x, 0, 1, 3, 4, gtk.FILL, gtk.FILL, 0, 0)
@@ -450,8 +450,8 @@ class TreffGUI:
     scaling_factor.set_text(str(self.active_file_data.fit_object.scaling_factor))
     # activating the input will apply the settings, too
     scaling_factor.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(scaling_factor, 1, 2, 3, 4, gtk.FILL, gtk.FILL, 0, 0)   
-    
+    align_table.attach(scaling_factor, 1, 2, 3, 4, gtk.FILL, gtk.FILL, 0, 0)
+
     text_filed=gtk.Label()
     text_filed.set_markup('Efficiencies: ')
     align_table.attach(text_filed, 2, 4, 1, 2, gtk.FILL, gtk.FILL, 0, 0)
@@ -491,7 +491,7 @@ class TreffGUI:
     # activating the input will apply the settings, too
     flipper1_efficiancy.connect('activate', self.dialog_activate, dialog)
     align_table.attach(flipper1_efficiancy, 3, 4, 5, 6, gtk.FILL, gtk.FILL, 0, 0)
-    
+
     # fit-settings
     fit_x=gtk.CheckButton(label='Fit selected', use_underline=True)
     fit_x.connect('toggled', self.toggle_fit_bool_option, fit_params, 'actually')
@@ -501,7 +501,7 @@ class TreffGUI:
     max_iter.set_text(str(self.max_iter))
     # activating the input will apply the settings, too
     max_iter.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(max_iter, 0, 1, 4, 5, 0, gtk.FILL, 0, 0)   
+    align_table.attach(max_iter, 0, 1, 4, 5, 0, gtk.FILL, 0, 0)
     text_filed=gtk.Label()
     text_filed.set_markup('max. iterations')
     align_table.attach(text_filed, 1, 2, 4, 5, gtk.FILL, gtk.FILL, 0, 0)
@@ -513,7 +513,7 @@ class TreffGUI:
     alambda_first.set_text(str(self.active_file_data.fit_object.alambda_first))
     # activating the input will apply the settings, too
     alambda_first.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(alambda_first, 1, 2, 6, 7, 0, gtk.FILL, 0, 0)   
+    align_table.attach(alambda_first, 1, 2, 6, 7, 0, gtk.FILL, 0, 0)
     text_filed=gtk.Label()
     text_filed.set_markup('nTest')
     align_table.attach(text_filed, 0, 1, 7, 8, gtk.FILL, gtk.FILL, 0, 0)
@@ -522,8 +522,8 @@ class TreffGUI:
     ntest.set_text(str(self.active_file_data.fit_object.ntest))
     # activating the input will apply the settings, too
     ntest.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(ntest, 1, 2, 7, 8, 0, gtk.FILL, 0, 0)   
-    
+    align_table.attach(ntest, 1, 2, 7, 8, 0, gtk.FILL, 0, 0)
+
     text_filed=gtk.Label()
     text_filed.set_markup('max_hr')
     align_table.attach(text_filed, 0, 1, 8, 9, gtk.FILL, gtk.FILL, 0, 0)
@@ -538,20 +538,20 @@ class TreffGUI:
     align_table.attach(show_all_button, 2, 3, 8, 9, gtk.FILL, gtk.FILL, 0, 0)
     # activating the input will apply the settings, too
     ntest.connect('activate', self.dialog_activate, dialog)
-    align_table.attach(max_hr, 1, 2, 8, 9, 0, gtk.FILL, 0, 0)   
+    align_table.attach(max_hr, 1, 2, 8, 9, 0, gtk.FILL, 0, 0)
     if self.active_file_data.fit_object_history!=[]:
-      history_back=gtk.Button(label='Undo (%i)' % len(self.active_file_data.fit_object_history), use_underline=True)
+      history_back=gtk.Button(label='Undo (%i)'%len(self.active_file_data.fit_object_history), use_underline=True)
       history_back.connect('clicked', self.fit_history, True, dialog, window)
       align_table.attach(history_back, 2, 3, 7, 8, gtk.FILL, gtk.FILL, 0, 0)
     if self.active_file_data.fit_object_future!=[]:
-      history_forward=gtk.Button(label='Redo (%i)' % len(self.active_file_data.fit_object_future), use_underline=True)
+      history_forward=gtk.Button(label='Redo (%i)'%len(self.active_file_data.fit_object_future), use_underline=True)
       history_forward.connect('clicked', self.fit_history, False, dialog, window)
       align_table.attach(history_forward, 3, 4, 7, 8, gtk.FILL, gtk.FILL, 0, 0)
-    frame = gtk.Frame()
+    frame=gtk.Frame()
     frame.set_shadow_type(gtk.SHADOW_IN)
     frame.add(align_table)
-    table.attach(frame, 0, 1, layer_index+3, layer_index+4, gtk.FILL,  gtk.FILL, 0, 0)
-    sw = gtk.ScrolledWindow()
+    table.attach(frame, 0, 1, layer_index+3, layer_index+4, gtk.FILL, gtk.FILL, 0, 0)
+    sw=gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
     # scrollbars.
@@ -559,16 +559,16 @@ class TreffGUI:
     sw.add_with_viewport(table) # add textbuffer view widget
     #----------------- Adding input fields -----------------
     dialog.vbox.add(sw) # add table to dialog box
-    dialog.set_default_size(size[0],size[1])
-    dialog.add_button('Custom Constraints',7) # button custom constrain has handler_id 7
-    dialog.add_button('New Layer',3) # button new layer has handler_id 3
-    dialog.add_button('New Multilayer',4) # button new multilayer has handler_id 4
-    dialog.add_button('Fit/Simulate and Replot',5) # button replot has handler_id 5
+    dialog.set_default_size(size[0], size[1])
+    dialog.add_button('Custom Constraints', 7) # button custom constrain has handler_id 7
+    dialog.add_button('New Layer', 3) # button new layer has handler_id 3
+    dialog.add_button('New Multilayer', 4) # button new multilayer has handler_id 4
+    dialog.add_button('Fit/Simulate and Replot', 5) # button replot has handler_id 5
     dialog.connect("response", self.dialog_response, dialog, window,
-                   [(wavelength, delta_wavelength), background, 
-                   [first_slit, second_slit], 
-                   scaling_factor, 
-                   [polarizer_efficiancy, analyzer_efficiancy, flipper0_efficiancy, flipper1_efficiancy], 
+                   [(wavelength, delta_wavelength), background,
+                   [first_slit, second_slit],
+                   scaling_factor,
+                   [polarizer_efficiancy, analyzer_efficiancy, flipper0_efficiancy, flipper1_efficiancy],
                    alambda_first, ntest, x_from, x_to, max_hr, move_channels_button, show_all_button],
                    [layer_params, fit_params, max_iter])
     # befor the widget gets destroyed the textbuffer view widget is removed
@@ -576,7 +576,7 @@ class TreffGUI:
     dialog.show_all()
     # connect dialog to main window
     window.open_windows.append(dialog)
-    dialog.connect("destroy", lambda *w: window.open_windows.remove(dialog))
+    dialog.connect("destroy", lambda*w: window.open_windows.remove(dialog))
 
   def stop_scroll_emission(self, SL_selector, action):
     '''Stop scrolling event when ontop of seleciton dialog.'''
@@ -596,13 +596,13 @@ class TreffGUI:
       # labels
       layer_title=gtk.Label()
       if not substrate:
-        layer_title.set_markup(str(layer_index + 1) + ' - ' + layer.name)
+        layer_title.set_markup(str(layer_index+1)+' - '+layer.name)
         align_table.attach(layer_title, 0, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
         thickness_x=gtk.CheckButton(label='thickness', use_underline=True)
         thickness_x.connect('toggled', self.toggle_fit_option, layer_params[layer_index], 0)
         align_table.attach(thickness_x, 0, 1, 1, 2, gtk.FILL, gtk.FILL, 0, 0)
       else:
-        layer_title.set_markup('Substrate - ' + layer.name)
+        layer_title.set_markup('Substrate - '+layer.name)
         align_table.attach(layer_title, 0, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
         spacer=gtk.Label()
         spacer.set_markup('  ')
@@ -645,13 +645,13 @@ class TreffGUI:
       scatter_density_Nb.set_text(str(layer.scatter_density_Nb))
       # activating the input will apply the settings, too
       scatter_density_Nb.connect('activate', self.dialog_activate, dialog)
-      align_table.attach(scatter_density_Nb, 1, 2, 2, 3, gtk.FILL,  gtk.FILL, 0, 0)
+      align_table.attach(scatter_density_Nb, 1, 2, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
       scatter_density_Nb2=gtk.Entry()
       scatter_density_Nb2.set_width_chars(10)
       scatter_density_Nb2.set_text(str(layer.scatter_density_Nb2))
       # activating the input will apply the settings, too
       scatter_density_Nb2.connect('activate', self.dialog_activate, dialog)
-      align_table.attach(scatter_density_Nb2, 2, 3, 2, 3, gtk.FILL,  gtk.FILL, 0, 0)
+      align_table.attach(scatter_density_Nb2, 2, 3, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
       scatter_density_Np=gtk.Entry()
       scatter_density_Np.set_width_chars(12)
       scatter_density_Np.set_text(str(layer.scatter_density_Np))
@@ -669,7 +669,7 @@ class TreffGUI:
       SL_selector.allowed=False
       SL_selector.connect('scroll-event', self.stop_scroll_emission)
       SL_selector.connect('changed', self.change_scattering_length, \
-                          SL_selector, layer,scatter_density_Nb, scatter_density_Nb2, scatter_density_Np, \
+                          SL_selector, layer, scatter_density_Nb, scatter_density_Nb2, scatter_density_Np, \
                           layer_title, layer_index, substrate)
       layer.SL_selector=SL_selector
       align_table.attach(SL_selector, 4, 5, 2, 3, gtk.FILL, gtk.FILL, 0, 0)
@@ -696,14 +696,14 @@ class TreffGUI:
     else:
       #++++++++++++++++++ multilayer fileds +++++++++++++++++++++++++
       layer_params[layer_index]={}
-      align_table=gtk.Table(5, 1 + len(layer.layers), False)
+      align_table=gtk.Table(5, 1+len(layer.layers), False)
       align_table.set_row_spacings(5)
       text_filed=gtk.Label()
       text_filed.set_markup('Multilayer')
       align_table.attach(text_filed, 0, 1, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
       text_filed=gtk.Label()
-      text_filed.set_markup(str(layer_index + 1) + ' - ' + layer.name)
-      align_table.attach(text_filed, 1, 2,  0, 1, gtk.FILL, gtk.FILL, 0, 0)
+      text_filed.set_markup(str(layer_index+1)+' - '+layer.name)
+      align_table.attach(text_filed, 1, 2, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
       small_table=gtk.Table(2, 1, False)
       repititions=gtk.Entry()
       repititions.set_width_chars(3)
@@ -738,12 +738,12 @@ class TreffGUI:
       for i, sub_layer in enumerate(layer.layers):
         sub_table=self.create_layer_options(sub_layer, i, layer_params[layer_index], dialog, window)
         align_table.attach(sub_table, 1, 5, i+1, i+2, gtk.FILL, gtk.FILL, 0, 0)
-      frame = gtk.Frame()
+      frame=gtk.Frame()
       frame.set_shadow_type(gtk.SHADOW_IN)
       frame.add(align_table)
       align_table=frame
     return align_table
-  
+
   def change_scattering_length(self, action, SL_selector, layer, scatter_density_Nb, scatter_density_Nb2, scatter_density_Np, layer_title, layer_index, substrate):
     '''
       function to change a layers scattering length parameters
@@ -757,14 +757,14 @@ class TreffGUI:
       scatter_density_Nb2.set_text(str(SL[1]))
       scatter_density_Np.set_text(str(SL[2]))
       if substrate:
-        layer_title.set_markup('Substrate - ' + layer.name)
+        layer_title.set_markup('Substrate - '+layer.name)
       else:
-        layer_title.set_markup(str(layer_index + 1) + ' - ' + layer.name)
+        layer_title.set_markup(str(layer_index+1)+' - '+layer.name)
     except KeyError:
       scatter_density_Nb.set_text("1")
       scatter_density_Nb2.set_text("1")
       scatter_density_Np.set_text("1")
-  
+
   def dialog_response(self, action, response, dialog, window, parameters_list, fit_list):
     '''
       Handle fit dialog response.
@@ -817,7 +817,7 @@ class TreffGUI:
         return None
       self.dialog_fit(action, window, move_channels=parameters_list[10].get_active(), new_max_hr=new_max_hr)
       # read fit parameters from file and create new object, if process is killed ignore
-      if fit_list[1]['actually'] and response==5 and self.active_file_data.fit_object.fit==1: 
+      if fit_list[1]['actually'] and response==5 and self.active_file_data.fit_object.fit==1:
         parameters, errors=self.read_fit_file(self.TEMP_DIR+'result', self.active_file_data.fit_object)
         new_fit=self.active_file_data.fit_object.copy()
         new_fit.get_parameters(parameters)
@@ -844,15 +844,15 @@ class TreffGUI:
     output_names=config.treff.FIT_OUTPUT_FILES
     self.export_data_and_entfile(self.TEMP_DIR, 'fit_temp.ent')
     #open a background process for the fit function
-    self.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', new_max_hr)
+    self.proc=self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', new_max_hr)
     print "PNR program started."
     if self.active_file_data.fit_object.fit!=1 and any(self.active_file_data.fit_datasets): # if this is not a fit just wait till finished
-      exec_time, stderr_value = self.proc.communicate()
+      exec_time, stderr_value=self.proc.communicate()
       try:
-        print "PNR program finished in %.2g seconds." % float(exec_time.splitlines()[-1])
+        print "PNR program finished in %.2g seconds."%float(exec_time.splitlines()[-1])
       except IndexError:
         if exec_time.strip()!='' or stderr_value.strip()!='':
-          raise RuntimeError, 'PNR program finished with error message:\n%s' % (exec_time+' '+stderr_value)
+          raise RuntimeError, 'PNR program finished with error message:\n%s'%(exec_time+' '+stderr_value)
     else:
       self.open_status_dialog(window)
     first=True
@@ -861,13 +861,13 @@ class TreffGUI:
       if dataset:
         # if data for the channel was selected combine data and fit together
         try:
-          simu=read_data.treff.read_simulation(self.TEMP_DIR + output_names[i])
+          simu=read_data.treff.read_simulation(self.TEMP_DIR+output_names[i])
           simu.number='sim_'+dataset.number
           simu.short_info='simulation '+names[i]
           simu.sample_name=dataset.sample_name
           dataset.plot_together=[dataset, simu]
         except IOError:
-          raise RuntimeError, 'PNR program finished without creating data, program output:\n%s' % (exec_time+' '+stderr_value)
+          raise RuntimeError, 'PNR program finished without creating data, program output:\n%s'%(exec_time+' '+stderr_value)
         if first:
           dataset.plot_options+='''
 set style line 2 lc 1
@@ -885,21 +885,21 @@ set style increment user
 set style line 1 lc %i
 set style line 2 lc %i
 set style increment user
-''' % (i+1, i+1)
+'''%(i+1, i+1)
       elif self.active_file_data.fit_object.simulate_all_channels:
-        simu=read_data.treff.read_simulation(self.TEMP_DIR + output_names[i])
-        simu.number='%i' % i
+        simu=read_data.treff.read_simulation(self.TEMP_DIR+output_names[i])
+        simu.number='%i'%i
         simu.short_info='simulation '+names[i]
         simu.plot_options+='''
 set style line 1 lc %i
 set style increment user
-''' % (i+1)
+'''%(i+1)
         simu.logy=True
         free_sims.append(simu)
     # create a multiplot with all datasets
     window.multiplot=[MultiplotList([(dataset, dataset.short_info) for dataset in \
                                      self.active_file_data.fit_datasets if dataset])]
-    window.multi_list.set_markup(' Multiplot List: \n' + '\n'.join(map(lambda item: item[1], window.multiplot[0])))
+    window.multi_list.set_markup(' Multiplot List: \n'+'\n'.join(map(lambda item: item[1], window.multiplot[0])))
     if not window.index_mess in [self.active_file_data.index(item[0]) for item in window.multiplot[0]]:
       try:
         window.index_mess=self.active_file_data.index(window.multiplot[0][0][0])
@@ -929,7 +929,7 @@ set style increment user
       # move the polarization channels agains eachother to make it easier for the eye
       if not self.replot:
         self.replot=window.replot
-        window.replot=lambda *ignore: self.move_channels_replot(window)
+        window.replot=lambda*ignore: self.move_channels_replot(window)
         def reset_replot(index):
           window.replot=self.replot
           self.replot=None
@@ -998,30 +998,30 @@ set style increment user
       if len(new_layer)==1: # single layer
         text_string+=str(index)+' - Layer:\n'
         if new_layer.thickness!=old_layer.thickness:
-          text_string+='\tthickness:\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+          text_string+='\tthickness:\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
               (old_layer.thickness, new_layer.thickness, sorted_errors[index_add+str(index)+','+str(0)])
         if new_layer.scatter_density_Nb!=old_layer.scatter_density_Nb:
-          text_string+='\tNb\':\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+          text_string+='\tNb\':\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
               (old_layer.scatter_density_Nb, new_layer.scatter_density_Nb, sorted_errors[index_add+str(index)+','+str(1)])
         if new_layer.scatter_density_Nb2!=old_layer.scatter_density_Nb2:
-          text_string+='\tNb\'\':\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+          text_string+='\tNb\'\':\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
               (old_layer.scatter_density_Nb2, new_layer.scatter_density_Nb2, sorted_errors[index_add+str(index)+','+str(2)])
         if new_layer.scatter_density_Np!=old_layer.scatter_density_Np:
-          text_string+='\tNp:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+          text_string+='\tNp:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
               (old_layer.scatter_density_Np, new_layer.scatter_density_Np, sorted_errors[index_add+str(index)+','+str(3)])
         if new_layer.theta!=old_layer.theta:
-          text_string+='\Theta:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+          text_string+='\Theta:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
               (old_layer.theta, new_layer.theta, sorted_errors[index_add+str(index)+','+str(4)])
         if new_layer.phi!=old_layer.phi:
-          text_string+='\tPhi:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+          text_string+='\tPhi:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
               (old_layer.phi, new_layer.phi, sorted_errors[index_add+str(index)+','+str(5)])
         if new_layer.roughness!=old_layer.roughness:
-          text_string+='\troughness:\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+          text_string+='\troughness:\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
               (old_layer.roughness, new_layer.roughness, sorted_errors[index_add+str(index)+','+str(6)])
         return text_string+'\n'
       else:
         text_string+='\n'+str(index)+' - Multilayer:\n'
-        for i,  layer in enumerate(new_layer.layers):
+        for i, layer in enumerate(new_layer.layers):
           text_string+='\t'+get_layer_text(layer, old_layer.layers[i], i, index_add=str(index)+',')
         return text_string
     #----------- get_layer_text responde function ----------------
@@ -1030,49 +1030,49 @@ set style increment user
     # substrate parameters
     text_string+='\nSubstrat:\n'
     if old_fit.substrate.scatter_density_Nb!=new_fit.substrate.scatter_density_Nb:
-      text_string+='\tNb\':\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+      text_string+='\tNb\':\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
           (old_fit.substrate.scatter_density_Nb, new_fit.substrate.scatter_density_Nb, sorted_errors['substrate0'])
     if old_fit.substrate.scatter_density_Nb2!=new_fit.substrate.scatter_density_Nb2:
-      text_string+='\tNb\'\':\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+      text_string+='\tNb\'\':\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
           (old_fit.substrate.scatter_density_Nb2, new_fit.substrate.scatter_density_Nb2, sorted_errors['substrate1'])
     if old_fit.substrate.scatter_density_Np!=new_fit.substrate.scatter_density_Np:
-      text_string+='\tNp:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+      text_string+='\tNp:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
           (old_fit.substrate.scatter_density_Np, new_fit.substrate.scatter_density_Np, sorted_errors['substrate2'])
     if old_fit.substrate.theta!=new_fit.substrate.theta:
-      text_string+='\Theta:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+      text_string+='\Theta:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
           (old_fit.substrate.theta, new_fit.substrate.theta, sorted_errors['substrate3'])
     if old_fit.substrate.phi!=new_fit.substrate.phi:
-      text_string+='\tPhi:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' % \
+      text_string+='\tPhi:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
           (old_fit.substrate.phi, new_fit.substrate.phi, sorted_errors['substrate4'])
     if old_fit.substrate.roughness!=new_fit.substrate.roughness:
-      text_string+='\troughness:\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+      text_string+='\troughness:\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
           (old_fit.substrate.roughness, new_fit.substrate.roughness, sorted_errors['substrate5'])
     # global parameters
     text_string+='\n'
     if old_fit.scaling_factor!=new_fit.scaling_factor:
-      text_string+='Scaling Factor:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+      text_string+='Scaling Factor:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
           (old_fit.scaling_factor, new_fit.scaling_factor, sorted_errors['scaling'])
     if old_fit.background!=new_fit.background:
-      text_string+='Background:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+      text_string+='Background:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
         (old_fit.background, new_fit.background, sorted_errors['background'])
     if old_fit.polarization_parameters[0]!=new_fit.polarization_parameters[0]:
-      text_string+='Polarizer efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+      text_string+='Polarizer efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
         (old_fit.polarization_parameters[0], new_fit.polarization_parameters[0], sorted_errors['polarizer_efficiancy'])
     if old_fit.polarization_parameters[1]!=new_fit.polarization_parameters[1]:
-      text_string+='Analyzer efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+      text_string+='Analyzer efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
         (old_fit.polarization_parameters[1], new_fit.polarization_parameters[1], sorted_errors['analyzer_efficiancy'])
     if old_fit.polarization_parameters[2]!=new_fit.polarization_parameters[2]:
-      text_string+='1st Flipper efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+      text_string+='1st Flipper efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
         (old_fit.polarization_parameters[2], new_fit.polarization_parameters[2], sorted_errors['flipper0_efficiancy'])
     if old_fit.polarization_parameters[3]!=new_fit.polarization_parameters[3]:
-      text_string+='2nd Flipper efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n' %  \
+      text_string+='2nd Flipper efficiency:\t\t%# .6g  \t->   %# .6g    +/- %# .6g\n'%\
         (old_fit.polarization_parameters[3], new_fit.polarization_parameters[3], sorted_errors['flipper1_efficiancy'])
     text_string+='\n\nDo you want to use these new parameters?'
     text=gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview. 
-    buffer = text.get_buffer()
+    buffer=text.get_buffer()
     buffer.set_text(text_string)
-    sw = gtk.ScrolledWindow()
+    sw=gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
     # scrollbars.
@@ -1080,13 +1080,13 @@ set style increment user
     sw.add_with_viewport(text) # add textbuffer view widget
     sw.show_all()
     results.vbox.add(sw) # add table to dialog box
-    results.set_default_size(500,450)
-    results.add_button('OK',1) # button replot has handler_id 1
-    results.add_button('Cancel',2) # button replot has handler_id 2
+    results.set_default_size(500, 450)
+    results.add_button('OK', 1) # button replot has handler_id 1
+    results.add_button('Cancel', 2) # button replot has handler_id 2
     #dialog.connect("response", self.result_window_response, dialog, window, new_fit)
     # connect dialog to main window
     window.open_windows.append(dialog)
-    results.connect("destroy", lambda *w: window.open_windows.remove(dialog))
+    results.connect("destroy", lambda*w: window.open_windows.remove(dialog))
     response=results.run()
     self.result_window_response(response, dialog, window, new_fit)
     results.destroy()
@@ -1096,51 +1096,51 @@ set style increment user
       file selection dialog for parameter export to .ent file
     '''
     #++++++++++++++++File selection dialog+++++++++++++++++++#
-    file_dialog=gtk.FileChooserDialog(title='Export to...', action=gtk.FILE_CHOOSER_ACTION_SAVE, 
-                                      buttons=(gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, 
+    file_dialog=gtk.FileChooserDialog(title='Export to...', action=gtk.FILE_CHOOSER_ACTION_SAVE,
+                                      buttons=(gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL,
                                                gtk.RESPONSE_CANCEL))
     file_dialog.set_default_response(gtk.RESPONSE_OK)
     file_dialog.set_current_name(self.active_file_name+'.ent')
-    filter = gtk.FileFilter()
+    filter=gtk.FileFilter()
     filter.set_name('Entry file')
     filter.add_pattern('*.ent')
     file_dialog.add_filter(filter)
-    filter = gtk.FileFilter()
+    filter=gtk.FileFilter()
     filter.set_name('All')
     filter.add_pattern('*.*')
     file_dialog.add_filter(filter)
     use_multilayer=gtk.CheckButton(label='Combine 1st multiplot (don\'t export every single layer)', use_underline=True)
     use_multilayer.show()
     file_dialog.vbox.pack_end(use_multilayer, expand=False)
-    response = file_dialog.run()
-    if response == gtk.RESPONSE_OK:
+    response=file_dialog.run()
+    if response==gtk.RESPONSE_OK:
       file_name=file_dialog.get_filename()
-    elif response == gtk.RESPONSE_CANCEL:
+    elif response==gtk.RESPONSE_CANCEL:
       file_dialog.destroy()
       return False
     file_dialog.destroy()
     #----------------File selection dialog-------------------#
     file_prefix=file_name.rsplit('.ent', 1)[0]
-    self.export_data_and_entfile(os.path.dirname(file_prefix), 
-                                 os.path.basename(file_prefix)+'.ent', 
-                                 datafile_prefix=os.path.basename(file_prefix), 
+    self.export_data_and_entfile(os.path.dirname(file_prefix),
+                                 os.path.basename(file_prefix)+'.ent',
+                                 datafile_prefix=os.path.basename(file_prefix),
                                  use_multilayer=use_multilayer.get_active(), use_roughness_gradient=False)
     return True
-  
+
   def import_fit_dialog(self, action, window):
     '''
       file selection dialog for parameter import from .ent file
     '''
     #++++++++++++++++File selection dialog+++++++++++++++++++#
-    file_dialog=gtk.FileChooserDialog(title='Open new entfile...', 
-                                      action=gtk.FILE_CHOOSER_ACTION_OPEN, 
+    file_dialog=gtk.FileChooserDialog(title='Open new entfile...',
+                                      action=gtk.FILE_CHOOSER_ACTION_OPEN,
                                       buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
     file_dialog.set_default_response(gtk.RESPONSE_OK)
-    filter = gtk.FileFilter()
+    filter=gtk.FileFilter()
     filter.set_name('Entry file')
     filter.add_pattern('*.ent')
     file_dialog.add_filter(filter)
-    filter = gtk.FileFilter()
+    filter=gtk.FileFilter()
     filter.set_name('All')
     filter.add_pattern('*.*')
     file_dialog.add_filter(filter)
@@ -1150,10 +1150,10 @@ set style increment user
     align.add(x_ray_import)
     align.show_all()
     file_dialog.vbox.pack_end(align, expand=False, fill=True, padding=0)
-    response = file_dialog.run()
-    if response == gtk.RESPONSE_OK:
+    response=file_dialog.run()
+    if response==gtk.RESPONSE_OK:
       file_name=file_dialog.get_filename()
-    elif response == gtk.RESPONSE_CANCEL:
+    elif response==gtk.RESPONSE_CANCEL:
       file_dialog.destroy()
       return False
     file_dialog.destroy()
@@ -1168,15 +1168,15 @@ set style increment user
         return False
     self.dialog_fit(action, window)
     return True
-  
+
   def join_datasets_dialog(self, action, window):
     '''
       Select two datasets and join them together.
     '''
     imported_files=self.file_data.keys()
     imported_files.sort()
-    dialog=SimpleEntryDialog('Select Datasets to Join...', 
-                             (('Dataset 1', imported_files, imported_files.index(self.active_file_name)), 
+    dialog=SimpleEntryDialog('Select Datasets to Join...',
+                             (('Dataset 1', imported_files, imported_files.index(self.active_file_name)),
                              ('Dataset 2', imported_files, 0))
                              )
     options, result=dialog.run()
@@ -1185,7 +1185,7 @@ set style increment user
       d1=self.file_data[options['Dataset 1']]
       d2=self.file_data[options['Dataset 2']]
       if len(d1)<len(d2):
-        print "Can't join datasets with length %i and %i." % (len(d1), len(d2))
+        print "Can't join datasets with length %i and %i."%(len(d1), len(d2))
         return
       elif d1 is d2:
         print "You need to select different datasets."
@@ -1193,9 +1193,9 @@ set style increment user
       self.join_datasets(options['Dataset 1'], options['Dataset 2'])
       window.measurement=self.active_file_data
       window.replot()
-  
+
   #++++++++++ GISANS functions only present in this mode +++++++
-  
+
   def seperate_scattering(self, action, window, preset=None):
     '''
       Add or substract measured polarizations from each other
@@ -1204,68 +1204,68 @@ set style increment user
     # build a list of MeasurementData objects in active_file_data for the polarizations
     polarization_list=[]
     for key, object in self.file_data.items():
-      polarization_list+=[(dataset,key) for dataset in object]
+      polarization_list+=[(dataset, key) for dataset in object]
     combine_list=[]
     def add_object():
       '''Subdialog to add one chanel to the separation.'''
       add_dialog=gtk.Dialog(title='Add polarization:')
-      add_dialog.set_default_size(100,50)
+      add_dialog.set_default_size(100, 50)
       add_dialog.add_button('OK', 1)
       add_dialog.add_button('Cancle', 0)
-      align_table=gtk.Table(4,1,False)
+      align_table=gtk.Table(4, 1, False)
       label=gtk.Label('sign: ')
-      align_table.attach(label, 0,1, 0, 1, 0,0, 0,0);
+      align_table.attach(label, 0, 1, 0, 1, 0, 0, 0, 0);
       sign=gtk.Entry()
       sign.set_text('+')
-      align_table.attach(sign, 1,2, 0, 1, 0,0, 0,0);
+      align_table.attach(sign, 1, 2, 0, 1, 0, 0, 0, 0);
       multiplier=gtk.Entry()
       multiplier.set_text('1')
-      align_table.attach(multiplier, 2,3, 0, 1, 0,0, 0,0);
+      align_table.attach(multiplier, 2, 3, 0, 1, 0, 0, 0, 0);
       object_box=gtk.combo_box_new_text()
       object_box.append_text('0-('+os.path.split(polarization_list[0][1])[1]+'-'+polarization_list[0][0].short_info+')')
       for i, object in enumerate(polarization_list[1:]):
         object_box.append_text(str(i+1)+'-('+os.path.split(object[1])[1]+'-'+object[0].short_info+')')
       object_box.set_active(0)
-      align_table.attach(object_box, 3,4, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0)
+      align_table.attach(object_box, 3, 4, 0, 1, gtk.EXPAND|gtk.FILL, 0, 0, 0)
       add_dialog.vbox.add(align_table)
       add_dialog.show_all()
       result=add_dialog.run()
       if result==1:
-        if sign.get_text() in ['+','-', '*', '/']:
+        if sign.get_text() in ['+', '-', '*', '/']:
           sign=sign.get_text()
         else:
           sign='+'
-        combine_list.append( (object_box.get_active(), sign, float(multiplier.get_text())) )
+        combine_list.append((object_box.get_active(), sign, float(multiplier.get_text())))
         label=gtk.Label(sign+multiplier.get_text()+'*{'+object_box.get_active_text()+'}')
         label.show()
-        function_table.attach(label, 0,1, len(combine_list)-1,len(combine_list), 0,0, 0,0)
+        function_table.attach(label, 0, 1, len(combine_list)-1, len(combine_list), 0, 0, 0, 0)
       add_dialog.destroy()
     combine_dialog=gtk.Dialog(title='Combination of polarizations:')
-    combine_dialog.set_default_size(150,50)
+    combine_dialog.set_default_size(150, 50)
     combine_dialog.add_button('Add', 2)
     combine_dialog.add_button('OK', 1)
     combine_dialog.add_button('Cancle', 0)
-    table=gtk.Table(3,1,False)
+    table=gtk.Table(3, 1, False)
     input_filed=gtk.Entry()
     input_filed.set_width_chars(4)
     input_filed.set_text('Result')
     table.attach(input_filed,
                 # X direction #          # Y direction
-                0, 1,                      0, 1,
-                gtk.EXPAND | gtk.FILL,     0,
-                0,                         0);
+                0, 1, 0, 1,
+                gtk.EXPAND|gtk.FILL, 0,
+                0, 0);
     label=gtk.Label(" = ")
     table.attach(label,
                 # X direction #          # Y direction
-                1, 2,                      0, 1,
-                0,                         0,
-                0,                         0);
-    function_table=gtk.Table(1,1,False)
+                1, 2, 0, 1,
+                0, 0,
+                0, 0);
+    function_table=gtk.Table(1, 1, False)
     table.attach(function_table,
                 # X direction #          # Y direction
-                2, 3,                      0, 1,
-                gtk.EXPAND | gtk.FILL,     0,
-                0,                         0);
+                2, 3, 0, 1,
+                gtk.EXPAND|gtk.FILL, 0,
+                0, 0);
     combine_dialog.vbox.add(table)
     combine_dialog.show_all()
     # if a preset is used create the right list and show the function
@@ -1277,7 +1277,7 @@ set style increment user
         try:
           label=gtk.Label(item[1]+str(item[2])+'*{'+str(i)+'-('+polarization_list[item[0]][0].short_info+')}')
           label.show()
-          function_table.attach(label, 0,1, i,i+1, 0,0, 0,0)        
+          function_table.attach(label, 0, 1, i, i+1, 0, 0, 0, 0)
         except IndexError:
           combine_dialog.destroy()
           return None
@@ -1290,7 +1290,7 @@ set style increment user
       window.index_mess=len(self.active_file_data)-1
       window.replot()
     combine_dialog.destroy()
-  
+
   def calculate_combination(self, combine_list, polarization_list, title):
     '''
       Calculate a combination of polarization directions as
@@ -1300,21 +1300,21 @@ set style increment user
       @param polarization_list The chanels which will be combined
       @param title Name of the new created chanel
     '''
-    if combine_list[0][1] != '-':
+    if combine_list[0][1]!='-':
       result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
     else:
       result=-1.*combine_list[0][2]*polarization_list[combine_list[0][0]][0]
     for object, sign, multiplier in combine_list[1:]:
-      if sign == '+':
+      if sign=='+':
         result=result+multiplier*polarization_list[object][0]
-      elif sign == '*':
+      elif sign=='*':
         result=result*(multiplier*polarization_list[object][0])
-      elif sign == '/':
+      elif sign=='/':
         result=result/(multiplier*polarization_list[object][0])
       else:
         result=result-multiplier*polarization_list[object][0]
       if result is None:
-        message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
+        message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE,
                                   message_format='You can only combine polarizations with the same number of measured points!')
         message.run()
         message.destroy()
@@ -1337,20 +1337,20 @@ set style increment user
     '''
       Replot the simulated and measured data.
     '''
-    dataset=window.measurement[window.index_mess]        
+    dataset=window.measurement[window.index_mess]
     simu=read_data.treff.read_simulation(self.TEMP_DIR+'simulation_pp')
     simu.number='sim_'+dataset.number
     simu.short_info='simulation'
     simu.sample_name=dataset.sample_name
     dataset.plot_together=[dataset, simu]
-    window.replot()  
-  
+    window.replot()
+
   def smooth_dataset_dialog(self, session, window):
     '''
       Smooth the dataset with a gaussian.
     '''
-    parameters, result=SimpleEntryDialog('Gaussian Smoothing...', 
-                         (('Size [pix]', 5, int),('Size-y [pix]', 'None', str)) ).run()
+    parameters, result=SimpleEntryDialog('Gaussian Smoothing...',
+                         (('Size [pix]', 5, int), ('Size-y [pix]', 'None', str))).run()
     if result:
       try:
         size_y=int(parameters['Size-y [pix]'])
@@ -1358,17 +1358,17 @@ set style increment user
       except ValueError:
         self.smooth_dataset(window.measurement[window.index_mess], parameters['Size [pix]'], None)
       window.replot()
-      print "Smoothed with %i pixel filter size." % parameters['Size [pix]']
-  
+      print "Smoothed with %i pixel filter size."%parameters['Size [pix]']
+
   def separate_active_scattering_d17_dialog(self, session, window):
     '''
       Select the polarization channels for the correction.
     '''
-    P, result=SimpleEntryDialog('Polarization Parameters:', 
+    P, result=SimpleEntryDialog('Polarization Parameters:',
                          (('p1', 0.01, float),
-                          ('p2', 0.01, float), 
-                          ('F1', 0.01, float), 
-                          ('F2', 0.01, float)) ).run()
+                          ('p2', 0.01, float),
+                          ('F1', 0.01, float),
+                          ('F2', 0.01, float))).run()
     if result:
       for key, value in P.items():
         P[key]=[value]
@@ -1379,4 +1379,4 @@ set style increment user
       window.index_mess=0
       window.rebuild_menus()
       window.replot()
-    
+

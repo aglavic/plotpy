@@ -21,7 +21,7 @@ import config.templates
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 
@@ -157,10 +157,10 @@ class PreviewDialog(gtk.Dialog):
     '''
       Called to show the dialog and create unset previews.
     '''
-    def stop_preview_creation(dialog, id):
+    def stop_preview_creation(dialog, id_):
       # Stop the preview creation on a response signal
       self.stop_preview=True
-      self.response_id=id
+      self.response_id=id_
     self.show()
     self.stop_preview=False
     self.connect('response', stop_preview_creation)
@@ -334,11 +334,12 @@ class PreviewDialog(gtk.Dialog):
                                   [dataset],
                                   'preview',
                                   dataset.short_info,
-                                  [object.short_info for object in dataset.plot_together],
+                                  [item.short_info for item in dataset.plot_together],
                                   main_window.errorbars,
                                   output_file=self.preview_temp_file,
                                   fit_lorentz=False)
-      buf=gtk.gdk.pixbuf_new_from_file(self.preview_temp_file).scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
+      buf=gtk.gdk.pixbuf_new_from_file(self.preview_temp_file).scale_simple(
+                                              100, 50, gtk.gdk.INTERP_BILINEAR)
       image.set_from_pixbuf(buf)
       dataset.preview=buf
     while gtk.events_pending():
@@ -519,8 +520,8 @@ class SimpleEntryDialog(gtk.Dialog):
       # if a mouse callback is registered it doesn't
       # work with Dialog.run
       self._result=None
-      def set_result(widget, id):
-        self._result=id
+      def set_result(widget, id_):
+        self._result=id_
       self.connect('response', set_result)
       self.show_all()
       while self._result is None:
@@ -570,7 +571,7 @@ class SimpleEntryDialog(gtk.Dialog):
           raise IndexError, "position tuple only has 6 items"
     self.mouse_position_entries=entries
     self.mouse_position_step=0
-    for key, index in entries[0]:
+    for key, ignore in entries[0]:
       self.entries[key].modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse('red'))
       self.entries[key].modify_text(gtk.STATE_SELECTED, gtk.gdk.color_parse('yellow'))
 
@@ -1581,7 +1582,7 @@ class OptionSwitchSelection(gtk.Table):
         entry.connect('changed', self._entry_set)
         entries.append((name, [entry]))
       elif vtype is list:
-        entries.append((name, value))
+        entries.append((name, vtype))
       elif vtype is tuple:
         pass
       elif vtype is bool:

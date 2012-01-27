@@ -320,10 +320,10 @@ class FileActions:
       elif action_name=='Last':
         mp.select_item(-1)
       elif action_name=='Next':
-        mp.select_item(min(len(mp)-1, mp.item_index+1))
+        mp.select_item(min(len(mp.multiplots)-1, mp.item_index+1))
       else:
         try:
-          if len(mp)>int(self.window.plot_page_entry.get_text()) and\
+          if len(mp.multiplots)>int(self.window.plot_page_entry.get_text()) and\
             int(self.window.plot_page_entry.get_text())>=0:
             mp.select_item(int(self.window.plot_page_entry.get_text()))
         except ValueError:

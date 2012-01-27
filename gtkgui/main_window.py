@@ -430,7 +430,7 @@ class ApplicationMainWindow(gtk.Window):
     self.view_right.hide()
 
     while len(self.measurement)==0:
-      # if there is no measurement loaded, open a file selction dialog
+      # if there is no measurement loaded, open a file selection dialog
       while gtk.events_pending():
         gtk.main_iteration(False)
       return_status_ok=self.add_file(None, hide_status=False)
@@ -452,6 +452,7 @@ class ApplicationMainWindow(gtk.Window):
     #+++++++++++++ Show window and connecting events ++++++++++++++
     self.read_window_config()
     self.show_all()
+    self.frame1.set_current_page(0)
     # resize events
     self.connect("event-after", self.update_picture)
     self.connect("configure-event", self.update_size)
@@ -617,7 +618,8 @@ class ApplicationMainWindow(gtk.Window):
     '''
     import config
     dialog=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE,
-                                  message_format='The configuration files can be found at: \n%s'%config.__path__[0])
+                message_format='The configuration files can be found at: \n%s'%
+                                                            config.__path__[0])
     dialog.run()
     dialog.destroy()
 
@@ -1253,7 +1255,7 @@ class ApplicationMainWindow(gtk.Window):
     # change ranges
     plot_options=self.active_dataset.plot_options
     if self.active_multiplot:
-      self.multiplot.plot_options=mp[0][0].plot_options
+      self.multiplot.plot_options=self.active_multiplot[0].plot_options
     if len(xin)==2:
       try:
         plot_options.xrange=xin
@@ -1586,8 +1588,7 @@ class ApplicationMainWindow(gtk.Window):
     paned=gtk.VPaned()
 
     # Label
-    label=gtk.Label()
-    label.set_markup('Gnuplot input for the last plot:')
+    label=gtk.Label('Gnuplot input for the last plot:')
     table.attach(label, 0, 1, 0, 1, 0, 0, 0, 0);
 
     # plot options
@@ -1596,26 +1597,25 @@ class ApplicationMainWindow(gtk.Window):
     # POLICY_AUTOMATIC will automatically decide whether you need
     # scrollbars.
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    text_filed=gtk.Label()
-    text_filed.set_markup(plot_text.replace('<', '[').replace('>', ']'))
-    sw.add_with_viewport(text_filed) # add textbuffer view widget
+    text_field=gtk.Label(plot_text)
+    #text_filed.set_markup(plot_text.replace('<', '[').replace('>', ']'))
+    sw.add_with_viewport(text_field) # add textbuffer view widget
     table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0)
     paned.add(table)
     # errors of the last plot
     if self.last_plot_text!='':
       table=gtk.Table(1, 2, False)
       # Label
-      label=gtk.Label()
-      label.set_markup('Error during execution:')
+      label=gtk.Label('Error during execution:')
       table.attach(label, 0, 1, 0, 1, 0, 0, 0, 0);
       sw=gtk.ScrolledWindow()
       # Set the adjustments for horizontal and vertical scroll bars.
       # POLICY_AUTOMATIC will automatically decide whether you need
       # scrollbars.
       sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-      text_filed=gtk.Label()
-      text_filed.set_markup(self.last_plot_text)
-      sw.add_with_viewport(text_filed) # add textbuffer view widget
+      text_field=gtk.Label(self.last_plot_text)
+      #text_field.set_markup()
+      sw.add_with_viewport(text_field) # add textbuffer view widget
       table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0)
       paned.add(table)
       paned.set_position(400)
@@ -2553,12 +2553,12 @@ set multiplot layout %i,1
                                   gnuplot_preferences.defined_color_patterns[pattern])
     gptext+='unset multiplot\n'
     # send commands to gnuplot
-    measurement_data_plotting.gnuplot_instance.stdin.write('reset\n')
-    measurement_data_plotting.gnuplot_instance.stdin.write(gptext)
-    measurement_data_plotting.gnuplot_instance.stdin.write('\nprint "|||"\n')
-    output=measurement_data_plotting.gnuplot_instance.stdout.read(3)
+    measurement_data_plotting.gnuplot_instance.stdin.write('reset\n') #@UndefinedVariable
+    measurement_data_plotting.gnuplot_instance.stdin.write(gptext) #@UndefinedVariable
+    measurement_data_plotting.gnuplot_instance.stdin.write('\nprint "|||"\n') #@UndefinedVariable
+    output=measurement_data_plotting.gnuplot_instance.stdout.read(3) #@UndefinedVariable
     while output[-3:]!='|||':
-      output+=measurement_data_plotting.gnuplot_instance.stdout.read(1)
+      output+=measurement_data_plotting.gnuplot_instance.stdout.read(1) #@UndefinedVariable
     pattern_box=gtk.combo_box_new_text()
     # drop down menu for the pattern selection
     for pattern in pattern_names:
@@ -3403,7 +3403,7 @@ set multiplot layout %i,1
     import IPython
     if IPython.__version__<'0.11':
       from ipython_view import IPythonView, MenuWrapper, FitWrapper
-      import IPython.ipapi as ipapi
+      import IPython.ipapi as ipapi #@UnusedImport @UnresolvedImport
     else:
       from ipython_view_new import IPythonView, MenuWrapper, FitWrapper
       import IPython.core.ipapi as ipapi
@@ -3782,16 +3782,16 @@ set multiplot layout %i,1
       return None
     script_data=download_page.read()
     exec script_data
-    if __version__ not in VERSION_HISTORY:
+    if __version__ not in VERSION_HISTORY: #@UndefinedVariable
       version_index=0
     else:
-      version_index=VERSION_HISTORY.index(__version__)
+      version_index=VERSION_HISTORY.index(__version__) #@UndefinedVariable
     if self.config_object['Update']['CheckBeta']:
-      check_index=VERSION_HISTORY.index(BETA_UPDATE)
-      update_item=BETA_UPDATE
+      check_index=VERSION_HISTORY.index(BETA_UPDATE) #@UndefinedVariable
+      update_item=BETA_UPDATE #@UndefinedVariable
     else:
-      check_index=VERSION_HISTORY.index(NORMAL_UPDATE)
-      update_item=NORMAL_UPDATE
+      check_index=VERSION_HISTORY.index(NORMAL_UPDATE) #@UndefinedVariable
+      update_item=NORMAL_UPDATE #@UndefinedVariable
     if version_index<check_index:
       dialog=gtk.MessageDialog(parent=self, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_OK_CANCEL ,
         message_format="There is a new version (%s) ready to download. Do you want to install it?"%(update_item))
@@ -3799,7 +3799,7 @@ set multiplot layout %i,1
       dialog.destroy()
       if result==gtk.RESPONSE_OK:
         # run update function defined on the webpage
-        perform_update_gtk(__version__, update_item)
+        perform_update_gtk(__version__, update_item) #@UndefinedVariable
     else:
       print "Softwar is up to date."
 
@@ -4377,11 +4377,10 @@ set multiplot layout %i,1
       self.last_plot_text=self.plot(self.active_session,
                                     itemlist,
                                     multiplot[0][1],
-                                    #plotlist[0][0].short_info,
                                     multiplot.title,
                                     [item.short_info for item in itemlist],
                                     errorbars,
-                                    self.active_session.TEMP_DIR+'plot_temp.png',
+                                    output_file=self.active_session.TEMP_DIR+'plot_temp.png',
                                     fit_lorentz=False,
                                     sample_name=multiplot.sample_name)
       self.label.set_width_chars(min(len(multiplot.sample_name)+5,
@@ -4594,14 +4593,6 @@ set multiplot layout %i,1
           <menuitem action='SaveProfile' position="bottom"/>
           <menuitem action='DeleteProfile' position="bottom"/>
         </menu>
-        '''
-    if len(self.measurement)==0 or self.active_dataset.zdata>=0:
-      output+='''<menuitem action='SelectColor'/>
-        '''
-    else:
-      output+='''<menuitem action='ChangeStyle'/>
-        '''
-    output+='''<menuitem action='ChangeXYZLabel'/>
         <separator name='static9'/>
         <menu action='MultiplotMenu'>
           <menuitem action='Multiplot'/>
@@ -4610,22 +4601,38 @@ set multiplot layout %i,1
           <menuitem action='NewMultiplot'/>
           <menuitem action='ClearMultiplot'/>
         </menu>
-        <menu action='ToolbarActions'>
+        <menu action='Navigate'>
           <menuitem action='Next'/>
           <menuitem action='Prev'/>
           <menuitem action='First'/>
           <menuitem action='Last'/>
-          <separator name='static3'/>
-          <menuitem action='ErrorBars'/>
-          <menuitem action='Apply'/>
         </menu>
         <menu action='PlotAppearance'>
+          <menuitem action='Apply'/>
+          <separator name='static3'/>
           <menuitem action='PlotKeyLeft'/>
           <menuitem action='PlotKeyRight'/>
           <menuitem action='PlotKeyBottomLeft'/>
           <menuitem action='PlotKeyBottomRight'/>
+          <separator name='static31'/>
           <menuitem action='PlotToggleGrid'/>
-          <menuitem action='PlotToggleLinespoints'/>
+          '''
+    if len(self.measurement)>0 and self.active_dataset.zdata>=0:
+      output+='''<menuitem action='XYProjections'/>
+        '''
+    else:
+      output+='''<menuitem action='PlotToggleLinespoints'/>
+        <menuitem action='ErrorBars'/>
+        '''
+    output+='''<separator name='static32'/>
+      '''
+    if len(self.measurement)==0 or self.active_dataset.zdata>=0:
+      output+='''<menuitem action='SelectColor'/>
+        '''
+    else:
+      output+='''<menuitem action='ChangeStyle'/>
+        '''
+    output+='''<menuitem action='ChangeXYZLabel'/>
         </menu>
         <separator name='static4'/>
         <menuitem action='ShowPlotTree'/>
@@ -4714,19 +4721,21 @@ set multiplot layout %i,1
       <toolitem action='Last'/>
       <separator name='static10'/>
       <toolitem action='Apply'/>
-      <toolitem action='ExportAll'/>
+      <toolitem action='PlotToggleGrid'/>
       '''
     if len(self.measurement)>0 and self.active_dataset.zdata>=0:
       output+='''<toolitem action='XYProjections'/>
       '''
     else:
-      output+='''<toolitem action='ErrorBars'/>
+      output+='''<toolitem action='PlotToggleLinespoints'/>
+      <toolitem action='ErrorBars'/>
       '''
     output+='''<toolitem action='ToggleMousemode' />
       <separator name='static11'/>
       <toolitem action='AddMultiplot'/>
       <toolitem action='Multiplot'/>
       <separator name='static12'/>
+      <toolitem action='ExportAll'/>
       <toolitem action='SaveSnapshot'/>
       <toolitem action='LoadSnapshot'/>
       <separator name='static13'/>
@@ -4757,7 +4766,7 @@ set multiplot layout %i,1
       ("ExtrasMenu", None, "E_xtras"), # name, stock id, label
       ("HelpMenu", None, "_Help"), # name, stock id, label
       ("ToolBar", None, "Toolbar"), # name, stock id, label
-      ("ToolbarActions", None, "Toolbar Actions"), # name, stock id, label
+      ("Navigate", None, "Navigate"), # name, stock id, label
       ("OpenDatafile", gtk.STOCK_OPEN, # name, stock id
         "_Open File", "<control>O", # label, accelerator
         "Open a new datafile", # tooltip
@@ -4767,13 +4776,13 @@ set multiplot layout %i,1
         None, None), # tooltip
       ("SaveSnapshot", gtk.STOCK_EDIT, # name, stock id
         "Save Snapshot", "<alt>S", # label, accelerator
-        "Save the current state for this measurement.", # tooltip
+        "Save the current state for this measurement as Snapshot.", # tooltip
         self.save_snapshot),
       ("SaveSnapshotAs", gtk.STOCK_EDIT, # name, stock id
         "Save Snapshot As...", "<alt><shift>S", # label, accelerator
-        "Save the current state for this measurement.", # tooltip
+        "Save the current state for this measurement as Snapshot.", # tooltip
         self.save_snapshot),
-      ("SaveSnapshotNumpy", gtk.STOCK_EDIT, # name, stock id
+      ("SaveSnapshotNumpy", None, # name, stock id
         "Save Dataset As Numpy Archive...", "<alt><shift>N", # label, accelerator
         "Save the current state for this dataset.", # tooltip
         self.save_snapshot),
@@ -4927,7 +4936,7 @@ set multiplot layout %i,1
         self.change_color_pattern),
       ("Apply", gtk.STOCK_CONVERT, # name, stock id
         "Apply", None, #'a',                     # label, accelerator
-        "Apply current plot settings to all sequences", # tooltip
+        "Apply current plot settings to selected sequences", # tooltip
         self.apply_to_all),
       ("ExportAll", gtk.STOCK_EXECUTE, # name, stock id
         "Exp. Selection...", "<alt><shift>E", # label, accelerator
@@ -4948,14 +4957,14 @@ set multiplot layout %i,1
       ("MultiplotMenu", None, # name, stock id
         "Multiplot", None, # label, accelerator
         "Multiplot", # tooltip
-        self.export_plot),
+        None),
       ("AddMultiplot", gtk.STOCK_JUMP_TO, # name, stock id
         "_Add", '<alt>a', # label, accelerator
-        "Add/Remove plot to/from multi-plot list", # tooltip
+        "Add Plot to Multiplot List", # tooltip
         self.add_multiplot),
       ("AddAllMultiplot", gtk.STOCK_JUMP_TO, # name, stock id
         "Add all to Multiplot", '<alt><shift>a', # label, accelerator
-        "Add/Remove all sequences to/from multi-plot list", # tooltip
+        "Add all sequences to Multiplot List", # tooltip
         self.add_multiplot),
       ("ClearMultiplot", gtk.STOCK_DELETE, # name, stock id
         "Clear Multiplot List", '<control><alt>a', #'c',                     # label, accelerator
@@ -5036,7 +5045,7 @@ set multiplot layout %i,1
         self.change_plot_appearance),
       ("PlotToggleGrid", None, # name, stock id
         "Toggle grid", 'F9', # label, accelerator
-        "Toggle grid", # tooltip
+        "Toggle grid (None, Major, Minor, Major-Front, Minor-Front)", # tooltip
         self.change_plot_appearance),
       ("PlotToggleLinespoints", None, # name, stock id
         "Toggle lines/linespoints", 'F6', # label, accelerator
@@ -5064,6 +5073,40 @@ set multiplot layout %i,1
         self.toolbar_ui_id=self.UIManager.add_ui_from_string(ui_info)
     except gobject.GError, msg:
         print "building menus failed: %s"%msg
+    for item in config.gui.ICONS.items():
+      self.replace_icon(*item)
+
+
+  def replace_icon(self, item, imgfile):
+    '''
+      Cange the icon of one toolbar button to a user defined file.
+      The file gets scaled to fit in a 24x24 pix button.
+    '''
+    size=float(config.gui.ICON_SIZE)
+    path=self.active_session.SCRIPT_PATH
+    icon=os.path.join(path, 'gtkgui', 'icons', imgfile)
+    buf=gtk.gdk.pixbuf_new_from_file(icon)
+    width=buf.get_width()
+    height=buf.get_height()
+    scale=min(size/width, size/height)
+    buf=buf.scale_simple(int(width*scale), int(height*scale), gtk.gdk.INTERP_BILINEAR)
+
+    toolbutton=self.UIManager.get_widget('/ui/ToolBar/'+item)
+    if toolbutton is not None:
+      img=gtk.Image()
+      img.set_from_pixbuf(buf)
+      img.show()
+      toolbutton.set_icon_widget(img)
+    for menu in ['FileMenu', 'ViewMenu/ToolbarActions',
+                 'FileMenu/SnapshotSub', 'ViewMenu/MultiplotMenu',
+                 'ViewMenu/PlotAppearance',
+                 ]:
+      menuitem=self.UIManager.get_widget('/ui/MenuBar/'+menu+'/'+item)
+      if menuitem is not None:
+        img=gtk.Image()
+        img.set_from_pixbuf(buf)
+        img.show()
+        menuitem.set_image(img)
 
   #---------------------Functions responsible for menus and toolbar----------------------#
 

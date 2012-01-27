@@ -3,10 +3,10 @@
  Functions to parallelize some functions of the program using the IPython multiprocessing features.
 '''
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__status__="Development"
 
 import config.parallel
 import sys
@@ -31,9 +31,9 @@ def connect():
   try:
     client=Client(**config.parallel.CLIENT_KW)
   except Exception, error:
-    print "Could not connect to cluster:\n  %s - %s" % (type(error).__name__, error)
+    print "Could not connect to cluster:\n  %s - %s"%(type(error).__name__, error)
     return False
-  print "\tconnected to controller with %i engines" % len(client.ids)
+  print "\tconnected to controller with %i engines"%len(client.ids)
   dview=client[:]
   lview=client.load_balanced_view()
   # change std. execution method to be blocking
@@ -41,18 +41,18 @@ def connect():
   lview.block=True
   # prepare the client with the most common used modules
   print "\tpreparing necessary modules..."
-  general=[ 
-            'import numpy', 
-            'import sys', 
-            'import os', 
-            'if not "%s" in sys.path: sys.path.append("%s");' % (config.parallel.CLUSTER_PLOTPY_DIR, 
+  general=[
+            'import numpy',
+            'import sys',
+            'import os',
+            'if not "%s" in sys.path: sys.path.append("%s");'%(config.parallel.CLUSTER_PLOTPY_DIR,
                                                                  config.parallel.CLUSTER_PLOTPY_DIR),
-            'import plugins', 
-            "user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')", 
+            'import plugins',
+            "user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')",
             '''if os.path.exists(user_folder) and os.path.exists(os.path.join(user_folder, 'plugins')) \
 and not os.path.join(user_folder, 'plugins') in sys.path: \
-sys.path.append(os.path.join(user_folder, 'plugins'));''', 
-            'import fit_data', 
+sys.path.append(os.path.join(user_folder, 'plugins'));''',
+            'import fit_data',
             ]
   l=0
   sys.stdout.write('\t\t')
@@ -103,19 +103,19 @@ if multiprocessing is not None:
     '''
       Thread which executes arbitrary code from a never ending main loop.
     '''
-    
+
     def __init__(self, globals={}, locals={}):
       self.locals=manager.dict(locals)
       self.globals=manager.dict(globals)
       self._options=manager.dict(
-                                execute=False, 
-                                finished=True, 
-                                stay_alive=True, 
-                                ex_action='', 
+                                execute=False,
+                                finished=True,
+                                stay_alive=True,
+                                ex_action='',
                                 last_exception=None,
                                   )
       multiprocessing.Process.__init__(self)
-    
+
     def run(self):
       '''
         Start the threads main loop.
@@ -136,7 +136,7 @@ if multiprocessing is not None:
       self._options['finished']=False
       self._options['last_exception']=None
       self._options['execute']=True
-    
+
     def _do_execution(self):
       try:
         global_dict=dict(self.globals)
@@ -156,7 +156,7 @@ if multiprocessing is not None:
       Worker thread controller object. Should be a replacement for the ipython
       direct view of the multiprocessing facility.
     '''
-    
+
     def __init__(self, max_threads=multiprocessing.cpu_count(), startup_actions=[]):
       self.max_threads=max_threads
       self.workers=[]
@@ -172,7 +172,7 @@ if multiprocessing is not None:
         wi=Worker(w0.globals, w0.locals)
         wi.start()
         self.workers.append(wi)
-    
+
     def execute(self, action):
       for worker in self.workers:
         worker.execute(action)
@@ -189,11 +189,11 @@ if multiprocessing is not None:
         if key in worker.locals:
           output.append(worker.locals[key])
       return output
-      
+
     def __setitem__(self, key, value):
       for worker in self.workers:
         worker.locals[key]=value
-      
+
     def scatter(self, key, value):
       N=len(self.workers)
       L=len(value)
@@ -214,30 +214,30 @@ if multiprocessing is not None:
       else:
         raise NotImplementedError, 'only list and arrays are supported'
       return output
-        
-      
 
-    
+
+
+
   def connect_threads():
     global dview
-    print "Initializing threadding with %i threads..." % cpu_count()
-    general=[ 
-              'import numpy', 
-              'import sys', 
-              'import os', 
-              'if not "%s" in sys.path: sys.path.append("%s");' % (config.parallel.CLUSTER_PLOTPY_DIR, 
+    print "Initializing threadding with %i threads..."%cpu_count() #@UndefinedVariable
+    general=[
+              'import numpy',
+              'import sys',
+              'import os',
+              'if not "%s" in sys.path: sys.path.append("%s");'%(config.parallel.CLUSTER_PLOTPY_DIR,
                                                                    config.parallel.CLUSTER_PLOTPY_DIR),
-              'import plugins', 
-              "user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')", 
+              'import plugins',
+              "user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')",
               '''if os.path.exists(user_folder) and os.path.exists(os.path.join(user_folder, 'plugins')) \
   and not os.path.join(user_folder, 'plugins') in sys.path: \
-  sys.path.append(os.path.join(user_folder, 'plugins'));''', 
-              'import fit_data', 
+  sys.path.append(os.path.join(user_folder, 'plugins'));''',
+              'import fit_data',
               ]
     dview=Controller(startup_actions=general+additional_actions)
     print "\n\tFinished!"
-    
-    
+
+
 else:
   class Controller(object):
     pass

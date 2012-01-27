@@ -20,44 +20,45 @@ from glob import glob
 import subprocess
 
 __name__='plot-script'
-__author__ = "Artur Glavic"
+__author__="Artur Glavic"
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__author_email__ = __email__
-__url__ = "http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki"
+__author_email__=__email__
+__url__="http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki"
 __description__='''Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.'''
 
 __scripts__=['plot.py']
 __py_modules__=[]
 __package_dir__={'plot_script': '.'}
-__packages__=['plot_script', 'plot_script.config', 'plot_script.config.default_templates', 
-            'plot_script.read_data', 'plot_script.sessions', 
+__packages__=['plot_script', 'plot_script.config', 'plot_script.config.default_templates',
+            'plot_script.read_data', 'plot_script.sessions',
             'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui', 'plot_script.plugins'] #'plot_script.wxgui', 
-__package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90', 
-                            'fit/pnr_multi/*.f90', 'logo*.png'], 
-                  'plot_script': ['doc/*.html', 'gpl.pdf'], 
+__package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90',
+                            'fit/pnr_multi/*.f90', 'logo*.png'],
+                  'plot_script': ['doc/*.html', 'gpl.pdf'],
+                  'plot_script.gtkgui': ['icons/*.png'],
                     }
 __data_files__=[('doc', glob('doc/*.html'))]
 
 if "py2app" in sys.argv:
-  import py2app
+  import py2app #@UnusedImport @UnresolvedImport
   __scripts__=['__init__.py']
   #__data_files__+=[('../Frameworks', glob('/usr/lib/libwx_mac*'))]
-  __options__={ 
-              "app": ['__init__.py'], 
+  __options__={
+              "app": ['__init__.py'],
               "options": { "py2app": {
-                           "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio", 
+                           "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
                            #"excludes": "__init__", 
                            "optimize": 1, # Keep docstrings
-                           "packages": "encodings, gtk, sessions, read_data, gtkgui, IPython", 
-                           "resources": glob("doc/*.html"), 
-                           "iconfile": "config/logo.png", 
+                           "packages": "encodings, gtk, sessions, read_data, gtkgui, IPython",
+                           "resources": glob("doc/*.html"),
+                           "iconfile": "config/logo.png",
                            #"argv_emulation": True,
-                           }, 
+                           },
                           }
               }
 elif "py2exe" in sys.argv:
-  import py2exe
-  __options__={ 
+  import py2exe #@UnusedImport @UnresolvedImport
+  __options__={
                 #"setup_requires": ['py2exe'], 
                 #"console": [ "__init__.py"], # set the executable for py2exe
                 "windows": [ "__init__.py" ], # executable for py2exe is windows application            
@@ -66,12 +67,12 @@ elif "py2exe" in sys.argv:
                               "optimize": 1, # Keep docstring (e.g. IPython console usage)
                               "skip_archive": True, # setting not to move compiled code into library.zip file
                               'packages':'encodings, gtk, sessions, read_data, gtkgui, IPython, PIL',
-                              "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'], 
-                             }, 
+                              "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'],
+                             },
                            }
               }
 else:
-  __options__={"setup_requires":[], 
+  __options__={"setup_requires":[],
                 }
 
 __requires__=['pygtk', 'gobject', 'numpy']
@@ -83,7 +84,7 @@ from distutils.core import setup, Extension
 #                      include_dirs = ['/usr/lib/python2.6/dist-packages/numpy/core/include/numpy'])
 __extensions_modules__=[]#[mdf_module]
 
-script_files=['scripts/prd', 'scripts/psd', 'scripts/p4d', 'scripts/dnsplot', 'scripts/treffplot', 'scripts/pin12', 
+script_files=['scripts/prd', 'scripts/psd', 'scripts/p4d', 'scripts/dnsplot', 'scripts/treffplot', 'scripts/pin12',
               'scripts/plot_SQUID_data', 'scripts/plot_4circle_data', 'scripts/plot_reflectometer_data']
 # creat windows batches for the script_files
 win_batches=[script+'.bat' for script in script_files]
@@ -111,11 +112,11 @@ if 'install' in sys.argv:
   print "Testing dependencies."
   # call linux and windows gnuplot command with --help option to test if it can be called.
   try:
-    subprocess.Popen(['gnuplot','--help'], shell=False,stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+    subprocess.Popen(['gnuplot', '--help'], shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
     gnuplot=True
   except OSError:
     try:
-      subprocess.Popen(['pgnuplot','--help'], shell=False,stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+      subprocess.Popen(['pgnuplot', '--help'], shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
       gnuplot=True
     except OSError:
       print "Gnuplot must be installed to use this program."
@@ -147,13 +148,13 @@ setup(name=__name__,
       author=__author__,
       author_email=__email__,
       url=__url__,
-      scripts=__scripts__, 
-      py_modules=__py_modules__, 
-      ext_modules=__extensions_modules__, 
-      packages=__packages__, 
-      package_dir=__package_dir__, 
+      scripts=__scripts__,
+      py_modules=__py_modules__,
+      ext_modules=__extensions_modules__,
+      packages=__packages__,
+      package_dir=__package_dir__,
       package_data=__package_data__,
-      data_files=__data_files__, 
+      data_files=__data_files__,
       requires=__requires__, #does not do anything
       **__options__
      )
@@ -168,24 +169,24 @@ if ('bdist' in sys.argv):
   os.rename(__name__+'-'+__version__+'-1.noarch.rpm', __name__+'-'+__version__+'.rpm')
   os.remove(__name__+'-'+__version__+'-1.src.rpm')
   print "Creating debian folder..."
-  subprocess.Popen(['fakeroot', 'alien', '-k', '-g', __name__+'-'+__version__+'.rpm'], shell=False, 
-                   stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['fakeroot', 'alien', '-k', '-g', __name__+'-'+__version__+'.rpm'], shell=False,
+                   stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
   # creating menu entries
   os.mkdir(__name__+'-'+__version__+'/usr/share/applications/')
   os.mkdir(__name__+'-'+__version__+'.orig/usr/share/applications/')
-  subprocess.Popen(['cp']+ glob('../menu_entries_27/*.desktop')+[__name__+'-'+__version__+'/usr/share/applications/'], 
-                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
-  subprocess.Popen(['cp']+glob('../menu_entries_27/*.desktop')+[__name__+'-'+__version__+'.orig/usr/share/applications/'], 
-                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['cp']+glob('../menu_entries_27/*.desktop')+[__name__+'-'+__version__+'/usr/share/applications/'],
+                   shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['cp']+glob('../menu_entries_27/*.desktop')+[__name__+'-'+__version__+'.orig/usr/share/applications/'],
+                   shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
   # creating mime types
   os.mkdir(__name__+'-'+__version__+'/usr/share/mime/')
   os.mkdir(__name__+'-'+__version__+'/usr/share/mime/packages/')
   os.mkdir(__name__+'-'+__version__+'.orig/usr/share/mime/')
   os.mkdir(__name__+'-'+__version__+'.orig/usr/share/mime/packages/')
-  subprocess.Popen(['cp']+ glob('../mime_types/*.xml')+[__name__+'-'+__version__+'/usr/share/mime/packages/'], 
-                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
-  subprocess.Popen(['cp']+glob('../mime_types/*.xml')+[__name__+'-'+__version__+'.orig/usr/share/mime/packages/'], 
-                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['cp']+glob('../mime_types/*.xml')+[__name__+'-'+__version__+'/usr/share/mime/packages/'],
+                   shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['cp']+glob('../mime_types/*.xml')+[__name__+'-'+__version__+'.orig/usr/share/mime/packages/'],
+                   shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
   os.chdir(__name__+'-'+__version__)
   # debian control file
   deb_con=open('debian/control', 'w')
@@ -200,25 +201,25 @@ if ('bdist' in sys.argv):
   deb_tmp.close()
   # python 2.7
   print "Packaging for debian (python2.7)..."
-  subprocess.Popen(['dpkg-buildpackage', '-i.*', '-I', '-rfakeroot', '-us', '-uc'], shell=False, 
+  subprocess.Popen(['dpkg-buildpackage', '-i.*', '-I', '-rfakeroot', '-us', '-uc'], shell=False,
                    stderr=subprocess.STDOUT, stdout=open('../last_package.log', 'w')
                    ).communicate()
   os.chdir('..')
   os.rename((__name__+'_'+__version__).lower()+'-1_all.deb', __name__+'-'+__version__+'_natty.deb')
   # python 2.6
-  subprocess.Popen(['cp']+ glob('../menu_entries/*.desktop')+[__name__+'-'+__version__+'/usr/share/applications/'], 
-                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
-  subprocess.Popen(['cp']+glob('../menu_entries/*.desktop')+[__name__+'-'+__version__+'.orig/usr/share/applications/'], 
-                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
-  subprocess.Popen(['mv', __name__+'-'+__version__+'/usr/local/lib/python2.7', 
-                    __name__+'-'+__version__+'/usr/local/lib/python2.6'], 
-                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
-  subprocess.Popen(['mv', __name__+'-'+__version__+'.orig/usr/local/lib/python2.7', 
-                    __name__+'-'+__version__+'.orig/usr/local/lib/python2.6'], 
-                   shell=False, stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['cp']+glob('../menu_entries/*.desktop')+[__name__+'-'+__version__+'/usr/share/applications/'],
+                   shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['cp']+glob('../menu_entries/*.desktop')+[__name__+'-'+__version__+'.orig/usr/share/applications/'],
+                   shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['mv', __name__+'-'+__version__+'/usr/local/lib/python2.7',
+                    __name__+'-'+__version__+'/usr/local/lib/python2.6'],
+                   shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+  subprocess.Popen(['mv', __name__+'-'+__version__+'.orig/usr/local/lib/python2.7',
+                    __name__+'-'+__version__+'.orig/usr/local/lib/python2.6'],
+                   shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
   os.chdir(__name__+'-'+__version__)
   print "Packaging for debian (python2.6)..."
-  subprocess.Popen(['dpkg-buildpackage', '-i.*', '-I', '-rfakeroot', '-us', '-uc'], shell=False, 
+  subprocess.Popen(['dpkg-buildpackage', '-i.*', '-I', '-rfakeroot', '-us', '-uc'], shell=False,
                    stderr=subprocess.STDOUT, stdout=open('../last_package_2.log', 'w')).communicate()
   os.chdir('..')
   os.rename((__name__+'_'+__version__).lower()+'-1_all.deb', __name__+'-'+__version__+'_maverick.deb')
@@ -237,7 +238,7 @@ if ('install' in sys.argv) and len(sys.argv)==2:
     win_script_path=os.path.join(sys.prefix.lower(), 'scripts')
     win_path=os.path.expandvars('$PATH').lower().split(';')
     if not win_script_path in win_path:
-      print "Could not verify path!\nPlease be sure that '" + win_script_path + "' is in your path."
+      print "Could not verify path!\nPlease be sure that '"+win_script_path+"' is in your path."
   else:
     # Linux/OS-X installation
     pass
@@ -248,14 +249,14 @@ if ('install' in sys.argv) and len(sys.argv)==2:
 if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
   print "Adding module directory to python path in plot.py script."
   script=open(os.path.join(sys.argv[sys.argv.index('--install-scripts')+1], 'plot.py'), 'r')
-  text=script.read().replace('##---add_python_path_here---##','sys.path.insert(1,"'+\
+  text=script.read().replace('##---add_python_path_here---##', 'sys.path.insert(1,"'+\
                     glob(os.path.join(sys.argv[sys.argv.index('--prefix')+1], 'lib/python2.?/site-packages'))[-1]\
                     +'")')
   script.close()
   script=open(os.path.join(sys.argv[sys.argv.index('--install-scripts')+1], 'plot.py'), 'w')
   script.write(text)
   script.close()
-  
+
 # py2exe specific stuff to make it work:
 if "py2exe" in sys.argv and not py2exe_test:
   def xcopy_to_folder(from_folder, to_folder):
@@ -264,17 +265,17 @@ if "py2exe" in sys.argv and not py2exe_test:
       src=os.path.join(*from_folder)
     else:
       src=from_folder
-    print "Copy %s to %s..." % (src, dest)
+    print "Copy %s to %s..."%(src, dest)
     try:
       os.mkdir(os.path.join('archiv', to_folder))
     except OSError:
-      print "\tDirectory %s already exists." % dest
+      print "\tDirectory %s already exists."%dest
     try:
-      handle=os.popen('xcopy %s %s /y /e' % (src, dest))
+      handle=os.popen('xcopy %s %s /y /e'%(src, dest))
       files=len(handle.read().splitlines())
-      print "\t%i Files" % files
+      print "\t%i Files"%files
     except:
-      print "\tSkipped because of errors!" % src
+      print "\tSkipped because of errors!"%src
   print "\nRenaming executable"
   os.popen('copy archiv\\__init__.exe archiv\\plot.exe')
   os.popen('del archiv\\__init__.exe')
@@ -284,21 +285,22 @@ if "py2exe" in sys.argv and not py2exe_test:
   gtk_folder='C:\\gtk'
   #gtk_folder='C:\\Python27\\Lib\\site-packages\\gtk-2.0\\runtime'
   for src, dest in [
-                    (gtk_folder+'\\etc', 'etc'), 
-                    (gtk_folder+'\\share\\*.none', 'share'), 
-                    (gtk_folder+'\\share\\locale', 'share\\locale'), 
-                    (gtk_folder+'\\share\\themes', 'share\\themes'), 
-                    (gtk_folder+'\\share\\icons', 'share\\icons'), 
-                    (gtk_folder+'\\bin', 'bin'), 
-                    (gtk_folder+'\\lib', 'lib'), 
-                    ('config', 'config'), 
+                    (gtk_folder+'\\etc', 'etc'),
+                    (gtk_folder+'\\share\\*.none', 'share'),
+                    (gtk_folder+'\\share\\locale', 'share\\locale'),
+                    (gtk_folder+'\\share\\themes', 'share\\themes'),
+                    (gtk_folder+'\\share\\icons', 'share\\icons'),
+                    (gtk_folder+'\\bin', 'bin'),
+                    (gtk_folder+'\\lib', 'lib'),
+                    ('config', 'config'),
+                    ('gtkgui\\icons', 'gtkgui\\icons'),
                     ]:
     xcopy_to_folder(src, dest)
   from glob import glob
   for script_file in glob('scripts\\*.bat'):
     sf=open(script_file, 'r').read()
     open(os.path.join('archiv', os.path.split(script_file)[1]), 'w').write(sf.replace('plot.py', 'plot'))
- 
+
 # py2app specific stuff to make it work: 
 #if "py2app" in sys.argv:
 #  subprocess.call(['cp', '-r','config/*','archiv/plot-script.app/Contents/Resources/lib/python2.7/config'])

@@ -4,9 +4,9 @@
   Example script how to used numpy .npz exported data from plot.py
 '''
 
-import sys
-from pylab import *
-from numpy import load
+import sys #@UnusedImport
+from pylab import * #@UnusedWildImport
+from numpy import load #@Reimport
 
 nextlog=False
 for i, name in enumerate(sys.argv[1:]):

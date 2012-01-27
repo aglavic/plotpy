@@ -41,10 +41,11 @@ class MultiplotItem(gtk.HBox):
       The dataset gets copied to make it possible
       to change plot settings and columns multiplot specific.
     '''
+    dataset, name=item
+    name=os.path.split(name)[1]
     if not just_labels:
-      self.items.append(deepcopy(item))
-    label=gtk.Label('%s\n%s'%(os.path.split(item[1])[1],
-                                item[0].short_info))
+      self.items.append((deepcopy(dataset), name))
+    label=gtk.Label('%s\n%s'%(name, dataset.short_info))
     label.show()
     self._labels.append(label)
     self.add(label)
@@ -287,6 +288,7 @@ class ItemSortAdd(gtk.Dialog):
         pd=PreviewDialog(self.parent_gui.active_session.file_data,
                          show_previews=False, single_selection=False,
                          buttons=('OK', 1, 'Cancel', 0))
+        pd.set_default_size(800, 600)
         result=pd.run()
         if result:
           items=pd.get_active_objects_with_key()
