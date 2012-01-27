@@ -670,28 +670,25 @@ class FileActions:
     first_dim="r"
     first_unit=units[cols[0]]
     new_cols=[(first_dim, first_unit), (dims[cols[2]], units[cols[2]]), (dims[cols[3]], units[cols[3]])]
-    output=MeasurementData(new_cols,
+    output=MeasurementData([],
                            [],
                            0,
                            1,
-                           2,
+                           -1,
                            )
-    # go from 0 to max_r in dr steps
-    for i in range(int(max_r/dr)+1):
-      r=i*dr
-      x_val=(i+0.5)*dr
-      #y_vals=[]
-      indices=numpy.where((dist_r>=x_val)*(dist_r<x_val+dr))[0]
-      y_vals=values[indices]
-      dy_vals=errors[indices]
-      #for i, dist in enumerate(dist_r):
-      #  if dist>=x_val and dist<x_val+dr:
-      #    y_vals.append(values[i])
-      #    dy_vals.append(errors[i])
-      if len(y_vals)>0:
-        y_val=y_vals.sum()/float(len(y_vals))
-        dy_val=sqrt((dy_vals**2).sum())/float(len(y_vals))
-        output.append((x_val, y_val, dy_val))
+    # calculate the histogam of points weighted by intensity, error² and 1
+    # the result is than calculated as hist(intensity)/hist(1)
+    # and sqrt(hist(error²))/hist(1)
+    points=int(max_r/dr)+1
+    hy, ignore=numpy.histogram(dist_r, points, weights=values)
+    hdy, ignore=numpy.histogram(dist_r, points, weights=errors**2)
+    hdy=numpy.sqrt(hdy)
+    count, hx=numpy.histogram(dist_r, points)
+    hy/=count
+    hdy/=count
+    hx=(hx[:-1]+hx[1:])/2.
+    output.data.append(PhysicalProperty(new_cols[0][0], new_cols[0][1], hx))
+    output.data.append(PhysicalProperty(new_cols[1][0], new_cols[1][1], hy, hdy))
     if len(output)==0:
       return None
     else:
