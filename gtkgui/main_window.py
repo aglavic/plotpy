@@ -191,6 +191,7 @@ class ApplicationMainWindow(gtk.Window):
     except gobject.GError, msg:
         raise RuntimeError, "building menus failed: %s"%msg
     self.menu_bar=self.UIManager.get_widget("/MenuBar")
+    # custom icons
     for item in config.gui.ICONS.items():
       self.replace_icon(*item)
     self.menu_bar.show()
@@ -200,7 +201,7 @@ class ApplicationMainWindow(gtk.Window):
         # X direction #          # Y direction
         0, 3, 0, 1,
         gtk.EXPAND|gtk.FILL, 0,
-        0, 0);
+        0, 0)
     # put toolbar below menubar, only expand in x direction
     bar=self.UIManager.get_widget("/ToolBar")
     bar.set_tooltips(True)
@@ -377,18 +378,16 @@ class ApplicationMainWindow(gtk.Window):
     # put plot settings below Plot
     table.attach(align_table,
         # X direction           Y direction
-        0, 2, 4, 5,
+        0, 3, 4, 5,
         gtk.FILL, gtk.FILL,
         0, 0)
     #---------- Create additional setting input for the plot ----------
 
     #+++ Creating entries and options according to the active measurement +++
     if len(self.measurement)>0:
-      self.label.set_width_chars(min(len(self.active_dataset.sample_name)+5,
-                                                          40)) # title width
+      self.label.set_width_chars(30) # title width
       self.label.set_text(self.active_dataset.sample_name)
-      self.label2.set_width_chars(min(len(self.active_dataset.short_info)+5,
-                                                           40)) # title width
+      self.label2.set_width_chars(30) # title width
       self.label2.set_text(self.active_dataset.short_info)
       # TODO: put this to a different location
       self.plot_options_buffer.set_text(str(self.active_dataset.plot_options))
@@ -410,7 +409,10 @@ class ApplicationMainWindow(gtk.Window):
 
     #-------Build widgets in table structure--------
 
-    # show the window settings and catch resize events
+    #+++++++++++++ Show window and connecting events ++++++++++++++
+    # show all widgets, load the last window position and size and show
+    # the window
+    table.show_all()
     self.x_range_in.hide()
     self.y_range_in.hide()
     self.z_range_in.hide()
@@ -430,6 +432,9 @@ class ApplicationMainWindow(gtk.Window):
     self.view_up.hide()
     self.view_down.hide()
     self.view_right.hide()
+    self.frame1.set_current_page(0)
+    self.read_window_config()
+    self.show()
 
     while len(self.measurement)==0:
       # if there is no measurement loaded, open a file selection dialog
@@ -451,10 +456,6 @@ class ApplicationMainWindow(gtk.Window):
       # hide thw status dialog to make it possible to reshow it
       self.status_dialog.hide()
 
-    #+++++++++++++ Show window and connecting events ++++++++++++++
-    self.read_window_config()
-    self.show_all()
-    self.frame1.set_current_page(0)
     # resize events
     self.connect("event-after", self.update_picture)
     self.connect("configure-event", self.update_size)
@@ -4251,11 +4252,9 @@ set multiplot layout %i,1
                                         sample_name=plotlist.sample_name,
                                         show_persistent=True)
     else:
-      self.label.set_width_chars(min(len(self.active_dataset.sample_name)+5,
-                                                          40))
+      self.label.set_width_chars(30)
       self.label.set_text(self.active_dataset.sample_name)
-      self.label2.set_width_chars(min(len(self.active_dataset.short_info)+5,
-                                                           40))
+      self.label2.set_width_chars(30)
       self.label2.set_text(self.active_dataset.short_info)
       self.last_plot_text=self.plot(self.active_session,
                                   [self.active_dataset],
@@ -4385,18 +4384,14 @@ set multiplot layout %i,1
                                     output_file=self.active_session.TEMP_DIR+'plot_temp.png',
                                     fit_lorentz=False,
                                     sample_name=multiplot.sample_name)
-      self.label.set_width_chars(min(len(multiplot.sample_name)+5,
-                                     40))
+      self.label.set_width_chars(30)
       self.label.set_text(multiplot.sample_name)
-      self.label2.set_width_chars(min(len(multiplot.title)+5,
-                                      40))
+      self.label2.set_width_chars(30)
       self.label2.set_text(multiplot.title)
     else:
-      self.label.set_width_chars(min(len(self.active_dataset.sample_name)+5,
-                                                          40))
+      self.label.set_width_chars(30)
       self.label.set_text(self.active_dataset.sample_name)
-      self.label2.set_width_chars(min(len(self.active_dataset.short_info)+5,
-                                                           40))
+      self.label2.set_width_chars(30)
       self.label2.set_text(self.active_dataset.short_info)
       self.last_plot_text=self.plot(self.active_session,
                                   [self.active_dataset],
