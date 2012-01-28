@@ -191,6 +191,8 @@ class ApplicationMainWindow(gtk.Window):
     except gobject.GError, msg:
         raise RuntimeError, "building menus failed: %s"%msg
     self.menu_bar=self.UIManager.get_widget("/MenuBar")
+    for item in config.gui.ICONS.items():
+      self.replace_icon(*item)
     self.menu_bar.show()
 
     # put menu at top position, only expand in x direction
@@ -1255,7 +1257,7 @@ class ApplicationMainWindow(gtk.Window):
     # change ranges
     plot_options=self.active_dataset.plot_options
     if self.active_multiplot:
-      self.multiplot.plot_options=self.active_multiplot[0].plot_options
+      plot_options=self.multiplot.plot_options
     if len(xin)==2:
       try:
         plot_options.xrange=xin

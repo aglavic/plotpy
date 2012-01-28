@@ -1,4 +1,4 @@
-#Thu Jan 26 17:23:57 CET 2012
+#Sat Jan 28 15:12:43 CET 2012
 eclipse.preferences.version=1
 encoding//additions/matplot_npz.py=utf8
 encoding//config/default_templates/afm.py=utf-8
@@ -12,6 +12,7 @@ encoding//gtkgui/multiplots.py=utf-8
 encoding//gtkgui/treff.py=utf-8
 encoding//plugins/__init__.py=utf-8
 encoding//read_data/__init__.py=utf-8
+encoding//read_data/kws2.py=utf-8
 encoding//read_data/reflectometer.py=utf-8
 encoding//sessions/generic.py=utf-8
 encoding/__init__.py=utf-8

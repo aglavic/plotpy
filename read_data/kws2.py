@@ -17,10 +17,10 @@ import config.gnuplot_preferences
 import array as array_module
 import gzip
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__status__="Development"
 
 # plack times speed of light
 h_c=1.239842E4 #eV⋅Å
@@ -78,9 +78,9 @@ def read_data(file_name):
   countingtime=read_countingtime(header_lines)
   data_lines=lines[config.kws2.HEADER:]
   file_handler.close()
-  output= create_dataobj(data_lines,  header_lines, countingtime, setup)
+  output=create_dataobj(data_lines, header_lines, countingtime, setup)
   output.short_info=os.path.split(file_name)[1]
-  
+
   return [output]
 
 def read_countingtime(lines):
@@ -95,8 +95,8 @@ def create_dataobj(data_lines, header_lines, countingtime, setup):
   '''
     Create a MeasurementData object form the input datalines.
   '''
-  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                           ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'],
+                           ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']],
                             [], 4, 5, 3, 2)
   data_joined=" ".join(data_lines)
   data_array=array(map(float, data_joined.split()))
@@ -136,16 +136,16 @@ def create_dataobj(data_lines, header_lines, countingtime, setup):
     qz_array=qy_array
     qy_array=tmp
   for i in range(config.kws2.PIXEL_X**2):
-    dataobj.append((y_array[i], z_array[i], corrected_data[i], corrected_error[i], 
+    dataobj.append((y_array[i], z_array[i], corrected_data[i], corrected_error[i],
                     qy_array[i], qz_array[i], data_array[i], error_array[i]))
   return dataobj
-  
+
 def read_sensitivities(folder, name):
   '''
     Read data from the sensitivity file.
   '''
   global detector_sensitivities
-  print "\treading detector sesitivity from %s" % name
+  print "\treading detector sesitivity from %s"%name
   file_name=os.path.join(folder, name)
   if file_name.endswith('.gz'):
     # use gziped data format
@@ -161,13 +161,13 @@ def read_sensitivities(folder, name):
   # take at minimum 0.5 counts for the sensitivity
   data_array=maximum(0.5, data_array)
   detector_sensitivities[name]=data_array/countingtime
-  
+
 def read_background(folder, name):
   '''
     Read data from the background file.
   '''
   global background_data
-  print "\treading background data from %s" % name
+  print "\treading background data from %s"%name
   file_name=os.path.join(folder, name)
   if file_name.endswith('.gz'):
     # use gziped data format
@@ -183,7 +183,7 @@ def read_background(folder, name):
   # normalize to get about the same cps values
   error_array=sqrt(data_array)
   background_data[name]=(data_array/countingtime, error_array/countingtime)
-  
+
 def read_cmb_file(file_name):
   '''
     Read the binary .cmb file format.
@@ -213,7 +213,7 @@ def read_cmb_file(file_name):
       return 'NULL'
     file_names=[file_name]
   return read_cmb_files(file_names)
-  
+
 def read_cmb_files(file_names):
   '''
     Read a list of .cmb files and sum them up in one dataset.
@@ -224,25 +224,25 @@ def read_cmb_files(file_names):
   for key, value in setups.items():
     if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
       setup=value
-  sys.stdout.write( "\tReading...\n")
+  sys.stdout.write("\tReading...\n")
   sys.stdout.flush()
   background=2.
   countingtime=1.
   detector_distance=setup['DETECTOR_DISTANCE']#1435. #mm
-  pixelsize_x= 0.2171 #mm
-  pixelsize_y= 0.2071 #mm
+  pixelsize_x=0.2171 #mm
+  pixelsize_y=0.2071 #mm
   center_x=setup['CENTER_X'] #345. pix
   center_y=setup['CENTER_Y'] #498.5 pix
   lambda_x=setup['LAMBDA_N'] #1.54
-  q_window=[-10., 10., -10., 10.]
-  dataobj=HugeMD([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                           ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+  q_window=[-10., 10.,-10., 10.]
+  dataobj=HugeMD([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'],
+                           ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']],
                             [], 4, 5, 3, 2)
   data_array=None
   countingtime=0.
   for i, file_name in enumerate(file_names):
     if len(file_names)>1:
-      sys.stdout.write("\b\b\b% 3i" % i)
+      sys.stdout.write("\b\b\b% 3i"%i)
       sys.stdout.flush()
     sample_name=''
     if file_name.endswith('.gz'):
@@ -269,7 +269,7 @@ def read_cmb_files(file_names):
       data_array=data_arrayi
     else:
       data_array+=data_arrayi
-  sys.stdout.write( "\b\b\b done!\n\tProcessing...")
+  sys.stdout.write("\b\b\b done!\n\tProcessing...")
   sys.stdout.flush()
   z_array=linspace(0, 1024**2-1, 1024**2)%1024
   y_array=linspace(0, 1024**2-1, 1024**2)//1024
@@ -301,10 +301,10 @@ def read_cmb_files(file_names):
   dataobj.scan_line=1
   dataobj.scan_line_constant=0
   dataobj.logz=True
-  sys.stdout.write( "\b\b\b done!\n")
+  sys.stdout.write("\b\b\b done!\n")
   sys.stdout.flush()
   return [dataobj]
- 
+
 def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items=None):
   '''
     Read the binary .edf (european data format) file including header.
@@ -316,9 +316,9 @@ def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items
   for key, value in setups.items():
     if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
       setup=value
-  
-  q_window=[-1000, 1000, -1000, 1000]
-  dataobj=HugeMD([], [], 3, 4, -1, 2)
+
+  q_window=[-1000, 1000,-1000, 1000]
+  dataobj=HugeMD([], [], 3, 4,-1, 2)
   # Get header information
   if setup['BACKGROUND']:
     if not setup['BACKGROUND'] in background_data:
@@ -338,7 +338,7 @@ def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items
     if file_prefix in imported_edfs:
       return 'NULL'
     input_array, header_settings, header_info=import_edf_set(file_name)
-  
+
   if header_info['center_x'] is not None:
     center_x=header_info['center_x']
   elif setup['CENTER_X']:
@@ -387,17 +387,17 @@ def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items
     # Insert columns
     dataobj.data.append(PhysicalProperty('pixel_x', 'pix', x_array[use_indices]).astype(int16))
     dataobj.data.append(PhysicalProperty('pixel_y', 'pix', y_array[use_indices]).astype(int16))
-    dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data_array[use_indices], 
+    dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data_array[use_indices],
                                                       corrected_error_array[use_indices]))
     dataobj.data.append(PhysicalProperty('Q_y', 'Å^{-1}', qy_array[use_indices]))
     dataobj.data.append(PhysicalProperty('Q_z', 'Å^{-1}', qz_array[use_indices]))
   else:
     dataobj.data=deepcopy(baseitem.data)
     if baseuseindices is None:
-      dataobj.data[2]=PhysicalProperty('intensity', 'counts/s', corrected_data_array, 
-                                                      corrected_error_array)      
+      dataobj.data[2]=PhysicalProperty('intensity', 'counts/s', corrected_data_array,
+                                                      corrected_error_array)
     else:
-      dataobj.data[2]=PhysicalProperty('intensity', 'counts/s', corrected_data_array[baseuseindices], 
+      dataobj.data[2]=PhysicalProperty('intensity', 'counts/s', corrected_data_array[baseuseindices],
                                                       corrected_error_array[baseuseindices])
   dataobj.sample_name=header_info['sample_name']
   dataobj.info="\n".join([item[0]+': '+item[1] for item in sorted(header_settings.items())])
@@ -437,24 +437,24 @@ def import_edf_set(file_name):
       return import_edf_file(file_prefix+'_im_full.edf')
     is_list=False
   file_name=file_list[0]
-  sys.stdout.write('\tReading file 1/%i' % len(file_list))
+  sys.stdout.write('\tReading file 1/%i'%len(file_list))
   sys.stdout.flush()
   input_array, header_settings, header_info=import_edf_file(file_name)
   i=0
   # import all other files and add them together
   for i, file_name in enumerate(file_list[1:]):
-    sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i' % (i+2, len(file_list)))
+    sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i'%(i+2, len(file_list)))
     sys.stdout.flush()
     input_array_tmp, header_settings_tmp, header_info_tmp=import_edf_file(file_name)
     # add the collected data to the already imported
     input_array+=input_array_tmp
     header_info['time']+=header_info_tmp['time']
   if not is_list:
-    sys.stdout.write('\b'*(len(str(i+2))+len(str(len(file_list))))+'\breadout complete, writing sum to %s!\n' % (file_prefix+'_im_full.edf'))
+    sys.stdout.write('\b'*(len(str(i+2))+len(str(len(file_list))))+'\breadout complete, writing sum to %s!\n'%(file_prefix+'_im_full.edf'))
     sys.stdout.flush()
     write_edf_file(file_prefix, input_array, header_info['time'])
   return input_array, header_settings, header_info
-  
+
 def read_background_edf(background_file_name):
   '''
     Read the binary .edf (european data format) file including header.
@@ -464,7 +464,7 @@ def read_background_edf(background_file_name):
   file_list=glob(background_file_name)
   file_list.sort()
   file_name=file_list[0]
-  sys.stdout.write('\tReading background file 1/%i' % len(file_list))
+  sys.stdout.write('\tReading background file 1/%i'%len(file_list))
   sys.stdout.flush()
   if file_name.endswith('.gz'):
     file_handler=gzip.open(file_name, 'rb')
@@ -480,7 +480,7 @@ def read_background_edf(background_file_name):
   bg_time=header_info['time']
   # import all other files and add them together
   for i, file_name in enumerate(file_list[1:]):
-    sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i' % (i+2, len(file_list)))
+    sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i'%(i+2, len(file_list)))
     sys.stdout.flush()
     if file_name.endswith('.gz'):
       file_handler=gzip.open(file_name, 'rb')
@@ -506,23 +506,23 @@ def read_edf_header(file_handler):
   settings={}
   # Set standart values which are overwritten if found in the header
   info={
-      'lambda_γ': 1.771, 
-      'xdim': 1024, 
-      'ydim': 1024, 
-      'sample_name': '', 
-      'time': 1., 
-      'pixel_x': 512.5, 
-      'pixelsize_x': 0.16696,#0.0914, 
-      'pixel_y': 512.5, 
-      'pixelsize_y': 0.16696,#0.0914, 
-      'detector_distance': None, 
-      'DataNormalization': None, 
-      'center_x': None, 
-      'center_y': None, 
+      'lambda_γ': 1.771,
+      'xdim': 1024,
+      'ydim': 1024,
+      'sample_name': '',
+      'time': 1.,
+      'pixel_x': 512.5,
+      'pixelsize_x': 0.16696, #0.0914, 
+      'pixel_y': 512.5,
+      'pixelsize_y': 0.16696, #0.0914, 
+      'detector_distance': None,
+      'DataNormalization': None,
+      'center_x': None,
+      'center_y': None,
       }
   while '}' not in line:
     if "=" in line:
-      key, value= line.split('=', 1)
+      key, value=line.split('=', 1)
       key=key.strip()
       value=value.strip().rstrip(';').strip()
       settings[key]=value
@@ -540,9 +540,9 @@ def read_edf_header(file_handler):
     info['detector_distance']=float(settings['SampleDistance'].rstrip('m'))*1000.
   if 'Monochromator_energy' in settings:
     energy=float(settings['Monochromator_energy'].rstrip('keV'))*1000.
-    info['lambda_γ']= h_c/energy
+    info['lambda_γ']=h_c/energy
   if  'WaveLength' in settings:
-    info['lambda_γ']= float(settings['WaveLength'].rstrip('m'))*1e10
+    info['lambda_γ']=float(settings['WaveLength'].rstrip('m'))*1e10
   if 'Sample_comments' in settings:
     info['sample_name']=settings['Sample_comments']
   if 'Title' in settings:
@@ -591,7 +591,7 @@ def import_edf_file(file_name):
     input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*4))
     input_array=maximum(0., input_array)
   else:
-    raise IOError, 'Unknown data format in header: %s' % header_settings['DataType']
+    raise IOError, 'Unknown data format in header: %s'%header_settings['DataType']
   file_handler.close()
   return array(input_array), header_settings, header_info
 
@@ -610,7 +610,7 @@ def write_edf_file(file_prefix, data, countingtime):
   write_file=open(file_prefix+'_im_full.edf', 'wb')
   for header_line in old_file_parts[2]:
     if 'Exposure_time' in header_line:
-      write_file.write("Exposure_time = %fms ;\n" % (countingtime*1000.))
+      write_file.write("Exposure_time = %fms ;\n"%(countingtime*1000.))
     elif 'DataType' in header_line:
       write_file.write("DataType = SignedInteger ;\n")
     else:
@@ -619,7 +619,7 @@ def write_edf_file(file_prefix, data, countingtime):
   int_data=map(int, data.tolist())
   output_array.fromlist(int_data)
   output_array.tofile(write_file)
-  write_file.close()  
+  write_file.close()
 
 def read_p08_binary(file_name):
   '''
@@ -630,45 +630,48 @@ def read_p08_binary(file_name):
   for key, value in setups.items():
     if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
       setup=value
-  sys.stdout.write( "\tReading...")
+  sys.stdout.write("\tReading...")
   sys.stdout.flush()
   countingtime=1.
   detector_distance=setup['DETECTOR_DISTANCE'] #mm
   join_pixels=4.
-  pixelsize_x= 0.015 * join_pixels#mm
-  pixelsize_y= 0.015 * join_pixels#mm
+  pixelsize_x=0.015*join_pixels#mm
+  pixelsize_y=0.015*join_pixels#mm
   sample_name=''
   center_x=setup['CENTER_X']/join_pixels
   center_y=setup['CENTER_Y']/join_pixels
-  q_window=[-1000., 1000., -1000., 1000.]
-  dataobj=HugeMD([], 
-                            [], 2, 3, -1, 4)
+  q_window=[-1000., 1000.,-1000., 1000.]
+  dataobj=HugeMD([],
+                            [], 2, 3,-1, 4)
   # read the data
-  sys.stdout.write( "\b\b\b binary...")
+  sys.stdout.write("\b\b\b binary...")
   sys.stdout.flush()
   header, data_array=read_p08_binarydata(file_name)
   if setup['BACKGROUND'] is not None:
-    sys.stdout.write( "\b\b\b subtracting background %s..." % setup['BACKGROUND'])
+    sys.stdout.write("\b\b\b subtracting background %s..."%setup['BACKGROUND'])
     sys.stdout.flush()
     data_array-=read_p08_binarydata(setup['BACKGROUND'])[1]
   # averadge 4x4 pixels
-  sys.stdout.write( "\b\b\b, joining %ix%i pixels..." % (join_pixels, join_pixels))
+  sys.stdout.write("\b\b\b, joining %ix%i pixels..."%(join_pixels, join_pixels))
   sys.stdout.flush()
   # neighboring pixels
   use_ids=arange(4096/join_pixels).astype(int)*int(join_pixels)
   data_array2=zeros((4096/join_pixels, 4096/join_pixels))
-  for i in range(int(join_pixels)):
-    for j in range(int(join_pixels)):
-      data_array2+=data_array[use_ids+i][:,use_ids+j]
-  data_array=data_array2.flatten()
-  sys.stdout.write( "\b\b\b, calculating q-positions and joining data...")
+  if join_pixels>1:
+    for i in range(int(join_pixels)):
+      for j in range(int(join_pixels)):
+        data_array2+=data_array[use_ids+i][:, use_ids+j]
+    data_array=data_array2.flatten()
+  else:
+    data_array=data_array.flatten()
+  sys.stdout.write("\b\b\b, calculating q-positions and joining data...")
   sys.stdout.flush()
   # read additional info from end of file
   z_array=linspace((4096/join_pixels)**2-1, 0, (4096/join_pixels)**2)%(4096/join_pixels)
   y_array=linspace(0, (4096/join_pixels)**2-1, (4096/join_pixels)**2)//(4096/join_pixels)
   error_array=sqrt(data_array)
-  corrected_data=data_array/countingtime
-  corrected_error=error_array/countingtime
+  data_array/=countingtime
+  error_array/=countingtime
   lambda_x=setup['LAMBDA_N']
   qy_array=4.*pi/lambda_x*\
            sin(arctan((y_array-center_y)*pixelsize_y/detector_distance/2.))
@@ -690,8 +693,8 @@ def read_p08_binary(file_name):
   dataobj.data.append(PhysicalProperty('pixel_y', 'pix', z_array[use_indices]))
   dataobj.data.append(PhysicalProperty('Q_y', 'Å^{-1}', qy_array[use_indices]))
   dataobj.data.append(PhysicalProperty('Q_z', 'Å^{-1}', qz_array[use_indices]))
-  dataobj.data.append(PhysicalProperty('intensity', 'counts/s', corrected_data[use_indices]))
-  dataobj.data[-1].error=corrected_error[use_indices]
+  dataobj.data.append(PhysicalProperty('intensity', 'counts/s', data_array[use_indices]))
+  dataobj.data[-1].error=error_array[use_indices]
   #dataobj.data[3]=PhysicalProperty('raw_int', 'counts', data_array[use_indices])
   #dataobj.data[3].error=error_array[use_indices]
 
@@ -699,7 +702,7 @@ def read_p08_binary(file_name):
   dataobj.scan_line=1
   dataobj.scan_line_constant=0
   dataobj.logz=True
-  sys.stdout.write( "\b\b\b done!\n")
+  sys.stdout.write("\b\b\b done!\n")
   sys.stdout.flush()
   return [dataobj]
 
@@ -725,29 +728,29 @@ def read_tif_data(file_name):
   for key, value in setups.items():
     if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
       setup=value
-  sys.stdout.write( "\tReading...")
+  sys.stdout.write("\tReading...")
   sys.stdout.flush()
   countingtime=1.
   detector_distance=setup['DETECTOR_DISTANCE'] #mm
   sample_name=''
   center_x=setup['CENTER_X']
   center_y=setup['CENTER_Y']
-  q_window=[-1000., 1000., -1000., 1000.]
-  dataobj=HugeMD([], 
-                            [], 2, 3, -1, 4)
+  q_window=[-1000., 1000.,-1000., 1000.]
+  dataobj=HugeMD([],
+                            [], 2, 3,-1, 4)
   # read the data
-  sys.stdout.write( "\b\b\b TIFF image...")
-  sys.stdout.flush()  
-  
+  sys.stdout.write("\b\b\b TIFF image...")
+  sys.stdout.flush()
+
   data_array=read_raw_tif_data(file_name)
   if 'SIZE_X' in setup and 'SIZE_Y' in setup:
-    pixelsize_x= setup['SIZE_X']/data_array.shape[0]
-    pixelsize_y= setup['SIZE_Y']/data_array.shape[1]
+    pixelsize_x=setup['SIZE_X']/data_array.shape[0]
+    pixelsize_y=setup['SIZE_Y']/data_array.shape[1]
   else:
-    pixelsize_x= 30./data_array.shape[0]
-    pixelsize_y= 30./data_array.shape[0]
-  
-  sys.stdout.write( "\b\b\b, calculating q-positions and joining data...")
+    pixelsize_x=30./data_array.shape[0]
+    pixelsize_y=30./data_array.shape[0]
+
+  sys.stdout.write("\b\b\b, calculating q-positions and joining data...")
   sys.stdout.flush()
   # read additional info from end of file
   y_array=linspace((data_array.shape[0])**2-1, 0, (data_array.shape[0])**2)%(data_array.shape[1])
@@ -786,10 +789,10 @@ def read_tif_data(file_name):
   dataobj.scan_line=1
   dataobj.scan_line_constant=0
   dataobj.logz=True
-  sys.stdout.write( "\b\b\b done!\n")
+  sys.stdout.write("\b\b\b done!\n")
   sys.stdout.flush()
   return [dataobj]
-  
+
 def read_raw_tif_data(file_name):
   # use PIL image readout
   import Image
@@ -801,7 +804,7 @@ def read_raw_tif_data(file_name):
   data_array=data_array.reshape(*img.size)
   data_array=data_array.astype(float32)
   return data_array
-  
+
 def read_bmp_data(file_name):
   '''
     Read a tif datafile.
@@ -811,10 +814,10 @@ def read_bmp_data(file_name):
   for key, value in setups.items():
     if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
       setup=value
-  sys.stdout.write( "\tReading...")
+  sys.stdout.write("\tReading...")
   sys.stdout.flush()
   # read the data
-  sys.stdout.write( "\b\b\b BMP Image...")
+  sys.stdout.write("\b\b\b BMP Image...")
   sys.stdout.flush()
   data_array=read_raw_bmp_data(file_name)
   pixels_x, pixels_y=data_array.shape
@@ -826,23 +829,23 @@ def read_bmp_data(file_name):
   detector_distance=setup['DETECTOR_DISTANCE'] #mm
   join_pixels=max(1, pixels_x//1024)
   if 'SIZE_X' in setup and 'SIZE_Y' in setup:
-    pixelsize_x= setup['SIZE_X']/pixels_x*join_pixels
-    pixelsize_y= setup['SIZE_Y']/pixels_y*join_pixels
+    pixelsize_x=setup['SIZE_X']/pixels_x*join_pixels
+    pixelsize_y=setup['SIZE_Y']/pixels_y*join_pixels
   else:
-    pixelsize_x= 30./pixels_x*join_pixels
-    pixelsize_y= 30./pixels_y*join_pixels
+    pixelsize_x=30./pixels_x*join_pixels
+    pixelsize_y=30./pixels_y*join_pixels
   sample_name=''
   center_x=setup['CENTER_X']/join_pixels
   center_y=setup['CENTER_Y']/join_pixels
-  q_window=[-1000., 1000., -1000., 1000.]
-  dataobj=HugeMD([], 
-                            [], 2, 3, -1, 4)
+  q_window=[-1000., 1000.,-1000., 1000.]
+  dataobj=HugeMD([],
+                            [], 2, 3,-1, 4)
   if setup['BACKGROUND'] is not None:
-    sys.stdout.write( "\b\b\b subtracting background %s..." % setup['BACKGROUND'])
+    sys.stdout.write("\b\b\b subtracting background %s..."%setup['BACKGROUND'])
     sys.stdout.flush()
     data_array-=read_raw_bmp_data(setup['BACKGROUND'])[1]
   # averadge ixi pixels
-  sys.stdout.write( "\b\b\b, joining %ix%i pixels..." % (join_pixels, join_pixels))
+  sys.stdout.write("\b\b\b, joining %ix%i pixels..."%(join_pixels, join_pixels))
   sys.stdout.flush()
   # neighboring pixels
   use_idsx=arange(pixels_x//join_pixels).astype(int)*int(join_pixels)
@@ -851,12 +854,12 @@ def read_bmp_data(file_name):
   #print use_idsx, use_idsy
   for i in range(int(join_pixels)):
     for j in range(int(join_pixels)):
-      data_array2+=data_array[use_idsx+i][:,use_idsy+j]
+      data_array2+=data_array[use_idsx+i][:, use_idsy+j]
   data_array=data_array2.flatten()
-  sys.stdout.write( "\b\b\b, calculating q-positions and joining data...")
+  sys.stdout.write("\b\b\b, calculating q-positions and joining data...")
   sys.stdout.flush()
   # read additional info from end of file
-  z_array=linspace(0,  (pixels_x//join_pixels)*(pixels_y//join_pixels)-1, 
+  z_array=linspace(0, (pixels_x//join_pixels)*(pixels_y//join_pixels)-1,
                    (pixels_x//join_pixels)*(pixels_y//join_pixels))//(pixels_y//join_pixels)
   y_array=linspace(0, (pixels_x//join_pixels)*(pixels_y//join_pixels)-1,
                    (pixels_x//join_pixels)*(pixels_y//join_pixels))%(pixels_y//join_pixels)
@@ -894,10 +897,10 @@ def read_bmp_data(file_name):
   dataobj.scan_line=1
   dataobj.scan_line_constant=0
   dataobj.logz=True
-  sys.stdout.write( "\b\b\b done!\n")
+  sys.stdout.write("\b\b\b done!\n")
   sys.stdout.flush()
   return [dataobj]
-  
+
 def read_raw_bmp_data(file_name):
   # use PIL image readout
   import Image
@@ -909,12 +912,12 @@ def read_raw_bmp_data(file_name):
   data_array=data_array.reshape(*img.size)
   data_array=data_array.astype(float32)
   return data_array
-  
+
 class KWS2MeasurementData(HugeMD):
   '''
     Class implementing additions for KWS2 data objects.
   '''
-  
+
   def __add__(self, other):
     '''
       Add two measurements together.
@@ -922,13 +925,13 @@ class KWS2MeasurementData(HugeMD):
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
     #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
-    out.data[2].values=(array(self.data[2].values)+array(other.data[2].values)).tolist()    
+    out.data[2].values=(array(self.data[2].values)+array(other.data[2].values)).tolist()
     out.data[3].values=(sqrt(array(self.data[3].values)**2+array(other.data[3].values)**2)).tolist()
-    out.data[6].values=(array(self.data[6].values)+array(other.data[6].values)).tolist()    
+    out.data[6].values=(array(self.data[6].values)+array(other.data[6].values)).tolist()
     out.data[7].values=(sqrt(array(self.data[7].values)**2+array(other.data[7].values)**2)).tolist()
     out.changed_after_export=True
     return out
-  
+
   def __sub__(self, other):
     '''
       Subtract two measurements from another.
@@ -936,26 +939,26 @@ class KWS2MeasurementData(HugeMD):
     out=deepcopy(self)
     out.short_info=self.short_info+'-'+other.short_info
     #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
-    out.data[2].values=(array(self.data[2].values)-array(other.data[2].values)).tolist()    
+    out.data[2].values=(array(self.data[2].values)-array(other.data[2].values)).tolist()
     out.data[3].values=(sqrt(array(self.data[3].values)**2+array(other.data[3].values)**2)).tolist()
-    out.data[6].values=(array(self.data[6].values)-array(other.data[6].values)).tolist()    
+    out.data[6].values=(array(self.data[6].values)-array(other.data[6].values)).tolist()
     out.data[7].values=(sqrt(array(self.data[7].values)**2+array(other.data[7].values)**2)).tolist()
     out.changed_after_export=True
     return out
-  
+
   def __rmul__(self, other):
     '''
       Add two measurements together.
     '''
     out=deepcopy(self)
     #out.tmp_export_file=self.tmp_export_file+'_'+str(other)
-    out.data[2].values=(other*array(self.data[2].values)).tolist()    
-    out.data[3].values=(other*array(self.data[3].values)).tolist()    
-    out.data[6].values=(other*array(self.data[6].values)).tolist()    
-    out.data[7].values=(other*array(self.data[7].values)).tolist()    
+    out.data[2].values=(other*array(self.data[2].values)).tolist()
+    out.data[3].values=(other*array(self.data[3].values)).tolist()
+    out.data[6].values=(other*array(self.data[6].values)).tolist()
+    out.data[7].values=(other*array(self.data[7].values)).tolist()
     out.changed_after_export=True
     return out
-  
+
   def __mul__(self, other):
     '''
       Multiply two measurements.
@@ -965,15 +968,15 @@ class KWS2MeasurementData(HugeMD):
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
     #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
-    out.data[2].values=(array(self.data[2].values)*array(other.data[2].values)).tolist()    
+    out.data[2].values=(array(self.data[2].values)*array(other.data[2].values)).tolist()
     out.data[3].values=(sqrt(array(self.data[3].values)**2*array(other.data[2].values)**2+\
                              array(other.data[3].values)**2*array(self.data[2].values)**2)).tolist()
-    out.data[6].values=(array(self.data[6].values)*array(other.data[6].values)).tolist()    
+    out.data[6].values=(array(self.data[6].values)*array(other.data[6].values)).tolist()
     out.data[7].values=(sqrt(array(self.data[7].values)**2*array(other.data[6].values)**2+\
                              array(other.data[7].values)**2*array(self.data[6].values)**2)).tolist()
     out.changed_after_export=True
     return out
-  
+
   def __div__(self, other):
     '''
       Divide two measurements.
@@ -983,11 +986,11 @@ class KWS2MeasurementData(HugeMD):
     out=deepcopy(self)
     out.short_info=self.short_info+'+'+other.short_info
     #out.tmp_export_file=self.tmp_export_file+'_'+os.path.split(other.tmp_export_file)[1]
-    out.data[2].values=(array(self.data[2].values)/array(other.data[2].values)).tolist()    
+    out.data[2].values=(array(self.data[2].values)/array(other.data[2].values)).tolist()
     out.data[3].values=(sqrt(array(self.data[3].values)**2/array(other.data[2].values)**2+\
                              array(other.data[3].values)**2*array(self.data[2].values)**2\
                              /array(other.data[2].values)**4)).tolist()
-    out.data[6].values=(array(self.data[6].values)/array(other.data[6].values)).tolist()    
+    out.data[6].values=(array(self.data[6].values)/array(other.data[6].values)).tolist()
     out.data[7].values=(sqrt(array(self.data[7].values)**2/array(other.data[6].values)**2+\
                              array(other.data[7].values)**2*array(self.data[6].values)**2\
                              /array(other.data[6].values)**4)).tolist()

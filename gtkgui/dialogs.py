@@ -100,7 +100,7 @@ class StatusDialog(gtk.Dialog):
     if end_visible:
       self.textview.scroll_to_mark(self.end_mark, 0.)
     while gtk.events_pending():
-      gtk.main_iteration()
+      gtk.main_iteration(False)
 
 #------------------------ StatusDialog to show an updated text -------------------------
 
@@ -2110,6 +2110,21 @@ class ColorDialog(gtk.ColorSelectionDialog):
         color_selection.connect('color-changed', self._change_color)
       else:
         self.add_buttons('Apply', gtk.RESPONSE_APPLY)
+    gp_line=gtk.HBox()
+    gp_line.show()
+    label=gtk.Label('Use Gnuplot Color:')
+    label.show()
+    gp_line.add(label)
+    box=gtk.combo_box_new_text()
+    box.show()
+    box.append_text('<none>')
+    box.set_active(0)
+    for i in range(16):
+      box.append_text('%i'%i)
+    gp_line.add(box)
+    self.vbox.add(gp_line)
+    self.gp_box=box
+    box.connect('changed', self._change_color)
 
 
   def _change_color(self, widget):
@@ -2117,16 +2132,20 @@ class ColorDialog(gtk.ColorSelectionDialog):
       If defined call the function set on init.
     '''
     if self._activation_callback is not None:
-      self._activation_callback(self.get_color_selection())
+      try:
+        self._activation_callback(int(self.gp_box.get_active_text()))
+      except ValueError:
+        self._activation_callback(self.get_color_selection())
 
   def run(self):
     '''
       Keep running if apply button is pressed.
     '''
     result=gtk.ColorSelectionDialog.run(self)
+    self._change_color(None)
     while result==gtk.RESPONSE_APPLY:
-      self._change_color(None)
       result=gtk.ColorSelectionDialog.run(self)
+      self._change_color(None)
     return result
 
 class StyleLine(gtk.Table):
@@ -2160,6 +2179,8 @@ class StyleLine(gtk.Table):
                }
       if style._color is None:
         options['color']='<auto>'
+      elif type(style._color) is int:
+        options['color']='<%i>'%style._color
       else:
         options['color']="#%.2X%.2X%.2X"%tuple(style.color)
     else:
@@ -2332,20 +2353,26 @@ class StyleLine(gtk.Table):
     '''
       Open a color selection dialog.
     '''
+    old_color=self.plot_options._special_plot_parameters.color
     color_dia=ColorDialog(activation_callback=self._update_color, auto_apply=False)
+    if type(old_color) is int:
+      color_dia.gp_box.set_active(old_color+1)
+
     result=color_dia.run()
     if result==gtk.RESPONSE_OK:
-      selection=color_dia.get_color_selection()
-      self._update_color(selection)
-      color=selection.get_current_color()
-      self.entries['color-button'].set_label('#%.2X%.2X%.2X'%(
-                                                                   color.red_float*255,
-                                                                   color.green_float*255,
-                                                                   color.blue_float*255,
-                                                                   ))
+      color=self.plot_options._special_plot_parameters.color
+      if type(color) is int:
+        self.entries['color-button'].set_label('<%i>'%color)
+      else:
+        self.entries['color-button'].set_label('#%.2X%.2X%.2X'%tuple(color))
     else:
-      self._update_color(None)
-      self.entries['color-button'].set_label('<auto>')
+      self._update_color(old_color)
+      if old_color is None:
+        self.entries['color-button'].set_label('<auto>')
+      elif type(old_color) is int:
+        self.entries['color-button'].set_label('<%i>'%old_color)
+      else:
+        self.entries['color-button'].set_label('#%.2X%.2X%.2X'%tuple(old_color))
     color_dia.destroy()
     self.callback()
 

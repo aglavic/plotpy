@@ -9,6 +9,7 @@ import gtk
 import os
 from diverse_classes import MultiplotList
 from sessions.reflectometer_fit.treff import *
+from measurement_data_structure import PlotStyle
 from read_data.kws2 import KWS2MeasurementData
 import config.treff
 import read_data.treff
@@ -855,7 +856,6 @@ class TreffGUI:
           raise RuntimeError, 'PNR program finished with error message:\n%s'%(exec_time+' '+stderr_value)
     else:
       self.open_status_dialog(window)
-    first=True
     free_sims=[]
     for i, dataset in enumerate(self.active_file_data.fit_datasets):
       if dataset:
@@ -868,65 +868,56 @@ class TreffGUI:
           dataset.plot_together=[dataset, simu]
         except IOError:
           raise RuntimeError, 'PNR program finished without creating data, program output:\n%s'%(exec_time+' '+stderr_value)
-        if first:
-          dataset.plot_options+='''
-set style line 2 lc 1
-set style line 3 lc 2
-set style line 4 lc 2
-set style line 5 lc 3
-set style line 6 lc 3
-set style line 7 lc 4
-set style line 8 lc 4
-set style increment user
-'''
-          first=False
-        else:
-          dataset.plot_options+='''
-set style line 1 lc %i
-set style line 2 lc %i
-set style increment user
-'''%(i+1, i+1)
+        dataset.plot_options._special_plot_parameters=PlotStyle()
+        dataset.plot_options._special_plot_parameters.color=i+1
+        dataset.plot_together[1].plot_options._special_plot_parameters=PlotStyle()
+        dataset.plot_together[1].plot_options._special_plot_parameters.color=i+1
       elif self.active_file_data.fit_object.simulate_all_channels:
         simu=read_data.treff.read_simulation(self.TEMP_DIR+output_names[i])
         simu.number='%i'%i
         simu.short_info='simulation '+names[i]
-        simu.plot_options+='''
-set style line 1 lc %i
-set style increment user
-'''%(i+1)
+        simu.plot_options._special_plot_parameters=PlotStyle()
+        simu.plot_options._special_plot_parameters.color=i+1
         simu.logy=True
         free_sims.append(simu)
     # create a multiplot with all datasets
-    window.multiplot=[MultiplotList([(dataset, dataset.short_info) for dataset in \
-                                     self.active_file_data.fit_datasets if dataset])]
-    window.multi_list.set_markup(' Multiplot List: \n'+'\n'.join(map(lambda item: item[1], window.multiplot[0])))
-    if not window.index_mess in [self.active_file_data.index(item[0]) for item in window.multiplot[0]]:
-      try:
-        window.index_mess=self.active_file_data.index(window.multiplot[0][0][0])
-      except:
-        self.file_data['Simulations']=free_sims
-        self.active_file_data=self.file_data['Simulations']
-        self.active_file_name='Simulations'
-        window.index_mess=0
-        window.measurement=self.active_file_data
-        window.input_file_name='Simulations'
-        free_sims[0].plot_options+='''
-set style line 2 lc 1
-set style line 3 lc 2
-set style line 4 lc 2
-set style line 5 lc 3
-set style line 6 lc 3
-set style line 7 lc 4
-set style line 8 lc 4
-set style increment user
-'''
-    for sim in free_sims:
-      # add simulations without dataset to the multiplot
-      window.multiplot[0].append((sim, sim.short_info))
-      window.multiplot[0].append((sim, sim.short_info))
-    free_sims.reverse()
+    if window.multiplot.title=='Fit+Data':
+      window.multiplot.active_mp.clear()
+    else:
+      window.multiplot.new_item()
+      window.multiplot.title='Fit+Data'
+    for item in [(dataset, dataset.short_info) for dataset in \
+                 self.active_file_data.fit_datasets if dataset]:
+      window.multiplot.append(item)
+    window.active_multiplot=True
+
+#    if not window.index_mess in [self.active_file_data.index(item[0]) for item in window.multiplot[0]]:
+#      try:
+#        window.index_mess=self.active_file_data.index(window.multiplot[0][0][0])
+#      except:
+#        self.file_data['Simulations']=free_sims
+#        self.active_file_data=self.file_data['Simulations']
+#        self.active_file_name='Simulations'
+#        window.index_mess=0
+#        window.measurement=self.active_file_data
+#        window.input_file_name='Simulations'
+#        free_sims[0].plot_options+='''
+#set style line 2 lc 1
+#set style line 3 lc 2
+#set style line 4 lc 2
+#set style line 5 lc 3
+#set style line 6 lc 3
+#set style line 7 lc 4
+#set style line 8 lc 4
+#set style increment user
+#'''
+#    for sim in free_sims:
+#       add simulations without dataset to the multiplot
+#      window.multiplot[0].append((sim, sim.short_info))
+#      window.multiplot[0].append((sim, sim.short_info))
+#    free_sims.reverse()
     if move_channels:
-      # move the polarization channels agains eachother to make it easier for the eye
+      # move the polarization channels against each other to make it easier for the eye
       if not self.replot:
         self.replot=window.replot
         window.replot=lambda*ignore: self.move_channels_replot(window)
@@ -949,7 +940,7 @@ set style increment user
       channels should be moved to show the fits.
     '''
     if window.active_multiplot:
-      for i, tupel in enumerate(reversed(window.multiplot[0])):
+      for i, tupel in enumerate(reversed(window.multiplot)):
         dataset=tupel[0]
         if len(dataset.plot_together)>1:
           dataset.data[dataset.ydata].values=map(lambda number: number*10.**(i*1), dataset.data[dataset.ydata].values)
@@ -966,7 +957,7 @@ set style increment user
           else:
             dataset.y.error=dataset.y.error*10.**(i*1)
       self.replot()
-      for i, tupel in enumerate(reversed(window.multiplot[0])):
+      for i, tupel in enumerate(reversed(window.multiplot)):
         dataset=tupel[0]
         if len(dataset.plot_together)>1:
           dataset.data[dataset.ydata].values=map(lambda number: number/10.**(i*1), dataset.data[dataset.ydata].values)

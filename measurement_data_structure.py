@@ -1787,7 +1787,10 @@ class PlotStyle(object):
       output+=self._substyles[self.style][self.substyle]+' '
     output+='lw %g '%self.linewidth
     if self._color is not None:
-      output+='lc rgb "#%.2X%.2X%.2X" '%tuple(self._color)
+      if type(self._color) is int:
+        output+='lc %i '%(self._color)
+      else:
+        output+='lc rgb "#%.2X%.2X%.2X" '%tuple(self._color)
     if self.style in self._has_points:
       output+='pt %i ps %g '%(self.pointtype, self.pointsize)
     return output
@@ -1799,6 +1802,8 @@ class PlotStyle(object):
     if color is None:
       # unset color specification
       self._color=None
+    elif type(color) is int:
+      self._color=color
     elif hasattr(color, 'get_current_color'):
       # use gtk.ColorSelection to retrieve the color to be set
       colorspec=color.get_current_color()

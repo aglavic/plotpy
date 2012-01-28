@@ -89,6 +89,10 @@ class MultiplotItem(gtk.HBox):
     self.items.insert(position-1, item)
     gtk.HBox.reorder_child(self, label, position)
 
+  def clear(self):
+    for i in range(len(self.items)):
+      self.pop(0)
+
 
 
 class MultiplotCanvas(gtk.Table):
@@ -229,9 +233,16 @@ class MultiplotCanvas(gtk.Table):
   def _set_sample_name(self, newname):
     self.items.items.sample_name=newname
 
+  def _get_plot_options(self):
+    return self.items.items[0][0].plot_options
+
+  def _set_plot_options(self, options):
+    self.items.items[0][0].plot_options=options
+
   items=property(_get_item)
   title=property(_get_title, _set_title)
   sample_name=property(_get_sample_name, _set_sample_name)
+  plot_options=property(_get_plot_options, _set_plot_options)
 
   def sort_add(self, ignore=None, items=None):
     if items is None:
