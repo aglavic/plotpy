@@ -3703,6 +3703,42 @@ set multiplot layout %i,1
       if connected:
         status_dialog.hide()
 
+  def edit_user_config(self, action):
+    '''
+      Open a dialog to edit the user config file.
+    '''
+    from config import user_config
+    user_config.write()
+    dialog=gtk.Dialog(title='Edit User Config...',
+                      buttons=('Ok', 1, 'Cancel', 0))
+    dialog.set_default_size(400, 600)
+    entry=gtk.TextView()
+    entry.show()
+    buffer=entry.get_buffer()
+    buffer.set_text(open(user_config.filename, 'r').read())
+    sw=gtk.ScrolledWindow()
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add_with_viewport(entry)
+    sw.show()
+    dialog.vbox.add(sw)
+    result=dialog.run()
+    while result==1:
+      text=buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
+      try:
+        tmpfile=os.path.join(self.active_session.TEMP_DIR, 'user_config.ini')
+        open(tmpfile, 'w').write(text)
+        ConfigObj(tmpfile, unrepr=True)
+        open(user_config.filename, 'w').write(text)
+        print "User config changed"
+        user_config.clear()
+        user_config._errors=[]
+        user_config._load(tmpfile, user_config._original_configspec)
+        break
+      except Exception, error:
+        print "Error in text, config not saved. %s"%error
+        result=dialog.run()
+    dialog.destroy()
+
   #--------------------------Menu/Toolbar Events---------------------------------#
 
   #----------------------------------Event hanling---------------------------------------#
@@ -4684,6 +4720,8 @@ set multiplot layout %i,1
         <menuitem action='OpenDataView'/>
         <separator name='extras2'/>
         <menuitem action='ConnectIPython'/>
+        <separator name='extras3'/>
+        <menuitem action='EditUserConfig'/>
       </menu>
       <separator name='static13'/>
       <menu action='HelpMenu'>
@@ -4999,6 +5037,10 @@ set multiplot layout %i,1
         "IP-Cluster...", None, # label, accelerator
         None, # tooltip
         self.connect_cluster),
+      ("EditUserConfig", None, # name, stock id
+        "Edit User Config", None, # label, accelerator
+        None, # tooltip
+        self.edit_user_config),
       ("ShowPersistent", gtk.STOCK_FULLSCREEN, # name, stock id
         "Open Persistent Gnuplot Window", None, # label, accelerator
         "Open Persistent Gnuplot Window", # tooltip
@@ -5019,7 +5061,6 @@ set multiplot layout %i,1
         "Check for Update", None, # label, accelerator
         "Check for Update", # tooltip
         self.check_for_updates),
-
       ("PlotAppearance", None,
         "Plot Appearance", None,
         "Plot Appearance",

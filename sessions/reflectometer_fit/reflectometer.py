@@ -4,12 +4,16 @@
 '''
 
 from parameters import FitParameters, LayerParam, MultilayerParam
+from config import user_config
+from config.scattering_length_table import SCATTERING_LENGTH_DENSITIES
+if not 'X-ray SLD' in user_config:
+  user_config['X-ray SLD']=SCATTERING_LENGTH_DENSITIES
 
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__status__="Production"
 
 
 class RefFitParameters(FitParameters):
@@ -21,9 +25,10 @@ class RefFitParameters(FitParameters):
   radiation=[8048.0, 'Cu-K_alpha'] # readiation energy of x-rays
   number_of_points=10 # number of simulated points
   resolution=3.5 # resolution in q in 1e-3 A^-1
-  theta_max= 2.3 # angle of total coverage for recalibration
-  from config.scattering_length_table import SCATTERING_LENGTH_DENSITIES
-  
+  theta_max=2.3 # angle of total coverage for recalibration
+
+  SCATTERING_LENGTH_DENSITIES=user_config['X-ray SLD']
+
   def append_layer(self, material, thickness, roughness):
     '''
       append one layer at bottom from the lookup table defined
@@ -32,9 +37,9 @@ class RefFitParameters(FitParameters):
     try: # if layer not in the table, return False
       SL=self.SCATTERING_LENGTH_DENSITIES[material]
       result=True
-      parameters=[thickness] + SL + [roughness]
+      parameters=[thickness]+SL+[roughness]
     except (KeyError, TypeError):
-      parameters=[thickness] + [1. for i in range(self.PARAMETER_LENGTH-2)] + [roughness]
+      parameters=[thickness]+[1. for i in range(self.PARAMETER_LENGTH-2)]+[roughness]
       material='Unknown'
       result=False
     layer=RefLayerParam(material, parameters)
@@ -52,11 +57,11 @@ class RefFitParameters(FitParameters):
       return False
     layer_list=[]
     for i, SL in enumerate(SLs):
-      layer_list.append(RefLayerParam(materials[i], [thicknesses[i]] + SL + [roughnesses[i]]))
+      layer_list.append(RefLayerParam(materials[i], [thicknesses[i]]+SL+[roughnesses[i]]))
     multilayer=RefMultilayerParam(repititions, name, layer_list)
     self.layers.append(multilayer)
     return True
-  
+
   def append_substrate(self, material, roughness):
     '''
       append substrat from the lookup table defined
@@ -67,9 +72,9 @@ class RefFitParameters(FitParameters):
       result=True
     except KeyError:
       material='Unknown'
-      SL=[1. for i in range(self.PARAMETER_LENGTH - 2)]
+      SL=[1. for i in range(self.PARAMETER_LENGTH-2)]
       result=False
-    layer=RefLayerParam(material, [0.] + SL + [roughness])
+    layer=RefLayerParam(material, [0.]+SL+[roughness])
     self.substrate=layer
     return result
 
@@ -78,30 +83,30 @@ class RefFitParameters(FitParameters):
       create a .ent file for fit.f90 script from given parameters
       fit parameters have to be set in advance, see set_fit_parameters/set_fit_constrains
     '''
-    ent_string=str(self.radiation[0]) + '\tscattering radiaion energy (' + self.radiation[1] + ')\n'
-    ent_string+=str(self.number_of_points) + '\tnumber of datapoints\n\n'
-    ent_string+=str(self.number_of_layers() + 1) + '\tnumber of interfaces (number of layers + 1)\n'
-    ent_string_layer, layer_index, para_index = self.__get_ent_str_layers__(use_roughness_gradient)
+    ent_string=str(self.radiation[0])+'\tscattering radiaion energy ('+self.radiation[1]+')\n'
+    ent_string+=str(self.number_of_points)+'\tnumber of datapoints\n\n'
+    ent_string+=str(self.number_of_layers()+1)+'\tnumber of interfaces (number of layers + 1)\n'
+    ent_string_layer, layer_index, para_index=self.__get_ent_str_layers__(use_roughness_gradient)
     ent_string+=ent_string_layer
     # more global parameters
-    ent_string+=str(round(self.background, 4)) + '\tbackground\t\t\t\tparametar ' + str(para_index) + '\n'
+    ent_string+=str(round(self.background, 4))+'\tbackground\t\t\t\tparametar '+str(para_index)+'\n'
     para_index+=1
-    ent_string+=str(self.resolution) + '\tresolution in q (sigma, in 1e-3 A^-1)\tparameter ' + str(para_index) + '\n'
+    ent_string+=str(self.resolution)+'\tresolution in q (sigma, in 1e-3 A^-1)\tparameter '+str(para_index)+'\n'
     para_index+=1
-    ent_string+=str(round(self.scaling_factor, 4)) + '\tscaling factor *1e6\t\t\tparameter ' + str(para_index) + '\n'
-    ent_string+='\n' + str(self.theta_max) + '\ttheta_max (in deg) for recalibration\n'
+    ent_string+=str(round(self.scaling_factor, 4))+'\tscaling factor *1e6\t\t\tparameter '+str(para_index)+'\n'
+    ent_string+='\n'+str(self.theta_max)+'\ttheta_max (in deg) for recalibration\n'
     # fit specific parameters
     ent_string+='#### fit specific parameters:\n'
-    ent_string+=str(self.fit) + '\t1: fit; 0: simulation\n'
-    ent_string+='\n' + str(len(self.fit_params)) + '\t\tNumber of parameters to be fitted\n'
-    ent_string+=' '.join([str(param) for param in self.fit_params]) + '\t\tindices of parameters\n'
-    ent_string+=str(len(self.constrains)) + '\t\tnumber of constrains\n'
+    ent_string+=str(self.fit)+'\t1: fit; 0: simulation\n'
+    ent_string+='\n'+str(len(self.fit_params))+'\t\tNumber of parameters to be fitted\n'
+    ent_string+=' '.join([str(param) for param in self.fit_params])+'\t\tindices of parameters\n'
+    ent_string+=str(len(self.constrains))+'\t\tnumber of constrains\n'
     for constrain in self.constrains:
-      ent_string+=str(len(constrain)) + '\t\tnumber of parameters to be kept equal\n'
-      ent_string+=' '.join([str(param) for param in constrain]) + '\t\tindices of those parameters\n'
+      ent_string+=str(len(constrain))+'\t\tnumber of parameters to be kept equal\n'
+      ent_string+=' '.join([str(param) for param in constrain])+'\t\tindices of those parameters\n'
     return ent_string
 
-  
+
   def set_fit_parameters(self, layer_params={}, substrate_params=[], background=False, resolution=False, scaling=False):
     '''
       set fit parameters depending on (multi)layers
@@ -116,7 +121,7 @@ class RefFitParameters(FitParameters):
       else:
         para_index+=len(layer)*4
     for param in substrate_params:
-      fit_params.append(para_index + param)
+      fit_params.append(para_index+param)
     para_index+=3
     if background:
       fit_params.append(para_index)
@@ -129,7 +134,7 @@ class RefFitParameters(FitParameters):
     para_index+=1
     fit_params.sort()
     self.fit_params=fit_params
-    
+
   def get_parameters(self, parameters):
     '''
       set layer parameters from existing fit
@@ -138,12 +143,12 @@ class RefFitParameters(FitParameters):
     for i, layer in enumerate(self.layers):
       for j in range(4): # every layer parameter
         if not layer.multilayer==1: # its a single layer
-          if (para_index + j) in self.fit_params:
-            layer.set_param(j, parameters[para_index + j])
+          if (para_index+j) in self.fit_params:
+            layer.set_param(j, parameters[para_index+j])
         else:
           for k in range(len(layer.layers)): # got through sub layers
-            if (para_index + j + k*4) in self.fit_params:
-              layer.layers[k].set_param(j, parameters[para_index + j + k*4])
+            if (para_index+j+k*4) in self.fit_params:
+              layer.layers[k].set_param(j, parameters[para_index+j+k*4])
       para_index+=len(layer)*4
     for j in range(3):
       if para_index in self.fit_params:
@@ -158,7 +163,7 @@ class RefFitParameters(FitParameters):
     if para_index in self.fit_params:
       self.scaling_factor=parameters[para_index]
     para_index+=1
-  
+
   def get_errors(self, errors):
     '''
       convert errors dictionary from parameter indices to layer indices
@@ -168,12 +173,12 @@ class RefFitParameters(FitParameters):
     for i, layer in enumerate(self.layers):
       for j in range(4): # every layer parameter
         if not layer.multilayer==1: # its a single layer
-          if (para_index + j) in self.fit_params:
-            errors_out[str(i) + ',' + str(j)]=errors[para_index + j]
+          if (para_index+j) in self.fit_params:
+            errors_out[str(i)+','+str(j)]=errors[para_index+j]
         else:
           for k in range(len(layer.layers)): # got through sub layers
-            if (para_index + j + k*4) in self.fit_params:
-              errors_out[str(i) + ',' + str(k) + ',' + str(j)]=errors[para_index + j + k*4]
+            if (para_index+j+k*4) in self.fit_params:
+              errors_out[str(i)+','+str(k)+','+str(j)]=errors[para_index+j+k*4]
       para_index+=len(layer)*4
     for j in range(3):
       if para_index in self.fit_params:
@@ -189,7 +194,7 @@ class RefFitParameters(FitParameters):
       errors_out['scaling']=errors[para_index]
     para_index+=1
     return errors_out
-  
+
   def set_fit_constrains(self):
     '''
       Set fit constrains depending on (multi)layers.
@@ -290,7 +295,7 @@ class RefLayerParam(LayerParam):
   '''
   delta=1
   d_over_b=1
-  
+
   def __init__(self, name='NoName', parameters_list=None):
     '''
       class constructor
@@ -302,7 +307,7 @@ class RefLayerParam(LayerParam):
     else:
       self.delta=1
       self.d_over_b=1
-  
+
   def __eq__(self, other):
     '''
       test if two layers have the same parameters
@@ -310,7 +315,7 @@ class RefLayerParam(LayerParam):
     return LayerParam.__eq__(self, other) and\
       self.delta==other.delta and\
       self.d_over_b==other.d_over_b
-  
+
   def copy(self):
     '''
       create a copy of this object
@@ -329,9 +334,9 @@ class RefLayerParam(LayerParam):
     '''
     list=[]
     for i in params:
-      list.append(param_index + i)
-    return list, param_index + 4
-  
+      list.append(param_index+i)
+    return list, param_index+4
+
   def dialog_get_params(self, action, response, thickness, delta, d_over_b, roughness):
     '''
       function to get parameters from the GUI dialog
@@ -342,18 +347,18 @@ class RefLayerParam(LayerParam):
       self.d_over_b=float(d_over_b.get_text())
     except TypeError:
       None
-  
+
   def set_param(self, index, value):
     '''
       set own parameters by index
     '''
-    if index==1: 
+    if index==1:
       self.delta=value
-    elif index==2: 
+    elif index==2:
       self.d_over_b=value
     else:
       LayerParam.set_param(self, index, 3, value)
-  
+
   def get_ent_text(self, layer_index, para_index, add_roughness=0., use_roughness_gradient=True):
     '''
       Function to get the text lines for the .ent file.
@@ -364,9 +369,9 @@ class RefLayerParam(LayerParam):
       add_roughness=0.
     text=LayerParam.__get_ent_text_start__(self, layer_index, para_index)
     para_index+=1
-    text+=str(self.delta) + '\tdelta *1e6\t\t\t\tparameter ' + str(para_index) + '\n'
+    text+=str(self.delta)+'\tdelta *1e6\t\t\t\tparameter '+str(para_index)+'\n'
     para_index+=1
-    text+=str(self.d_over_b) + '\tdelta/beta\t\t\t\tparameter ' + str(para_index) + '\n'
+    text+=str(self.d_over_b)+'\tdelta/beta\t\t\t\tparameter '+str(para_index)+'\n'
     para_index+=1
     text+=LayerParam.__get_ent_text_end__(self, layer_index, para_index, add_roughness)
     para_index+=1
@@ -377,10 +382,10 @@ class RefMultilayerParam(MultilayerParam):
   '''
     class for multilayer data
   '''
-  
+
   def copy(self):
     return MultilayerParam.copy(self, RefMultilayerParam())
-  
+
   def get_fit_params(self, params, param_index):
     '''
       return a parameter list according to params (list of param lists for multilayer)
@@ -389,9 +394,9 @@ class RefMultilayerParam(MultilayerParam):
     layers=len(self.layers)
     for j in range(layers):
       for i in params[j]:
-        list+=[param_index + i + j * 4 + k * layers * 4 for k in range(self.repititions)]
-    return list, param_index + len(self) * 4
-  
+        list+=[param_index+i+j*4+k*layers*4 for k in range(self.repititions)]
+    return list, param_index+len(self)*4
+
   def get_fit_cons(self, param_index):
     '''
       return a list of constainlists according to multilayers
@@ -404,5 +409,5 @@ class RefMultilayerParam(MultilayerParam):
       constrain_params=3
     for j in range(layers): # iterate through layers
       for i in range(constrain_params): # iterate through parameters
-        list.append([param_index + i + j * 4 + k * layers * 4 for k in range(self.repititions)])
-    return list, param_index + len(self)
+        list.append([param_index+i+j*4+k*layers*4 for k in range(self.repititions)])
+    return list, param_index+len(self)

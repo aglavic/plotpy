@@ -28,40 +28,44 @@ from measurement_data_structure import MeasurementData, PhysicalProperty
 # importing data readout
 import read_data.treff
 import read_data.treff_addon1
+from config import user_config
 import config.treff
 import config.transformations
 import config.gnuplot_preferences
+from config.scattering_length_table import NEUTRON_SCATTERING_LENGTH_DENSITIES
+if not 'Neutron SLD' in user_config:
+  user_config['Neutron SLD']=NEUTRON_SCATTERING_LENGTH_DENSITIES
 # import gui functions for active config.gui.toolkit
 import config.gui
 try:
-  GUI=__import__( config.gui.toolkit+'gui.treff', fromlist=['TreffGUI']).TreffGUI
-except ImportError: 
+  GUI=__import__(config.gui.toolkit+'gui.treff', fromlist=['TreffGUI']).TreffGUI
+except ImportError:
   class GUI: pass
 try:
-  ReflectometerFitGUI=__import__( config.gui.toolkit+'gui.reflectometer_functions', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
-except ImportError: 
+  ReflectometerFitGUI=__import__(config.gui.toolkit+'gui.reflectometer_functions', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
+except ImportError:
   class ReflectometerFitGUI: pass
 
 if not sys.platform.startswith('win'):
   WindowsError=OSError
 
-__author__ = "Artur Glavic"
-__credits__ = ["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
+__author__="Artur Glavic"
+__credits__=["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__status__="Production"
 
 class FitList(list):
   '''
     Class to store the fit parameters together with the list of MeasurementData objects.
   '''
-  
+
   def __init__(self, *args):
     list.__init__(self, *args)
-    self.fit_object=TreffFitParameters() 
+    self.fit_object=TreffFitParameters()
     self.fit_object_history=[]
     self.fit_object_future=[]
     self.fit_datasets=[None, None, None, None] # a list of datasets used for fit [++,--,+-,-+]
- 
+
 def calc_intensities_general(S, P):
   '''
     A general formalism to calculate measured intensities from simulated scattering and
@@ -82,37 +86,37 @@ def calc_intensities_general(S, P):
   # Define the transformation matrices
   o=numpy.zeros_like(F1)
   i=numpy.zeros_like(F1)+1.
-  M1=numpy.array(   [
-                     [      i,         o,         o,        o     ], 
-                     [      o,         i,         o,        o     ], 
-                     [     F1,         o,      (i-F1),      o     ], 
-                     [      o,        F1,         o,      (i-F1), ], 
+  M1=numpy.array([
+                     [      i, o, o, o     ],
+                     [      o, i, o, o     ],
+                     [     F1, o, (i-F1), o     ],
+                     [      o, F1, o, (i-F1), ],
                      ])
-  M2=numpy.array(   [
-                     [      i,         o,         o,        o     ], 
-                     [     F2,      (i-F2),       o,        o     ], 
-                     [      o,         o,         i,        o     ], 
-                     [      o,         o,        F2,      (i-F2), ], 
+  M2=numpy.array([
+                     [      i, o, o, o     ],
+                     [     F2, (i-F2), o, o     ],
+                     [      o, o, i, o     ],
+                     [      o, o, F2, (i-F2), ],
                      ])
-  M3=numpy.array(   [
-                     [   (i-p1),       o,        p1,        o     ], 
-                     [      o,       (i-p1),      o,       p1     ], 
-                     [     p1,         o,      (i-p1),      o     ], 
-                     [      o,        p1,         o,      (i-p1)  ], 
+  M3=numpy.array([
+                     [   (i-p1), o, p1, o     ],
+                     [      o, (i-p1), o, p1     ],
+                     [     p1, o, (i-p1), o     ],
+                     [      o, p1, o, (i-p1)  ],
                      ])
-  M4=numpy.array(   [
-                     [   (i-p2),      p2,         o,        o     ], 
-                     [     p2,       (i-p2),      o,        o     ], 
-                     [      o,         o,      (i-p2),     p2     ], 
-                     [      o,         o,        p2,      (i-p2)  ], 
+  M4=numpy.array([
+                     [   (i-p2), p2, o, o     ],
+                     [     p2, (i-p2), o, o     ],
+                     [      o, o, (i-p2), p2     ],
+                     [      o, o, p2, (i-p2)  ],
                      ])
   Mall=dot_matrix(dot_matrix(M1, M2), dot_matrix(M3, M4))
   Intensity=dot_vector(Mall, Sigma)
   return {
-          '++': Intensity[0], 
-          '+-': Intensity[1], 
+          '++': Intensity[0],
+          '+-': Intensity[1],
           '-+': Intensity[2],
-          '--': Intensity[3], 
+          '--': Intensity[3],
           }
 
 def dot_matrix(M1, M2):
@@ -149,14 +153,14 @@ def separate_scattering_d17(datasets, P, break_condition=1e-3):
   S=deepcopy(I)
   converged=False
   for i in range(100):
-    I_neu=calc_intensities_general(S,P)
+    I_neu=calc_intensities_general(S, P)
     I_div={}
     sum_of_divs=0.
     for key in I.keys():
       I_div[key]=I[key]-I_neu[key]
       S[key]+=I_div[key]
       sum_of_divs+=numpy.abs(I_div[key]).sum()
-    if (sum_of_divs < break_condition):
+    if (sum_of_divs<break_condition):
       converged=True
       break
   for value in S.values():
@@ -179,39 +183,39 @@ def calc_intensities(R, P):
   '''
   I={}
   # calculate up-up intensity
-  I['++']=R['++'] * (P['polarizer']*P['flipper1']*P['analyzer']                             +\
-                    (1.-P['polarizer'])*(1.-P['flipper1'])*P['analyzer'])                   +\
-          R['--'] * ((1.-P['polarizer'])*P['flipper1']*(1.-P['analyzer'])                   +\
-                    P['polarizer']*(1.-P['flipper1'])*(1.-P['analyzer']))                   +\
-          R['+-'] * (P['polarizer']*P['flipper1']*(1.-P['analyzer'])                        +\
-                    (1.-P['polarizer'])*(1.-P['flipper1'])*(1.-P['analyzer']))              +\
-          R['-+'] * ((1.-P['polarizer'])*P['flipper1']*P['analyzer']                        +\
+  I['++']=R['++']*(P['polarizer']*P['flipper1']*P['analyzer']+\
+                    (1.-P['polarizer'])*(1.-P['flipper1'])*P['analyzer'])+\
+          R['--']*((1.-P['polarizer'])*P['flipper1']*(1.-P['analyzer'])+\
+                    P['polarizer']*(1.-P['flipper1'])*(1.-P['analyzer']))+\
+          R['+-']*(P['polarizer']*P['flipper1']*(1.-P['analyzer'])+\
+                    (1.-P['polarizer'])*(1.-P['flipper1'])*(1.-P['analyzer']))+\
+          R['-+']*((1.-P['polarizer'])*P['flipper1']*P['analyzer']+\
                     P['polarizer']*(1.-P['flipper1'])*P['analyzer'])
   # calculate down-down intensity
-  I['--']=R['--'] * (P['polarizer']*P['flipper2']*P['analyzer']                             +\
-                    P['polarizer']*(1.-P['flipper2'])*(1.-P['analyzer']))                   +\
-          R['++'] * ((1.-P['polarizer'])*P['flipper2']*(1.-P['analyzer'])                   +\
-                    (1.-P['polarizer'])*(1.-P['flipper2'])*P['analyzer'])                   +\
-          R['-+'] * (P['polarizer']*P['flipper2']*(1.-P['analyzer'])                        +\
-                    P['polarizer']*(1.-P['flipper2'])*P['analyzer'])                        +\
-          R['+-'] * ((1.-P['polarizer'])*P['flipper2']*P['analyzer']                        +\
+  I['--']=R['--']*(P['polarizer']*P['flipper2']*P['analyzer']+\
+                    P['polarizer']*(1.-P['flipper2'])*(1.-P['analyzer']))+\
+          R['++']*((1.-P['polarizer'])*P['flipper2']*(1.-P['analyzer'])+\
+                    (1.-P['polarizer'])*(1.-P['flipper2'])*P['analyzer'])+\
+          R['-+']*(P['polarizer']*P['flipper2']*(1.-P['analyzer'])+\
+                    P['polarizer']*(1.-P['flipper2'])*P['analyzer'])+\
+          R['+-']*((1.-P['polarizer'])*P['flipper2']*P['analyzer']+\
                     (1.-P['polarizer'])*(1.-P['flipper2'])*(1.-P['analyzer']))
   # calculate up-down intensity
-  I['+-']=R['+-'] * (P['polarizer']*P['flipper1']*P['flipper2']*P['analyzer']               +\
-                    (1.-P['polarizer'])*(1.-P['flipper1'])*P['flipper2']*P['analyzer'])     +\
-          R['-+'] * ((1.-P['polarizer'])*P['flipper1']*P['flipper2']*(1.-P['analyzer'])     +\
-                    P['polarizer']*(1.-P['flipper1'])*P['flipper2']*(1.-P['analyzer'])      +\
-                    (1.-P['polarizer'])*P['flipper1']*(1.-P['flipper2'])*P['analyzer']      +\
-                    P['polarizer']*(1.-P['flipper1'])*(1.-P['flipper2'])*P['analyzer'])     +\
-          R['++'] * (P['polarizer']*P['flipper1']*P['flipper2']*(1.-P['analyzer'])          +\
-                    P['polarizer']*P['flipper1']*(1.-P['flipper2'])*P['analyzer'])          +\
-          R['--'] * ((1.-P['polarizer'])*P['flipper1']*P['flipper2']*P['analyzer']          +\
+  I['+-']=R['+-']*(P['polarizer']*P['flipper1']*P['flipper2']*P['analyzer']+\
+                    (1.-P['polarizer'])*(1.-P['flipper1'])*P['flipper2']*P['analyzer'])+\
+          R['-+']*((1.-P['polarizer'])*P['flipper1']*P['flipper2']*(1.-P['analyzer'])+\
+                    P['polarizer']*(1.-P['flipper1'])*P['flipper2']*(1.-P['analyzer'])+\
+                    (1.-P['polarizer'])*P['flipper1']*(1.-P['flipper2'])*P['analyzer']+\
+                    P['polarizer']*(1.-P['flipper1'])*(1.-P['flipper2'])*P['analyzer'])+\
+          R['++']*(P['polarizer']*P['flipper1']*P['flipper2']*(1.-P['analyzer'])+\
+                    P['polarizer']*P['flipper1']*(1.-P['flipper2'])*P['analyzer'])+\
+          R['--']*((1.-P['polarizer'])*P['flipper1']*P['flipper2']*P['analyzer']+\
                     P['polarizer']*(1.-P['flipper1'])*P['flipper2']*P['analyzer']) # + O((1-p)^3) + (1-P)^4
   # calculate down-up intensity
-  I['-+']=R['-+'] * (P['polarizer']*P['analyzer'])                                          +\
-          R['+-'] * ((1.-P['polarizer'])*(1.-P['analyzer']))                                +\
-          R['--'] * (P['polarizer']*(1.-P['analyzer']))                                     +\
-          R['++'] * ((1.-P['polarizer'])*P['analyzer'])
+  I['-+']=R['-+']*(P['polarizer']*P['analyzer'])+\
+          R['+-']*((1.-P['polarizer'])*(1.-P['analyzer']))+\
+          R['--']*(P['polarizer']*(1.-P['analyzer']))+\
+          R['++']*((1.-P['polarizer'])*P['analyzer'])
   # normalize intensities for output
   scale_by=1./sum(I.values())
   for key in I.keys():
@@ -244,7 +248,7 @@ def seperate_scattering(datasets, P):
   for key in I.keys():
     I[key]/=normalization_factor
   R=deepcopy(I)
-  
+
   for i in range(maximum_iterations):
     I_neu=calc_intensities(R, P)
     I_div={}
@@ -253,8 +257,8 @@ def seperate_scattering(datasets, P):
       I_div[key]=I[key]-I_neu[key]
       R[key]+=I_div[key]
       sum_of_divs+=numpy.abs(I_div[key]).sum()
-      print "Iteration %i: Sum of I_div=%.8f" % (i+1, sum_of_divs)
-      if (sum_of_divs < stop_iteration_at):
+      print "Iteration %i: Sum of I_div=%.8f"%(i+1, sum_of_divs)
+      if (sum_of_divs<stop_iteration_at):
         break
   output=[]
   output.append(R['++']*normalization_factor)
@@ -287,17 +291,17 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('TREFF/MARIA/D17', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]','*.zip', '*.d17'), 
+  FILE_WILDCARDS=[('TREFF/MARIA/D17', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]', '*.zip', '*.d17'),
                   ]
   TRANSFORMATIONS=[\
-                  ['mrad',1/config.treff.GRAD_TO_MRAD,0,'°'],
-                  ['detector', 'mrad', 1., 0, '2Θ', 'mrad'], 
-                  ['detector', 'rad', 1., 0, '2Θ', 'rad'], 
-                  ['detector', '°', 1., 0, '2Θ', '°'], 
-                  ['omega', 'mrad', 1., 0, 'Θ', 'mrad'], 
-                  ['omega', 'rad', 1., 0, 'Θ', 'rad'], 
-                  ['omega', '°', 1., 0, 'Θ', '°'], 
-                  ]  
+                  ['mrad', 1/config.treff.GRAD_TO_MRAD, 0, '°'],
+                  ['detector', 'mrad', 1., 0, '2Θ', 'mrad'],
+                  ['detector', 'rad', 1., 0, '2Θ', 'rad'],
+                  ['detector', '°', 1., 0, '2Θ', '°'],
+                  ['omega', 'mrad', 1., 0, 'Θ', 'mrad'],
+                  ['omega', 'rad', 1., 0, 'Θ', 'rad'],
+                  ['omega', '°', 1., 0, 'Θ', '°'],
+                  ]
   import_images=True
   import_detector_images=False
   x_from=5 # fit only x regions between x_from and x_to
@@ -307,7 +311,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add', 'ft1', 'maria', 'dimg', 'sim', 'bin', 'speedup']
   MARIA=False
-  replot=None 
+  replot=None
   add_to_files={}
   add_simdata=False
   gisans=False
@@ -315,25 +319,25 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
 
   #------------------ local variables -----------------
 
-  
+
   def __init__(self, arguments):
     '''
       class constructor expands the GenericSession constructor
     '''
-    self.read_data=read_data.treff.read_data    
+    self.read_data=read_data.treff.read_data
     self.RESULT_FILE=config.treff.RESULT_FILE
     GenericSession.__init__(self, arguments)
     if self.add_simdata:
       from copy import deepcopy
-      simdata=read_data.treff.MeasurementDataTREFF([['Θ', 'mrad'], 
-                             ['2DWindow', 'counts'], 
-                             ['DetectorTotal', 'counts'], 
-                             ['error','counts'], 
-                             ['errorTotal','counts'], 
-                             ['Intensity','counts/Monitor'], 
-                             ['error(monitor)','counts/Monitor'], 
-                             ['Intensity(time)', 'counts/s'], 
-                             ['error(time)','counts/s']], 
+      simdata=read_data.treff.MeasurementDataTREFF([['Θ', 'mrad'],
+                             ['2DWindow', 'counts'],
+                             ['DetectorTotal', 'counts'],
+                             ['error', 'counts'],
+                             ['errorTotal', 'counts'],
+                             ['Intensity', 'counts/Monitor'],
+                             ['error(monitor)', 'counts/Monitor'],
+                             ['Intensity(time)', 'counts/s'],
+                             ['error(time)', 'counts/s']],
                             [], 0, 5, 6)
       simdata.append([0, 1e6, 1e6, 1e3, 1e3, 1, 1e-3, 1, 1e-3])
       simdata.append([100, 0.1, 1, 0.01, 0.1, 1e-7, 1e-8, 1e-7, 1e-8])
@@ -362,7 +366,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       self.active_file_data=self.file_data[self.active_file_name]
     except KeyError:
       self.active_file_data=[]
-  
+
   def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
     '''
       additional command line arguments for squid sessions
@@ -378,10 +382,10 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
               self.add_to_files[input_file_names[-1]].append(argument)
             else:
               self.add_to_files[input_file_names[-1]]=[argument]
-          last_argument_option=[False,'']            
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='bin':
           self.rebinning=int(argument)
-          last_argument_option=[False,'']            
+          last_argument_option=[False, '']
         else:
           found=False
       elif argument=='-ft1':
@@ -425,7 +429,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       self.file_data[file_name+'_imgs']=[]
       i=0
       if self.rebinning:
-        print "\tRebinning detector images %ix%i" % (self.rebinning, self.rebinning)
+        print "\tRebinning detector images %ix%i"%(self.rebinning, self.rebinning)
       for channel_images in detector_images:
         for image in channel_images:
           image.number=str(i)
@@ -445,10 +449,10 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
         del(self.file_data[file_name+'_imgs'])
     if file_name in self.add_to_files:
       for name in self.add_to_files[file_name]:
-        print "Trying to import for adding '%s'" % name
+        print "Trying to import for adding '%s'"%name
         add_data=self.read_data(name, self.SCRIPT_PATH, self.import_images, self.import_detector_images)
         for i, dataset in enumerate(data):
-          print "Adding dataset %i from '%s'" %(i, name)
+          print "Adding dataset %i from '%s'"%(i, name)
           data[i]=dataset.join(add_data[i])
     if data=='NULL':
       return data
@@ -481,16 +485,16 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     savey=dataset.y.copy()
     dataset.y-=dataset.x
     # Extract the two lines
-    specular=file_actions.create_cross_section(1.0, center_position_offset[0], 0.0, center_position_offset[1], 
-                                                      line_width, 1, gauss_weighting=False, 
+    specular=file_actions.create_cross_section(1.0, center_position_offset[0], 0.0, center_position_offset[1],
+                                                      line_width, 1, gauss_weighting=False,
                                                       sigma_gauss=0.1, bin_distance=alphai_steps)
-    off_spec1=file_actions.create_cross_section(1.0, center_position_offset[0], 
-                                                0.0, 2.*line_width+center_position_offset[1], 
-                                                line_width, 1, gauss_weighting=False, 
+    off_spec1=file_actions.create_cross_section(1.0, center_position_offset[0],
+                                                0.0, 2.*line_width+center_position_offset[1],
+                                                line_width, 1, gauss_weighting=False,
                                                 sigma_gauss=1., bin_distance=alphai_steps)
-    off_spec2=file_actions.create_cross_section(1.0, center_position_offset[0], 
-                                                0.0, -2.*line_width+center_position_offset[1], 
-                                                line_width, 1, gauss_weighting=False, 
+    off_spec2=file_actions.create_cross_section(1.0, center_position_offset[0],
+                                                0.0,-2.*line_width+center_position_offset[1],
+                                                line_width, 1, gauss_weighting=False,
                                                 sigma_gauss=1., bin_distance=alphai_steps)
     dataset.y=savey
     # Create a new object for the stored data
@@ -524,15 +528,15 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     # add the object to the active_file_data list
     active_data=self.active_file_data[file_actions.window.index_mess]
     true_specular.number=str(len(self.active_file_data)-1)
-    true_specular.short_info='%s - Specular cut' % active_data.short_info
+    true_specular.short_info='%s - Specular cut'%active_data.short_info
     true_specular.sample_name=active_data.sample_name
     true_specular.info=active_data.info
     true_specular.logy=True
     self.active_file_data.append(true_specular)
     file_actions.window.index_mess=len(self.active_file_data)-1
     return True
-  
-  def export_data_and_entfile(self, folder, file_name, datafile_prefix='fit_temp_', 
+
+  def export_data_and_entfile(self, folder, file_name, datafile_prefix='fit_temp_',
                               use_multilayer=False, use_roughness_gradient=True):
     '''
       Export measured data for fit program and the corresponding .ent file.
@@ -544,12 +548,12 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     for i, dataset in enumerate(self.active_file_data.fit_datasets):
       # if the channel dataset is None use 0 points.
       if dataset:
-        dataset.unit_trans([['°', math.pi/180.*1000., 0, 'mrad'], 
-                            ['rad', 1000., 0, 'mrad']])    
-        dataset.unit_trans([['2Θ', 'mrad', 0.5, 0, 'Θ', 'mrad']])    
-        data_lines.append(dataset.export(os.path.join(folder, datafile_prefix+names[i]+'.ref'), 
-                                         False, ' ', 
-                                         xfrom=self.x_from, xto=self.x_to, 
+        dataset.unit_trans([['°', math.pi/180.*1000., 0, 'mrad'],
+                            ['rad', 1000., 0, 'mrad']])
+        dataset.unit_trans([['2Θ', 'mrad', 0.5, 0, 'Θ', 'mrad']])
+        data_lines.append(dataset.export(os.path.join(folder, datafile_prefix+names[i]+'.ref'),
+                                         False, ' ',
+                                         xfrom=self.x_from, xto=self.x_to,
                                          only_fitted_columns=True))
       elif not self.active_file_data.fit_object.simulate_all_channels and not i==0:
         data_lines.append(0)
@@ -574,26 +578,26 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       program to finish, it only startes the sub process, which is returned.
     '''
     code_path=os.path.join(self.SCRIPT_PATH, 'config', 'fit', 'pnr_multi')
-    param_code_file=os.path.join(self.TEMP_DIR,  config.treff.PROGRAM_PARAMETER_FILE)
+    param_code_file=os.path.join(self.TEMP_DIR, config.treff.PROGRAM_PARAMETER_FILE)
     exe=os.path.join(self.TEMP_DIR, 'pnr.o')
     subcode_files=map(lambda name: os.path.join(code_path, name), config.treff.PROGRAM_FILES)
     # has the program been changed or does it not exist
     if force_compile or (not os.path.exists(exe)) or \
-      any(map(lambda name: (os.stat(name)[8]-os.stat(exe)[8]) > 0, subcode_files)):
+      any(map(lambda name: (os.stat(name)[8]-os.stat(exe)[8])>0, subcode_files)):
       param_code=open(os.path.join(code_path, config.treff.PROGRAM_PARAMETER_FILE), 'r').read()
-      param_code=param_code.replace("parameter(maxlay=400,map=7*maxlay+12,ndatap=4000,max_hr=5000,np_conv=500,pdq=0.02d0)", 
-                              "parameter(maxlay=400,map=7*maxlay+12,ndatap=4000,max_hr=%i,np_conv=500,pdq=0.02d0)" % \
+      param_code=param_code.replace("parameter(maxlay=400,map=7*maxlay+12,ndatap=4000,max_hr=5000,np_conv=500,pdq=0.02d0)",
+                              "parameter(maxlay=400,map=7*maxlay+12,ndatap=4000,max_hr=%i,np_conv=500,pdq=0.02d0)"%\
                               self.max_hr
                               )
       open(param_code_file, 'w').write(param_code)
       ofiles=[]
       num_files=len(subcode_files)+2
-      sys.stdout.write('Compiling fit program %2i/%2i' % (0, num_files))
+      sys.stdout.write('Compiling fit program %2i/%2i'%(0, num_files))
       sys.stdout.flush()
       callopts=dict(
                       stderr=subprocess.PIPE,
-                      stdout=subprocess.PIPE, 
-                      stdin=subprocess.PIPE,                      
+                      stdout=subprocess.PIPE,
+                      stdin=subprocess.PIPE,
                      )
       fortran_compiler=config.treff.FORTRAN_COMPILER
       if sys.argv[0].endswith('.exe'):
@@ -606,55 +610,55 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
         # compile each source file separately
         ofile=os.path.join(self.TEMP_DIR, os.path.split(file)[1].rsplit('.', 1)[0]+'.o')
         ofiles.append(ofile)
-        call_params=[fortran_compiler, 
-                     config.treff.FORTRAN_PRECOMPILE_OPTION, file, 
-                     config.treff.FORTRAN_OUTPUT_OPTION, 
-                     ofile, 
+        call_params=[fortran_compiler,
+                     config.treff.FORTRAN_PRECOMPILE_OPTION, file,
+                     config.treff.FORTRAN_OUTPUT_OPTION,
+                     ofile,
                      ]
         if  config.treff.FORTRAN_COMPILER_OPTIONS!=None:
           call_params.append(config.treff.FORTRAN_COMPILER_OPTIONS)
         if  config.treff.FORTRAN_COMPILER_MARCH!=None:
           call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
         try:
-          proc=subprocess.Popen(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL, 
-                           creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
+          proc=subprocess.Popen(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL,
+                           creationflags=config.gnuplot_preferences.PROCESS_FLAGS,
                            **callopts
-                           )  
+                           )
           result=proc.communicate()
         except (OSError, WindowsError), error:
-          raise RuntimeError, "Problem calling the fortran compile '%s': %s" % (fortran_compiler, error)
+          raise RuntimeError, "Problem calling the fortran compile '%s': %s"%(fortran_compiler, error)
         if result!=('', ''):
-          raise RuntimeError, "Problem compiling fortran program: %s" % (result[0]+result[1])
-        sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i' % (i+1, num_files))
+          raise RuntimeError, "Problem compiling fortran program: %s"%(result[0]+result[1])
+        sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i'%(i+1, num_files))
         sys.stdout.flush()
       # compile the combination of all files
       call_params=[fortran_compiler]+ofiles+\
-                    [config.treff.FORTRAN_OUTPUT_OPTION, 
-                     exe, 
+                    [config.treff.FORTRAN_OUTPUT_OPTION,
+                     exe,
                      ]
       if  config.treff.FORTRAN_COMPILER_OPTIONS!=None:
         call_params.append(config.treff.FORTRAN_COMPILER_OPTIONS)
       if  config.treff.FORTRAN_COMPILER_MARCH!=None:
         call_params.append(config.treff.FORTRAN_COMPILER_MARCH)
       try:
-        proc=subprocess.Popen(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL,  
-                      creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
+        proc=subprocess.Popen(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL,
+                      creationflags=config.gnuplot_preferences.PROCESS_FLAGS,
                       **callopts)
         result=proc.communicate()
       except (OSError, WindowsError), error:
-        raise RuntimeError, "Problem calling the fortran compile '%s': %s" % (fortran_compiler, error)
+        raise RuntimeError, "Problem calling the fortran compile '%s': %s"%(fortran_compiler, error)
       if result!=('', ''):
-        raise RuntimeError, "Problem compiling fortran program: %s" % (result[0]+result[1])
-      sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i\n' % (num_files, num_files))
+        raise RuntimeError, "Problem compiling fortran program: %s"%(result[0]+result[1])
+      sys.stdout.write('\b'*27+'Compiling fit program %2i/%2i\n'%(num_files, num_files))
       sys.stdout.flush()
       print 'Compiled'
-    process = subprocess.Popen([exe, file_ent, str(self.max_iter)], 
-                        shell=config.gnuplot_preferences.EMMULATE_SHELL,  
-                        creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
+    process=subprocess.Popen([exe, file_ent, str(self.max_iter)],
+                        shell=config.gnuplot_preferences.EMMULATE_SHELL,
+                        creationflags=config.gnuplot_preferences.PROCESS_FLAGS,
                         stderr=subprocess.PIPE,
-                        stdout=subprocess.PIPE, 
-                        stdin=subprocess.PIPE, 
-                        cwd=self.TEMP_DIR, 
+                        stdout=subprocess.PIPE,
+                        stdin=subprocess.PIPE,
+                        cwd=self.TEMP_DIR,
                         )
     return process
 
@@ -668,7 +672,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     I=dataset.data[dataset.zdata][:].reshape(numpy.sqrt(len(x)), numpy.sqrt(len(x)))
     Ismooth=blur_image(I, kernel_size, kernel_size_y)
     dataset.data[dataset.zdata].values=Ismooth.flatten().tolist()
-  
+
   def join_datasets(self, d1_name, d2_name):
     d1=self.file_data[d1_name]
     d2=self.file_data[d2_name]
@@ -678,7 +682,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     self.file_data[d1_name+'+'+d2_name]=newd
     self.active_file_data=newd
     self.active_file_name=d1_name+'+'+d2_name
-  
+
   def separate_active_scattering_d17(self, P):
     datasets=self.active_file_data[:4]
     new_data=separate_scattering_d17(datasets, P)
@@ -691,9 +695,9 @@ def gauss_kern(size, size_y=None):
   """
   if size_y is None:
     size_y=size
-  x, y = numpy.mgrid[-size:size+1, -size_y:size_y+1]
-  g = numpy.exp(-(x**2/float(size)+y**2/float(size_y)))
-  return g / g.sum()
+  x, y=numpy.mgrid[-size:size+1,-size_y:size_y+1]
+  g=numpy.exp(-(x**2/float(size)+y**2/float(size_y)))
+  return g/g.sum()
 
 def blur_image(I, n, n_y=None) :
   """ 
@@ -702,8 +706,8 @@ def blur_image(I, n, n_y=None) :
     size n.
   """
   from scipy import signal
-  g = gauss_kern(n, n_y)
-  improc = signal.convolve(I,g, mode='same')
+  g=gauss_kern(n, n_y)
+  improc=signal.convolve(I, g, mode='same')
   return improc
 
 class TreffFitParameters(FitParameters):
@@ -723,8 +727,8 @@ class TreffFitParameters(FitParameters):
   ntest=1 # number of times chi has to be not improvable before the fit stops (I think)
   PARAMETER_LENGTH=7
   simulate_all_channels=False
-  from config.scattering_length_table import NEUTRON_SCATTERING_LENGTH_DENSITIES
-  
+  NEUTRON_SCATTERING_LENGTH_DENSITIES=user_config['Neutron SLD']
+
   def append_layer(self, material, thickness, roughness):
     '''
       append one layer at bottom from the lookup table defined
@@ -733,9 +737,9 @@ class TreffFitParameters(FitParameters):
     try: # if layer not in the table, return False
       SL=self.NEUTRON_SCATTERING_LENGTH_DENSITIES[material]
       result=True
-      parameters=[thickness] + SL + [90., 90, roughness]
+      parameters=[thickness]+SL+[90., 90, roughness]
     except (KeyError, TypeError):
-      parameters=[thickness] + [1. for i in range(self.PARAMETER_LENGTH-4)] + [90., 90., roughness]
+      parameters=[thickness]+[1. for i in range(self.PARAMETER_LENGTH-4)]+[90., 90., roughness]
       material='Unknown'
       result=False
     layer=TreffLayerParam(material, parameters)
@@ -753,11 +757,11 @@ class TreffFitParameters(FitParameters):
       return False
     layer_list=[]
     for i, SL in enumerate(SLs):
-      layer_list.append(TreffLayerParam(materials[i], [thicknesses[i]] + SL + [90., 90., roughnesses[i]]))
+      layer_list.append(TreffLayerParam(materials[i], [thicknesses[i]]+SL+[90., 90., roughnesses[i]]))
     multilayer=TreffMultilayerParam(repititions, name, layer_list)
     self.layers.append(multilayer)
     return True
-  
+
   def append_substrate(self, material, roughness):
     '''
       append substrat from the lookup table defined
@@ -768,9 +772,9 @@ class TreffFitParameters(FitParameters):
       result=True
     except KeyError:
       material='Unknown'
-      SL=[1. for i in range(self.PARAMETER_LENGTH - 4)]
+      SL=[1. for i in range(self.PARAMETER_LENGTH-4)]
       result=False
-    layer=TreffLayerParam(material, [0.] + SL + [90., 90., roughness])
+    layer=TreffLayerParam(material, [0.]+SL+[90., 90., roughness])
     self.substrate=layer
     return result
 
@@ -779,51 +783,51 @@ class TreffFitParameters(FitParameters):
       create a .ent file for fit.f90 script from given parameters
       fit parameters have to be set in advance, see set_fit_parameters/set_fit_constrains
     '''
-    ent_string=str(self.slits[0]) + '\tfirst slit opening (mm)\n'
-    ent_string+=str(self.slits[1]) + '\tsecond slit opening (mm)\n'
-    ent_string+=str(self.sample_length) + '\tsample length (mm)\n'
-    ent_string+=str(self.distances[0]) + '\tdistance from first slit to sample (mm)\n'
-    ent_string+=str(self.distances[1]) + '\tdistance from second slit to sample (mm)\n'
-    
+    ent_string=str(self.slits[0])+'\tfirst slit opening (mm)\n'
+    ent_string+=str(self.slits[1])+'\tsecond slit opening (mm)\n'
+    ent_string+=str(self.sample_length)+'\tsample length (mm)\n'
+    ent_string+=str(self.distances[0])+'\tdistance from first slit to sample (mm)\n'
+    ent_string+=str(self.distances[1])+'\tdistance from second slit to sample (mm)\n'
+
     ent_string+='#+++ File names for the 4 polarization directions (++,--,+-,-+) +++\n'
     for i, name in enumerate(self.input_file_names):
-      ent_string+=name + '\n' + str(self.number_of_points[i]) + '\t number of points used from this file\n'
-    
+      ent_string+=name+'\n'+str(self.number_of_points[i])+'\t number of points used from this file\n'
+
     ent_string+='#------ \n'
-    ent_string+=str(self.wavelength[0]) + '\twavelength of the neutrons (Angstrom)\n'
-    ent_string+=str(self.wavelength[1]) + '\twidth of the wavelength (Angstrom)\n'
-    
+    ent_string+=str(self.wavelength[0])+'\twavelength of the neutrons (Angstrom)\n'
+    ent_string+=str(self.wavelength[1])+'\twidth of the wavelength (Angstrom)\n'
+
     ent_string+='#+++++  Begin of layer parameters +++++\n'
     if use_multilayer and any(map(lambda item: item.multilayer, self.layers)):
       string, layer_index, para_index=self.__get_ent_str_with_multilayer__()
       ent_string+=string
-    else:      
+    else:
       ent_string+='0\tnumber of layers on top of the (unused) multilayer\n'
       ent_string+='# blank\n'
       ent_string+='0\tnumber of layers in the unicell of the multilayer\n'
       ent_string+='# blank\n'
       ent_string+='0\tnumber of repititions of those unicells in the multilayer\n'
       ent_string+='# blank\n'
-      
-      ent_string+=str(self.number_of_layers()) + '\tnumber of layers below the (unused) multilayer\n'
-      ent_string_layer, layer_index, para_index = self.__get_ent_str_layers__(use_roughness_gradient)
+
+      ent_string+=str(self.number_of_layers())+'\tnumber of layers below the (unused) multilayer\n'
+      ent_string_layer, layer_index, para_index=self.__get_ent_str_layers__(use_roughness_gradient)
       ent_string+=ent_string_layer
-    
+
     # more global parameters
-    ent_string+=str(round(self.scaling_factor, 4)) + '\tscaling factor \t\t\t\tparameter ' + str(para_index) + '\n'
+    ent_string+=str(round(self.scaling_factor, 4))+'\tscaling factor \t\t\t\tparameter '+str(para_index)+'\n'
     para_index+=1
-    ent_string+=str(round(self.background, 4)) + '\tbackground\t\t\t\tparametar ' + str(para_index) + '\n'
+    ent_string+=str(round(self.background, 4))+'\tbackground\t\t\t\tparametar '+str(para_index)+'\n'
     para_index+=1
     ent_string+='#### Polarization parameters\n'
-    ent_string+=str(self.polarization_parameters[0]) + '\tpolarizer efficiency\t\t\tparameter ' + str(para_index) + '\n'
+    ent_string+=str(self.polarization_parameters[0])+'\tpolarizer efficiency\t\t\tparameter '+str(para_index)+'\n'
     para_index+=1
-    ent_string+=str(self.polarization_parameters[1]) + '\tanalyzer efficiency\t\t\tparameter ' + str(para_index) + '\n'
+    ent_string+=str(self.polarization_parameters[1])+'\tanalyzer efficiency\t\t\tparameter '+str(para_index)+'\n'
     para_index+=1
-    ent_string+=str(self.polarization_parameters[2]) + '\tfirst flipper efficiency\t\tparameter ' + str(para_index) + '\n'
+    ent_string+=str(self.polarization_parameters[2])+'\tfirst flipper efficiency\t\tparameter '+str(para_index)+'\n'
     para_index+=1
-    ent_string+=str(self.polarization_parameters[3]) + '\tsecond flipper efficiency\t\tparameter ' + str(para_index) + '\n'
+    ent_string+=str(self.polarization_parameters[3])+'\tsecond flipper efficiency\t\tparameter '+str(para_index)+'\n'
     para_index+=1
-    
+
     # create constrains as needed for pnr_multi ( degrees of freedom etc. )
     fit_parameters=list(self.fit_params)
     constrains_list=map(list, self.constrains)
@@ -838,18 +842,18 @@ class TreffFitParameters(FitParameters):
           continue
     # fit specific parameters
     ent_string+='#### fit specific parameters:\n'
-    ent_string+=str(self.fit) + '\t1: fit; 0: simulation\n'
-    ent_string+='\n' + str(len(fit_parameters)) + '\t\tNumber of parameters to be fitted\n'
-    ent_string+=' '.join([str(param) for param in fit_parameters]) + '\t\tindices of parameters\n'
-    ent_string+='\n' + str(len(self.constrains)) + '\t\tnumber of constraints\n'
+    ent_string+=str(self.fit)+'\t1: fit; 0: simulation\n'
+    ent_string+='\n'+str(len(fit_parameters))+'\t\tNumber of parameters to be fitted\n'
+    ent_string+=' '.join([str(param) for param in fit_parameters])+'\t\tindices of parameters\n'
+    ent_string+='\n'+str(len(self.constrains))+'\t\tnumber of constraints\n'
     for i, constrain in enumerate(constrains_list):
       ent_string+='1\ttype of contraint; 1: of type b=c=...=a  2: of type b+a=cste\n'
-      ent_string+=str(constrain_to_list[i]) + '\tparameter with respect to which the equality relation has to be set\n'
-      ent_string+=str(len(constrain)) + '\t\tnumber of parameters to be kept equal\n'
-      ent_string+=' '.join([str(param) for param in constrain]) + '\t\tindices of those parameters\n'
+      ent_string+=str(constrain_to_list[i])+'\tparameter with respect to which the equality relation has to be set\n'
+      ent_string+=str(len(constrain))+'\t\tnumber of parameters to be kept equal\n'
+      ent_string+=' '.join([str(param) for param in constrain])+'\t\tindices of those parameters\n'
     ent_string+='### Parameters for the fit algorithm:\n'
-    ent_string+=str(self.alambda_first) + '\talambda_first, correspons to first step size in fit algorithm\n'
-    ent_string+=str(self.ntest) + '\tntest, the number of times chi could not be improved before fit stops\n'
+    ent_string+=str(self.alambda_first)+'\talambda_first, correspons to first step size in fit algorithm\n'
+    ent_string+=str(self.ntest)+'\tntest, the number of times chi could not be improved before fit stops\n'
     return ent_string
 
   def __get_ent_str_with_multilayer__(self):
@@ -866,41 +870,41 @@ class TreffFitParameters(FitParameters):
       else:
         layer_list.append(layer)
     layer_bottom=layer_list
-    
+
     # layers and parameters are numbered started with 1
     layer_index=1
     para_index=1
     ent_string=''
-    ent_string+='%i\tnumber of layers on top of the (unused) multilayer\n' % len(layer_top)
+    ent_string+='%i\tnumber of layers on top of the (unused) multilayer\n'%len(layer_top)
     ent_string+='#### Begin of layers above, first layer '
     # add text for every top_layer
     for layer in layer_top:
-      string,  layer_index, para_index=layer.get_ent_text(layer_index, para_index)
+      string, layer_index, para_index=layer.get_ent_text(layer_index, para_index)
       ent_string+=string
     ent_string+='## End of layers above\n'
-    ent_string+='%i\tnumber of layers in the unicell of the multilayer\n' % len(multilayer.layers)
+    ent_string+='%i\tnumber of layers in the unicell of the multilayer\n'%len(multilayer.layers)
     ent_string+='#### Begin of layers in multilayer '
     for layer in multilayer.layers:
-      string,  layer_index, para_index=layer.get_ent_text(layer_index, para_index)
+      string, layer_index, para_index=layer.get_ent_text(layer_index, para_index)
       ent_string+=string
     ent_string+='## End of layers in multilayer\n'
-    ent_string+='%i\tnumber of repititions of those unicells in the multilayer\n' % multilayer.repititions
+    ent_string+='%i\tnumber of repititions of those unicells in the multilayer\n'%multilayer.repititions
     ent_string+='\n'
-    ent_string+='%i\tnumber of layers below the (unused) multilayer\n' % len(layer_bottom)
+    ent_string+='%i\tnumber of layers below the (unused) multilayer\n'%len(layer_bottom)
     ent_string+='#### Begin of layers below, first layer '
     # add text for every top_layer
     for layer in layer_bottom:
-      string,  layer_index, para_index=layer.get_ent_text(layer_index, para_index)
-      ent_string+=string    
+      string, layer_index, para_index=layer.get_ent_text(layer_index, para_index)
+      ent_string+=string
     # substrate data
-    string,  layer_index, para_index=self.substrate.get_ent_text(layer_index, para_index-1)
-    ent_string+='\n'.join([string.splitlines()[0]]+string.splitlines()[2:]) + '\n' # cut the thickness line
+    string, layer_index, para_index=self.substrate.get_ent_text(layer_index, para_index-1)
+    ent_string+='\n'.join([string.splitlines()[0]]+string.splitlines()[2:])+'\n' # cut the thickness line
     ent_string+='### End of layers.\n'
     return ent_string, layer_index, para_index
-  
-  def set_fit_parameters(self, layer_params={}, substrate_params=[], background=False, 
-                         polarizer_efficiancy=False, analyzer_efficiancy=False, 
-                         flipper0_efficiancy=False, flipper1_efficiancy=False, 
+
+  def set_fit_parameters(self, layer_params={}, substrate_params=[], background=False,
+                         polarizer_efficiancy=False, analyzer_efficiancy=False,
+                         flipper0_efficiancy=False, flipper1_efficiancy=False,
                          scaling=False):
     '''
       set fit parameters depending on (multi)layers
@@ -915,7 +919,7 @@ class TreffFitParameters(FitParameters):
       else:
         para_index+=len(layer)*7
     for param in substrate_params:
-      fit_params.append(para_index + param)
+      fit_params.append(para_index+param)
     para_index+=6
     if scaling:
       fit_params.append(para_index)
@@ -937,7 +941,7 @@ class TreffFitParameters(FitParameters):
     para_index+=1
     fit_params.sort()
     self.fit_params=fit_params
-    
+
   def get_parameters(self, parameters):
     '''
       set layer parameters from existing fit
@@ -946,12 +950,12 @@ class TreffFitParameters(FitParameters):
     for i, layer in enumerate(self.layers):
       for j in range(7): # every layer parameter
         if not layer.multilayer==1: # its a single layer
-          if (para_index + j) in self.fit_params:
-            layer.set_param(j, parameters[para_index + j])
+          if (para_index+j) in self.fit_params:
+            layer.set_param(j, parameters[para_index+j])
         else:
           for k in range(len(layer.layers)): # got through sub layers
-            if (para_index + j + k*7) in self.fit_params:
-              layer.layers[k].set_param(j, parameters[para_index + j + k*7])
+            if (para_index+j+k*7) in self.fit_params:
+              layer.layers[k].set_param(j, parameters[para_index+j+k*7])
       para_index+=len(layer)*7
     for j in range(6):
       if para_index in self.fit_params:
@@ -975,7 +979,7 @@ class TreffFitParameters(FitParameters):
     if para_index in self.fit_params:
       self.polarization_parameters[3]=parameters[para_index]
     para_index+=1
-  
+
   def get_errors(self, errors):
     '''
       convert errors dictionary from parameter indices to layer indices
@@ -985,12 +989,12 @@ class TreffFitParameters(FitParameters):
     for i, layer in enumerate(self.layers):
       for j in range(7): # every layer parameter
         if not layer.multilayer==1: # its a single layer
-          if (para_index + j) in self.fit_params:
-            errors_out[str(i) + ',' + str(j)]=errors[para_index + j]
+          if (para_index+j) in self.fit_params:
+            errors_out[str(i)+','+str(j)]=errors[para_index+j]
         else:
           for k in range(len(layer.layers)): # go through sub layers
-            if (para_index + j + k*7) in self.fit_params:
-              errors_out[str(i) + ',' + str(k) + ',' + str(j)]=errors[para_index + j + k*7]
+            if (para_index+j+k*7) in self.fit_params:
+              errors_out[str(i)+','+str(k)+','+str(j)]=errors[para_index+j+k*7]
       para_index+=len(layer)*7
     for j in range(6):
       if para_index in self.fit_params:
@@ -1015,7 +1019,7 @@ class TreffFitParameters(FitParameters):
       errors_out['flipper1_efficiancy']=errors[para_index]
     para_index+=1
     return errors_out
-  
+
   def set_fit_constrains(self):
     '''
       set fit constrains depending on (multi)layers
@@ -1093,7 +1097,7 @@ class TreffFitParameters(FitParameters):
     number_of_layers_top=int(lines.pop().split()[0])
     self.layers=[]
     for i in range(number_of_layers_top):
-      layer = self.read_layer_params_from_file(lines)
+      layer=self.read_layer_params_from_file(lines)
       self.layers.append(layer)
     # read multi layers data
     comment=lines.pop()
@@ -1105,12 +1109,12 @@ class TreffFitParameters(FitParameters):
     if number_of_layers_multi>0:
       layers_in_multi=[]
       for i in range(number_of_layers_multi):
-        layer = self.read_layer_params_from_file(lines)
+        layer=self.read_layer_params_from_file(lines)
         layers_in_multi.append(layer)
       lines.pop()
       repititions_of_multi=int(lines.pop().split()[0])
-      self.layers.append(TreffMultilayerParam(repititions=repititions_of_multi, 
-                                              name=multi_name, 
+      self.layers.append(TreffMultilayerParam(repititions=repititions_of_multi,
+                                              name=multi_name,
                                               layer_list=layers_in_multi))
     else:
       lines.pop()
@@ -1119,7 +1123,7 @@ class TreffFitParameters(FitParameters):
     # read bottom layers data
     number_of_layers_bottom=int(lines.pop().split()[0])
     for i in range(number_of_layers_bottom):
-      layer = self.read_layer_params_from_file(lines)
+      layer=self.read_layer_params_from_file(lines)
       self.layers.append(layer)
     # read substrate data
     self.substrate=self.read_layer_params_from_file(lines, substrate=True)
@@ -1149,7 +1153,7 @@ class TreffFitParameters(FitParameters):
     layer=TreffLayerParam(name=name, parameters_list=parameters)
     return layer
 
-  def read_params_from_X_file(self,name):
+  def read_params_from_X_file(self, name):
     '''
       Convert Parameters from x-ray .ent file to neutrons and import it
       for usage with this fit.
@@ -1169,12 +1173,12 @@ class TreffFitParameters(FitParameters):
     self.wavelength[0]=4.73
     self.wavelength[1]=0.03
     self.layers=[]
-  
+
     ### null multilayer above
     #layers_in_multi=[]
     #repititions_of_multi = 0
     #self.layers.append(sessions.treff.TreffMultilayerParam(0, name="NoName", layer_list=layers_in_multi))
-    
+
     def get_layer_parameter(layer):
         name=layer.name
         parameters=[]
@@ -1191,11 +1195,11 @@ class TreffFitParameters(FitParameters):
         parameters.append(90)
         parameters.append(layer.roughness)
         return TreffLayerParam(name, parameters_list=parameters)
-    
+
     for i, layer in enumerate(x_ray_fitdata.layers):
       ### multilayer
       if layer.multilayer:
-        multilayer=TreffMultilayerParam(layer.repititions, layer.name, )
+        multilayer=TreffMultilayerParam(layer.repititions, layer.name,)
         for sub_layer in layer.layers:
           multilayer.layers.append(get_layer_parameter(sub_layer))
         self.layers.append(multilayer)
@@ -1219,7 +1223,7 @@ class TreffFitParameters(FitParameters):
       else:
         ### single layer
         self.layers.append(get_layer_parameter(layer))
-  
+
     ### substrate
     name=x_ray_fitdata.substrate.name
     parameters=[]
@@ -1236,8 +1240,8 @@ class TreffFitParameters(FitParameters):
     parameters.append(90)
     parameters.append(x_ray_fitdata.substrate.roughness)
     self.substrate=TreffLayerParam(name=x_ray_fitdata.substrate.name, parameters_list=parameters)
-  
-   
+
+
     ### global parameters
     self.scaling_factor=0.4
     self.background=2
@@ -1245,7 +1249,7 @@ class TreffFitParameters(FitParameters):
     self.polarization_parameters[1]=0.951
     self.polarization_parameters[2]=1.0
     self.polarization_parameters[3]=1.0
-  
+
 class TreffLayerParam(LayerParam):
   '''
     class for one layer data
@@ -1256,7 +1260,7 @@ class TreffLayerParam(LayerParam):
   scatter_density_Np=0.
   theta=90.
   phi=90.
-  
+
   def __init__(self, name='NoName', parameters_list=None):
     '''
       class constructor
@@ -1268,7 +1272,7 @@ class TreffLayerParam(LayerParam):
       self.scatter_density_Np=parameters_list[3]
       self.theta=parameters_list[4]
       self.phi=parameters_list[5]
-  
+
   def __eq__(self, other):
     '''
       test if two layers have the same parameters
@@ -1279,7 +1283,7 @@ class TreffLayerParam(LayerParam):
       self.scatter_density_Np==other.scatter_density_Np and\
       self.theta==other.theta and\
       self.phi==other.phi
-  
+
   def copy(self):
     '''
       create a copy of this object
@@ -1300,10 +1304,10 @@ class TreffLayerParam(LayerParam):
     '''
     list=[]
     for i in params:
-      list.append(param_index + i)
-    return list, param_index + 7
-  
-  def dialog_get_params(self, action, response, thickness, scatter_density_Nb, 
+      list.append(param_index+i)
+    return list, param_index+7
+
+  def dialog_get_params(self, action, response, thickness, scatter_density_Nb,
                         scatter_density_Nb2, scatter_density_Np, theta, phi, roughness):
     '''
       function to get parameters from the GUI dialog
@@ -1317,24 +1321,24 @@ class TreffLayerParam(LayerParam):
       self.phi=float(phi.get_text())
     except TypeError:
       None
-  
+
   def set_param(self, index, value):
     '''
       set own parameters by index
     '''
-    if index==1: 
+    if index==1:
       self.scatter_density_Nb=value
-    elif index==2: 
+    elif index==2:
       self.scatter_density_Nb2=value
-    elif index==3: 
+    elif index==3:
       self.scatter_density_Np=value
-    elif index==4: 
+    elif index==4:
       self.theta=value
-    elif index==5: 
+    elif index==5:
       self.phi=value
     else:
       LayerParam.set_param(self, index, 6, value)
-  
+
   def get_ent_text(self, layer_index, para_index, add_roughness=0., use_roughness_gradient=True):
     '''
       Function to get the text lines for the .ent file.
@@ -1345,29 +1349,29 @@ class TreffLayerParam(LayerParam):
       add_roughness=0.
     text=LayerParam.__get_ent_text_start__(self, layer_index, para_index)
     para_index+=1
-    text+=str(self.scatter_density_Nb) + '\treal part Nb\', - (A**-2)*1e6\t\tparameter ' + str(para_index) + '\n'
+    text+=str(self.scatter_density_Nb)+'\treal part Nb\', - (A**-2)*1e6\t\tparameter '+str(para_index)+'\n'
     para_index+=1
-    text+=str(self.scatter_density_Nb2) + ' imaginary part Nb\'\' of nuclear and\tparameter ' + str(para_index) + '\n'
+    text+=str(self.scatter_density_Nb2)+' imaginary part Nb\'\' of nuclear and\tparameter '+str(para_index)+'\n'
     para_index+=1
-    text+=str(self.scatter_density_Np) + '\tmagnetic scat. len. dens. Np \t\tparameter ' + str(para_index) + '\n'
+    text+=str(self.scatter_density_Np)+'\tmagnetic scat. len. dens. Np \t\tparameter '+str(para_index)+'\n'
     para_index+=1
-    text+=str(self.theta) + '\ttheta [deg.] (0 on z, 90 on x-y plane)\tparameter ' + str(para_index) + '\n'
+    text+=str(self.theta)+'\ttheta [deg.] (0 on z, 90 on x-y plane)\tparameter '+str(para_index)+'\n'
     para_index+=1
-    text+=str(self.phi) + '\tphi [deg.]  (0 on x, 90 on y)\t\tparameter ' + str(para_index) + '\n'
+    text+=str(self.phi)+'\tphi [deg.]  (0 on x, 90 on y)\t\tparameter '+str(para_index)+'\n'
     para_index+=1
     text+=LayerParam.__get_ent_text_end__(self, layer_index, para_index, add_roughness)
     para_index+=1
     layer_index+=1
     return text, layer_index, para_index
-  
+
 class TreffMultilayerParam(MultilayerParam):
   '''
     class for multilayer data
   '''
-  
+
   def copy(self):
     return MultilayerParam.copy(self, TreffMultilayerParam())
-  
+
   def get_fit_params(self, params, param_index):
     '''
       return a parameter list according to params (list of param lists for multilayer)
@@ -1376,9 +1380,9 @@ class TreffMultilayerParam(MultilayerParam):
     layers=len(self.layers)
     for j in range(layers):
       for i in params[j]:
-        list+=[param_index + i + j * 7 + k * layers * 7 for k in range(self.repititions)]
-    return list, param_index + len(self) * 7
-  
+        list+=[param_index+i+j*7+k*layers*7 for k in range(self.repititions)]
+    return list, param_index+len(self)*7
+
   def get_fit_cons(self, param_index):
     '''
       return a list of constainlists according to multilayers
@@ -1391,5 +1395,5 @@ class TreffMultilayerParam(MultilayerParam):
       constrain_params=6
     for j in range(layers): # iterate through layers
       for i in range(constrain_params): # iterate through parameters
-        list.append([param_index + i + j * 7 + k * layers * 7 for k in range(self.repititions)])
-    return list, param_index + len(self)
+        list.append([param_index+i+j*7+k*layers*7 for k in range(self.repititions)])
+    return list, param_index+len(self)

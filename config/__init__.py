@@ -13,17 +13,17 @@ from plotpy_info import __copyright__, __license__, __version__, __maintainer__,
 # user specific config files possible as well.
 import os
 
+config_path=os.path.expanduser('~/.plotting_gui')
+if not os.path.exists(config_path):
+  os.mkdir(config_path)
 if not os.access(__path__[0], os.W_OK):
-  config_path=os.path.expanduser('~/.plotting_gui')
-  if not os.path.exists(config_path):
-    os.mkdir(config_path)
   user_path=os.path.join(config_path, 'config')
   if not os.path.exists(user_path):
     os.mkdir(user_path)
   # create new config files if the script version is newer
   try:
     if not os.path.exists(os.path.join(user_path, "gnuplot_preferences.py")) or \
-        os.path.getmtime(os.path.join(user_path, "gnuplot_preferences.py"))<os.path.getmtime(os.path.abspath(__file__)):  
+        os.path.getmtime(os.path.join(user_path, "gnuplot_preferences.py"))<os.path.getmtime(os.path.abspath(__file__)):
         # copy all files to the users directory
         files=filter(lambda file: file.endswith('.py'), os.listdir(__path__[0]))
         for file in files:
@@ -34,35 +34,46 @@ if not os.access(__path__[0], os.W_OK):
     # if the files are not present or accessable, use the variables to create them
     def typecheck():
       pass
-    subpackage_items= [
-                       'circle', 
-                       'diamagnetism_table', 
-                       'dns', 
-                       'gnuplot_preferences', 
-                       'gui', 
+    subpackage_items=[
+                       'circle',
+                       'diamagnetism_table',
+                       'dns',
+                       'gnuplot_preferences',
+                       'gui',
                        'in12',
                        'kws2',
-                       'maria', 
-                       'reflectometer', 
-                       'scattering_length_table', 
-                       'squid', 
-                       'templates', 
+                       'maria',
+                       'reflectometer',
+                       'scattering_length_table',
+                       'squid',
+                       'templates',
                        'transformations',
-                       'treff', 
+                       'treff',
                        ]
     for package in subpackage_items:
       active_config=__import__('config.'+package, fromlist=[package])
-      export_file=open(os.path.join(user_path, package + '.py'), 'w')
+      export_file=open(os.path.join(user_path, package+'.py'), 'w')
       variables=filter(lambda item: '__' not in item, dir(active_config))
       for name in variables:
         if type(getattr(active_config, name)) is type(typecheck) or \
           type(getattr(active_config, name)) is type(os):
           continue
-        export_file.write('%s = %s\n' % (name, getattr(active_config, name).__repr__()))
+        export_file.write('%s = %s\n'%(name, getattr(active_config, name).__repr__()))
       # for code executed when importing the modules we would loose information
       # so this code is doubled in the __configadd__ variable.
       if '__configadd__' in dir(active_config):
         export_file.write(active_config.__configadd__)
-      export_file.close()    
+      export_file.close()
   # reassociate this module to use the user files
   __path__=[user_path]
+
+
+# load user config, it will be saved automatically on exit
+from configobj import ConfigObj
+import atexit
+
+user_config=ConfigObj(os.path.join(config_path, 'user_config.ini'),
+                        unrepr=True, indent_type='    ')
+user_config['last_access_version']=__version__
+atexit.register(user_config.write)
+

@@ -99,6 +99,10 @@ class TreffGUI:
                 "Join Datasets...", '<control>J', # label, accelerator
                 "Combine two datasets to one.", # tooltip
                 self.join_datasets_dialog),
+#            ("TreffChangeSLD", None, #
+#                "Change SLD list...", None, # label, accelerator
+#                None, # tooltip
+#                self.change_sld_list),
              )
     return string, actions
 
@@ -1184,6 +1188,7 @@ class TreffGUI:
       self.join_datasets(options['Dataset 1'], options['Dataset 2'])
       window.measurement=self.active_file_data
       window.replot()
+
 
   #++++++++++ GISANS functions only present in this mode +++++++
 
