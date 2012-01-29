@@ -3,12 +3,12 @@
  Settings used for parallel computing with the IPython cluster interface.
 '''
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Production"
 
-import sys, os
+import os
 
 
 # keyword arguments of the Client function call
@@ -20,7 +20,7 @@ CLIENT_KW=dict(
             #profile='netcluster', 
             #profile_dir=None, 
             #sshserver='glavic@192.168.2.2', 
-            timeout=5, 
+            timeout=5,
             #
            )
 

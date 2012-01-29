@@ -11,8 +11,6 @@
 #                                                                                               #
 #################################################################################################
 
-# Pleas do not make any changes here unless you know what you are doing.
-import sys
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # importing data readout
@@ -20,14 +18,14 @@ import read_data.in12
 # import gui functions for active config.gui.toolkit
 import config.gui
 try:
-  GUI=__import__( config.gui.toolkit+'gui.in12', fromlist=['IN12GUI']).IN12GUI
-except ImportError: 
+  GUI=__import__(config.gui.toolkit+'gui.in12', fromlist=['IN12GUI']).IN12GUI
+except ImportError:
   class GUI: pass
 
-__author__ = "Artur Glavic"
-__credits__ = ["Ulrich Ruecker"]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__author__="Artur Glavic"
+__credits__=["Ulrich Ruecker"]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Development"
 
 class IN12Session(GUI, GenericSession):
   '''
@@ -41,7 +39,7 @@ class IN12Session(GUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]', '*.gz'),]
+  FILE_WILDCARDS=[('Filtered', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]', '*.gz'), ]
   mds_create=False
 
 #  TRANSFORMATIONS=[\
@@ -50,13 +48,13 @@ class IN12Session(GUI, GenericSession):
 #  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+[]  
   #------------------ local variables -----------------
 
-  
+
   def __init__(self, arguments):
     '''
       class constructor expands the GenericSession constructor
     '''
     GenericSession.__init__(self, arguments)
-  
+
 #  def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
 #    '''
 #      additional command line arguments for squid sessions
@@ -78,7 +76,7 @@ class IN12Session(GUI, GenericSession):
     '''
       Function to read data files.
     '''
-    return read_data.in12.read_data(file_name )
+    return read_data.in12.read_data(file_name)
 
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++

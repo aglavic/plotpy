@@ -8,10 +8,12 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import os, sys
 from copy import deepcopy
-from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, savetxt, resize, where, int8, float32, uint16, int16, fromstring, arange, meshgrid, zeros, asarray
+from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, \
+                 where, float32, uint16, int16, fromstring, \
+                 arange, zeros, asarray
 from configobj import ConfigObj
 from glob import glob
-from measurement_data_structure import MeasurementData, HugeMD, PhysicalProperty
+from measurement_data_structure import HugeMD, PhysicalProperty
 import config.kws2
 import config.gnuplot_preferences
 import array as array_module
@@ -19,7 +21,7 @@ import gzip
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Development"
 
 # plack times speed of light

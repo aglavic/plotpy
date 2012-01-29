@@ -10,10 +10,10 @@ import os
 import numpy
 from measurement_data_structure import MeasurementData, PhysicalProperty
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Development"
 
 def read_data(file_name):
   '''
@@ -42,7 +42,7 @@ def read_data(file_name):
   if len(data_cols)>2:
     I.error=data_cols[2][filter_indices]
   if len(data_cols)>3:
-    dataset.short_info=" - Intensity column %i" % 1
+    dataset.short_info=" - Intensity column %i"%1
     for i in range(1, ((len(data_cols)-1)/2)):
       Ii=PhysicalProperty('I' , 'a.u.', data_cols[1+2*i][filter_indices])
       if len(data_cols)>(1+2*i):
@@ -51,8 +51,8 @@ def read_data(file_name):
       dataset.data.append(q)
       dataset.data.append(Ii)
       dataset.sample_name=file_name
-      dataset.short_info=" - Intensity column %i" % (i+1)
-      dataset.logy=True 
+      dataset.short_info=" - Intensity column %i"%(i+1)
+      dataset.logy=True
       output.append(dataset)
       i+=1
   return output

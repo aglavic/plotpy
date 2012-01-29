@@ -3,10 +3,10 @@
   A table of compounds and their scattering length density for x-ray K_alpha and Neutrons.
 '''
 
-__author__ = "Artur Glavic"
-__credits__ = ["Esther Pfuhl", "Paul Zakalek"]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__author__="Artur Glavic"
+__credits__=["Esther Pfuhl", "Paul Zakalek"]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Production"
 
 #
 # {'name': [sl_density,delta/beta]}
@@ -17,8 +17,8 @@ SCATTERING_LENGTH_DENSITIES={
   #     the ICSD database and the index of Refraction calculator at 
   #     http://henke.lbl.gov/ .
   # semiconductors:
-    'GaAs': [14.543, 33.4117], 
-    'Si': [7.57547, 43.83831], 
+    'GaAs': [14.543, 33.4117],
+    'Si': [7.57547, 43.83831],
   # metals:
     'Ag': [29.43313, 11.06523],
     'Cr': [20.905, 9.77735],

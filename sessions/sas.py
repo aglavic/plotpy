@@ -11,8 +11,6 @@
 #                                                                                               #
 #################################################################################################
 
-# Pleas do not make any changes here unless you know what you are doing.
-import sys
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # importing data readout
@@ -20,14 +18,14 @@ import read_data.sas
 # import gui functions for active config.gui.toolkit
 import config.gui
 try:
-  GUI=__import__( config.gui.toolkit+'gui.sas', fromlist=['SASGUI']).SASGUI
-except ImportError: 
+  GUI=__import__(config.gui.toolkit+'gui.sas', fromlist=['SASGUI']).SASGUI
+except ImportError:
   class GUI: pass
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Development"
 
 class SASSession(GUI, GenericSession):
   '''
@@ -41,12 +39,12 @@ class SASSession(GUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('Filtered', '*.dat', '*.txt', '*.gz'),]
+  FILE_WILDCARDS=[('Filtered', '*.dat', '*.txt', '*.gz'), ]
   mds_create=False
 
   #------------------ local variables -----------------
 
-  
+
   def read_file(self, file_name):
     '''
       Function to read data files.

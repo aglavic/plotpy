@@ -6,10 +6,10 @@
 # import modules
 import os
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Production"
 
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
 TRANSFORMATIONS=[\
@@ -20,14 +20,14 @@ TRANSFORMATIONS_CONST=[]
 #  (every measurement file the positions have to start with 0 and have no holes in between
 # [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
 DATA_COLUMNS={
-            'THETA':        ['Θ','°']
-            ,'2THETA':      ['2Θ','°']
-            ,'PHI':         ['φ','°']
-            ,'COUPLED':     ['2Θ','°']
-            ,'COUNTS':      ['Intensity','counts']
-            ,'STEPTIME':    ['Time per Step','s']
-            ,'AUX1':        ['z','mm']
-            ,'AUX3':        ['KEC','mm']
+            'THETA':        ['Θ', '°']
+            , '2THETA':      ['2Θ', '°']
+            , 'PHI':         ['φ', '°']
+            , 'COUPLED':     ['2Θ', '°']
+            , 'COUNTS':      ['Intensity', 'counts']
+            , 'STEPTIME':    ['Time per Step', 's']
+            , 'AUX1':        ['z', 'mm']
+            , 'AUX3':        ['KEC', 'mm']
             }
 
 # how to call the fit-script

@@ -12,12 +12,12 @@ import sys
 from measurement_data_structure import MeasurementData
 import config.squid
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Production"
 
-def read_data(file_name,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
+def read_data(file_name, COLUMNS_MAPPING, MEASUREMENT_TYPES):
   '''
     Read the ppms/mpms datafile.
     
@@ -40,13 +40,13 @@ def read_data(file_name,COLUMNS_MAPPING,MEASUREMENT_TYPES):
       measurement_info=read_header(input_file_lines)
       while input_file_lines.pop(0).find('[Data]')==-1:
         continue
-      measurement_data=read_data_lines(input_file_lines,measurement_info,COLUMNS_MAPPING,MEASUREMENT_TYPES)
+      measurement_data=read_data_lines(input_file_lines, measurement_info, COLUMNS_MAPPING, MEASUREMENT_TYPES)
       if measurement_data=='NULL':
         print "No valid data found!"
         return 'NULL'
       for split in config.squid.SPLIT_AFTER:
         new_measurement_data=[]
-        for i, dataset in enumerate(measurement_data):
+        for dataset in measurement_data:
           if split[0] in dataset.dimensions():
             new_measurement_data+=split_after_read(dataset, split)
           else:
@@ -54,7 +54,7 @@ def read_data(file_name,COLUMNS_MAPPING,MEASUREMENT_TYPES):
         measurement_data=new_measurement_data
       new_measurement_data=[]
       for dataset in measurement_data:
-        if len(set(dataset.data[dataset.ydata].values)) <= 1:
+        if len(set(dataset.data[dataset.ydata].values))<=1:
           continue
         else:
           new_measurement_data.append(dataset)
@@ -67,17 +67,17 @@ def read_data(file_name,COLUMNS_MAPPING,MEASUREMENT_TYPES):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
 
-def get_columns(input_file): 
+def get_columns(input_file):
   '''
     Just return the columns present in the file.
     
     @return List of measured columns or 'NULL'
   '''
   if os.path.exists(input_file):
-    input_file_handler=open(input_file,'r')
+    input_file_handler=open(input_file, 'r')
     if input_file_handler.readline().find('[Header]')>=0:
-      lines=[input_file_handler.readline() for i in range(50)]
-      measurement_info=read_header(lines)
+      lines=[input_file_handler.readline() for ignore in range(50)]
+      #measurement_info=read_header(lines)
       while lines.pop(0).find('[Data]')==-1:
         continue
     else:
@@ -89,18 +89,18 @@ def get_columns(input_file):
   else:
     print 'File '+input_file+' does not exist.'
     return 'NULL'
-  
 
-def read_header(input_file_lines): 
+
+def read_header(input_file_lines):
   '''
     Read header of the datafile.
     
     @return Measurement information and Name of the sample
   '''
-  output=['','']
+  output=['', '']
   for i in range(len(input_file_lines)):
     line=input_file_lines[i].split(', ', 2)
-    if (line[0]=='INFO') & (len(line)>2):
+    if (line[0]=='INFO')&(len(line)>2):
       output[0]=output[0]+'\n'+line[1]+': '+line[2].rstrip('\r\n')
       if line[1]=='NAME':
         output[1]=line[2].rstrip('\r\n')
@@ -108,7 +108,7 @@ def read_header(input_file_lines):
       break
   return output
 
-def check_type(data_1,data_2,type_i):
+def check_type(data_1, data_2, type_i):
   '''
     Check if the data from two lines belong to the same sequence.
   '''
@@ -119,8 +119,8 @@ def check_type(data_1,data_2,type_i):
     else:
       output=False
   return output
-  
-def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES): 
+
+def read_data_lines(input_file_lines, info, COLUMNS_MAPPING, MEASUREMENT_TYPES):
   '''
     Read data points line by line.
     
@@ -139,9 +139,9 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
     for mapping in COLUMNS_MAPPING:
       if item==mapping[0]:
         if len(mapping)==3 or mapping[3] not in line:
-          columns.append([count-2,mapping[1],mapping[2]])
+          columns.append([count-2, mapping[1], mapping[2]])
         else:
-          columns.append([count-2,mapping[1],mapping[2], line.index(mapping[3])])
+          columns.append([count-2, mapping[1], mapping[2], line.index(mapping[3])])
     columns.sort(key=lambda x:x[1])
   # filter empty first line
   if input_file_lines[0].strip()=='':
@@ -174,25 +174,25 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
       if not useable:
         continue
       applicable_types.append([
-                               const_col_indices, 
-                               use_indices[0], 
-                               use_indices[1], 
-                               use_indices[2], 
-                               type_i[4], 
+                               const_col_indices,
+                               use_indices[0],
+                               use_indices[1],
+                               use_indices[2],
+                               type_i[4],
                                ])
   not_found=True
   while not_found:
     try:
       #read 2 lines to determine the type of the first sequence
-      data_1=read_data_line(input_file_lines.pop(0),columns)
-      data_2=read_data_line(input_file_lines.pop(0),columns)
+      data_1=read_data_line(input_file_lines.pop(0), columns)
+      data_2=read_data_line(input_file_lines.pop(0), columns)
     except IndexError:
       print "No valid data in file."
       return 'NULL'
     if (data_1!='NULL')&(data_2!='NULL'):
       for type_i in applicable_types:
-        if not_found and check_type(data_1,data_2,type_i):
-          data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],-1)
+        if not_found and check_type(data_1, data_2, type_i):
+          data=MeasurementData([column[2] for column in columns], type_i[0], type_i[1], type_i[2],-1)
           data.append(data_1)
           data.append(data_2)
           data.plot_options=type_i[4]
@@ -213,24 +213,24 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
   if count_lines>10000:
     sys.stdout.write('Reading progress [%]:   0')
     sys.stdout.flush()
-  for i,line in enumerate(input_file_lines): # append data from one sequence to the object or create new object for the next sequence
+  for i, line in enumerate(input_file_lines): # append data from one sequence to the object or create new object for the next sequence
     if (i+1)%10000==0:
       procent=float(i)/count_lines*100.
       sys.stdout.write('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b'+\
-                        'Reading progress [%%]: %3d' % procent)
+                        'Reading progress [%%]: %3d'%procent)
       sys.stdout.flush()
     next_data=read_data_line(line, columns)
-    if next_data != 'NULL':
+    if next_data!='NULL':
       if data_is_type(next_data):
         data_append(next_data)
       else:
         output.append(data)
-        next_data_2=read_data_line(input_file_lines[i+1],columns)
-        if next_data_2 != 'NULL':
+        next_data_2=read_data_line(input_file_lines[i+1], columns)
+        if next_data_2!='NULL':
           not_found=True
           for type_i in applicable_types:
-            if check_type(next_data,next_data_2,type_i)&not_found:
-              data=MeasurementData([column[2] for column in columns],type_i[0],type_i[1],type_i[2],-1)
+            if check_type(next_data, next_data_2, type_i)&not_found:
+              data=MeasurementData([column[2] for column in columns], type_i[0], type_i[1], type_i[2],-1)
               data.plot_options=type_i[4]
               not_found=False
               data.info=info[0]
@@ -253,7 +253,7 @@ def read_data_lines(input_file_lines,info,COLUMNS_MAPPING,MEASUREMENT_TYPES):
   output.append(data)
   return output
 
-def read_data_line(input_file_line, columns): 
+def read_data_line(input_file_line, columns):
   '''
     Read one line of data and output the data as a list of floats.
     
@@ -266,19 +266,19 @@ def read_data_line(input_file_line, columns):
       val=line[column[0]]
       if len(column)==4:
         err=line[column[3]]
-        if val != '' and err!='':
+        if val!='' and err!='':
           values.append((float(val), float(err)))
         else:
-          values.append((0., 1.))        
+          values.append((0., 1.))
       else:
-        if val != '':
+        if val!='':
           values.append(float(val))
         else:
           values.append(0.)
     return values
   else:
     return 'NULL'
-  
+
 def split_after_read(dataset, split):
   '''
     Split a dataset by a specific column after the file has been read.
@@ -308,12 +308,12 @@ def split_after_read(dataset, split):
         for physprop in output[-1].data:
           physprop.values=[]
         output[-1].append(point)
-        output[-1].short_info='at %d %s' % (key*split[2], dataset.units()[split_col])
+        output[-1].short_info='at %d %s'%(key*split[2], dataset.units()[split_col])
   else:
     xcol=dataset.xdata
     if dims[xcol]!=split[0]:
       return [dataset]
-    direction = dataset[0][xcol]<dataset[4][xcol]
+    direction=dataset[0][xcol]<dataset[4][xcol]
     lastpoint=dataset[0]
     active_data=deepcopy(dataset)
     for col in active_data.data:
@@ -334,4 +334,4 @@ def split_after_read(dataset, split):
         active_data.append(point)
     output.append(active_data)
   return output
-  
+

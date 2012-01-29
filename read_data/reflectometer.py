@@ -15,7 +15,7 @@ from numpy import array, sqrt, pi, sin, float32, argsort, linspace
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 
@@ -79,7 +79,7 @@ def read_header(input_file_lines):
     @return Header information 
   '''
   output=''
-  for i in range(len(input_file_lines)):
+  for ignore in input_file_lines:
     line=input_file_lines.pop(0)
     if ('COUNTS' in line):
       scantype=line[1:-1].rstrip('\r\n')
@@ -98,10 +98,9 @@ def read_data_lines(input_file_lines, info, DATA_COLUMNS):
     @return One MeasurementData object for a scan sequence
   '''
   global sample_name
-  output=[] #initialise data array containing data objects
   data_info=''
   scantype=None
-  count_time=1.
+  _count_time=1.
   for line in info[0].splitlines():
     setting=line.split('=')
     if setting[0]=='SAMPLE':
@@ -109,7 +108,7 @@ def read_data_lines(input_file_lines, info, DATA_COLUMNS):
     elif setting[0].strip()=='DRIVE':
       scantype=setting[1].strip("'").strip()
     elif setting[0].strip()=='STEPTIME':
-      count_time=float(setting[1])
+      _count_time=float(setting[1])
     # Definitions for locked-coupled scans
     elif setting[0].strip()=='START':
       i=0

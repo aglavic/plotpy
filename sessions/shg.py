@@ -11,8 +11,6 @@
 #                                                                                               #
 #################################################################################################
 
-# Pleas do not make any changes here unless you know what you are doing.
-import sys
 import numpy
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
@@ -29,7 +27,7 @@ except ImportError:
 
 __author__="Artur Glavic"
 __credits__=["Ulrich Ruecker"]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Development"
 
 class SHGSession(GUI, GenericSession):
@@ -133,7 +131,6 @@ class ChiMultifit(FitFunction3D):
     '''
     sin=numpy.sin
     cos=numpy.cos
-    pih=numpy.pi*0.5
     dphi=p[0]*numpy.pi/180
     domains=len(self.domains)
     Chis=self.get_chis(p[1+domains:])
@@ -249,7 +246,7 @@ class ChiMultifit(FitFunction3D):
     '''
       Simulate for all datasets.
     '''
-    ana, pol, ign=self.get_anapol()
+    ana, pol, ignore=self.get_anapol()
     try:
       y=self.fit_function(self.parameters, pol, ana)
     except TypeError, error:

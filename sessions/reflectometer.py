@@ -29,15 +29,14 @@ import time
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # import parameter class for fits
-from reflectometer_fit.reflectometer import *
+from reflectometer_fit.reflectometer import * #@UnusedWildImport
 # importing preferences and data readout
 import read_data.reflectometer
 # use own datastructure also for templates
-import sessions.templates
-sessions.templates.MeasurementDataClass=read_data.reflectometer.MeasurementData
+from sessions import templates
+templates.MeasurementDataClass=read_data.reflectometer.MeasurementData
 import config.reflectometer
 import config.gnuplot_preferences
-from measurement_data_structure import MeasurementData
 # import gui functions for active config.gui.toolkit
 import config.gui
 try:
@@ -54,7 +53,7 @@ if not sys.platform.startswith('win'):
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Development"
 
 class FitList(list):
@@ -161,19 +160,16 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     #refinements=[]
     for dataset in datasets:
       self.time_col=1
-      th=0
-      twoth=0
-      phi=0
       for line in dataset.info.splitlines():
         strip=line.split('=')
         if strip[0]=='STEPTIME':
           self.time_col=float(strip[1])
-        if strip[0]=='THETA':
-          th=float(strip[1])
-        if strip[0]=='2THETA':
-          twoth=float(strip[1])
-        if strip[0]=='PHI':
-          phi=float(strip[1])
+        #if strip[0]=='THETA':
+        #  th=float(strip[1])
+        #if strip[0]=='2THETA':
+        #  twoth=float(strip[1])
+        #if strip[0]=='PHI':
+        #  phi=float(strip[1])
       if not self.show_counts:
         self.units=dataset.units()
         dataset.process_function(self.counts_to_cps)
@@ -357,16 +353,22 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       try to fit the scaling factor before the total reflection angle
     '''
     self.active_file_data.fit_object.fit=1
-    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, only_fitted_columns=True, xfrom=0.005, xto=self.find_total_reflection(dataset))
+    dataset.export(self.TEMP_DIR+'fit_temp.res', False,
+                   only_fitted_columns=True, xfrom=0.005,
+                   xto=self.find_total_reflection(dataset))
     self.active_file_data.fit_object.set_fit_parameters(scaling=True) # fit only scaling factor
     # create the .ent file
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    self.proc=self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp', 20)
+    self.proc=self.call_fit_program(self.TEMP_DIR+'fit_temp.ent',
+                                    self.TEMP_DIR+'fit_temp.res',
+                                    self.TEMP_DIR+'fit_temp', 20)
     retcode=self.proc.communicate()
-    parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref', self.active_file_data.fit_object)
-    self.active_file_data.fit_object.scaling_factor=parameters[self.active_file_data.fit_object.fit_params[0]]
+    parameters, ignore=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref',
+                                          self.active_file_data.fit_object)
+    self.active_file_data.fit_object.scaling_factor=parameters[
+                              self.active_file_data.fit_object.fit_params[0]]
     self.active_file_data.fit_object.fit=0
     return retcode
 
@@ -381,8 +383,10 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       if not layer.multilayer:
         layer_dict[i]=[3]
       else:
-        layer_dict[i]=[[3] for j in range(len(layer.layers))]
-    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', print_info=False, only_fitted_columns=True, xfrom=self.find_total_reflection(dataset))
+        layer_dict[i]=[[3] for ignore in range(len(layer.layers))]
+    dataset.export(self.TEMP_DIR+'fit_temp.res',
+                   print_info=False, only_fitted_columns=True,
+                   xfrom=self.find_total_reflection(dataset))
     self.active_file_data.fit_object.set_fit_parameters(layer_params=layer_dict, substrate_params=[2]) # set all roughnesses to be fit
     # create the .ent file
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
@@ -397,7 +401,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
                         'Script running for % 6dsec'%sec)
       sys.stdout.flush()
     retcode=self.proc.communicate()
-    parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref', self.active_file_data.fit_object)
+    parameters, ignore=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref', self.active_file_data.fit_object)
     self.active_file_data.fit_object.get_parameters(parameters)
     self.active_file_data.fit_object.fit=0
     return retcode
@@ -449,7 +453,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     #----- Try to refine the scaling factorn and roughnesses -----
     #+++++++ create final input file and make a simulation +++++++
       # write data into files with sequence numbers in format ok for fit.f90    
-    data_lines=dataset.export(export_file_prefix+'.res', print_info=False, only_fitted_columns=True)
+    dataset.export(export_file_prefix+'.res', print_info=False, only_fitted_columns=True)
     self.active_file_data.fit_object.set_fit_parameters(background=True)
     ent_file=open(export_file_prefix+'.ent', 'w')
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
@@ -458,7 +462,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     self.proc=self.call_fit_program(export_file_prefix+'.ent',
                                                              export_file_prefix+'.res',
                                                              export_file_prefix, 20)
-    retcode=self.proc.communicate()
+    self.proc.communicate()
     #------- create final input file and make a simulation -------
 
   #---- functions for fitting with fortran program by E. Kentzinger ----

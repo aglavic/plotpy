@@ -13,14 +13,12 @@ import numpy
 from copy import deepcopy
 from glob import glob
 from measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalConstant
-from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, \
-                          PIXEL_WIDTH, DETECTOR_PIXELS, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, \
-                          D17_PIXEL_SIZE, D17_CENTER_OFFSET
+from config.treff import GRAD_TO_MRAD, GRAD_TO_RAD, D17_PIXEL_SIZE, D17_CENTER_OFFSET
 from zipfile import ZipFile
 
 __author__="Artur Glavic"
 __credits__=["Ulrich Ruecker"]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 MARIA_REDUCE_RESOLUTION=False
@@ -105,7 +103,7 @@ def read_data(file_name, script_path, import_images, return_detector_images):
       return read_d17_raw_data(file_from, file_to)
   # reset parameters, if maria image was imported before
   global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, PI_4_OVER_LAMBDA
-  from config.treff import DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, PI_4_OVER_LAMBDA
+  from config.treff import DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, PI_4_OVER_LAMBDA #@UnusedImport
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
     return 'NULL'
@@ -378,7 +376,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
       img_file=gzip.open(data_path+line[columns['Image']]+'.gz', 'rb')
     elif line[columns['Image']].endswith('.gz') and os.path.exists(data_path+line[columns['Image']]):
       # gziped images
-      import gzip
+      import gzip #@Reimport
       img_file=gzip.open(data_path+line[columns['Image']], 'rb')
     elif os.path.exists(data_path+line[columns['Image']]):
       # unziped images
@@ -456,7 +454,7 @@ def integrate_one_picture(img_file, line, columns, alphai, alphaf_center, calibr
   img_file.close()
   img_data=img_data.split('\n')
   sqrt=math.sqrt
-  log10=math.log10
+  #log10=math.log10
   sin=math.sin
   cos=math.cos
   data_list=[]
@@ -478,10 +476,10 @@ def integrate_one_picture(img_file, line, columns, alphai, alphaf_center, calibr
     img_integral=sum(int_data)
     alphaf=alphaf_center+pixel_width*(CENTER_PIXEL-i)
     intensity=img_integral/monitor*calibration[i]
-    if intensity>0:
-      logintensity=log10(intensity)
-    else:
-      logintensity=-10.0
+    #if intensity>0:
+    #  logintensity=log10(intensity)
+    #else:
+    #  logintensity=-10.0
     error=sqrt(img_integral)/monitor*calibration[i]
     # convert to mrad and create point list.
     append_to_list((GRAD_TO_MRAD*alphai,
@@ -515,7 +513,7 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   img_data=numpy.fromstring(img_file.read(), int, sep=" ")
   try:
     img_data=img_data.reshape(DETECTOR_PIXELS,-1)
-  except ValueError, error:
+  except ValueError:
     return [], None
   img_file.close()
   cos=numpy.cos
@@ -529,7 +527,7 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   calibration=calibration[filter_indices]
   try:
     intensities=img_intensities/monitor*calibration
-  except ValueError, error:
+  except ValueError:
     return [], None
   errors=numpy.sqrt(img_intensities)/monitor*calibration
   alphaf=alphaf_center+pixel_width*(CENTER_PIXEL-numpy.arange(DETECTOR_PIXELS))[filter_indices]
@@ -573,11 +571,10 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
     @return List of MeasurementData objects for the 2d maps and scans splitted by polarization channels
   '''
   global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
-  from config.maria import DETECTOR_ROWS_MAP, COLUMNS_MAPPING, DETECTOR_PIXELS, \
-                          PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
-  import config.gnuplot_preferences
+  from config.maria import DETECTOR_ROWS_MAP, COLUMNS_MAPPING, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION #@UnusedImport
+  from config import gnuplot_preferences
   # speedup plotting using no interpolation or averidgeing
-  config.gnuplot_preferences.settings_3dmap='''set pm3d map corners2color c1
+  gnuplot_preferences.settings_3dmap='''set pm3d map corners2color c1
 set ticslevel 0.05
 set palette defined (0 "blue", 1 "green", 2 "yellow", 3 "red", 4 "purple", 5 "black")
 set size square
@@ -889,16 +886,16 @@ def d17_pp_from_block(dimension, unit, block, error_block=None):
   return pp
 
 d17_calibration={'water': None, 'transmission': None}
-from config.treff import D17_CALIBRATION_FILES, D17_MASK
+from config.treff import D17_MASK#, D17_CALIBRATION_FILES
 
 def read_d17_raw_data(file_from, file_to):
   '''
     Read d17 raw detector images.
   '''
-  import config.treff
-  config.treff.LAMBDA_N=5.3
+  from config import treff
+  treff.LAMBDA_N=5.3
   PI_2_OVER_LAMBDA=numpy.pi*2./5.3
-  config.treff.PI_4_OVER_LAMBDA=4.*numpy.pi/5.3
+  treff.PI_4_OVER_LAMBDA=4.*numpy.pi/5.3
   #if d17_calibration['water'] is None and D17_CALIBRATION_FILES['water'] is not None:
     #print "    Reading calibration file 'water' which will be used for all imports..."
     ## using water measurement as mask and scale by the number of non zero elements per column
@@ -1075,8 +1072,8 @@ def read_d17_raw_file(file_name):
   tof_channels=int(info_block0[0])
   dataset.tof=tof_channels!=1
   counting_time=PhysicalConstant(float(info_block1[2]), 's')
-  monitor=PhysicalConstant(float(info_block1[4]), 'monitor')
-  temp=float(info_block1[29])
+  #monitor=PhysicalConstant(float(info_block1[4]), 'monitor')
+  #temp=float(info_block1[29])
   detector_angle=float(info_block2[16])
   omega=float(info_block2[2])
   # get the data 
@@ -1094,7 +1091,7 @@ def read_d17_raw_file(file_name):
     tof_d0=float(info_block1[55])-float(info_block2[14])/200. # (chopper1,chopper2)-sample distance m
     tof_d1=float(info_block2[15])*1e-3 # sample-detector distance
     tof_distance=tof_d0+tof_d1
-    tof_open_req=45.-(float(info_block2[43])-float(info_block2[41]))/100.
+    #tof_open_req=45.-(float(info_block2[43])-float(info_block2[41]))/100.
     tof_open_act=45.-(float(info_block2[47])-float(info_block2[45]))
     tof_real_open=tof_open_act-float(info_block1[56])
     tof_period=60./float(info_block2[44])
@@ -1104,7 +1101,7 @@ def read_d17_raw_file(file_name):
     # extract data
     data=map(lambda region: map(str.split, region), data_region)
     # flatten data list
-    data=[item for range in data for sublist in range for item in sublist]
+    data=[item for range_ in data for sublist in range_ for item in sublist]
   intensity=PhysicalProperty('Intensity', 'counts', data)
   intensity.error=numpy.sqrt(intensity.view(numpy.ndarray))
   intensity/=counting_time
@@ -1113,7 +1110,7 @@ def read_d17_raw_file(file_name):
     intensity=intensity*scaling
     intensity.unit='a.u.'
   if d17_calibration['transmission'] is not None:
-    scaling_factor=d17_calibration['transmission']
+    scaling=d17_calibration['transmission']
     intensity=intensity*scaling
     intensity.unit='a.u.'
   if tof_channels==1:
@@ -1166,14 +1163,14 @@ def read_d17_calibration(file_name):
   info_block1=info_block1.split()[1:]
   info_block2=info_block2.split()[1:]
   counting_time=PhysicalConstant(float(info_block1[2]), 's')
-  monitor=PhysicalConstant(float(info_block1[4]), 'monitor')
+  #monitor=PhysicalConstant(float(info_block1[4]), 'monitor')
   # get the data 
   data=regions[-1].splitlines()[1:]
   data=map(str.split, data)
   # flatten data list
   data=[item for sublist in data for item in sublist]
-  pix_x=PhysicalProperty('x', 'pix', [range(256) for i in range(64)]).flatten()
-  pix_y=PhysicalProperty('y', 'pix', [[i for j in range(256)] for i in range(64)]).flatten()
+  pix_x=PhysicalProperty('x', 'pix', [range(256) for ignore in range(64)]).flatten()
+  pix_y=PhysicalProperty('y', 'pix', [[i for i in range(256)] for ignore in range(64)]).flatten()
   dataset.append_column(pix_x)
   dataset.append_column(pix_y)
   intensity=PhysicalProperty('Intensity', 'counts', data)
@@ -1209,5 +1206,5 @@ if not getattr(ZipFile, 'open', False):
     '''
       Use ZipFileWrapper for open method.
     '''
-    def open(self, file_name, ignore):
+    def open(self, file_name, ignore): #@ReservedAssignment
       return ZipFileWrapper(self, file_name)

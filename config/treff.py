@@ -4,11 +4,10 @@
 '''
 
 from math import pi
-import numpy
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Development"
 
 # map of line/column indices for the detector raw data files (256*256 points)

@@ -7,19 +7,19 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 import os
-from measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalConstant
+from measurement_data_structure import MeasurementData, PhysicalProperty
 import numpy
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Development"
 
 column_rename={
-               'Temp. sample holder': 'T_{sample}', 
-               'Temp. needle valve': 'T_{cryo}', 
-               'signal': 'I', 
-               
+               'Temp. sample holder': 'T_{sample}',
+               'Temp. needle valve': 'T_{cryo}',
+               'signal': 'I',
+
                }
 
 def read_data(file_name):
@@ -41,11 +41,11 @@ def read_data(file_name):
   output=[]
   for file_info in file_infos:
     if not os.path.exists(file_info['name']):
-      print 'File %s not found.' % file_info['name']
+      print 'File %s not found.'%file_info['name']
       continue
     output.append(read_dat_file(file_info, global_info))
   return output
-  
+
 def read_parameterfile(file_name):
   '''
     Read information on the measurement from the parameter file.
@@ -53,19 +53,19 @@ def read_parameterfile(file_name):
   file_text=open(file_name, 'r').read().decode('iso-8859-15')
   prefix=file_name.rsplit('.par', 1)[0]
   global_info={
-              'sample': file_text.split('Sample         : ')[1].splitlines()[0], 
-              'type': file_text.split('Experiment     : ')[1].splitlines()[0], 
-              'user': file_text.split('Experiment by  : ')[1].splitlines()[0], 
+              'sample': file_text.split('Sample         : ')[1].splitlines()[0],
+              'type': file_text.split('Experiment     : ')[1].splitlines()[0],
+              'user': file_text.split('Experiment by  : ')[1].splitlines()[0],
               'datetime': file_text.split('Date : ')[1].splitlines()[0]+' '+\
-                          file_text.split('Time : ')[1].splitlines()[0], 
-              'comments': file_text.split('----------')[1], 
+                          file_text.split('Time : ')[1].splitlines()[0],
+              'comments': file_text.split('----------')[1],
               }
   # extract measurement specific parameters
   if global_info['type']=='Anisotropy':
     file_infos=[{
                  'name': prefix+'.dat',
-                 'polarizer offset': float(file_text.split('Relative angle polariser/analyser : ')[1].split('°', 1)[0]), 
-                 'index': 1, 
+                 'polarizer offset': float(file_text.split('Relative angle polariser/analyser : ')[1].split('°', 1)[0]),
+                 'index': 1,
                  }]
   else:
     infolines=file_text.split('Configuration :')[1].split('y-devices:')[0].splitlines()[1:]
@@ -77,7 +77,7 @@ def read_parameterfile(file_name):
     for index in indices:
       info={}
       file_infos.append(info)
-      info['name']=prefix+'_%i.dat' % (index+1)
+      info['name']=prefix+'_%i.dat'%(index+1)
       info['index']=index+1
       for line in infolines:
         param=line.split(':')[0].strip()
@@ -101,24 +101,24 @@ def read_dat_file(file_info, global_info):
   for i, dimension, unit in zip(range(len(units)), dimensions, units)[1:]:
     if dimension in column_rename:
       dimension=column_rename[dimension]
-    cols.append( PhysicalProperty(str(dimension), str(unit), data[:, i]) )
+    cols.append(PhysicalProperty(str(dimension), str(unit), data[:, i]))
   if 'Polariser' in file_info:
     pol=file_info['Polariser']
-    cols.append( PhysicalProperty('Polariser', str(pol[1]), pol[0]+numpy.zeros_like(cols[0])) )
+    cols.append(PhysicalProperty('Polariser', str(pol[1]), pol[0]+numpy.zeros_like(cols[0])))
   if 'Analyser' in file_info:
     ana=file_info['Analyser']
-    cols.append( PhysicalProperty('Analyser', str(ana[1]), ana[0]+numpy.zeros_like(cols[0])) )
+    cols.append(PhysicalProperty('Analyser', str(ana[1]), ana[0]+numpy.zeros_like(cols[0])))
   if 'polarizer offset' in file_info:
     for col in cols:
       if col.dimension=='Analyser':
         ana=col
         break
-    cols.append( (ana+file_info['polarizer offset'])//'Polariser' )
+    cols.append((ana+file_info['polarizer offset'])//'Polariser')
   output=MeasurementData()
-  output.sample_name="%s - %s " % (global_info['sample'], global_info['type'])
-  output.short_info="%i_{%i}:" % (global_info['par_index'], file_info['index'])
+  output.sample_name="%s - %s "%(global_info['sample'], global_info['type'])
+  output.short_info="%i_{%i}:"%(global_info['par_index'], file_info['index'])
   output.data=cols
-  output.info="User: %s\nDate: %s\n\nComments:\n%s" % (global_info['user'], global_info['datetime'], global_info['comments'])
+  output.info="User: %s\nDate: %s\n\nComments:\n%s"%(global_info['user'], global_info['datetime'], global_info['comments'])
   # type specific column settings_3d
   if global_info['type']=='Time':
     Tidx=output.dimensions().index('T_{sample}')
@@ -127,12 +127,12 @@ def read_dat_file(file_info, global_info):
       output.xdata=Tidx
   if global_info['type'] in ['Polariser', 'Analyser', 'Anisotropy']:
     if global_info['type']=='Polariser':
-      output.short_info+=' Analyser at %.0f%s' % file_info['Analyser']
+      output.short_info+=' Analyser at %.0f%s'%file_info['Analyser']
     elif global_info['type']=='Analyser':
-      output.short_info+=' Polariser at %.0f%s' % file_info['Polariser']
+      output.short_info+=' Polariser at %.0f%s'%file_info['Polariser']
     else:
-      
-      output.short_info+=' Polariser at +%.0f°' % file_info['polarizer offset']
+
+      output.short_info+=' Polariser at +%.0f°'%file_info['polarizer offset']
     # plot in polar coordinates
     po=output.plot_options
     po.is_polar=True

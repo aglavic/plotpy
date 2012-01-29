@@ -18,7 +18,6 @@ import os
 import sys
 import math, numpy
 import subprocess
-import time
 from copy import deepcopy
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
@@ -51,7 +50,7 @@ if not sys.platform.startswith('win'):
 
 __author__="Artur Glavic"
 __credits__=["Ulrich Ruecker", "Emmanuel Kentzinger", "Paul Zakalek"]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 class FitList(list):
@@ -151,8 +150,8 @@ def separate_scattering_d17(datasets, P, break_condition=1e-3):
   for value in I.values():
     value/=normalization_factor
   S=deepcopy(I)
-  converged=False
-  for i in range(100):
+  _converged=False
+  for ignore in range(100):
     I_neu=calc_intensities_general(S, P)
     I_div={}
     sum_of_divs=0.
@@ -161,7 +160,7 @@ def separate_scattering_d17(datasets, P, break_condition=1e-3):
       S[key]+=I_div[key]
       sum_of_divs+=numpy.abs(I_div[key]).sum()
     if (sum_of_divs<break_condition):
-      converged=True
+      _converged=True
       break
   for value in S.values():
     value*=normalization_factor
@@ -229,7 +228,6 @@ def seperate_scattering(datasets, P):
     @param datasets A list of MeasurementData objects for ++, --, +- and -+ channel
     @param P Dictionary of polarizer,flipper1,flipper2,analyzer polarization component efficiencies
   '''
-  from copy import deepcopy
   maximum_iterations=100
   stop_iteration_at=1e-10
   I={}
@@ -328,7 +326,6 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     self.RESULT_FILE=config.treff.RESULT_FILE
     GenericSession.__init__(self, arguments)
     if self.add_simdata:
-      from copy import deepcopy
       simdata=read_data.treff.MeasurementDataTREFF([['Θ', 'mrad'],
                              ['2DWindow', 'counts'],
                              ['DetectorTotal', 'counts'],
@@ -497,8 +494,6 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
                                                 line_width, 1, gauss_weighting=False,
                                                 sigma_gauss=1., bin_distance=alphai_steps)
     dataset.y=savey
-    # Create a new object for the stored data
-    new_cols=[]
     # Try to subtract the off-specular part,
     # if no off-specular point is present at the specific 
     # angle the specular intensity is taken
@@ -542,7 +537,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       Export measured data for fit program and the corresponding .ent file.
     '''
     names=config.treff.REF_FILE_ENDINGS
-    output_names=config.treff.FIT_OUTPUT_FILES
+    #output_names=config.treff.FIT_OUTPUT_FILES
     # convert x values from grad to mrad and 2Theta to Theta
     data_lines=[]
     for i, dataset in enumerate(self.active_file_data.fit_datasets):
@@ -606,12 +601,12 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
         tmpenv=dict(os.environ)
         tmpenv['PATH']=os.path.join(self.SCRIPT_PATH, 'gfortran\\bin')
         callopts['env']=tmpenv
-      for i, file in enumerate([param_code_file]+subcode_files):
-        # compile each source file separately
-        ofile=os.path.join(self.TEMP_DIR, os.path.split(file)[1].rsplit('.', 1)[0]+'.o')
+      for i, file_ in enumerate([param_code_file]+subcode_files):
+        # compile each source file_ separately
+        ofile=os.path.join(self.TEMP_DIR, os.path.split(file_)[1].rsplit('.', 1)[0]+'.o')
         ofiles.append(ofile)
         call_params=[fortran_compiler,
-                     config.treff.FORTRAN_PRECOMPILE_OPTION, file,
+                     config.treff.FORTRAN_PRECOMPILE_OPTION, file_,
                      config.treff.FORTRAN_OUTPUT_OPTION,
                      ofile,
                      ]
@@ -667,9 +662,8 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       Smoothe a dataset using the convolution with a gaussian kernel function.
       At the moment only for detector images (rectangular, equally spaced lattice)
     '''
-    x=dataset.data[dataset.xdata][:]
-    y=dataset.data[dataset.ydata][:]
-    I=dataset.data[dataset.zdata][:].reshape(numpy.sqrt(len(x)), numpy.sqrt(len(x)))
+    xylen=len(dataset.data[dataset.xdata][:])
+    I=dataset.data[dataset.zdata][:].reshape(numpy.sqrt(xylen), numpy.sqrt(xylen))
     Ismooth=blur_image(I, kernel_size, kernel_size_y)
     dataset.data[dataset.zdata].values=Ismooth.flatten().tolist()
 
@@ -739,7 +733,7 @@ class TreffFitParameters(FitParameters):
       result=True
       parameters=[thickness]+SL+[90., 90, roughness]
     except (KeyError, TypeError):
-      parameters=[thickness]+[1. for i in range(self.PARAMETER_LENGTH-4)]+[90., 90., roughness]
+      parameters=[thickness]+[1. for ignore in range(self.PARAMETER_LENGTH-4)]+[90., 90., roughness]
       material='Unknown'
       result=False
     layer=TreffLayerParam(material, parameters)
@@ -772,7 +766,7 @@ class TreffFitParameters(FitParameters):
       result=True
     except KeyError:
       material='Unknown'
-      SL=[1. for i in range(self.PARAMETER_LENGTH-4)]
+      SL=[1. for ignore in range(self.PARAMETER_LENGTH-4)]
       result=False
     layer=TreffLayerParam(material, [0.]+SL+[90., 90., roughness])
     self.substrate=layer
@@ -799,7 +793,7 @@ class TreffFitParameters(FitParameters):
 
     ent_string+='#+++++  Begin of layer parameters +++++\n'
     if use_multilayer and any(map(lambda item: item.multilayer, self.layers)):
-      string, layer_index, para_index=self.__get_ent_str_with_multilayer__()
+      string, ignore, para_index=self.__get_ent_str_with_multilayer__()
       ent_string+=string
     else:
       ent_string+='0\tnumber of layers on top of the (unused) multilayer\n'
@@ -810,7 +804,7 @@ class TreffFitParameters(FitParameters):
       ent_string+='# blank\n'
 
       ent_string+=str(self.number_of_layers())+'\tnumber of layers below the (unused) multilayer\n'
-      ent_string_layer, layer_index, para_index=self.__get_ent_str_layers__(use_roughness_gradient)
+      ent_string_layer, ignore, para_index=self.__get_ent_str_layers__(use_roughness_gradient)
       ent_string+=ent_string_layer
 
     # more global parameters
@@ -947,7 +941,7 @@ class TreffFitParameters(FitParameters):
       set layer parameters from existing fit
     '''
     para_index=1
-    for i, layer in enumerate(self.layers):
+    for layer in self.layers:
       for j in range(7): # every layer parameter
         if not layer.multilayer==1: # its a single layer
           if (para_index+j) in self.fit_params:
@@ -1072,11 +1066,11 @@ class TreffFitParameters(FitParameters):
     new_fit.ntest=self.ntest
     return new_fit
 
-  def read_params_from_file(self, file):
+  def read_params_from_file(self, file_name):
     '''
       read data from .ent file
     '''
-    lines=open(file, 'r').readlines()
+    lines=open(file_name, 'r').readlines()
     lines.reverse()
     for i, line in enumerate(lines):
       if line[0]!='#':
@@ -1196,7 +1190,7 @@ class TreffFitParameters(FitParameters):
         parameters.append(layer.roughness)
         return TreffLayerParam(name, parameters_list=parameters)
 
-    for i, layer in enumerate(x_ray_fitdata.layers):
+    for layer in x_ray_fitdata.layers:
       ### multilayer
       if layer.multilayer:
         multilayer=TreffMultilayerParam(layer.repititions, layer.name,)
@@ -1300,12 +1294,12 @@ class TreffLayerParam(LayerParam):
 
   def get_fit_params(self, params, param_index):
     '''
-      return a parameter list according to params
+      return a parameter list_ according to params
     '''
-    list=[]
+    list_=[]
     for i in params:
-      list.append(param_index+i)
-    return list, param_index+7
+      list_.append(param_index+i)
+    return list_, param_index+7
 
   def dialog_get_params(self, action, response, thickness, scatter_density_Nb,
                         scatter_density_Nb2, scatter_density_Np, theta, phi, roughness):
@@ -1374,20 +1368,20 @@ class TreffMultilayerParam(MultilayerParam):
 
   def get_fit_params(self, params, param_index):
     '''
-      return a parameter list according to params (list of param lists for multilayer)
+      return a parameter list_ according to params (list_ of param lists for multilayer)
     '''
-    list=[]
+    list_=[]
     layers=len(self.layers)
     for j in range(layers):
       for i in params[j]:
-        list+=[param_index+i+j*7+k*layers*7 for k in range(self.repititions)]
-    return list, param_index+len(self)*7
+        list_+=[param_index+i+j*7+k*layers*7 for k in range(self.repititions)]
+    return list_, param_index+len(self)*7
 
   def get_fit_cons(self, param_index):
     '''
-      return a list of constainlists according to multilayers
+      return a list_ of constainlists according to multilayers
     '''
-    list=[]
+    list_=[]
     layers=len(self.layers)
     if self.roughness_gradient==0:
       constrain_params=7
@@ -1395,5 +1389,5 @@ class TreffMultilayerParam(MultilayerParam):
       constrain_params=6
     for j in range(layers): # iterate through layers
       for i in range(constrain_params): # iterate through parameters
-        list.append([param_index+i+j*7+k*layers*7 for k in range(self.repititions)])
-    return list, param_index+len(self)
+        list_.append([param_index+i+j*7+k*layers*7 for k in range(self.repititions)])
+    return list_, param_index+len(self)

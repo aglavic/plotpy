@@ -18,7 +18,6 @@
 #                                                                                               #
 #################################################################################################
 
-import sys
 try:
   import scipy.interpolate
 except ImportError:
@@ -39,15 +38,15 @@ import config.diamagnetism_table
 # import gui functions for active config.gui.toolkit
 import config.gui
 try:
-  GUI=__import__( config.gui.toolkit+'gui.squid', fromlist=['SquidGUI']).SquidGUI
-except ImportError: 
+  GUI=__import__(config.gui.toolkit+'gui.squid', fromlist=['SquidGUI']).SquidGUI
+except ImportError:
   class GUI: pass
 
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Development"
 
 class SquidSession(GUI, GenericSession):
   '''
@@ -71,7 +70,7 @@ Data columns and unit transformations are defined in config.squid.py.
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('SQUID/PPMS','*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]','*.[Dd][Aa][Tt].gz', '*.[Rr][Aa][Ww].gz'), 
+  FILE_WILDCARDS=[('SQUID/PPMS', '*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]', '*.[Dd][Aa][Tt].gz', '*.[Rr][Aa][Ww].gz'),
                   ]
   # options:
   dia_mag_correct=0. # diamagnetic correction factor
@@ -81,7 +80,7 @@ Data columns and unit transformations are defined in config.squid.py.
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['dia', 'dia-calc', 'para']
   #------------------ local variables -----------------
 
-  
+
   def __init__(self, arguments):
     '''
       class constructor expands the GenericSession constructor
@@ -90,7 +89,7 @@ Data columns and unit transformations are defined in config.squid.py.
     self.MEASUREMENT_TYPES=config.squid.MEASUREMENT_TYPES
     self.TRANSFORMATIONS=config.squid.TRANSFORMATIONS
     GenericSession.__init__(self, arguments)
-  
+
   def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
     '''
       additional command line arguments for squid sessions
@@ -101,20 +100,20 @@ Data columns and unit transformations are defined in config.squid.py.
       if last_argument_option[0]:
         if last_argument_option[1]=='dia':
           self.dia_mag_offset=float(argument)/1e9
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='dia-calc':
           self.dia_calc[0]=True
           self.dia_calc[1]=argument
-          last_argument_option=[True,'dia-calc2']
+          last_argument_option=[True, 'dia-calc2']
         elif last_argument_option[1]=='dia-calc2':
           self.dia_calc[2]=float(argument)/1e3
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='para':
           self.para[0]=float(argument)/1e9
-          last_argument_option=[True,'para2']
+          last_argument_option=[True, 'para2']
         elif last_argument_option[1]=='para2':
           self.para[1]=float(argument)
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         else:
           found=False
       #elif argument=='-l':
@@ -138,8 +137,8 @@ Data columns and unit transformations are defined in config.squid.py.
     '''
       function to read data files
     '''
-    return read_data.squid.read_data(file_name ,self.COLUMNS_MAPPING,self.MEASUREMENT_TYPES)
-  
+    return read_data.squid.read_data(file_name , self.COLUMNS_MAPPING, self.MEASUREMENT_TYPES)
+
   def add_file(self, filename, append=True):
     '''
       Add the data of a new file to the session.
@@ -165,15 +164,15 @@ Data columns and unit transformations are defined in config.squid.py.
         para=PhysicalConstant(para, 'K·A·m^2/T')
         self.dia_para_correction(dataset, dia, para)
       # name the dataset
-      constant, unit=dataset.unit_trans_one(dataset.type(),config.squid.TRANSFORMATIONS_CONST)      
+      constant, unit=dataset.unit_trans_one(dataset.type(), config.squid.TRANSFORMATIONS_CONST)
       if dataset.short_info=='':
         unit=unit or dataset.units()[dataset.type()]
-        dataset.short_info='at %d ' % constant + unit # set short info as the value of the constant column
+        dataset.short_info='at %d '%constant+unit # set short info as the value of the constant column
     return datasets
 
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
-  
+
   def dia_para_correction(self, dataset, dia, para):
     '''
       Calculate dia- and paramagnetic correction for the given dataset.
@@ -201,7 +200,7 @@ Data columns and unit transformations are defined in config.squid.py.
       dataset.append_column(dataset.data[mag])
       dataset.data[-1].dimension="Corrected "+dataset.data[-1].dimension
     def dia_para_calc(point):
-      point[-1]= point[mag] + point[field] * ( dia - para / point[temp])
+      point[-1]=point[mag]+point[field]*(dia-para/point[temp])
       return point
     dataset.process_function(dia_para_calc)
     dataset.ydata=len(dataset.data)-1
@@ -209,12 +208,12 @@ Data columns and unit transformations are defined in config.squid.py.
   def calc_dia(self):
     found, elements_dia=self.calc_dia_elements()
     if found:
-      self.dia_mag_correct=self.dia_mag_offset + elements_dia
+      self.dia_mag_correct=self.dia_mag_offset+elements_dia
     else:
-      print str(elements_dia) + ' not in list.'
+      print str(elements_dia)+' not in list.'
       self.dia_mag_correct=self.dia_mag_offset
-  
-  def calc_dia_elements(self): 
+
+  def calc_dia_elements(self):
     '''
       Returns the diamagnetic moment of the elements in self.dia_calc[1] with the mass self.dia_calc[2] 
       The format for the elements strin is 'La_1-Fe_2-O_4','la_1-fe2+_2-o_4', 'La-Fe_2-O_4' or 'LaFe2O4'

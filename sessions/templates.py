@@ -5,13 +5,12 @@
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Development"
 
 import os
 
 import measurement_data_structure
-import config.templates
 import numpy as np
 MeasurementDataClass=measurement_data_structure.MeasurementData
 
@@ -356,18 +355,9 @@ class DataImportTemplate(object):
       
       @return List of new columns that have been created
     '''
-    sqrt=np.sqrt
-    sin=np.sin
-    cos=np.cos
-    tan=np.tan
-    exp=np.exp
-    arctan=np.arctan
-    arcsin=np.arcsin
-    arccos=np.arccos
-    pi=np.pi
     data_arrays=map(np.array, data_cols)
     output=[]
-    for function, unit, dimension in self.columns_from_function:
+    for function, ignore, ignore in self.columns_from_function:
       function=self.replace(function)
       # replace the dimensions in the function by the internal variable for this
       for i, dim in enumerate(self.dimensions):
@@ -515,7 +505,7 @@ class DataImportTemplate(object):
     dimensions=[self.replace(column[0]) for column in self.columns]
     units=[self.replace(column[1]) for column in self.columns]
     # add columns calculated from functions
-    for function, dimension, unit  in self.columns_from_function:
+    for ignore, dimension, unit  in self.columns_from_function:
       for i, dim in enumerate(dimensions):
         unit=unit.replace('[%s]'%dim, units[i])
       dimensions.append(self.replace(dimension))
