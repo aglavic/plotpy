@@ -30,18 +30,18 @@ import read_data.dns
 import config.dns
 # import gui functions for active config.gui.toolkit
 import config.gui
-try:  
-  GUI=__import__( config.gui.toolkit+'gui.dns', fromlist=['DNSGUI']).DNSGUI
-except ImportError: 
+try:
+  GUI=__import__(config.gui.toolkit+'gui.dns', fromlist=['DNSGUI']).DNSGUI
+except ImportError:
   class GUI: pass
 
-__author__ = "Artur Glavic"
-__credits__ = ["Werner Schweika"]
+__author__="Artur Glavic"
+__credits__=["Werner Schweika"]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__status__="Production"
 
 # functions for evaluation of polarized neutron measurements
-def correct_flipping_ratio(flipping_ratio, pp_data, pm_data, 
+def correct_flipping_ratio(flipping_ratio, pp_data, pm_data,
                            scattering_propability=0.1, convergence_criteria=None):
   '''
     Calculate the selfconsistent solution of the spin-flip/non spin-flip
@@ -65,27 +65,27 @@ def correct_flipping_ratio(flipping_ratio, pp_data, pm_data,
   ITERATIONS=100
   MULTIPLE_SCATTERING_DEAPTH=10
   # just calculate the power of scattering propability times transmission once
-  POW_OF_SCAT_PROP=[(1.-scattering_propability) * scattering_propability**i \
-                    for i in range(MULTIPLE_SCATTERING_DEAPTH)]  
+  POW_OF_SCAT_PROP=[(1.-scattering_propability)*scattering_propability**i \
+                    for i in range(MULTIPLE_SCATTERING_DEAPTH)]
   # function for the test of the convergence
   if convergence_criteria is None:
     def test(difference):
       return difference<1e-10
   else:
     test=convergence_criteria
-  
+
   # normalize the data
   total=(pp_data+pm_data)
   p_norm=pp_data/total
   m_norm=pm_data/total
-  
+
   # use the data as starting value
   nsf_scattering=cp(p_norm)
   sf_scattering=1.-nsf_scattering
-  
+
   # calculate polarization from flipping-ratio
   polarization=flipping_ratio/(1.+flipping_ratio)
-  
+
   for iter in range(ITERATIONS):
     # n-times multiple scattering is represented by a list of length n
     p_multiple_scattering=[polarization]
@@ -93,25 +93,25 @@ def correct_flipping_ratio(flipping_ratio, pp_data, pm_data,
     # calculate the multiple scattered part of the intensity
     for i in range(MULTIPLE_SCATTERING_DEAPTH):
       p_multiple_scattering.append(
-                                   p_multiple_scattering[i]*nsf_scattering +\
+                                   p_multiple_scattering[i]*nsf_scattering+\
                                    m_multiple_scattering[i]*sf_scattering
                                    )
       m_multiple_scattering.append(
-                                   m_multiple_scattering[i]*nsf_scattering +\
+                                   m_multiple_scattering[i]*nsf_scattering+\
                                    p_multiple_scattering[i]*sf_scattering
                                    )
     # calculate the intensity measured for the complete scattering
-    up_intensity=p_multiple_scattering[1] * POW_OF_SCAT_PROP[0]
-    down_intensity=m_multiple_scattering[1] * POW_OF_SCAT_PROP[0]
+    up_intensity=p_multiple_scattering[1]*POW_OF_SCAT_PROP[0]
+    down_intensity=m_multiple_scattering[1]*POW_OF_SCAT_PROP[0]
     for i in range(1, MULTIPLE_SCATTERING_DEAPTH):
-      up_intensity+=p_multiple_scattering[i+1] * POW_OF_SCAT_PROP[i]
-      down_intensity+=m_multiple_scattering[i+1] * POW_OF_SCAT_PROP[i]
-    
+      up_intensity+=p_multiple_scattering[i+1]*POW_OF_SCAT_PROP[i]
+      down_intensity+=m_multiple_scattering[i+1]*POW_OF_SCAT_PROP[i]
+
     # calculate difference of measured and simulated scattering
-    diff=p_norm-up_intensity  
+    diff=p_norm-up_intensity
     nsf_scattering+=diff
     sf_scattering=1.-nsf_scattering
-    
+
     # test if the solution converged
     if test(abs(diff)):
       # scale the output by total measured intensity
@@ -176,12 +176,12 @@ class DNSSession(GUI, GenericSession):
   FILE_WILDCARDS=[('DNS', '*.d_dat', '*.d_dat.gz'), ('D7', '*.d7', '*.d7.gz')]
 
   TRANSFORMATIONS=[\
-  ]  
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'b', 'bg', 'bs', 'fr', 'v', 'vana', 'files', 
-                                                          'sample', 'setup', 'cz', 'time', 'flipper', 'monitor', 
-                                                          'powder', 'xyz', 'sep-nonmag', 'split', 'fullauto', 'sum', 
-                                                          'dx', 'dy', 'nx', 'ny', 'd7'] 
-  file_options={'default': ['', 0, 1, [0, -1], ''],  # (prefix, omega_offset, increment, range, postfix)
+  ]
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['inc', 'ooff', 'b', 'bg', 'bs', 'fr', 'v', 'vana', 'files',
+                                                          'sample', 'setup', 'cz', 'time', 'flipper', 'monitor',
+                                                          'powder', 'xyz', 'sep-nonmag', 'split', 'fullauto', 'sum',
+                                                          'dx', 'dy', 'nx', 'ny', 'd7']
+  file_options={'default': ['', 0, 1, [0,-1], ''], # (prefix, omega_offset, increment, range, postfix)
                 } # Dictionary storing specific options for files with the same prefix
   prefixes=[] # A list of all filenames to be imported
   mds_create=False # DNS data is not stored as .mds files as the import is fast
@@ -215,7 +215,7 @@ class DNSSession(GUI, GenericSession):
   D7_IMPORT=False
   #------------------ local variables -----------------
 
-  
+
   def __init__(self, arguments):
     '''
       Class constructor which is called with the command line arguments.
@@ -229,7 +229,7 @@ class DNSSession(GUI, GenericSession):
     #++++++++++++++++ evaluate command line +++++++++++++++++++++++
     names=self.read_arguments(arguments) # get names and set options
     if names==None: # read_arguments returns none, if help option is set
-      print self.LONG_HELP + self.SPECIFIC_HELP + self.LONG_HELP_END
+      print self.LONG_HELP+self.SPECIFIC_HELP+self.LONG_HELP_END
       exit()
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     if self.FULLAUTO:
@@ -246,7 +246,7 @@ class DNSSession(GUI, GenericSession):
     self.import_plugins() # search the plugin folder for modules
     if self.BACKGROUND_FILES:
       self.BACKGROUND_FILES.sort()
-      print "Reading user set background files %s-%s" % (self.BACKGROUND_FILES[0], self.BACKGROUND_FILES[-1])
+      print "Reading user set background files %s-%s"%(self.BACKGROUND_FILES[0], self.BACKGROUND_FILES[-1])
       # read all background files supplied by the user with the -bg option
       # every dataset will be corrected by the user bg files and if no
       # fitting user bg file is found the system background files
@@ -257,7 +257,7 @@ class DNSSession(GUI, GenericSession):
     names.sort()
     self.set_transformations()
     config.transformations.known_transformations+=self.TRANSFORMATIONS
-    if len(names) > 0:
+    if len(names)>0:
       self.find_prefixes(names) # try to find the sequences for the remaining file names
     if not self.SPLIT is None:
       self.split_sequences(self.SPLIT) # old way of splitting sequences every SPLIT step
@@ -266,7 +266,7 @@ class DNSSession(GUI, GenericSession):
     for prefix in self.prefixes:
       # for every measured sequence read the datafiles and create a map/lineplot.
       self.read_files(prefix)
-    
+
     if len(self.prefixes)>0:
       # set the first measurement as active
       self.active_file_data=self.file_data[self.prefixes[0]]
@@ -277,10 +277,10 @@ class DNSSession(GUI, GenericSession):
     else:
       self.active_file_data=[]
       self.active_file_name=''
-    
+
     # for gui set fullauto import
     self.FULLAUTO=True
-  
+
   def initialize_fullauto(self, names):
     '''
       Initializing the fullauto session, which tries to set every options
@@ -297,9 +297,9 @@ class DNSSession(GUI, GenericSession):
       szf=glob('setup*.zip')
       if len(szf)>0:
         self.CORRECTION_ZIP=szf[-1]
-        print "\tUsing setup files from %s." % szf[-1]
+        print "\tUsing setup files from %s."%szf[-1]
     self.find_prefixes(names)
-    print "\tFound %i continous sequences. Trying to split those by Temperature." % len(self.prefixes)
+    print "\tFound %i continous sequences. Trying to split those by Temperature."%len(self.prefixes)
     self.autosplit_sequences()
 
   def autosplit_sequences(self):
@@ -321,7 +321,7 @@ class DNSSession(GUI, GenericSession):
           splits.append(i)
       splits.append(i+1)
       for i, split in enumerate(splits[:-1]):
-        name=glob("%s*%i%s" % (options[0], options[3][0]+split, options[4]))[0]
+        name=glob("%s*%i%s"%(options[0], options[3][0]+split, options[4]))[0]
         # get number of different helmholz, flipper settings
         inc=1
         curi=currents[split]
@@ -332,49 +332,49 @@ class DNSSession(GUI, GenericSession):
             inc+=1
         if (splits[i+1]-split)%inc!=0:
           discard_items=(splits[i+1]-split)%inc
-          print "\tFound uncomplete file sequence, discarding last %i files." % discard_items
+          print "\tFound uncomplete file sequence, discarding last %i files."%discard_items
           new_prefixes.append(name)
           pre=options[0]+"0".join(["" for j in range(
               len(str(options[3][1]))-len(str(splits[i+1]+1)))])
-          new_options[name]=[pre, 
-                              options[1], 
-                              inc, 
-                              (split+options[3][0], splits[i+1]+options[3][0]-1-discard_items), 
+          new_options[name]=[pre,
+                              options[1],
+                              inc,
+                              (split+options[3][0], splits[i+1]+options[3][0]-1-discard_items),
                               options[4]]
-          discarded.append((pre, 
-                              options[1], 
-                              inc, 
-                              (split+options[3][0], splits[i+1]+options[3][0]-1), 
+          discarded.append((pre,
+                              options[1],
+                              inc,
+                              (split+options[3][0], splits[i+1]+options[3][0]-1),
                               options[4]))
         else:
           new_prefixes.append(name)
           pre=options[0]+"0".join(["" for j in range(
               len(str(options[3][1]))-len(str(splits[i+1]+1)))])
-          new_options[name]=[pre, 
-                              options[1], 
-                              inc, 
-                              (split+options[3][0], splits[i+1]+options[3][0]-1), 
+          new_options[name]=[pre,
+                              options[1],
+                              inc,
+                              (split+options[3][0], splits[i+1]+options[3][0]-1),
                               options[4]]
-    print "\tSplitted into %i sequences, using %i and discarding %i." % (len(new_prefixes)+len(discarded), len(new_prefixes), len(discarded))
+    print "\tSplitted into %i sequences, using %i and discarding %i."%(len(new_prefixes)+len(discarded), len(new_prefixes), len(discarded))
     self.prefixes=new_prefixes
     self.file_options=new_options
     print "... initialization ready, writing options to 'last_fullauto.txt'.\n"
     file_handler=open('last_fullauto.txt', 'w')
     file_handler.write('dnsplot -b -v -fr 0. ')
     if self.CORRECTION_ZIP:
-      file_handler.write('-cz %s ' % self.CORRECTION_ZIP)
-    for prefix in self.prefixes: 
+      file_handler.write('-cz %s '%self.CORRECTION_ZIP)
+    for prefix in self.prefixes:
       values=self.file_options[prefix]
-      file_handler.write('\\\n-files %s %.1f %i %i %i %s ' % (
-                                                         values[0], values[1], 
-                                                         values[2], values[3][0],  
+      file_handler.write('\\\n-files %s %.1f %i %i %i %s '%(
+                                                         values[0], values[1],
+                                                         values[2], values[3][0],
                                                          values[3][1], values[4]
                                                          ))
     file_handler.write('\n')
-    for values in discarded: 
-      file_handler.write('# -files %s %.1f %i %i %i %s \n' % (
-                                                         values[0], values[1], 
-                                                         values[2], values[3][0],  
+    for values in discarded:
+      file_handler.write('# -files %s %.1f %i %i %i %s \n'%(
+                                                         values[0], values[1],
+                                                         values[2], values[3][0],
                                                          values[3][1], values[4]
                                                          ))
     file_handler.close()
@@ -386,7 +386,7 @@ class DNSSession(GUI, GenericSession):
     '''
     temperatures=[]
     currents=[]
-    file_list=glob("%s*%s" % (options[0], options[4]))
+    file_list=glob("%s*%s"%(options[0], options[4]))
     if len(file_list)==0:
       return None
     file_list.sort()
@@ -401,11 +401,11 @@ class DNSSession(GUI, GenericSession):
         file_handler=open(file_name, 'r')
         # Currents
         currents.append((
-                         round(read_data.dns.read_info(file_handler, 'Flipper_precession'), 2), 
+                         round(read_data.dns.read_info(file_handler, 'Flipper_precession'), 2),
                          #round(read_data.dns.read_info(file_handler, 'Flipper_z_compensation'), 2), 
-                         round(read_data.dns.read_info(file_handler, 'C_a'), 2), 
-                         round(read_data.dns.read_info(file_handler, 'C_b'), 2), 
-                         round(read_data.dns.read_info(file_handler, 'C_c'), 2), 
+                         round(read_data.dns.read_info(file_handler, 'C_a'), 2),
+                         round(read_data.dns.read_info(file_handler, 'C_b'), 2),
+                         round(read_data.dns.read_info(file_handler, 'C_c'), 2),
                          round(read_data.dns.read_info(file_handler, 'C_z'), 2)
                          )
                         )
@@ -423,18 +423,18 @@ class DNSSession(GUI, GenericSession):
       if last_argument_option[0]:
         if last_argument_option[1]=='inc':
           self.file_options['default'][2]=int(argument)
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='ooff':
           self.file_options['default'][1]=float(argument)
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='split':
           self.SPLIT=float(argument)
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='bg':
           if ',' in argument:
             name_from, name_to=argument.split(',', 1)
             all_names=glob(os.path.join(
-                           os.path.split(name_from)[0], 
+                           os.path.split(name_from)[0],
                            '*'))
             all_names.sort()
             try:
@@ -451,82 +451,82 @@ class DNSSession(GUI, GenericSession):
               self.BACKGROUND_FILES=[argument]
             else:
               self.BACKGROUND_FILES.append(argument)
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='bs':
           self.BACKGROUND_SCALING=float(argument)
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='fr':
           self.CORRECT_FLIPPING=True
           self.SCATTERING_PROPABILITY=float(argument)
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='cz':
           self.CORRECTION_ZIP=argument
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='dx':
           self.D_SPACING_X=float(argument)
           self.TRANSFORM_Q=True
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='dy':
           self.D_SPACING_Y=float(argument)
           self.TRANSFORM_Q=True
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='nx':
           self.D_NAME_X=argument
           self.TRANSFORM_Q=True
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='ny':
           self.D_NAME_Y=argument
           self.TRANSFORM_Q=True
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='vana':
           self.VANADIUM_FILE=unicode(argument)
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         # Set sample name:
         elif last_argument_option[1]=='sample':
           self.SAMPLE_NAME=argument
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         elif last_argument_option[1]=='setup':
           config.dns.SETUP_DIRECTORYS=[argument]
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         #+++++++++++++++ explicit file setting +++++++++++++++++++++++++++
         # Enty checking is quite extensive as there are many options which could
         # be given worng by the user.
         elif last_argument_option[1]=='files':
           new_options=[]
           new_options.append(argument)
-          last_argument_option=[True,'files_1', new_options]
+          last_argument_option=[True, 'files_1', new_options]
         # omega offset
         elif last_argument_option[1]=='files_1':
           try:
             last_argument_option[2].append(float(argument))
           except ValueError:
-            print "Check your Syntax! Omega offset has to be a number, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]" % argument
+            print "Check your Syntax! Omega offset has to be a number, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]"%argument
             exit()
-          last_argument_option=[True,'files_2', last_argument_option[2]]
+          last_argument_option=[True, 'files_2', last_argument_option[2]]
         # increment
         elif last_argument_option[1]=='files_2':
           try:
             last_argument_option[2].append(int(argument))
           except ValueError:
-            print "Check your Syntax! Increment has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]" % argument
-            exit()            
-          last_argument_option=[True,'files_3', last_argument_option[2]]
+            print "Check your Syntax! Increment has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]"%argument
+            exit()
+          last_argument_option=[True, 'files_3', last_argument_option[2]]
         # from
         elif last_argument_option[1]=='files_3':
           try:
             last_argument_option[2].append([int(argument)])
           except ValueError:
-            print "Check your Syntax! From has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]" % argument
-            exit()            
-          last_argument_option=[True,'files_4', last_argument_option[2]]
+            print "Check your Syntax! From has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]"%argument
+            exit()
+          last_argument_option=[True, 'files_4', last_argument_option[2]]
         # to
         elif last_argument_option[1]=='files_4':
           try:
             last_argument_option[2][3].append(int(argument))
           except ValueError:
-            print "Check your Syntax! To has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]" % argument
-            exit()            
-          last_argument_option=[True,'files_5', last_argument_option[2]]
+            print "Check your Syntax! To has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]"%argument
+            exit()
+          last_argument_option=[True, 'files_5', last_argument_option[2]]
         # postfix
         elif last_argument_option[1]=='files_5':
           last_argument_option[2].append(argument)
@@ -548,11 +548,11 @@ class DNSSession(GUI, GenericSession):
             Omega offset='%g'
             Increment='%i'
             From,To='%i','%i'
-            Postfix='%s' """ % (erg[0], erg[1], erg[2], erg[3][0], erg[3][1], erg[4])
+            Postfix='%s' """%(erg[0], erg[1], erg[2], erg[3][0], erg[3][1], erg[4])
             exit()
           self.prefixes.append(directory+os.sep+first_file)
           self.file_options[directory+os.sep+first_file]=last_argument_option[2]
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
         else:
           found=False
         #--------------- explicit file setting ---------------------------
@@ -577,7 +577,7 @@ class DNSSession(GUI, GenericSession):
         self.SHORT_INFO=[('monitor', lambda monitor: 'with monitor='+str(monitor), 'counts')]
       elif argument=='-flipper':
         def flipper_on(current):
-          if current > 0.1:
+          if current>0.1:
             return "spin-flip"
           else:
             return "non spin-flip"
@@ -586,11 +586,11 @@ class DNSSession(GUI, GenericSession):
         self.XYZ_POL=True
         self.file_options['default'][2]=6
         def flipper_on(current):
-          if current > 0.1:
+          if current>0.1:
             return "spin-flip"
           else:
             return "non spin-flip"
-        self.SHORT_INFO=[('pol_channel', lambda P: str(P)+'-', ''), 
+        self.SHORT_INFO=[('pol_channel', lambda P: str(P)+'-', ''),
                           ('flipper', flipper_on, '')]
       elif argument=='-sep-nonmag':
         self.SEPARATE_NONMAG=True
@@ -605,13 +605,13 @@ class DNSSession(GUI, GenericSession):
       Works as if the filenames had been given via commandline.
     '''
     filenames.sort()
-    if len(filenames) > 0:
+    if len(filenames)>0:
       self.find_prefixes(filenames)
     else:
       return False
     # For alter imports also try fullautomode
     if self.FULLAUTO and getattr(self, 'INIT_COMPLETE', False):
-      self.autosplit_sequences()      
+      self.autosplit_sequences()
     self.prefixes.sort()
     new_prefixes=[pf for pf in self.prefixes if not pf in self.file_data]
     if len(new_prefixes)>0:
@@ -621,7 +621,7 @@ class DNSSession(GUI, GenericSession):
       return True
     else:
       return False
-  
+
   def read_files(self, file):
     '''
       Function to read data files for one measurement. 
@@ -649,7 +649,7 @@ class DNSSession(GUI, GenericSession):
     file_list.sort()
     # Read the raw data
     self.file_data[file+'|raw_data']=[]
-    print "Reading files %s{num}%s with num from %i to %i." % (prefix, postfix, num_range[0], num_range[1])
+    print "Reading files %s{num}%s with num from %i to %i."%(prefix, postfix, num_range[0], num_range[1])
     for file_name in file_list:
       # get integer number of the file, catch errors form wrong file selection
       try:
@@ -664,7 +664,7 @@ class DNSSession(GUI, GenericSession):
     print "\tRead, creating map."
     self.create_maps(file)
     return None
-  
+
   def read_files_d7(self, file):
     '''
       Function to read data files for one D7 measurement. 
@@ -692,7 +692,7 @@ class DNSSession(GUI, GenericSession):
     file_list.sort()
     # Read the raw data
     self.file_data[file+'|raw_data']=[]
-    print "Reading files %s{num}%s with num from %i to %i." % (prefix, postfix, num_range[0], num_range[1])
+    print "Reading files %s{num}%s with num from %i to %i."%(prefix, postfix, num_range[0], num_range[1])
     for file_name in file_list:
       # get integer number of the file, catch errors form wrong file selection
       try:
@@ -712,7 +712,7 @@ class DNSSession(GUI, GenericSession):
     print "\tRead, creating map."
     self.create_maps(file)
     return None
-  
+
   def get_active_file_info(self):
     '''
       Replacement of generic info function, more specific to dns imports.
@@ -724,15 +724,15 @@ class DNSSession(GUI, GenericSession):
       if name in self.file_options:
         opts=self.file_options[name]
         leni=len(str(opts[3][1]))
-        return "Data read from files %s-%s.\n\tOmega-Offset: %.2f\n\tNumber of Polarization Channels: %i\n" % (
-                              opts[0]+("%%0%ii" % leni) % opts[3][0] + opts[4], 
-                              opts[0]+"%i" % opts[3][1] + opts[4], 
-                              opts[1], 
+        return "Data read from files %s-%s.\n\tOmega-Offset: %.2f\n\tNumber of Polarization Channels: %i\n"%(
+                              opts[0]+("%%0%ii"%leni)%opts[3][0]+opts[4],
+                              opts[0]+"%i"%opts[3][1]+opts[4],
+                              opts[1],
                               opts[2]
                               )
       else:
-        return "%s: \n" % (self.active_file_name )
-  
+        return "%s: \n"%(self.active_file_name)
+
   def sum_same_omega_tth(self, scans):
     '''
       Find scan files with same omega and tth value and sum them up.
@@ -741,8 +741,8 @@ class DNSSession(GUI, GenericSession):
     print '\tSumming up files with same positions [ω,2θ]'
     scandict={}
     for scan in scans:
-      key=(scan.dns_info['omega'], scan.dns_info['detector_bank_2T'], 
-           scan.dns_info['C_a'], scan.dns_info['C_b'], scan.dns_info['C_c'], 
+      key=(scan.dns_info['omega'], scan.dns_info['detector_bank_2T'],
+           scan.dns_info['C_a'], scan.dns_info['C_b'], scan.dns_info['C_c'],
            scan.dns_info['flipper'], scan.dns_info['flipper_compensation'])
       if key in scandict:
         scandict[key].append(scan)
@@ -780,8 +780,8 @@ class DNSSession(GUI, GenericSession):
     from copy import deepcopy
     scandict={}
     for scan in scans:
-      key=(scan.dns_info['detector_bank_2T'], 
-           scan.dns_info['C_a'], scan.dns_info['C_b'], scan.dns_info['C_c'], 
+      key=(scan.dns_info['detector_bank_2T'],
+           scan.dns_info['C_a'], scan.dns_info['C_b'], scan.dns_info['C_c'],
            scan.dns_info['flipper'], scan.dns_info['flipper_compensation'])
       if key in scandict:
         scandict[key].append(scan)
@@ -827,23 +827,23 @@ class DNSSession(GUI, GenericSession):
     if 'detector_angles' in scans[0].dns_info:
       # Functoin used to append data to the object
       def append_to_map(point):
-        return [detector_bank_2T, 
-                round(omega-omega_offset, 1), 
-                round(omega, 1), 
-                point[3], 
-                point[0], 
-                point[1], 
-                point[2], 
-                point[1], 
-                point[2], 
+        return [detector_bank_2T,
+                round(omega-omega_offset, 1),
+                round(omega, 1),
+                point[3],
+                point[0],
+                point[1],
+                point[2],
+                point[1],
+                point[2],
                 0, 0, i]
     else:
       # Functoin used to append data to the object
       def append_to_map(point):
-        return [detector_bank_2T, 
-                round(omega-omega_offset-detector_bank_2T, 1), 
-                round(omega-detector_bank_2T, 1), 
-                point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE-detector_bank_2T, 
+        return [detector_bank_2T,
+                round(omega-omega_offset-detector_bank_2T, 1),
+                round(omega-detector_bank_2T, 1),
+                point[0]*config.dns.DETECTOR_ANGULAR_INCREMENT+config.dns.FIRST_DETECTOR_ANGLE-detector_bank_2T,
                 point[0]
                 ]+point[1:]+point[1:]+[0, 0, i]
     if self.COMBINE_SAME_OMEGA_TTH:
@@ -859,11 +859,11 @@ class DNSSession(GUI, GenericSession):
           sub=2
         else:
           sub=1
-        columns=[['DetectorbankAngle', '°'], ['ω', '°'], ['ω-RAW', '°'], 
+        columns=[['DetectorbankAngle', '°'], ['ω', '°'], ['ω-RAW', '°'],
                  ['2Θ', '°'], ['Detector', '']]+\
                  [[scan.dimensions()[j], scan.units()[j]] for j in range(1, len(scan.units())+1-sub)]+\
-                 [['I_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-sub)/2)]+\
-                 [['error_%i' % j, 'a.u.'] for j in range(0, (len(scan.units())-sub)/2)]+\
+                 [['I_%i'%j, 'a.u.'] for j in range(0, (len(scan.units())-sub)/2)]+\
+                 [['error_%i'%j, 'a.u.'] for j in range(0, (len(scan.units())-sub)/2)]+\
                  [['Q_x', 'Å^{-1}'], ['Q_y', 'Å^{-1}'], ['Filenumber', '']]
         self.file_data[file].append(DNSMeasurementData(columns, [], 1, 3, (len(scan.units())-sub)/2+5, zdata=5))
         # set some parameters for the object
@@ -876,7 +876,7 @@ class DNSSession(GUI, GenericSession):
           active_map.sample_name=scan.dns_info['sample_name']
         else:
           active_map.sample_name=self.SAMPLE_NAME
-        active_map.info= "\n".join(map(lambda item: item[0]+': '+str(item[1]),
+        active_map.info="\n".join(map(lambda item: item[0]+': '+str(item[1]),
                                     sorted(scan.dns_info.items())))
       # add the data
       data=[list(point) for point in scan]
@@ -890,7 +890,7 @@ class DNSSession(GUI, GenericSession):
       # assign flipping chanels to nicr-data
       self.correct_flipping_ratio(self.SCATTERING_PROPABILITY)
     for dnsmap in self.active_file_data:
-      sys.stdout.write("\tMap %s created, perfoming datatreatment: " % dnsmap.number)
+      sys.stdout.write("\tMap %s created, perfoming datatreatment: "%dnsmap.number)
       sys.stdout.flush()
       if self.POWDER_DATA or len(set(dnsmap.data[1].values))==1:
         new=dnsmap.prepare_powder_data()
@@ -949,7 +949,7 @@ class DNSSession(GUI, GenericSession):
     para_2.short_info='para_2'
     para_2.number='0'
     # para= <para_1,para_2>
-    para=0.5 * para_1 + 0.5 * para_2
+    para=0.5*para_1+0.5*para_2
     para.short_info='paramagnetic'
     para.number='0'
     # sp_inc= 1.5 * (3 * SF_z - SF_x - SF_y)
@@ -972,20 +972,20 @@ class DNSSession(GUI, GenericSession):
       for nonmagnetic samples.
     '''
     # para= <para_1,para_2>
-    coherent=af[1] - 0.5 * af[0]
+    coherent=af[1]-0.5*af[0]
     coherent.short_info='coherent scattering'
     coherent.number='3'
     # sp_inc= 1.5 * (3 * SF_z - SF_x - SF_y)
-    sp_inc= 1.5 * af[0]
+    sp_inc=1.5*af[0]
     sp_inc.short_info='spin incoherent'
     sp_inc.number='4'
     # nu_coh= NSF_z - 0.5 * para - 1/3 * sp_inc
-    separated=coherent / sp_inc
+    separated=coherent/sp_inc
     separated.short_info='Separated'
     separated.number='0'
     af.insert(2, coherent)
     af.insert(3, sp_inc)
-    af.insert(0, separated)    
+    af.insert(0, separated)
 
   def find_background_data(self, dataset):
     '''
@@ -1047,7 +1047,7 @@ class DNSSession(GUI, GenericSession):
             if i==0:
               dataset.background_data[angle]=bg[0]
             else:
-              if bg_detectors[i]-angle < angle-bg_detectors[i-1]:
+              if bg_detectors[i]-angle<angle-bg_detectors[i-1]:
                 dataset.background_data[angle]=bg[i]
               else:
                 dataset.background_data[angle]=bg[i-1]
@@ -1098,7 +1098,7 @@ class DNSSession(GUI, GenericSession):
         if int(found_prefixes[(prefix, postfix)][2])+1==int(number):
           found_prefixes[(prefix, postfix)][2]=number
         else:
-          found_prefixes[(prefix+'_%s' % found_prefixes[(prefix, postfix)][1], postfix)]=found_prefixes[(prefix, postfix)]
+          found_prefixes[(prefix+'_%s'%found_prefixes[(prefix, postfix)][1], postfix)]=found_prefixes[(prefix, postfix)]
           found_prefixes[(prefix, postfix)]=[prefix, number, number, postfix]
       else:
         found_prefixes[(prefix, postfix)]=[prefix, number, number, postfix]
@@ -1107,7 +1107,7 @@ class DNSSession(GUI, GenericSession):
       while item[1][:i]==item[2][:i]:
         i+=1
         if i>len(item[1]):
-          print "Sorry, could not get prefixes right, for %s." % (item[0]+item[1]+item[3]+'-'+\
+          print "Sorry, could not get prefixes right, for %s."%(item[0]+item[1]+item[3]+'-'+\
                                                                   item[0]+item[2]+item[3])
           break
       if i>len(item[1]):
@@ -1117,13 +1117,13 @@ class DNSSession(GUI, GenericSession):
       else:
         add_folder=''
       self.prefixes.append(add_folder+item[0]+item[1]+item[3])
-      self.file_options[add_folder+item[0]+item[1]+item[3]]=[item[0]+item[1][:i-1], 
-                                                           self.file_options['default'][1], 
-                                                           self.file_options['default'][2], 
-                                                           [int(item[1][i-1:]), 
-                                                           int(item[2][i-1:])], 
-                                                           item[3]]    
-  
+      self.file_options[add_folder+item[0]+item[1]+item[3]]=[item[0]+item[1][:i-1],
+                                                           self.file_options['default'][1],
+                                                           self.file_options['default'][2],
+                                                           [int(item[1][i-1:]),
+                                                           int(item[2][i-1:])],
+                                                           item[3]]
+
   def split_sequences(self, length):
     '''
       Split the file_options and prefixes at every 
@@ -1145,15 +1145,15 @@ class DNSSession(GUI, GenericSession):
       options[3][0]=max(int(file_list[0].split(fileprefix, 1)[1].rsplit(options[4], 1)[0])
                         , options[3][0])
       if options[3][1]-options[3][0]>length:
-        new_options=[options[0:3]+[ [int(options[3][0]+i*length), int(min(options[3][0]+(i+1)*length-1, options[3][1]))] ]+[options[4]] for i in range(int((options[3][1]-options[3][0])/length +1))]
+        new_options=[options[0:3]+[ [int(options[3][0]+i*length), int(min(options[3][0]+(i+1)*length-1, options[3][1]))] ]+[options[4]] for i in range(int((options[3][1]-options[3][0])/length+1))]
         file_dict={}
         def put_in_dict(name):
-          file_dict[int(name.split(fileprefix, 1)[1].rsplit(options[4], 1)[0])] = name
+          file_dict[int(name.split(fileprefix, 1)[1].rsplit(options[4], 1)[0])]=name
         map(put_in_dict, file_list)
         self.file_options[folder+os.sep+file_dict[new_options[0][3][0]]]=new_options[0]
         for new_option in new_options[1:]:
           self.prefixes.append(folder+os.sep+file_dict[new_option[3][0]])
-          self.file_options[folder+os.sep+file_dict[new_option[3][0]]]=new_option    
+          self.file_options[folder+os.sep+file_dict[new_option[3][0]]]=new_option
 
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
@@ -1165,9 +1165,9 @@ class DNSSession(GUI, GenericSession):
     '''
     for name in self:
       if not name.endswith("|raw_data"):
-        print "Plotting '" + name + "' sequences."
+        print "Plotting '"+name+"' sequences."
         print self.plot_active()
-  
+
   def set_transformations(self):
     '''
       Set the transformation options from q_x to dx*,dy* 
@@ -1176,10 +1176,10 @@ class DNSSession(GUI, GenericSession):
     d_star_x=2.*pi/self.D_SPACING_X
     d_star_y=2.*pi/self.D_SPACING_Y
     self.TRANSFORMATIONS=[\
-      ['Q_x','Å^{-1}',1./d_star_x,0,self.D_NAME_X,'r.l.u.'],\
-      ['Q_y','Å^{-1}',1/d_star_y,0,self.D_NAME_Y,'r.l.u.'],\
+      ['Q_x', 'Å^{-1}', 1./d_star_x, 0, self.D_NAME_X, 'r.l.u.'], \
+      ['Q_y', 'Å^{-1}', 1/d_star_y, 0, self.D_NAME_Y, 'r.l.u.'], \
                           ]
-  
+
   def read_vana_bg_nicr_files(self):
     '''
       Read all NiCr, background and vanadium files in the chosen directorys and zipfile and correct NiCr for backgound.
@@ -1192,14 +1192,14 @@ class DNSSession(GUI, GenericSession):
         zf=zipfile.ZipFile(self.CORRECTION_ZIP, 'r')
         directorys.append(os.path.join(self.TEMP_DIR, 'setup'))
         os.mkdir(directorys[-1])
-        print "Extracting ziped setup data %s." % self.CORRECTION_ZIP
+        print "Extracting ziped setup data %s."%self.CORRECTION_ZIP
         for ziped_file in zf.filelist:
           name=os.path.split(ziped_file.filename)[1]
           file=open(os.path.join(directorys[-1], name), 'w')
           file.write(zf.read(ziped_file.filename))
           file.close()
       except IOError:
-        print "No zip file %s." % self.CORRECTION_ZIP
+        print "No zip file %s."%self.CORRECTION_ZIP
     file_list=[]
     # create a list of all files in the setup directorys
     for directory in directorys:
@@ -1213,16 +1213,16 @@ class DNSSession(GUI, GenericSession):
     vana_files=[]
     # filter the file names by the wildcards set in config.dns
     for wildcard in config.dns.NICR_FILE_WILDCARDS:
-      nicr_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
-                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
+      nicr_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]),
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]),
                              file_list)))
     for wildcard in config.dns.BACKGROUND_WILDCARDS:
-      bg_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
-                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
+      bg_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]),
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]),
                              file_list)))
     for wildcard in config.dns.VANADIUM_WILDCARDS:
-      vana_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
-                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
+      vana_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]),
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]),
                              file_list)))
     # a dictionary with the detector bank helmholz parameters is used to store the NiCr data
     nicr_data={}
@@ -1254,7 +1254,7 @@ class DNSSession(GUI, GenericSession):
     for key, data in nicr_data.items():
       if key[1:] in bg_data:
         background_data_list=bg_data[key[1:]]
-        background_data_list.sort(lambda b1, b2: cmp(b1.dns_info['detector_bank_2T'], 
+        background_data_list.sort(lambda b1, b2: cmp(b1.dns_info['detector_bank_2T'],
                                                      b2.dns_info['detector_bank_2T']))
         background_data_angles=[b.dns_info['detector_bank_2T'] for b in background_data_list]
         i=0
@@ -1264,7 +1264,7 @@ class DNSSession(GUI, GenericSession):
             i+=1
           else:
             break
-        if  background_data_angles[i]-angle < angle-background_data_angles[i-1] or i==0:
+        if  background_data_angles[i]-angle<angle-background_data_angles[i-1] or i==0:
           background_data=background_data_list[i]
         else:
           background_data=background_data_list[i-1]
@@ -1316,7 +1316,7 @@ class DNSSession(GUI, GenericSession):
             vana_data.name+='-'+backgound_data.name.replace('+', '-')
             bgs=True
       if not bgs and self.AUTO_VANADIUM:
-        print "No backgound data for file %s, vanadium correction will not be correct." % file_name
+        print "No backgound data for file %s, vanadium correction will not be correct."%file_name
     if vana_data:
       # normalize the vanadium data to stay in the same intensity region
       scale=vana_data.data[1][:].sum()/len(vana_data)
@@ -1327,7 +1327,7 @@ class DNSSession(GUI, GenericSession):
       # remove files
       for file_name in os.listdir(directorys[-1]):
         os.remove(os.path.join(directorys[-1], file_name))
-      os.rmdir(directorys[-1])      
+      os.rmdir(directorys[-1])
 
   def read_vana_bg_nicr_files_d7(self):
     '''
@@ -1342,14 +1342,14 @@ class DNSSession(GUI, GenericSession):
         zf=zipfile.ZipFile(self.CORRECTION_ZIP, 'r')
         directorys.append(os.path.join(self.TEMP_DIR, 'setup'))
         os.mkdir(directorys[-1])
-        print "Extracting ziped setup data %s." % self.CORRECTION_ZIP
+        print "Extracting ziped setup data %s."%self.CORRECTION_ZIP
         for ziped_file in zf.filelist:
           name=os.path.split(ziped_file.filename)[1]
           file=open(os.path.join(directorys[-1], name), 'w')
           file.write(zf.read(ziped_file.filename))
           file.close()
       except IOError:
-        print "No zip file %s." % self.CORRECTION_ZIP
+        print "No zip file %s."%self.CORRECTION_ZIP
     file_list=[]
     # create a list of all files in the setup directorys
     for directory in directorys:
@@ -1363,16 +1363,16 @@ class DNSSession(GUI, GenericSession):
     vana_files=[]
     # filter the file names by the wildcards set in config.dns
     for wildcard in config.dns.NICR_FILE_WILDCARDS:
-      nicr_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
-                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
+      nicr_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]),
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]),
                              file_list)))
     for wildcard in config.dns.BACKGROUND_WILDCARDS:
-      bg_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
-                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
+      bg_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]),
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]),
                              file_list)))
     for wildcard in config.dns.VANADIUM_WILDCARDS:
-      vana_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]), 
-                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]), 
+      vana_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]),
+                      filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]),
                              file_list)))
     # a dictionary with the detector bank helmholz parameters is used to store the NiCr data
     nicr_data={}
@@ -1411,11 +1411,11 @@ class DNSSession(GUI, GenericSession):
         bg=background_data.get_data(index)
         point[1]-=bg[1]
         point[2]=sqrt(point[2]**2+bg[2]**2)
-        return point      
+        return point
     for key, data in nicr_data.items():
       if key[1:] in bg_data:
         background_data_list=bg_data[key[1:]]
-        background_data_list.sort(lambda b1, b2: cmp(b1.dns_info['detector_bank_2T'], 
+        background_data_list.sort(lambda b1, b2: cmp(b1.dns_info['detector_bank_2T'],
                                                      b2.dns_info['detector_bank_2T']))
         background_data_angles=[b.dns_info['detector_bank_2T'] for b in background_data_list]
         i=0
@@ -1425,7 +1425,7 @@ class DNSSession(GUI, GenericSession):
             i+=1
           else:
             break
-        if  background_data_angles[i]-angle < angle-background_data_angles[i-1] or i==0:
+        if  background_data_angles[i]-angle<angle-background_data_angles[i-1] or i==0:
           background_data=background_data_list[i]
         else:
           background_data=background_data_list[i-1]
@@ -1433,8 +1433,8 @@ class DNSSession(GUI, GenericSession):
         data.name+='-'+background_data.name
         bg_corrected_data[key]=data
       elif self.CORRECT_FLIPPING:
-        print "No background data for file %s found, flipping ration correction not correct." % data.name
-        bg_corrected_data[key]=data        
+        print "No background data for file %s found, flipping ration correction not correct."%data.name
+        bg_corrected_data[key]=data
     self.bg_corrected_nicr_data=bg_corrected_data
     for file_name in vana_files:
       if file_name.endswith('.d7'):
@@ -1484,7 +1484,7 @@ class DNSSession(GUI, GenericSession):
               vana_data.name+='-'+background_data.name.replace('+', '-')
               bgs=True
         if not bgs and self.AUTO_VANADIUM:
-          print "No backgound data for file %s, vanadium correction will not be correct." % file_name
+          print "No backgound data for file %s, vanadium correction will not be correct."%file_name
     if vana_data:
       scale=vana_data.data[1][:].sum()/len(vana_data)
       vana_data.data[1]/=scale
@@ -1494,7 +1494,7 @@ class DNSSession(GUI, GenericSession):
       # remove files
       for file_name in os.listdir(directorys[-1]):
         os.remove(os.path.join(directorys[-1], file_name))
-      os.rmdir(directorys[-1])      
+      os.rmdir(directorys[-1])
 
   def read_bg_file(self, bg_file, bg_data):
     '''
@@ -1529,7 +1529,7 @@ class DNSSession(GUI, GenericSession):
     else:
       bg_data[key]=[dataset]
     return True
-  
+
   def read_bg_file_d7(self, bg_file, bg_data):
     '''
       Read one background file and add it to a dictionary.
@@ -1564,7 +1564,7 @@ class DNSSession(GUI, GenericSession):
       else:
         bg_data[key]=[dataset]
     return True
-  
+
   def correct_flipping_ratio(self, scattering_propability=0.1):
     '''
       This function assigns the right NiCr measurements to the data sequences.
@@ -1607,9 +1607,9 @@ class DNSSession(GUI, GenericSession):
           data_nicr[use_key[3:]].sort()
           data_nicr[use_key[3:]].reverse()
         else:
-          print "To many chanels for %s, skipping." % str(key)
+          print "To many chanels for %s, skipping."%str(key)
       else:
-        print "\tNo NiCr data file found at detector bank=%g for helmholz currents (a,b,c,z):%.2f,%.2f,%.2f,%.2f" % ( 
+        print "\tNo NiCr data file found at detector bank=%g for helmholz currents (a,b,c,z):%.2f,%.2f,%.2f,%.2f"%(
                                             detector, c_a, c_b, c_c, c_z)
     # calculate flipping-ration from nicr data
     def calc_flipping_ratio(point):
@@ -1634,7 +1634,7 @@ class DNSSession(GUI, GenericSession):
       item[1].scattering_propability=scattering_propability
       item[2].flipping_correction=(one_first, item[0], item[1])
       item[2].scattering_propability=scattering_propability
-  
+
 class DNSMeasurementData(MeasurementData):
   '''
     Class derived from MeasurementData to be more suitable for DNS measurements.
@@ -1657,9 +1657,9 @@ class DNSMeasurementData(MeasurementData):
   background_data=None
   # if a flipping correction is made this is a list of
   # [SF-Chanel?, nicr-data, other_DNSMeasurement]
-  flipping_correction=None 
+  flipping_correction=None
   scattering_propability=0.1
-  
+
   def get_info(self):
     '''
       Replacement of the general get_info function.
@@ -1668,23 +1668,23 @@ class DNSMeasurementData(MeasurementData):
     if self.background_data is not None:
       outstring+="Background files used for detector bank positions:\n"
       for key, value in sorted(self.background_data.items()):
-        outstring+="\t%.2f:\t%s\n" % (key, value.name)
+        outstring+="\t%.2f:\t%s\n"%(key, value.name)
     if self.vanadium_data is not None:
       outstring+="Vanadium files used for detector sensitivity correctio:\n"
       names=self.vanadium_data.name.split('+')
       for i, name in enumerate(names):
-        outstring+="\t%s" % (name)
+        outstring+="\t%s"%(name)
         if (i%5)==4 and i!=(len(names)-1):
           outstring+="\n"
       outstring+="\n"
     if self.flipping_correction is not None:
       outstring+="Flippng ratio correction has been made with:\n"
-      outstring+="\tScattering propability: %.1f%%\n" % (self.scattering_propability*100.)
-      outstring+="\tFile used: %s\n" % self.flipping_correction[1].name
+      outstring+="\tScattering propability: %.1f%%\n"%(self.scattering_propability*100.)
+      outstring+="\tFile used: %s\n"%self.flipping_correction[1].name
     outstring+="\n\nHeader information read from first file:\n"
     outstring+=self.info
     return outstring
-  
+
   def prepare_powder_data(self):
     '''
       Change settings for own dataset to be used as powderdata.
@@ -1714,7 +1714,7 @@ class DNSMeasurementData(MeasurementData):
       else:
         new.append(point)
     return new
-  
+
   def calculate_wavevectors(self):
     '''
       Calculate the wavevectors from omega, 2Theta and lambda.
@@ -1728,12 +1728,12 @@ class DNSMeasurementData(MeasurementData):
       def angle_to_wavevector(point):
         output=point
         output[qx_index]=(cos(-point[1])-\
-                  cos(-point[1] + point[3]))*\
+                  cos(-point[1]+point[3]))*\
                   two_pi_over_lambda
         output[qy_index]=(sin(-point[1])-\
-                  sin(-point[1] + point[3]))*\
+                  sin(-point[1]+point[3]))*\
                   two_pi_over_lambda
-        return output    
+        return output
       self.process_function(angle_to_wavevector)
       self.data[qx_index].unit='Å^{-1}'
       self.data[qy_index].unit='Å^{-1}'
@@ -1752,14 +1752,14 @@ class DNSMeasurementData(MeasurementData):
         output=point
         output[q_index]=2.*two_pi_over_lambda*sin(0.5*point[3])
         output[d_index]=2.*pi/output[q_index]
-        return output    
+        return output
       self.process_function(angle_to_wavevector)
       self.data[q_index].unit='Å^{-1}'
       self.data[d_index].unit='Å'
       self.data[q_index].dimension='Q'
       self.data[d_index].dimension='d'
       self.xdata=q_index
-  
+
   def change_omega_offset(self, omega_offset):
     '''
       Recalculate omega and q_x, q_y for a new offset value.
@@ -1769,7 +1769,7 @@ class DNSMeasurementData(MeasurementData):
       return point
     self.process_function(calc_omega)
     self.calculate_wavevectors()
-  
+
   def make_corrections(self):
     '''
       Correct the data for background and Vanadium standard.
@@ -1802,7 +1802,7 @@ class DNSMeasurementData(MeasurementData):
       else:
         self.ydata=self.number_of_channels*2+5
         self.yerror=self.number_of_channels*3+5
-  
+
   def make_combined_corrections(self, other):
     '''
       Correct two datasets for background, flipping-ratio and Vanadium standard.
@@ -1827,7 +1827,7 @@ class DNSMeasurementData(MeasurementData):
       converged=self.make_flipping_correction([self.flipping_correction[1], self, other], self.scattering_propability)
     except ValueError:
       sys.stdout.write("different data length")
-      sys.stdout.flush()      
+      sys.stdout.flush()
     if not self.vanadium_data is None:
       sys.stdout.write("up-vanadium, ")
       sys.stdout.flush()
@@ -1858,7 +1858,7 @@ class DNSMeasurementData(MeasurementData):
       self.yerror=self.number_of_channels*3+5
       other.ydata=other.number_of_channels*2+5
       other.yerror=other.number_of_channels*3+5
-  
+
   def make_flipping_correction(self, item, scattering_propability):
     '''
       Calculate the flipping ratio correction for all intensity chanels.
@@ -1884,23 +1884,23 @@ class DNSMeasurementData(MeasurementData):
         pm_data=array(pm_data)
         def test(difference):
           return all(difference<1e-10)
-        p_data, m_data, conv = correct_flipping_ratio(nicr_data, pp_data, pm_data, 
+        p_data, m_data, conv=correct_flipping_ratio(nicr_data, pp_data, pm_data,
                                                                              scattering_propability, test)
         converged=converged and conv
       else:
         p_data=[]
         m_data=[]
         for i in range(len(pp_data)):
-          p, m, conv = correct_flipping_ratio(nicr_data[i], pp_data[i], pm_data[i], scattering_propability)
+          p, m, conv=correct_flipping_ratio(nicr_data[i], pp_data[i], pm_data[i], scattering_propability)
           p_data.append(p)
           m_data.append(m)
           converged=converged and conv
-      sys.stdout.write("%s, " % converged)
+      sys.stdout.write("%s, "%converged)
       sys.stdout.flush()
       item[2].data[yindex].values=list(p_data)
-      item[1].data[yindex].values=list(m_data) 
+      item[1].data[yindex].values=list(m_data)
     return converged
-  
+
   def copy_intensities(self, point):
     '''
       Just copy the raw intensity measured to another column.
@@ -1909,10 +1909,10 @@ class DNSMeasurementData(MeasurementData):
     for i in range(nc):
       point[i+2*nc+5]=point[i+5][:]
       point[i+3*nc+5]=point[i+nc+5][:]
-      point[i+2*nc+5].dimension='I_%i' % i
-      point[i+3*nc+5].dimension='Error_%i' % i
+      point[i+2*nc+5].dimension='I_%i'%i
+      point[i+3*nc+5].dimension='Error_%i'%i
     return point
-  
+
   if use_numpy:
     #++++++++++++ calculations for use with arrays +++++++++++++++++
     def correct_background(self, point):
@@ -1951,11 +1951,11 @@ class DNSMeasurementData(MeasurementData):
       #bg=map(array, bg_columns)
       for i in range(nc):
         point[i+2*nc+5]=point[i+5]-bg[i]
-        point[i+3*nc+5]=sqrt(point[i+nc+5]**2 + bg[i+nc]**2)
-        point[i+2*nc+5].dimension='I_%i' % i
-        point[i+3*nc+5].dimension='Error_%i' % i
+        point[i+3*nc+5]=sqrt(point[i+nc+5]**2+bg[i+nc]**2)
+        point[i+2*nc+5].dimension='I_%i'%i
+        point[i+3*nc+5].dimension='Error_%i'%i
       return point
-    
+
     def correct_vanadium(self, point):
       '''
         Devide the intensity by the counts measured with vanadium for the
@@ -1975,20 +1975,22 @@ class DNSMeasurementData(MeasurementData):
         vn_indices=(point[4]-vn_list[0][0]).astype(int)
       else:
         # get indices for tth values
-        vn_indices=array(map(lambda tth: vn_lists[0].index([item for item in vn_lists[0] if item<=tth][-1]), point[3])).astype(int)
+        vn_indices=array(map(lambda tth: vn_list[0].index(
+                    [item for item in vn_list[0] if item<=tth][-1]),
+                    point[3])).astype(int)
       # create a list of arrays with the corresponding intensities
       vn=vn_list[1][vn_indices]
       errvn=vn_list[2][vn_indices]
       for i in range(nc):
         point[i+2*nc+5]/=vn
-        point[i+3*nc+5]=self.error_propagation_quotient([point[i+2*nc+5], point[i+3*nc+5]],[vn, errvn])
+        point[i+3*nc+5]=self.error_propagation_quotient([point[i+2*nc+5], point[i+3*nc+5]], [vn, errvn])
       return point
-  
+
     def __add__(self, other):
       '''
         Defines how two objects of this class should be add with '+'.
       '''
-      if len(self) != len(other):
+      if len(self)!=len(other):
         raise ValueError, 'Can only add datasets with the same length.'
       # create a new instance of the class
       from copy import deepcopy
@@ -2000,12 +2002,12 @@ class DNSMeasurementData(MeasurementData):
         result.data[i+2*nc+5].values=list(array(self.data[i+2*nc+5].values)+array(other.data[i+2*nc+5].values))
         result.data[i+3*nc+5].values=list(sqrt(array(self.data[i+3*nc+5].values)**2+array(other.data[i+3*nc+5].values)**2))
       return result
-    
+
     def __sub__(self, other):
       '''
         Defines how two objects of this class should be subtracted with '-'.
       '''
-      if len(self) != len(other):
+      if len(self)!=len(other):
         raise ValueError, 'Can only subtract datasets with the same length.'
       # create a new instance of the class
       from copy import deepcopy
@@ -2017,12 +2019,12 @@ class DNSMeasurementData(MeasurementData):
         result.data[i+2*nc+5].values=list(array(self.data[i+2*nc+5].values)-array(other.data[i+2*nc+5].values))
         result.data[i+3*nc+5].values=list(sqrt(array(self.data[i+3*nc+5].values)**2+array(other.data[i+3*nc+5].values)**2))
       return result
-    
+
     def __mul__(self, other):
       '''
         Multiply the data by data of a different dataset.
       '''
-      if len(self) != len(other):
+      if len(self)!=len(other):
         raise ValueError, 'Can only multiply datasets with the same length.'
       # create a new instance of the class
       from copy import deepcopy
@@ -2031,17 +2033,17 @@ class DNSMeasurementData(MeasurementData):
       for i in range(nc):
         result.data[i+5].values=list(array(self.data[i+5].values)*array(other.data[i+5].values))
         result.data[i+nc+5].values=list(sqrt((array(self.data[i+nc+5].values)*array(other.data[i+5].values))**2 \
-                                          + (array(other.data[i+nc+5].values)*array(self.data[i+5].values))**2))
+                                          +(array(other.data[i+nc+5].values)*array(self.data[i+5].values))**2))
         result.data[i+2*nc+5].values=list(array(self.data[i+2*nc+5].values)*array(other.data[i+2*nc+5].values))
         result.data[i+3*nc+5].values=list(sqrt((array(self.data[i+3*nc+5].values)*array(other.data[i+2*nc+5].values))**2\
                                              +(array(other.data[i+3*nc+5].values)*array(self.data[i+2*nc+5].values))**2))
-      return result      
-    
+      return result
+
     def __div__(self, other):
       '''
         Divide the data by data of a different dataset.
       '''
-      if len(self) != len(other):
+      if len(self)!=len(other):
         raise ValueError, 'Can only divide datasets with the same length.'
       # create a new instance of the class
       from copy import deepcopy
@@ -2050,14 +2052,14 @@ class DNSMeasurementData(MeasurementData):
       for i in range(nc):
         result.data[i+5].values=list(array(self.data[i+5].values)/array(other.data[i+5].values))
         result.data[i+nc+5].values=list(sqrt((array(self.data[i+nc+5].values)/array(other.data[i+5].values))**2 \
-                                          + (array(other.data[i+nc+5].values)*array(self.data[i+5].values)\
+                                          +(array(other.data[i+nc+5].values)*array(self.data[i+5].values)\
                                                                             /array(other.data[i+5].values)**2)**2))
         result.data[i+2*nc+5].values=list(array(self.data[i+2*nc+5].values)/array(other.data[i+2*nc+5].values))
         result.data[i+3*nc+5].values=list(sqrt((array(self.data[i+3*nc+5].values)/array(other.data[i+2*nc+5].values))**2\
                                              +(array(other.data[i+3*nc+5].values)*array(self.data[i+2*nc+5].values)\
                                                                                 /array(other.data[i+2*nc+5].values)**2)**2))
-      return result      
-    
+      return result
+
     def __rmul__(self, other):
       '''
         Multiply the data by a constant factor.
@@ -2070,7 +2072,7 @@ class DNSMeasurementData(MeasurementData):
       nc=self.number_of_channels
       for i in range(4*nc):
         result.data[i+5].values=list(array(self.data[i+5].values)*other)
-      return result      
+      return result
     #------------ calculations for use with arrays -----------------
   else:
     #+++++++++ calculations for use with single points +++++++++++++
@@ -2086,14 +2088,14 @@ class DNSMeasurementData(MeasurementData):
       nc=self.number_of_channels
       # find the background for the right detector
       for bg_point in self.background_data:
-        if bg_point[0] ==  point[4]:
+        if bg_point[0]==point[4]:
           bg=bg_point[1:]
           break
       for i in range(nc):
         point[i+2*nc+5]=point[i+5]-bg[i]
-        point[i+3*nc+5]=sqrt(point[i+nc+5]**2 + bg[i+nc]**2)
+        point[i+3*nc+5]=sqrt(point[i+nc+5]**2+bg[i+nc]**2)
       return point
-    
+
     def correct_vanadium(self, point):
       '''
         Devide the intensity by the counts measured with vanadium for the
@@ -2106,20 +2108,20 @@ class DNSMeasurementData(MeasurementData):
       nc=self.number_of_channels
       # find the background for the right detector
       for vn_point in self.vanadium_data:
-        if vn_point[0] ==  point[4]:
+        if vn_point[0]==point[4]:
           vn=vn_point[1]
           errvn=vn_point[2]
           break
       for i in range(nc):
         point[i+2*nc+5]/=vn
-        point[i+3*nc+5]=self.error_propagation_quotient([point[i+2*nc+5], point[i+3*nc+5]],[vn, errvn])
+        point[i+3*nc+5]=self.error_propagation_quotient([point[i+2*nc+5], point[i+3*nc+5]], [vn, errvn])
       return point
 
     def __add__(self, other):
       '''
         Defines how two objects of this class should be add with '+'.
       '''
-      if len(self) != len(other):
+      if len(self)!=len(other):
         return None
       # create a new instance of the class
       from copy import deepcopy
@@ -2132,12 +2134,12 @@ class DNSMeasurementData(MeasurementData):
           result.data[i+2*nc+5].values[j]=self.data[i+2*nc+5].values[j]+other.data[i+2*nc+5].values[j]
           result.data[i+3*nc+5].values[j]=sqrt(self.data[i+3*nc+5].values[j]**2+other.data[i+3*nc+5].values[j]**2)
       return result
-    
+
     def __sub__(self, other):
       '''
         Defines how two objects of this class should be subtracted with '-'.
       '''
-      if len(self) != len(other):
+      if len(self)!=len(other):
         return None
       # create a new instance of the class
       from copy import deepcopy
@@ -2150,7 +2152,7 @@ class DNSMeasurementData(MeasurementData):
           result.data[i+2*nc+5].values[j]=self.data[i+2*nc+5].values[j]-other.data[i+2*nc+5].values[j]
           result.data[i+3*nc+5].values[j]=sqrt(self.data[i+3*nc+5].values[j]**2+other.data[i+3*nc+5].values[j]**2)
       return result
-    
+
     def __rmul__(self, other):
       '''
         Multiply the data by a constant factor.
@@ -2164,12 +2166,12 @@ class DNSMeasurementData(MeasurementData):
       for i in range(4*nc):
         for j in range(len(self)):
           result.data[i+5].values[j]=self.data[i+5].values[j]*other
-      return result      
+      return result
     #--------- calculations for use with single points -------------
 
-  def error_propagation_quotient(self,xdata,ydata): 
+  def error_propagation_quotient(self, xdata, ydata):
     '''
       Calculate the propagated error for x/y.
     '''
-    return sqrt(xdata[1]**2/ydata[0]**2 + xdata[0]**2/ydata[0]**4 * ydata[1]**2)
-  
+    return sqrt(xdata[1]**2/ydata[0]**2+xdata[0]**2/ydata[0]**4*ydata[1]**2)
+

@@ -3,10 +3,10 @@
   Implementation of a template framework to make it possible for the user to import any ascii column data.
 '''
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__status__="Development"
 
 import os
 
@@ -22,7 +22,7 @@ class DataImportTemplate(object):
   '''
   name='Unnamed'
   wildcards=[]
-  
+
   def __init__(self, template_name):
     '''
       Create a template import object, which can be used to import a specific type of file.
@@ -35,10 +35,10 @@ class DataImportTemplate(object):
       self.compile_template(template_code)
       self.MeasurementData=MeasurementDataClass
     except IOError:
-      raise IOError, "Template file %s not found" % template_name
+      raise IOError, "Template file %s not found"%template_name
     except SyntaxError:
-      raise SyntaxError,  "Error in Template syntax"
-  
+      raise SyntaxError, "Error in Template syntax"
+
   def compile_template(self, template_code):
     '''
       Evaluate all settings in the template and add them to this object.
@@ -50,133 +50,134 @@ class DataImportTemplate(object):
     # run the code, which defines some local variables
     exec(template_code)
     # check if all needed variables are set in template
+    # UndefinedVariables should be defined in the template
     try:
-      general
-      header
-      columns
-      splitting
-      footer
+      general #@UndefinedVariable
+      header #@UndefinedVariable
+      columns #@UndefinedVariable
+      splitting #@UndefinedVariable
+      footer #@UndefinedVariable
     except NameError, error_text:
-      raise SyntaxError,  "Compiling template failed, not all needed variables are defined: %s" % error_text
+      raise SyntaxError, "Compiling template failed, not all needed variables are defined: %s"%error_text
     # go through the local variables and set options accordingly.
-    
+
     ## General
-    if 'name' in general:
-      self.name=general['name']
-    if 'comments' in general:
-      self.comments=general['comments']
+    if 'name' in general: #@UndefinedVariable
+      self.name=general['name'] #@UndefinedVariable
+    if 'comments' in general: #@UndefinedVariable
+      self.comments=general['comments'] #@UndefinedVariable
     else:
       self.comments=[]
-    if 'split string' in general:
-      self.split_string=general['split string']
+    if 'split string' in general: #@UndefinedVariable
+      self.split_string=general['split string'] #@UndefinedVariable
     else:
       self.split_string=None
-    if 'sample' in general:
-      self.sample=general['sample']
+    if 'sample' in general: #@UndefinedVariable
+      self.sample=general['sample'] #@UndefinedVariable
     else:
       self.sample=''
-    if 'short info' in general:
-      self.short_info=general['short info']
+    if 'short info' in general: #@UndefinedVariable
+      self.short_info=general['short info'] #@UndefinedVariable
     else:
       self.short_info=''
-    if 'info' in general:
-      self.info=general['info']
+    if 'info' in general: #@UndefinedVariable
+      self.info=general['info'] #@UndefinedVariable
     else:
       self.info='<header>'
-    
+
     ## Header
-    if 'length' in header:
+    if 'length' in header: #@UndefinedVariable
       self.header_fixed_length=True
-      self.header_length=int(header['length'])
+      self.header_length=int(header['length']) #@UndefinedVariable
     else:
       self.header_fixed_length=False
-    self.header_use_comment=('use comment' in header and header['use comment'])
-    self.header_use_number_search=('use number search' in header and header['use number search'])
-    if 'search keyword' in header:
-      self.header_keyword_search=header['search keyword']
+    self.header_use_comment=('use comment' in header and header['use comment']) #@UndefinedVariable
+    self.header_use_number_search=('use number search' in header and header['use number search']) #@UndefinedVariable
+    if 'search keyword' in header: #@UndefinedVariable
+      self.header_keyword_search=header['search keyword'] #@UndefinedVariable
     else:
       self.header_keyword_search=None
-    
+
     ## Columns
-    if 'columns' in columns:
+    if 'columns' in columns: #@UndefinedVariable
       self.columns_fixed=True
-      self.columns=columns['columns']
+      self.columns=columns['columns'] #@UndefinedVariable
     else:
       self.columns_fixed=False
-    if 'from header' in columns:
-      self.columns_from_header=columns['from header']
-      if 'header column splitting' in columns:
-        self.columns_header_splitting=columns['header column splitting']
+    if 'from header' in columns: #@UndefinedVariable
+      self.columns_from_header=columns['from header'] #@UndefinedVariable
+      if 'header column splitting' in columns: #@UndefinedVariable
+        self.columns_header_splitting=columns['header column splitting'] #@UndefinedVariable
       else:
         self.columns_header_splitting=None
     else:
       self.columns_from_header=None
-    if 'columns map' in columns:
-      self.columns_map=columns['columns map']
+    if 'columns map' in columns: #@UndefinedVariable
+      self.columns_map=columns['columns map'] #@UndefinedVariable
     else:
       self.columns_map=None
-    if 'ignore' in columns:
-      self.columns_ignore=columns['ignore']
+    if 'ignore' in columns: #@UndefinedVariable
+      self.columns_ignore=columns['ignore'] #@UndefinedVariable
     else:
       self.columns_ignore=[]
-    if 'column from function' in columns:
-      self.columns_from_function=columns['column from function']
+    if 'column from function' in columns: #@UndefinedVariable
+      self.columns_from_function=columns['column from function'] #@UndefinedVariable
     else:
       self.columns_from_function=[]
-    if 'plot columns' in columns:
-      self.columns_plot_map=columns['plot columns']
+    if 'plot columns' in columns: #@UndefinedVariable
+      self.columns_plot_map=columns['plot columns'] #@UndefinedVariable
     else:
       self.columns_plot_map=None
-    self.ignore_comment=('ignore comment' in columns and columns['ignore comment'])
-    
+    self.ignore_comment=('ignore comment' in columns and columns['ignore comment']) #@UndefinedVariable
+
     ## Sequence splitting
-    self.splitting_use_comment=('use comment' in splitting and splitting['use comment'])
-    self.splitting_use_empty=('use empty' in splitting and splitting['use empty'])
-    if 'use string' in splitting:
-      self.splitting_strings=splitting['use string']
+    self.splitting_use_comment=('use comment' in splitting and splitting['use comment']) #@UndefinedVariable
+    self.splitting_use_empty=('use empty' in splitting and splitting['use empty']) #@UndefinedVariable
+    if 'use string' in splitting: #@UndefinedVariable
+      self.splitting_strings=splitting['use string'] #@UndefinedVariable
     else:
       self.splitting_strings=None
-    if 'read new columns' in splitting:
-      self.columns_from_splitting=splitting['read new columns']
+    if 'read new columns' in splitting: #@UndefinedVariable
+      self.columns_from_splitting=splitting['read new columns'] #@UndefinedVariable
     else:
       self.columns_from_splitting=None
-    
+
     ## Footer
-    if 'length' in footer:
+    if 'length' in footer: #@UndefinedVariable
       self.footer_fixed_length=True
-      self.footer_length=footer['length']
+      self.footer_length=footer['length'] #@UndefinedVariable
     else:
       self.footer_fixed_length=False
-    self.footer_use_comment=('use comment' in footer and footer['use comment'])
-    self.footer_use_number_search=('use number search' in footer and footer['use number search'])
-    if 'search keyword' in footer:
-      self.footer_keyword_search=footer['search keyword']
+    self.footer_use_comment=('use comment' in footer and footer['use comment']) #@UndefinedVariable
+    self.footer_use_number_search=('use number search' in footer and footer['use number search']) #@UndefinedVariable
+    if 'search keyword' in footer: #@UndefinedVariable
+      self.footer_keyword_search=footer['search keyword'] #@UndefinedVariable
     else:
       self.footer_keyword_search=None
-    
+
     ## Search patterns for string replacement
-    if 'search pattern' in header:
-      self.header_search_patterns=header['search pattern']
+    if 'search pattern' in header: #@UndefinedVariable
+      self.header_search_patterns=header['search pattern'] #@UndefinedVariable
     else:
       self.header_search_patterns={}
-    if 'search pattern' in splitting:
-      self.splitting_search_patterns=splitting['search pattern']
+    if 'search pattern' in splitting: #@UndefinedVariable
+      self.splitting_search_patterns=splitting['search pattern'] #@UndefinedVariable
     else:
       self.splitting_search_patterns={}
-    if 'search pattern' in footer:
-      self.footer_search_patterns=footer['search pattern']
+    if 'search pattern' in footer: #@UndefinedVariable
+      self.footer_search_patterns=footer['search pattern'] #@UndefinedVariable
     else:
       self.footer_search_patterns={}
-    
+
     ## Define wildcards to use for this template
     try:
-      self.wildcards=type_info['wildcards']
+      self.wildcards=type_info['wildcards'] #@UndefinedVariable
     except (NameError, KeyError):
       self.wildcards=['*']
     return True
-  
+
   #++++++++++++++++++++++ Reading methods +++++++++++++++++++++++++++
-  
+
   def __call__(self, file_name):
     '''
       Function directly called to import data.
@@ -186,7 +187,7 @@ class DataImportTemplate(object):
       @return A list of MeasurementData or derived objects
     '''
     if not os.path.exists(file_name):
-      print "File %s not found" % file_name
+      print "File %s not found"%file_name
       return 'NULL'
     self.replacements={}
     self.number=0
@@ -222,7 +223,7 @@ class DataImportTemplate(object):
       output.append(dataset)
       self.number+=0
     return output
-  
+
   def read_header(self, lines):
     '''
       Get the header size and read needed information from this header.
@@ -253,7 +254,7 @@ class DataImportTemplate(object):
       if self.header_use_number_search:
         # search for the first line starting with a number
         for i, line in enumerate(lines):
-          if line.strip() == '':
+          if line.strip()=='':
             continue
           first=line.split(self.split_string)[0]
           try:
@@ -268,7 +269,7 @@ class DataImportTemplate(object):
     header=lines[:self.header_length]
     self.replacements['header']="\n".join(header)
     return header
-  
+
   def read_footer(self, lines):
     '''
       Get the footer size and read needed information from this footer.
@@ -299,7 +300,7 @@ class DataImportTemplate(object):
       if self.footer_use_number_search:
         # search for the first line starting with a number
         for i, line in enumerate(reversed(lines)):
-          if line.strip() == '':
+          if line.strip()=='':
             continue
           first=line.split(self.split_string)[0]
           try:
@@ -312,7 +313,7 @@ class DataImportTemplate(object):
     if (self.footer_length+self.header_length)==len(lines):
       raise IndexError, 'Footer+Header expands to the hole file length'
     return lines[-self.footer_length-1:]
-  
+
   def read_data(self, lines, dataset):
     '''
       Read data from input lines and append it to a dataset object.
@@ -322,7 +323,7 @@ class DataImportTemplate(object):
     '''
     # remove empty lines
     lines=map(lambda line: line.strip(), lines)
-    lines=filter(lambda line: line != '', lines)
+    lines=filter(lambda line: line!='', lines)
     # remove comment lines
     if not self.ignore_comment:
       lines=filter(lambda line: line.strip()[0] not in self.comments, lines)
@@ -346,7 +347,7 @@ class DataImportTemplate(object):
     while i<len(dataset.data)-1:
       i+=1
       dataset.data[i].values=list(dataset.data[i-1].values)
-  
+
   def calculate_columns_from_function(self, data_cols):
     '''
       Calculate new column values from imported columns from functions given in the template.
@@ -370,16 +371,16 @@ class DataImportTemplate(object):
       function=self.replace(function)
       # replace the dimensions in the function by the internal variable for this
       for i, dim in enumerate(self.dimensions):
-        function=function.replace('[%s]' % dim, 'data_arrays[%i]' % i)
+        function=function.replace('[%s]'%dim, 'data_arrays[%i]'%i)
       try:
         new_col=eval(function)
         data_arrays.append(new_col)
         output.append(new_col.tolist())
       except SyntaxError:
-        print "Syntax error in function %s" % function
+        print "Syntax error in function %s"%function
         output.append((data_arrays[0]*0.).tolist())
     return output
-  
+
   def get_sequences(self, lines):
     '''
       Extract measured sequences and inter sequence lines.
@@ -443,7 +444,7 @@ class DataImportTemplate(object):
     if len(inter_sequences)<len(sequences):
       inter_sequences.append([])
     return sequences, inter_sequences
-  
+
   def init_replacements(self, lines, split_patterns):
     '''
       Search for patterns in the input lines and add the result to the objects
@@ -470,7 +471,7 @@ class DataImportTemplate(object):
           except IndexError:
             continue
         replacements[key]=result
-   
+
   def init_new_sequence(self, lines):
     '''
       Make changes for the next read sequence according to header/intersequence lines.
@@ -483,7 +484,7 @@ class DataImportTemplate(object):
       # Get the columns to be used
       if (self.init_initial and self.columns_from_header):
         line=lines[self.columns_from_header[0]]
-        splitted_line=line.split( (self.columns_from_header[1] or self.split_string) )
+        splitted_line=line.split((self.columns_from_header[1] or self.split_string))
         columns=splitted_line[self.columns_from_header[2]:self.columns_from_header[3]]
       elif self.columns_from_splitting:
         line=lines[self.columns_from_splitting[0]]
@@ -516,7 +517,7 @@ class DataImportTemplate(object):
     # add columns calculated from functions
     for function, dimension, unit  in self.columns_from_function:
       for i, dim in enumerate(dimensions):
-        unit=unit.replace('[%s]' % dim, units[i])
+        unit=unit.replace('[%s]'%dim, units[i])
       dimensions.append(self.replace(dimension))
       units.append(self.replace(unit))
     for i in reversed(self.ignore):
@@ -538,11 +539,11 @@ class DataImportTemplate(object):
           self.error=i
         if ('z' in pm) and dimension in map(self.replace, pm['z']):
           self.z=i
-    
+
     self.dimensions=dimensions
     self.units=units
     self.init_initial=False
-  
+
   def new_dataset(self):
     '''
       Create a new data object from the active column and replacement settings.
@@ -555,7 +556,7 @@ class DataImportTemplate(object):
     dataset.info=self.replace(self.info)
     dataset.number=str(self.number)
     return dataset
-  
+
   def replace(self, string):
     '''
       Replace placeholders in string by the settings read from the input file.
@@ -563,8 +564,8 @@ class DataImportTemplate(object):
       @return changed string
     '''
     # Find tags starting with < and ending with >
-    tags=map(lambda item: item.split('>')[0], 
-             filter(lambda item: '>' in item, 
+    tags=map(lambda item: item.split('>')[0],
+             filter(lambda item: '>' in item,
                     string.split('<')))
     # remove double entries
     tags=list(set(tags))
@@ -582,4 +583,4 @@ class DataImportTemplate(object):
       else:
         string=string.replace('<'+tags[i]+'>', '')
     return string
-    
+

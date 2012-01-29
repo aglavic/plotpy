@@ -21,10 +21,11 @@ import config
 from config import gnuplot_preferences
 from config.gui import DOWNLOAD_PAGE_URL
 import file_actions
-from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, PrintDatasetDialog, \
-                    SimpleEntryDialog, DataView, PlotTree, FileImportDialog, StyleLine, ImportWizard
+from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, \
+                    PrintDatasetDialog, SimpleEntryDialog, DataView, PlotTree, \
+                    FileImportDialog, StyleLine, ImportWizard
 from multiplots import MultiplotCanvas
-from diverse_classes import MultiplotList, PlotProfile, RedirectError, RedirectOutput
+from diverse_classes import PlotProfile, RedirectError, RedirectOutput
 import read_data
 
 if not sys.platform.startswith('win'):
@@ -35,7 +36,7 @@ if not sys.platform.startswith('win'):
 __author__="Artur Glavic"
 __credits__=['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika',
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 def main_loop(session):
@@ -575,7 +576,7 @@ class ApplicationMainWindow(gtk.Window):
         os.mkdir(os.path.expanduser('~')+'/.plotting_gui')
       # ConfigObj config structure for profiles
       self.config_object['profiles']={}
-      for name, profile in self.profiles.items():
+      for ignore, profile in self.profiles.items():
         profile.write(self.config_object['profiles'])
       del self.config_object['profiles']['default']
       self.config_object['MouseMode']={
@@ -619,7 +620,6 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Show a dialog with the path to the config files.
     '''
-    import config
     dialog=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE,
                 message_format='The configuration files can be found at: \n%s'%
                                                             config.__path__[0])
@@ -939,18 +939,18 @@ class ApplicationMainWindow(gtk.Window):
       Change the active datafile for plotted sequences.
     '''
     index=int(action.get_name().split('-')[-1])
-    object=sorted(self.active_session.file_data.items())[index]
-    self.change_active_file_object(object)
+    measurements=sorted(self.active_session.file_data.items())[index]
+    self.change_active_file_object(measurements)
 
-  def change_active_file_object(self, object, index_mess=0):
+  def change_active_file_object(self, measurements, index_mess=0):
     '''
-      Change the active file object from which the plotted sequences are extracted.
+      Change the active file measurements from which the plotted sequences are extracted.
       
-      @param object A list of MeasurementData objects from one file
+      @param measurements A list of MeasurementData objects from one file
     '''
-    self.active_session.change_active(object)
+    self.active_session.change_active(measurements)
     self.measurement=self.active_session.active_file_data
-    self.input_file_name=object[0]
+    self.input_file_name=measurements[0]
     # reset index to the first sequence in that file
     self.index_mess=index_mess
     self.active_multiplot=False
@@ -971,7 +971,6 @@ class ApplicationMainWindow(gtk.Window):
       
       @return List of names that have been imported.
     '''
-    file_names=[]
     #++++++++++++++++File selection dialog+++++++++++++++++++#
     file_dialog=FileImportDialog(self.active_folder, self.active_session.FILE_WILDCARDS)
     file_names, folder, template, ascii_filter=file_dialog.run()
@@ -1008,12 +1007,12 @@ class ApplicationMainWindow(gtk.Window):
               self.active_session.change_active(name=file_name)
       elif ascii_filter==-2:
         session=self.active_session
-        # import with fitting filter
+        # import with fitting filter_
         for file_name in file_names:
           file_type=file_name.rsplit('.', 1)[1]
-          for filter in read_data.defined_filters:
-            if file_type in filter.file_types:
-              ds=filter.read_data(file_name)
+          for filter_ in read_data.defined_filters:
+            if file_type in filter_.file_types:
+              ds=filter_.read_data(file_name)
               ds=session.create_numbers(ds)
               session.add_data(ds, file_name, True)
               session.new_file_data_treatment(ds)
@@ -1021,22 +1020,22 @@ class ApplicationMainWindow(gtk.Window):
               session.active_file_name=file_name
               break
       else:
-        # import with new or selected filter
+        # import with new or selected filter_
         if ascii_filter==-1:
-          filter=self.new_ascii_import_filter(file_names[0])
-          if filter is None:
+          filter_=self.new_ascii_import_filter(file_names[0])
+          if filter_ is None:
             # Dialog was canceled
             if type(sys.stdout)!=file:
               sys.stdout.second_output=None
               if hide_status:
                 status_dialog.hide()
             return
-          read_data.append_filter(filter)
+          read_data.append_filter(filter_)
         else:
-          filter=read_data.defined_filters[ascii_filter]
+          filter_=read_data.defined_filters[ascii_filter]
         session=self.active_session
         for file_name in file_names:
-          ds=filter.read_data(file_name)
+          ds=filter_.read_data(file_name)
           ds=session.create_numbers(ds)
           session.add_data(ds, file_name, True)
           session.new_file_data_treatment(ds)
@@ -1118,18 +1117,18 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.set_select_multiple(False)
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
-      filter=gtk.FileFilter()
-      filter.set_name("Snapshots (*.mdd(.gz))")
-      filter.add_pattern("*.mdd")
-      filter.add_pattern("*.mdd.gz")
-      file_dialog.add_filter(filter)
+      filter_=gtk.FileFilter()
+      filter_.set_name("Snapshots (*.mdd(.gz))")
+      filter_.add_pattern("*.mdd")
+      filter_.add_pattern("*.mdd.gz")
+      file_dialog.add_filter(filter_)
       file_dialog.set_current_name(
             (multiplot.sample_name+'_'+multiplot.title+'.mdd').replace(' ', '')
                                   )
-      filter=gtk.FileFilter()
-      filter.set_name("All Files")
-      filter.add_pattern("*")
-      file_dialog.add_filter(filter)
+      filter_=gtk.FileFilter()
+      filter_.set_name("All Files")
+      filter_.add_pattern("*")
+      file_dialog.add_filter(filter_)
       response=file_dialog.run()
       if response==gtk.RESPONSE_OK:
         self.active_folder=file_dialog.get_current_folder()
@@ -1155,22 +1154,22 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
       if action.get_name()=='SaveSnapshotAs':
-        filter=gtk.FileFilter()
-        filter.set_name("Snapshots (*.mdd(.gz))")
-        filter.add_pattern("*.mdd")
-        filter.add_pattern("*.mdd.gz")
-        file_dialog.add_filter(filter)
+        filter_=gtk.FileFilter()
+        filter_.set_name("Snapshots (*.mdd(.gz))")
+        filter_.add_pattern("*.mdd")
+        filter_.add_pattern("*.mdd.gz")
+        file_dialog.add_filter(filter_)
         file_dialog.set_current_name(self.active_session.active_file_name+'.mdd')
       else:
-        filter=gtk.FileFilter()
-        filter.set_name("Numpy Archive (*.npz)")
-        filter.add_pattern("*.npz")
-        file_dialog.add_filter(filter)
+        filter_=gtk.FileFilter()
+        filter_.set_name("Numpy Archive (*.npz)")
+        filter_.add_pattern("*.npz")
+        file_dialog.add_filter(filter_)
         file_dialog.set_current_name(self.active_session.active_file_name+'.npz')
-      filter=gtk.FileFilter()
-      filter.set_name("All Files")
-      filter.add_pattern("*")
-      file_dialog.add_filter(filter)
+      filter_=gtk.FileFilter()
+      filter_.set_name("All Files")
+      filter_.add_pattern("*")
+      file_dialog.add_filter(filter_)
       response=file_dialog.run()
       if response==gtk.RESPONSE_OK:
         self.active_folder=file_dialog.get_current_folder()
@@ -1202,15 +1201,15 @@ class ApplicationMainWindow(gtk.Window):
       file_dialog.set_select_multiple(False)
       file_dialog.set_default_response(gtk.RESPONSE_OK)
       file_dialog.set_current_folder(self.active_folder)
-      filter=gtk.FileFilter()
-      filter.set_name("Snapshots (*.mdd(.gz))")
-      filter.add_pattern("*.mdd")
-      filter.add_pattern("*.mdd.gz")
-      file_dialog.add_filter(filter)
-      filter=gtk.FileFilter()
-      filter.set_name("All Files")
-      filter.add_pattern("*")
-      file_dialog.add_filter(filter)
+      filter_=gtk.FileFilter()
+      filter_.set_name("Snapshots (*.mdd(.gz))")
+      filter_.add_pattern("*.mdd")
+      filter_.add_pattern("*.mdd.gz")
+      file_dialog.add_filter(filter_)
+      filter_=gtk.FileFilter()
+      filter_.set_name("All Files")
+      filter_.add_pattern("*")
+      file_dialog.add_filter(filter_)
       response=file_dialog.run()
       if response==gtk.RESPONSE_OK:
         self.active_folder=file_dialog.get_current_folder()
@@ -1232,7 +1231,7 @@ class ApplicationMainWindow(gtk.Window):
 
   def change_range(self, action):
     '''
-      Change plotting range according to textinput.
+      Change plotting range_ according to textinput.
     '''
     # set the font size
     try:
@@ -1245,13 +1244,13 @@ class ApplicationMainWindow(gtk.Window):
     ranges_texts.append(self.x_range_in.get_text().lstrip('[').rstrip(']'))
     ranges_texts.append(self.y_range_in.get_text().lstrip('[').rstrip(']'))
     ranges_texts.append(self.z_range_in.get_text().lstrip('[').rstrip(']'))
-    for i, range in enumerate(ranges_texts):
-      if ':' in range:
-        ranges_texts[i]=range.replace(',', '.').split(':')
-      elif ',' in range:
-        ranges_texts[i]=range.split(',')
+    for i, range_ in enumerate(ranges_texts):
+      if ':' in range_:
+        ranges_texts[i]=range_.replace(',', '.').split(':')
+      elif ',' in range_:
+        ranges_texts[i]=range_.split(',')
       else:
-        ranges_texts[i]=range.strip().split()
+        ranges_texts[i]=range_.strip().split()
     xin=ranges_texts[0]
     yin=ranges_texts[1]
     zin=ranges_texts[2]
@@ -1481,10 +1480,10 @@ class ApplicationMainWindow(gtk.Window):
       gnuplot_preferences.plotting_parameters=plotting_parameters.get_text()
       gnuplot_preferences.plotting_parameters_errorbars=plotting_parameters_errorbars.get_text()
       gnuplot_preferences.plotting_parameters_3d=plotting_parameters_3d.get_text()
-      buffer=plotting_settings_3d.get_buffer()
-      gnuplot_preferences.settings_3d=buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
-      buffer=plotting_settings_3dmap.get_buffer()
-      gnuplot_preferences.settings_3dmap=buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
+      buffer_=plotting_settings_3d.get_buffer()
+      gnuplot_preferences.settings_3d=buffer_.get_text(buffer_.get_start_iter(), buffer_.get_end_iter())
+      buffer_=plotting_settings_3dmap.get_buffer()
+      gnuplot_preferences.settings_3dmap=buffer_.get_text(buffer_.get_start_iter(), buffer_.get_end_iter())
       self.replot() # plot with new settings
 
   def load_profile(self, action):
@@ -1508,7 +1507,7 @@ class ApplicationMainWindow(gtk.Window):
     name_entry.set_text('Enter Name')
     name_entry.set_width_chars(20)
     name_dialog.add_action_widget(name_entry, 1)
-    response=name_dialog.run()
+    name_dialog.run()
     name=name_entry.get_text()
     name_dialog.destroy()
     # add the profile to the profiles dictionary
@@ -1579,7 +1578,7 @@ class ApplicationMainWindow(gtk.Window):
                          self.active_session.active_file_name,
                          '',
                          self.active_dataset.short_info,
-                         [object.short_info for object in self.active_dataset.plot_together],
+                         [ds.short_info for ds in self.active_dataset.plot_together],
                          errorbars,
                          output_file=self.active_session.TEMP_DIR+'plot_temp.png',
                          fit_lorentz=False)
@@ -1805,11 +1804,12 @@ class ApplicationMainWindow(gtk.Window):
       self.rebuild_menus()
     transformations_dialog.destroy()
 
-  def get_new_transformation(self, transformations, dialog_table, list, units, dimensions):
+  def get_new_transformation(self, transformations, dialog_table,
+                             list_, units, dimensions):
     '''
       Create a entry field line for a unit transformation.
     '''
-    table=table=gtk.Table(11, 1, False)
+    table=gtk.Table(11, 1, False)
     entry_list=[]
     entry=gtk.Entry()
     entry.set_width_chars(10)
@@ -1927,7 +1927,7 @@ class ApplicationMainWindow(gtk.Window):
                 gtk.EXPAND|gtk.FILL, 0,
                 0, 0);
     item=(table, entry_list)
-    list.append(item)
+    list_.append(item)
     button=gtk.Button('DEL')
     table.attach(button,
                 # X direction #          # Y direction
@@ -1936,13 +1936,13 @@ class ApplicationMainWindow(gtk.Window):
                 0, 0);
     dialog_table.attach(table,
                 # X direction #          # Y direction
-                0, 1, len(list)-1, len(list),
+                0, 1, len(list_)-1, len(list_),
                 gtk.EXPAND|gtk.FILL, 0,
                 0, 0);
     table.show_all()
-    button.connect('activate', self.remove_transformation, item, table, list)
+    button.connect('activate', self.remove_transformation, item, table, list_)
 
-  def remove_transformation(self, action, item, table, list):
+  def remove_transformation(self, action, item, table, list_):
     '''
       Nothing jet.
     '''
@@ -2402,9 +2402,9 @@ class ApplicationMainWindow(gtk.Window):
       Dialog to select the options for interpolation and smoothing of 2d-data
       into a regular grid.
     '''
-    def int_or_none(input):
+    def int_or_none(input_):
       try:
-        return int(input)
+        return int(input_)
       except ValueError:
         return None
     parameters, result=SimpleEntryDialog('Interpolate to regular grid and smooth data...',
@@ -2435,9 +2435,9 @@ class ApplicationMainWindow(gtk.Window):
       Dialog to select the options for interpolation and smoothing of 2d-data
       into a regular grid.
     '''
-    def int_or_none(input):
+    def int_or_none(input_):
       try:
-        return int(input)
+        return int(input_)
       except ValueError:
         return None
     parameters, result=SimpleEntryDialog('Rebin regular gridded data...',
@@ -2834,7 +2834,6 @@ set multiplot layout %i,1
       logarithmic plotting and the custom plot settings.
     '''
     use_data=self.active_dataset
-    use_dim=use_data.dimensions()
     use_maxcol=max([use_data.xdata, use_data.ydata, use_data.zdata, use_data.yerror])
     selection_dialog=PreviewDialog(self.active_session.file_data, buttons=('Apply', 0, 'Cancel', 1))
     selection_dialog.set_preview_parameters(self.plot, self.active_session, self.active_session.TEMP_DIR+'plot_temp.png')
@@ -2951,14 +2950,14 @@ set multiplot layout %i,1
       else:
         file_dialog.set_current_name(os.path.split(self.active_session.active_file_name+'_.gp')[1])
       # create the filters in the file selection dialog
-      filter=gtk.FileFilter()
-      filter.set_name("Gnuplot (.gp)")
-      filter.add_pattern("*.gp")
-      file_dialog.add_filter(filter)
-      filter=gtk.FileFilter()
-      filter.set_name("All files")
-      filter.add_pattern("*")
-      file_dialog.add_filter(filter)
+      filter_=gtk.FileFilter()
+      filter_.set_name("Gnuplot (.gp)")
+      filter_.add_pattern("*.gp")
+      file_dialog.add_filter(filter_)
+      filter_=gtk.FileFilter()
+      filter_.set_name("All files")
+      filter_.add_pattern("*")
+      file_dialog.add_filter(filter_)
       # add to checkboxes if the picture should be created and if it should be .ps
       ps_box=gtk.CheckButton('Picture as Postscript', True)
       ps_box.show()
@@ -3019,7 +3018,7 @@ set multiplot layout %i,1
                            common_file_prefix,
                            '',
                            self.active_dataset.short_info,
-                           [object.short_info for object in self.active_dataset.plot_together],
+                           [ds.short_info for ds in self.active_dataset.plot_together],
                            errorbars,
                            output_file=common_file_prefix+picture_type,
                            fit_lorentz=False,
@@ -3041,7 +3040,7 @@ set multiplot layout %i,1
       write_file.write(plot_text+'\n')
       write_file.close()
       if pic_box.get_active():
-        proc=subprocess.Popen([self.active_session.GNUPLOT_COMMAND,
+        subprocess.call([self.active_session.GNUPLOT_COMMAND,
                          common_file_prefix+'.gp'],
                         shell=gnuplot_preferences.EMMULATE_SHELL,
                         creationflags=gnuplot_preferences.PROCESS_FLAGS,
@@ -3069,17 +3068,17 @@ set multiplot layout %i,1
       file_dialog.set_current_name(multi_file_name)
       file_dialog.set_current_folder(self.active_folder)
       # create the filters in the file selection dialog
-      filter=gtk.FileFilter()
-      filter.set_name("Images (png/ps)")
-      filter.add_mime_type("image/png")
-      filter.add_mime_type("image/ps")
-      filter.add_pattern("*.png")
-      filter.add_pattern("*.ps")
-      file_dialog.add_filter(filter)
-      filter=gtk.FileFilter()
-      filter.set_name("All files")
-      filter.add_pattern("*")
-      file_dialog.add_filter(filter)
+      filter_=gtk.FileFilter()
+      filter_.set_name("Images (png/ps)")
+      filter_.add_mime_type("image/png")
+      filter_.add_mime_type("image/ps")
+      filter_.add_pattern("*.png")
+      filter_.add_pattern("*.ps")
+      file_dialog.add_filter(filter_)
+      filter_=gtk.FileFilter()
+      filter_.set_name("All files")
+      filter_.add_pattern("*")
+      file_dialog.add_filter(filter_)
       response=file_dialog.run()
       if response==gtk.RESPONSE_OK:
         self.active_folder=file_dialog.get_current_folder()
@@ -3113,17 +3112,17 @@ set multiplot layout %i,1
         file_dialog.set_current_name(os.path.split(
                       self.input_file_name+'_'+self.active_dataset.number+'.'+self.set_file_type)[1])
         file_dialog.set_current_folder(self.active_folder)
-        filter=gtk.FileFilter()
-        filter.set_name("Images (png/ps)")
-        filter.add_mime_type("image/png")
-        filter.add_mime_type("image/ps")
-        filter.add_pattern("*.png")
-        filter.add_pattern("*.ps")
-        file_dialog.add_filter(filter)
-        filter=gtk.FileFilter()
-        filter.set_name("All files")
-        filter.add_pattern("*")
-        file_dialog.add_filter(filter)
+        filter_=gtk.FileFilter()
+        filter_.set_name("Images (png/ps)")
+        filter_.add_mime_type("image/png")
+        filter_.add_mime_type("image/ps")
+        filter_.add_pattern("*.png")
+        filter_.add_pattern("*.ps")
+        file_dialog.add_filter(filter_)
+        filter_=gtk.FileFilter()
+        filter_.set_name("All files")
+        filter_.add_pattern("*")
+        file_dialog.add_filter(filter_)
         # get hbox widget for the entries
         file_dialog.show_all()
         response=file_dialog.run()
@@ -3140,7 +3139,7 @@ set multiplot layout %i,1
                                     [self.active_dataset],
                                     self.input_file_name,
                                     self.active_dataset.short_info,
-                                    [object.short_info for object in self.active_dataset.plot_together],
+                                    [ds.short_info for ds in self.active_dataset.plot_together],
                                     errorbars,
                                     new_name,
                                     fit_lorentz=False)
@@ -3212,7 +3211,7 @@ set multiplot layout %i,1
                                       dataset.plot_together,
                                       file_name,
                                       dataset.short_info,
-                                      [object.short_info for object in dataset.plot_together],
+                                      [ds.short_info for ds in dataset.plot_together],
                                       errorbars,
                                       os.path.join(self.active_folder, naming),
                                       fit_lorentz=False)
@@ -3262,19 +3261,17 @@ set multiplot layout %i,1
       return
     PRINT_COMMAND=print_command
     if action.get_name()=='Print':
-      term='postscript landscape enhanced colour'
       self.last_plot_text=self.plot(self.active_session,
                                     [self.active_dataset],
                                     self.input_file_name,
                                     self.active_dataset.short_info,
-                                    [object.short_info for object in self.active_dataset.plot_together],
+                                    [ds.short_info for ds in self.active_dataset.plot_together],
                                     errorbars,
                                     output_file=self.active_session.TEMP_DIR+'plot_temp.ps',
                                     fit_lorentz=False)
       print 'Printing with: '+(print_command%self.active_session.TEMP_DIR+'plot_temp.ps')
       subprocess.call((print_command%self.active_session.TEMP_DIR+'plot_temp.ps').split())
     elif action.get_name()=='PrintAll':
-      term='postscript landscape enhanced colour'
       dialog=PreviewDialog(self.active_session.file_data, title='Select Plots for Printing...',
                            buttons=('OK', 1, 'Cancel', 0), parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
       dialog.set_default_size(800, 600)
@@ -3286,14 +3283,13 @@ set multiplot layout %i,1
       else:
         dialog.destroy()
         return
-      print_string=''
       combined_file=open(self.active_session.TEMP_DIR+'plot_temp.ps', 'w')
       for i, dataset in enumerate(plot_list): # combine all plot files in one print statement
         self.last_plot_text=self.plot(self.active_session,
                                       [dataset],
                                       self.input_file_name,
                                       dataset.short_info,
-                                      [object.short_info for object in dataset.plot_together],
+                                      [ds.short_info for ds in dataset.plot_together],
                                       errorbars,
                                       output_file=self.active_session.TEMP_DIR+'plot_temp_%i.ps'%i,
                                       fit_lorentz=False)
@@ -3356,8 +3352,8 @@ set multiplot layout %i,1
     response=message.run()
     if response==1:
       makro=file_actions.MakroRepr()
-      buffer=text.get_buffer()
-      makro_text=buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
+      buffer_=text.get_buffer()
+      makro_text=buffer_.get_text(buffer_.get_start_iter(), buffer_.get_end_iter())
       makro.from_string(makro_text)
       self.last_makro=makro
       self.file_actions.run_makro(makro)
@@ -3405,20 +3401,17 @@ set multiplot layout %i,1
     '''
     import IPython
     if IPython.__version__<'0.11':
-      from ipython_view import IPythonView, MenuWrapper, FitWrapper
+      from ipython_view import IPythonView, MenuWrapper, FitWrapper #@UnusedImport
       import IPython.ipapi as ipapi #@UnusedImport @UnresolvedImport
     else:
-      from ipython_view_new import IPythonView, MenuWrapper, FitWrapper
-      import IPython.core.ipapi as ipapi
+      from ipython_view_new import IPythonView, MenuWrapper, FitWrapper #@Reimport
+      import IPython.core.ipapi as ipapi #@Reimport
     import measurement_data_structure
     import pango
-    import sys
-    import numpy
     try:
       import scipy
     except ImportError:
       scipy=None
-    from copy import deepcopy
     from glob import glob
     from fit_data import register_function
 
@@ -3583,6 +3576,7 @@ set multiplot layout %i,1
                        'getxyz': getxyz,
                        'newxyz': newxyz,
                        'getall': getall,
+                       'glob': glob,
                        'newall': newall,
                        'mapdata': mapdata,
                        'mapall': mapall,
@@ -3666,13 +3660,13 @@ set multiplot layout %i,1
     self.open_windows.append(dialog)
     dialog.connect('response', self.dataview_response, unchanged_dataset)
 
-  def dataview_response(self, widget, id, unchanged_dataset):
+  def dataview_response(self, widget, id_, unchanged_dataset):
     '''
       Button on dataview pressed.
     '''
-    if id==0:
+    if id_==0:
       widget.destroy()
-    elif id==-1:
+    elif id_==-1:
       self.active_dataset=unchanged_dataset
       self.replot()
       widget.dataset=deepcopy(unchanged_dataset)
@@ -3684,7 +3678,6 @@ set multiplot layout %i,1
     '''
       Open a dialog to connect to IPython Cluster.
     '''
-    import config.parallel
     import parallel
     if parallel.dview is not None:
       parallel.disconnect()
@@ -3714,8 +3707,8 @@ set multiplot layout %i,1
     dialog.set_default_size(400, 600)
     entry=gtk.TextView()
     entry.show()
-    buffer=entry.get_buffer()
-    buffer.set_text(open(user_config.filename, 'r').read())
+    buffer_=entry.get_buffer()
+    buffer_.set_text(open(user_config.filename, 'r').read())
     sw=gtk.ScrolledWindow()
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
     sw.add_with_viewport(entry)
@@ -3723,7 +3716,7 @@ set multiplot layout %i,1
     dialog.vbox.add(sw)
     result=dialog.run()
     while result==1:
-      text=buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
+      text=buffer_.get_text(buffer_.get_start_iter(), buffer_.get_end_iter())
       try:
         tmpfile=os.path.join(self.active_session.TEMP_DIR, 'user_config.ini')
         open(tmpfile, 'w').write(text)
@@ -3868,7 +3861,7 @@ set multiplot layout %i,1
     if (self.config_object['Update']['Check'] and time()>self.config_object['Update']['NextCheck']) or action is not None:
       print "Checking for new Version."
       self.config_object['Update']['NextCheck']=time()+24.*60.*60
-      new_version=self.check_for_update_now()
+      self.check_for_update_now()
   #---------------------------Functions for initializing etc-----------------------------#
 
   #++++++++++++++Functions for displaying graphs plotting and status infos+++++++++++++++#
@@ -3880,7 +3873,7 @@ set multiplot layout %i,1
     # in windows we have to wait for the picture to be written to disk
     if self.active_session.OPERATING_SYSTEM=='windows':
       sleep(0.05)
-      for i in range(100):
+      for ignore in range(100):
         if os.path.exists(self.active_session.TEMP_DIR+'plot_temp.png'):
           if os.path.getsize(self.active_session.TEMP_DIR+'plot_temp.png')>1000:
             break
@@ -4181,8 +4174,8 @@ set multiplot layout %i,1
     '''
     position=self.image.get_pointer()
     img_size=self.image.get_allocation()
-    img_width=float(img_size[2]-img_size[0])
-    img_height=float(img_size[3]-img_size[1])
+    #img_width=float(img_size[2]-img_size[0])
+    #img_height=float(img_size[3]-img_size[1])
     mr, pr=self.mouse_data_range
     if mr[1]==0. or mr[3]==0.:
       return None
@@ -4271,32 +4264,27 @@ set multiplot layout %i,1
       Open a persistent gnuplot window.
     '''
     global errorbars
-    i=0
     if self.active_multiplot:
-      for plotlist in self.multiplot:
-        itemlist=[item[0] for item in plotlist]
-        if self.active_dataset in itemlist:
-          self.last_plot_text=self.plot(self.active_session,
-                                        [item[0] for item in plotlist],
-                                        plotlist[0][1],
-                                        #plotlist[0][0].short_info,
-                                        plotlist.title,
-                                        [item[0].short_info for item in plotlist],
-                                        errorbars,
-                                        self.active_session.TEMP_DIR+'plot_temp.png',
-                                        fit_lorentz=False,
-                                        sample_name=plotlist.sample_name,
-                                        show_persistent=True)
+      multiplot=self.multiplot
+      itemlist=[item[0] for item in multiplot]
+      self.last_plot_text=self.plot(self.active_session,
+                                    itemlist,
+                                    multiplot[0][1],
+                                    multiplot.title,
+                                    [item.short_info for item in itemlist],
+                                    errorbars,
+                                    output_file=self.active_session.TEMP_DIR+'plot_temp.png',
+                                    fit_lorentz=False,
+                                    #sample_name=multiplot.sample_name,
+                                    show_persistent=True)
     else:
-      self.label.set_width_chars(30)
       self.label.set_text(self.active_dataset.sample_name)
-      self.label2.set_width_chars(30)
       self.label2.set_text(self.active_dataset.short_info)
       self.last_plot_text=self.plot(self.active_session,
                                   [self.active_dataset],
                                   self.input_file_name,
                                   self.active_dataset.short_info,
-                                  [object.short_info for object in self.active_dataset.plot_together],
+                                  [ds.short_info for ds in self.active_dataset.plot_together],
                                   errorbars,
                                   output_file=self.active_session.TEMP_DIR+'plot_temp.png',
                                   fit_lorentz=False,
@@ -4384,14 +4372,14 @@ set multiplot layout %i,1
       options=self.active_dataset.plot_options
       # If the dataset has ranges but the input settings are empty, fill them
       if (self.x_range_in.get_text()=="") and ((options.xrange[0] is not None) or (options.xrange[1] is not None)):
-        range=str(options.xrange[0])+':'+str(options.xrange[1])
-        self.x_range_in.set_text(range.replace('None', ''))
+        range_x=str(options.xrange[0])+':'+str(options.xrange[1])
+        self.x_range_in.set_text(range_x.replace('None', ''))
       if (self.y_range_in.get_text()=="") and ((options.yrange[0] is not None) or (options.yrange[1] is not None)):
-        range=str(options.yrange[0])+':'+str(options.yrange[1])
-        self.y_range_in.set_text(range.replace('None', ''))
+        range_y=str(options.yrange[0])+':'+str(options.yrange[1])
+        self.y_range_in.set_text(range_y.replace('None', ''))
       if (self.z_range_in.get_text()=="") and ((options.zrange[0] is not None) or (options.zrange[1] is not None)):
-        range=str(options.zrange[0])+':'+str(options.zrange[1])
-        self.z_range_in.set_text(range.replace('None', ''))
+        range_z=str(options.zrange[0])+':'+str(options.zrange[1])
+        self.z_range_in.set_text(range_z.replace('None', ''))
     # make sure the change is ignored
     self._ignore_change=True
     self.logx.set_active(logitems.logx)
@@ -4433,7 +4421,7 @@ set multiplot layout %i,1
                                   [self.active_dataset],
                                   self.input_file_name,
                                   self.active_dataset.short_info,
-                                  [object.short_info for object in self.active_dataset.plot_together],
+                                  [ds.short_info for ds in self.active_dataset.plot_together],
                                   errorbars,
                                   output_file=self.active_session.TEMP_DIR+'plot_temp.png',
                                   fit_lorentz=False)
@@ -4555,7 +4543,7 @@ set multiplot layout %i,1
       </menu>
       <menu action='FilesMenu'>
       '''
-    for i, name in enumerate([object[0] for object in sorted(self.active_session.file_data.items())]):
+    for i, name in enumerate([ds[0] for ds in sorted(self.active_session.file_data.items())]):
       output+="        <menuitem action='File-"+str(i)+"'/>\n"
       self.added_items+=(("File-"+str(i), None,
                           os.path.split(name)[1],

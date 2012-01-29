@@ -5,13 +5,14 @@
 
 import os
 import gzip
+import numpy
 
 from measurement_data_structure import MeasurementData, PhysicalProperty
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Development"
 
 
 class GenericFileReader(object):
@@ -22,7 +23,7 @@ class GenericFileReader(object):
     The data readout is focused on readability and to be general,
     not on speed.
   '''
-  
+
   # global options for the readout
   header_lines=None             # default is auto
   sequence_splitting=None       # read just one sequence
@@ -31,31 +32,31 @@ class GenericFileReader(object):
                                 # are ignored for data readout, in header they are used
   column_names=None             # List of names for each column or None
   column_units=None
-  
+
   def __init__(self, **opts):
     '''
       Create a new file reader with optional supplied settings.
     '''
     for general_setting in [
-                'header_lines', 
-                'sequence_splitting', 
-                'column_seperator', 
-                'comment_characters', 
-                'column_names', 
-                'column_units', 
+                'header_lines',
+                'sequence_splitting',
+                'column_seperator',
+                'comment_characters',
+                'column_names',
+                'column_units',
                             ]:
       if general_setting in opts:
         setattr(self, general_setting, opts[general_setting])
     self.file_text=''
     self.header=''
     self.data=''
-  
+
   def read_file_data(self, file_object):
     '''
       Read the data of a textfile, gziped textfile or open filelike object.
     '''
     if type(object) in [str, unicode]:
-      if not os.file.exists(file_object):
+      if not os.path.exists(file_object):
         return False
       if object.endswith('.gz'):
         self.file_text=gzip.open(object, 'r').read()
@@ -64,7 +65,7 @@ class GenericFileReader(object):
     else:
       self.file_text=file_object.read()
     return True
-  
+
   def split_header(self):
     '''
       Split the current data into header and data part.
@@ -91,7 +92,7 @@ class GenericFileReader(object):
       self.header=text_lines[:header_lines]
       self.data=text_lines[header_lines:]
       return True
-  
+
   def get_data(self):
     '''
       Extract columns from the data.

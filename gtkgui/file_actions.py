@@ -10,7 +10,7 @@ from measurement_data_structure import MeasurementData, PhysicalProperty, Physic
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Development"
 
 class FileActions:
@@ -109,7 +109,7 @@ class FileActions:
     '''
     conf=ConfigObj(unrepr=True)
     for i, action in enumerate(self.history[from_index:to_index]):
-     conf[str(i)]=action
+      conf[str(i)]=action
     output=MakroRepr()
     conf.write(output)
     return output

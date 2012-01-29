@@ -67,7 +67,7 @@ if not "--nolimit" in sys.argv:
     import resource
     # Maximum memeroy usage is GiB, otherwise the program could cause
     # the system to hang dew to excessive swap memory access
-    resource.setrlimit(resource.RLIMIT_AS, (2*1024**3,2*1024**3))
+    resource.setrlimit(resource.RLIMIT_AS, (2*1024**3, 2*1024**3))
   except ImportError:
     pass
 
@@ -83,10 +83,10 @@ if not "--nolimit" in sys.argv:
 #except AttributeError:
   #sys.setappdefaultencoding('utf8')
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__status__="Production"
 
 
 '''
@@ -98,20 +98,20 @@ __status__ = "Production"
   the session.
 '''
 known_measurement_types={
-                         'squid': ('squid', 'SquidSession', ['dat', 'raw', 'DAT', 'RAW'], []), 
-                         '4circle': ('circle', 'CircleSession', ['spec'], []), 
-                         'p09': ('circle', 'CircleSession', ['fio'], []), 
-                         'refl': ('reflectometer', 'ReflectometerSession', ['UXD', 'uxd', 'xrdml'], []), 
-                         'treff': ('treff', 'TreffSession', ['___'], []), 
-                         'maria': ('treff', 'TreffSession', ['___'], ['-maria']), 
-                         'in12': ('in12', 'IN12Session', ['___'], []), 
-                         'dns': ('dns', 'DNSSession', ['d_dat'], []), 
-                         'kws2': ('kws2', 'KWS2Session', ['DAT'], []),                         
-                         'sas': ('sas', 'SASSession', ['___'], []),                         
+                         'squid': ('squid', 'SquidSession', ['dat', 'raw', 'DAT', 'RAW'], []),
+                         '4circle': ('circle', 'CircleSession', ['spec'], []),
+                         'p09': ('circle', 'CircleSession', ['fio'], []),
+                         'refl': ('reflectometer', 'ReflectometerSession', ['UXD', 'uxd', 'xrdml'], []),
+                         'treff': ('treff', 'TreffSession', ['___'], []),
+                         'maria': ('treff', 'TreffSession', ['___'], ['-maria']),
+                         'in12': ('in12', 'IN12Session', ['___'], []),
+                         'dns': ('dns', 'DNSSession', ['d_dat'], []),
+                         'kws2': ('kws2', 'KWS2Session', ['DAT'], []),
+                         'sas': ('sas', 'SASSession', ['___'], []),
                          'gisas': ('kws2', 'KWS2Session', ['DAT', 'edf', 'cmb', 'tif', 'bmp'], []),
-                         'shg': ('shg', 'SHGSession', ['par'], []),                         
+                         'shg': ('shg', 'SHGSession', ['par'], []),
                          #'scd': ('single_diff', 'SingleDiffSession', ['___']), 
-                         'generic': ('generic', 'GenericSession', ['___'], []), 
+                         'generic': ('generic', 'GenericSession', ['___'], []),
                          }
 
 '''
@@ -141,7 +141,7 @@ def import_session_from_name(arguments, measurement_type):
     else:
       new_args.append(item)
   arguments=new_args
-  active_session_class = getattr(__import__('sessions.'+measurement_type[0], {}, {}, 
+  active_session_class=getattr(__import__('sessions.'+measurement_type[0], {}, {},
                                       [measurement_type[1]]), measurement_type[1])
   return active_session_class(arguments)
 
@@ -151,11 +151,11 @@ def import_session_from_module_info(module_info, arguments):
     
     @return The class instance for the measurement type
   '''
-  active_session_class = getattr(__import__(module_info[0], {}, {}, 
+  active_session_class=getattr(__import__(module_info[0], {}, {},
                                       [module_info[1]]), module_info[1])
   return active_session_class(arguments)
 
-def initialize(arguments):  
+def initialize(arguments):
   ''' 
     initialize session and read data files 
   '''
@@ -170,7 +170,7 @@ def initialize(arguments):
     warnings.simplefilter('ignore')
   # parent class
   from sessions.generic import GenericSession, read_full_snapshot
-  if (len(arguments) == 0):
+  if (len(arguments)==0):
     # if no input parameter given, print the short help string
     #print GenericSession.SHORT_HELP
     #exit()
@@ -183,7 +183,7 @@ def initialize(arguments):
     # open a snapshot with automatic session detection:
     data, file_name, module_info=read_full_snapshot(arguments[0])
     active_session=import_session_from_module_info(module_info, arguments[1:])
-    print "Starting session type read from snapshot: %s" % module_info[1]
+    print "Starting session type read from snapshot: %s"%module_info[1]
     active_session.file_data[file_name]=data
     active_session.active_file_data=data
     active_session.active_file_name=file_name
@@ -195,7 +195,7 @@ def initialize(arguments):
         break
       for suffix in measurement_type[2]:
         if suffix in suffixes:
-          print "Setting session type to " + name + '.'
+          print "Setting session type to "+name+'.'
           active_session=import_session_from_name(arguments+measurement_type[3], measurement_type)
           found_sessiontype=True
           break
@@ -214,13 +214,13 @@ def initialize_gui_toolkit():
     toolkit=sys.argv.pop(idx)
     if toolkit in ['gtk', 'wx']:
       config.gui.toolkit=toolkit
-      print "Setting GUI toolkit to %s." % toolkit
+      print "Setting GUI toolkit to %s."%toolkit
   if config.gui.toolkit=='wx':
     sys.argv.append('--debug')
   global gui_main, status_dialog
-  gui_main=__import__( config.gui.toolkit+'gui.main_window' , fromlist=["main_window"])
+  gui_main=__import__(config.gui.toolkit+'gui.main_window' , fromlist=["main_window"])
   if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
-    dialogs=__import__( config.gui.toolkit+'gui.dialogs' , fromlist=["dialogs"])
+    dialogs=__import__(config.gui.toolkit+'gui.dialogs' , fromlist=["dialogs"])
     status_dialog=dialogs.connect_stdout_dialog()
   else:
     status_dialog=None
@@ -264,22 +264,22 @@ def ipdrop(session):
   from glob import glob
   index_mess=0
   errorbars=False
-  
+
   autoplot=True
   # convenience functions
   def plot(ds, output_file):
-    result=mdp.gnuplot_plot_script(session, 
+    result=mdp.gnuplot_plot_script(session,
                            [ds],
-                           'temp_plot', 
-                           '.png', 
+                           'temp_plot',
+                           '.png',
                            ds.sample_name+ds.short_info,
                            [ds.short_info],
                            errorbars,
-                           output_file, 
-                           sample_name=ds.sample_name) 
+                           output_file,
+                           sample_name=ds.sample_name)
     if result!=('', []):
       print result[0]
-    
+
   def replot(index=None):
     if index is None:
       index=_user_namespace['index_mess']
@@ -291,7 +291,7 @@ def ipdrop(session):
   def select_file(name=None):
     # change the active plotted file
     if name is None:
-      print "\n".join(["% 3i: %s" % item for item in enumerate(sorted(session.file_data.keys()))])
+      print "\n".join(["% 3i: %s"%item for item in enumerate(sorted(session.file_data.keys()))])
       index=int(raw_input('\tSelect new active file: '))
       name=sorted(session.file_data.keys())[index]
     session.active_file_data=session.file_data[name]
@@ -321,10 +321,10 @@ def ipdrop(session):
     # return active dataset
     return session.active_file_data[_user_namespace['index_mess']]
   class plot_gui:
-    def rebuild_menus():
+    def rebuild_menus(self):
       pass
-    
-  
+
+
   _user_namespace={
                          }
   _user_namespace.update(locals())
@@ -334,27 +334,40 @@ def ipdrop(session):
   items=filter(lambda item: item.startswith('plot_script'), sys.modules.keys())
   for item in items:
     del(sys.modules[item])
-  
+
   session.initialize_gnuplot()
   gnuplot_version, terminals=mdp.check_gnuplot_version(session)
-  if not sys.platform == 'darwin' and 'pngcairo' in terminals:
+  if not sys.platform=='darwin' and 'pngcairo' in terminals:
     config.gnuplot_preferences.set_output_terminal_png=config.gnuplot_preferences.set_output_terminal_pngcairo
   if not 'wxt' in terminals and 'x11' in terminals:
     # if no wxt support is compiled
     config.gnuplot_preferences.set_output_terminal_wxt=config.gnuplot_preferences.set_output_terminal_x11
   import IPython
-  if IPython.__version__ <'0.11':
-    import IPython.Shell
-    shell = IPython.Shell.IPShellEmbed(argv='', banner='', user_ns=_user_namespace)
+  banner='''
+    This is an IPython console with access to Plot.py namespace.
+    You can get access on help about objects with "object?".
+    Special plot.py functions:
+      plot(dataset, output_file) # export a plot to an image file
+      replot(index=None) # show a gnuplot interactive plot of the selected dataset
+      select_file(name=none) # select a loaded file and plot it, None shows the selectoin
+      read_file(file_name) # import a data file
+      next(rel=1) # move the selection in the active file
+      logy() # set y-scale to log
+      dataset() # return the active dataset object
+  '''
+  if IPython.__version__<'0.11':
+    import IPython.Shell #@UnresolvedImport
+    shell=IPython.Shell.IPShellEmbed(argv='', banner='', user_ns=_user_namespace)
     if len(session.ipython_commands)>0:
       # exectue commands
       shell.IP.runlines("\n".join(session.ipython_commands))
     shell(header='')
   else:
     from IPython.frontend.terminal.embed import InteractiveShellEmbed
-    shell = InteractiveShellEmbed(user_ns=_user_namespace)
+    shell=InteractiveShellEmbed(user_ns=_user_namespace,
+                                banner1=banner, display_banner=True)
     shell()
-  
+
 
 def _run():
   '''
@@ -384,5 +397,5 @@ def _run():
   else:
     active_session.os_cleanup()
 
-if __name__ == '__main__':    #code to execute if called from command-line
+if __name__=='__main__':    #code to execute if called from command-line
   _run()

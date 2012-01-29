@@ -6,10 +6,10 @@
 from math import pi
 import numpy
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__status__="Development"
 
 # map of line/column indices for the detector raw data files (256*256 points)
 DETECTOR_PIXELS=256
@@ -25,12 +25,12 @@ GRAD_TO_MRAD=pi/180.*1000.
 GRAD_TO_RAD=pi/180.
 
 # Files to combine for the pnr_multi.f90 program
-PROGRAM_FILES=[ 'fit_pnr_mult_newcons.f90', 
-                'levenberg_rough_newcons_treff.f90', 
-                'param_mult.f90', 
-                'polref_sp_rough.f90', 
-                'read_mrad_sim_rough_treff.f90', 
-                'refconv_illu.f90', 
+PROGRAM_FILES=[ 'fit_pnr_mult_newcons.f90',
+                'levenberg_rough_newcons_treff.f90',
+                'param_mult.f90',
+                'polref_sp_rough.f90',
+                'read_mrad_sim_rough_treff.f90',
+                'refconv_illu.f90',
                 'calchi_treff.f90']
 PROGRAM_PARAMETER_FILE='parameters_module.f90'
 REF_FILE_ENDINGS=['uu', 'dd', 'ud', 'du']
@@ -39,17 +39,17 @@ RESULT_FILE='result'
 
 # D17 Instrument options
 # Correction fiels
-D17_CALIBRATION_FILES={'water': None,#"/home/glavic/tmp/d17/Water/016295",  
-                       'transmission': None,#"/home/glavic/tmp/d17/transmission/025258"
+D17_CALIBRATION_FILES={'water': None, #"/home/glavic/tmp/d17/Water/016295",  
+                       'transmission': None, #"/home/glavic/tmp/d17/transmission/025258"
                        }
 # Lower and Upper Bounds of the detector to use
 D17_MASK_BOUNDS_Y=(20, 51)
 D17_MASK_BOUNDS_X=(28, 237)
 # Define the integration mask of the detector, a 64x265 matrix of 0 and 1
 D17_MASK=None #((numpy.zeros((64, 256))+1).transpose()*numpy.where((numpy.arange(0, 64)>=D17_MASK_BOUNDS_Y[0])*\
-               #     (numpy.arange(0, 64)<=D17_MASK_BOUNDS_Y[1]), 1., 0.)).transpose()*\
-               #     numpy.where((numpy.arange(0, 256)>=D17_MASK_BOUNDS_X[0])*\
-               #     (numpy.arange(0, 256)<=D17_MASK_BOUNDS_X[1]), 1., 0.)
+              #     (numpy.arange(0, 64)<=D17_MASK_BOUNDS_Y[1]), 1., 0.)).transpose()*\
+              #     numpy.where((numpy.arange(0, 256)>=D17_MASK_BOUNDS_X[0])*\
+              #     (numpy.arange(0, 256)<=D17_MASK_BOUNDS_X[1]), 1., 0.)
 D17_PIXEL_SIZE=0.02225 # °
 D17_CENTER_OFFSET=0.18846#0.225 # °
 # compiler settings for fortran

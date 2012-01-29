@@ -79,7 +79,7 @@ class MeasurementData(object):
   view_z=30
   filters=[]  # a list of filters to be applied when returning the data, the format is:
               # ( column , from , to , include )
-  SPLIT_SENSITIVITY=0.05
+  SPLIT_SENSITIVITY=0.01
   is_matrix_data=False
   plot_together_zindex=0
   fit_object=None

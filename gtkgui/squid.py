@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 '''
   SQUID GTK GUI class.
-''' 
+'''
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
@@ -12,17 +12,17 @@ from measurement_data_structure import PhysicalConstant
 #----------------------- importing modules --------------------------
 
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Production"
 
 
 class SquidGUI:
   '''
     Squid GUI functions for the GTK toolkit.
   '''
-  
+
   def create_menu(self):
     '''
       create a specifig menu for the squid session
@@ -38,28 +38,28 @@ class SquidGUI:
     # Create actions for the menu, functions are invoked with the window as
     # third parameter to make interactivity with the GUI possible
     actions=(
-            ( "SquidMenu", None,                             # name, stock id
-                "SQUID", None,                    # label, accelerator
-                None,                                   # tooltip
-                None ),
-            ( "SquidDiaPara", None,                             # name, stock id
-                "_Dia-/Paramagnetic Correction...", "<control>d",                    # label, accelerator
-                None,                                   # tooltip
-                self.dia_para_dialog ),
-            ( "SquidExtractRaw", None,                             # name, stock id
-                "Extract magnetic moment", None,                    # label, accelerator
-                None,                                   # tooltip
-                self.calc_moment_from_rawdata ),
-            ( "SubtractDataset", None,                             # name, stock id
-                "Subtract another dataset...", None,                    # label, accelerator
-                None,                                   # tooltip
-                self.subtract_dataset ),
+            ("SquidMenu", None, # name, stock id
+                "SQUID", None, # label, accelerator
+                None, # tooltip
+                None),
+            ("SquidDiaPara", None, # name, stock id
+                "_Dia-/Paramagnetic Correction...", "<control>d", # label, accelerator
+                None, # tooltip
+                self.dia_para_dialog),
+            ("SquidExtractRaw", None, # name, stock id
+                "Extract magnetic moment", None, # label, accelerator
+                None, # tooltip
+                self.calc_moment_from_rawdata),
+            ("SubtractDataset", None, # name, stock id
+                "Subtract another dataset...", None, # label, accelerator
+                None, # tooltip
+                self.subtract_dataset),
              )
-    return string,  actions
-  
-   #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
-  
-  def dia_para_dialog(self, action, window):
+    return string, actions
+
+  #++++++++++++++++++++++++++ GUI functions ++++++++++++++++++++++++++++++++
+
+  def __old_dia_para_dialog(self, action, window):
     '''
       A dialog to enter the diamagnetic and paramagnetic correction.
       Diamagnetic correction can be calculated from a fit to the
@@ -75,7 +75,7 @@ class SquidGUI:
     if 'A·m^2' in units:
       dia=dia/1e3
       para=para/1e3
-    dialog=gtk.Dialog(title="Enter diamagnetic and paramagnetic correction factors:", 
+    dialog=gtk.Dialog(title="Enter diamagnetic and paramagnetic correction factors:",
                       parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
     # create a table with the entries
     table=gtk.Table(4, 4, False)
@@ -83,76 +83,76 @@ class SquidGUI:
                         "the data will then be correct as: NEWDATA=DATA - PARA * 1/T + DIA.\n\n")
     table.attach(top_label,
                 # X direction #          # Y direction
-                0, 3,                      0, 1,
-                0,                       gtk.FILL|gtk.EXPAND,
-                0,                         0)
+                0, 3, 0, 1,
+                0, gtk.FILL|gtk.EXPAND,
+                0, 0)
     label=gtk.Label("Diamagnetic Correction: ")
     table.attach(label,
                 # X direction #          # Y direction
-                0, 2,                      1, 2,
-                0,                       gtk.FILL,
-                0,                         0)
+                0, 2, 1, 2,
+                0, gtk.FILL,
+                0, 0)
     dia_entry=gtk.Entry()
     dia_entry.set_text(str(dia))
     table.attach(dia_entry,
                 # X direction #          # Y direction
-                2, 4,                      1, 2,
-                0,                       gtk.FILL,
-                0,                         0)
-    
+                2, 4, 1, 2,
+                0, gtk.FILL,
+                0, 0)
+
     fit_button=gtk.Button("Fit asymptotes")
     table.attach(fit_button,
                 # X direction #          # Y direction
-                0, 1,                      2, 3,
-                0,                       gtk.FILL,
-                0,                         0)
+                0, 1, 2, 3,
+                0, gtk.FILL,
+                0, 0)
     label=gtk.Label("of MvsH measurement, excluding ±")
     table.attach(label,
                 # X direction #          # Y direction
-                1, 2,                      2, 3,
-                gtk.FILL,                       gtk.FILL,
-                0,                         0)
+                1, 2, 2, 3,
+                gtk.FILL, gtk.FILL,
+                0, 0)
     fit_exclude_regtion=gtk.Entry()
     fit_exclude_regtion.set_width_chars(4)
     fit_exclude_regtion.set_text("1")
     table.attach(fit_exclude_regtion,
                 # X direction #          # Y direction
-                2, 3,                      2, 3,
-                0,                       gtk.FILL,
-                0,                         0)
+                2, 3, 2, 3,
+                0, gtk.FILL,
+                0, 0)
     ignore_errors=gtk.CheckButton("ignore errors")
     table.attach(ignore_errors,
                 # X direction #          # Y direction
-                3, 4,                      2, 3,
-                0,                       gtk.FILL,
-                0,                         0)
-    
+                3, 4, 2, 3,
+                0, gtk.FILL,
+                0, 0)
+
     label=gtk.Label("Paramagnetic Correction: ")
     table.attach(label,
                 # X direction #          # Y direction
-                0, 2,                      3, 4,
-                0,                       gtk.FILL,
-                0,                         0)
+                0, 2, 3, 4,
+                0, gtk.FILL,
+                0, 0)
     para_entry=gtk.Entry()
     para_entry.set_text(str(para))
     table.attach(para_entry,
                 # X direction #          # Y direction
-                2, 4,                      3, 4,
-                0,                       gtk.FILL,
-                0,                         0)
+                2, 4, 3, 4,
+                0, gtk.FILL,
+                0, 0)
     # insert the table and buttons to the dialog
     dialog.vbox.add(table)
     dialog.add_button("OK", 2)
     dialog.add_button("Apply", 1)
     dialog.add_button("Cancel", 0)
-    fit_button.connect("clicked", lambda *ignore: dialog.response(3))
-    fit_exclude_regtion.connect("activate", lambda *ignore: dialog.response(3))
-    dia_entry.connect("activate", lambda *ignore: dialog.response(2))
-    para_entry.connect("activate", lambda *ignore: dialog.response(2))
+    fit_button.connect("clicked", lambda*ignore: dialog.response(3))
+    fit_exclude_regtion.connect("activate", lambda*ignore: dialog.response(3))
+    dia_entry.connect("activate", lambda*ignore: dialog.response(2))
+    para_entry.connect("activate", lambda*ignore: dialog.response(2))
     dialog.show_all()
     dialog.connect("response", self.dia_para_response, window, [dia_entry, para_entry, fit_exclude_regtion, ignore_errors])
-  
-  def dia_para_response(self, dialog, response, window, entries):
+
+  def __old_dia_para_response(self, dialog, response, window, entries):
     '''
       Evaluate the response of the dialog from dia_para_dialog.
     '''
@@ -167,10 +167,10 @@ class SquidGUI:
         dia=dia/1e3
         para=para/1e3
       dia=PhysicalConstant(dia, 'A·m^2/T')
-      para=PhysicalConstant(para, 'K·A·m^2/T')        
-      self.dia_para_correction(window.measurement[window.index_mess], 
+      para=PhysicalConstant(para, 'K·A·m^2/T')
+      self.dia_para_correction(window.measurement[window.index_mess],
                                dia, para)
-      window.replot()      
+      window.replot()
       dialog.destroy()
       return None
     try:
@@ -198,17 +198,17 @@ class SquidGUI:
         self.dia_para_correction(dataset, dia , para)
         fit=FitDiamagnetism(([0., 0, 0, split]))
         if not entries[3].get_active():
-          fit.refine(dataset.x, 
-                     dataset.y, 
+          fit.refine(dataset.x,
+                     dataset.y,
                      dataset.y.error)
         else:
-          fit.refine(dataset.x, 
+          fit.refine(dataset.x,
                      dataset.y)
         entries[0].set_text(str(-fit.parameters[0]))
       return None
     if response>0:
       dia=PhysicalConstant(dia, 'A·m^2/T')
-      para=PhysicalConstant(para, 'K·A·m^2/T')        
+      para=PhysicalConstant(para, 'K·A·m^2/T')
       self.dia_para_correction(window.measurement[window.index_mess], dia, para)
       window.replot()
     if response==2:
@@ -219,12 +219,12 @@ class SquidGUI:
         para=para/1e4
       if 'A·m^2' in units:
         dia=dia*1e3
-        para=para*1e3      
+        para=para*1e3
       self.dia_mag_correct=dia
       self.para[0]=para
       dialog.destroy()
-    
-  
+
+
   def dia_para_dialog(self, action, window):
     '''
       A dialog to enter the diamagnetic and paramagnetic correction.
@@ -241,7 +241,7 @@ class SquidGUI:
     if 'A·m^2' in units:
       dia=dia/1e3
       para=para/1e3
-    dialog=gtk.Dialog(title="Enter diamagnetic and paramagnetic correction factors:", 
+    dialog=gtk.Dialog(title="Enter diamagnetic and paramagnetic correction factors:",
                       parent=window, flags=gtk.DIALOG_DESTROY_WITH_PARENT)
     # create a table with the entries
     table=gtk.Table(4, 4, False)
@@ -249,75 +249,75 @@ class SquidGUI:
                         "the data will then be correct as: NEWDATA=DATA - PARA * 1/T + DIA.\n\n")
     table.attach(top_label,
                 # X direction #          # Y direction
-                0, 3,                      0, 1,
-                0,                       gtk.FILL|gtk.EXPAND,
-                0,                         0)
+                0, 3, 0, 1,
+                0, gtk.FILL|gtk.EXPAND,
+                0, 0)
     label=gtk.Label("Diamagnetic Correction: ")
     table.attach(label,
                 # X direction #          # Y direction
-                0, 2,                      1, 2,
-                0,                       gtk.FILL,
-                0,                         0)
+                0, 2, 1, 2,
+                0, gtk.FILL,
+                0, 0)
     dia_entry=gtk.Entry()
     dia_entry.set_text(str(float(dia)))
     table.attach(dia_entry,
                 # X direction #          # Y direction
-                2, 4,                      1, 2,
-                0,                       gtk.FILL,
-                0,                         0)
-    
+                2, 4, 1, 2,
+                0, gtk.FILL,
+                0, 0)
+
     fit_button=gtk.Button("Fit asymptotes")
     table.attach(fit_button,
                 # X direction #          # Y direction
-                0, 1,                      2, 3,
-                0,                       gtk.FILL,
-                0,                         0)
+                0, 1, 2, 3,
+                0, gtk.FILL,
+                0, 0)
     label=gtk.Label("of MvsH measurement, excluding ±")
     table.attach(label,
                 # X direction #          # Y direction
-                1, 2,                      2, 3,
-                gtk.FILL,                       gtk.FILL,
-                0,                         0)
+                1, 2, 2, 3,
+                gtk.FILL, gtk.FILL,
+                0, 0)
     fit_exclude_regtion=gtk.Entry()
     fit_exclude_regtion.set_width_chars(4)
     fit_exclude_regtion.set_text("1")
     table.attach(fit_exclude_regtion,
                 # X direction #          # Y direction
-                2, 3,                      2, 3,
-                0,                       gtk.FILL,
-                0,                         0)
+                2, 3, 2, 3,
+                0, gtk.FILL,
+                0, 0)
     ignore_errors=gtk.CheckButton("ignore errors")
     table.attach(ignore_errors,
                 # X direction #          # Y direction
-                3, 4,                      2, 3,
-                0,                       gtk.FILL,
-                0,                         0)
-    
+                3, 4, 2, 3,
+                0, gtk.FILL,
+                0, 0)
+
     label=gtk.Label("Paramagnetic Correction: ")
     table.attach(label,
                 # X direction #          # Y direction
-                0, 2,                      3, 4,
-                0,                       gtk.FILL,
-                0,                         0)
+                0, 2, 3, 4,
+                0, gtk.FILL,
+                0, 0)
     para_entry=gtk.Entry()
     para_entry.set_text(str(float(para)))
     table.attach(para_entry,
                 # X direction #          # Y direction
-                2, 4,                      3, 4,
-                0,                       gtk.FILL,
-                0,                         0)
+                2, 4, 3, 4,
+                0, gtk.FILL,
+                0, 0)
     # insert the table and buttons to the dialog
     dialog.vbox.add(table)
     dialog.add_button("OK", 2)
     dialog.add_button("Apply", 1)
     dialog.add_button("Cancel", 0)
-    fit_button.connect("clicked", lambda *ignore: dialog.response(3))
-    fit_exclude_regtion.connect("activate", lambda *ignore: dialog.response(3))
-    dia_entry.connect("activate", lambda *ignore: dialog.response(2))
-    para_entry.connect("activate", lambda *ignore: dialog.response(2))
+    fit_button.connect("clicked", lambda*ignore: dialog.response(3))
+    fit_exclude_regtion.connect("activate", lambda*ignore: dialog.response(3))
+    dia_entry.connect("activate", lambda*ignore: dialog.response(2))
+    para_entry.connect("activate", lambda*ignore: dialog.response(2))
     dialog.show_all()
     dialog.connect("response", self.dia_para_response, window, [dia_entry, para_entry, fit_exclude_regtion, ignore_errors])
-  
+
   def dia_para_response(self, dialog, response, window, entries):
     '''
       Evaluate the response of the dialog from dia_para_dialog.
@@ -333,10 +333,10 @@ class SquidGUI:
         dia=dia/1e3
         para=para/1e3
       dia=PhysicalConstant(dia, 'A·m^2/T')
-      para=PhysicalConstant(para, 'K·A·m^2/T')        
-      self.dia_para_correction(window.measurement[window.index_mess], 
+      para=PhysicalConstant(para, 'K·A·m^2/T')
+      self.dia_para_correction(window.measurement[window.index_mess],
                                dia, para)
-      window.replot()      
+      window.replot()
       dialog.destroy()
       return None
     try:
@@ -360,21 +360,21 @@ class SquidGUI:
         from fit_data import FitDiamagnetism
         # fit after paramagnetic correction
         dia=PhysicalConstant(0., 'A·m^2/T')
-        para=PhysicalConstant(para, 'K·A·m^2/T')        
+        para=PhysicalConstant(para, 'K·A·m^2/T')
         self.dia_para_correction(dataset, dia , para)
         fit=FitDiamagnetism(([0., 0., 0., split]))
         if not entries[3].get_active():
-          fit.refine(dataset.x, 
-                   dataset.y, 
+          fit.refine(dataset.x,
+                   dataset.y,
                    dataset.y.error)
         else:
-          fit.refine(dataset.x, 
+          fit.refine(dataset.x,
                      dataset.y)
         entries[0].set_text(str(-fit.parameters[0]))
       return None
     if response>0:
       dia=PhysicalConstant(dia, 'A·m^2/T')
-      para=PhysicalConstant(para, 'K·A·m^2/T')        
+      para=PhysicalConstant(para, 'K·A·m^2/T')
       self.dia_para_correction(window.measurement[window.index_mess], dia, para)
       window.replot()
     if response==2:
@@ -385,11 +385,11 @@ class SquidGUI:
         para=para/1e4
       if 'A·m^2' in units:
         dia=dia*1e3
-        para=para*1e3      
+        para=para*1e3
       self.dia_mag_correct=dia
       self.para[0]=para
       dialog.destroy()
-    
+
   #-------------------------- GUI functions --------------------------------
 
   def toggle_correction(self, action, window):
@@ -427,7 +427,7 @@ class SquidGUI:
         self.dia_mag_correct*=1e3
         self.para[0]*=1e3
     window.replot()
-  
+
   def calc_moment_from_rawdata(self, action, window, start_point=None, end_point=None):
     '''
       Try to fit the SQUID signal to retrieve the magnetic moment of a sample,
@@ -450,22 +450,22 @@ class SquidGUI:
     temp_index=dims.index('T')
     temp_unit=units[temp_index]
     v_index=dims.index('V_{SC-long}')
-    from measurement_data_structure import MeasurementData      
+    from measurement_data_structure import MeasurementData
     # select a data subset
     raw_data=self.active_file_data[start_point:end_point]
     # create object for extracted data
-    extracted_data=MeasurementData([['Point', 'No.'], 
-                                    [dims[field_index], field_unit], 
-                                    ['T', temp_unit], 
-                                    ['M_{fit}', 'emu'], 
-                                    ['dM_{fit}', 'emu'], 
-                                    ['Sample Pos._{fit}', 'cm'], 
-                                    ['sigma_{fit}', 'cm'], 
-                                    ],[],2,3,4)
+    extracted_data=MeasurementData([['Point', 'No.'],
+                                    [dims[field_index], field_unit],
+                                    ['T', temp_unit],
+                                    ['M_{fit}', 'emu'],
+                                    ['dM_{fit}', 'emu'],
+                                    ['Sample Pos._{fit}', 'cm'],
+                                    ['sigma_{fit}', 'cm'],
+                                    ], [], 2, 3, 4)
     extracted_data.short_info='Magnetization data extracted via fitting'
     for i, data in enumerate(raw_data):
-      if i%50 == 0:
-        print "Extracting datapoint No: %i" %i
+      if i%50==0:
+        print "Extracting datapoint No: %i"%i
       data.ydata=v_index
       data.dydata=v_index
       fit_object=FitSession(data)
@@ -475,7 +475,7 @@ class SquidGUI:
       fit_object.simulate()
       fit_data=fit_object.functions[0][0].parameters
       extracted_data.append((i, data.get_data(0)[field_index], data.get_data(0)[temp_index], fit_data[0], fit_data[0], fit_data[1], fit_data[2]))
-      self.active_file_data.append(extracted_data) 
+      self.active_file_data.append(extracted_data)
 
   def subtract_dataset(self, action, window):
     '''
@@ -483,12 +483,12 @@ class SquidGUI:
     '''
     if window.measurement[window.index_mess].zdata>=0:
       return None
-    selection_dialog=PreviewDialog(self.file_data, 
-                                title='Select Dataset for Subtraction...', 
-                                show_previews=False, 
-                                buttons=('OK', 1, 'Cancel', 0), 
-                                parent=window, 
-                                flags=gtk.DIALOG_DESTROY_WITH_PARENT, 
+    selection_dialog=PreviewDialog(self.file_data,
+                                title='Select Dataset for Subtraction...',
+                                show_previews=False,
+                                buttons=('OK', 1, 'Cancel', 0),
+                                parent=window,
+                                flags=gtk.DIALOG_DESTROY_WITH_PARENT,
                                 single_selection=True
                                 )
     selection_dialog.set_default_size(800, 600)

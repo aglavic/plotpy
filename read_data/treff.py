@@ -14,14 +14,14 @@ from copy import deepcopy
 from glob import glob
 from measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalConstant
 from config.treff import GRAD_TO_MRAD, DETECTOR_ROWS_MAP, PI_4_OVER_LAMBDA, GRAD_TO_RAD, \
-                          PIXEL_WIDTH, DETECTOR_PIXELS,CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, \
+                          PIXEL_WIDTH, DETECTOR_PIXELS, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION, \
                           D17_PIXEL_SIZE, D17_CENTER_OFFSET
 from zipfile import ZipFile
 
-__author__ = "Artur Glavic"
-__credits__ = ["Ulrich Ruecker"]
+__author__="Artur Glavic"
+__credits__=["Ulrich Ruecker"]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__status__="Production"
 
 MARIA_REDUCE_RESOLUTION=False
 
@@ -31,10 +31,10 @@ class MeasurementDataTREFF(MeasurementData):
     to combine two sets of measurements.
   '''
   is_matrix_data=False # can speed up map plots, not well tested
-  
+
   def __init__(self, *args, **opts):
     MeasurementData.__init__(self, *args, **opts)
-  
+
   def join(self, other, join_type=0):
     '''
       Append the data of an other object to this object.
@@ -69,7 +69,7 @@ class MeasurementDataTREFF(MeasurementData):
       
       @return Another MeasurementDataTREFF instance.
     '''
-    
+
     if join_type==1:
       new=deepcopy(other)
       add_obj=self
@@ -147,37 +147,37 @@ def read_data(file_name, script_path, import_images, return_detector_images):
   except ValueError:
     image_col=None
     import_images=False
-  columns={ 'Image': image_col, 
+  columns={ 'Image': image_col,
            'Polarization': columns_line.index('Pol.'),
-           'Monitor': columns_line.index('Monitor'), 
-           '2DWindow': columns_line.index('2DWind.'), 
-           'DetectorTotal': columns_line.index('2DTotal'), 
-           'Time': columns_line.index('Time'), 
-           'omega': -1, 
-           'detector': -1
+           'Monitor': columns_line.index('Monitor'),
+           '2DWindow': columns_line.index('2DWind.'),
+           'DetectorTotal': columns_line.index('2DTotal'),
+           'Time': columns_line.index('Time'),
+           'omega':-1,
+           'detector':-1
            }
   global negative_omega
   negative_omega=False
   const_information={}
   for line in headers:
     try:
-      if line[0] == 'Scan':
+      if line[0]=='Scan':
         columns['Scantype']=line[-1]
-        if line[-1] == 'omega':
+        if line[-1]=='omega':
           columns['omega']=0
-        elif line[-1] == 'detector' or line[-1] == 'scatteringarm':
+        elif line[-1]=='detector' or line[-1]=='scatteringarm':
           columns['detector']=0
-        elif line[-1] == 'sampletable':
+        elif line[-1]=='sampletable':
           columns['omega']=0
           negative_omega=True
         else:
           columns[line[-1]]=0
-      elif line[0] == '2nd':
-        if line[-1] == 'omega':
+      elif line[0]=='2nd':
+        if line[-1]=='omega':
           columns['omega']=1
-        elif line[-1] == 'detector':
+        elif line[-1]=='detector':
           columns['detector']=1
-        elif line[-1] == 'sampletable':
+        elif line[-1]=='sampletable':
           columns['omega']=1
           negative_omega=True
       else:
@@ -189,7 +189,7 @@ def read_data(file_name, script_path, import_images, return_detector_images):
         const_information[' '.join(line[0:2])]=float(line[2])
       except:
         None
-        
+
   # devide polarization directions
   data_uu_lines=filter(lambda line: line[columns['Polarization']]=='uu', data_lines)
   data_dd_lines=filter(lambda line: line[columns['Polarization']]=='dd', data_lines)
@@ -212,55 +212,55 @@ def read_data(file_name, script_path, import_images, return_detector_images):
   detector_images=[]
   if len(data_uu_lines)>0:
     print "\tEvaluating up-up images."
-    data_uu, scan_uu, detector_image_uu=integrate_pictures(data_uu_lines, columns, const_information, 
+    data_uu, scan_uu, detector_image_uu=integrate_pictures(data_uu_lines, columns, const_information,
                                         path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_uu)>0:
       data_uu.short_info='++ map'
       maps.append(data_uu)
     scan_uu.short_info='++'
     # filter 0 intensity points
-    scan_uu.filters=[(5, 0.0, 0.0, False)]    
+    scan_uu.filters=[(5, 0.0, 0.0, False)]
     scans.append(scan_uu)
     detector_images.append(detector_image_uu)
   if len(data_dd_lines)>0:
     print "\tEvaluating down-down images."
-    data_dd, scan_dd, detector_image_dd=integrate_pictures(data_dd_lines, columns, const_information, 
+    data_dd, scan_dd, detector_image_dd=integrate_pictures(data_dd_lines, columns, const_information,
                                         path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_dd)>0:
       data_dd.short_info='-- map'
       maps.append(data_dd)
     scan_dd.short_info='--'
     # filter 0 intensity points
-    scan_dd.filters=[(5, 0.0, 0.0, False)]    
+    scan_dd.filters=[(5, 0.0, 0.0, False)]
     scans.append(scan_dd)
     detector_images.append(detector_image_dd)
   if len(data_ud_lines)>0:
     print "\tEvaluating up-down images."
-    data_ud, scan_ud, detector_image_ud=integrate_pictures(data_ud_lines, columns, const_information, 
+    data_ud, scan_ud, detector_image_ud=integrate_pictures(data_ud_lines, columns, const_information,
                                         path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_ud)>0:
       data_ud.short_info='+- map'
       maps.append(data_ud)
     scan_ud.short_info='+-'
     # filter 0 intensity points
-    scan_ud.filters=[(5, 0.0, 0.0, False)]    
+    scan_ud.filters=[(5, 0.0, 0.0, False)]
     scans.append(scan_ud)
     detector_images.append(detector_image_ud)
   if len(data_du_lines)>0:
     print "\tEvaluating down-up images."
-    data_du, scan_du, detector_image_du=integrate_pictures(data_du_lines, columns, const_information, 
+    data_du, scan_du, detector_image_du=integrate_pictures(data_du_lines, columns, const_information,
                                         path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_du)>0:
       data_du.short_info='-+ map'
       maps.append(data_du)
     scan_du.short_info='-+'
     # filter 0 intensity points
-    scan_du.filters=[(5, 0.0, 0.0, False)]    
+    scan_du.filters=[(5, 0.0, 0.0, False)]
     scans.append(scan_du)
     detector_images.append(detector_image_du)
   if len(data_xx_lines)>0:
     print "\tEvaluating unpolarized images."
-    data_xx, scan_xx, detector_image_xx=integrate_pictures(data_xx_lines, columns, const_information, 
+    data_xx, scan_xx, detector_image_xx=integrate_pictures(data_xx_lines, columns, const_information,
                                         path_name, calibration, import_images, treff_zip, return_detector_images)
     if len(data_xx)>0:
       data_xx.short_info='unpolarized'
@@ -270,13 +270,14 @@ def read_data(file_name, script_path, import_images, return_detector_images):
     detector_images.append(detector_image_xx)
   for mapi in maps:
     mapi.logz=True
+    mapi.SPLIT_SENSITIVITY=0.0001
     mapi.plot_options='set cbrange [1e-7:]\nset zrange [1e-7:]\n'
   for scan in scans:
     scan.logy=True
   if import_images:
-    output=maps + scans
+    output=maps+scans
   else:
-    output= scans
+    output=scans
   if treff_zip:
     # this is very importent as the zip file could be damadged otherwise!
     treff_zip.close()
@@ -302,7 +303,7 @@ def string_or_float(string_line):
   except ValueError:
     return False
 
-def integrate_pictures(data_lines, columns, const_information, data_path, calibration, 
+def integrate_pictures(data_lines, columns, const_information, data_path, calibration,
                        import_images, treff_zip=None, return_detector_images=False):
   '''
     Integrate detector rows of the image files corresponding to one polarization direction.
@@ -321,48 +322,48 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
   detector_images=[]
   sqrt=math.sqrt
   # create the data object
-  scan_data_object=MeasurementDataTREFF([[columns['Scantype'], 'mrad'], 
-                               ['2DWindow', 'counts'], 
-                               ['DetectorTotal', 'counts'], 
-                               ['error','counts'], 
-                               ['errorTotal','counts'], 
-                               ['Intensity','counts/Monitor'], 
-                               ['error(monitor)','counts/Monitor'], 
-                               ['Intensity(time)', 'counts/s'], 
-                               ['error(time)','counts/s']], 
+  scan_data_object=MeasurementDataTREFF([[columns['Scantype'], 'mrad'],
+                               ['2DWindow', 'counts'],
+                               ['DetectorTotal', 'counts'],
+                               ['error', 'counts'],
+                               ['errorTotal', 'counts'],
+                               ['Intensity', 'counts/Monitor'],
+                               ['error(monitor)', 'counts/Monitor'],
+                               ['Intensity(time)', 'counts/s'],
+                               ['error(time)', 'counts/s']],
                               [], 0, 5, 6)
-  data_object=MeasurementDataTREFF([['α_i', 'mrad'], 
-                               ['α_f', 'mrad'], 
-                               ['α_i+α_f', 'mrad'], 
-                               ['α_i-α_f', 'mrad'], 
-                               ['Q_x', 'Å^{-1}'], 
-                               ['Q_z', 'Å^{-1}'], 
-                               ['Intensity', 'a.u.'], 
-                               ['error','a.u.']], 
-                              [], 0, 1, 7, 6)  
+  data_object=MeasurementDataTREFF([['α_i', 'mrad'],
+                               ['α_f', 'mrad'],
+                               ['α_i+α_f', 'mrad'],
+                               ['α_i-α_f', 'mrad'],
+                               ['Q_x', 'Å^{-1}'],
+                               ['Q_z', 'Å^{-1}'],
+                               ['Intensity', 'a.u.'],
+                               ['error', 'a.u.']],
+                              [], 0, 1, 7, 6)
   # alpha_i is used as main column for the line splitteng used for pm3d
   data_object.scan_line_constant=1
   data_object.scan_line=0
   data_list=[]
   scan_data_list=[]
   if (import_images  or return_detector_images):
-    sys.stdout.write('\t\t Image %03i/%03i' % (1, len(data_lines)))
+    sys.stdout.write('\t\t Image %03i/%03i'%(1, len(data_lines)))
     sys.stdout.flush()
   for index, line in enumerate(data_lines):
-    if float(line[columns['Monitor']]) == 0.:
+    if float(line[columns['Monitor']])==0.:
       continue # measurement error, nothing to do
-    scan_data_list.append(map(float, (line[columns[columns['Scantype']]], 
-                                      line[columns['2DWindow']], 
-                                      line[columns['DetectorTotal']], 
-                                      line[columns['2DWindow']], 
+    scan_data_list.append(map(float, (line[columns[columns['Scantype']]],
+                                      line[columns['2DWindow']],
                                       line[columns['DetectorTotal']],
-                                      line[columns['Monitor']], 
-                                      line[columns['Monitor']], 
-                                      line[columns['Time']], 
+                                      line[columns['2DWindow']],
+                                      line[columns['DetectorTotal']],
+                                      line[columns['Monitor']],
+                                      line[columns['Monitor']],
+                                      line[columns['Time']],
                                       line[columns['Time']])))
     if not (import_images  or return_detector_images):
       continue
-    sys.stdout.write('\b'*14+' Image %03i/%03i' % (index+1, len(data_lines)))
+    sys.stdout.write('\b'*14+' Image %03i/%03i'%(index+1, len(data_lines)))
     sys.stdout.flush()
     if treff_zip and line[columns['Image']] in treff_zip.namelist():
       # use data inside ziped file
@@ -371,33 +372,33 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
       # use data inside ziped file
       print "gziped files not supported inside of .zip file."
       continue
-    elif os.path.exists(data_path + line[columns['Image']] + '.gz'):
+    elif os.path.exists(data_path+line[columns['Image']]+'.gz'):
       # gziped images
       import gzip
-      img_file=gzip.open(data_path + line[columns['Image']] + '.gz', 'rb')
-    elif line[columns['Image']].endswith('.gz') and os.path.exists(data_path + line[columns['Image']]):
+      img_file=gzip.open(data_path+line[columns['Image']]+'.gz', 'rb')
+    elif line[columns['Image']].endswith('.gz') and os.path.exists(data_path+line[columns['Image']]):
       # gziped images
       import gzip
-      img_file=gzip.open(data_path + line[columns['Image']], 'rb')
-    elif os.path.exists(data_path + line[columns['Image']]):
+      img_file=gzip.open(data_path+line[columns['Image']], 'rb')
+    elif os.path.exists(data_path+line[columns['Image']]):
       # unziped images
-      img_file=open(data_path + line[columns['Image']], 'r')
+      img_file=open(data_path+line[columns['Image']], 'r')
     else:
       # no image file
-      sys.stdout.write( '\n\t\t\t'+ data_path + line[columns['Image']] + \
-                    '(.gz) does not exist, check your files.\n\t\t Image %03i/%03i' % (1, len(data_lines)))
+      sys.stdout.write('\n\t\t\t'+data_path+line[columns['Image']]+\
+                    '(.gz) does not exist, check your files.\n\t\t Image %03i/%03i'%(1, len(data_lines)))
       continue
     # define alphai and alphaf (for the detector center)
-    if columns['omega'] >= 0:
-      alphai = float(line[columns['omega']])
+    if columns['omega']>=0:
+      alphai=float(line[columns['omega']])
     else:
-      alphai = const_information['omega']
+      alphai=const_information['omega']
     if negative_omega:
-      alphai *= -1
-    if columns['detector'] >= 0:
-      alphaf_center = float(line[columns['detector']]) - alphai
+      alphai*=-1
+    if columns['detector']>=0:
+      alphaf_center=float(line[columns['detector']])-alphai
     else:
-      alphaf_center = const_information['detector'] - alphai
+      alphaf_center=const_information['detector']-alphai
     # integrate the image
     detector_data, detector_image=integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, calibration, PIXEL_WIDTH)
     data_list+=detector_data
@@ -417,7 +418,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     #data_list+=integrate_one_picture(img_file, line, columns, alphai, alphaf_center, calibration, PIXEL_WIDTH)
   if (import_images  or return_detector_images):
     print ""
-  if import_images:  
+  if import_images:
     data_append=data_object.append
     # append the integrated data to the object
     map(data_append, data_list)
@@ -470,26 +471,26 @@ def integrate_one_picture(img_file, line, columns, alphai, alphaf_center, calibr
     return []
   monitor=float(line[columns['Monitor']])
   for i in range(len(calibration)):
-    if calibration[i] <= 0 :
+    if calibration[i]<=0 :
       continue # ignore blind spots of detector
     # convet strings into integer
     int_data=map(int, parts[i])
     img_integral=sum(int_data)
-    alphaf = alphaf_center + pixel_width * (CENTER_PIXEL - i)
-    intensity = img_integral / monitor * calibration[i]
-    if intensity > 0:
-      logintensity = log10(intensity)
+    alphaf=alphaf_center+pixel_width*(CENTER_PIXEL-i)
+    intensity=img_integral/monitor*calibration[i]
+    if intensity>0:
+      logintensity=log10(intensity)
     else:
-      logintensity = -10.0
-    error = sqrt(img_integral) / monitor * calibration[i]
+      logintensity=-10.0
+    error=sqrt(img_integral)/monitor*calibration[i]
     # convert to mrad and create point list.
-    append_to_list((GRAD_TO_MRAD * alphai, 
-                    GRAD_TO_MRAD * alphaf, 
-                    GRAD_TO_MRAD * (alphai + alphaf), 
-                    GRAD_TO_MRAD * (alphai - alphaf), 
-                    PI_4_OVER_LAMBDA/2.*(cos(GRAD_TO_RAD * alphaf) - cos(GRAD_TO_RAD * alphai)), 
-                    PI_4_OVER_LAMBDA/2.*(sin(GRAD_TO_RAD * alphai) + sin(GRAD_TO_RAD * alphaf)), 
-                    intensity, 
+    append_to_list((GRAD_TO_MRAD*alphai,
+                    GRAD_TO_MRAD*alphaf,
+                    GRAD_TO_MRAD*(alphai+alphaf),
+                    GRAD_TO_MRAD*(alphai-alphaf),
+                    PI_4_OVER_LAMBDA/2.*(cos(GRAD_TO_RAD*alphaf)-cos(GRAD_TO_RAD*alphai)),
+                    PI_4_OVER_LAMBDA/2.*(sin(GRAD_TO_RAD*alphai)+sin(GRAD_TO_RAD*alphaf)),
+                    intensity,
                     error))
   return data_list, img_data
 
@@ -513,7 +514,7 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   # read the data of an image file and split the lines 
   img_data=numpy.fromstring(img_file.read(), int, sep=" ")
   try:
-    img_data=img_data.reshape(DETECTOR_PIXELS, -1)
+    img_data=img_data.reshape(DETECTOR_PIXELS,-1)
   except ValueError, error:
     return [], None
   img_file.close()
@@ -531,14 +532,14 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   except ValueError, error:
     return [], None
   errors=numpy.sqrt(img_intensities)/monitor*calibration
-  alphaf=alphaf_center + pixel_width * (CENTER_PIXEL - numpy.arange(DETECTOR_PIXELS))[filter_indices]
+  alphaf=alphaf_center+pixel_width*(CENTER_PIXEL-numpy.arange(DETECTOR_PIXELS))[filter_indices]
   # create importent columns
   data_list.append(GRAD_TO_MRAD*(numpy.zeros_like(alphaf)+alphai))
   data_list.append(GRAD_TO_MRAD*alphaf)
   data_list.append(data_list[0]+data_list[1])
   data_list.append(data_list[0]-data_list[1])
-  data_list.append(PI_4_OVER_LAMBDA/2.*(cos(0.001*data_list[1]) - cos(0.001*data_list[0])))
-  data_list.append(PI_4_OVER_LAMBDA/2.*(sin(0.001*data_list[0]) + sin(0.001*data_list[1])))
+  data_list.append(PI_4_OVER_LAMBDA/2.*(cos(0.001*data_list[1])-cos(0.001*data_list[0])))
+  data_list.append(PI_4_OVER_LAMBDA/2.*(sin(0.001*data_list[0])+sin(0.001*data_list[1])))
   data_list.append(intensities)
   data_list.append(errors)
   data_list=numpy.array(data_list).transpose().tolist()
@@ -550,14 +551,14 @@ def read_simulation(file_name):
     
     @return One MeasurementData object
   '''
-  sim_file=open(file_name,'r')
+  sim_file=open(file_name, 'r')
   sim_lines=sim_file.readlines()
   sim_file.close()
-  data=MeasurementData([['Θ','mrad'],['Intensity','a.u.'],['Unknown','counts/s'],['Unknown2','counts/s']],[],0,1,2)
+  data=MeasurementData([['Θ', 'mrad'], ['Intensity', 'a.u.'], ['Unknown', 'counts/s'], ['Unknown2', 'counts/s']], [], 0, 1, 2)
   data.info='Simulation'
   for line in sim_lines:
     if len(line.split())>1:
-      point=map(float,line.split())
+      point=map(float, line.split())
       data.append(point)
   return data
 
@@ -572,8 +573,8 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
     @return List of MeasurementData objects for the 2d maps and scans splitted by polarization channels
   '''
   global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
-  from config.maria import DETECTOR_ROWS_MAP, COLUMNS_MAPPING,  DETECTOR_PIXELS, \
-                          PIXEL_WIDTH,CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
+  from config.maria import DETECTOR_ROWS_MAP, COLUMNS_MAPPING, DETECTOR_PIXELS, \
+                          PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
   import config.gnuplot_preferences
   # speedup plotting using no interpolation or averidgeing
   config.gnuplot_preferences.settings_3dmap='''set pm3d map corners2color c1
@@ -632,7 +633,7 @@ set size square
   # define the type of scan used
   columns['Scantype']='omega'
   for i, line in enumerate(headers):
-    if ['#Scan','command','arguments:'] == line:
+    if ['#Scan', 'command', 'arguments:']==line:
       arguments=" ".join(headers[i+1]).split('+-')[1].split()
       arguments=map(lambda item: item.replace('[', '').replace(']', ''), arguments)
       if 'omega' in arguments:
@@ -684,7 +685,7 @@ set size square
   detector_images=[]
   if len(data_uu_lines)>0:
     print "\tEvaluating up-up images."
-    data_uu, scan_uu, detector_image_uu=integrate_pictures(data_uu_lines, columns, const_information, 
+    data_uu, scan_uu, detector_image_uu=integrate_pictures(data_uu_lines, columns, const_information,
                                         path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_uu)>0:
       data_uu.short_info='++ map'
@@ -696,7 +697,7 @@ set size square
     detector_images.append(detector_image_uu)
   if len(data_dd_lines)>0:
     print "\tEvaluating down-down images."
-    data_dd, scan_dd, detector_image_dd=integrate_pictures(data_dd_lines, columns, const_information, 
+    data_dd, scan_dd, detector_image_dd=integrate_pictures(data_dd_lines, columns, const_information,
                                         path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_dd)>0:
       data_dd.short_info='-- map'
@@ -708,7 +709,7 @@ set size square
     detector_images.append(detector_image_dd)
   if len(data_ud_lines)>0:
     print "\tEvaluating up-down images."
-    data_ud, scan_ud, detector_image_ud=integrate_pictures(data_ud_lines, columns, const_information, 
+    data_ud, scan_ud, detector_image_ud=integrate_pictures(data_ud_lines, columns, const_information,
                                         path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_ud)>0:
       data_ud.short_info='+- map'
@@ -720,7 +721,7 @@ set size square
     detector_images.append(detector_image_ud)
   if len(data_du_lines)>0:
     print "\tEvaluating down-up images."
-    data_du, scan_du, detector_image_du=integrate_pictures(data_du_lines, columns, const_information, 
+    data_du, scan_du, detector_image_du=integrate_pictures(data_du_lines, columns, const_information,
                                         path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_du)>0:
       data_du.short_info='-+ map'
@@ -732,7 +733,7 @@ set size square
     detector_images.append(detector_image_du)
   if len(data_xx_lines)>0:
     print "\tEvaluating unpolarized images."
-    data_xx, scan_xx, detector_image_xx=integrate_pictures(data_xx_lines, columns, const_information, 
+    data_xx, scan_xx, detector_image_xx=integrate_pictures(data_xx_lines, columns, const_information,
                                         path_name, calibration, import_images, maria_zip, return_detector_images)
     if len(data_xx)>0:
       data_xx.short_info='unpolarized'
@@ -747,9 +748,9 @@ set size square
   for scan in scans:
     scan.logy=True
   if import_images:
-    output=maps + scans
+    output=maps+scans
   else:
-    output= scans
+    output=scans
   if maria_zip:
     # this is very importent as the zip file could be damadged otherwise!
     maria_zip.close()
@@ -763,18 +764,18 @@ def create_img_object(data, alphai=0., alphaf_center=0., cnt_time=1.):
     Create a KWS2MeasurementData object from an detector raw data array.
   '''
   from kws2 import KWS2MeasurementData
-  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'], 
-                           ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']], 
+  dataobj=KWS2MeasurementData([['pixel_x', 'pix'], ['pixel_y', 'pix'], ['intensity', 'counts/s'], ['error', 'counts/s'],
+                           ['Q_y', 'Å^{-1}'], ['Q_z', 'Å^{-1}'], ['raw_int', 'counts'], ['raw_errors', 'counts']],
                             [], 4, 5, 3, 2)
   # remove colmuns not part of the detector
   data_array=numpy.array(data)
   first_row, last_row, first_col, last_col=DETECTOR_REGION
-  data=data_array[first_row:last_row+1, first_col:last_col+1]  
+  data=data_array[first_row:last_row+1, first_col:last_col+1]
   # get pixels per row or column of remainig data
   x_array=numpy.arange((last_col-first_col+1)*(last_row-first_row+1))%(last_col-first_col+1)+first_col
-  z_angle=alphai + alphaf_center + PIXEL_WIDTH * (CENTER_PIXEL - x_array)
+  z_angle=alphai+alphaf_center+PIXEL_WIDTH*(CENTER_PIXEL-x_array)
   y_array=numpy.arange((last_col-first_col+1)*(last_row-first_row+1))/(last_col-first_col+1)+first_row
-  y_angle=PIXEL_WIDTH * (CENTER_PIXEL_Y - y_array)
+  y_angle=PIXEL_WIDTH*(CENTER_PIXEL_Y-y_array)
   q_y=PI_4_OVER_LAMBDA*numpy.sin(GRAD_TO_RAD*y_angle/2.)
   q_z=PI_4_OVER_LAMBDA*numpy.sin(GRAD_TO_RAD*z_angle/2.)
   data_array=numpy.array(data).flatten()
@@ -791,7 +792,7 @@ def create_img_object(data, alphai=0., alphaf_center=0., cnt_time=1.):
   dataobj.logz=True
   dataobj.plot_options.zrange[0]=min_z
   return dataobj
-  
+
 
 
 def read_d17_processed_data(file_name):
@@ -827,10 +828,10 @@ def read_d17_processed_data(file_name):
   aipaf.dimension='α_i+α_f'
   aimaf=alphai-alphaf
   aimaf.dimension='α_i-α_f'
-  qx=PI_2_OVER_LAMBDA*(numpy.cos(alphaf) - numpy.cos(alphai))
+  qx=PI_2_OVER_LAMBDA*(numpy.cos(alphaf)-numpy.cos(alphai))
   qx.dimension='Q_x'
   qx.unit='Å^{-1}'
-  qz=PI_2_OVER_LAMBDA*(numpy.sin(alphai) + numpy.sin(alphaf))
+  qz=PI_2_OVER_LAMBDA*(numpy.sin(alphai)+numpy.sin(alphaf))
   qz.dimension='Q_z'
   qz.unit='Å^{-1}'
   channels=int(file_lines[first_block+scan_points*2+2].split('(')[1].split('arrays')[0])
@@ -841,8 +842,8 @@ def read_d17_processed_data(file_name):
   for i in range(channels):
     index=(scan_points+1)*i+(scan_points+2)*2+first_block
     error_index=(scan_points+1)*(i+channels-1)+(scan_points+2)*3+first_block
-    intensity=d17_pp_from_block('Intensity', 
-                                'a.u.', 
+    intensity=d17_pp_from_block('Intensity',
+                                'a.u.',
                                 file_lines[index:index+scan_points],
                                 error_block=file_lines[error_index:error_index+scan_points])
     intensity=intensity[sort_order]
@@ -870,8 +871,8 @@ def read_d17_processed_data(file_name):
   if len(datasets)==4:
     datasets=[datasets[0], datasets[3], datasets[2], datasets[1]]
   return datasets
-  
-  
+
+
 
 def d17_pp_from_block(dimension, unit, block, error_block=None):
   '''
@@ -935,18 +936,18 @@ def read_d17_raw_data(file_from, file_to):
   file_list=filter(lambda item: os.path.split(item)[1].rstrip('.gz').isdigit(), file_list)
   file_list.sort()
   if not (file_from in file_list and file_to in file_list):
-    print 'File not found: %s and %s.' % (file_from, file_to)
+    print 'File not found: %s and %s.'%(file_from, file_to)
     return 'NULL'
   from_index=file_list.index(file_from)
   to_index=file_list.index(file_to)+1
   file_list=file_list[from_index:to_index]
-  sys.stdout.write('    Reading %3i/%3i' % (1, len(file_list)))
+  sys.stdout.write('    Reading %3i/%3i'%(1, len(file_list)))
   sys.stdout.flush()
   notfound=[]
   join_sets=[]
   found_pattern=False
   for i, file_name in enumerate(file_list):
-    sys.stdout.write('\b'*7+'%3i/%3i' % (i, len(file_list)))
+    sys.stdout.write('\b'*7+'%3i/%3i'%(i, len(file_list)))
     sys.stdout.flush()
     dataset=read_d17_raw_file(file_name)
     if dataset is None:
@@ -1020,8 +1021,8 @@ def read_d17_raw_data(file_from, file_to):
       alphaf=dataset.data[1]
       dataset.append_column((alphai+alphaf)//'α_i+α_f')
       dataset.append_column((alphai-alphaf)//'α_i-α_f')
-      dataset.append_column((PI_2_OVER_LAMBDA*(numpy.cos(alphaf) - numpy.cos(alphai)))//('Q_x', 'Å^{-1}'))
-      dataset.append_column((PI_2_OVER_LAMBDA*(numpy.sin(alphai) + numpy.sin(alphaf)))//('Q_z', 'Å^{-1}'))
+      dataset.append_column((PI_2_OVER_LAMBDA*(numpy.cos(alphaf)-numpy.cos(alphai)))//('Q_x', 'Å^{-1}'))
+      dataset.append_column((PI_2_OVER_LAMBDA*(numpy.sin(alphai)+numpy.sin(alphaf)))//('Q_z', 'Å^{-1}'))
       dataset.logz=True
       dataset.scan_line=0
       dataset.scan_line_constant=1
@@ -1033,7 +1034,7 @@ def read_d17_raw_data(file_from, file_to):
     for dataset in output:
       dataset.plot_options.zrange=(zfrom, zto)
   if len(notfound)>0:
-    print "Could not import files %s" % str([file_name[i] for i in notfound])
+    print "Could not import files %s"%str([file_name[i] for i in notfound])
   return output
 
 def read_d17_raw_file(file_name):
@@ -1057,7 +1058,7 @@ def read_d17_raw_file(file_name):
   try:
     sample_name=header_1.split('*')[0].rsplit(None, 2)[0].split(None, 1)[1].strip()
   except:
-    sample_name='(%s)' % file_name
+    sample_name='(%s)'%file_name
   try:
     F1=int(header_1.split('*F1=')[1].split('*')[0])
     F2=int(header_1.split('*F2=')[1].split('*')[0])
@@ -1116,7 +1117,7 @@ def read_d17_raw_file(file_name):
     intensity=intensity*scaling
     intensity.unit='a.u.'
   if tof_channels==1:
-    alphaf=PhysicalProperty('α_f', '°', numpy.arange(128, -128, -1)*D17_PIXEL_SIZE+\
+    alphaf=PhysicalProperty('α_f', '°', numpy.arange(128,-128,-1)*D17_PIXEL_SIZE+\
                                               D17_CENTER_OFFSET+detector_angle-omega)
     alphai=PhysicalProperty('α_i', '°', numpy.zeros_like(alphaf)+omega)
     dataset.append_column(alphaf)
@@ -1125,12 +1126,12 @@ def read_d17_raw_file(file_name):
     dataset.append_column(intensity)
     dataset.append_column(alphai)
   else:
-    two_theta=PhysicalProperty('2Θ', '°', numpy.repeat(numpy.arange(128, -128, -1)*D17_PIXEL_SIZE+\
+    two_theta=PhysicalProperty('2Θ', '°', numpy.repeat(numpy.arange(128,-128,-1)*D17_PIXEL_SIZE+\
                                               D17_CENTER_OFFSET+detector_angle, tof_channels))
     tof=PhysicalProperty('TOF', 's', numpy.tile(numpy.arange(tof_channels)*tof_cwidth+\
                                                 tof_delta_t, 256))
     lambda_n=(tof*h_over_m0/tof_distance)//('λ_n', 'Å')
-    dataset.append_column(two_theta)    
+    dataset.append_column(two_theta)
     dataset.append_column(lambda_n)
     dataset.append_column(intensity)
     dataset.append_column(tof)
@@ -1185,25 +1186,25 @@ def read_d17_calibration(file_name):
 
 if not getattr(ZipFile, 'open', False):
   import zipfile
-  
+
   class ZipFileWrapper:
     '''
       Small class bahaving as filelike object for python versions < 2.6.
     '''
-    
+
     def __init__(self, zip_object, file_name):
       self.zip_object=zip_object
       self.file_name=file_name
-    
+
     def read(self):
       return self.zip_object.read(self.file_name)
-    
+
     def close(self):
       pass
-    
+
     def readlines(self):
       return self.read().splitlines()
-  
+
   class ZipFile(zipfile.ZipFile):
     '''
       Use ZipFileWrapper for open method.

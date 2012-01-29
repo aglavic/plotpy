@@ -24,12 +24,12 @@ from StringIO import StringIO
 
 try:
         import IPython
-except Exception,e:
-        raise RuntimeError, "Error importing IPython (%s)" % str(e)
+except Exception, e:
+        raise RuntimeError, "Error importing IPython (%s)"%str(e)
 
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
 
-ansi_colors =  {'0;30': 'Black',
+ansi_colors={'0;30': 'Black',
                 '0;31': 'Red',
                 '0;32': 'Green',
                 '0;33': 'Brown',
@@ -47,16 +47,16 @@ ansi_colors =  {'0;30': 'Black',
                 '1;37': 'Black'}
 
 class IterableIPShell:
-  def __init__(self,argv=None,user_ns=None,user_global_ns=None,
-               cin=None, cout=None,cerr=None, input_func=None):
+  def __init__(self, argv=None, user_ns=None, user_global_ns=None,
+               cin=None, cout=None, cerr=None, input_func=None):
     if input_func:
-      IPython.frontend.terminal.interactiveshell.raw_input_original = input_func
+      IPython.frontend.terminal.interactiveshell.raw_input_original=input_func
     if cin:
-      IPython.utils.io.stdin = IPython.utils.io.IOStream(cin)
+      IPython.utils.io.stdin=IPython.utils.io.IOStream(cin) #@UndefinedVariable
     if cout:
-      IPython.utils.io.stdout = IPython.utils.io.IOStream(cout)
+      IPython.utils.io.stdout=IPython.utils.io.IOStream(cout) #@UndefinedVariable
     if cerr:
-      IPython.utils.io.stderr = IPython.utils.io.IOStream(cerr)
+      IPython.utils.io.stderr=IPython.utils.io.IOStream(cerr) #@UndefinedVariable
 
     if argv is None:
       argv=[]
@@ -64,102 +64,102 @@ class IterableIPShell:
     # This is to get rid of the blockage that occurs during 
     # IPython.Shell.InteractiveShell.user_setup()
     #IPython.iplib.raw_input = lambda x: None
-    
-    self.term = IPython.utils.io.IOTerm(stdin=cin, stdout=cout, stderr=cerr)
 
-    os.environ['TERM'] = 'dumb'
+    self.term=IPython.utils.io.IOTerm(stdin=cin, stdout=cout, stderr=cerr) #@UndefinedVariable
+
+    os.environ['TERM']='dumb'
     # perhaps a bit hackkish, review...
     old_std=(sys.stdout, sys.stderr)
     sys.stdout, sys.stderr=cout, cerr
     # perhaps a bit hackkish, review...
-    
-    excepthook = sys.excepthook
-    self.IP = IPython.frontend.terminal.embed.InteractiveShellEmbed(user_ns=user_ns,
+
+    excepthook=sys.excepthook
+    self.IP=IPython.frontend.terminal.embed.InteractiveShellEmbed(user_ns=user_ns, #@UndefinedVariable
                                          user_global_ns=user_global_ns)
-    self.IP.system = self.IP.system_piped#lambda cmd: self.shell(self.IP.var_expand(cmd),
+    self.IP.system=self.IP.system_piped#lambda cmd: self.shell(self.IP.var_expand(cmd),
                                           #  header='IPython system call: ',
-                                           # verbose=self.IP.rc.system_verbose)
+                                          # verbose=self.IP.rc.system_verbose)
     # perhaps a bit hackkish, review...
     sys.stdout, sys.stderr=old_std
     # perhaps a bit hackkish, review...
-    
+
     # set right encoding
     self.IP.stdin_encoding='UTF-8'
-    sys.excepthook = excepthook
-    self.iter_more = 0
-    self.history_level = 0
-    self.complete_sep =  re.compile('[\s\{\}\[\]\(\)=\'"]')
-    IPython.lib.enable_gtk()
+    sys.excepthook=excepthook
+    self.iter_more=0
+    self.history_level=0
+    self.complete_sep=re.compile('[\s\{\}\[\]\(\)=\'"]')
+    IPython.lib.enable_gtk() #@UndefinedVariable
 
   def execute(self):
-    self.history_level = 0
-    orig_stdout = (sys.stdout, sys.stderr)
-    sys.stdout = IPython.utils.io.stdout
-    sys.stderr = IPython.utils.io.stderr
+    self.history_level=0
+    orig_stdout=(sys.stdout, sys.stderr)
+    sys.stdout=IPython.utils.io.stdout #@UndefinedVariable
+    sys.stderr=IPython.utils.io.stderr #@UndefinedVariable
     try:
-      line = self.getCurrentLine()#IPython.utils.io.raw_input_ext()#self.IP.raw_input()
+      line=self.getCurrentLine()#IPython.utils.io.raw_input_ext()#self.IP.raw_input()
       #if self.IP.autoindent:
       #  self.IP.readline_startup_hook(None)
     except KeyboardInterrupt:
       self.IP.write('\nKeyboardInterrupt\n')
       self.IP.resetbuffer()
       # keep cache in sync with the prompt counter:
-      self.IP.outputcache.prompt_count -= 1
+      self.IP.outputcache.prompt_count-=1
 
       if self.IP.autoindent:
-        self.IP.indent_current_nsp = 0
-      self.iter_more = 0
+        self.IP.indent_current_nsp=0
+      self.iter_more=0
     except:
       self.IP.showtraceback()
     else:
       self.IP.input_splitter.push(line)
-      self.iter_more = self.IP.input_splitter.push_accepts_more()
+      self.iter_more=self.IP.input_splitter.push_accepts_more()
       if (self.IP.SyntaxTB.last_syntax_error and
           self.IP.rc.autoedit_syntax):
         self.IP.edit_syntax_error()
     if self.iter_more:
-      self.prompt = str(self.IP.prompt_manager.render('in2')).strip()
+      self.prompt=str(self.IP.prompt_manager.render('in2')).strip()
       #if self.IP.autoindent:
       #  self.IP.readline_startup_hook(lambda : self.IP.input_splitter.indent_spaces*' ')#(self.IP.pre_readline)
     else:
-      source_raw = self.IP.input_splitter.source_raw_reset()[1]
+      source_raw=self.IP.input_splitter.source_raw_reset()[1]
       self.IP.run_cell(source_raw, store_history=True)
-      self.prompt = str(self.IP.prompt_manager.render('in')).strip()
-    sys.stdout, sys.stderr = orig_stdout
+      self.prompt=str(self.IP.prompt_manager.render('in')).strip()
+    sys.stdout, sys.stderr=orig_stdout
 
   def historyBack(self):
-    self.history_level -= 1
+    self.history_level-=1
     return self._getHistory()
 
   def historyForward(self):
-    self.history_level += 1
+    self.history_level+=1
     return self._getHistory()
 
   def _getHistory(self):
     try:
       #rv = self.IP.user_ns['In'][self.history_level].strip('\n')
-      rv = self.IP.history_manager.input_hist_raw[self.history_level].strip('\n')
+      rv=self.IP.history_manager.input_hist_raw[self.history_level].strip('\n')
     except IndexError:
-      self.history_level = 0
-      rv = ''
+      self.history_level=0
+      rv=''
     return rv
 
   def updateNamespace(self, ns_dict):
     self.IP.user_ns.update(ns_dict)
 
   def complete(self, line):
-    split_line = self.complete_sep.split(line)
+    split_line=self.complete_sep.split(line)
     if split_line[-1]=='':
       possibilities=[]
       strip_poss=[]
     else:
-      possibilities = self.IP.complete(split_line[-1])[1]
+      possibilities=self.IP.complete(split_line[-1])[1]
       strip_poss=[pos.lstrip('%') for pos in possibilities]
     if strip_poss:
-      common_prefix = reduce(self._commonPrefix, strip_poss)
-      completed = line[:-len(split_line[-1])]+common_prefix
+      common_prefix=reduce(self._commonPrefix, strip_poss)
+      completed=line[:-len(split_line[-1])]+common_prefix
     else:
-      completed = line
+      completed=line
     return completed, possibilities
 
   def _commonPrefix(self, str1, str2):
@@ -168,12 +168,12 @@ class IterableIPShell:
         return str1[:i]
     return str1
 
-  def shell(self, cmd,verbose=0,debug=0,header=''):
-    stat = 0
+  def shell(self, cmd, verbose=0, debug=0, header=''):
+    stat=0
     if verbose or debug: print header+cmd
     # flush stdout so we don't mangle python's buffering
     if not debug:
-      input, output = os.popen4(cmd)
+      input, output=os.popen4(cmd)
       print output.read()
       output.close()
       input.close()
@@ -183,8 +183,8 @@ class ConsoleView(gtk.TextView):
     gtk.TextView.__init__(self)
     self.modify_font(pango.FontDescription('Mono'))
     self.set_cursor_visible(True)
-    self.text_buffer = self.get_buffer()
-    self.mark = self.text_buffer.create_mark('scroll_mark',
+    self.text_buffer=self.get_buffer()
+    self.mark=self.text_buffer.create_mark('scroll_mark',
                                              self.text_buffer.get_end_iter(),
                                              False)
     for code in ansi_colors:
@@ -193,26 +193,26 @@ class ConsoleView(gtk.TextView):
                                   weight=700)
     self.text_buffer.create_tag('0')
     self.text_buffer.create_tag('notouch', editable=False)
-    self.color_pat = re.compile('\x01?\x1b\[(.*?)m\x02?')
-    self.line_start = \
+    self.color_pat=re.compile('\x01?\x1b\[(.*?)m\x02?')
+    self.line_start=\
                 self.text_buffer.create_mark('line_start',
                         self.text_buffer.get_end_iter(), True
                 )
     self.connect('key-press-event', self._onKeypress)
-    self.last_cursor_pos = 0
+    self.last_cursor_pos=0
 
   def write(self, text, editable=False):
-    segments = self.color_pat.split(text)
-    segment = segments.pop(0)
-    start_mark = self.text_buffer.create_mark(None,
+    segments=self.color_pat.split(text)
+    segment=segments.pop(0)
+    start_mark=self.text_buffer.create_mark(None,
                                               self.text_buffer.get_end_iter(),
                                               True)
     self.text_buffer.insert(self.text_buffer.get_end_iter(), segment)
 
     if segments:
-      ansi_tags = self.color_pat.findall(text)
+      ansi_tags=self.color_pat.findall(text)
       for tag in ansi_tags:
-        i = segments.index(tag)
+        i=segments.index(tag)
         self.text_buffer.insert_with_tags_by_name(self.text_buffer.get_end_iter(),
                                              segments[i+1], str(tag))
         segments.pop(i)
@@ -225,21 +225,21 @@ class ConsoleView(gtk.TextView):
 
   def showPrompt(self, prompt):
     self.write(prompt)
-    self.text_buffer.move_mark(self.line_start,self.text_buffer.get_end_iter())
+    self.text_buffer.move_mark(self.line_start, self.text_buffer.get_end_iter())
 
   def changeLine(self, text):
-    iter = self.text_buffer.get_iter_at_mark(self.line_start)
+    iter=self.text_buffer.get_iter_at_mark(self.line_start)
     iter.forward_to_line_end()
     self.text_buffer.delete(self.text_buffer.get_iter_at_mark(self.line_start), iter)
     self.write(text, True)
 
   def getCurrentLine(self):
-    rv = self.text_buffer.get_slice(self.text_buffer.get_iter_at_mark(self.line_start),
+    rv=self.text_buffer.get_slice(self.text_buffer.get_iter_at_mark(self.line_start),
                                     self.text_buffer.get_end_iter(), False)
     return unicode(rv)
 
   def showReturned(self, text):
-    iter = self.text_buffer.get_iter_at_mark(self.line_start)
+    iter=self.text_buffer.get_iter_at_mark(self.line_start)
     iter.forward_to_line_end()
     self.text_buffer.apply_tag_by_name('notouch',
                                        self.text_buffer.get_iter_at_mark(self.line_start),
@@ -248,70 +248,70 @@ class ConsoleView(gtk.TextView):
     if text:
       self.write('\n')
     self.showPrompt(self.prompt)
-    self.text_buffer.move_mark(self.line_start,self.text_buffer.get_end_iter())
+    self.text_buffer.move_mark(self.line_start, self.text_buffer.get_end_iter())
     self.write(self.IP.input_splitter.indent_spaces*' ', True)
     self.text_buffer.place_cursor(self.text_buffer.get_end_iter())
 
   def _onKeypress(self, obj, event):
     if not event.string:
       return
-    insert_mark = self.text_buffer.get_insert()
-    insert_iter = self.text_buffer.get_iter_at_mark(insert_mark)
-    selection_mark = self.text_buffer.get_selection_bound()
-    selection_iter = self.text_buffer.get_iter_at_mark(selection_mark)
-    start_iter = self.text_buffer.get_iter_at_mark(self.line_start)
-    if start_iter.compare(insert_iter) <= 0 and \
-          start_iter.compare(selection_iter) <= 0:
+    insert_mark=self.text_buffer.get_insert()
+    insert_iter=self.text_buffer.get_iter_at_mark(insert_mark)
+    selection_mark=self.text_buffer.get_selection_bound()
+    selection_iter=self.text_buffer.get_iter_at_mark(selection_mark)
+    start_iter=self.text_buffer.get_iter_at_mark(self.line_start)
+    if start_iter.compare(insert_iter)<=0 and \
+          start_iter.compare(selection_iter)<=0:
       return
-    elif start_iter.compare(insert_iter) > 0 and \
-          start_iter.compare(selection_iter) > 0:
+    elif start_iter.compare(insert_iter)>0 and \
+          start_iter.compare(selection_iter)>0:
       self.text_buffer.place_cursor(start_iter)
-    elif insert_iter.compare(selection_iter) < 0:
+    elif insert_iter.compare(selection_iter)<0:
       self.text_buffer.move_mark(insert_mark, start_iter)
-    elif insert_iter.compare(selection_iter) > 0:
+    elif insert_iter.compare(selection_iter)>0:
       self.text_buffer.move_mark(selection_mark, start_iter)
 
 class IPythonView(ConsoleView, IterableIPShell):
   propagate_key_parent=None # a window to which unhandles keys are propagated
-  
+
   def __init__(self, intro_text=""):
     ConsoleView.__init__(self)
-    self.cout = StringIO()
-    IterableIPShell.__init__(self, cout=self.cout,cerr=self.cout,
+    self.cout=StringIO()
+    IterableIPShell.__init__(self, cout=self.cout, cerr=self.cout,
                              input_func=self.raw_input)
     self.connect('key_press_event', self.keyPress)
     self.execute()
     self.cout.truncate(0)
     self.showPrompt(intro_text+self.prompt)
-    self.interrupt = False
+    self.interrupt=False
 
   def raw_input(self, prompt=''):
     if self.interrupt:
-      self.interrupt = False
+      self.interrupt=False
       raise KeyboardInterrupt
     line=self.getCurrentLine()
     return line
 
   def keyPress(self, widget, event):
-    if event.state & gtk.gdk.CONTROL_MASK and event.keyval == 99:
-      self.interrupt = True
+    if event.state&gtk.gdk.CONTROL_MASK and event.keyval==99:
+      self.interrupt=True
       self._processLine()
       return True
-    elif event.keyval == gtk.keysyms.Return:
+    elif event.keyval==gtk.keysyms.Return:
       self._processLine()
       return True
-    elif event.keyval == gtk.keysyms.Up:
+    elif event.keyval==gtk.keysyms.Up:
       self.changeLine(self.historyBack())
       return True
-    elif event.keyval == gtk.keysyms.Down:
+    elif event.keyval==gtk.keysyms.Down:
       self.changeLine(self.historyForward())
       return True
-    elif event.keyval == gtk.keysyms.Tab:
+    elif event.keyval==gtk.keysyms.Tab:
       if not self.getCurrentLine().strip():
         return False
-      completed, possibilities = self.complete(self.getCurrentLine())
-      if len(possibilities) > 1:
-        slice = self.getCurrentLine()
+      completed, possibilities=self.complete(self.getCurrentLine())
+      if len(possibilities)>1:
+        slice=self.getCurrentLine()
         self.write('\n')
         for symbol in possibilities:
           self.write(symbol+'\n')
@@ -333,10 +333,10 @@ class IPythonView(ConsoleView, IterableIPShell):
     #self.showReturned(str(self.IP.outputcache._))
 
   def _processLine(self):
-    self.history_pos = 0
+    self.history_pos=0
     self.execute()
-    rv = self.cout.getvalue()
-    if rv: rv = rv.strip('\n')
+    rv=self.cout.getvalue()
+    if rv: rv=rv.strip('\n')
     self.showReturned(rv)
     self.cout.truncate(0)
 
@@ -346,13 +346,13 @@ class MenuWrapper(object):
     Every attribute of this object should be hidden for the user.
   '''
   __menu_root__=None
-  
+
   def __init__(self, menu_root):
     '''
       Constructor just connecting the base menu.
     '''
     self.__menu_root__=menu_root
-  
+
   def __get_dict__(self):
     '''
       Interactively creates the objects __dict__ dictionary to contain only the
@@ -379,17 +379,17 @@ class MenuWrapper(object):
     for key, value in dict.items():
       setattr(self, key, value)
     return dict
-  
+
   # connect __dict__ to the __get_dict__ function
   __dict__=property(__get_dict__)
-  
+
   def __getattribute__(self, name):
     # if used before first accessing the __dict__
     if name.startswith('_'):
       return object.__getattribute__(self, name)
     else:
       return self.__dict__[name]
-  
+
 
 class FitWrapper(object):
   '''
@@ -398,7 +398,7 @@ class FitWrapper(object):
   __fit_root__=None
   __session_root__=None
   __window_root__=None
-  
+
   def __init__(self, main_window, active_session):
     '''
       Constructor just connecting the base menu.
@@ -407,7 +407,7 @@ class FitWrapper(object):
     self.__fit_root__=FitSession
     self.__window_root__=main_window
     self.__session_root__=active_session
-  
+
   def __get_dict__(self):
     '''
       Interactively creates the objects __dict__ dictionary to contain only the
@@ -419,17 +419,17 @@ class FitWrapper(object):
       items=sorted(self.__fit_root__.available_functions_2d.items())
     else:
       items=sorted(self.__fit_root__.available_functions_3d.items())
-    dict=FitSubWrapper(self.__fit_root__, 
-                               self.__window_root__, 
-                               self.__session_root__, 
+    dict=FitSubWrapper(self.__fit_root__,
+                               self.__window_root__,
+                               self.__session_root__,
                                items).__dict__
     for key, value in dict.items():
       setattr(self, key, value)
     return dict
-  
+
   # connect __dict__ to the __get_dict__ function
   __dict__=property(__get_dict__)
-  
+
   def __getattribute__(self, name):
     if name.startswith('_'):
       return object.__getattribute__(self, name)
@@ -444,7 +444,7 @@ class FitSubWrapper(object):
   __session_root__=None
   __window_root__=None
   __items_root__=None
-  
+
   def __init__(self, fit_session, main_window, active_session, items):
     '''
       Constructor just connecting the base menu.
@@ -453,7 +453,7 @@ class FitSubWrapper(object):
     self.__window_root__=main_window
     self.__session_root__=active_session
     self.__items_root__=items
-  
+
   def __get_dict__(self):
     '''
       Interactively creates the objects __dict__ dictionary to contain only the
@@ -467,7 +467,7 @@ class FitSubWrapper(object):
     for key, value in dict.items():
       setattr(self, key, value)
     return dict
-  
+
   # connect __dict__ to the __get_dict__ function
   __dict__=property(__get_dict__)
 
@@ -484,7 +484,7 @@ class FitCaller(object):
     
     FitCallser.parameters is a list of (name,value) tuples for the default parameters.
   '''
-  
+
   def __init__(self, parent, fit_class):
     self.__parent__=parent
     self.__fit_class__=fit_class

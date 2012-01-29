@@ -41,31 +41,31 @@ from measurement_data_structure import MeasurementData
 # import gui functions for active config.gui.toolkit
 import config.gui
 try:
-  GUI=__import__( config.gui.toolkit+'gui.reflectometer', fromlist=['ReflectometerGUI']).ReflectometerGUI
-except ImportError: 
+  GUI=__import__(config.gui.toolkit+'gui.reflectometer', fromlist=['ReflectometerGUI']).ReflectometerGUI
+except ImportError:
   class GUI: pass
 try:
-  ReflectometerFitGUI=__import__( config.gui.toolkit+'gui.reflectometer_functions', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
-except ImportError: 
+  ReflectometerFitGUI=__import__(config.gui.toolkit+'gui.reflectometer_functions', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
+except ImportError:
   class ReflectometerFitGUI: pass
 
 if not sys.platform.startswith('win'):
   WindowsError=OSError
 
-__author__ = "Artur Glavic"
-__credits__ = []
+__author__="Artur Glavic"
+__credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__status__="Development"
 
 class FitList(list):
   '''
     Class to store the fit parameters together with the list of MeasurementData objects.
   '''
   fit_inhomogenity_object=None
-  
+
   def __init__(self, *args):
     list.__init__(self, *args)
-    self.fit_object=RefFitParameters() 
+    self.fit_object=RefFitParameters()
     self.fit_object_history=[]
     self.fit_object_future=[]
 
@@ -89,7 +89,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('D8 reflectometer','*.[Uu][Xx][Dd]','*.[Uu][Xx][Dd].gz'), ('Philips X\'Pert', '*.txt', '*.xrdml')]
+  FILE_WILDCARDS=[('D8 reflectometer', '*.[Uu][Xx][Dd]', '*.[Uu][Xx][Dd].gz'), ('Philips X\'Pert', '*.txt', '*.xrdml')]
   COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['fit', 'ref']
   #options:
   show_counts=False # dont convert to conts/s
@@ -102,7 +102,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
   #------------------ local variables -----------------
 
-  
+
   def __init__(self, arguments):
     '''
       class constructor expands the GenericSession constructor
@@ -117,7 +117,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       self.active_file_data=self.file_data[self.active_file_name]
     except KeyError:
       self.active_file_data=[]
-  
+
   def read_argument_add(self, argument, last_argument_option=[False, ''], input_file_names=[]):
     '''
       additional command line arguments for reflectometer sessions
@@ -128,13 +128,13 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
         if last_argument_option[1]=='fit':
           self.export_for_fit=True
           self.fit_layers=argument
-          last_argument_option=[True,'fit2']
+          last_argument_option=[True, 'fit2']
         elif last_argument_option[1]=='fit2':
           self.fit_thicknesses=argument
-          last_argument_option=[True,'fit3']
+          last_argument_option=[True, 'fit3']
         elif last_argument_option[1]=='fit3':
           self.fit_est_roughness=float(argument)
-          last_argument_option=[False,'']
+          last_argument_option=[False, '']
       # Cases of arguments:
       elif argument=='-counts':
         self.show_counts=True
@@ -149,8 +149,8 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     '''
       function to read data files
     '''
-    return read_data.reflectometer.read_data(file_name ,self.DATA_COLUMNS)
-  
+    return read_data.reflectometer.read_data(file_name , self.DATA_COLUMNS)
+
   def add_file(self, filename, append=True):
     '''
       Add the data of a new file to the session.
@@ -163,7 +163,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       self.time_col=1
       th=0
       twoth=0
-      phi=0       
+      phi=0
       for line in dataset.info.splitlines():
         strip=line.split('=')
         if strip[0]=='STEPTIME':
@@ -177,10 +177,10 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       if not self.show_counts:
         self.units=dataset.units()
         dataset.process_function(self.counts_to_cps)
-        dataset.unit_trans([['counts',1,0,'counts/s']])
+        dataset.unit_trans([['counts', 1, 0, 'counts/s']])
       #dataset.short_info=' started at Θ='+str(round(th,4))+' 2Θ='+str(round(twoth,4))+' φ='+str(round(phi,4))
       if self.export_for_fit: # export fit files
-        self.export_fit(dataset,  filename)
+        self.export_fit(dataset, filename)
         simu=read_data.reflectometer.read_simulation(self.TEMP_DIR+'fit_temp.sim')
         simu.number='sim_'+dataset.number
         simu.short_info='simulation'
@@ -189,7 +189,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
         dataset.plot_together=[dataset, simu]
     # TODO: GUI selection to show only data or fit
     #if self.export_for_fit: # export fit files
-     # self.add_data(refinements, filename+"_simulation")
+    #  self.add_data(refinements, filename+"_simulation")
     return datasets
 
   def add_data(self, data_list, name, append=True):
@@ -221,17 +221,17 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     from scipy.interpolate import interp1d
     from measurement_data_structure import MeasurementData, PhysicalProperty
     from fit_data import FitPolynomialPowerlaw
-    dataset.unit_trans([['Q','Å^{-1}', lambda_x/4./np.pi**2*180.,0.,'Θ', '°'], 
-                        ['2Θ', '°', 0.5,0.,'Θ', '°']])
+    dataset.unit_trans([['Q', 'Å^{-1}', lambda_x/4./np.pi**2*180., 0., 'Θ', '°'],
+                        ['2Θ', '°', 0.5, 0., 'Θ', '°']])
     region=np.where(dataset.x>theta_c)
     # Change x to sqrt(Θ²-Θc²)/λ and interpolate it to even spaced data
-    x_uneven=(np.sqrt( dataset.x[region]**2 - theta_c**2)%'rad')/lambda_x
+    x_uneven=(np.sqrt(dataset.x[region]**2-theta_c**2)%'rad')/lambda_x
     x=np.linspace(x_uneven.min(), x_uneven.max(), len(x_uneven))
     y_uneven=dataset.y[region]
     f=interp1d(x_uneven, y_uneven, kind=interpolation_type, copy=False)
     y=f(x)
     # normalize by a polynomial fit to the logarithmic data
-    fit=FitPolynomialPowerlaw([0., 0., 0., -1., 1.])
+    fit=FitPolynomialPowerlaw([0., 0., 0.,-1., 1.])
     fit.refine(x, y)
     y=y/fit(x)
     # Calculate the fourier transform of the data
@@ -240,11 +240,11 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     fft_x=np.linspace(1./(2.*x.max()), 1./(2.*x.max())*len(fft_y), len(fft_y))
     fft_phi=np.angle(fft_result)
     out=MeasurementData()
-    out.append_column( PhysicalProperty('d-spacing', 'Å', fft_x) )
-    out.append_column( PhysicalProperty('Amplitude', 'a.u.', fft_y) )
-    out.append_column( PhysicalProperty('phase', 'rad', fft_phi) )
+    out.append_column(PhysicalProperty('d-spacing', 'Å', fft_x))
+    out.append_column(PhysicalProperty('Amplitude', 'a.u.', fft_y))
+    out.append_column(PhysicalProperty('phase', 'rad', fft_phi))
     out.sample_name=dataset.sample_name
-    out.short_info='Fourier Analysis with Θ_c=%g%s' % (theta_c, dataset.x.unit)
+    out.short_info='Fourier Analysis with Θ_c=%g%s'%(theta_c, dataset.x.unit)
     #out2=MeasurementData()
     #out2.append_column( PhysicalProperty('d-spacing', 'Å', x) )
     #out2.append_column( PhysicalProperty('Intensity', 'a.u.', y) )
@@ -260,7 +260,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     '''
     output_data=input_data
     counts_column=[]
-    for i,unit in enumerate(self.units[:len(input_data)]): 
+    for i, unit in enumerate(self.units[:len(input_data)]):
   # selection of the columns for counts
       if unit=='counts':
         counts_column.append(i)
@@ -285,7 +285,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       code_tmp=' '
     # has the program been changed or does it not exist
     if (not os.path.exists(exe)) or \
-      ((os.stat(code_file)[8]-os.stat(exe)[8]) > 0) or \
+      ((os.stat(code_file)[8]-os.stat(exe)[8])>0) or \
       (not 'maxint='+str(self.active_file_data.fit_object.number_of_layers()+1) in code_tmp):
       code=open(code_file, 'r').read()
       # compile the program with constants suitable for this dataset
@@ -298,10 +298,10 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       print 'Compiling fit program!'
       callopts=dict(
                       stderr=subprocess.PIPE,
-                      stdout=subprocess.PIPE, 
-                      stdin=subprocess.PIPE,                      
+                      stdout=subprocess.PIPE,
+                      stdin=subprocess.PIPE,
                      )
-      
+
       call_params=[config.reflectometer.FORTRAN_COMPILER, os.path.join(self.TEMP_DIR, 'fit_tmp.f90'), '-o', exe]
       if  config.reflectometer.FORTRAN_COMPILER_OPTIONS!=None:
         call_params.append(config.reflectometer.FORTRAN_COMPILER_OPTIONS)
@@ -314,27 +314,27 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
         tmpenv['PATH']=os.path.join(self.SCRIPT_PATH, 'gfortran\\bin')
         callopts['env']=tmpenv
       try:
-        proc=subprocess.Popen(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL,  
-                      creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
+        proc=subprocess.Popen(call_params, shell=config.gnuplot_preferences.EMMULATE_SHELL,
+                      creationflags=config.gnuplot_preferences.PROCESS_FLAGS,
                       **callopts
                       )
         result=proc.communicate()
       except (OSError, WindowsError), error:
-        raise RuntimeError, "Problem calling the fortran compile '%s': %s" % (config.reflectometer.FORTRAN_COMPILER, error)
+        raise RuntimeError, "Problem calling the fortran compile '%s': %s"%(config.reflectometer.FORTRAN_COMPILER, error)
       if result!=('', ''):
-        raise RuntimeError, "Problem compiling fortran program: %s" % (result[0]+result[1])
+        raise RuntimeError, "Problem compiling fortran program: %s"%(result[0]+result[1])
       else:
         print 'Compiled'
-    process = subprocess.Popen([exe, file_ent, file_res, file_out+'.ref', file_out+'.sim', str(max_iter)], 
-                        shell=config.gnuplot_preferences.EMMULATE_SHELL,  
-                        creationflags=config.gnuplot_preferences.PROCESS_FLAGS, 
+    process=subprocess.Popen([exe, file_ent, file_res, file_out+'.ref', file_out+'.sim', str(max_iter)],
+                        shell=config.gnuplot_preferences.EMMULATE_SHELL,
+                        creationflags=config.gnuplot_preferences.PROCESS_FLAGS,
                         stderr=subprocess.PIPE,
-                        stdout=subprocess.PIPE, 
-                        stdin=subprocess.PIPE, 
-                        cwd=self.TEMP_DIR, 
+                        stdout=subprocess.PIPE,
+                        stdin=subprocess.PIPE,
+                        cwd=self.TEMP_DIR,
                         )
     return process
-    
+
   def find_total_reflection(self, dataset):
     '''
       try to find the angle of total reflection by
@@ -357,14 +357,14 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       try to fit the scaling factor before the total reflection angle
     '''
     self.active_file_data.fit_object.fit=1
-    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, only_fitted_columns=True, xfrom=0.005,xto=self.find_total_reflection(dataset))
+    data_lines=dataset.export(self.TEMP_DIR+'fit_temp.res', False, only_fitted_columns=True, xfrom=0.005, xto=self.find_total_reflection(dataset))
     self.active_file_data.fit_object.set_fit_parameters(scaling=True) # fit only scaling factor
     # create the .ent file
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    self.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',20)
-    retcode = self.proc.communicate()
+    self.proc=self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp', 20)
+    retcode=self.proc.communicate()
     parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref', self.active_file_data.fit_object)
     self.active_file_data.fit_object.scaling_factor=parameters[self.active_file_data.fit_object.fit_params[0]]
     self.active_file_data.fit_object.fit=0
@@ -388,16 +388,16 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     ent_file=open(self.TEMP_DIR+'fit_temp.ent', 'w')
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
     ent_file.close()
-    self.proc = self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp',20)
+    self.proc=self.call_fit_program(self.TEMP_DIR+'fit_temp.ent', self.TEMP_DIR+'fit_temp.res', self.TEMP_DIR+'fit_temp', 20)
     sec=0.
     while self.proc.poll()==None:
       time.sleep(0.1)
       sec+=0.1
-      sys.stdout.write( '\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b'+\
-                        'Script running for % 6dsec' % sec)
+      sys.stdout.write('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b'+\
+                        'Script running for % 6dsec'%sec)
       sys.stdout.flush()
-    retcode = self.proc.communicate()
-    parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref',self.active_file_data.fit_object)
+    retcode=self.proc.communicate()
+    parameters, errors=self.read_fit_file(self.TEMP_DIR+'fit_temp.ref', self.active_file_data.fit_object)
     self.active_file_data.fit_object.get_parameters(parameters)
     self.active_file_data.fit_object.fit=0
     return retcode
@@ -417,48 +417,48 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
           count=int(compound.split('[')[0])
           second_split=compound.split('[')[1].rstrip(']').split('_')
           second_thick=fit_thick.split('-')[0].lstrip('[').rstrip(']').split('_')
-          self.active_file_data.fit_object.append_multilayer(second_split, map(float, second_thick), 
+          self.active_file_data.fit_object.append_multilayer(second_split, map(float, second_thick),
                                                              [self.fit_est_roughness for i in second_thick], count)
         else: # no multilayer
             if len(fit_thick)>0:
-                self.active_file_data.fit_object.append_layer(compound, float(fit_thick.split('-')[0]), 
+                self.active_file_data.fit_object.append_layer(compound, float(fit_thick.split('-')[0]),
                                                               self.fit_est_roughness)
             else:
                 self.active_file_data.fit_object.append_substrate(compound, self.fit_est_roughness)
         if len(fit_thick.split('-'))>1: # remove first thickness
-            fit_thick=fit_thick.split('-',1)[1]
+            fit_thick=fit_thick.split('-', 1)[1]
         else:
             fit_thick=''
       #------------------- create fit parameters object -------------------
     self.active_file_data.fit_object.set_fit_constrains() # set constrained parameters for multilayer
       # convert x values from angle to q
-    dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'Q','Å^{-1}'], \
-                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'Q','Å^{-1}']])
+    dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'Q', 'Å^{-1}'], \
+                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'Q', 'Å^{-1}']])
       # first guess for scaling factor is the maximum intensity
     self.active_file_data.fit_object.scaling_factor=(dataset.max(xstart=0.005)[1]/1e5)
       # first guess for the background is the minimum intensity
     self.active_file_data.fit_object.background=dataset.min()[1]
     #+++++ Try to refine the scaling factorn and roughnesses +++++
-    if self.try_refine: 
+    if self.try_refine:
       print "Try to refine scaling"
-      dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'Q','Å^{-1}'], \
-                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'Q','Å^{-1}']])    
+      dataset.unit_trans([['Θ', '°', 4*math.pi/1.54/180*math.pi, 0, 'Q', 'Å^{-1}'], \
+                      ['2Θ', '°', 2*math.pi/1.54/180*math.pi, 0, 'Q', 'Å^{-1}']])
       self.refine_scaling(dataset)
       print "Try to refine roughnesses"
       self.refine_roughnesses(dataset)
     #----- Try to refine the scaling factorn and roughnesses -----
     #+++++++ create final input file and make a simulation +++++++
       # write data into files with sequence numbers in format ok for fit.f90    
-    data_lines=dataset.export(export_file_prefix+'.res',print_info=False, only_fitted_columns=True) 
+    data_lines=dataset.export(export_file_prefix+'.res', print_info=False, only_fitted_columns=True)
     self.active_file_data.fit_object.set_fit_parameters(background=True)
     ent_file=open(export_file_prefix+'.ent', 'w')
     ent_file.write(self.active_file_data.fit_object.get_ent_str()+'\n')
     ent_file.close()
     print "Simulate the measurement"
-    self.proc = self.call_fit_program(export_file_prefix+'.ent', 
-                                                             export_file_prefix+'.res', 
-                                                             export_file_prefix,20)
-    retcode = self.proc.communicate()
+    self.proc=self.call_fit_program(export_file_prefix+'.ent',
+                                                             export_file_prefix+'.res',
+                                                             export_file_prefix, 20)
+    retcode=self.proc.communicate()
     #------- create final input file and make a simulation -------
 
   #---- functions for fitting with fortran program by E. Kentzinger ----
