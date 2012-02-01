@@ -45,7 +45,7 @@
 # python modules
 import sys, os
 import warnings
-exit=sys.exit
+exit=sys.exit #@ReservedAssignment
 from glob import glob
 try:
   sys.path.append(os.path.split(__file__)[0])
@@ -255,13 +255,10 @@ def ipdrop(session):
   '''
     Inizialize some convenience functions and drop to an IPython console.
   '''
-  import sys, os
   import numpy as np
   import scipy as sp
-  import sessions.generic
   mdp=sessions.generic.measurement_data_plotting
   mds=sessions.generic.measurement_data_structure
-  from glob import glob
   index_mess=0
   errorbars=False
 
@@ -305,7 +302,7 @@ def ipdrop(session):
     for file_name in file_names:
       session.add_file(file_name)
     select_file(file_names[-1])
-  def next(rel=1):
+  def next(rel=1): #@ReservedAssignment
     # switch to next plot
     _user_namespace['index_mess']=(_user_namespace['index_mess']+rel)%len(session.active_file_data)
     if _user_namespace['autoplot']:
@@ -336,7 +333,7 @@ def ipdrop(session):
     del(sys.modules[item])
 
   session.initialize_gnuplot()
-  gnuplot_version, terminals=mdp.check_gnuplot_version(session)
+  ignore, terminals=mdp.check_gnuplot_version(session)
   if not sys.platform=='darwin' and 'pngcairo' in terminals:
     config.gnuplot_preferences.set_output_terminal_png=config.gnuplot_preferences.set_output_terminal_pngcairo
   if not 'wxt' in terminals and 'x11' in terminals:

@@ -164,7 +164,7 @@ class AsciiImportFilter(object):
     '''
       Load preset options from a dictionary.
     '''
-    dict_items=self._dict_items
+    #dict_items=self._dict_items
     for input_type, value in preset.items():
       old_item=getattr(self, input_type)
       etype=type(old_item)
@@ -354,7 +354,7 @@ class AsciiImportFilter(object):
 
   def _4split_sequences(self):
     # split data into different sequences
-    header_lines, data_lines, footer_lines=self._header_lines, self._data_lines, self._footer_lines
+    ignore, data_lines, ignore=self._header_lines, self._data_lines, self._footer_lines
     if self.split_sequences!=0:
       self._splited_data, self._sequence_headers=self._split_data(data_lines)
     else:
@@ -381,7 +381,7 @@ class AsciiImportFilter(object):
       Converts the ascii data into a 2d array of floats.
     '''
     output=[]
-    for j, data_lines in enumerate(self._splited_data):
+    for data_lines in self._splited_data:
       data_array=self._extract_data(data_lines)
       output.append(data_array)
     self._data_arrays=output
@@ -537,7 +537,7 @@ class AsciiImportFilter(object):
     info=self._extracted_data
     # extract header information by searching for custom strings
     for name, search_string, presplit, offset, endsplit, info_type in info_search:
-      for i, line in enumerate(info_lines):
+      for line in info_lines:
         try:
           idx=line.index(search_string)
         except ValueError:
@@ -703,15 +703,15 @@ class AsciiImportFilter(object):
 
 #-----------------------------------AbstractImportFilter-Class---------------------------------------------------#
 
-def append_filter(filter):
+def append_filter(filter_):
   '''
-    Add a filter to the list of known import filters.
+    Add a filter_ to the list of known import filters.
   '''
-  if filter in defined_filters:
+  if filter_ in defined_filters:
     return
-  defined_filters.append(filter)
+  defined_filters.append(filter_)
   if config is not None:
-    config[filter.name]=filter.get_presets()
+    config[filter_.name]=filter_.get_presets()
     config.write()
 
 try:

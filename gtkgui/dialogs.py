@@ -875,7 +875,12 @@ class ExportFileChooserDialog(gtk.FileChooserDialog):
     elif opts['action']==gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
       # Introduce a new table right of the location entry
       table=gtk.Table(2, 2, False)
-      self.vbox.get_children()[0].get_children()[0].get_children()[0].get_children()[1].pack_end(table, False)
+      try:
+        self.vbox.get_children()[0].get_children()[0].get_children()[0].\
+                                        get_children()[1].pack_end(table, False)
+      except AttributeError:
+        self.vbox.get_children()[0].get_children()[0].get_children()[0].\
+                                        get_children()[1].add(table)
     label=gtk.Label('width')
     table.attach(label,
             # X direction #          # Y direction

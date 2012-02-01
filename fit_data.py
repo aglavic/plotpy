@@ -35,7 +35,7 @@ except ImportError:
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 class ConnectedDict(dict):
@@ -1470,6 +1470,65 @@ class FitVoigt(FitFunction):
     value=p[0]*wofz(z).real/wofz(z0).real+p[4]
     return value
 
+class FitOffspecular(FitFunction):
+  '''
+    Fit the offspecular diffuse scattering from roughness.
+  '''
+
+  # define class variables.
+  name="Offspecular"
+  parameters=[1., 500., 0.3, 1.54, 2., 0., 0., 100., 0.05, 0.3]
+  parameter_names=['I', 'ζ', 'H', 'λ', '2Θ', 'θ-offset', 'C',
+                   'I-spec', 'σ-spec', 'αi-max']
+  parameter_description={'I': 'Scaling of Off-specular part',
+                         'ζ': 'Roughness correlation length',
+                         'H': 'Hurst parameter defining the fractal dimension 0<H<1',
+                         'λ': 'Used Wavelength',
+                         '2Θ': 'Used 2Θ value',
+                         'θ-offset': 'Miss-alignment of θ',
+                         'C':'Offset',
+                         'I-spec': 'Specular intensity',
+                         'σ-spec': 'Width of the specular region',
+                         'αi-max': 'Angle where the full beam is reflected by the sample',
+                         }
+  fit_function_text='Offspecular: I=[I] ζ=[ζ|2] H=[H|3]'
+
+  def __init__(self, initial_parameters=[]):
+    '''
+      Initialize and import scipy function.
+    '''
+    FitFunction.__init__(self, initial_parameters)
+    self.refine_parameters=[0, 1, 5, 6, 7, 8]
+
+
+  def fit_function(self, p, x):
+    '''
+      Return the Voigt profile of x.
+      It is calculated using the complex error function,
+      see Wikipedia articel on Voigt-profile for the details.
+    '''
+    pi=numpy.pi
+    cos=numpy.cos
+    I0=p[0]
+    xi=p[1]
+    H=p[2]
+    lamda=p[3]
+    tth=p[4]/180.*pi
+    th_offset=p[5]
+    C=p[6]
+
+    I_spec=p[7]
+    sigma_spec=p[8]/180.*pi
+    ai_max=p[9]/180.*pi
+
+    alpha_i=(x+th_offset)/180.*pi
+    alpha_f=tth-alpha_i
+    Qx=2.*pi/lamda*(cos(alpha_f)-cos(alpha_i))
+    Sxy=(1.+Qx**2*xi**2)**(-1.-H)
+    Sspec=numpy.exp(-0.5*(tth/2.-alpha_i)**2/sigma_spec**2)
+    I=I0*abs(Sxy)**2+I_spec*Sspec
+    return numpy.minimum(1., alpha_i/ai_max)*I+C
+
 class FitCuK(FitFunction):
   '''
     Simulate Cu-Kα radiation for fitting θ-2θ scans of x-ray diffraction as douple
@@ -2757,6 +2816,7 @@ class FitSession(FitSessionGUI):
                        FitPolynomialPowerlaw.name: FitPolynomialPowerlaw,
                        FitCrystalLayer.name: FitCrystalLayer,
                        FitRelaxingCrystalLayer.name: FitRelaxingCrystalLayer,
+                       FitOffspecular.name: FitOffspecular,
                        #FitNanoparticleZFC.name: FitNanoparticleZFC, 
                        #FitNanoparticleZFC2.name: FitNanoparticleZFC2, 
                        }
@@ -2840,7 +2900,7 @@ class FitSession(FitSessionGUI):
     funcs.sort()
     return funcs
 
-  def sum(self, index_1, index_2):
+  def sum(self, index_1, index_2): #@ReservedAssignment
     '''
       Create a sum of the functions with index 1 and 2.
       Function 1 and 2 are set not to be fitted.

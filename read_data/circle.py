@@ -8,14 +8,13 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 import os
-import sys
-import math, numpy
+import numpy
 from measurement_data_structure import MeasurementData, PhysicalProperty, MeasurementData4D
-from config.circle import *
+from config.circle import * #@UnusedWildImport
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 def read_data(input_file):
@@ -89,7 +88,7 @@ def read_scan_header(input_file_lines):
     @return List of header information and data column names or 'NULL' if not the right format
   '''
   output=None
-  for i in range(len(input_file_lines)):
+  for ignore in range(len(input_file_lines)):
     line=input_file_lines.pop(0)
     if (line[0:2]=='#L'):
       columns=line[3:-1].split('  ')
@@ -191,14 +190,14 @@ def get_type_columns(type_line, columns):
   '''
     Return the indices of columns to plot.
   '''
-  type, options=type_line.split(None, 1)
+  type_, options=type_line.split(None, 1)
   intensity=len(columns)-1
   intensity_error=-1
   for col in INTENSITY_COLUMNS:
     if col in columns:
       intensity=columns.index(col)
       break
-  if type=='hklscan':
+  if type_=='hklscan':
     hklranges=map(float, options.strip().split())
     if abs(hklranges[1]-hklranges[0])>1e-5:
       return columns.index('h'), intensity, intensity_error,-1
@@ -206,10 +205,10 @@ def get_type_columns(type_line, columns):
       return columns.index('k'), intensity, intensity_error,-1
     if abs(hklranges[5]-hklranges[4])>1e-5:
       return columns.index('l'), intensity, intensity_error,-1
-  elif type=='hklmesh':
+  elif type_=='hklmesh':
     items=options.strip().split()
     return columns.index(items[0].lower()), columns.index(items[4].lower()), intensity_error, intensity
-  elif type=='mesh':
+  elif type_=='mesh':
     items=options.strip().split()
     first_angle=items[0]
     if first_angle in KNOWN_COLUMNS:
@@ -220,7 +219,7 @@ def get_type_columns(type_line, columns):
     first_index=columns.index(first_angle)
     second_index=columns.index(second_angle)
     return first_index, second_index, intensity_error, intensity
-  elif type=='mesh3d':
+  elif type_=='mesh3d':
     items=options.strip().split()
     first_angle='Theta' #items[0]
     if first_angle in KNOWN_COLUMNS:
@@ -231,18 +230,17 @@ def get_type_columns(type_line, columns):
     first_index=columns.index(first_angle)
     second_index=columns.index(second_angle)
     return first_index, second_index, intensity_error, intensity
-  elif type=='timescan_cm' or type=='Escan':
+  elif type_=='timescan_cm' or type_=='Escan':
     return columns.index('E'), intensity, intensity_error,-1
-  elif type=='ascan' and options.split()[0]=='lake':
+  elif type_=='ascan' and options.split()[0]=='lake':
     return columns.index('T_{sample}'), intensity, intensity_error,-1
   else:
     return 0, intensity, intensity_error,-1
 
 def recheck_type(dataset, scan_header):
-  type_line=scan_header['type']
-  type_line=scan_header['type']
-  type, options=type_line.split(None, 1)
-  if type=='timescan':
+  type_line=scan_header['type_']
+  type_, ignore=type_line.split(None, 1)
+  if type_=='timescan':
     if 'T_{sample}' in dataset.dimensions():
       t_index=dataset.dimensions().index('T_{sample}')
       T=dataset.data[t_index]
@@ -376,13 +374,13 @@ def read_data_4id(input_file):
     return 'NULL'
   header, data_with_head=text.split('# Column Descriptions:', 1)
   header_info=extract_4id_headerinfo(header)
-  type, file_columns, data=extract_4id_columns_and_data(data_with_head)
+  type_, file_columns, data=extract_4id_columns_and_data(data_with_head)
   if len(data)==0:
     print "No data in the file."
     return 'NULL'
   output=MeasurementData(x=0, y=1)
   used_columns=[0]
-  for i, column, unit in ID4_SCANS[type]:
+  for i, column, unit in ID4_SCANS[type_]:
     if column is None:
       column, unit=file_columns[i]
       if column in ID4_MAPPING:
@@ -439,7 +437,7 @@ def extract_4id_columns_and_data(data_with_head):
   '''
     Extract the data and columns of the file.
   '''
-  type='other'
+  type_='other'
   lines=data_with_head.splitlines()
   columns=[]
   data_lines=[]
@@ -462,13 +460,13 @@ def extract_4id_columns_and_data(data_with_head):
                       items[2].strip()
                       ))
   if 'M3C DS Y' in data_with_head:
-    type='mirror-align'
+    type_='mirror-align'
   elif 'XMCD_2_Diff' in data_with_head:
-    type='XMCD'
+    type_='XMCD'
   elif 'Positioner 2' in data_with_head:
-    type='e-scan'
+    type_='e-scan'
   data_lines=map(str.strip, data_lines)
   data=map(str.split, data_lines)
   data=numpy.array(data, dtype=numpy.float32)
   data=data.transpose()
-  return type, columns, data
+  return type_, columns, data
