@@ -1,13 +1,12 @@
 # -*- encoding: utf-8 -*-
 '''
   KWS2 GTK GUI class.
-''' 
+'''
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
 import os
 import gtk
-from glob import glob
 # own modules
 import config.kws2
 from dialogs import SimpleEntryDialog
@@ -15,10 +14,10 @@ from dialogs import SimpleEntryDialog
 #----------------------- importing modules --------------------------
 
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Production"
 
 
 class KWS2GUI:
@@ -27,7 +26,7 @@ class KWS2GUI:
       Create a new intrumental setup.
     '''
     file_type=file_name.rsplit('.gz', 1)[0].rsplit('.', 1)[-1]
-    if file_type == 'cmb':
+    if file_type=='cmb':
       # riso dataset
       setup=dict(config.kws2.setup_config_riso)
     else:
@@ -38,7 +37,7 @@ class KWS2GUI:
     label_center_x=gtk.Label('Horizontal Beamcenter:')
     label_center_y=gtk.Label('Vertical Beamcenter:')
     label_detector_distance=gtk.Label('Detector distance:')
-    if file_type in ['edf', 'cmb', 'bin', 'tif']:
+    if file_type in ['edf', 'cmb', 'bin', 'tif', 'bmp', 'png']:
       label_lambda_n=gtk.Label('X-ray Wavelength λ:')
     else:
       label_lambda_n=gtk.Label('Neutron Wavelength λ:')
@@ -77,50 +76,51 @@ class KWS2GUI:
     label_width_y=gtk.Label('Detector size vertical:')
     rl_width_x=gtk.Label('mm')
     rl_width_y=gtk.Label('mm')
-    if file_type == 'tif':
+    if file_type in ['tif', 'png', 'bmp']:
       # add to table
-      table.attach(label_width_x, 0,1, 2,3, gtk.FILL,0, 0,0);
-      table.attach(label_width_y, 0,1, 3,4, gtk.FILL,0, 0,0);
-      table.attach(entry_width_x, 1,2, 2,3, gtk.FILL,0, 0,0);
-      table.attach(entry_width_y, 1,2, 3,4, gtk.FILL,0, 0,0);
-      table.attach(rl_width_x, 2,3, 2,3, gtk.FILL,0, 0,0);
-      table.attach(rl_width_y, 2,3, 3,4, gtk.FILL,0, 0,0);
-      
+      table.attach(label_width_x, 0, 1, 2, 3, gtk.FILL, 0, 0, 0);
+      table.attach(label_width_y, 0, 1, 3, 4, gtk.FILL, 0, 0, 0);
+      table.attach(entry_width_x, 1, 2, 2, 3, gtk.FILL, 0, 0, 0);
+      table.attach(entry_width_y, 1, 2, 3, 4, gtk.FILL, 0, 0, 0);
+      table.attach(rl_width_x, 2, 3, 2, 3, gtk.FILL, 0, 0, 0);
+      table.attach(rl_width_y, 2, 3, 3, 4, gtk.FILL, 0, 0, 0);
+
     # add to table
-    table.attach(toggle_button_swapyz, 1,3, 6,7, gtk.EXPAND|gtk.FILL,0, 0,0);
-    if not file_type in ['cmb', 'tif']:
-      table.attach(label_background, 0,1, 8,9, gtk.FILL,0, 0,0);
-      table.attach(entry_background, 1,2, 8,9, gtk.EXPAND|gtk.FILL,0, 0,0);
-      table.attach(button_background, 2,3, 8,9, gtk.FILL,0, 0,0);  
+    table.attach(toggle_button_swapyz, 1, 3, 6, 7, gtk.EXPAND|gtk.FILL, 0, 0, 0);
+    if not file_type in ['cmb', 'tif', 'png', 'bmp']:
+      table.attach(label_background, 0, 1, 8, 9, gtk.FILL, 0, 0, 0);
+      table.attach(entry_background, 1, 2, 8, 9, gtk.EXPAND|gtk.FILL, 0, 0, 0);
+      table.attach(button_background, 2, 3, 8, 9, gtk.FILL, 0, 0, 0);
       if not file_type in ['edf', 'bin']:
-        table.attach(label_detector_sensitivity, 0,1, 7,8, gtk.FILL,0, 0,0);
-        table.attach(entry_detector_sensitivity, 1,2, 7,8, gtk.EXPAND|gtk.FILL,0, 0,0);
-        table.attach(button_detector_sensitivity, 2,3, 7,8, gtk.FILL,0, 0,0);  
-    table.attach(label_apply, 0,1, 9,10, gtk.FILL,0, 0,0);
-    table.attach(label_center_x, 0,1, 0,1, gtk.FILL,0, 0,0);
-    table.attach(label_center_y, 0,1, 1,2, gtk.FILL,0, 0,0);
-    table.attach(entry_center_x, 1,2, 0,1, 0,0, 0,0);
-    table.attach(entry_center_y, 1,2, 1,2, 0,0, 0,0);
-    table.attach(rl_center_x, 2,3, 0,1, gtk.FILL,0, 0,0);
-    table.attach(rl_center_y, 2,3, 1,2, gtk.FILL,0, 0,0);
+        table.attach(label_detector_sensitivity, 0, 1, 7, 8, gtk.FILL, 0, 0, 0);
+        table.attach(entry_detector_sensitivity, 1, 2, 7, 8, gtk.EXPAND|gtk.FILL, 0, 0, 0);
+        table.attach(button_detector_sensitivity, 2, 3, 7, 8, gtk.FILL, 0, 0, 0);
+    table.attach(label_apply, 0, 1, 9, 10, gtk.FILL, 0, 0, 0);
+    table.attach(label_center_x, 0, 1, 0, 1, gtk.FILL, 0, 0, 0);
+    table.attach(label_center_y, 0, 1, 1, 2, gtk.FILL, 0, 0, 0);
+    table.attach(entry_center_x, 1, 2, 0, 1, 0, 0, 0, 0);
+    table.attach(entry_center_y, 1, 2, 1, 2, 0, 0, 0, 0);
+    table.attach(rl_center_x, 2, 3, 0, 1, gtk.FILL, 0, 0, 0);
+    table.attach(rl_center_y, 2, 3, 1, 2, gtk.FILL, 0, 0, 0);
     if not file_type in ['edf']:
-      table.attach(label_detector_distance, 0,1, 4,5, gtk.FILL,0, 0,0);
-      table.attach(entry_detector_distance, 1,2, 4,5, 0,0, 0,0);
-      table.attach(rl_detector_distance, 2,3, 4,5, gtk.FILL,0, 0,0);  
-    table.attach(entry_apply, 1,2, 9,10, gtk.EXPAND|gtk.FILL,0, 0,0);
+      table.attach(label_detector_distance, 0, 1, 4, 5, gtk.FILL, 0, 0, 0);
+      table.attach(entry_detector_distance, 1, 2, 4, 5, 0, 0, 0, 0);
+      table.attach(rl_detector_distance, 2, 3, 4, 5, gtk.FILL, 0, 0, 0);
+    table.attach(entry_apply, 1, 2, 9, 10, gtk.EXPAND|gtk.FILL, 0, 0, 0);
     if not file_type in ['edf']:
-      table.attach(label_lambda_n, 0,1, 5,6, gtk.FILL,0, 0,0);
-      table.attach(entry_lambda_n, 1,2, 5,6, 0,0, 0,0);
-      table.attach(rl_lambda_n, 2,3, 5,6, gtk.FILL,0, 0,0);  
-    
+      table.attach(label_lambda_n, 0, 1, 5, 6, gtk.FILL, 0, 0, 0);
+      table.attach(entry_lambda_n, 1, 2, 5, 6, 0, 0, 0, 0);
+      table.attach(rl_lambda_n, 2, 3, 5, 6, gtk.FILL, 0, 0, 0);
+
     dialog.vbox.add(table)
     dialog.show_all()
     dialog.run()
-    
+
     # read the configuration
     setup_name=entry_apply.get_text()
-    if not os.path.join(folder, file_name) in glob(os.path.join(folder, setup_name)):
-      setup_name=file_name
+    # TODO: check this!
+    #if not os.path.join(folder, file_name) in glob(os.path.join(folder, setup_name)):
+    #  setup_name=file_name
     detector_sensitivity=entry_detector_sensitivity.get_text()
     if not os.path.exists(os.path.join(folder, detector_sensitivity)):
       detector_sensitivity=None
@@ -182,20 +182,20 @@ class KWS2GUI:
     '''
     # Create actions for the menu
     actions=(
-            ( "GISAS", None,                             # name, stock id
-                "GISAS", None,                    # label, accelerator
-                None,                                   # tooltip
-                None ),
-            ( "SeperateScattering", None,                             # name, stock id
-                "Seperate Scattering", None,                    # label, accelerator
-                "Calculate seperated scattering parts from polarization directions.",                                   # tooltip
-                self.seperate_scattering ),
-            ( "AutoBackground", None,                             # name, stock id
-                "Automatically Subtract Background", None,                    # label, accelerator
-                "",                                   # tooltip
-                self.do_autosubtract_background ),
+            ("GISAS", None, # name, stock id
+                "GISAS", None, # label, accelerator
+                None, # tooltip
+                None),
+            ("SeperateScattering", None, # name, stock id
+                "Seperate Scattering", None, # label, accelerator
+                "Calculate seperated scattering parts from polarization directions.", # tooltip
+                self.seperate_scattering),
+            ("AutoBackground", None, # name, stock id
+                "Automatically Subtract Background", None, # label, accelerator
+                "", # tooltip
+                self.do_autosubtract_background),
                 )
-    return string,  actions
+    return string, actions
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
 
@@ -205,68 +205,68 @@ class KWS2GUI:
       to calculate e.g. coherent magnetic scattering.
     '''
     # build a list of MeasurementData objects in active_file_data for the polarizations
-    polarization_list=[(object[1][0],object[0]) for object in self.file_data.items()]
+    polarization_list=[(object[1][0], object[0]) for object in self.file_data.items()]
     combine_list=[]
     def add_object():
       '''Subdialog to add one chanel to the separation.'''
       add_dialog=gtk.Dialog(title='Add polarization:')
-      add_dialog.set_default_size(100,50)
+      add_dialog.set_default_size(100, 50)
       add_dialog.add_button('OK', 1)
       add_dialog.add_button('Cancle', 0)
-      align_table=gtk.Table(4,1,False)
+      align_table=gtk.Table(4, 1, False)
       label=gtk.Label('sign: ')
-      align_table.attach(label, 0,1, 0, 1, 0,0, 0,0);
+      align_table.attach(label, 0, 1, 0, 1, 0, 0, 0, 0);
       sign=gtk.Entry()
       sign.set_text('+')
-      align_table.attach(sign, 1,2, 0, 1, 0,0, 0,0);
+      align_table.attach(sign, 1, 2, 0, 1, 0, 0, 0, 0);
       multiplier=gtk.Entry()
       multiplier.set_text('1')
-      align_table.attach(multiplier, 2,3, 0, 1, 0,0, 0,0);
+      align_table.attach(multiplier, 2, 3, 0, 1, 0, 0, 0, 0);
       object_box=gtk.combo_box_new_text()
       object_box.append_text('0-('+polarization_list[0][0].short_info+')')
       for i, object in enumerate(polarization_list[1:]):
         object_box.append_text(str(i+1)+'-('+object[0].short_info+')')
       object_box.set_active(0)
-      align_table.attach(object_box, 3,4, 0,1, gtk.EXPAND|gtk.FILL,0, 0,0)
+      align_table.attach(object_box, 3, 4, 0, 1, gtk.EXPAND|gtk.FILL, 0, 0, 0)
       add_dialog.vbox.add(align_table)
       add_dialog.show_all()
       result=add_dialog.run()
       if result==1:
-        if sign.get_text() in ['+','-', '*', '/']:
+        if sign.get_text() in ['+', '-', '*', '/']:
           sign=sign.get_text()
         else:
           sign='+'
-        combine_list.append( (object_box.get_active(), sign, float(multiplier.get_text())) )
+        combine_list.append((object_box.get_active(), sign, float(multiplier.get_text())))
         label=gtk.Label(sign+multiplier.get_text()+'*{'+object_box.get_active_text()+'}')
         label.show()
-        function_table.attach(label, 0,1, len(combine_list)-1,len(combine_list), 0,0, 0,0)
+        function_table.attach(label, 0, 1, len(combine_list)-1, len(combine_list), 0, 0, 0, 0)
       add_dialog.destroy()
     combine_dialog=gtk.Dialog(title='Combination of polarizations:')
-    combine_dialog.set_default_size(150,50)
+    combine_dialog.set_default_size(150, 50)
     combine_dialog.add_button('Add', 2)
     combine_dialog.add_button('OK', 1)
     combine_dialog.add_button('Cancle', 0)
-    table=gtk.Table(3,1,False)
+    table=gtk.Table(3, 1, False)
     input_filed=gtk.Entry()
     input_filed.set_width_chars(4)
     input_filed.set_text('Result')
     table.attach(input_filed,
                 # X direction #          # Y direction
-                0, 1,                      0, 1,
-                gtk.EXPAND | gtk.FILL,     0,
-                0,                         0);
+                0, 1, 0, 1,
+                gtk.EXPAND|gtk.FILL, 0,
+                0, 0);
     label=gtk.Label(" = ")
     table.attach(label,
                 # X direction #          # Y direction
-                1, 2,                      0, 1,
-                0,                         0,
-                0,                         0);
-    function_table=gtk.Table(1,1,False)
+                1, 2, 0, 1,
+                0, 0,
+                0, 0);
+    function_table=gtk.Table(1, 1, False)
     table.attach(function_table,
                 # X direction #          # Y direction
-                2, 3,                      0, 1,
-                gtk.EXPAND | gtk.FILL,     0,
-                0,                         0);
+                2, 3, 0, 1,
+                gtk.EXPAND|gtk.FILL, 0,
+                0, 0);
     combine_dialog.vbox.add(table)
     combine_dialog.show_all()
     # if a preset is used create the right list and show the function
@@ -278,7 +278,7 @@ class KWS2GUI:
         try:
           label=gtk.Label(item[1]+str(item[2])+'*{'+str(i)+'-('+polarization_list[item[0]][0].short_info+')}')
           label.show()
-          function_table.attach(label, 0,1, i,i+1, 0,0, 0,0)        
+          function_table.attach(label, 0, 1, i, i+1, 0, 0, 0, 0)
         except IndexError:
           combine_dialog.destroy()
           return None
@@ -291,7 +291,7 @@ class KWS2GUI:
       window.index_mess=len(self.active_file_data)-1
       window.replot()
     combine_dialog.destroy()
-  
+
   def calculate_combination(self, combine_list, polarization_list, title):
     '''
       Calculate a combination of polarization directions as
@@ -301,21 +301,21 @@ class KWS2GUI:
       @param polarization_list The chanels which will be combined
       @param title Name of the new created chanel
     '''
-    if combine_list[0][1] != '-':
+    if combine_list[0][1]!='-':
       result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
     else:
       result=-1.*combine_list[0][2]*polarization_list[combine_list[0][0]][0]
     for object, sign, multiplier in combine_list[1:]:
-      if sign == '+':
+      if sign=='+':
         result=result+multiplier*polarization_list[object][0]
-      elif sign == '*':
+      elif sign=='*':
         result=result*(multiplier*polarization_list[object][0])
-      elif sign == '/':
+      elif sign=='/':
         result=result/(multiplier*polarization_list[object][0])
       else:
         result=result-multiplier*polarization_list[object][0]
       if result is None:
-        message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, 
+        message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE,
                                   message_format='You can only combine polarizations with the same number of measured points!')
         message.run()
         message.destroy()
@@ -332,4 +332,4 @@ class KWS2GUI:
       bg_fraction=values['Fraction (1/x)']
       bg=self.autosubtract_background(self.active_file_data[window.index_mess], bg_fraction)
       window.replot()
-      print "%i background subtracted" % bg
+      print "%i background subtracted"%bg

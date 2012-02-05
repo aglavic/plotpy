@@ -601,6 +601,56 @@ class SimpleEntryDialog(gtk.Dialog):
 
 #--------------- SimpleEntryDialog to get a list of values from the user ---------------
 
+#++++++++++++++++++ MouseReader dialog to get a single xy position +++++++++++++++++++++
+
+class MouseReader(gtk.Dialog):
+  '''
+    A simple dialog window used to retrieve a position on the plot.
+  '''
+  mouse_position=(0., 0.)
+  _window=None
+
+  def __init__(self, title, window):
+    gtk.Dialog.__init__(self, title=title, parent=window)
+
+    self._window=window
+    x, y=window.get_position()
+    self.set_default_size(400, 50)
+    self.move(x+150, y)
+    window.mouse_position_callback=self.callback
+    self.vbox.add(gtk.Label(title))
+
+
+  def run(self):
+    '''
+      Like Dialog.run but works with mouse callback. 
+    '''
+    self._result=None
+    def set_result(widget, id_):
+      self._result=id_
+    self.connect('response', set_result)
+    self.show_all()
+    while self._result is None:
+      while gtk.events_pending():
+        gtk.main_iteration(False)
+      sleep(0.1)
+    self.cleanup()
+    self.hide()
+    return self.mouse_position
+
+  def callback(self, position):
+    '''
+      Called when the mouse button is pressed on the plot.
+    '''
+    self.mouse_position=position[0:2]
+    self._result=1
+
+  def cleanup(self):
+    self._window.mouse_position_callback=None
+
+
+#------------------ MouseReader dialog to get a single xy position ---------------------
+
 #++++++++++++ MultipeakDialog to fit a peak function at differnt positions +++++++++++++
 
 class MultipeakDialog(gtk.Dialog):

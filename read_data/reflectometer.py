@@ -9,9 +9,11 @@
 import os
 import math
 import measurement_data_structure
+from measurement_data_structure import PhysicalProperty
 import codecs
 from copy import deepcopy
 from numpy import array, sqrt, pi, sin, float32, argsort, linspace
+from array import array as py_array
 
 __author__="Artur Glavic"
 __credits__=[]
@@ -30,7 +32,10 @@ def read_data(file_name, DATA_COLUMNS):
   '''
   measurement_data=[]
   if os.path.exists(file_name):
-    if file_name.endswith('.txt'):
+    if file_name.endswith('.raw'):
+      # Philips X'Pert data files
+      return read_bruker_raw(file_name)
+    elif file_name.endswith('.txt'):
       # Philips X'Pert data files
       return read_data_philips(file_name)
     if file_name.endswith('.xrdml'):
@@ -293,6 +298,129 @@ def read_data_xrdml(input_file):
       dataset.info+='% 10s = %g %s\n'%(key, value[1], value[0])
 
     return [dataset]
+
+def read_bruker_raw(input_file):
+  '''
+    Read a raw dataset from Bruker D8
+  '''
+  data=open(input_file, 'rb').read()
+  if data[:7]!='RAW1.01':
+    print "Wrong file format"
+    return "NULL"
+  header_info=read_bruker_header(data[:712])
+  scans=read_bruker_data(data[712:], header_info['SCANS'])
+  output=[]
+  for i, scan in enumerate(scans):
+    dataset=MeasurementData()
+    if scan[0]['SCAN_ANGLE']=='2THETA':
+      dataset.data.append(PhysicalProperty('2Θ', '°', scan[1]))
+      dataset.data.append(PhysicalProperty('I', 'counts', scan[2], sqrt(scan[2])))
+      dataset.data.append((4.*pi/1.54*sin(dataset.data[0]/2.))//('Q_z', 'Å^{-1}'))
+    else:
+      dataset.data.append(PhysicalProperty('Θ', '°', scan[1]))
+      dataset.data.append(PhysicalProperty('I', 'counts', scan[2], sqrt(scan[2])))
+      dataset.data.append((4.*pi/1.54*sin(dataset.data[0]))//('Q_z', 'Å^{-1}'))
+    dataset.data[1]/=PhysicalProperty('', 's', [scan[0]['TIME_PER_STEP']])
+
+    dataset.sample_name=header_info['SAMPLE_ID']
+    if len(scans)!=1:
+      dataset.short_info='#%i'%i
+    dataset.info=''
+    for key, value in sorted(header_info.items()+scan[0].items()):
+      dataset.info+='%20s: %s\n'%(key, value)
+    output.append(dataset)
+  return output
+
+def read_bruker_header(data):
+  head_info={}
+  file_status=uint32_(data[8:12])
+  if file_status==1:
+    head_info["file status"]="done"
+  elif (file_status==2):
+    head_info["file status"]="active"
+  elif (file_status==3):
+    head_info["file status"]="aborted"
+  elif (file_status==4):
+    head_info["file status"]="interrupted"
+  head_info['SCANS']=uint32_(data[12:16])
+  head_info["MEASURE_DATE"]=data[16:26].replace('\x00', '')
+  head_info["MEASURE_TIME"]=data[26:36].replace('\x00', '')
+  #head_info["USER"]=data[36:108].replace('\x00', '')
+  #head_info["SITE"]=data[108:326].replace('\x00', '')
+  head_info["SAMPLE_ID"]=data[326:386].replace('\x00', '')
+  head_info["COMMENT"]=data[386:446].replace('\x00', '')
+  head_info["ANODE_MATERIAL"]=data[608:612].replace('\x00', '')
+  head_info["ALPHA_AVERAGE"]=double_(data[616:624])
+  head_info["ALPHA1"]=double_(data[624:632])
+  head_info["ALPHA2"]=double_(data[632:640])
+  head_info["BETA"]=double_(data[640:648])
+  head_info["ALPHA_RATIO"]=double_(data[648:656])
+  head_info["measurement time"]=float_(data[664:668])
+
+  head_info["detector code"]=uint32_(data[96:100])
+  return head_info
+
+def read_bruker_data(data, scans):
+  i=0
+  scan_data=[]
+  for j in range(scans):
+    range_info=read_bruker_range_header(data[i:])
+    start=i+304+range_info['supplementary_headers_size']
+    i=start+4*range_info['STEPS']
+    I=py_array('f')
+    I.fromstring(data[start:i])
+    I=array(I)
+    x=linspace(range_info['START_%s'%range_info['SCAN_ANGLE']],
+         range_info['START_%s'%range_info['SCAN_ANGLE']]+\
+           range_info['STEP_SIZE']*range_info['STEPS'],
+         range_info['STEPS'])
+    scan_data.append([range_info, x, I])
+  return scan_data
+
+def read_bruker_range_header(data):
+  range_info={}
+  #head_length=uint32_(data[:4])
+  range_info['STEPS']=uint32_(data[4:8])
+  range_info['START_THETA']=double_(data[8:16])
+  range_info['START_2THETA']=double_(data[16:24])
+  range_info['START_CHI']=double_(data[24:32])
+  range_info['START_PHI']=double_(data[32:40])
+  range_info['START_Z']=double_(data[56:64])
+  range_info['STEP_SIZE']=double_(data[176:184])
+
+  range_info['STEP_MODE']=uint32_(data[196:200])
+
+  range_info['TIME_PER_STEP']=float_(data[192:196])
+  range_info['supplementary_headers_size']=uint32_(data[256:260])
+  if range_info['STEP_MODE'] in [0, 1]:
+    range_info['SCAN_ANGLE']='2THETA'
+  else:
+    range_info['SCAN_ANGLE']='THETA'
+  return range_info
+
+def double_(string):
+  '''
+    Return a double float from a binary string.
+  '''
+  a=py_array('d')
+  a.fromstring(string)
+  return a.pop()
+
+def float_(string):
+  '''
+    Return a double float from a binary string.
+  '''
+  a=py_array('f')
+  a.fromstring(string)
+  return a.pop()
+
+def uint32_(string):
+  '''
+    Return a double float from a binary string.
+  '''
+  a=py_array('I')
+  a.fromstring(string)
+  return int(a.pop())
 
 class MeasurementData(measurement_data_structure.MeasurementData):
   '''

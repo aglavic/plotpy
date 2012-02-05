@@ -107,6 +107,7 @@ known_measurement_types={
                          'in12': ('in12', 'IN12Session', ['___'], []),
                          'dns': ('dns', 'DNSSession', ['d_dat'], []),
                          'kws2': ('kws2', 'KWS2Session', ['DAT'], []),
+                         'mbe': ('mbe', 'MBESession', ['png'], []),
                          'sas': ('sas', 'SASSession', ['___'], []),
                          'gisas': ('kws2', 'KWS2Session', ['DAT', 'edf', 'cmb', 'tif', 'bmp'], []),
                          'shg': ('shg', 'SHGSession', ['par'], []),
