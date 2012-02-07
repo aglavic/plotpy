@@ -7,7 +7,6 @@
 '''
 
 import sys, os
-exit=sys.exit
 
 try:
   # Use easy setup to ensure dependencies
@@ -19,16 +18,16 @@ except ImportError:
 from glob import glob
 import subprocess
 
-__name__='plot-script'
+__name__='plot-script' #@ReservedAssignment
 __author__="Artur Glavic"
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __author_email__=__email__
 __url__="http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki"
 __description__='''Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.'''
 
 __scripts__=['plot.py']
 __py_modules__=[]
-__package_dir__={'plot_script': '.'}
+__package_dir__={}
 __packages__=['plot_script', 'plot_script.config', 'plot_script.config.default_templates',
             'plot_script.read_data', 'plot_script.sessions',
             'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui', 'plot_script.plugins'] #'plot_script.wxgui', 
@@ -41,17 +40,16 @@ __data_files__=[('doc', glob('doc/*.html'))]
 
 if "py2app" in sys.argv:
   import py2app #@UnusedImport @UnresolvedImport
-  __scripts__=['__init__.py']
+  __scripts__=['plot.py']
   #__data_files__+=[('../Frameworks', glob('/usr/lib/libwx_mac*'))]
   __options__={
-              "app": ['__init__.py'],
+              "app": ['plot.py'],
               "options": { "py2app": {
                            "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
-                           #"excludes": "__init__", 
                            "optimize": 1, # Keep docstrings
-                           "packages": "encodings, gtk, sessions, read_data, gtkgui, IPython",
+                           "packages": "encodings, gtk, IPython, plot_script",
                            "resources": glob("doc/*.html"),
-                           "iconfile": "config/logo.png",
+                           "iconfile": "plot_script/config/logo.png",
                            #"argv_emulation": True,
                            },
                           }
@@ -61,12 +59,12 @@ elif "py2exe" in sys.argv:
   __options__={
                 #"setup_requires": ['py2exe'], 
                 #"console": [ "__init__.py"], # set the executable for py2exe
-                "windows": [ "__init__.py" ], # executable for py2exe is windows application            
+                "windows": [ "plot.py" ], # executable for py2exe is windows application            
                 "options": {  "py2exe": {
                               "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio, Image, TiffImagePlugin",
                               "optimize": 1, # Keep docstring (e.g. IPython console usage)
                               "skip_archive": True, # setting not to move compiled code into library.zip file
-                              'packages':'encodings, gtk, sessions, read_data, gtkgui, IPython, PIL',
+                              'packages':'encodings, gtk, IPython, PIL',
                               "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'],
                              },
                            }
@@ -76,16 +74,15 @@ else:
                 }
 
 __requires__=['pygtk', 'gobject', 'numpy']
-from distutils.core import setup, Extension
+from distutils.core import setup
 
 # extensions modules written in C
-#mdf_module = Extension('plot_script.measurement_data_functions',
-#                      sources = ['measurement_data_functions.c'], 
-#                      include_dirs = ['/usr/lib/python2.6/dist-packages/numpy/core/include/numpy'])
-__extensions_modules__=[]#[mdf_module]
+__extensions_modules__=[]
 
-script_files=['scripts/prd', 'scripts/psd', 'scripts/p4d', 'scripts/dnsplot', 'scripts/treffplot', 'scripts/pin12',
-              'scripts/plot_SQUID_data', 'scripts/plot_4circle_data', 'scripts/plot_reflectometer_data']
+script_files=['scripts/prd', 'scripts/psd', 'scripts/p4d', 'scripts/dnsplot',
+              'scripts/treffplot', 'scripts/pin12',
+              'scripts/plot_SQUID_data', 'scripts/plot_4circle_data',
+              'scripts/plot_reflectometer_data']
 # creat windows batches for the script_files
 win_batches=[script+'.bat' for script in script_files]
 for script in script_files:

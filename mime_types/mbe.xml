@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+   <mime-type type="text/mbe">
+     <comment>MBE Log File</comment>
+     <glob pattern="*.log"/>
+   </mime-type>
+   <mime-type type="text/aes">
+     <comment>MBE AES File</comment>
+     <glob pattern="*.dat"/>
+   </mime-type>
+   <mime-type type="image/mbe_png">
+     <comment>LEED/RHEED File</comment>
+     <glob pattern="*.png"/>
+   </mime-type>
+</mime-info>
