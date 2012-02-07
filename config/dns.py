@@ -5,10 +5,10 @@
 
 import os, sys
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Production"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Production"
 
 min_prefix_length=3
 
@@ -19,11 +19,11 @@ DETECTOR_ANGULAR_INCREMENT=5.
 # Mapping the detector numbers of D7 to their angular offset from the bank center
 D7_DETECTOR_MAP=[
                  # Relative detector positions for first Bank (Bank 4)
-                 [(i%2)*(-0.9886*(i+1)+26.452)+((i+1)%2)*(-0.99863*(i+1)+26.511) for i in range(44)], 
+                 [(i%2)*(-0.9886*(i+1)+26.452)+((i+1)%2)*(-0.99863*(i+1)+26.511) for i in range(44)],
                  # Relative detector positions for second Bank (Bank 3)
-                 [(i%2)*(-0.99234*(i+1)+22.728)+((i+1)%2)*(-0.9939*(i+1)+22.397) for i in range(44)], 
+                 [(i%2)*(-0.99234*(i+1)+22.728)+((i+1)%2)*(-0.9939*(i+1)+22.397) for i in range(44)],
                  # Relative detector positions for third Bank (Bank 2)
-                 [(i%2)*(-1.0068*(i+1)+21.762)+((i+1)%2)*(-0.99642*(i+1)+21.326) for i in range(44)], 
+                 [(i%2)*(-1.0068*(i+1)+21.762)+((i+1)%2)*(-0.99642*(i+1)+21.326) for i in range(44)],
                  # trying old one
                  #[(i%2)*(-1.0204*(i+1)+23.905)+((i+1)%2)*(-0.9955*(i+1)+23.377) for i in range(44)], 
                  #[(i%2)*(-0.99762*(i+1)+20.566)+((i+1)%2)*(-0.99237*(i+1)+20.7.1a5) for i in range(44)], 
@@ -32,42 +32,42 @@ D7_DETECTOR_MAP=[
 LAMBDA_NEUTRON=None
 VANADIUM_FILE=None
 SETUP_DIRECTORYS=['.'] # directories to look for the calibration files
-NICR_FILE_WILDCARDS=[('', 'nicr.d_dat'), ('', 'NiCr.d_dat'), ('', 'nicr.d_dat.gz'), ('', 'NiCr.d_dat.gz'), 
-                     ('','_silica.d7')] # nicr files start, end string
-BACKGROUND_WILDCARDS=[('', 'leer.d_dat'), ('', 'back.d_dat'), ('', 'leer.d_dat.gz'), ('', 'back.d_dat.gz'), 
-                      ('','_back.d7')]  # background file start, end string
-VANADIUM_WILDCARDS=[('', 'vana.d_dat'), ('', 'Vana.d_dat'), ('', 'vana.d_dat.gz'), ('', 'Vana.d_dat.gz'), 
+NICR_FILE_WILDCARDS=[('', 'nicr.d_dat'), ('', 'NiCr.d_dat'), ('', 'nicr.d_dat.gz'), ('', 'NiCr.d_dat.gz'),
+                     ('', '_silica.d7')] # nicr files start, end string
+BACKGROUND_WILDCARDS=[('', 'leer.d_dat'), ('', 'back.d_dat'), ('', 'leer.d_dat.gz'), ('', 'back.d_dat.gz'),
+                      ('', '_back.d7')]  # background file start, end string
+VANADIUM_WILDCARDS=[('', 'vana.d_dat'), ('', 'Vana.d_dat'), ('', 'vana.d_dat.gz'), ('', 'Vana.d_dat.gz'),
                     ('vanadium_', '.dat'), ('', '_vana.d7')] # vanadium file start, end string
 
 ALWAYS_FULLAUTO=False
 FULLAUTO_TEMP_SENSITIVITY=5.
 
 # mapping of the parameter names in the DNS data files
-GET_INFO= (\
+GET_INFO=(\
   # get detector bank position
-  ('DeteRota','detector_bank_2T'),\
+  ('DeteRota', 'detector_bank_2T'), \
   # get sample rotation
-  ('Huber','omega'),\
+  ('Huber', 'omega'), \
   # get polarizer positio
-  ('Translation','polarizer_trans'),\
+  ('Translation', 'polarizer_trans'), \
   # get flipper current
-  ('Flipper_precession','flipper'),\
+  ('Flipper_precession', 'flipper'), \
   # get flipper current
-  ('Flipper_z_compensation','flipper_compensation'),\
+  ('Flipper_z_compensation', 'flipper_compensation'), \
   # get helmholz current
-  ('C_a','C_a'),\
+  ('C_a', 'C_a'), \
   # get helmholz current
-  ('C_b','C_b'),\
+  ('C_b', 'C_b'), \
   # get helmholz current
-  ('C_c','C_c'),\
+  ('C_c', 'C_c'), \
   # get helmholz current
-  ('C_z','C_z'),\
+  ('C_z', 'C_z'), \
   # get temperature
-  ('T1','temperature'),\
+  ('T1', 'temperature'), \
   # get counting time
-  ('Timer','time'),\
+  ('Timer', 'time'), \
   # get monitor counts
-  ('Monitor','monitor')
+  ('Monitor', 'monitor')
   )
 
 SCALE_BY=('time', 's') #('monitor','monitor') # scale data by measureing 'time' or 'monitor' counts

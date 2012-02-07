@@ -5,13 +5,12 @@
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
-from numpy import sin, cos, arctan, sqrt, pi, ndarray, where
+from numpy import sin, cos, arctan, sqrt, pi, ndarray, where, sign
 # own modules
 from measurement_data_structure import PhysicalProperty
 from gtkgui.dialogs import SimpleEntryDialog, MouseReader
-from config.mbe import LEED_SCREEN_SIZE, LEED_DISTANCE, H_over_2m, \
-                       RHEED_SCREEN_SIZE, RHEED_DISTANCE, RHEED_CENTER_X, \
-                       RHEED_CENTER_Y, RHEED_SCREEN_PIXELS, O_ENERGY
+import config
+from config.mbe import H_over_2m, O_ENERGY
 from fit_data import FitGaussian3D
 #from dialogs import SimpleEntryDialog
 
@@ -86,7 +85,7 @@ class MBEGUI:
                 None, # tooltip
                 self.rheed_to_q),
             ("AESCorrect", None, # name, stock id
-             "Correct AES Energy", "<control>A", # label, accelerator
+             "Correct AES Energy", "<control><alt>C", # label, accelerator
                 None, # tooltip
                 self.correct_aes),
                 )
@@ -99,6 +98,8 @@ class MBEGUI:
       Correct the x-position of an AES spectrum.
     '''
     dataset=window.active_dataset
+    if dataset.x.unit!='eV':
+      return
     if window.mouse_mode:
       old_freeinput=dataset.plot_options.free_input
       old_range=dataset.plot_options.xrange
@@ -127,11 +128,11 @@ class MBEGUI:
       dataset.x-=parameters['Oxygen Line [eV]']-O_ENERGY
       window.replot()
 
-
   def leed_to_q(self, action, window):
     '''
       Transform the data from xy to QxQy.
     '''
+    LEED=config.user_config['LEED']
     if window.mouse_mode:
       dataset=window.active_dataset
       if dataset.xdata==3:
@@ -145,20 +146,23 @@ class MBEGUI:
       point11=MouseReader('Select one point in Qx', window).run()
       point12=MouseReader('Select a second point in Qx', window).run()
       point21=MouseReader('Select one point in Qy', window).run()
-      point3=MouseReader('Select a point on the screen edge', window).run()
+      #point3=MouseReader('Select a point on the screen edge', window).run()
       # refine positions
       x, y, z=dataset.data[0:3]
-      fit=FitGaussian3D([50., point11[0], point11[1], 5., 5., 0., 10.])
+      fit=FitGaussian3D([50., point11[0], point11[1], 3., 3., 0., 10.])
+      fit.refine_parameters=[0, 1, 2, 6]
       region=where((x>=(point11[0]-30))&(x<=(point11[0]+30))&\
                    (y>=(point11[1]-30))&(y<=(point11[1]+30)))
       fit.refine(x[region], y[region], z[region])
       point11=fit.parameters[1:3]
-      fit=FitGaussian3D([50., point12[0], point12[1], 5., 5., 0., 10.])
+      fit=FitGaussian3D([50., point12[0], point12[1], 3., 3., 0., 10.])
+      fit.refine_parameters=[0, 1, 2, 6]
       region=where((x>=(point12[0]-30))&(x<=(point12[0]+30))&\
                    (y>=(point12[1]-30))&(y<=(point12[1]+30)))
       fit.refine(x[region], y[region], z[region])
       point12=fit.parameters[1:3]
-      fit=FitGaussian3D([50., point21[0], point21[1], 5., 5., 0., 10.])
+      fit=FitGaussian3D([50., point21[0], point21[1], 3., 3., 0., 10.])
+      fit.refine_parameters=[0, 1, 2, 6]
       region=where((x>=(point21[0]-30))&(x<=(point21[0]+30))&\
                    (y>=(point21[1]-30))&(y<=(point21[1]+30)))
       fit.refine(x[region], y[region], z[region])
@@ -175,7 +179,7 @@ class MBEGUI:
       L1=(A1-A2+L)/2./sqrt(L)
       center_x=point11[0]-(point11[0]-point12[0])*L1/sqrt(L)
       center_y=point11[1]-(point11[1]-point12[1])*L1/sqrt(L)
-      screen_size=sqrt((point3[0]-center_x)**2+(point3[1]-center_y)**2)*2.
+      #screen_size=sqrt((point3[0]-center_x)**2+(point3[1]-center_y)**2)*2.
       tilt=arctan((center_y-point11[1])/(center_x-point11[0]))*180./pi
 
       old_freeinput=dataset.plot_options.free_input
@@ -184,22 +188,21 @@ class MBEGUI:
              'set label "Point 2" at %f, %f point front'%tuple(point12),
              'set label "Point 3" at %f, %f point front'%tuple(point21),
              'set label "Center" at %f, %f point front'%(center_x, center_y),
-             'set arrow from %f,%f to %f,%f nohead front'%(center_x, center_y,
-                                                           point3[0], point3[1]),
                                        ]
       window.replot()
       dataset.plot_options.free_input=old_freeinput
     else:
-      center_x=100.
-      center_y=100.
-      screen_size=500.
+      center_x=LEED['SCREEN_X']
+      center_y=LEED['SCREEN_Y']
       tilt=0.
     dialog=SimpleEntryDialog('LEED parameters:',
                              [
                               ('Energy [eV]', 100., float),
+       #                       ('Screen Center x [pix]', LEED['SCREEN_X'], float),
+       #                       ('Screen Center y [pix]', LEED['SCREEN_Y'], float),
                               ('Center x [pix]', center_x, float),
                               ('Center y [pix]', center_y, float),
-                              ('Screen Size [pix]', screen_size, float),
+                              ('Screen Size [pix]', LEED['PIXEL_SIZE'], float),
                               ('Axes tilt [°]', tilt, float),
                               ]
                              )
@@ -210,15 +213,51 @@ class MBEGUI:
       x, y=dataset.data[0:2]
 
       lamda=H_over_2m/sqrt(parameters['Energy [eV]'])
-      pixel_size=LEED_SCREEN_SIZE/parameters['Screen Size [pix]']
-      th_x=arctan((x.view(ndarray)-parameters['Center x [pix]'])*pixel_size/LEED_DISTANCE)
-      th_y=arctan((y.view(ndarray)-parameters['Center y [pix]'])*pixel_size/LEED_DISTANCE)
+      pixel_size=LEED['SCREEN_SIZE']/parameters['Screen Size [pix]']
+      LEED['PIXEL_SIZE']=parameters['Screen Size [pix]']
+      #LEED['SCREEN_X']=parameters['Screen Center x [pix]']
+      #LEED['SCREEN_Y']=parameters['Screen Center y [pix]']
+      th=arctan(sqrt((x.view(ndarray)-parameters['Center x [pix]'])**2+\
+                     (y.view(ndarray)-parameters['Center y [pix]'])**2)*\
+                pixel_size/LEED['DISTANCE'])
+      idx=where((x-parameters['Center x [pix]'])!=0)
+      phi=sign(y.view(ndarray))*pi/2. # if x position is zero phi is pi/2. or -pi/2.
+      phi[idx]=arctan((y[idx].view(ndarray)-parameters['Center y [pix]'])/\
+                      (x[idx].view(ndarray)-parameters['Center x [pix]']))
+      phi+=pi
+      phi[(x-parameters['Center x [pix]'])>=0]+=pi
+      phi[(((x-parameters['Center x [pix]'])==0)&\
+           ((y-parameters['Center y [pix]'])<0))]-=pi
+      Q=2.*pi/lamda*sin(th)
+      Qx=Q*cos(phi)
+      Qy=Q*sin(phi)
+
+      #th0=arctan(sqrt((parameters['Center x [pix]']-LEED['SCREEN_X'])**2+\
+      #                (parameters['Center y [pix]']-LEED['SCREEN_Y'])**2)*\
+      #                pixel_size/LEED['DISTANCE'])
+      #if (parameters['Center x [pix]']-LEED['SCREEN_X'])==0:
+      #  phi0=sign(parameters['Center y [pix]']-LEED['SCREEN_Y'])*pi/2.
+      #else:
+      #  phi0=arctan((parameters['Center y [pix]']-LEED['SCREEN_Y'])/\
+      #              (parameters['Center x [pix]']-LEED['SCREEN_X']))
+      #phi0+=pi
+      #if parameters['Center x [pix]']>0:
+      #  phi0+=pi
+      #Q0=2.*pi/lamda*sin(th0)
+      #Qx0=Q0*cos(phi0)
+      #Qy0=Q0*sin(phi0)
+
+      #th_x=arctan((x.view(ndarray)-parameters['Center x [pix]'])*pixel_size/LEED['DISTANCE'])
+      #th_y=arctan((y.view(ndarray)-parameters['Center y [pix]'])*pixel_size/LEED['DISTANCE'])
+
       tilt=parameters['Axes tilt [°]']*pi/180.
-      qx_array=2.*pi/lamda*sin(th_x)
-      qy_array=2.*pi/lamda*sin(th_y)
-      qtmp=qx_array
-      qx_array=qx_array*cos(tilt)+qy_array*sin(tilt)
-      qy_array=qy_array*cos(tilt)-qtmp*sin(tilt)
+      #qx_array=2.*pi/lamda*sin(th_x)
+      #qy_array=2.*pi/lamda*sin(th_y)
+      #qtmp=qx_array
+      #qx_array=(Qx+Qx0)*cos(tilt)+(Qy+Qy0)*sin(tilt)
+      #qy_array=(Qy+Qy0)*cos(tilt)-(Qx+Qx0)*sin(tilt)
+      qx_array=(Qx)*cos(tilt)+(Qy)*sin(tilt)
+      qy_array=(Qy)*cos(tilt)-(Qx)*sin(tilt)
 
       if len(dataset.data)==3:
         dataset.data.append(PhysicalProperty('Q_x', 'Å^{-1}', qx_array))
@@ -226,6 +265,7 @@ class MBEGUI:
       else:
         dataset.data[3]=PhysicalProperty('Q_x', 'Å^{-1}', qx_array)
         dataset.data[4]=PhysicalProperty('Q_y', 'Å^{-1}', qy_array)
+        dataset.changed_after_export=True
       dataset.is_matrix_data=False
       dataset.xdata=3
       dataset.ydata=4
@@ -238,6 +278,7 @@ class MBEGUI:
     '''
       Transform the data from xy to QxQy.
     '''
+    RHEED=config.user_config['RHEED']
     if window.mouse_mode:
       dataset=window.active_dataset
       if dataset.xdata==4:
@@ -255,7 +296,7 @@ class MBEGUI:
       #             (y>=(specular[1]-30))&(y<=(specular[1]+30)))
       #fit.refine(x[region], y[region], z[region])
       #specular=fit.parameters[1:3]
-      specdiv=(specular[0]-RHEED_CENTER_X, specular[1]-RHEED_CENTER_Y)
+      specdiv=(specular[0]-RHEED['CENTER_X'], specular[1]-RHEED['CENTER_Y'])
       specdist=sqrt(specdiv[0]**2+specdiv[1]**2)
       speccenter=(specular[0]-specdiv[0]/2., specular[1]-specdiv[1]/2.)
       divnorm=(specdiv[0]/specdist, specdiv[1]/specdist)
@@ -278,7 +319,7 @@ class MBEGUI:
       specular=(400., 400.)
     dialog=SimpleEntryDialog('RHEED parameters:',
                              [
-                              ('Energy [eV]', 10000., float),
+                              ('Energy [eV]', RHEED['ENERGY'], float),
                               ('Specular x [pix]', specular[0], float),
                               ('Specular y [pix]', specular[1], float),
                               ]
@@ -291,25 +332,24 @@ class MBEGUI:
       y=dataset.data[1].view(ndarray)
       specular=(parameters['Specular x [pix]'], parameters['Specular y [pix]'])
       # difference between specular position and zero position
-      specdiv=(specular[0]-RHEED_CENTER_X, specular[1]-RHEED_CENTER_Y)
+      specdiv=(specular[0]-RHEED['CENTER_X'], specular[1]-RHEED['CENTER_Y'])
       specdist=sqrt(specdiv[0]**2+specdiv[1]**2)
       speccenter=(specular[0]-specdiv[0]/2., specular[1]-specdiv[1]/2.)
       divnorm=(specdiv[0]/specdist, specdiv[1]/specdist)
-      pixel_size=RHEED_SCREEN_SIZE/RHEED_SCREEN_PIXELS
-      alpha_i=arctan(specdist/2.*pixel_size/RHEED_DISTANCE)
+      pixel_size=RHEED['SCREEN_SIZE']/RHEED['SCREEN_PIXELS']
+      alpha_i=arctan(specdist/2.*pixel_size/RHEED['DISTANCE'])
       alpha_f=arctan((((x-speccenter[0])*divnorm[0])+\
-                            ((y-speccenter[1])*divnorm[1]))*\
-                      pixel_size/RHEED_DISTANCE)
+                      ((y-speccenter[1])*divnorm[1]))*\
+                      pixel_size/RHEED['DISTANCE'])
       phi=arctan((((x-speccenter[0])*divnorm[1])-\
-                            ((y-speccenter[1])*divnorm[0]))*\
-                      pixel_size/RHEED_DISTANCE)
+                  ((y-speccenter[1])*divnorm[0]))*\
+                      pixel_size/RHEED['DISTANCE'])
 
-
-
-      lamda=H_over_2m/sqrt(parameters['Energy [eV]'])
-      qx_array=2.*pi/lamda*(cos(alpha_f)*cos(phi)-cos(alpha_i))
+      RHEED['ENERGY']=parameters['Energy [eV]']
+      lamda=H_over_2m/sqrt(RHEED['ENERGY'])
+      qx_array=2.*pi/lamda*(cos(alpha_i)-cos(alpha_f)*cos(phi))
       qy_array=2.*pi/lamda*(sin(phi)*cos(alpha_f))
-      qx_array[alpha_f>=0.]*=-1
+      qx_array[alpha_f<0]=0
 
       if len(dataset.data)==3:
         dataset.data.append(PhysicalProperty('Q_x', 'Å^{-1}', qx_array))
@@ -317,6 +357,7 @@ class MBEGUI:
       else:
         dataset.data[3]=PhysicalProperty('Q_x', 'Å^{-1}', qx_array)
         dataset.data[4]=PhysicalProperty('Q_y', 'Å^{-1}', qy_array)
+        dataset.changed_after_export=True
       dataset.is_matrix_data=False
       dataset.xdata=4
       dataset.ydata=3

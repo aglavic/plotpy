@@ -8,15 +8,28 @@ __credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Development"
 
+from config import user_config
 
-H_over_2m=12.26426 #m^{-1}·eV^{1/2} - electron wavelength factor for energy in eV
-LEED_SCREEN_SIZE=350.
-LEED_DISTANCE=200.
-RHEED_SCREEN_SIZE=350.
-RHEED_SCREEN_PIXELS=620.
-RHEED_DISTANCE=350.
-RHEED_CENTER_X=400.
-RHEED_CENTER_Y=310.
+#Å^{-1}·eV^{1/2} - electron wavelength factor for 1/sqrt(energy in eV)
+H_over_2m=12.26426
 
+if not 'LEED' in user_config:
+  user_config['LEED']=dict(
+                SCREEN_SIZE=350.,
+                SCREEN_X=220.,
+                SCREEN_Y=380.,
+                DISTANCE=300.,
+                PIXEL_SIZE=650.,
+                           )
 
-O_ENERGY=500.
+if not 'RHEED' in user_config:
+  user_config['RHEED']=dict(
+                SCREEN_SIZE=200.,
+                SCREEN_PIXELS=620.,
+                DISTANCE=350.,
+                CENTER_X=-50.,
+                CENTER_Y=255.,
+                ENERGY=15000.,
+                           )
+
+O_ENERGY=503.

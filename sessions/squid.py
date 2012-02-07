@@ -70,7 +70,8 @@ Data columns and unit transformations are defined in config.squid.py.
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('SQUID/PPMS', '*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]', '*.[Dd][Aa][Tt].gz', '*.[Rr][Aa][Ww].gz'),
+  FILE_WILDCARDS=[('SQUID/PPMS', '*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]',
+                   '*.[Dd][Aa][Tt].gz', '*.[Rr][Aa][Ww].gz'),
                   ]
   # options:
   dia_mag_correct=0. # diamagnetic correction factor
@@ -264,7 +265,7 @@ Data columns and unit transformations are defined in config.squid.py.
     else:
       return False, elements
 
-  def do_subtract_dataset(self, dataset, object):
+  def do_subtract_dataset(self, dataset, object_):
     '''
       Subtract one dataset from another using interpolation.
     '''
@@ -273,9 +274,9 @@ Data columns and unit transformations are defined in config.squid.py.
     xdata=numpy.array(dataset.data[dataset.xdata].values)
     ydata=numpy.array(dataset.data[dataset.ydata].values)
     error=numpy.array(dataset.data[dataset.yerror].values)
-    x2data=numpy.array(object.data[object.xdata].values)
-    y2data=numpy.array(object.data[object.ydata].values)
-    error2=numpy.array(object.data[object.yerror].values)
+    x2data=numpy.array(object_.data[object_.xdata].values)
+    y2data=numpy.array(object_.data[object_.ydata].values)
+    error2=numpy.array(object_.data[object_.yerror].values)
     if x2data[0]>x2data[-1]:
       x2data=numpy.array(list(reversed(x2data.tolist())))
       y2data=numpy.array(list(reversed(y2data.tolist())))
@@ -300,5 +301,5 @@ Data columns and unit transformations are defined in config.squid.py.
     newdata=deepcopy(dataset)
     newdata.data[newdata.ydata].values=(ydata-y2interp).tolist()
     newdata.data[newdata.yerror].values=(numpy.sqrt(error**2+error2interp**2)).tolist()
-    newdata.short_info=dataset.short_info+' - '+object.short_info
+    newdata.short_info=dataset.short_info+' - '+object_.short_info
     return newdata

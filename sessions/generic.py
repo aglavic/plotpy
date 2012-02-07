@@ -23,7 +23,6 @@
 import os
 import sys
 exit=sys.exit
-import math
 from time import sleep
 import subprocess
 from cPickle import load, dumps, dump

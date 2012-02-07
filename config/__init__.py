@@ -25,10 +25,10 @@ if not os.access(__path__[0], os.W_OK):
     if not os.path.exists(os.path.join(user_path, "gnuplot_preferences.py")) or \
         os.path.getmtime(os.path.join(user_path, "gnuplot_preferences.py"))<os.path.getmtime(os.path.abspath(__file__)):
         # copy all files to the users directory
-        files=filter(lambda file: file.endswith('.py'), os.listdir(__path__[0]))
-        for file in files:
-          from_name=os.path.join(__path__[0], file)
-          to_name=os.path.join(user_path, file)
+        files=filter(lambda file_: file_.endswith('.py'), os.listdir(__path__[0]))
+        for file_ in files:
+          from_name=os.path.join(__path__[0], file_)
+          to_name=os.path.join(user_path, file_)
           open(to_name, 'wb').write(open(from_name, 'rb').read())
   except:
     # if the files are not present or accessable, use the variables to create them
@@ -65,7 +65,7 @@ if not os.access(__path__[0], os.W_OK):
         export_file.write(active_config.__configadd__)
       export_file.close()
   # reassociate this module to use the user files
-  __path__=[user_path]
+  __path__=[user_path] #@ReservedAssignment
 
 
 # load user config, it will be saved automatically on exit

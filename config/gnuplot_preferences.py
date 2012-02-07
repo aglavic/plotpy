@@ -3,13 +3,13 @@
  Variables for gnuplot options to be used by plot commands.
 '''
 
-from sys import prefix, platform
+from sys import platform
 from os.path import exists, split
 from os.path import join as join_path
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 #

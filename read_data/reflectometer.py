@@ -324,7 +324,7 @@ def read_bruker_raw(input_file):
 
     dataset.sample_name=header_info['SAMPLE_ID']
     if len(scans)!=1:
-      dataset.short_info='#%i'%i
+      dataset.short_info='#%i'%(i+1)
     dataset.info=''
     for key, value in sorted(header_info.items()+scan[0].items()):
       dataset.info+='%20s: %s\n'%(key, value)
