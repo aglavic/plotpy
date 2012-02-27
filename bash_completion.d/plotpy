@@ -1,0 +1,62 @@
+# completions for plot.py
+
+_plot() {
+  local curw
+  COMPREPLY=()
+  curw="${COMP_WORDS[COMP_CWORD]}"
+  if [ $COMP_CWORD == 1 ]
+    then COMPREPLY=($(compgen -W "4circle dns gisas in12 kws2 mbe refl sas shg squid treff" -- $curw))
+    else case "${COMP_WORDS[1]}" in
+      "dns") COMPREPLY=($(compgen -G "$curw*.d_dat") $(compgen -G "$curw*.d_dat.gz") $(compgen -S/ -d -- $curw));;
+      "mbe") COMPREPLY=($(compgen -G "$curw*.dat") $(compgen -G "$curw*.png") $(compgen -G "$curw*.log") $(compgen -S/ -d -- $curw));;
+      "4circle") COMPREPLY=($(compgen -G "$curw*.spec") $(compgen -G "$curw*.spec.gz") $(compgen -G "$curw*.[0-9][0-9][0-9][0-9]") $(compgen -G "$curw*.fio") $(compgen -G "$curw*.fio.gz") $(compgen -S/ -d -- $curw));;
+      "kws2") COMPREPLY=($(compgen -G "$curw*.DAT") $(compgen -G "$curw*.edf") $(compgen -G "$curw*.cmb") $(compgen -G "$curw*.bin") $(compgen -G "$curw*.gz") $(compgen -S/ -d -- $curw));;
+      "gisas") COMPREPLY=($(compgen -G "$curw*.DAT") $(compgen -G "$curw*.edf") $(compgen -G "$curw*.cmb") $(compgen -G "$curw*.bin") $(compgen -G "$curw*.gz") $(compgen -S/ -d -- $curw));;
+      "in12") COMPREPLY=($(compgen -o default));;
+      "refl") COMPREPLY=($(compgen -G "$curw*.[Uu][Xx][Dd]") $(compgen -G "$curw*.raw") $(compgen -G "$curw*.xrdml") $(compgen -G "$curw*.txt") $(compgen -G "$curw*.gz") $(compgen -S/ -d -- $curw));;
+      "sas") COMPREPLY=($(compgen -G "$curw*.dat") $(compgen -G "$curw*.txt") $(compgen -G "$curw*.gz") $(compgen -S/ -d -- $curw));;
+      "shg") COMPREPLY=($(compgen -G "$curw*.par") $(compgen -S/ -d -- $curw));;
+      "squid") COMPREPLY=($(compgen -G "$curw*.dat") $(compgen -G "$curw*.dat.gz") $(compgen -G "$curw*.DAT.gz") $(compgen -G "$curw*.DAT") $(compgen -G "$curw*.raw") $(compgen -G "$curw*.raw.gz") $(compgen -S/ -d -- $curw));;
+      "treff") COMPREPLY=($(compgen -o default));;
+    esac
+  fi
+  return 0
+  }
+
+complete -F _plot -o nospace plot.py
+
+_prd() {
+  local curw
+  curw="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=($(compgen -G "$curw*.[Uu][Xx][Dd]") $(compgen -G "$curw*.raw") $(compgen -G "$curw*.xrdml") $(compgen -G "$curw*.txt") $(compgen -G "$curw*.gz") $(compgen -S/ -d -- $curw))
+  return 0
+  }
+
+complete -F _prd -o nospace prd
+
+_psd() {
+  local curw
+  curw="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=($(compgen -G "$curw*.dat") $(compgen -G "$curw*.dat.gz") $(compgen -G "$curw*.DAT.gz") $(compgen -G "$curw*.DAT") $(compgen -G "$curw*.raw") $(compgen -G "$curw*.raw.gz") $(compgen -S/ -d -- $curw))
+  return 0
+  }
+
+complete -F _psd -o nospace psd
+
+_p4d() {
+  local curw
+  curw="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=($(compgen -G "$curw*.spec") $(compgen -G "$curw*.spec.gz") $(compgen -G "$curw*.[0-9][0-9][0-9][0-9]") $(compgen -G "$curw*.fio") $(compgen -G "$curw*.fio.gz") $(compgen -S/ -d -- $curw))
+  return 0
+  }
+
+complete -F _p4d -o nospace p4d
+
+_dnsplot() {
+  local curw
+  curw="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=($(compgen -G "$curw*.d_dat") $(compgen -G "$curw*.d_dat.gz") $(compgen -S/ -d -- $curw))
+  return 0
+  }
+
+complete -F _dnsplot -o nospace dnsplot

@@ -1,4 +1,4 @@
-#Tue Feb 07 23:07:47 CET 2012
+#Mon Feb 27 08:39:02 CET 2012
 eclipse.preferences.version=1
 encoding//additions/matplot_npz.py=utf8
 encoding//plot_script/__init__.py=utf-8
@@ -19,6 +19,7 @@ encoding//plot_script/config/squid.py=utf-8
 encoding//plot_script/config/templates.py=utf-8
 encoding//plot_script/config/transformations.py=utf-8
 encoding//plot_script/config/treff.py=utf-8
+encoding//plot_script/fit_data.py=utf-8
 encoding//plot_script/gtkgui/__init__.py=utf-8
 encoding//plot_script/gtkgui/circle.py=utf-8
 encoding//plot_script/gtkgui/dialogs.py=utf-8
@@ -40,6 +41,9 @@ encoding//plot_script/gtkgui/sas.py=utf-8
 encoding//plot_script/gtkgui/shg.py=utf-8
 encoding//plot_script/gtkgui/squid.py=utf-8
 encoding//plot_script/gtkgui/treff.py=utf-8
+encoding//plot_script/measurement_data_plotting.py=utf-8
+encoding//plot_script/measurement_data_structure.py=utf-8
+encoding//plot_script/parallel.py=utf-8
 encoding//plot_script/read_data/__init__.py=utf-8
 encoding//plot_script/read_data/circle.py=utf-8
 encoding//plot_script/read_data/dns.py=utf-8

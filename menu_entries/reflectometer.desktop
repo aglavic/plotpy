@@ -11,4 +11,4 @@ Type=Application
 Exec=/usr/local/bin/plot.py refl -startuppath %d %f
 Categories=GTK;GNOME;Science;
 X-KDE-StartupNotify=true
-MimeType=text/refl;
+MimeType=text/refl;text/aes;

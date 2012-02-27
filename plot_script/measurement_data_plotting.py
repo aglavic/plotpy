@@ -637,7 +637,7 @@ def script_header(show_persistent, datasets, output_file):
     postscript_export=True
     terminal=gp.set_output_terminal_wxt
   elif output_file is None:
-    postscript_export=False
+    postscript_export=True
     terminal=gp.set_output_terminal_wxt
   elif output_file.rsplit('.', 1)[1]=='ps':
     postscript_export=True

@@ -11,4 +11,4 @@ Type=Application
 Exec=/usr/local/bin/plot.py mbe -startuppath %d %f
 Categories=GTK;GNOME;Science;
 X-KDE-StartupNotify=true
-MimeType=text/mbe;text/aes;image/mbe_png;
+MimeType=text/x-log;text/mbe;text/aes;image/png;

@@ -61,10 +61,10 @@ elif "py2exe" in sys.argv:
                 #"console": [ "__init__.py"], # set the executable for py2exe
                 "windows": [ "plot.py" ], # executable for py2exe is windows application            
                 "options": {  "py2exe": {
-                              "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio, Image, TiffImagePlugin",
+                              "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio, Image, TiffImagePlugin, PngImagePlugin",
                               "optimize": 1, # Keep docstring (e.g. IPython console usage)
                               "skip_archive": True, # setting not to move compiled code into library.zip file
-                              'packages':'encodings, gtk, IPython, PIL',
+                              'packages':'encodings, gtk, IPython, PIL, plot_script',
                               "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'],
                              },
                            }
@@ -184,7 +184,14 @@ if ('bdist' in sys.argv):
                    shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
   subprocess.Popen(['cp']+glob('../mime_types/*.xml')+[__name__+'-'+__version__+'.orig/usr/share/mime/packages/'],
                    shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+  os.mkdir(__name__+'-'+__version__+'/etc')
+  os.mkdir(__name__+'-'+__version__+'/etc/bash_completion.d')
+  os.mkdir(__name__+'-'+__version__+'.orig/etc')
+  os.mkdir(__name__+'-'+__version__+'.orig/etc/bash_completion.d')
   os.chdir(__name__+'-'+__version__)
+  complete=open('etc/bash_completion.d/plotpy', 'w')
+  complete.write(open('../../bash_completion.d/plotpy', 'r').read())
+  complete.close()
   # debian control file
   deb_con=open('debian/control', 'w')
   deb_con.write(open('../../deb_control', 'r').read())
@@ -246,7 +253,7 @@ if ('install' in sys.argv) and len(sys.argv)==2:
 if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
   print "Adding module directory to python path in plot.py script."
   script=open(os.path.join(sys.argv[sys.argv.index('--install-scripts')+1], 'plot.py'), 'r')
-  text=script.read().replace('##---add_python_path_here---##', 'sys.path.insert(1,"'+\
+  text=script.read().replace('##---add_python_path_here---##', 'import sys\nsys.path.insert(1,"'+\
                     glob(os.path.join(sys.argv[sys.argv.index('--prefix')+1], 'lib/python2.?/site-packages'))[-1]\
                     +'")')
   script.close()

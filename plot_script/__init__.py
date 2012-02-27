@@ -71,6 +71,16 @@ if not "--nolimit" in sys.argv:
   except ImportError:
     pass
 
+# compatibility with older versions (snap-shots and plugins)
+# the plot_script package there was not imported properly so
+# we have to define the old module names
+import read_data, fit_data, measurement_data_structure
+sys.modules['sessions']=sys.modules['plot_script.sessions']
+sys.modules['read_data']=sys.modules['plot_script.read_data']
+sys.modules['fit_data']=sys.modules['plot_script.fit_data']
+sys.modules['config']=sys.modules['plot_script.config']
+sys.modules['measurement_data_structure']=sys.modules['plot_script.measurement_data_structure']
+
 #----------------------- importing modules --------------------------
 
 # set default encoding
@@ -257,9 +267,14 @@ def ipdrop(session):
     Inizialize some convenience functions and drop to an IPython console.
   '''
   import numpy as np
-  import scipy as sp
-  mdp=sessions.generic.measurement_data_plotting
-  mds=sessions.generic.measurement_data_structure
+  try:
+    import scipy as sp
+  except ImportError:
+    sp=None
+    print "Scipy not installed"
+  import measurement_data_plotting as mdp
+  import measurement_data_structure as mds
+
   index_mess=0
   errorbars=False
 
@@ -270,11 +285,10 @@ def ipdrop(session):
                            [ds],
                            'temp_plot',
                            '.png',
-                           ds.sample_name+ds.short_info,
+                           ds.short_info,
                            [ds.short_info],
                            errorbars,
-                           output_file,
-                           sample_name=ds.sample_name)
+                           output_file)
     if result!=('', []):
       print result[0]
 
@@ -309,6 +323,8 @@ def ipdrop(session):
     if _user_namespace['autoplot']:
       replot()
     print _user_namespace['index_mess']
+  def prev():
+    next(-1)
   def logy():
     # set/unset logscale
     session.active_file_data[_user_namespace['index_mess']].logy=\
@@ -327,11 +343,6 @@ def ipdrop(session):
                          }
   _user_namespace.update(locals())
   _user_namespace.update({'_user_namespace':_user_namespace})
-  # remove read_data modules from sys.modules
-  # fixes problems with importing modules
-  items=filter(lambda item: item.startswith('plot_script'), sys.modules.keys())
-  for item in items:
-    del(sys.modules[item])
 
   session.initialize_gnuplot()
   ignore, terminals=mdp.check_gnuplot_version(session)
@@ -347,7 +358,7 @@ def ipdrop(session):
     Special plot.py functions:
       plot(dataset, output_file) # export a plot to an image file
       replot(index=None) # show a gnuplot interactive plot of the selected dataset
-      select_file(name=none) # select a loaded file and plot it, None shows the selectoin
+      select_files(name=none) # select a loaded file and plot it, None shows the selectoin
       read_file(file_name) # import a data file
       next(rel=1) # move the selection in the active file
       logy() # set y-scale to log

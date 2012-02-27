@@ -238,7 +238,7 @@ def get_type_columns(type_line, columns):
     return 0, intensity, intensity_error,-1
 
 def recheck_type(dataset, scan_header):
-  type_line=scan_header['type_']
+  type_line=scan_header['type']
   type_, ignore=type_line.split(None, 1)
   if type_=='timescan':
     if 'T_{sample}' in dataset.dimensions():

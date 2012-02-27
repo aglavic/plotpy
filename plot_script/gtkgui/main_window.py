@@ -855,6 +855,7 @@ class ApplicationMainWindow(gtk.Window):
               'GISAS': ('kws2', 'KWS2Session'),
               'Reflectometer': ('reflectometer', 'ReflectometerSession'),
               'TREFF/MARIA': ('treff', 'TreffSession'),
+              'MBE': ('mbe', 'MBESession'),
 
               }
 

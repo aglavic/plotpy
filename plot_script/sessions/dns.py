@@ -17,7 +17,7 @@
 import os
 import sys
 from glob import glob
-exit=sys.exit
+exit=sys.exit #@ReservedAssignment
 # if possible use the numpy functions as they work with complete arrays
 from numpy import pi, cos, sin, sqrt, array, where, nan_to_num, maximum, zeros
 use_numpy=True
@@ -30,6 +30,7 @@ from plot_script.read_data import dns as read_data
 from plot_script.config import dns as config
 # import gui functions for active config.gui.toolkit
 from plot_script.config import gui as gui_config
+from plot_script.config import transformations
 try:
   GUI=__import__(gui_config.toolkit+'gui.dns', fromlist=['DNSGUI']).DNSGUI
 except ImportError:
@@ -37,7 +38,7 @@ except ImportError:
 
 __author__="Artur Glavic"
 __credits__=["Werner Schweika"]
-from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 # functions for evaluation of polarized neutron measurements
@@ -77,7 +78,7 @@ def correct_flipping_ratio(flipping_ratio, pp_data, pm_data,
   # normalize the data
   total=(pp_data+pm_data)
   p_norm=pp_data/total
-  m_norm=pm_data/total
+  #m_norm=pm_data/total
 
   # use the data as starting value
   nsf_scattering=cp(p_norm)
@@ -86,7 +87,7 @@ def correct_flipping_ratio(flipping_ratio, pp_data, pm_data,
   # calculate polarization from flipping-ratio
   polarization=flipping_ratio/(1.+flipping_ratio)
 
-  for iter in range(ITERATIONS):
+  for ignore in range(ITERATIONS):
     # n-times multiple scattering is represented by a list of length n
     p_multiple_scattering=[polarization]
     m_multiple_scattering=[1.-polarization]
@@ -256,7 +257,7 @@ class DNSSession(GUI, GenericSession):
         self.user_bg[key]=self.sum_same_tth(value)
     names.sort()
     self.set_transformations()
-    config.transformations.known_transformations+=self.TRANSFORMATIONS
+    transformations.known_transformations+=self.TRANSFORMATIONS
     if len(names)>0:
       self.find_prefixes(names) # try to find the sequences for the remaining file names
     if not self.SPLIT is None:
@@ -539,7 +540,7 @@ class DNSSession(GUI, GenericSession):
             file_prefix=split[0]
           file_postfix=str(last_argument_option[2][3][0])+last_argument_option[2][4]
           try:
-            first_file=sorted([file for file in os.listdir(directory) \
+            first_file=sorted([file_ for file_ in os.listdir(directory) \
                                if file.startswith(file_prefix) and file.endswith(file_postfix)])[0]
           except IndexError:
             erg=last_argument_option[2]
@@ -622,19 +623,19 @@ class DNSSession(GUI, GenericSession):
     else:
       return False
 
-  def read_files(self, file):
+  def read_files(self, file_name):
     '''
       Function to read data files for one measurement. 
       The files are split by their prefixes.
       
-      @param file Sequence with the options for the file import
+      @param file_name Sequence with the options for the file_name import
     '''
     # read the options for this sequence of files
-    prefix=self.file_options[file][0]
-    omega_offset=self.file_options[file][1]
-    increment=self.file_options[file][2]
-    num_range=self.file_options[file][3]
-    postfix=self.file_options[file][4]
+    prefix=self.file_options[file_name][0]
+    #omega_offset=self.file_options[file_name][1]
+    #increment=self.file_options[file_name][2]
+    num_range=self.file_options[file_name][3]
+    postfix=self.file_options[file_name][4]
     # split folder and filename of prefix
     file_split=prefix.rsplit(os.sep, 1)
     if len(file_split)==1:
@@ -648,10 +649,10 @@ class DNSSession(GUI, GenericSession):
       return None
     file_list.sort()
     # Read the raw data
-    self.file_data[file+'|raw_data']=[]
+    self.file_data[file_name+'|raw_data']=[]
     print "Reading files %s{num}%s with num from %i to %i."%(prefix, postfix, num_range[0], num_range[1])
     for file_name in file_list:
-      # get integer number of the file, catch errors form wrong file selection
+      # get integer number of the file_name, catch errors form wrong file_name selection
       try:
         active_number=int(os.path.join(folder, file_name).rsplit(postfix)[0].split(prefix, 1)[1])
       except ValueError:
@@ -660,24 +661,24 @@ class DNSSession(GUI, GenericSession):
         # read the datafile into a MeasurementData object.
         dataset=read_data.read_data(os.path.join(folder, file_name))
         dataset.number=str(active_number)
-        self.file_data[file+'|raw_data'].append(dataset)
+        self.file_data[file_name+'|raw_data'].append(dataset)
     print "\tRead, creating map."
-    self.create_maps(file)
+    self.create_maps(file_name)
     return None
 
-  def read_files_d7(self, file):
+  def read_files_d7(self, file_name):
     '''
       Function to read data files for one D7 measurement. 
       The files are split by their prefixes.
       
-      @param file Sequence with the options for the file import
+      @param file_name Sequence with the options for the file_name import
     '''
     # read the options for this sequence of files
-    prefix=self.file_options[file][0]
-    omega_offset=self.file_options[file][1]
-    increment=self.file_options[file][2]
-    num_range=self.file_options[file][3]
-    postfix=self.file_options[file][4]
+    prefix=self.file_options[file_name][0]
+    #omega_offset=self.file_options[file_name][1]
+    #increment=self.file_options[file_name][2]
+    num_range=self.file_options[file_name][3]
+    postfix=self.file_options[file_name][4]
     # split folder and filename of prefix
     file_split=prefix.rsplit(os.sep, 1)
     if len(file_split)==1:
@@ -691,10 +692,10 @@ class DNSSession(GUI, GenericSession):
       return None
     file_list.sort()
     # Read the raw data
-    self.file_data[file+'|raw_data']=[]
+    self.file_data[file_name+'|raw_data']=[]
     print "Reading files %s{num}%s with num from %i to %i."%(prefix, postfix, num_range[0], num_range[1])
     for file_name in file_list:
-      # get integer number of the file, catch errors form wrong file selection
+      # get integer number of the file_name, catch errors form wrong file_name selection
       try:
         active_number=int(os.path.join(folder, file_name).rsplit(postfix)[0].split(prefix, 1)[1])
       except ValueError:
@@ -704,13 +705,13 @@ class DNSSession(GUI, GenericSession):
         # read the datafile into a MeasurementData object.
         datasets=read_data.read_data_d7(os.path.join(folder, file_name))
         if i==1:
-          self.file_options[file][2]=len(datasets)
+          self.file_options[file_name][2]=len(datasets)
         for dataset in datasets:
           dataset.number=str(i)
           i+=1
-        self.file_data[file+'|raw_data']+=datasets
+        self.file_data[file_name+'|raw_data']+=datasets
     print "\tRead, creating map."
-    self.create_maps(file)
+    self.create_maps(file_name)
     return None
 
   def get_active_file_info(self):
@@ -806,24 +807,24 @@ class DNSSession(GUI, GenericSession):
         outscans.append(joint)
     return outscans
 
-  def create_maps(self, file):
+  def create_maps(self, file_name):
     '''
       Crates a MeasurementData object which can be used to
       plot color maps or lineplots of the measurement.
       For Powder data it is only shown as 2Theta vs intensity.
       For single crystal it is a map in q_x,q_y. (Or hkl)
       
-      @param file Sequence with the options for the file import
+      @param file_name Sequence with the options for the file_name import
     '''
     # select the raw data for this measurement
-    scans=self.file_data[file+'|raw_data']
-    self.file_data[file]=[]
+    scans=self.file_data[file_name+'|raw_data']
+    self.file_data[file_name]=[]
     # read the options for this sequence of files
-    prefix=self.file_options[file][0]
-    omega_offset=self.file_options[file][1]
-    increment=self.file_options[file][2]
-    num_range=self.file_options[file][3]
-    postfix=self.file_options[file][4]
+    #prefix=self.file_options[file_name][0]
+    omega_offset=self.file_options[file_name][1]
+    increment=self.file_options[file_name][2]
+    #num_range=self.file_options[file_name][3]
+    #postfix=self.file_options[file_name][4]
     if 'detector_angles' in scans[0].dns_info:
       # Functoin used to append data to the object
       def append_to_map(point):
@@ -865,9 +866,9 @@ class DNSSession(GUI, GenericSession):
                  [['I_%i'%j, 'a.u.'] for j in range(0, (len(scan.units())-sub)/2)]+\
                  [['error_%i'%j, 'a.u.'] for j in range(0, (len(scan.units())-sub)/2)]+\
                  [['Q_x', 'Å^{-1}'], ['Q_y', 'Å^{-1}'], ['Filenumber', '']]
-        self.file_data[file].append(DNSMeasurementData(columns, [], 1, 3, (len(scan.units())-sub)/2+5, zdata=5))
+        self.file_data[file_name].append(DNSMeasurementData(columns, [], 1, 3, (len(scan.units())-sub)/2+5, zdata=5))
         # set some parameters for the object
-        active_map=self.file_data[file][i]
+        active_map=self.file_data[file_name][i]
         active_map.number=str(i)
         active_map.dns_info=scan.dns_info
         active_map.number_of_channels=(len(scan.units())-1)/2
@@ -882,10 +883,10 @@ class DNSSession(GUI, GenericSession):
       data=[list(point) for point in scan]
       detector_bank_2T=scan.dns_info['detector_bank_2T']
       omega=scan.dns_info['omega']
-      map(self.file_data[file][i%increment].append, map(append_to_map, data))
+      map(self.file_data[file_name][i%increment].append, map(append_to_map, data))
       #append_combine_data()
     # perform calculations
-    self.active_file_data=self.file_data[file]
+    self.active_file_data=self.file_data[file_name]
     if self.CORRECT_FLIPPING:
       # assign flipping chanels to nicr-data
       self.correct_flipping_ratio(self.SCATTERING_PROPABILITY)
@@ -910,7 +911,7 @@ class DNSSession(GUI, GenericSession):
         if vana_data!='NULL':
           dnsmap.vanadium_data=vana_data
         else:
-          # when the file is not raw data read vanadium_data from a 2th file
+          # when the file_name is not raw data read vanadium_data from a 2th file_name
           vana_data=GenericSession.read_file(self, self.VANADIUM_FILE)[0]
           vana_data.sort(0)
           # to make it possible to correct for this data, round the 2Theta value
@@ -1129,8 +1130,8 @@ class DNSSession(GUI, GenericSession):
       Split the file_options and prefixes at every 
       [length] number.
     '''
-    for file in self.prefixes:
-      options=self.file_options[file]
+    for file_prefix in self.prefixes:
+      options=self.file_options[file_prefix]
       # Create a list of all files.
       file_split=options[0].rsplit(os.sep, 1)
       if len(file_split)==1:
@@ -1195,11 +1196,11 @@ class DNSSession(GUI, GenericSession):
         print "Extracting ziped setup data %s."%self.CORRECTION_ZIP
         for ziped_file in zf.filelist:
           name=os.path.split(ziped_file.filename)[1]
-          file=open(os.path.join(directorys[-1], name), 'w')
-          file.write(zf.read(ziped_file.filename))
-          file.close()
+          file_handle=open(os.path.join(directorys[-1], name), 'w')
+          file_handle.write(zf.read(ziped_file.filename))
+          file_handle.close()
       except IOError:
-        print "No zip file %s."%self.CORRECTION_ZIP
+        print "No zip file_handle %s."%self.CORRECTION_ZIP
     file_list=[]
     # create a list of all files in the setup directorys
     for directory in directorys:
@@ -1211,7 +1212,7 @@ class DNSSession(GUI, GenericSession):
     nicr_files=[]
     bg_files=[]
     vana_files=[]
-    # filter the file names by the wildcards set in config.dns
+    # filter the file_handle names by the wildcards set in config.dns
     for wildcard in config.NICR_FILE_WILDCARDS:
       nicr_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]),
                       filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]),
@@ -1316,7 +1317,7 @@ class DNSSession(GUI, GenericSession):
             vana_data.name+='-'+backgound_data.name.replace('+', '-')
             bgs=True
       if not bgs and self.AUTO_VANADIUM:
-        print "No backgound data for file %s, vanadium correction will not be correct."%file_name
+        print "No backgound data for file_handle %s, vanadium correction will not be correct."%file_name
     if vana_data:
       # normalize the vanadium data to stay in the same intensity region
       scale=vana_data.data[1][:].sum()/len(vana_data)
@@ -1345,11 +1346,11 @@ class DNSSession(GUI, GenericSession):
         print "Extracting ziped setup data %s."%self.CORRECTION_ZIP
         for ziped_file in zf.filelist:
           name=os.path.split(ziped_file.filename)[1]
-          file=open(os.path.join(directorys[-1], name), 'w')
-          file.write(zf.read(ziped_file.filename))
-          file.close()
+          file_handle=open(os.path.join(directorys[-1], name), 'w')
+          file_handle.write(zf.read(ziped_file.filename))
+          file_handle.close()
       except IOError:
-        print "No zip file %s."%self.CORRECTION_ZIP
+        print "No zip file_handle %s."%self.CORRECTION_ZIP
     file_list=[]
     # create a list of all files in the setup directorys
     for directory in directorys:
@@ -1361,7 +1362,7 @@ class DNSSession(GUI, GenericSession):
     nicr_files=[]
     bg_files=[]
     vana_files=[]
-    # filter the file names by the wildcards set in config.dns
+    # filter the file_handle names by the wildcards set in config.dns
     for wildcard in config.NICR_FILE_WILDCARDS:
       nicr_files+=sorted(filter(lambda name: os.path.split(name)[1].startswith(wildcard[0]),
                       filter(lambda name: os.path.split(name)[1].endswith(wildcard[1]),
@@ -1433,7 +1434,7 @@ class DNSSession(GUI, GenericSession):
         data.name+='-'+background_data.name
         bg_corrected_data[key]=data
       elif self.CORRECT_FLIPPING:
-        print "No background data for file %s found, flipping ration correction not correct."%data.name
+        print "No background data for file_handle %s found, flipping ration correction not correct."%data.name
         bg_corrected_data[key]=data
     self.bg_corrected_nicr_data=bg_corrected_data
     for file_name in vana_files:
@@ -1484,7 +1485,7 @@ class DNSSession(GUI, GenericSession):
               vana_data.name+='-'+background_data.name.replace('+', '-')
               bgs=True
         if not bgs and self.AUTO_VANADIUM:
-          print "No backgound data for file %s, vanadium correction will not be correct."%file_name
+          print "No backgound data for file_handle %s, vanadium correction will not be correct."%file_name
     if vana_data:
       scale=vana_data.data[1][:].sum()/len(vana_data)
       vana_data.data[1]/=scale
@@ -1808,7 +1809,7 @@ class DNSMeasurementData(MeasurementData):
       Correct two datasets for background, flipping-ratio and Vanadium standard.
       The rawdata is not changed only the I column.
     '''
-    changed=False
+    #changed=False
     if not self.background_data is None:
       sys.stdout.write("up-background, ")
       sys.stdout.flush()
@@ -1824,7 +1825,7 @@ class DNSMeasurementData(MeasurementData):
     sys.stdout.write("flipping-ratio: ")
     sys.stdout.flush()
     try:
-      converged=self.make_flipping_correction([self.flipping_correction[1], self, other], self.scattering_propability)
+      ignore=self.make_flipping_correction([self.flipping_correction[1], self, other], self.scattering_propability)
     except ValueError:
       sys.stdout.write("different data length")
       sys.stdout.flush()

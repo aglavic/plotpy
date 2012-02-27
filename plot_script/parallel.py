@@ -47,12 +47,12 @@ def connect():
             'import os',
             'if not "%s" in sys.path: sys.path.append("%s");'%(config.parallel.CLUSTER_PLOTPY_DIR,
                                                                  config.parallel.CLUSTER_PLOTPY_DIR),
-            'import plugins',
+            'import plot_script.plugins',
             "user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')",
             '''if os.path.exists(user_folder) and os.path.exists(os.path.join(user_folder, 'plugins')) \
 and not os.path.join(user_folder, 'plugins') in sys.path: \
 sys.path.append(os.path.join(user_folder, 'plugins'));''',
-            'import fit_data',
+            'import plot_script.fit_data as fit_data',
             ]
   l=0
   sys.stdout.write('\t\t')

@@ -8,8 +8,8 @@
      <comment>MBE AES File</comment>
      <glob pattern="*.dat"/>
    </mime-type>
-   <mime-type type="image/mbe_png">
-     <comment>LEED/RHEED File</comment>
+   <mime-type type="image/png">
+     <comment>PNG image</comment>
      <glob pattern="*.png"/>
    </mime-type>
 </mime-info>

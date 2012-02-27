@@ -15,18 +15,18 @@ H_over_2m=12.26426
 
 if not 'LEED' in user_config:
   user_config['LEED']=dict(
-                SCREEN_SIZE=350.,
+                SCREEN_SIZE=104.,
+                PIXEL_SIZE=650.,
                 SCREEN_X=220.,
                 SCREEN_Y=380.,
-                DISTANCE=300.,
-                PIXEL_SIZE=650.,
+                DISTANCE=66.,
                            )
 
 if not 'RHEED' in user_config:
   user_config['RHEED']=dict(
-                SCREEN_SIZE=200.,
+                SCREEN_SIZE=78.,
                 SCREEN_PIXELS=620.,
-                DISTANCE=350.,
+                DISTANCE=393.2,
                 CENTER_X=-50.,
                 CENTER_Y=255.,
                 ENERGY=15000.,

@@ -70,7 +70,8 @@ Data columns and unit transformations are defined in config.squid.py.
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('SQUID/PPMS', '*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]',
+  FILE_WILDCARDS=[
+                  ('SQUID/PPMS', '*.[Dd][Aa][Tt]', '*.[Rr][Aa][Ww]',
                    '*.[Dd][Aa][Tt].gz', '*.[Rr][Aa][Ww].gz'),
                   ]
   # options:

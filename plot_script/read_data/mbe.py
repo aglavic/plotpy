@@ -131,9 +131,9 @@ def read_png_data(file_name):
   #sys.stdout.write("\b\b\b, calculating q-positions and joining data...")
   #sys.stdout.flush()
   # read additional info from end of file
-  x_array=linspace(0, (pixels_x)*(pixels_y)-1,
-                   (pixels_x)*(pixels_y))//(pixels_y)
   y_array=linspace(0, (pixels_x)*(pixels_y)-1,
+                   (pixels_x)*(pixels_y))//(pixels_y)
+  x_array=linspace(0, (pixels_x)*(pixels_y)-1,
                    (pixels_x)*(pixels_y))%(pixels_y)
 
   #th_x=arctan((x_array-center_x)*pixelsize/detector_distance)#/2.
