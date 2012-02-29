@@ -1,19 +1,7 @@
 recursive-include doc *.html
-recursive-include gtkgui/icons *.png
-include config/fit/fit.f90
-include config/logo*.*
-recursive-include config/fit/pnr_multi *.f90
-recursive-include config *.dat squid_calibration
-include install
-include prd
-include psd
-include p4d
-include plot_reflectometer_data
-include plot_4circle_data
-include plot_SQUID_data
-include dnsplot
-include treffplot
-include pin12
-include uninstall
-
-include dnsplot_help.pdf
+recursive-include plot_script/gtkgui/icons *.png
+include plot_script/config/fit/fit.f90
+include plot_script/config/logo*.*
+recursive-include plot_script/config/fit/pnr_multi *.f90
+recursive-include plot_script/config *.dat squid_calibration
+include scripts/*

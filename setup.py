@@ -296,8 +296,8 @@ if "py2exe" in sys.argv and not py2exe_test:
                     (gtk_folder+'\\share\\icons', 'share\\icons'),
                     (gtk_folder+'\\bin', 'bin'),
                     (gtk_folder+'\\lib', 'lib'),
-                    ('config', 'config'),
-                    ('gtkgui\\icons', 'gtkgui\\icons'),
+                    ('plot_script\\config', 'plot_script\\config'),
+                    ('plot_script\\gtkgui\\icons', 'plot_script\\gtkgui\\icons'),
                     ]:
     xcopy_to_folder(src, dest)
   from glob import glob

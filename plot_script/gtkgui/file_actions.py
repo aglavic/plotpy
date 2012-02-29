@@ -6,7 +6,8 @@
 import numpy
 from copy import deepcopy
 from configobj import ConfigObj
-from plot_script.measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalUnit
+from plot_script.measurement_data_structure import MeasurementData, \
+                          PhysicalProperty, PhysicalUnit, HugeMD
 
 __author__="Artur Glavic"
 __credits__=[]
@@ -791,7 +792,7 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix
     @param sigmy_y Sigma for the gaussian weighting in y direction
     @param grid_xy List of (x,y) tuples for the new grid
     
-    @return MeasurementData or KWS2MeasurementData object with the rebinned data
+    @return MeasurementData or HugeMD object with the rebinned data
   '''
   if dataset.zdata<0:
     raise ValueError, 'Dataset needs to be 3 dimensional for interpolation'
@@ -822,8 +823,7 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix
         (dims[dataset.ydata], units[dataset.ydata]),
         (dims[dataset.zdata], units[dataset.zdata])]
   if use_matrix_data_output:
-    from plot_script.read_data.kws2 import KWS2MeasurementData
-    output_data=KWS2MeasurementData(cols, [], 0, 1,-1, 2)
+    output_data=HugeMD(cols, [], 0, 1,-1, 2)
     output_data.is_matrix_data=True
   else:
     output_data=MeasurementData(cols, [], 0, 1,-1, 2)
@@ -880,11 +880,10 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
         (dims[dataset.ydata], units[dataset.ydata]),
         (dims[dataset.zdata], units[dataset.zdata])]
   if use_matrix_data_output:
-    from plot_script.read_data.kws2 import KWS2MeasurementData
-    output_data=KWS2MeasurementData(cols, [], 0, 1,-1, 2)
+    output_data=HugeMD([], [], 0, 1,-1, 2)
     output_data.is_matrix_data=True
   else:
-    output_data=MeasurementData(cols, [], 0, 1, 3, 2)
+    output_data=MeasurementData(cols, [], 0, 1,-1, 2)
   # Get indices to sort the data for x and y ascending
   #sort_idx_x=numpy.argsort(x)
   #sort_idx_y=numpy.argsort(y[sort_idx_x])
@@ -897,55 +896,50 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
   # get x and y pixels
   swapped=False
   try:
-    x0=x[0]
-    len_x=x[1:].tolist().index(x0)+1
+    len_x=numpy.where(x==x[0])[0][1]
     if len_x==1:
       tmpy=x
       x=y
       y=tmpy
-      x0=x[0]
       tmpy=join_pixels_x
       join_pixels_x=join_pixels_y
       join_pixels_y=tmpy
-      len_x=x[1:].tolist().index(x0)+1
+      len_x=numpy.where(x==x[0])[0][1]
       swapped=True
-  except ValueError:
-    raise ValueError, "Can only rebin regular grid, no second item for x=%f found"%x0
+  except IndexError:
+    raise ValueError, "Can only rebin regular grid data"
   if (len(x)%len_x)!=0:
     raise ValueError, "Can only rebin regular grid, no integer number of points for grid width %i found"%len_x
   len_y=len(x)//len_x
   new_len_x=len_x//join_pixels_x
-  new_len_y=len_x//join_pixels_y
+  new_len_y=len_y//join_pixels_y
   # create empty arrays for the new data
-  newx=numpy.zeros(new_len_x*new_len_y)
-  newy=numpy.zeros(new_len_x*new_len_y)
-  newz=numpy.zeros(new_len_x*new_len_y)
-  newdzq=numpy.zeros(new_len_x*new_len_y)
+  bins, newx, newy=numpy.histogram2d(x, y, (new_len_x+1, new_len_y+1))
+  newz, newx, newy=numpy.histogram2d(x, y, (new_len_x+1, new_len_y+1),
+                                     weights=z)
+  newdzq, newx, newy=numpy.histogram2d(x, y, (new_len_x+1, new_len_y+1),
+                                       weights=dzq)
+  newz/=bins
+  newdzq/=bins
+  newx, newy=numpy.meshgrid((newx[:-1]+newx[1:])/2., (newy[:-1]+newy[1:])/2.)
+
+
   # Create an index map for items which are not summed together
-  line_index=numpy.array([i*join_pixels_x for i in range(new_len_x)])
-  full_index=numpy.array([i*len_x*join_pixels_y+line_index for i in range(new_len_y)]).flatten()
-  # add data from neighboring pixels
-  for i in range(join_pixels_x):
-    for j in range(join_pixels_y):
-      newx+=x[full_index+i+len_x*j]
-      newy+=y[full_index+i+len_x*j]
-      newz+=z[full_index+i+len_x*j]
-      newdzq+=dzq[full_index+i+len_x*j]
-  # normalize by nuber of joint pixels
-  newx/=join_pixels_x*join_pixels_y
-  newy/=join_pixels_x*join_pixels_y
-  newz/=join_pixels_x*join_pixels_y
-  newdzq/=join_pixels_x*join_pixels_y
   newdz=numpy.sqrt(newdzq)
   # place the new data in the output object
   if swapped:
-    output_data.data[1].values=newx.tolist()
-    output_data.data[0].values=newy.tolist()
+    output_data.data.append(PhysicalProperty(cols[1][0], cols[1][1],
+                                             newy.flatten()))
+    output_data.data.append(PhysicalProperty(cols[0][0], cols[0][1],
+                                             newx.flatten()))
   else:
-    output_data.data[0].values=newx.tolist()
-    output_data.data[1].values=newy.tolist()
-  output_data.data[2].values=newz.tolist()
-  output_data.data[2].error=newdz
+    output_data.data.append(PhysicalProperty(cols[0][0], cols[0][1],
+                                             newx.flatten()))
+    output_data.data.append(PhysicalProperty(cols[1][0], cols[1][1],
+                                             newy.flatten()))
+  output_data.data.append(PhysicalProperty(cols[2][0], cols[2][1],
+                                           newz.transpose().flatten(),
+                                           numpy.sqrt(newdzq).transpose().flatten()))
   return output_data
 
 def calculate_savitzky_golay(dataset, window_size=5, order=2, derivative=1):

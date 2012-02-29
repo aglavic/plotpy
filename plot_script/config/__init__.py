@@ -15,6 +15,7 @@ from plot_script.plotpy_info import __copyright__, __license__, __version__, \
 import os
 
 config_path=os.path.expanduser('~/.plotting_gui')
+os.environ['IPYTHONDIR']=os.path.join(config_path, 'ipython')
 if not os.path.exists(config_path):
   os.mkdir(config_path)
 #if not os.access(__path__[0], os.W_OK):
