@@ -866,13 +866,16 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
   if dataset.zdata<0:
     raise ValueError, 'Dataset needs to be 3 dimensional for interpolation'
   # get the data
-  x=dataset.x[:]
-  y=dataset.y[:]
-  z=dataset.z[:]
-  if dataset.yerror<0 or dataset.yerror>=len(dataset.data):
-    dzq=dataset.z.error**2
+  x=dataset.x
+  y=dataset.y
+  z=dataset.z
+  if dataset._yerror<0:
+    if dataset.z.error is None:
+      dzq=None
+    else:
+      dzq=dataset.z.error**2
   else:
-    dzq=dataset.data[dataset.yerror][:]**2
+    dzq=dataset.data[dataset.yerror]**2
   # create new object
   dims=dataset.dimensions()
   units=dataset.units()
@@ -884,16 +887,6 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
     output_data.is_matrix_data=True
   else:
     output_data=MeasurementData(cols, [], 0, 1,-1, 2)
-  # Get indices to sort the data for x and y ascending
-  #sort_idx_x=numpy.argsort(x)
-  #sort_idx_y=numpy.argsort(y[sort_idx_x])
-  #sort_idx_xy=sort_idx_x[sort_idx_y]
-  # sort the data
-  #x=x[sort_idx_xy]
-  #y=y[sort_idx_xy]
-  #z=z[sort_idx_xy]
-  #dzq=dzq[sort_idx_xy]
-  # get x and y pixels
   swapped=False
   try:
     len_x=numpy.where(x==x[0])[0][1]
@@ -914,18 +907,20 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
   new_len_x=len_x//join_pixels_x
   new_len_y=len_y//join_pixels_y
   # create empty arrays for the new data
-  bins, newx, newy=numpy.histogram2d(x, y, (new_len_x+1, new_len_y+1))
-  newz, newx, newy=numpy.histogram2d(x, y, (new_len_x+1, new_len_y+1),
+  bins, ignore, ignore=numpy.histogram2d(x, y, (new_len_x, new_len_y))
+  newz, ignore, ignore=numpy.histogram2d(x, y, (new_len_x, new_len_y),
                                      weights=z)
-  newdzq, newx, newy=numpy.histogram2d(x, y, (new_len_x+1, new_len_y+1),
-                                       weights=dzq)
   newz/=bins
-  newdzq/=bins
+  newz=newz.transpose().flatten()
+  if dzq is None:
+    newdz=None
+  else:
+    newdzq, newx, newy=numpy.histogram2d(x, y, (new_len_x, new_len_y),
+                                       weights=dzq)
+    newdz=numpy.sqrt(newdzq)
+    newdz/=bins
+    newdz=newdz.transpose().flatten()
   newx, newy=numpy.meshgrid((newx[:-1]+newx[1:])/2., (newy[:-1]+newy[1:])/2.)
-
-
-  # Create an index map for items which are not summed together
-  newdz=numpy.sqrt(newdzq)
   # place the new data in the output object
   if swapped:
     output_data.data.append(PhysicalProperty(cols[1][0], cols[1][1],
@@ -938,8 +933,8 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
     output_data.data.append(PhysicalProperty(cols[1][0], cols[1][1],
                                              newy.flatten()))
   output_data.data.append(PhysicalProperty(cols[2][0], cols[2][1],
-                                           newz.transpose().flatten(),
-                                           numpy.sqrt(newdzq).transpose().flatten()))
+                                           newz,
+                                           newdz))
   return output_data
 
 def calculate_savitzky_golay(dataset, window_size=5, order=2, derivative=1):
