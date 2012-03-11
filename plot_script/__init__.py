@@ -345,12 +345,7 @@ def ipdrop(session):
   _user_namespace.update({'_user_namespace':_user_namespace})
 
   session.initialize_gnuplot()
-  ignore, terminals=mdp.check_gnuplot_version(session)
-  if not sys.platform=='darwin' and 'pngcairo' in terminals:
-    config.gnuplot_preferences.set_output_terminal_png=config.gnuplot_preferences.set_output_terminal_pngcairo
-  if not 'wxt' in terminals and 'x11' in terminals:
-    # if no wxt support is compiled
-    config.gnuplot_preferences.set_output_terminal_wxt=config.gnuplot_preferences.set_output_terminal_x11
+  mdp.check_gnuplot_version(session)
   import IPython
   banner='''
     This is an IPython console with access to Plot.py namespace.

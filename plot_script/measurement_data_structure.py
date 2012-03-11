@@ -402,7 +402,7 @@ class MeasurementData(object):
       raise ValueError, "x not in measured range"
     if self._functional is not None:
       out=self._functional(x)
-      return PhysicalProperty(self.y.unit, self.y.dimension, out)
+      return PhysicalProperty(self.y.dimension, self.y.unit, out)
     xm=self.x
     ym=self.y
     if hasattr(x, '__iter__'):

@@ -68,24 +68,38 @@ else:
     FONT_PATH=''
 
 
-# character encoding in gnuplot
+# character encoding in gnuplot (>=4.4)
 ENCODING='utf8'
 # set the terminal options for the gnuplot output (postscript could need other labels)
-set_output_terminal_png='png enhanced size [width],[height] font "'+join_path('[font-path]', 'Arial.ttf')+\
-                          '" [font-size] lw 2' #transparent
-# since gnuplot 4.4 this is suppoerted
-set_output_terminal_pngcairo='pngcairo enhanced size [width],[height] font "Arial,[font-size]" lw 2' #transparent
+# image teminals with decending priority
+image_terminals=['pngcairo', 'png', 'gif', 'jpeg']
+image_terminal_options={
+      'pngcairo': ['enhanced', 'size [width],[height]',
+                   'font "Arial,[font-size]"', 'lw 2'],
+      'png': ['enhanced', 'size [width],[height]',
+              'font "'+join_path('[font-path]', 'Arial.ttf')+'" [font-size]',
+              'lw 2'],
+                        }
+image_terminal_options['gif']=image_terminal_options['png']
+image_terminal_options['jpeg']=image_terminal_options['png']
+
+# fallback if terminal was not selected
+set_output_terminal_image='png enhanced size [width],[height] font "'+\
+                          join_path('[font-path]', 'Arial.ttf')+'" [font-size]'
 # used is determined by file name
 set_output_terminal_ps='postscript landscape enhanced colour "Arial" 16 solid lw 2'
 
 # terminal for external gnuplot window
-if "linux" in platform:
-  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]', 'Arial.ttf')+'" 16'
-elif "darwin" in platform:
-  set_output_terminal_wxt='aqua enhanced font "'+join_path('[font-path]', 'Arial.ttf')+'" 16'
-else:
-  set_output_terminal_wxt='wxt enhanced font "'+join_path('[font-path]', 'Arial.ttf')+'" 16'
-set_output_terminal_x11='x11 enhanced font "'+join_path('[font-path]', 'Arial.ttf')+'" 16'
+gui_terminals=['qt', 'wxt', 'aqua', 'x11']
+gui_terminal_options={
+          'wxt': ['enhanced', 'font "'+join_path('[font-path]', 'Arial.ttf')+'" 16'],
+                      }
+gui_terminal_options['aqua']=gui_terminal_options['wxt']
+gui_terminal_options['qt']=gui_terminal_options['wxt']
+gui_terminal_options['x11']=gui_terminal_options['wxt']
+
+set_output_terminal_gui='x11 enhanced' # fallback if terminal was not selected
+
 
 # set output file name, the postfix has to be chosen consistant to the 'set term' statement
 output_file_name='[name]_[add_info][nr].png'

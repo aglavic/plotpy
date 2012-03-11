@@ -246,6 +246,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                   shell=gnuplot_preferences.EMMULATE_SHELL,
                   creationflags=gnuplot_preferences.PROCESS_FLAGS)
+        # try to set encoding once, it is not altered by the reset function
+        measurement_data_plotting.gnuplot_instance.stdin.write(#@UndefinedVariable
+                  'set encoding '+gnuplot_preferences.ENCODING+'\n')
+
       except:
         raise RuntimeError, "Problem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s"%program
 

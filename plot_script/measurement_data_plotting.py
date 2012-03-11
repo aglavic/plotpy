@@ -10,7 +10,7 @@
 
 import os
 import sys
-exit=sys.exit
+exit=sys.exit #@ReservedAssignment
 import subprocess
 from config import gnuplot_preferences
 #from time import sleep
@@ -20,7 +20,19 @@ __credits__=[]
 from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
-persistene_plots=0
+# gnuplot instances of persistent plots stay open to allow mouse interaction
+persistent_plots=0
+persistent_plot_instances=[]
+#def close_persistents():
+#  sys.stdout.write('Close')
+#  sys.stdout.flush()
+#  for p in persistent_plot_instances:
+#    p.stdin.write('quit\n')
+#    p.stdin.flush()
+#    p.communicate()
+#atexit.register(close_persistents)
+
+
 maps_with_projection=False
 
 # open an instance of gnuplot on first import
@@ -44,16 +56,30 @@ def check_gnuplot_version(session):
     proc=subprocess.Popen(params,
                         shell=gnuplot_preferences.EMMULATE_SHELL,
                         creationflags=gnuplot_preferences.PROCESS_FLAGS,
-                        stderr=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
                         stdout=subprocess.PIPE,
                         stdin=subprocess.PIPE,
                         )
-    output=proc.communicate()[1]
+    output=proc.communicate()[0]
     version, patchlevel, terminals=output.splitlines()
-    terminals=terminals.split()
-    return (float(version), float(patchlevel)), terminals
-  except:
-    return (0., 0.), []
+    terminals=terminals.strip().split()
+    terminals=[t.strip() for t in terminals]
+    # set the terminal options according to available terminals
+    for term in gnuplot_preferences.gui_terminals:
+      if term in terminals:
+        gnuplot_preferences.set_output_terminal_gui=" ".join(
+              [term]+gnuplot_preferences.gui_terminal_options[term]
+                                                             )
+        break
+    for term in gnuplot_preferences.image_terminals:
+      if term in terminals:
+        gnuplot_preferences.set_output_terminal_image=" ".join(
+              [term]+gnuplot_preferences.image_terminal_options[term]
+                                                             )
+        break
+    return (float(version), float(patchlevel))
+  except Exception, error:
+    return (0., 0.)
 
 def gnuplot_plot_script(session,
                         datasets,
@@ -87,9 +113,9 @@ def gnuplot_plot_script(session,
   gp=gnuplot_preferences # short form for gnuplot_preferences
   file_numbers=[]
   if show_persistent:
-    global persistene_plots
-    tmp_name='tmp_data_p-%i_'%persistene_plots
-    persistene_plots+=1
+    global persistent_plots
+    tmp_name='tmp_data_p-%i_'%persistent_plots
+    persistent_plots+=1
     output_file_prefix=session.TEMP_DIR+tmp_name
     postscript_export=True
   else:
@@ -111,13 +137,10 @@ def gnuplot_plot_script(session,
     sample_name=datasets[0].sample_name
   if output_file is None:
     postscript_export=False
-    terminal=gp.set_output_terminal_ps
   elif output_file.rsplit('.', 1)[1]=='ps':
     postscript_export=True
-    terminal=gp.set_output_terminal_ps
   else:
     postscript_export=False
-    terminal=gp.set_output_terminal_png
   script_name=session.TEMP_DIR+replace_ph(session,
                                           gp.gnuplot_file_name,
                                           datasets,
@@ -154,18 +177,21 @@ def gnuplot_plot_script(session,
       print GPVAL_Y_MAX
       """
   if show_persistent:
-    write_file=open(script_name, 'w')
-    write_file.write(gnuplot_file_text+'\n')
-    write_file.close()
-    params=[session.GNUPLOT_COMMAND, '-persist', script_name]
+    #write_file=open(script_name, 'w')
+    #write_file.write(gnuplot_file_text+'\n')
+    #write_file.close()
+    #params=
     try:
-      proc=subprocess.Popen(params,
+      persistent=subprocess.Popen([session.GNUPLOT_COMMAND],
                           shell=gnuplot_preferences.EMMULATE_SHELL,
                           creationflags=gnuplot_preferences.PROCESS_FLAGS,
-                          stderr=subprocess.PIPE,
+                          stderr=subprocess.STDOUT,
                           stdout=subprocess.PIPE,
                           stdin=subprocess.PIPE,
                           )
+      persistent.stdin.write(gnuplot_file_text+'\n')
+      persistent.stdin.flush()
+      persistent_plot_instances.append(persistent)
     except:
       raise RuntimeError, "\nProblem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s"%session.GNUPLOT_COMMAND
     return '', []
@@ -272,7 +298,6 @@ def create_plot_script(session,
   '''
   if output_file_prefix is None:
     output_file_prefix=session.TEMP_DIR+'tmp_data_'
-  gp=gnuplot_preferences # define global gnuplot_preferences modul as local gp 
   if not sample_name:
     sample_name=datasets[0].sample_name
   # Get nummerating strings for the datasets
@@ -545,22 +570,22 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
     gnuplot_file_text+='set format x2 "10^{%L}\n'
   if dataset.logy:
     gnuplot_file_text+='set log y\n'
-  xrange=list(dataset.plot_options._xrange)
-  yrange=list(dataset.plot_options._yrange)
-  if xrange[0] is None:
-    xrange[0]=dataset.x.min()
-  if xrange[1] is None:
-    xrange[1]=dataset.x.max()
-  if yrange[0] is None:
-    yrange[0]=dataset.y.min()
-  if yrange[1] is None:
-    yrange[1]=dataset.y.max()
-  zrange=dataset.plot_options._zrange
-  if zrange[1] is None:
-    zrange=(zrange[0], float(dataset.z.max()))
+  x_range=list(dataset.plot_options._xrange)
+  y_range=list(dataset.plot_options._yrange)
+  if x_range[0] is None:
+    x_range[0]=dataset.x.min()
+  if x_range[1] is None:
+    x_range[1]=dataset.x.max()
+  if y_range[0] is None:
+    y_range[0]=dataset.y.min()
+  if y_range[1] is None:
+    y_range[1]=dataset.y.max()
+  z_range=dataset.plot_options._zrange
+  if z_range[1] is None:
+    z_range=(z_range[0], float(dataset.z.max()))
   gnuplot_file_text+="set autoscale x\n"
-  gnuplot_file_text+=("set x2range [:]#[%s:%s]\n"%(zrange[0], zrange[1])).replace("None", "")
-  gnuplot_file_text+='set yrange [%f:%f]\n'%(yrange[0], yrange[1])
+  gnuplot_file_text+=("set x2range [:]#[%s:%s]\n"%(z_range[0], z_range[1])).replace("None", "")
+  gnuplot_file_text+='set yrange [%f:%f]\n'%(y_range[0], y_range[1])
   gnuplot_file_text+='unset xtics\n'
   gnuplot_file_text+='set x2tics rotate by -90 offset 0,1.4\n'
   gnuplot_file_text+='unset xlabel\n'
@@ -577,9 +602,9 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
     gnuplot_file_text+='set log x\n'
   else:
     gnuplot_file_text+='unset log x\n'
-  gnuplot_file_text+='set xrange [%f:%f]\n'%(xrange[0], xrange[1])
+  gnuplot_file_text+='set xrange [%f:%f]\n'%(x_range[0], x_range[1])
   gnuplot_file_text+='set autoscale y\n'
-  gnuplot_file_text+=("set yrange [:]#[%s:%s]\n"%(zrange[0], zrange[1])).replace("None", "")
+  gnuplot_file_text+=("set yrange [:]#[%s:%s]\n"%(z_range[0], z_range[1])).replace("None", "")
   #gnuplot_file_text+='unset ytics\n'
   gnuplot_file_text+='unset x2tics\n'
   gnuplot_file_text+='set xtics\n'
@@ -592,8 +617,8 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
     gnuplot_file_text+='unset log y\n'
   if dataset.logy:
     gnuplot_file_text+='set log y\n'
-  gnuplot_file_text+='set xrange [%f:%f]\n'%(xrange[0], xrange[1])
-  gnuplot_file_text+='set yrange [%f:%f]\n'%(yrange[0], yrange[1])
+  gnuplot_file_text+='set xrange [%f:%f]\n'%(x_range[0], x_range[1])
+  gnuplot_file_text+='set yrange [%f:%f]\n'%(y_range[0], y_range[1])
   gnuplot_file_text+='unset xtics\n'
   gnuplot_file_text+='unset ytics\n'
   gnuplot_file_text+='unset xtics\n'
@@ -633,34 +658,30 @@ def script_header(show_persistent, datasets, output_file):
     Create the header of the script with global settings.
   '''
   gp=gnuplot_preferences
-  if show_persistent:
+  if show_persistent or output_file is None:
     postscript_export=True
-    terminal=gp.set_output_terminal_wxt
-  elif output_file is None:
-    postscript_export=True
-    terminal=gp.set_output_terminal_wxt
+    terminal=gp.set_output_terminal_gui
   elif output_file.rsplit('.', 1)[1]=='ps':
     postscript_export=True
     terminal=gp.set_output_terminal_ps
   else:
     postscript_export=False
-    terminal=gp.set_output_terminal_png
+    terminal=gp.set_output_terminal_image
     if not 'crop' in terminal:
+      # crop option is not reset by restor
       terminal+=' nocrop'
   gnuplot_file_text=gp.GNUPLOT_FILE_HEAD+\
                     'set term '+terminal+'\n'
   if not show_persistent and output_file is not None:
     gnuplot_file_text+='set output "'+output_file+'"\n'
   if datasets[0].plot_options.is_polar:
-    gnuplot_file_text+='set encoding '+gp.ENCODING+'\n'+\
-                     'set xlabel "'+gp.y_label+'"\n'+\
+    gnuplot_file_text+='set xlabel "'+gp.y_label+'"\n'+\
                      'set ylabel "'+gp.y_label+'"\n'+\
                      'set title "'+gp.plot_title+'"\n'
     if datasets[0].x.unit=='°':
       gnuplot_file_text+='set angle degree\n'
   else:
-    gnuplot_file_text+='set encoding '+gp.ENCODING+'\n'+\
-                     'set xlabel "'+gp.x_label+'"\n'+\
+    gnuplot_file_text+='set xlabel "'+gp.x_label+'"\n'+\
                      'set ylabel "'+gp.y_label+'"\n'+\
                      'set title "'+gp.plot_title+'"\n'
   if (len(datasets)==1) and (len(datasets[0].plot_together)==1): # if there is only one graph don't show a key

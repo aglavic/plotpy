@@ -572,6 +572,12 @@ class ApplicationMainWindow(gtk.Window):
       When window is closed save the settings in home folder.
       All open dialogs are closed before exit.
     '''
+    # exit persistent gnuplot instances
+    from plot_script.measurement_data_plotting import persistent_plot_instances
+    for p in persistent_plot_instances:
+      p.stdin.write('quit\n')
+      p.stdin.flush()
+      p.communicate()
     if store_config:
       if not os.path.exists(os.path.expanduser('~')+'/.plotting_gui'):
         os.mkdir(os.path.expanduser('~')+'/.plotting_gui')
@@ -589,7 +595,7 @@ class ApplicationMainWindow(gtk.Window):
     if getattr(self, 'active_ipython', False):
       self.active_ipython.destroy()
     try:
-      # if the windows is destoryed before the main loop has started.
+      # if the windows is destroyed before the main loop has started.
       self.destroy()
       gtk.main_quit()
     except RuntimeError:
@@ -1298,7 +1304,7 @@ class ApplicationMainWindow(gtk.Window):
     label.set_markup('Terminal for PNG export (as shown in GUI Window):')
     table.attach(label, 0, 6, 0, 1, 0, 0, 0, 0);
     terminal_png=gtk.Entry()
-    terminal_png.set_text(gnuplot_preferences.set_output_terminal_png)
+    terminal_png.set_text(gnuplot_preferences.set_output_terminal_image)
     table.attach(terminal_png,
                 # X direction #          # Y direction
                 0, 6, 1, 2,
@@ -1474,7 +1480,7 @@ class ApplicationMainWindow(gtk.Window):
           self.plot_options_buffer.get_text(\
             self.plot_options_buffer.get_start_iter(), \
             self.plot_options_buffer.get_end_iter())
-      gnuplot_preferences.set_output_terminal_png=terminal_png.get_text()
+      gnuplot_preferences.set_output_terminal_image=terminal_png.get_text()
       gnuplot_preferences.set_output_terminal_ps=terminal_ps.get_text()
       gnuplot_preferences.x_label=x_label.get_text()
       gnuplot_preferences.y_label=y_label.get_text()
@@ -3322,10 +3328,7 @@ set multiplot layout %i,1
         dialog.destroy()
     else:
       if self.active_multiplot:
-        for plotlist in self.multiplot:
-          itemlist=[item[0] for item in plotlist]
-          if self.active_dataset in itemlist:
-            PrintDatasetDialog(plotlist, self, multiplot=True)
+        PrintDatasetDialog(self.multiplot, self, multiplot=True)
       else:
         measurements=[self.active_dataset]
         PrintDatasetDialog(measurements, self)
@@ -4210,16 +4213,11 @@ set multiplot layout %i,1
     '''
       Check gnuplot version for capabilities.
     '''
-    self.gnuplot_initialized=True
-    gnuplot_version, terminals=measurement_data_plotting.check_gnuplot_version(self.active_session)
+    gnuplot_version=measurement_data_plotting.check_gnuplot_version(self.active_session)
     if gnuplot_version[0]<4.4:
       # mouse mode only works with version 4.4 and higher
       self.mouse_mode=False
-    elif not sys.platform=='darwin' and 'pngcairo' in terminals:
-      gnuplot_preferences.set_output_terminal_png=gnuplot_preferences.set_output_terminal_pngcairo
-    if not 'wxt' in terminals and 'x11' in terminals:
-      # if no wxt support is compiled
-      gnuplot_preferences.set_output_terminal_wxt=gnuplot_preferences.set_output_terminal_x11
+    self.gnuplot_initialized=True
 
   def plot(self, session, datasets, file_name_prefix, title, names,
             with_errorbars, output_file=gnuplot_preferences.output_file_name,

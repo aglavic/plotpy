@@ -1192,14 +1192,14 @@ class PrintDatasetDialog:
       Create a PrintOperation with the number of pages corresponding to the number of datasets.
       Afterwards the Printing dialog is run.
     '''
-    old_terminal=gnuplot_preferences.set_output_terminal_png
+    old_terminal=gnuplot_preferences.set_output_terminal_image
     terminal_items=old_terminal.split()
     for i, item in enumerate(terminal_items):
       if item in ['lw', 'linewidth']:
         # scale the linewidth
         terminal_items[i+1]=str(int(terminal_items[i+1])*(self.width/1600.))
     terminal_items+=['crop']
-    gnuplot_preferences.set_output_terminal_png=" ".join(terminal_items)
+    gnuplot_preferences.set_output_terminal_image=" ".join(terminal_items)
     print_op=gtk.PrintOperation()
     if not self.use_multiplot:
       print_op.set_n_pages(len(self.datasets))
@@ -1219,7 +1219,7 @@ class PrintDatasetDialog:
     print_op.set_property('custom-tab-label', 'Plot Settings')
     # run the dialog
     res=print_op.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG, self.main_window)
-    gnuplot_preferences.set_output_terminal_png=old_terminal
+    gnuplot_preferences.set_output_terminal_image=old_terminal
 
   def create_custom_widgets(self, operation):
     '''

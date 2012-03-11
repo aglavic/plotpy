@@ -67,7 +67,7 @@ class PlotProfile:
       self.zrange=active_class.z_range_in.get_text()
     except AttributeError:
       self.log_xyz=[False, False, False]
-    self.set_output_terminal_png=gnuplot_preferences.set_output_terminal_png
+    self.set_output_terminal_png=gnuplot_preferences.set_output_terminal_image
     self.set_output_terminal_ps=gnuplot_preferences.set_output_terminal_ps
     self.x_label=gnuplot_preferences.x_label
     self.y_label=gnuplot_preferences.y_label
@@ -88,7 +88,7 @@ class PlotProfile:
     active_class.x_range_in.set_text(self.xrange)
     active_class.y_range_in.set_text(self.yrange)
     active_class.z_range_in.set_text(self.zrange)
-    gnuplot_preferences.set_output_terminal_png=self.set_output_terminal_png
+    gnuplot_preferences.set_output_terminal_image=self.set_output_terminal_png
     gnuplot_preferences.set_output_terminal_ps=self.set_output_terminal_ps
     gnuplot_preferences.x_label=self.x_label
     gnuplot_preferences.y_label=self.y_label

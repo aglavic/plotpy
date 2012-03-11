@@ -230,7 +230,7 @@ def get_type_columns(type_line, columns):
     first_index=columns.index(first_angle)
     second_index=columns.index(second_angle)
     return first_index, second_index, intensity_error, intensity
-  elif type_=='timescan_cm' or type_=='Escan':
+  elif type_=='timescan_cm' or type_=='Escan' or type_=='contmode':
     return columns.index('E'), intensity, intensity_error,-1
   elif type_=='ascan' and options.split()[0]=='lake':
     return columns.index('T_{sample}'), intensity, intensity_error,-1
