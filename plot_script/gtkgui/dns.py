@@ -283,8 +283,8 @@ class DNSGUI:
         inc=int(input_filed.get_text())
         self.file_options[self.active_file_name][2]=inc
         self.create_maps(self.active_file_name)
-        object=self.file_data[self.active_file_name]
-        window.change_active_file_object((self.active_file_name, object))
+        object_=self.file_data[self.active_file_name]
+        window.change_active_file_object((self.active_file_name, object_))
       except ValueError:
         pass
     inc_dialog.destroy()
@@ -316,8 +316,8 @@ class DNSGUI:
         new_sp=float(input_filed.get_text())
         self.SCATTERING_PROPABILITY=new_sp
         self.create_maps(self.active_file_name)
-        object=self.file_data[self.active_file_name]
-        window.change_active_file_object((self.active_file_name, object))
+        object_=self.file_data[self.active_file_name]
+        window.change_active_file_object((self.active_file_name, object_))
       except ValueError:
         pass
       if result==1:
@@ -331,7 +331,7 @@ class DNSGUI:
     '''
       Extract ω-scans with constant 2θ from all datasets. 
     '''
-    params, result=SimpleEntryDialog('Defint 2θ-value for the slice...', [
+    params, result=SimpleEntryDialog('Defint 2θ-value for the slice_...', [
                                     ('2θ-center', 90., float, gtk.Label('°')),
                                     ('2θ-width', 2.6, float, gtk.Label('°'))
                                                                           ]).run()
@@ -350,19 +350,19 @@ class DNSGUI:
       except ValueError:
         continue
       window.index_mess=i
-      slice=window.file_actions.create_cross_section(
+      slice_=window.file_actions.create_cross_section(
                         1, 0, 0, params['2θ-center'], params['2θ-width'],
                         0.1, bin_distance=0.1
                                                )
-      if slice is None:
+      if slice_ is None:
         continue
-      slice.data.pop(0)
-      slice.xdata=1
-      slice.ydata=0
-      slice.short_info=dataset.short_info+' 2θ='+str(params['2θ-center'])
-      slice.sample_name=dataset.sample_name
-      slice.number=str(i)
-      slices.append(slice)
+      slice_.data.pop(0)
+      slice_.xdata=1
+      slice_.ydata=0
+      slice_.short_info=dataset.short_info+' 2θ='+str(params['2θ-center'])
+      slice_.sample_name=dataset.sample_name
+      slice_.number=str(i)
+      slices.append(slice_)
       dataset.xdata=saved_x
       dataset.ydata=saved_y
     if len(slices)==0:
@@ -373,7 +373,7 @@ class DNSGUI:
     window.index_mess=0
     window.measurement=self.active_file_data
     window.rebuild_menus()
-    slices_names=[(slice, self.active_file_name) for slice in slices]
+    slices_names=[(slice_, self.active_file_name) for slice_ in slices]
     window.multiplot.append(MultiplotList(slices_names))
     window.active_multiplot=True
     window.replot()
@@ -408,9 +408,9 @@ class DNSGUI:
     if not self.active_file_name in self.file_options:
       return None
     # build a list of DNSMeasurementData objects in active_file_data for the polarizations
-    polarization_list=[(object, self.active_file_name) for object in self.active_file_data if "dns_info" in dir(object)]
+    polarization_list=[(object_, self.active_file_name) for object_ in self.active_file_data if "dns_info" in dir(object_)]
     for name, file_data_tmp in sorted(self.file_data.items()):
-      polarization_list+=[(object, name) for object in file_data_tmp if (("dns_info" in dir(object)) and not (('|raw_data' in name)or (self.active_file_name is name)))]
+      polarization_list+=[(object_, name) for object_ in file_data_tmp if (("dns_info" in dir(object_)) and not (('|raw_data' in name)or (self.active_file_name is name)))]
     combine_list=[]
     def add_object():
       '''Subdialog to add one chanel to the separation.'''
@@ -429,8 +429,8 @@ class DNSGUI:
       align_table.attach(multiplier, 2, 3, 0, 1, 0, 0, 0, 0);
       object_box=gtk.combo_box_new_text()
       object_box.append_text('0-('+polarization_list[0][0].short_info+')')
-      for i, object in enumerate(polarization_list[1:]):
-        object_box.append_text(str(i+1)+'-('+object[0].short_info+','+object[1]+')')
+      for i, object_ in enumerate(polarization_list[1:]):
+        object_box.append_text(str(i+1)+'-('+object_[0].short_info+','+object_[1]+')')
       object_box.set_active(0)
       align_table.attach(object_box, 3, 4, 0, 1, gtk.EXPAND|gtk.FILL, 0, 0, 0)
       add_dialog.vbox.add(align_table)
@@ -508,15 +508,15 @@ class DNSGUI:
       result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
     else:
       result=-1.*combine_list[0][2]*polarization_list[combine_list[0][0]][0]
-    for object, sign, multiplier in combine_list[1:]:
+    for object_, sign, multiplier in combine_list[1:]:
       if sign=='+':
-        result=result+multiplier*polarization_list[object][0]
+        result=result+multiplier*polarization_list[object_][0]
       elif sign=='*':
-        result=result*(multiplier*polarization_list[object][0])
+        result=result*(multiplier*polarization_list[object_][0])
       elif sign=='/':
-        result=result/(multiplier*polarization_list[object][0])
+        result=result/(multiplier*polarization_list[object_][0])
       else:
-        result=result-multiplier*polarization_list[object][0]
+        result=result-multiplier*polarization_list[object_][0]
       if result is None:
         message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE,
                                   message_format='You can only combine polarizations with the same number of measured points!')

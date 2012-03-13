@@ -205,7 +205,7 @@ class KWS2GUI:
       to calculate e.g. coherent magnetic scattering.
     '''
     # build a list of MeasurementData objects in active_file_data for the polarizations
-    polarization_list=[(object[1][0], object[0]) for object in self.file_data.items()]
+    polarization_list=[(object_[1][0], object_[0]) for object_ in self.file_data.items()]
     combine_list=[]
     def add_object():
       '''Subdialog to add one chanel to the separation.'''
@@ -224,8 +224,8 @@ class KWS2GUI:
       align_table.attach(multiplier, 2, 3, 0, 1, 0, 0, 0, 0);
       object_box=gtk.combo_box_new_text()
       object_box.append_text('0-('+polarization_list[0][0].short_info+')')
-      for i, object in enumerate(polarization_list[1:]):
-        object_box.append_text(str(i+1)+'-('+object[0].short_info+')')
+      for i, object_ in enumerate(polarization_list[1:]):
+        object_box.append_text(str(i+1)+'-('+object_[0].short_info+')')
       object_box.set_active(0)
       align_table.attach(object_box, 3, 4, 0, 1, gtk.EXPAND|gtk.FILL, 0, 0, 0)
       add_dialog.vbox.add(align_table)
@@ -305,15 +305,15 @@ class KWS2GUI:
       result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
     else:
       result=-1.*combine_list[0][2]*polarization_list[combine_list[0][0]][0]
-    for object, sign, multiplier in combine_list[1:]:
+    for object_, sign, multiplier in combine_list[1:]:
       if sign=='+':
-        result=result+multiplier*polarization_list[object][0]
+        result=result+multiplier*polarization_list[object_][0]
       elif sign=='*':
-        result=result*(multiplier*polarization_list[object][0])
+        result=result*(multiplier*polarization_list[object_][0])
       elif sign=='/':
-        result=result/(multiplier*polarization_list[object][0])
+        result=result/(multiplier*polarization_list[object_][0])
       else:
-        result=result-multiplier*polarization_list[object][0]
+        result=result-multiplier*polarization_list[object_][0]
       if result is None:
         message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE,
                                   message_format='You can only combine polarizations with the same number of measured points!')

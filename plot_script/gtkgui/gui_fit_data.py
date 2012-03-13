@@ -298,9 +298,9 @@ class FitSessionGUI:
       Allows for constrained parameters.
     '''
     if event.button==1 and (event.state&gtk.gdk.CONTROL_MASK):
-      def float_of_none(input):
+      def float_of_none(input_):
         try:
-          output=float(input)
+          output=float(input_)
         except ValueError:
           output=None
         return output

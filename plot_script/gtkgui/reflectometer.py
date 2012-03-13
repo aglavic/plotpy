@@ -11,7 +11,7 @@ import math
 import numpy
 # own modules
 from plot_script.read_data import reflectometer as read_data
-from plot_script.sessions.reflectometer_fit.reflectometer import *
+from plot_script.sessions.reflectometer_fit.reflectometer import * #@UnusedWildImport
 import dialogs
 from plot_script import fit_data
 from plot_script.measurement_data_structure import MeasurementData, PhysicalProperty
@@ -125,12 +125,12 @@ class ReflectometerGUI:
       Add or substract measured scans from each other.
     '''
     # build a list of MeasurementData objects in active_file_data for the scans
-    file_list=[object[0] for object in self.file_data.items()]
+    file_list=[object_[0] for object_ in self.file_data.items()]
     file_list.remove(self.active_file_name)
     file_list.insert(0, self.active_file_name)
     scan_list=[]
-    for file in file_list:
-      scan_list+=[(object, file, i) for i, object in enumerate(self.file_data[file])]
+    for file_ in file_list:
+      scan_list+=[(object_, file_, i) for i, object_ in enumerate(self.file_data[file_])]
     combine_list=[]
     def add_object():
       '''Subdialog to add one chanel to the separation.'''
@@ -148,11 +148,11 @@ class ReflectometerGUI:
       multiplier.set_text('1')
       align_table.attach(multiplier, 2, 3, 0, 1, 0, 0, 0, 0);
       object_box=gtk.combo_box_new_text()
-      for object in scan_list:
-        if object[0].zdata>=0:
+      for object_ in scan_list:
+        if object_[0].zdata>=0:
           continue
         else:
-          object_box.append_text(os.path.split(object[1])[1]+' '+str(object[2])+'-('+object[0].short_info+')')
+          object_box.append_text(os.path.split(object_[1])[1]+' '+str(object_[2])+'-('+object_[0].short_info+')')
       object_box.set_active(0)
       align_table.attach(object_box, 3, 4, 0, 1, gtk.EXPAND|gtk.FILL, 0, 0, 0)
       add_dialog.vbox.add(align_table)
@@ -232,15 +232,15 @@ class ReflectometerGUI:
       result=combine_list[0][2]*scan_list[combine_list[0][0]][0]
     else:
       result=-1.*combine_list[0][2]*scan_list[combine_list[0][0]][0]
-    for object, sign, multiplier in combine_list[1:]:
+    for object_, sign, multiplier in combine_list[1:]:
       if sign=='+':
-        result=result+multiplier*scan_list[object][0]
+        result=result+multiplier*scan_list[object_][0]
       elif sign=='*':
-        result=result*(multiplier*scan_list[object][0])
+        result=result*(multiplier*scan_list[object_][0])
       elif sign=='/':
-        result=result/(multiplier*scan_list[object][0])
+        result=result/(multiplier*scan_list[object_][0])
       else:
-        result=result-multiplier*scan_list[object][0]
+        result=result-multiplier*scan_list[object_][0]
       if result is None:
         message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE,
                                   message_format='You can only combine scans with the same number of measured points!')
@@ -671,8 +671,8 @@ class ReflectometerGUI:
     text_string+='\n\nDo you want to use these new parameters?'
     text=gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview. 
-    buffer=text.get_buffer()
-    buffer.set_text(text_string)
+    buffer_=text.get_buffer()
+    buffer_.set_text(text_string)
     sw=gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
@@ -721,7 +721,7 @@ class ReflectometerGUI:
                                       self.TEMP_DIR+'fit_temp', self.max_iter)
     print "fit.f90 program started."
     if self.active_file_data.fit_object.fit!=1: # if this is not a fit just wait till finished
-      exec_time, stderr_value=self.proc.communicate()
+      exec_time, ignore=self.proc.communicate()
       print "fit.f90 program finished in %.2g seconds."%float(exec_time.splitlines()[-1])
     else:
       self.open_status_dialog(window)
@@ -760,14 +760,14 @@ class ReflectometerGUI:
                                       action=gtk.FILE_CHOOSER_ACTION_OPEN,
                                       buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
     file_dialog.set_default_response(gtk.RESPONSE_OK)
-    filter=gtk.FileFilter()
-    filter.set_name('Entry file')
-    filter.add_pattern('*.ent')
-    file_dialog.add_filter(filter)
-    filter=gtk.FileFilter()
-    filter.set_name('All')
-    filter.add_pattern('*.*')
-    file_dialog.add_filter(filter)
+    filter_=gtk.FileFilter()
+    filter_.set_name('Entry file')
+    filter_.add_pattern('*.ent')
+    file_dialog.add_filter(filter_)
+    filter_=gtk.FileFilter()
+    filter_.set_name('All')
+    filter_.add_pattern('*.*')
+    file_dialog.add_filter(filter_)
     response=file_dialog.run()
     if response==gtk.RESPONSE_OK:
       file_name=file_dialog.get_filename()
@@ -790,14 +790,14 @@ class ReflectometerGUI:
     file_dialog=gtk.FileChooserDialog(title='Open new datafile...', action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
     file_dialog.set_default_response(gtk.RESPONSE_OK)
     file_dialog.set_current_name(self.active_file_name+'.ent')
-    filter=gtk.FileFilter()
-    filter.set_name('Entry file')
-    filter.add_pattern('*.ent')
-    file_dialog.add_filter(filter)
-    filter=gtk.FileFilter()
-    filter.set_name('All')
-    filter.add_pattern('*.*')
-    file_dialog.add_filter(filter)
+    filter_=gtk.FileFilter()
+    filter_.set_name('Entry file')
+    filter_.add_pattern('*.ent')
+    file_dialog.add_filter(filter_)
+    filter_=gtk.FileFilter()
+    filter_.set_name('All')
+    filter_.add_pattern('*.*')
+    file_dialog.add_filter(filter_)
     response=file_dialog.run()
     if response==gtk.RESPONSE_OK:
       file_name=file_dialog.get_filename()
@@ -808,7 +808,7 @@ class ReflectometerGUI:
     #----------------File selection dialog-------------------#
     file_prefix=file_name.rsplit('.ent', 1)[0]
     dataset=self.active_file_data[window.index_mess]
-    data_lines=dataset.export(file_prefix+'.res', print_info=False, only_fitted_columns=True, xfrom=self.x_from, xto=self.x_to)
+    dataset.export(file_prefix+'.res', print_info=False, only_fitted_columns=True, xfrom=self.x_from, xto=self.x_to)
     self.active_file_data.fit_object.set_fit_constrains()
     # create the .ent file
     ent_file=open(file_prefix+'.ent', 'w')
@@ -846,7 +846,8 @@ class ReflectometerGUI:
     '''
       Open a dialog to retrieve delta and beta online via http://henke.lbl.gov.
     '''
-    dialog=gtk.Dialog()
+    pass
+    #dialog=gtk.Dialog()
 
   def fourier_analysis_dialog(self, session, window):
     '''

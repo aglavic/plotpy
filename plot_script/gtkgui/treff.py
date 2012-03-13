@@ -8,7 +8,7 @@
 import gtk
 import os
 
-from plot_script.sessions.reflectometer_fit.treff import *
+from plot_script.sessions.reflectometer_fit.treff import * #@UnusedWildImport
 from plot_script.measurement_data_structure import PlotStyle
 from plot_script.read_data.kws2 import KWS2MeasurementData
 from plot_script.config import treff as config
@@ -230,11 +230,11 @@ class TreffGUI:
     object_box_3.append_text('None')
     object_box_4=gtk.combo_box_new_text()
     object_box_4.append_text('None')
-    for i, object in enumerate(self.active_file_data):
-      object_box_1.append_text(str(i)+'-('+object.short_info+')')
-      object_box_2.append_text(str(i)+'-('+object.short_info+')')
-      object_box_3.append_text(str(i)+'-('+object.short_info+')')
-      object_box_4.append_text(str(i)+'-('+object.short_info+')')
+    for i, object_ in enumerate(self.active_file_data):
+      object_box_1.append_text(str(i)+'-('+object_.short_info+')')
+      object_box_2.append_text(str(i)+'-('+object_.short_info+')')
+      object_box_3.append_text(str(i)+'-('+object_.short_info+')')
+      object_box_4.append_text(str(i)+'-('+object_.short_info+')')
     text_filed=gtk.Label()
     text_filed.set_markup('Up-Up-Channel: ')
     align_table.attach(text_filed, 0, 1, 0, 1, gtk.FILL, gtk.FILL, 0, 3)
@@ -289,9 +289,9 @@ class TreffGUI:
                         set_list[object_box_2.get_active()],
                         set_list[object_box_3.get_active()],
                         set_list[object_box_4.get_active()]]
-      for object in self.active_file_data.fit_datasets:
-        if object:
-          object.logy=True
+      for object_ in self.active_file_data.fit_datasets:
+        if object_:
+          object_.logy=True
       selection_dialog.destroy()
       return True
     else:
@@ -1065,8 +1065,8 @@ class TreffGUI:
     text_string+='\n\nDo you want to use these new parameters?'
     text=gtk.TextView()
     # Retrieving a reference to a textbuffer from a textview. 
-    buffer=text.get_buffer()
-    buffer.set_text(text_string)
+    buffer_=text.get_buffer()
+    buffer_.set_text(text_string)
     sw=gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
@@ -1096,14 +1096,14 @@ class TreffGUI:
                                                gtk.RESPONSE_CANCEL))
     file_dialog.set_default_response(gtk.RESPONSE_OK)
     file_dialog.set_current_name(self.active_file_name+'.ent')
-    filter=gtk.FileFilter()
-    filter.set_name('Entry file')
-    filter.add_pattern('*.ent')
-    file_dialog.add_filter(filter)
-    filter=gtk.FileFilter()
-    filter.set_name('All')
-    filter.add_pattern('*.*')
-    file_dialog.add_filter(filter)
+    filter_=gtk.FileFilter()
+    filter_.set_name('Entry file')
+    filter_.add_pattern('*.ent')
+    file_dialog.add_filter(filter_)
+    filter_=gtk.FileFilter()
+    filter_.set_name('All')
+    filter_.add_pattern('*.*')
+    file_dialog.add_filter(filter_)
     use_multilayer=gtk.CheckButton(label='Combine 1st multiplot (don\'t export every single layer)', use_underline=True)
     use_multilayer.show()
     file_dialog.vbox.pack_end(use_multilayer, expand=False)
@@ -1131,14 +1131,14 @@ class TreffGUI:
                                       action=gtk.FILE_CHOOSER_ACTION_OPEN,
                                       buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
     file_dialog.set_default_response(gtk.RESPONSE_OK)
-    filter=gtk.FileFilter()
-    filter.set_name('Entry file')
-    filter.add_pattern('*.ent')
-    file_dialog.add_filter(filter)
-    filter=gtk.FileFilter()
-    filter.set_name('All')
-    filter.add_pattern('*.*')
-    file_dialog.add_filter(filter)
+    filter_=gtk.FileFilter()
+    filter_.set_name('Entry file')
+    filter_.add_pattern('*.ent')
+    file_dialog.add_filter(filter_)
+    filter_=gtk.FileFilter()
+    filter_.set_name('All')
+    filter_.add_pattern('*.*')
+    file_dialog.add_filter(filter_)
     # Add a check box for importing x-ray .ent files.
     x_ray_import=gtk.CheckButton('Convert from x-ray .ent File')
     align=gtk.Alignment(xalign=1.0, yalign=0.0, xscale=0.0, yscale=0.0)
@@ -1199,8 +1199,8 @@ class TreffGUI:
     '''
     # build a list of MeasurementData objects in active_file_data for the polarizations
     polarization_list=[]
-    for key, object in self.file_data.items():
-      polarization_list+=[(dataset, key) for dataset in object]
+    for key, object_ in self.file_data.items():
+      polarization_list+=[(dataset, key) for dataset in object_]
     combine_list=[]
     def add_object():
       '''Subdialog to add one chanel to the separation.'''
@@ -1219,8 +1219,8 @@ class TreffGUI:
       align_table.attach(multiplier, 2, 3, 0, 1, 0, 0, 0, 0);
       object_box=gtk.combo_box_new_text()
       object_box.append_text('0-('+os.path.split(polarization_list[0][1])[1]+'-'+polarization_list[0][0].short_info+')')
-      for i, object in enumerate(polarization_list[1:]):
-        object_box.append_text(str(i+1)+'-('+os.path.split(object[1])[1]+'-'+object[0].short_info+')')
+      for i, object_ in enumerate(polarization_list[1:]):
+        object_box.append_text(str(i+1)+'-('+os.path.split(object_[1])[1]+'-'+object_[0].short_info+')')
       object_box.set_active(0)
       align_table.attach(object_box, 3, 4, 0, 1, gtk.EXPAND|gtk.FILL, 0, 0, 0)
       add_dialog.vbox.add(align_table)
@@ -1300,15 +1300,15 @@ class TreffGUI:
       result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
     else:
       result=-1.*combine_list[0][2]*polarization_list[combine_list[0][0]][0]
-    for object, sign, multiplier in combine_list[1:]:
+    for object_, sign, multiplier in combine_list[1:]:
       if sign=='+':
-        result=result+multiplier*polarization_list[object][0]
+        result=result+multiplier*polarization_list[object_][0]
       elif sign=='*':
-        result=result*(multiplier*polarization_list[object][0])
+        result=result*(multiplier*polarization_list[object_][0])
       elif sign=='/':
-        result=result/(multiplier*polarization_list[object][0])
+        result=result/(multiplier*polarization_list[object_][0])
       else:
-        result=result-multiplier*polarization_list[object][0]
+        result=result-multiplier*polarization_list[object_][0]
       if result is None:
         message=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE,
                                   message_format='You can only combine polarizations with the same number of measured points!')

@@ -55,7 +55,7 @@ class MultiplotItem(gtk.HBox):
 
   def update_labels(self):
     '''
-      Redefine the labesl for all datasets.
+      Redefine the labels for all datasets.
     '''
     labels=self._labels
     for i, item in enumerate(self.items):
@@ -93,7 +93,7 @@ class MultiplotItem(gtk.HBox):
     gtk.HBox.reorder_child(self, label, position)
 
   def clear(self):
-    for i in range(len(self.items)):
+    for ignore in range(len(self.items)):
       self.pop(0)
 
 
@@ -363,9 +363,7 @@ class ItemSortAdd(gtk.Dialog):
       self.parent_gui.replot()
 
   def _change_info(self, entry, dataset):
-    print dataset
     dataset.short_info=entry.get_text()
     if self._do_replot:
       self.parent_gui.replot()
-
 

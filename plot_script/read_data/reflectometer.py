@@ -363,7 +363,7 @@ def read_bruker_header(data):
 def read_bruker_data(data, scans):
   i=0
   scan_data=[]
-  for j in range(scans):
+  for ignore in range(scans):
     range_info=read_bruker_range_header(data[i:])
     start=i+304+range_info['supplementary_headers_size']
     i=start+4*range_info['STEPS']

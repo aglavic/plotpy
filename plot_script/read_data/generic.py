@@ -7,8 +7,6 @@ import os
 import gzip
 import numpy
 
-from plot_script.measurement_data_structure import MeasurementData, PhysicalProperty
-
 __author__="Artur Glavic"
 __credits__=[]
 from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport

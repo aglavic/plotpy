@@ -129,14 +129,12 @@ class ReflectometerFitGUI:
     status.set_modal(True)
     start=time.time()
     time_get=time.time
-    main_iteration=gtk.main_iteration
-    events_pending=gtk.events_pending
     file_name=self.TEMP_DIR+self.RESULT_FILE
-    # while the process is running ceep reading the .ref output file
+    # while the process is running ceep reading the .ref output file_
     while self.proc.poll()==None and not os.path.exists(file_name):
       continue
-    file=open(file_name, 'r')
-    text=file.read()
+    file_=open(file_name, 'r')
+    text=file_.read()
     while self.proc.poll()==None:
       try:
         line=open(self.TEMP_DIR+'status').read()
@@ -152,32 +150,32 @@ class ReflectometerFitGUI:
         chi=0
         improvements=0
         s_text='No status available at...'
-      text=file.read()
+      text=file_.read()
       status.set_title(s_text)
       status.write(text)
       time.sleep(0.1)
     try:
-      file.close()
+      file_.close()
     except AttributeError:
       pass
     status.destroy()
 
 
-  def toggle_fit_option(self, action, list, number):
+  def toggle_fit_option(self, action, list_, number):
     '''
-      add or remove parameter from list
+      add or remove parameter from list_
     '''
-    if number in list:
-      list.remove(number)
+    if number in list_:
+      list_.remove(number)
     else:
-      list.append(number)
-    list.sort()
+      list_.append(number)
+    list_.sort()
 
-  def toggle_fit_bool_option(self, action, dict, value):
+  def toggle_fit_bool_option(self, action, dict_, value):
     '''
       add or remove parameter from list
     '''
-    dict[value]=not dict[value]
+    dict_[value]=not dict_[value]
 
   def user_constraint_dialog(self, fit_dialog, window):
     '''
@@ -261,9 +259,9 @@ class ReflectometerFitGUI:
     if response==1:
       self.active_file_data.fit_object.user_constraints=[]
       objects=dialog.vbox.get_children()
-      for object in objects:
-        if type(object) is gtk.Table:
-          for widget in object.get_children():
+      for object_ in objects:
+        if type(object_) is gtk.Table:
+          for widget in object_.get_children():
             if type(widget) is gtk.Entry:
               try:
                 self.active_file_data.fit_object.user_constraints.append(map(int, widget.get_text().split(',')))
@@ -283,7 +281,7 @@ class ReflectometerFitGUI:
     fit_file=open(file_name, 'r')
     test_fit=fit_file.readlines()
     fit_file.close()
-    for i, line in enumerate(reversed(test_fit)):
+    for line in reversed(test_fit):
       split=line.split()
       if len(split)>1:
         if split[0] in parameters:

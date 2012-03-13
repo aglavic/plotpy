@@ -231,8 +231,6 @@ def read_cmb_files(file_names):
       setup=value
   sys.stdout.write("\tReading...\n")
   sys.stdout.flush()
-  background=2.
-  countingtime=1.
   detector_distance=setup['DETECTOR_DISTANCE']#1435. #mm
   pixelsize_x=0.2171 #mm
   pixelsize_y=0.2071 #mm
@@ -254,7 +252,7 @@ def read_cmb_files(file_names):
       file_handler=gzip.open(file_name, 'rb')
     else:
       file_handler=open(file_name, 'rb')
-    header=file_handler.read(256)
+    header=file_handler.read(256) #@UnusedVariable
     file_handler.read(256)
     raw_array=array_module.array('i')
     raw_array.fromfile(file_handler, 1024**2)
@@ -338,8 +336,8 @@ def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items
     input_array, header_settings, header_info=import_edf_file(file_name)
   else:
     # get a list of files, which belong together
-    file_prefix, file_ending=file_name.split('_im_')
-    file_postfix=file_ending.split('.', 1)[1] # remove number
+    file_prefix=file_name.split('_im_')[0]
+    #file_postfix=file_ending.split('.', 1)[1] # remove number
     if file_prefix in imported_edfs:
       return 'NULL'
     input_array, header_settings, header_info=import_edf_set(file_name)
@@ -431,8 +429,8 @@ def import_edf_set(file_name):
     is_list=True
   else:
     # get a list of files, which belong together
-    file_prefix, file_ending=file_name.split('_im_')
-    file_postfix=file_ending.split('.', 1)[1] # remove number
+    file_prefix=file_name.split('_im_')[0]
+    #file_postfix=file_ending.split('.', 1)[1] # remove number
     if file_prefix in imported_edfs:
       return 'NULL'
     imported_edfs.append(file_prefix)
@@ -450,7 +448,7 @@ def import_edf_set(file_name):
   for i, file_name in enumerate(file_list[1:]):
     sys.stdout.write('\b'*(len(str(i+1))+len(str(len(file_list))))+'\b%i/%i'%(i+2, len(file_list)))
     sys.stdout.flush()
-    input_array_tmp, header_settings_tmp, header_info_tmp=import_edf_file(file_name)
+    input_array_tmp, ignore, header_info_tmp=import_edf_file(file_name)
     # add the collected data to the already imported
     input_array+=input_array_tmp
     header_info['time']+=header_info_tmp['time']
@@ -475,8 +473,7 @@ def read_background_edf(background_file_name):
     file_handler=gzip.open(file_name, 'rb')
   else:
     file_handler=open(file_name, 'rb')
-  header_settings, header_info=read_edf_header(file_handler)
-  import array as array_module
+  ignore, header_info=read_edf_header(file_handler)
   input_array=array_module.array('H')
   #data_array.fromfile(file_handler, header_info['xdim']*header_info['ydim']) # deosn't work with gzip
   input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
@@ -491,7 +488,7 @@ def read_background_edf(background_file_name):
       file_handler=gzip.open(file_name, 'rb')
     else:
       file_handler=open(file_name, 'rb')
-    header_settings, header_info=read_edf_header(file_handler)
+    ignore, header_info=read_edf_header(file_handler)
     input_array=array_module.array('H')
     input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
     file_handler.close()
@@ -580,7 +577,7 @@ def import_edf_file(file_name):
   else:
     file_handler=open(file_name, 'rb')
   # read file header information
-  header_settings, header_info, header_lines=read_edf_header(file_handler)
+  header_settings, header_info, ignore=read_edf_header(file_handler)
   if header_settings['DataType']=='UnsignedShort':
     # load data as binary integer values
     input_array=array_module.array('H')
@@ -651,7 +648,7 @@ def read_p08_binary(file_name):
   # read the data
   sys.stdout.write("\b\b\b binary...")
   sys.stdout.flush()
-  header, data_array=read_p08_binarydata(file_name)
+  ignore, data_array=read_p08_binarydata(file_name)
   if setup['BACKGROUND'] is not None:
     sys.stdout.write("\b\b\b subtracting background %s..."%setup['BACKGROUND'])
     sys.stdout.flush()
@@ -802,7 +799,7 @@ def read_raw_tif_data(file_name):
   # use PIL image readout
   import Image
   # py2exe hack
-  import TiffImagePlugin
+  import TiffImagePlugin #@UnusedImport
   Image._initialized=2
   img=Image.open(file_name)
   data_array=asarray(img.getdata())
@@ -842,7 +839,7 @@ def read_bmp_data(file_name):
   sample_name=''
   center_x=setup['CENTER_X']/join_pixels
   center_y=setup['CENTER_Y']/join_pixels
-  q_window=[-1000., 1000.,-1000., 1000.]
+  #q_window=[-1000., 1000.,-1000., 1000.]
   dataobj=HugeMD([],
                             [], 2, 3,-1, 4)
   if setup['BACKGROUND'] is not None:

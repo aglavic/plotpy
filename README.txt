@@ -1,6 +1,8 @@
-      Release Notes for the plotting script collection Version 0.7.2.3
+      Release Notes for the plotting script collection Version 0.7.13
              Please report bugs and feature requests to http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki
 
+The information in this file has not been updated since version 0.7.2., it will
+be changed for version 0.8. More up-to-date information can be found in the Wiki.
 
 Content:
 

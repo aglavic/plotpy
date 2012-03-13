@@ -5,14 +5,13 @@
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
-import gtk
+from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 
 #----------------------- importing modules --------------------------
 
 
 __author__="Artur Glavic"
 __credits__=[]
-from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
 __status__="Production"
 
 

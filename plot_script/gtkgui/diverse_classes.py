@@ -38,7 +38,7 @@ class PlotProfile:
   settings_3dmap=''
   additional_commands=''
   log_xyz=[False, False, False]
-  xrange=''
+  xrange='' #@ReservedAssignment
   yrange=''
   zrange=''
 
@@ -248,8 +248,8 @@ class RedirectError(RedirectOutput):
       comment_dialog=gtk.Dialog(title='Supplementary Information:',
                                 buttons=('Create Bugreport', 1))
       textview=gtk.TextView()
-      buffer=textview.get_buffer()
-      buffer.set_text('''Name:
+      buffer_=textview.get_buffer()
+      buffer_.set_text('''Name:
 email:
 action before error occured:
   
@@ -258,7 +258,7 @@ comment: ''')
       comment_dialog.set_default_size(600, 300)
       comment_dialog.show_all()
       comment_dialog.run()
-      text=buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
+      text=buffer_.get_text(buffer_.get_start_iter(), buffer_.get_end_iter())
       comment_dialog.destroy()
       info=gtk.MessageDialog(type=gtk.MESSAGE_INFO, message_format='Writing debug information, please stay patient...')
       info.show_all()

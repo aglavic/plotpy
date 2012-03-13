@@ -493,6 +493,8 @@ class ApplicationMainWindow(gtk.Window):
     self.event_box.connect('button-press-event', self.mouse_press)
     self.event_box.connect('button-release-event', self.mouse_release)
     self.connect('motion-notify-event', self.catch_mouse_position)
+    # misc
+    self.frame1.connect('switch-page', self.tab_switched)
     #------------- connecting events --------------
 
     # create the first plot
@@ -671,6 +673,10 @@ Gnuplot version %.1f patchlevel %i with terminals:
                                                             config.__path__[0]) #@UndefinedVariable
     dialog.run()
     dialog.destroy()
+
+  def tab_switched(self, notebook, page, page_num):
+    if page_num==1:
+      self.multiplot.update_labels()
 
   def iterate_through_measurements(self, action):
     ''' 

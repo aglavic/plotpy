@@ -10,7 +10,7 @@ import gtk
 from time import time, sleep
 import dialogs
 from plot_script import  fit_data
-from plot_script.measurement_data_structure import MeasurementData, PhysicalProperty, PhysicalConstant
+from plot_script.measurement_data_structure import MeasurementData, PhysicalProperty
 
 #----------------------- importing modules --------------------------
 

@@ -536,7 +536,6 @@ class FileActions:
       bin the extracted data and to weight the binning with a gaussian.
     '''
     sqrt=numpy.sqrt
-    exp=numpy.exp
     dataset=self.window.measurement[self.window.index_mess]
     xdata=numpy.array(dataset.x)
     ydata=numpy.array(dataset.y)
@@ -609,74 +608,6 @@ class FileActions:
     out_dataset.append_column(PhysicalProperty(dataset.y.dimension, dataset.y.unit, data[2]))
     return out_dataset
 
-  def create_cross_section_oll(self, x, x_0, y, y_0, w, binning, gauss_weighting=False, sigma_gauss=1e10, bin_distance=None):
-    '''
-      Create a cross-section of 3d-data along an arbitrary line. It is possible to
-      bin the extracted data and to weight the binning with a gaussian.
-    '''
-    from math import sqrt, exp
-    dataset=self.window.measurement[self.window.index_mess]
-    data=dataset.list_err()
-    dims=dataset.dimensions()
-    units=dataset.units()
-    cols=(dataset.xdata,
-          dataset.ydata,
-          dataset.zdata,
-          dataset.yerror)
-    new_cols=[(dims[col], units[col]) for col in cols]
-    # Einheitsvector of line
-    vec_e=(x/sqrt(x**2+y**2), y/sqrt(x**2+y**2))
-    # Vector normal to the line
-    vec_n=(vec_e[1],-1*vec_e[0])
-    # starting point of cross-section line
-    origin=(x_0, y_0)
-    first_dim=''
-    first_unit=''
-    if x!=0:
-      first_dim+='%g %s'%(x, new_cols[0][0])
-      if y==0:
-        first_unit=new_cols[0][1]
-    if x!=0 and y!=0:
-      if y>0:
-        first_dim+=' + '
-      if new_cols[0][1]==new_cols[1][1]:
-        first_unit=new_cols[0][1]
-      else:
-        first_unit="Unknown"
-    if y!=0:
-      first_dim+='%g %s'%(y, new_cols[1][0])
-      if x==0:
-        first_unit=new_cols[1][1]
-    new_cols=[(first_dim, first_unit)]+new_cols+[('distance', first_unit)]
-    output=MeasurementData(new_cols,
-                           [],
-                           0,
-                           3,
-                           4,
-                           )
-    def point_filter(point):
-      '''
-        Test if point lies in the region expressed by origin, vec_n and w (width).
-        
-        @return Boolean
-      '''
-      v1=(point[0]-origin[0], point[1]-origin[1])
-      dist=abs(v1[0]*vec_n[0]+v1[1]*vec_n[1])
-      if dist<=(w/2.):
-        return True
-      else:
-        return False
-    # remove all points not inside the scanned region
-    data2=filter(point_filter, data)
-    if len(data2)==0:
-      return None
-    len_vec=sqrt(x**2+y**2)
-    data3=[[(vec_e[0]*dat[0]+vec_e[1]*dat[1])*len_vec, dat[0], dat[1], dat[2], dat[3],
-                                          (vec_n[0]*(dat[0]-origin[0])+vec_n[1]*(dat[1]-origin[1]))] for dat in data2]
-    data3=self.sort_and_bin(data3, binning, gauss_weighting, sigma_gauss, bin_distance)
-    map(output.append, data3)
-    return output
-
   def create_radial_integration(self, x_0, y_0, dr, max_r):
     '''
       Create a radial integration around one point (x_0,y_0)
@@ -686,7 +617,7 @@ class FileActions:
       @param dr Step size in radius for the created plot
       @param max_r Maximal radius to integrate to
     '''
-    from numpy import sqrt, array
+    from numpy import sqrt
     data=self.window.measurement[self.window.index_mess].get_filtered_data_matrix()
     dims=self.window.measurement[self.window.index_mess].dimensions()
     units=self.window.measurement[self.window.index_mess].units()
@@ -694,7 +625,7 @@ class FileActions:
           self.window.measurement[self.window.index_mess].ydata,
           self.window.measurement[self.window.index_mess].zdata,
           self.window.measurement[self.window.index_mess].yerror)
-    new_cols=[(dims[col], units[col]) for col in cols]
+    # new_cols=[(dims[col], units[col]) for col in cols]
     # Distances to the point
     dist_r=sqrt((data[cols[0]]-x_0)**2+(data[cols[1]]-y_0)**2)
     max_r=min(dist_r.max(), max_r)
@@ -794,7 +725,7 @@ class FileActions:
       
       @return The average of the integrated values with their errors.
     '''
-    from numpy import array, sqrt, where, ndarray
+    from numpy import sqrt, where, ndarray
     x=dataset.x.view(ndarray)
     y=dataset.y.view(ndarray)
     z=dataset.z.view(ndarray)
@@ -847,8 +778,8 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix
   else:
     dzq=dataset.z.error**2
   dzq=where(numpy.isinf(dzq), numpy.nan_to_num(dzq), 1.)
-  zout=[]
-  dzout=[]
+  #zout=[]
+  #dzout=[]
   dims=dataset.dimensions()
   units=dataset.units()
   cols=[(dims[dataset.xdata], units[dataset.xdata]),
@@ -1206,7 +1137,7 @@ class MakroRepr:
     '''
     return 0
 
-  def next(self):
+  def next(self): #@ReservedAssignment
     '''
       Dummifunction to complete file object possibilities.
     '''
@@ -1270,7 +1201,7 @@ def savitzky_golay(y, window_size, order, deriv=0):
   try:
       window_size=np.abs(np.int(window_size))
       order=np.abs(np.int(order))
-  except ValueError, msg:
+  except ValueError:
       raise ValueError("window_size and order have to be of type int")
   if window_size%2!=1:
     window_size-=1

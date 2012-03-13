@@ -27,7 +27,7 @@ try:
 except Exception, e:
         raise RuntimeError, "Error importing IPython (%s)"%str(e)
 
-from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 
 ansi_colors={'0;30': 'Black',
                 '0;31': 'Red',
@@ -169,14 +169,13 @@ class IterableIPShell:
     return str1
 
   def shell(self, cmd, verbose=0, debug=0, header=''):
-    stat=0
     if verbose or debug: print header+cmd
     # flush stdout so we don't mangle python's buffering
     if not debug:
-      input, output=os.popen4(cmd)
+      input_, output=os.popen4(cmd)
       print output.read()
       output.close()
-      input.close()
+      input_.close()
 
 class ConsoleView(gtk.TextView):
   def __init__(self):
@@ -228,8 +227,8 @@ class ConsoleView(gtk.TextView):
     self.text_buffer.move_mark(self.line_start, self.text_buffer.get_end_iter())
 
   def changeLine(self, text):
-    iter=self.text_buffer.get_iter_at_mark(self.line_start)
-    iter.forward_to_line_end()
+    iter_=self.text_buffer.get_iter_at_mark(self.line_start)
+    iter_.forward_to_line_end()
     self.text_buffer.delete(self.text_buffer.get_iter_at_mark(self.line_start), iter)
     self.write(text, True)
 
@@ -239,11 +238,11 @@ class ConsoleView(gtk.TextView):
     return unicode(rv)
 
   def showReturned(self, text):
-    iter=self.text_buffer.get_iter_at_mark(self.line_start)
-    iter.forward_to_line_end()
+    iter_=self.text_buffer.get_iter_at_mark(self.line_start)
+    iter_.forward_to_line_end()
     self.text_buffer.apply_tag_by_name('notouch',
                                        self.text_buffer.get_iter_at_mark(self.line_start),
-                                       iter)
+                                       iter_)
     self.write('\n'+text)
     if text:
       self.write('\n')
@@ -285,7 +284,7 @@ class IPythonView(ConsoleView, IterableIPShell):
     self.showPrompt(intro_text+self.prompt)
     self.interrupt=False
 
-  def raw_input(self, prompt=''):
+  def raw_input(self, prompt=''): #@ReservedAssignment
     if self.interrupt:
       self.interrupt=False
       raise KeyboardInterrupt
@@ -311,12 +310,12 @@ class IPythonView(ConsoleView, IterableIPShell):
         return False
       completed, possibilities=self.complete(self.getCurrentLine())
       if len(possibilities)>1:
-        slice=self.getCurrentLine()
+        slice_=self.getCurrentLine()
         self.write('\n')
         for symbol in possibilities:
           self.write(symbol+'\n')
         self.showPrompt(self.prompt)
-      self.changeLine(completed or slice)
+      self.changeLine(completed or slice_)
       return True
     elif (event.state&gtk.gdk.CONTROL_MASK or \
           event.state&gtk.gdk.MOD1_MASK) and self.propagate_key_parent is not None:
@@ -365,7 +364,7 @@ class MenuWrapper(object):
     menu_items=self.__menu_root__.get_children()
     # remove seperators
     menu_items=filter(lambda item: type(item) in [gtk.ImageMenuItem, gtk.MenuItem], menu_items)
-    dict={}
+    dict_={}
     for item in menu_items:
       name=item.get_label().replace('_', '').replace('.', '').replace('/', '').replace(' ', '_').replace('-', '_')
       if name=='Empty':
@@ -373,15 +372,15 @@ class MenuWrapper(object):
       submenu=item.get_submenu()
       if submenu is not None:
         # Create submenu wrapper
-        dict[name]=MenuWrapper(item.get_submenu())
+        dict_[name]=MenuWrapper(item.get_submenu())
       else:
-        dict[name]=item.activate
-    for key, value in dict.items():
+        dict_[name]=item.activate
+    for key, value in dict_.items():
       setattr(self, key, value)
-    return dict
+    return dict_
 
   # connect __dict__ to the __get_dict__ function
-  __dict__=property(__get_dict__)
+  __dict__=property(__get_dict__) #@ReservedAssignment
 
   def __getattribute__(self, name):
     # if used before first accessing the __dict__
@@ -419,16 +418,16 @@ class FitWrapper(object):
       items=sorted(self.__fit_root__.available_functions_2d.items())
     else:
       items=sorted(self.__fit_root__.available_functions_3d.items())
-    dict=FitSubWrapper(self.__fit_root__,
+    dict_=FitSubWrapper(self.__fit_root__,
                                self.__window_root__,
                                self.__session_root__,
                                items).__dict__
-    for key, value in dict.items():
+    for key, value in dict_.items():
       setattr(self, key, value)
-    return dict
+    return dict_
 
   # connect __dict__ to the __get_dict__ function
-  __dict__=property(__get_dict__)
+  __dict__=property(__get_dict__) #@ReservedAssignment
 
   def __getattribute__(self, name):
     if name.startswith('_'):
@@ -459,17 +458,17 @@ class FitSubWrapper(object):
       Interactively creates the objects __dict__ dictionary to contain only the
       fit function names. Calling a function creates a fit and fits it.
     '''
-    dict={
+    dict_={
           }
     for name, fit_class in self.__items_root__:
       name=name.replace('_', '').replace('.', '').replace('/', '').replace(' ', '_').replace('-', '_')
-      dict[name]=FitCaller(self, fit_class)
-    for key, value in dict.items():
+      dict_[name]=FitCaller(self, fit_class)
+    for key, value in dict_.items():
       setattr(self, key, value)
-    return dict
+    return dict_
 
   # connect __dict__ to the __get_dict__ function
-  __dict__=property(__get_dict__)
+  __dict__=property(__get_dict__) #@ReservedAssignment
 
   def __getattribute__(self, name):
     if name.startswith('_'):

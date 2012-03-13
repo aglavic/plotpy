@@ -6,12 +6,11 @@
 '''
 
 # Pleas do not make any changes here unless you know what you are doing.
-import os
 from math import sqrt
 import numpy
 from plot_script.measurement_data_structure import MeasurementData
 from plot_script.config import dns as config
-from plot_script.config.dns import *
+from plot_script.config.dns import * #@UnusedWildImport
 
 __author__="Artur Glavic"
 __credits__=[]

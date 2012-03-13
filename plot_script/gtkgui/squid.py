@@ -65,7 +65,6 @@ class SquidGUI:
       Diamagnetic correction can be calculated from a fit to the
       asymptotic behaviour of a MvsH measurement.
     '''
-    import gtk
     units=window.measurement[window.index_mess].units()
     dia=self.dia_mag_correct
     para=self.para[0]
@@ -231,7 +230,6 @@ class SquidGUI:
       Diamagnetic correction can be calculated from a fit to the
       asymptotic behaviour of a MvsH measurement.
     '''
-    import gtk
     units=window.measurement[window.index_mess].units()
     dia=self.dia_mag_correct
     para=self.para[0]
@@ -495,9 +493,9 @@ class SquidGUI:
     selection_dialog.set_preview_parameters(window.plot, self, self.TEMP_DIR+'plot_temp.png')
     result=selection_dialog.run()
     if result==1:
-      object=selection_dialog.get_active_objects()[0]
+      object_=selection_dialog.get_active_objects()[0]
       dataset=window.measurement[window.index_mess]
-      newdata=self.do_subtract_dataset(dataset, object)
+      newdata=self.do_subtract_dataset(dataset, object_)
       window.measurement.insert(window.index_mess+1, newdata)
       window.index_mess+=1
       window.replot()
