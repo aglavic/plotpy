@@ -24,7 +24,7 @@ from plot_script.config.gui import DOWNLOAD_PAGE_URL
 import file_actions
 from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, \
                     PrintDatasetDialog, SimpleEntryDialog, DataView, PlotTree, \
-                    FileImportDialog, StyleLine, ImportWizard
+                    FileImportDialog, StyleLine, ImportWizard, LabelArrowDialog
 from multiplots import MultiplotCanvas
 from diverse_classes import PlotProfile, RedirectError, RedirectOutput
 from plot_script import read_data
@@ -75,6 +75,12 @@ class ApplicationMainWindow(gtk.Window):
   plot_tree=None
   open_windows=[]
   _ignore_change=False
+  label_arrow_dialog=None
+  gnuplot_info={
+                'version': 0,
+                'patch': 0,
+                'terminals': [],
+                }
 
   def get_active_dataset(self):
     # convenience method to get the active dataset
@@ -612,13 +618,46 @@ class ApplicationMainWindow(gtk.Window):
       pass
     dialog.set_version("v%s"%__version__)
     dialog.set_authors([__author__]+__credits__)
-    dialog.set_copyright("© Copyright 2008-2011 Artur Glavic\n a.glavic@fz-juelich.de")
+
+    gp=self.gnuplot_info
+    pyversion="%i.%i.%i"%(sys.version_info.major,
+                          sys.version_info.minor,
+                          sys.version_info.micro)
+    try:
+      import IPython
+      ipversion=IPython.__version__
+    except ImportError:
+      ipversion="not installed"
+    npversion=numpy.version.short_version
+    try:
+      import scipy
+      spversion="version %s"%scipy.version.short_version
+    except ImportError:
+      spversion="not installed"
+    dialog.set_comments(
+                        '''
+Python interpreter version %s
+IPython %s
+Numpy version %s
+Scipy %s
+
+Gnuplot version %.1f patchlevel %i with terminals:
+%s
+                        '''%(
+        pyversion,
+        ipversion,
+        npversion,
+        spversion,
+        gp['version'], gp['patch'], "/".join(gp['terminals']),
+                        ))
+
+    dialog.set_copyright("© Copyright 2008-2012 Artur Glavic\n artur.glavic@gmail.com")
     dialog.set_license('''                    GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
                        
       The license can be found in the program directory as gpl.pdf''')
-    dialog.set_website("http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki")
-    dialog.set_website_label('Webseite @ fz-juelich.de')
+    dialog.set_website("http://sourceforge.net/projects/plotpy/index.html")
+    dialog.set_website_label('Webseite @ SorceForge')
     ## Close dialog on user response
     dialog.connect ("response", lambda d, r: d.destroy())
     dialog.show()
@@ -2539,41 +2578,45 @@ class ApplicationMainWindow(gtk.Window):
     for pattern in pattern_names:
       if gnuplot_preferences.defined_color_patterns[pattern] in gnuplot_preferences.settings_3dmap:
         active_pattern=pattern
-    # plot available colormaps
-    gptext="""# Script to plot colormaps with gnuplot
-unset xtics
-unset ytics
-unset colorbox
-set lmargin at screen 0.
-set rmargin at screen 1.
-set pm3d map
-set term jpeg size 400,%i font "%s"
-set output "%s"
-set multiplot layout %i,1
-    """%(
-           (len(pattern_names)*30),
-           os.path.join(gnuplot_preferences.FONT_PATH, 'Arial.ttf'),
-           os.path.join(self.active_session.TEMP_DIR, 'colormap.jpg').replace('\\', '\\\\'),
-           len(pattern_names),
-           )
-    portions=1./len(pattern_names)
-    for i, pattern in enumerate(pattern_names):
-      gptext+='set tmargin at screen %f\nset bmargin at screen %f\n'%(1.-i*portions, 1.-(i+1.)*portions)
-      gptext+='set label 1 "%s" at 50,1. center front\nset palette %s\nsplot [0:100][0:2] x w pm3d t ""\n'%(
-                                  pattern,
-                                  gnuplot_preferences.defined_color_patterns[pattern])
-    gptext+='unset multiplot\n'
-    # send commands to gnuplot
-    measurement_data_plotting.gnuplot_instance.stdin.write('reset\n') #@UndefinedVariable
-    measurement_data_plotting.gnuplot_instance.stdin.write(gptext) #@UndefinedVariable
-    measurement_data_plotting.gnuplot_instance.stdin.write('\nprint "|||"\n') #@UndefinedVariable
-    output=measurement_data_plotting.gnuplot_instance.stdout.read(3) #@UndefinedVariable
-    while output[-3:]!='|||':
-      output+=measurement_data_plotting.gnuplot_instance.stdout.read(1) #@UndefinedVariable
+    if 'jpeg' in self.gnuplot_info['terminals'] and not\
+      os.path.exists(os.path.join(self.active_session.TEMP_DIR, 'colormap.jpg')):
+      # plot available colormaps
+      gptext="""# Script to plot colormaps with gnuplot
+  unset xtics
+  unset ytics
+  unset colorbox
+  set lmargin at screen 0.
+  set rmargin at screen 1.
+  set pm3d map
+  set term jpeg size 400,%i font "%s"
+  set output "%s"
+  set multiplot layout %i,1
+      """%(
+             (len(pattern_names)*30),
+             os.path.join(gnuplot_preferences.FONT_PATH, 'Arial.ttf'),
+             os.path.join(self.active_session.TEMP_DIR, 'colormap.jpg').replace('\\', '\\\\'),
+             len(pattern_names),
+             )
+      portions=1./len(pattern_names)
+      for i, pattern in enumerate(pattern_names):
+        gptext+='set tmargin at screen %f\nset bmargin at screen %f\n'%(1.-i*portions, 1.-(i+1.)*portions)
+        gptext+='set label 1 "%s" at 50,1. center front\nset palette %s\nsplot [0:100][0:2] x w pm3d t ""\n'%(
+                                    pattern,
+                                    gnuplot_preferences.defined_color_patterns[pattern])
+      gptext+='unset multiplot\n'
+      # send commands to gnuplot
+      measurement_data_plotting.gnuplot_instance.stdin.write('reset\n') #@UndefinedVariable
+      measurement_data_plotting.gnuplot_instance.stdin.write(gptext) #@UndefinedVariable
+      measurement_data_plotting.gnuplot_instance.stdin.write('\nprint "|||"\n') #@UndefinedVariable
+      output=measurement_data_plotting.gnuplot_instance.stdout.read(3) #@UndefinedVariable
+      while output[-3:]!='|||':
+        output+=measurement_data_plotting.gnuplot_instance.stdout.read(1) #@UndefinedVariable
     pattern_box=gtk.combo_box_new_text()
     # drop down menu for the pattern selection
-    for pattern in pattern_names:
+    for i, pattern in enumerate(pattern_names):
       pattern_box.append_text(pattern)
+      if pattern==active_pattern:
+        pattern_box.set_active(i)
     pattern_box.show_all()
     cps_dialog=gtk.Dialog(title='Select new color pattern:')
     cps_dialog.set_default_size(400, 400)
@@ -2701,6 +2744,25 @@ set multiplot layout %i,1
       self.replot()
     dialog.destroy()
 
+  def open_label_arrows_dialog(self, action):
+    if self.label_arrow_dialog is None:
+      self.label_arrow_dialog=LabelArrowDialog(self.active_dataset, self)
+      if 'LabelArrowDialog' in self.config_object:
+        size=self.config_object['LabelArrowDialog']['size']
+        position=self.config_object['LabelArrowDialog']['position']
+        self.label_arrow_dialog.set_default_size(*size)
+        self.label_arrow_dialog.move(*position)
+      self.label_arrow_dialog.show()
+      def store_la_dialog_gemometry(widget, event):
+        self.config_object['LabelArrowDialog']={
+                                         'size': widget.get_size(),
+                                         'position': widget.get_position()
+                                         }
+      self.label_arrow_dialog.connect('configure-event', store_la_dialog_gemometry)
+    else:
+      self.label_arrow_dialog.destroy()
+      self.label_arrow_dialog=None
+
   def fit_dialog(self, action, size=None, position=None):
     '''
       A dialog to fit the data with a set of functions.
@@ -2746,7 +2808,7 @@ set multiplot layout %i,1
     #except AttributeError:
     fit_dialog.vbox.pack_end(actions_table, expand=False, fill=True, padding=0)
     fit_dialog.set_default_size(*size)
-    if position!=None:
+    if position is not None:
       fit_dialog.move(*position)
     fit_dialog.show_all()
     def store_fit_dialog_gemometry(widget, event):
@@ -3877,14 +3939,13 @@ set multiplot layout %i,1
     '''
     # in windows we have to wait for the picture to be written to disk
     if self.active_session.OPERATING_SYSTEM=='windows':
-      sleep(0.05)
-      for ignore in range(100):
-        if os.path.exists(self.active_session.TEMP_DIR+'plot_temp.png'):
-          if os.path.getsize(self.active_session.TEMP_DIR+'plot_temp.png')>1000:
+      for ignore in range(500):
+        # wait for the image to be written to disk (cache), maximal 5s 
+        if os.path.exists(self.active_session.TEMP_DIR+'plot_temp.png') and\
+          os.path.getsize(self.active_session.TEMP_DIR+'plot_temp.png')>1000:
             break
-          sleep(0.1)
         else:
-          sleep(0.1)
+          sleep(0.01)
       if os.path.getsize(self.active_session.TEMP_DIR+'plot_temp.png')<1000:
         # if this was not successful stop trying.
         return False
@@ -4084,7 +4145,11 @@ set multiplot layout %i,1
                                          [('Text', 'Label', str)]
                                          ).run()
           if result:
-            ds.plot_options+='set label "%s" at %g,%g,1. front\n'%(parameters['Text'], position[0], position[1])
+            ds.plot_options.labels.append([(position[0], position[1], 1),
+                                           parameters['Text'], True, False, ''])
+
+            if self.label_arrow_dialog is not None:
+              self.label_arrow_dialog.update()
         if action.button==2:
           self.mouse_arrow_starting_point=position
           self.image_pixmap, self.image_mask=self.image_pixbuf.render_pixmap_and_mask()
@@ -4093,7 +4158,11 @@ set multiplot layout %i,1
                                          [('Text', '(%g,%g)'%(position[0], position[1]), str)]
                                          ).run()
           if result:
-            ds.plot_options+='set label "%s" at %g,%g,1. point pt 6 front\n'%(parameters['Text'], position[0], position[1])
+            ds.plot_options.labels.append([(position[0], position[1], 1),
+                                           parameters['Text'], True, True, ''])
+
+            if self.label_arrow_dialog is not None:
+              self.label_arrow_dialog.update()
         self.replot()
 
 
@@ -4122,8 +4191,12 @@ set multiplot layout %i,1
       start=self.mouse_arrow_starting_point
       self.mouse_arrow_starting_point=None
       if position is not None:
-        dataset.plot_options+='set arrow from %g,%g,1. to %g,%g,1. front\n'%(start[0], start[1], position[0], position[1])
+        dataset.plot_options.arrows.append([((start[0], start[1], 1),
+                                             (position[0], position[1], 1)),
+                                            False, True, ''])
         self.replot()
+        if self.label_arrow_dialog is not None:
+          self.label_arrow_dialog.update()
     if self.active_fit_selection_from is not None:
       start=self.active_fit_selection_from
       self.active_fit_selection_from=None
@@ -4213,11 +4286,16 @@ set multiplot layout %i,1
     '''
       Check gnuplot version for capabilities.
     '''
-    gnuplot_version=measurement_data_plotting.check_gnuplot_version(self.active_session)
+    gnuplot_version, terminals=measurement_data_plotting.check_gnuplot_version(self.active_session)
     if gnuplot_version[0]<4.4:
       # mouse mode only works with version 4.4 and higher
       self.mouse_mode=False
     self.gnuplot_initialized=True
+    self.gnuplot_info={
+                       'version': gnuplot_version[0],
+                       'patch': gnuplot_version[1],
+                       'terminals': terminals,
+                       }
 
   def plot(self, session, datasets, file_name_prefix, title, names,
             with_errorbars, output_file=gnuplot_preferences.output_file_name,
@@ -4627,6 +4705,8 @@ set multiplot layout %i,1
           <menuitem action='Prev'/>
           <menuitem action='First'/>
           <menuitem action='Last'/>
+          <menuitem action='Up'/>
+          <menuitem action='Down'/>
         </menu>
         <menu action='PlotAppearance'>
           <menuitem action='Apply'/>
@@ -4654,6 +4734,7 @@ set multiplot layout %i,1
       output+='''<menuitem action='ChangeStyle'/>
         '''
     output+='''<menuitem action='ChangeXYZLabel'/>
+          <menuitem action='LabelsArrows'/>
         </menu>
         <separator name='static4'/>
         <menuitem action='ShowPlotTree'/>
@@ -4885,6 +4966,14 @@ set multiplot layout %i,1
         "_Next", "<control>N", # label, accelerator
         "Next Plot", # tooltip
         self.iterate_through_measurements),
+      ("Down", gtk.STOCK_GO_DOWN, # name, stock id
+        "Down", "<control>J", # label, accelerator
+        "Previous File", # tooltip
+        self.iterate_through_measurements),
+      ("Up", gtk.STOCK_GO_UP, # name, stock id
+        "Up", "<control>H", # label, accelerator
+        "Next File", # tooltip
+        self.iterate_through_measurements),
       ("Last", gtk.STOCK_GOTO_LAST, # name, stock id
         "Last", "<control><shift>N", # label, accelerator
         "Last Plot", # tooltip
@@ -4902,13 +4991,17 @@ set multiplot layout %i,1
         "Show Tree of Datasets...", # tooltip
         self.show_plot_tree),
       ("ChangeStyle", None, # name, stock id
-        "Change Plot Style", None, # label, accelerator
+        "Change Plot Style", '<control>Y', # label, accelerator
         None, # tooltip
         self.change_plot_style),
       ("ChangeXYZLabel", None, # name, stock id
-        "Change Plot XYZ-Labels", None, # label, accelerator
+        "Change Plot XYZ-Labels", '<control><shift>L', # label, accelerator
         None, # tooltip
         self.change_xyzaxis_style),
+      ("LabelsArrows", None, # name, stock id
+        "Labels and Arrows ...", '<control>L', # label, accelerator
+        None, # tooltip
+        self.open_label_arrows_dialog),
       ("FilterData", None, # name, stock id
         "Filter the data points", None, #'f',                     # label, accelerator
         None, # tooltip

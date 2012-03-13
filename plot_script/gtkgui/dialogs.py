@@ -12,7 +12,7 @@ from time import sleep
 from math import sqrt
 from plot_script.config import gnuplot_preferences
 from plot_script.measurement_data_structure import PlotStyle
-from plot_script.option_types import *
+from plot_script.option_types import * #@UnusedWildImport
 from plot_script.read_data import AsciiImportFilter, defined_filters
 from plot_script.config import templates
 
@@ -651,7 +651,7 @@ class MouseReader(gtk.Dialog):
 
 #------------------ MouseReader dialog to get a single xy position ---------------------
 
-#++++++++++++ MultipeakDialog to fit a peak function at differnt positions +++++++++++++
+#++++++++++++ MultipeakDialog to fit a peak function at different positions +++++++++++++
 
 class MultipeakDialog(gtk.Dialog):
   '''
@@ -717,7 +717,7 @@ class MultipeakDialog(gtk.Dialog):
       Evaluate the keyword arguments supplied to the constructor.
     '''
     if not 'title' in opts:
-      title=opts['title']='Multipeak Fit...'
+      opts['title']='Multipeak Fit...'
     if 'xyparams' in opts:
       self.x_parameter, self.y_parameter=opts['xyparams']
       del(opts['xyparams'])
@@ -844,8 +844,8 @@ class MultipeakDialog(gtk.Dialog):
       # if a mouse callback is registered it doesn't
       # work with Dialog.run
       self._result=None
-      def set_result(widget, id):
-        self._result=id
+      def set_result(widget, response_id):
+        self._result=response_id
       self.connect('response', set_result)
       self.show_all()
       while self._result is None or self._result==2:
@@ -1019,21 +1019,21 @@ class FileImportDialog(gtk.FileChooserDialog):
     self.template_folder=template_folder
     self.set_current_folder(current_folder)
     # Define filters for the file types.
-    filter=gtk.FileFilter()
-    filter.set_name('All Files')
-    filter.add_pattern('*')
-    self.add_filter(filter)
+    filter_=gtk.FileFilter()
+    filter_.set_name('All Files')
+    filter_.add_pattern('*')
+    self.add_filter(filter_)
     if last_filter=='All Files':
-      self.set_filter(filter)
-    filter=gtk.FileFilter()
-    filter.set_name('Binary Plot.py')
-    filter.add_pattern('*.mdd')
-    filter.add_pattern('*.mdd.gz')
-    filter.add_pattern('*.mds')
-    filter.add_pattern('*.mds.gz')
-    self.add_filter(filter)
+      self.set_filter(filter_)
+    filter_=gtk.FileFilter()
+    filter_.set_name('Binary Plot.py')
+    filter_.add_pattern('*.mdd')
+    filter_.add_pattern('*.mdd.gz')
+    filter_.add_pattern('*.mds')
+    filter_.add_pattern('*.mds.gz')
+    self.add_filter(filter_)
     if last_filter=='Binary Plot.py':
-      self.set_filter(filter)
+      self.set_filter(filter_)
     self.add_wildcards(wildcards)
     self.add_ascii_wildcards()
     self.set_icon_from_file(os.path.join(
@@ -1050,56 +1050,56 @@ class FileImportDialog(gtk.FileChooserDialog):
     global last_filter
     # the first wildcard will be active
     wildcard=wildcards[0]
-    filter=gtk.FileFilter()
-    filter.set_name(wildcard[0])
+    filter_=gtk.FileFilter()
+    filter_.set_name(wildcard[0])
     for pattern in wildcard[1:]:
-      filter.add_pattern(pattern)
-    self.add_filter(filter)
+      filter_.add_pattern(pattern)
+    self.add_filter(filter_)
     if last_filter is None or last_filter==wildcard[0]:
-      self.set_filter(filter)
+      self.set_filter(filter_)
     for wildcard in wildcards[1:]:
-      filter=gtk.FileFilter()
-      filter.set_name(wildcard[0])
+      filter_=gtk.FileFilter()
+      filter_.set_name(wildcard[0])
       for pattern in wildcard[1:]:
-        filter.add_pattern(pattern)
-      self.add_filter(filter)
+        filter_.add_pattern(pattern)
+      self.add_filter(filter_)
       if last_filter==wildcard[0]:
-        self.set_filter(filter)
+        self.set_filter(filter_)
 
   def add_ascii_wildcards(self):
     '''
       Add a list of wildcards for known ascii import filters.
     '''
     self.ascii_filters=[]
-    # selection to autodetect the filter to use
+    # selection to autodetect the filter_ to use
     if len(defined_filters)>0:
-      filter=gtk.FileFilter()
-      filter.set_name('ASCII-import (auto-select)')
+      filter_=gtk.FileFilter()
+      filter_.set_name('ASCII-import (auto-select)')
       for afilter in defined_filters:
         for ftype in afilter.file_types:
-          filter.add_pattern('*.'+ftype)
-      self.add_filter(filter)
+          filter_.add_pattern('*.'+ftype)
+      self.add_filter(filter_)
       if last_filter in ['ASCII-import (auto-select)', 'ASCII-import (new)']:
-        self.set_filter(filter)
-      self.ascii_filters.append(filter)
+        self.set_filter(filter_)
+      self.ascii_filters.append(filter_)
     else:
       self.ascii_filters.append(None)
-    # selection for single filter
+    # selection for single filter_
     for afilter in defined_filters:
-      filter=gtk.FileFilter()
-      filter.set_name('ASCII-import (%s)'%afilter.name)
+      filter_=gtk.FileFilter()
+      filter_.set_name('ASCII-import (%s)'%afilter.name)
       for ftype in afilter.file_types:
-        filter.add_pattern('*.'+ftype)
-      self.add_filter(filter)
+        filter_.add_pattern('*.'+ftype)
+      self.add_filter(filter_)
       if last_filter=='ASCII-import (%s)'%afilter.name:
-        self.set_filter(filter)
-      self.ascii_filters.append(filter)
-    # create a new filter
-    filter=gtk.FileFilter()
-    filter.set_name('ASCII-import (new)')
-    filter.add_pattern('*.*')
-    self.add_filter(filter)
-    self.ascii_filters.insert(1, filter)
+        self.set_filter(filter_)
+      self.ascii_filters.append(filter_)
+    # create a new filter_
+    filter_=gtk.FileFilter()
+    filter_.set_name('ASCII-import (new)')
+    filter_.add_pattern('*.*')
+    self.add_filter(filter_)
+    self.ascii_filters.insert(1, filter_)
 
 
   def clear_wildcards(self):
@@ -1107,8 +1107,8 @@ class FileImportDialog(gtk.FileChooserDialog):
       Remove all wildcards active at the moment.
     '''
     filters=self.list_filters()
-    for filter in filters[1:]:
-      self.remove_filter(filter)
+    for filter_ in filters[1:]:
+      self.remove_filter(filter_)
 
   def run(self):
     '''
@@ -1123,11 +1123,11 @@ class FileImportDialog(gtk.FileChooserDialog):
     if response==gtk.RESPONSE_OK:
       folder=self.get_current_folder()
       files=self.get_filenames()
-      filter=self.get_filter()
-      last_filter=filter.get_name()
-      # define filter status (-3: none, -2: auto, -1: new, +i: index for filter in list)
-      if filter in self.ascii_filters:
-        fidx=self.ascii_filters.index(filter)
+      filter_=self.get_filter()
+      last_filter=filter_.get_name()
+      # define filter_ status (-3: none, -2: auto, -1: new, +i: index for filter_ in list)
+      if filter_ in self.ascii_filters:
+        fidx=self.ascii_filters.index(filter_)
         ascii_filter=fidx-2
       else:
         ascii_filter=-3
@@ -1148,10 +1148,10 @@ class FileImportDialog(gtk.FileChooserDialog):
                                 action=gtk.FILE_CHOOSER_ACTION_OPEN,
                                 buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
                                 )
-    filter=gtk.FileFilter()
-    filter.set_name('Template (.py)')
-    filter.add_pattern('*.py')
-    tcdia.add_filter(filter)
+    filter_=gtk.FileFilter()
+    filter_.set_name('Template (.py)')
+    filter_.add_pattern('*.py')
+    tcdia.add_filter(filter_)
     tcdia.set_current_folder(self.template_folder)
     result=tcdia.run()
     if result==gtk.RESPONSE_OK:
@@ -1218,7 +1218,7 @@ class PrintDatasetDialog:
     print_op.connect("custom-widget-apply", self.read_custom_widgets)
     print_op.set_property('custom-tab-label', 'Plot Settings')
     # run the dialog
-    res=print_op.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG, self.main_window)
+    print_op.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG, self.main_window)
     gnuplot_preferences.set_output_terminal_image=old_terminal
 
   def create_custom_widgets(self, operation):
@@ -1286,7 +1286,7 @@ class PrintDatasetDialog:
                 [dataset],
                 session.active_file_name,
                 dataset.short_info,
-                [object.short_info for object in dataset.plot_together],
+                [object_.short_info for object_ in dataset.plot_together],
                 main_window.errorbars,
                 output_file=session.TEMP_DIR+'plot_temp.png',
                 fit_lorentz=False)
@@ -1373,6 +1373,7 @@ class PlotTree(gtk.Dialog):
     gtk.Dialog.show_all(self)
     if self.pre_parent is not None:
       self.set_transient_for(self.pre_parent)
+      self.connect('key_press_event', self.keyPress)
 
   def create_columns(self):
     '''
@@ -1392,10 +1393,10 @@ class PlotTree(gtk.Dialog):
     '''
     self.treestore.clear()
     for name, datasets in sorted(self.data_dict.items()):
-      iter=self.treestore.append(None, [None, name])
+      iter_=self.treestore.append(None, [None, name])
       for i, dataset in enumerate(datasets):
         preview=getattr(dataset, 'preview', None)
-        self.treestore.append(iter, [preview, "%3i: %s"%(i, dataset.short_info)])
+        self.treestore.append(iter_, [preview, "%3i: %s"%(i, dataset.short_info)])
       if self.expand_column==name:
         self.treeview.expand_to_path(sorted(self.data_dict.keys()).index(name))
 
@@ -1460,7 +1461,7 @@ class PlotTree(gtk.Dialog):
                               [dataset],
                               'preview',
                               dataset.short_info,
-                              [object.short_info for object in dataset.plot_together],
+                              [object_.short_info for object_ in dataset.plot_together],
                               main_window.errorbars,
                               output_file=self.preview_temp_file,
                               fit_lorentz=False)
@@ -1476,6 +1477,12 @@ class PlotTree(gtk.Dialog):
       self.preview_button.set_label('Create Previews')
       self.preview_creation_active=False
       self.ignore_cursor_change=False
+
+  def keyPress(self, widget, event):
+    if (event.state&gtk.gdk.CONTROL_MASK or \
+          event.state&gtk.gdk.MOD1_MASK):
+      # propagate any <control>+Key and <alt>+Key to the main window.
+      self.pre_parent.emit('key_press_event', event)
 
 #-------------------- Dialog storing all imported dataset names -------------------------
 
@@ -1495,7 +1502,7 @@ class DataView(gtk.Dialog):
     self.dataset=dataset
     # Create the treeview widget
     columns=zip(dataset.dimensions(), dataset.units())
-    self.liststore=gtk.ListStore(int, *[float for i in range(len(columns))])
+    self.liststore=gtk.ListStore(int, *[float for ignore in range(len(columns))])
     self.treeview=gtk.TreeView(self.liststore)
     self.treeview.connect('key-press-event', self.key_press_response)
     self.treeview.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
@@ -1557,7 +1564,7 @@ class DataView(gtk.Dialog):
       self.dataset.data[column][real_row]=new_item
     else:
       i=len(self.dataset.data)-1
-      for j, col in self.dataset.data:
+      for ignore, col in self.dataset.data:
         if col.has_error:
           i+=1
         if i==column:
@@ -1568,7 +1575,7 @@ class DataView(gtk.Dialog):
     if event.state&gtk.gdk.CONTROL_MASK:
       # copy selection
       if keyname=='c':
-        model, selection=self.treeview.get_selection().get_selected_rows()
+        ignore, selection=self.treeview.get_selection().get_selected_rows()
         indices=map(lambda select: self.liststore[select][0], selection)
         items=map(lambda index: "\t".join(map(str, self.dataset[index])), indices)
         clipboard_content="\n".join(items)
@@ -1910,11 +1917,11 @@ class SettingsNotebook(gtk.Notebook):
   '''
   origin_object=None
 
-  def __init__(self, object, pages):
+  def __init__(self, object_, pages):
     '''
       Create the notebook with defined pages.
     '''
-    self.origin_object=object
+    self.origin_object=object_
     gtk.Notebook.__init__(self)
     for name, page, page_info in pages:
       self.add_settings_page(name, page, page_info)
@@ -2092,7 +2099,7 @@ class ImportWizard(gtk.Dialog):
     self._set_filetext()
 
   def _set_filetext(self):
-    buffer=self.file_text.get_buffer()
+    buffer_=self.file_text.get_buffer()
     if self.file_name.endswith('.gz'):
       import gzip
       text=gzip.open(self.file_name, 'r').read()
@@ -2101,7 +2108,7 @@ class ImportWizard(gtk.Dialog):
     line_text=""
     for i, line in enumerate(text.splitlines()):
       line_text+="%03i:%s\n"%(i, line)
-    buffer.set_text(line_text)
+    buffer_.set_text(line_text)
 
   def run(self):
     '''
@@ -2436,6 +2443,262 @@ class StyleLine(gtk.Table):
     self.callback()
 
 #----------------- Dialog to change the color and style of a plot -----------------------
+
+#+++++++++++++ Dialog to define labels, arrows and lines on the plot ++++++++++++++++++++
+
+class LabelArrowDialog(gtk.Dialog):
+  '''
+    A tabed dialog with entries for labels, arrows/lines.
+  '''
+
+  def __init__(self, dataset, parent, title='Labels/Arrows/Lines',
+               buttons=('New', 3, 'Apply', 2, 'OK', 1, 'Cancel', 0)):
+    gtk.Dialog.__init__(self, title=title, buttons=buttons, parent=parent)
+    self.plot_window=parent
+    self.dataset=dataset
+    self._first_init=True
+    self.notebook=gtk.Notebook()
+    self.label_table=gtk.Table()
+    self.arrow_table=gtk.Table()
+    self.notebook.append_page(self.label_table, gtk.Label('Labels'))
+    self.notebook.append_page(self.arrow_table, gtk.Label('Lines/Arrows'))
+    self.notebook.show_all()
+    self.vbox.add(self.notebook)
+    self._init_all()
+    self.connect('response', self._handle_response)
+    self.connect('key_press_event', self.keyPress)
+
+  def _init_all(self):
+    '''
+      Create entries for all Notebook tabs tables.
+    '''
+    self._init_labels()
+    self._init_arrows()
+    self._first_init=False
+
+  def _init_labels(self):
+    '''
+      Create entries of the labels table and connect user input actions.
+    '''
+    labels=self.dataset.plot_options.labels
+    table=self.label_table
+    if self._first_init:
+      table.attach(gtk.Label('Position'), 0, 3, 0, 1)
+      table.attach(gtk.Label('Text'), 3, 4, 0, 1)
+      table.attach(gtk.Label('Front'), 4, 5, 0, 1)
+      table.attach(gtk.Label('Point'), 5, 6, 0, 1)
+      table.attach(gtk.Label('Custom Options'), 6, 7, 0, 1)
+    i=1
+    self.label_entries=[]
+    for position, text, front, point, settings in labels:
+      entries=[]
+      self.label_entries.append(entries)
+      for j, p in enumerate(position):
+        p_entry=gtk.Entry()
+        p_entry.set_text("%g"%p)
+        p_entry.set_width_chars(4)
+        table.attach(p_entry, j, j+1, i, i+1)
+        entries.append(p_entry)
+        p_entry.connect('activate', self._apply)
+      text_entry=gtk.Entry()
+      text_entry.set_text(text)
+      #text_entry.set_width_chars(16)
+      table.attach(text_entry, 3, 4, i, i+1)
+      entries.append(text_entry)
+      text_entry.connect('activate', self._apply)
+
+      front_toggle=gtk.CheckButton()
+      front_toggle.set_active(front)
+      table.attach(front_toggle, 4, 5, i, i+1)
+      entries.append(front_toggle)
+      front_toggle.connect('toggled', self._apply)
+
+      point_toggle=gtk.CheckButton()
+      point_toggle.set_active(point)
+      table.attach(point_toggle, 5, 6, i, i+1)
+      entries.append(point_toggle)
+      point_toggle.connect('toggled', self._apply)
+
+      settings_entry=gtk.Entry()
+      settings_entry.set_text(settings)
+      #settings_entry.set_width_chars()
+      table.attach(settings_entry, 6, 7, i, i+1)
+      entries.append(settings_entry)
+      settings_entry.connect('activate', self._apply)
+
+      del_button=gtk.Button('DEL')
+      del_button.connect('clicked', self._delete, 'label', i)
+      table.attach(del_button, 7, 8, i, i+1)
+      entries.append(del_button)
+      i+=1
+    table.show_all()
+
+  def _get_labels(self, *ignore):
+    '''
+      Collect all entries for labels.
+    '''
+    new_labels=[]
+    for entries in self.label_entries:
+      try:
+        posx=float(entries[0].get_text())
+        posy=float(entries[1].get_text())
+        posz=float(entries[2].get_text())
+        text=entries[3].get_text()
+        front=entries[4].get_active()
+        point=entries[5].get_active()
+        settings=entries[6].get_text()
+        new_labels.append([(posx, posy, posz), text, front, point, settings])
+      except:
+        pass
+    self.dataset.plot_options.labels=new_labels
+
+  def _init_arrows(self):
+    '''
+      Create entries of the arrows/lines table and connect user input actions.
+    '''
+    arrows=self.dataset.plot_options.arrows
+    table=self.arrow_table
+    if self._first_init:
+      table.attach(gtk.Label('From'), 0, 3, 0, 1)
+      table.attach(gtk.Label('To'), 3, 6, 0, 1)
+      table.attach(gtk.Label('Arrow'), 6, 7, 0, 1)
+      table.attach(gtk.Label('Front'), 7, 8, 0, 1)
+      table.attach(gtk.Label('Custom Options'), 8, 9, 0, 1)
+    i=1
+    self.arrow_entries=[]
+    for position, nohead, front, settings in arrows:
+      from_pos, to_pos=position
+      entries=[]
+      self.arrow_entries.append(entries)
+      for j, p in enumerate(from_pos):
+        p_entry=gtk.Entry()
+        p_entry.set_text("%g"%p)
+        p_entry.set_width_chars(4)
+        table.attach(p_entry, j, j+1, i, i+1)
+        entries.append(p_entry)
+        p_entry.connect('activate', self._apply)
+      for j, p in enumerate(to_pos):
+        p_entry=gtk.Entry()
+        p_entry.set_text("%g"%p)
+        p_entry.set_width_chars(4)
+        table.attach(p_entry, j+3, j+4, i, i+1)
+        entries.append(p_entry)
+        p_entry.connect('activate', self._apply)
+
+      arrow_toggle=gtk.CheckButton()
+      arrow_toggle.set_active(not nohead)
+      table.attach(arrow_toggle, 6, 7, i, i+1)
+      entries.append(arrow_toggle)
+      arrow_toggle.connect('toggled', self._apply)
+
+      front_toggle=gtk.CheckButton()
+      front_toggle.set_active(front)
+      table.attach(front_toggle, 7, 8, i, i+1)
+      entries.append(front_toggle)
+      front_toggle.connect('toggled', self._apply)
+
+      settings_entry=gtk.Entry()
+      settings_entry.set_text(settings)
+      #settings_entry.set_width_chars()
+      table.attach(settings_entry, 8, 9, i, i+1)
+      entries.append(settings_entry)
+      settings_entry.connect('activate', self._apply)
+
+      del_button=gtk.Button('DEL')
+      del_button.connect('clicked', self._delete, 'arrow', i)
+      table.attach(del_button, 9, 10, i, i+1)
+      entries.append(del_button)
+      i+=1
+    table.show_all()
+
+  def _get_arrows(self, *ignore):
+    '''
+      Collect all entries for labels.
+    '''
+    new_arrows=[]
+    for entries in self.arrow_entries:
+      try:
+        pos_fx=float(entries[0].get_text())
+        pos_fy=float(entries[1].get_text())
+        pos_fz=float(entries[2].get_text())
+        pos_tx=float(entries[3].get_text())
+        pos_ty=float(entries[4].get_text())
+        pos_tz=float(entries[5].get_text())
+        nohead=not entries[6].get_active()
+        front=entries[7].get_active()
+        settings=entries[8].get_text()
+        new_arrows.append([((pos_fx, pos_fy, pos_fz), (pos_tx, pos_ty, pos_tz)),
+                             nohead, front, settings])
+      except:
+        pass
+    self.dataset.plot_options.arrows=new_arrows
+
+  def _clear_all(self, *ignore):
+    '''
+      Remove all entries form label, arrow ane line tables.
+    '''
+    for entries in self.label_entries:
+      for entry in entries:
+        self.label_table.remove(entry)
+    for entries in self.arrow_entries:
+      for entry in entries:
+        self.arrow_table.remove(entry)
+
+
+  def _apply(self, *ignore):
+    self._get_labels()
+    self._get_arrows()
+    self.plot_window.replot()
+
+  def change_dataset(self, new_dataset):
+    self._clear_all()
+    self.dataset=new_dataset
+    self._init_all()
+
+  def _delete(self, button, part, index):
+    if part=='label':
+      self._clear_all()
+      self.dataset.plot_options.labels.pop(index-1)
+      self._init_all()
+    elif part=='arrow':
+      self._clear_all()
+      self.dataset.plot_options.arrows.pop(index-1)
+      self._init_all()
+    self._apply()
+
+  def update(self, *ignore):
+    self._clear_all()
+    self._init_all()
+
+  def _handle_response(self, dialog, response_id):
+    if response_id==3: # New
+      active_page=self.notebook.get_current_page()
+      if active_page==0:
+        self.dataset.plot_options.labels.append([(0, 0, 1), '',
+                                                 True, False, ''])
+      elif active_page==1:
+        self.dataset.plot_options.arrows.append([((0, 0, 1), (0, 0, 1)),
+                                                 True, True, ''])
+      self._clear_all()
+      self._init_all()
+    elif response_id==2: # Apply
+      self._apply()
+    elif response_id==1: # OK
+      self._apply()
+      self.plot_window.label_arrow_dialog=None
+      self.destroy()
+    else: # Cancel
+      self.plot_window.label_arrow_dialog=None
+      self.destroy()
+
+  def keyPress(self, widget, event):
+    if (event.state&gtk.gdk.CONTROL_MASK or \
+          event.state&gtk.gdk.MOD1_MASK):
+      # propagate any <control>+Key and <alt>+Key to the main window.
+      self.plot_window.emit('key_press_event', event)
+
+
+#------------- Dialog to define labels, arrows and lines on the plot --------------------
 
 # import last as this uses some of the classes
 import main_window

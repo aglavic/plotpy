@@ -340,6 +340,36 @@ class FileActions:
       elif action_name=='Next':
         self.window.index_mess=min(len(self.window.measurement)-1,
                                    self.window.index_mess+1)
+      elif action_name=='Up':
+        self.window.index_mess=0
+        session=self.window.active_session
+        dsname=session.active_file_name
+        names=session.file_data.keys()
+        names.sort()
+        index=names.index(dsname)
+        if index>1:
+          index-=1
+        else:
+          index=len(names)-1
+        new_name=names[index]
+        session.active_file_data=session.file_data[new_name]
+        session.active_file_name=new_name
+        self.window.measurement=session.active_file_data
+      elif action_name=='Down':
+        self.window.index_mess=0
+        session=self.window.active_session
+        dsname=session.active_file_name
+        names=session.file_data.keys()
+        names.sort()
+        index=names.index(dsname)
+        if index<(len(names)-1):
+          index+=1
+        else:
+          index=0
+        new_name=names[index]
+        session.active_file_data=session.file_data[new_name]
+        session.active_file_name=new_name
+        self.window.measurement=session.active_file_data
       else:
         try:
           if len(self.window.measurement)>int(self.window.plot_page_entry.get_text()):
@@ -347,6 +377,8 @@ class FileActions:
         except ValueError:
           pass
       self.window.plot_page_entry.set_text(str(self.window.index_mess))
+      if self.window.label_arrow_dialog is not None:
+        self.window.label_arrow_dialog.change_dataset(self.window.active_dataset)
 
   def create_fit_object(self):
     '''

@@ -1536,10 +1536,10 @@ class PlotOptions(object):
     self._xrange=[None, None]
     self._yrange=[None, None]
     self._zrange=[None, None]
-    self.input_string(initial_text)
     self.labels=[]
     self.arrows=[]
     self.tics=[None, None, None]
+    self.input_string(initial_text)
 
   def overwrite_copy(self, other):
     '''
@@ -1578,13 +1578,25 @@ class PlotOptions(object):
       output+=("set cbrange [%s:%s]\n"%(self._zrange[0], self._zrange[1])).replace("None", "")
     if not self.bar_endmarks:
       output+='set bars small\n'
-    for label in self.labels:
-      output+='set label "%s" at %f,%f front\n'%(label[0], label[1], label[2])
-    for arrow in self.arrows:
-      output+='set arrow from %f,%f to %f,%f front'%(arrow[0], arrow[1], arrow[2], arrow[3])
-      if arrow[4]:
+    for i, label in enumerate(self.labels):
+      pos=label[0]
+      text=label[1]
+      output+='set label %i "%s" at %g,%g,%g'%(i+100, text, pos[0], pos[1], pos[2])
+      if label[2]:
+        output+=' front'
+      if label[3]:
+        output+=' point pt 7'
+      output+=' %s # LABEL\n'%label[4]
+    for i, arrow in enumerate(self.arrows):
+      pos=arrow[0]
+      output+='set arrow %i from %g,%g,%g to %g,%g,%g'%(i+100,
+                          pos[0][0], pos[0][1], pos[0][2],
+                          pos[1][0], pos[1][1], pos[1][2])
+      if arrow[1]:
         output+=' nohead'
-      output+='\n'
+      if arrow[2]:
+        output+=' front'
+      output+=' %s # ARROW\n'%arrow[3]
     for i, tics in zip(['x', 'y', 'cb'], self.tics):
       if tics is not None:
         output+='set %stics %f\n'%(i, tics)
@@ -1612,12 +1624,7 @@ class PlotOptions(object):
         split=line.split(" ", 2)
         if len(split)==2:
           split.append('')
-        if split[1] not in ["xrange", "yrange", "zrange", "cbrange"]:
-          if split[1] in self.settings:
-            self.settings[split[1]].append(split[2])
-          else:
-            self.settings[split[1]]=[split[2]]
-        elif split[1]=="xrange":
+        if split[1]=="xrange":
           try:
             subsplit=split[2].split(":")
             xfrom=subsplit[0].lstrip("[")
@@ -1641,6 +1648,35 @@ class PlotOptions(object):
             self.zrange=[zfrom, zto]
           except:
             pass
+        elif split[1]=='label' and ' # LABEL' in split[2]:
+          try:
+            label=split[2].split('"', 2)[1]
+            position, settings=split[2].split(' at ')[1].split(' ', 1)
+            position=map(float, position.split(','))
+            front='front' in settings
+            point='point pt 7' in settings
+            settings=settings.replace('front', '').replace('point pt 7', '')\
+                             .replace('# LABEL', '').strip()
+            self.labels.append([position, label, front, point, settings])
+          except:
+            pass
+        elif split[1]=='arrow' and ' # ARROW' in split[2]:
+          try:
+            pos_from, ignore, pos_to, settings=split[2].split('from ')[1].split(' ', 3)
+            pos_from=map(float, pos_from.split(','))
+            pos_to=map(float, pos_to.split(','))
+            front='front' in settings
+            nohead='nohead' in settings
+            settings=settings.replace('front', '').replace('nohead', '')\
+                             .replace('# ARROW', '').strip()
+            self.arrows.append([(pos_from, pos_to), nohead, front, settings])
+          except:
+            pass
+        else:
+          if split[1] in self.settings:
+            self.settings[split[1]].append(split[2])
+          else:
+            self.settings[split[1]]=[split[2]]
       else:
         self.free_input.append(line)
 

@@ -77,9 +77,9 @@ def check_gnuplot_version(session):
               [term]+gnuplot_preferences.image_terminal_options[term]
                                                              )
         break
-    return (float(version), float(patchlevel))
+    return (float(version), float(patchlevel)), terminals
   except Exception, error:
-    return (0., 0.)
+    return (0., 0.), []
 
 def gnuplot_plot_script(session,
                         datasets,
