@@ -21,6 +21,7 @@ CLIENT_KW=dict(
             #profile_dir=None, 
             #sshserver='glavic@192.168.2.2', 
             timeout=5,
+            ipython_dir=os.path.expanduser('~/.config/ipython'),
             #
            )
 

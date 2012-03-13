@@ -2550,7 +2550,7 @@ class FitGaussian3D(FitFunction3D):
                          'C':'Offset'}
   constrains={
               4: {'bounds': [None, None], 'tied': '[σ_x]'},
-              5: {'bounds': [-180., 180.], 'tied': ''},
+              #5: {'bounds': [-180., 180.], 'tied': ''},
               6: {'bounds': [0., None], 'tied': ''}
               }
 
@@ -2564,6 +2564,7 @@ class FitGaussian3D(FitFunction3D):
     y0=p[2]
     sx=p[3]
     sy=p[4]
+    p[5]=p[5]%180
     tilt=p[5]/180.*numpy.pi
     tb=numpy.sin(tilt)
     ta=numpy.cos(tilt)
@@ -2599,7 +2600,7 @@ class FitPsdVoigt3D(FitFunction3D):
   sqrt2pi=numpy.sqrt(2*numpy.pi)
   constrains={
               4: {'bounds': [None, None], 'tied': '[γ_x]'},
-              7: {'bounds': [-180., 180.], 'tied': ''},
+              #7: {'bounds': [-180., 180.], 'tied': ''},
               8: {'bounds': [0., 1.], 'tied': ''},
               9: {'bounds': [0., None], 'tied': ''}
               }
@@ -2617,6 +2618,7 @@ class FitPsdVoigt3D(FitFunction3D):
     gammay=p[4]
     sx=p[5]
     sy=p[6]
+    p[7]=p[7]%180
     tilt=p[7]*numpy.pi/180.
     tb=numpy.sin(tilt)
     ta=numpy.cos(tilt)
@@ -2672,7 +2674,7 @@ class FitCuK3D(FitPsdVoigt3D):
 
 class FitLorentzian3D(FitFunction3D):
   '''
-    Fit a voigt function using the representation as real part of the complex error function.
+    Fit a Lorentz function in x and y.
   '''
 
   # define class variables.
@@ -2691,7 +2693,7 @@ class FitLorentzian3D(FitFunction3D):
   sqrt2pi=numpy.sqrt(2*numpy.pi)
   constrains={
               4: {'bounds': [None, None], 'tied': '[γ_x]'},
-              5: {'bounds': [-180., 180.], 'tied': ''},
+              #5: {'bounds': [-180., 180.], 'tied': ''},
               6: {'bounds': [0., None], 'tied': ''}
               }
 
@@ -2703,15 +2705,16 @@ class FitLorentzian3D(FitFunction3D):
     '''
     x=numpy.array(x, copy=False, dtype=numpy.float64)
     y=numpy.array(y, copy=False, dtype=numpy.float64)
+    p[5]=p[5]%180
     p=numpy.array(p, dtype=numpy.float64)
     I=p[0]
     x0=p[1]
     y0=p[2]
     gamma_x=p[3]
     gamma_y=p[4]
-    #tilt=p[5]*numpy.pi/180.
-    ta=numpy.cos(p[5])
-    tb=numpy.sin(p[5])
+    tilt=p[5]*numpy.pi/180.
+    ta=numpy.cos(tilt)
+    tb=numpy.sin(tilt)
     xdist=(x-x0)
     ydist=(y-y0)
     xdif=numpy.abs(xdist*ta-ydist*tb)

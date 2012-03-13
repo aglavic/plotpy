@@ -74,11 +74,12 @@ if not "--nolimit" in sys.argv:
 # compatibility with older versions (snap-shots and plugins)
 # the plot_script package there was not imported properly so
 # we have to define the old module names
-import read_data, fit_data, measurement_data_structure
+import read_data, fit_data, measurement_data_structure, parallel
 sys.modules['sessions']=sys.modules['plot_script.sessions']
 sys.modules['read_data']=sys.modules['plot_script.read_data']
 sys.modules['fit_data']=sys.modules['plot_script.fit_data']
 sys.modules['config']=sys.modules['plot_script.config']
+sys.modules['parallel']=sys.modules['plot_script.parallel']
 sys.modules['measurement_data_structure']=sys.modules['plot_script.measurement_data_structure']
 
 #----------------------- importing modules --------------------------

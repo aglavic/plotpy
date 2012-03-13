@@ -596,9 +596,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     if filename.endswith('.mds.gz') or filename.endswith('.mds') or \
       filename.endswith('.mdd.gz') or filename.endswith('.mdd'):
       # import binary files from this program
-      self.active_file_name=filename.rsplit('.mds', 1)[0].rsplit('.mdd', 1)[0]
-      self.reload_snapshot(filename)
-      return self.active_file_data
+      loaded_multiplot=self.reload_snapshot(filename)
+      if not loaded_multiplot:
+        self.active_file_name=filename.rsplit('.mds', 1)[0].rsplit('.mdd', 1)[0]
+        return self.active_file_data
+      else:
+        return []
     if filename.endswith('.gz'):
       zip_mds=True
       mds_name=filename.rsplit('.', 1)[0]+'.mds.gz'

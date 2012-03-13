@@ -1052,6 +1052,9 @@ Gnuplot version %.1f patchlevel %i with terminals:
             datasets=self.active_session.add_file(file_name, append=True)
             if len(datasets)>0:
               self.active_session.change_active(name=file_name)
+            elif self.active_session.multiplots is not None:
+              self.multiplot.new_from_list(self.active_session.multiplots)
+              self.active_multiplot=True
       elif ascii_filter==-2:
         session=self.active_session
         # import with fitting filter_
@@ -1242,7 +1245,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       name=None
     else:
       #++++++++++++++++File selection dialog+++++++++++++++++++#
-      file_dialog=gtk.FileChooserDialog(title='Save Snapshot to File...',
+      file_dialog=gtk.FileChooserDialog(title='Load Snapshot from File...',
                                         action=gtk.FILE_CHOOSER_ACTION_OPEN,
                                         buttons=(gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
       file_dialog.set_select_multiple(False)
@@ -3746,15 +3749,29 @@ Gnuplot version %.1f patchlevel %i with terminals:
       Open a dialog to connect to IPython Cluster.
     '''
     from plot_script import parallel
+    from plot_script.config import user_config
     if parallel.dview is not None:
       parallel.disconnect()
       return
 
-    parameters, result=SimpleEntryDialog('IPython Cluster Options...',
-                                         [('params', 'timeout=5, ', str)]
-                                         ).run()
+    parameters=user_config['Parallel']
+    parameters=",\n".join(map(lambda item: "%s=%s"%(item[0], repr(item[1])),
+                            parameters.items()))
+    dialog=gtk.Dialog(title='IPython Cluster Options...',
+                      buttons=('OK', 1, 'Cancel', 0))
+    param_entry=gtk.TextView()
+    text_buffer=param_entry.get_buffer()
+    text_buffer.set_text(parameters)
+    param_entry.show()
+    dialog.vbox.add(param_entry)
+    dialog.set_default_size(300, 200)
+    result=dialog.run()
+
     if result:
-      config.parallel.CLIENT_KW=eval('dict('+parameters['params']+')')
+      buff_text=text_buffer.get_text(text_buffer.get_start_iter(),
+                                     text_buffer.get_end_iter())
+      parameters=eval('dict('+buff_text+')')
+      user_config['Parallel']=parameters
       status_dialog=self.status_dialog
       status_dialog.show()
       sys.stdout.second_output=status_dialog
@@ -3762,6 +3779,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       sys.stdout.second_output=None
       if connected:
         status_dialog.hide()
+    dialog.destroy()
 
   def edit_user_config(self, action):
     '''
@@ -4065,15 +4083,12 @@ Gnuplot version %.1f patchlevel %i with terminals:
       else:
         # show the position of the cusor on the plot
         info='x=%6g  \ty=%6g'%(position[0], position[1])
-        if action.state.value_names==['GDK_CONTROL_MASK'] and self.active_dataset.zdata<0:
+        if action.state.value_names==['GDK_CONTROL_MASK']:
           info+='\t\tFit peak with gaussian (left), voigt (middle) or lorentzian (right) profile.'
         elif action.state.value_names==['GDK_SHIFT_MASK']:
           info+='\t\tPlace label (left), draw arrow (middle) or label position (right).'
         else:
-          if self.active_dataset.zdata>=0:
-            info+='\t\tZoom (right), unzoom (middle). <shift>-label/arrow'
-          else:
-            info+='\t\tZoom (right), unzoom (middle). <ctrl>-fit / <shift>-label/arrow'
+          info+='\t\tZoom (right), unzoom (middle). <ctrl>-fit / <shift>-label/arrow'
         self.statusbar.push(0, info)
       try:
         # if the cusor is inside the plot we change it's icon to a crosshair
@@ -4097,7 +4112,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       return
     position=self.get_position_on_plot()
     dataset=self.get_first_in_mp()
-    if 'GDK_CONTROL_MASK' in action.state.value_names and dataset.zdata<0:
+    if 'GDK_CONTROL_MASK' in action.state.value_names:
       # control was pressed during button press
       # fit a peak function to the active mouse position
       if position is not None:
@@ -4203,10 +4218,10 @@ Gnuplot version %.1f patchlevel %i with terminals:
       if position is None or self.active_multiplot:
         return
       ds=dataset
-      if ds.zdata>=0:
-        return
       if (abs(start[2]-position[2])+abs(start[3]-position[3]))<0.03:
         # Position was only clicked
+        if ds.zdata>=0:
+          return
         width=(ds.x.max()-ds.x.min())/10.
         start_range=None
         end_range=None
@@ -4219,30 +4234,76 @@ Gnuplot version %.1f patchlevel %i with terminals:
         start_range=min(position[0], start[0])
         end_range=max(position[0], start[0])
         x_0=(end_range-start_range)/2.+start_range
-        I=abs(position[1]-start[1])/4.
-        bg=min(position[1], start[1])
+        if ds.zdata>=0:
+          start_range_y=min(position[1], start[1])
+          end_range_y=max(position[1], start[1])
+          y_0=(end_range_y-start_range_y)/2.+start_range_y
+          I=ds.z[((ds.x>=start_range)&(ds.x<=end_range)&\
+                  (ds.y>=start_range_y)&(ds.y<=end_range_y))].max()
+          bg=ds.z[((ds.x>=start_range)&(ds.x<=end_range)&\
+                  (ds.y>=start_range_y)&(ds.y<=end_range_y))].min()
+        else:
+          I=abs(position[1]-start[1])/4.
+          bg=min(position[1], start[1])
       from plot_script import fit_data
       if (ds.fit_object==None):
         ds.fit_object=fit_data.FitSession(ds)
-      if action.button==1:
-        gaussian=fit_data.FitGaussian([ I, x_0, width, bg])
-        gaussian.x_from=start_range
-        gaussian.x_to=end_range
-        gaussian.refine(ds.x, ds.y)
-        ds.fit_object.functions.append([gaussian, False, True, False, False])
-      if action.button==2:
-        voigt=fit_data.FitVoigt([ I, x_0, width/2., width/2., bg])
-        voigt.x_from=start_range
-        voigt.x_to=end_range
-        voigt.refine(ds.x, ds.y)
-        ds.fit_object.functions.append([voigt, False, True, False, False])
-      if action.button==3:
-        lorentz=fit_data.FitLorentzian([ I, x_0, width, bg])
-        lorentz.x_from=start_range
-        lorentz.x_to=end_range
-        lorentz.refine(ds.x, ds.y)
-        ds.fit_object.functions.append([lorentz, False, True, False, False])
+      if ds.zdata<0:
+        if action.button==1:
+          gaussian=fit_data.FitGaussian([ I, x_0, width, bg])
+          gaussian.x_from=start_range
+          gaussian.x_to=end_range
+          gaussian.refine(ds.x, ds.y)
+          ds.fit_object.functions.append([gaussian, False, True, False, False])
+        if action.button==2:
+          voigt=fit_data.FitVoigt([ I, x_0, width/2., width/2., bg])
+          voigt.x_from=start_range
+          voigt.x_to=end_range
+          voigt.refine(ds.x, ds.y)
+          ds.fit_object.functions.append([voigt, False, True, False, False])
+        if action.button==3:
+          lorentz=fit_data.FitLorentzian([ I, x_0, width, bg])
+          lorentz.x_from=start_range
+          lorentz.x_to=end_range
+          lorentz.refine(ds.x, ds.y)
+          ds.fit_object.functions.append([lorentz, False, True, False, False])
+      else:
+        if action.button==1:
+          gaussian=fit_data.FitGaussian3D([ I, x_0, y_0, width, width, 0., bg])
+          gaussian.x_from=start_range
+          gaussian.x_to=end_range
+          gaussian.y_from=start_range_y
+          gaussian.y_to=end_range_y
+          gaussian.constrains[4]={'bounds': [None, None], 'tied': ''}
+          gaussian.refine_parameters=range(7)
+          gaussian.fit_function_text='G: [I] at [x_0],[y_0]'
+          gaussian.refine(ds.x, ds.y, ds.z)
+          ds.fit_object.functions.append([gaussian, False, True, False, False])
+        if action.button==2:
+          voigt=fit_data.FitPsdVoigt3D([ I, x_0, y_0, width/2., width/2.,
+                                        width/2., width/2., 0., 0.5, bg])
+          voigt.x_from=start_range
+          voigt.x_to=end_range
+          voigt.y_from=start_range_y
+          voigt.y_to=end_range_y
+          voigt.constrains[4]={'bounds': [None, None], 'tied': ''}
+          voigt.fit_function_text='V: [I] at [x_0],[y_0]'
+          voigt.refine(ds.x, ds.y, ds.z)
+          ds.fit_object.functions.append([voigt, False, True, False, False])
+        if action.button==3:
+          lorentz=fit_data.FitLorentzian3D([ I, x_0, y_0, width, width, 0., bg])
+          lorentz.x_from=start_range
+          lorentz.x_to=end_range
+          lorentz.y_from=start_range_y
+          lorentz.y_to=end_range_y
+          lorentz.constrains[4]={'bounds': [None, None], 'tied': ''}
+          lorentz.refine_parameters=range(7)
+          lorentz.fit_function_text='L: [I] at [x_0],[y_0]'
+          lorentz.refine(ds.x, ds.y, ds.z)
+          ds.fit_object.functions.append([lorentz, False, True, False, False])
       self.file_actions.activate_action('simmulate_functions')
+      if ds.zdata>=0:
+        self.rebuild_menus()
       self.replot()
 
   def get_position_on_plot(self):
