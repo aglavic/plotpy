@@ -90,12 +90,13 @@ set_output_terminal_image='png enhanced size [width],[height] font "'+\
 set_output_terminal_ps='postscript landscape enhanced colour "Arial" 16 solid lw 2'
 
 # terminal for external gnuplot window
-gui_terminals=['qt', 'wxt', 'aqua', 'x11']
+gui_terminals=['qt', 'windows', 'wxt', 'aqua', 'x11']
 gui_terminal_options={
           'wxt': ['enhanced', 'font "'+join_path('[font-path]', 'Arial.ttf')+'" 16'],
                       }
 gui_terminal_options['aqua']=gui_terminal_options['wxt']
 gui_terminal_options['qt']=gui_terminal_options['wxt']
+gui_terminal_options['windows']=gui_terminal_options['wxt']
 gui_terminal_options['x11']=gui_terminal_options['wxt']
 
 set_output_terminal_gui='x11 enhanced' # fallback if terminal was not selected
