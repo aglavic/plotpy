@@ -2487,10 +2487,12 @@ class LabelArrowDialog(gtk.Dialog):
       table.attach(gtk.Label('Text'), 3, 4, 0, 1)
       table.attach(gtk.Label('Front'), 4, 5, 0, 1)
       table.attach(gtk.Label('Point'), 5, 6, 0, 1)
-      table.attach(gtk.Label('Custom Options'), 6, 7, 0, 1)
+      table.attach(gtk.Label('Frame'), 6, 7, 0, 1)
+      table.attach(gtk.Label('Center'), 7, 8, 0, 1)
+      table.attach(gtk.Label('Custom Options'), 8, 9, 0, 1)
     i=1
     self.label_entries=[]
-    for position, text, front, point, settings in labels:
+    for position, text, front, point, center, frame, settings in labels:
       entries=[]
       self.label_entries.append(entries)
       for j, p in enumerate(position):
@@ -2519,16 +2521,28 @@ class LabelArrowDialog(gtk.Dialog):
       entries.append(point_toggle)
       point_toggle.connect('toggled', self._apply)
 
+      frame_toggle=gtk.CheckButton()
+      frame_toggle.set_active(frame)
+      table.attach(frame_toggle, 6, 7, i, i+1)
+      entries.append(frame_toggle)
+      frame_toggle.connect('toggled', self._apply)
+
+      center_toggle=gtk.CheckButton()
+      center_toggle.set_active(center)
+      table.attach(center_toggle, 7, 8, i, i+1)
+      entries.append(center_toggle)
+      center_toggle.connect('toggled', self._apply)
+
       settings_entry=gtk.Entry()
       settings_entry.set_text(settings)
       #settings_entry.set_width_chars()
-      table.attach(settings_entry, 6, 7, i, i+1)
+      table.attach(settings_entry, 8, 9, i, i+1)
       entries.append(settings_entry)
       settings_entry.connect('activate', self._apply)
 
       del_button=gtk.Button('DEL')
       del_button.connect('clicked', self._delete, 'label', i)
-      table.attach(del_button, 7, 8, i, i+1)
+      table.attach(del_button, 9, 10, i, i+1)
       entries.append(del_button)
       i+=1
     table.show_all()
@@ -2546,8 +2560,10 @@ class LabelArrowDialog(gtk.Dialog):
         text=entries[3].get_text()
         front=entries[4].get_active()
         point=entries[5].get_active()
-        settings=entries[6].get_text()
-        new_labels.append([(posx, posy, posz), text, front, point, settings])
+        frame=entries[6].get_active()
+        center=entries[7].get_active()
+        settings=entries[8].get_text()
+        new_labels.append([(posx, posy, posz), text, front, point, frame, center, settings])
       except:
         pass
     self.dataset.plot_options.labels=new_labels
@@ -2675,7 +2691,7 @@ class LabelArrowDialog(gtk.Dialog):
       active_page=self.notebook.get_current_page()
       if active_page==0:
         self.dataset.plot_options.labels.append([(0, 0, 1), '',
-                                                 True, False, ''])
+                                                 True, False, False, False, ''])
       elif active_page==1:
         self.dataset.plot_options.arrows.append([((0, 0, 1), (0, 0, 1)),
                                                  True, True, ''])

@@ -4167,7 +4167,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
                                          ).run()
           if result:
             ds.plot_options.labels.append([(position[0], position[1], 1),
-                                           parameters['Text'], True, False, ''])
+                                           parameters['Text'], True, False, False, False, ''])
 
             if self.label_arrow_dialog is not None:
               self.label_arrow_dialog.update()
@@ -4180,7 +4180,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
                                          ).run()
           if result:
             ds.plot_options.labels.append([(position[0], position[1], 1),
-                                           parameters['Text'], True, True, ''])
+                                           parameters['Text'], True, True, False, False, ''])
 
             if self.label_arrow_dialog is not None:
               self.label_arrow_dialog.update()

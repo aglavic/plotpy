@@ -229,7 +229,7 @@ class ConsoleView(gtk.TextView):
   def changeLine(self, text):
     iter_=self.text_buffer.get_iter_at_mark(self.line_start)
     iter_.forward_to_line_end()
-    self.text_buffer.delete(self.text_buffer.get_iter_at_mark(self.line_start), iter)
+    self.text_buffer.delete(self.text_buffer.get_iter_at_mark(self.line_start), iter_)
     self.write(text, True)
 
   def getCurrentLine(self):

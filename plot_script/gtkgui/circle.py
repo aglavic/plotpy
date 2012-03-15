@@ -101,7 +101,6 @@ class CircleGUI:
       print "Activate Autoreload"
       self.autoreload_active=True
       while self.autoreload_active:
-        last=time()
         self.reload_active_measurement(action, window)
         while gtk.events_pending():
           gtk.main_iteration(False)

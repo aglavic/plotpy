@@ -1581,12 +1581,18 @@ class PlotOptions(object):
     for i, label in enumerate(self.labels):
       pos=label[0]
       text=label[1]
+      if label[4]:
+        # draw box around the label
+        output+='set object %i rect at %g,%g,%g size char strlen("%s "), char 1 front fs transparent solid 0.75 lw 0.5\n'%(
+                                    i+200, pos[0], pos[1], pos[2], text)
       output+='set label %i "%s" at %g,%g,%g'%(i+100, text, pos[0], pos[1], pos[2])
       if label[2]:
         output+=' front'
       if label[3]:
         output+=' point pt 7'
-      output+=' %s # LABEL\n'%label[4]
+      if label[4] or label[5]:
+        output+=' center'
+      output+=' %s # LABEL\n'%label[6]
     for i, arrow in enumerate(self.arrows):
       pos=arrow[0]
       output+='set arrow %i from %g,%g,%g to %g,%g,%g'%(i+100,

@@ -12,7 +12,7 @@ from plot_script import  measurement_data_structure
 from plot_script.measurement_data_structure import PhysicalProperty
 import codecs
 from copy import deepcopy
-from numpy import array, sqrt, pi, sin, float32, argsort, linspace
+from numpy import array, sqrt, pi, sin, cos, float32, argsort, linspace
 from array import array as py_array
 
 __author__="Artur Glavic"
@@ -62,8 +62,13 @@ def read_data(file_name, DATA_COLUMNS):
         # for Θ or 2Θ scans add q-column
         if "DRIVE='THETA'" in sequence.info:
           two_theta_start=float(sequence.info.split('2THETA=')[1].split("\n")[0])
+          # omega/2-theta scan
           th=(sequence.x-sequence.x[0])+two_theta_start*0.5
           sequence.data.append((4.*pi/1.54*sin(th))//('Q_z', 'Å^{-1}'))
+          # rocking scan
+          ai=sequence.x
+          af=two_theta_start-ai
+          sequence.data.append((2.*pi/1.54*(cos(af)-cos(ai)))//('Q_x', 'Å^{-1}'))
         elif "DRIVE='2THETA'" in sequence.info or "DRIVE='COUPLED'" in sequence.info:
           th=sequence.x*0.5
           sequence.data.append((4.*pi/1.54*sin(th))//('Q_z', 'Å^{-1}'))
@@ -319,7 +324,13 @@ def read_bruker_raw(input_file):
     else:
       dataset.data.append(PhysicalProperty('Θ', '°', scan[1]))
       dataset.data.append(PhysicalProperty('I', 'counts', scan[2], sqrt(scan[2])))
+      # th2th
       dataset.data.append((4.*pi/1.54*sin(dataset.data[0]))//('Q_z', 'Å^{-1}'))
+      # rocking
+      tth=scan[0]['START_2THETA']
+      ai=dataset.data[0]
+      af=tth-ai
+      dataset.data.append((2.*pi/1.54*(cos(af)-cos(ai)))//('Q_x', 'Å^{-1}'))
     dataset.data[1]/=PhysicalProperty('', 's', [scan[0]['TIME_PER_STEP']])
 
     dataset.sample_name=header_info['SAMPLE_ID']

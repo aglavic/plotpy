@@ -1477,7 +1477,7 @@ class FitOffspecular(FitFunction):
 
   # define class variables.
   name="Offspecular"
-  parameters=[1., 500., 0.3, 1.54, 2., 0., 0., 100., 0.05, 0.3]
+  parameters=[1., 500., 0.3, 1.54, 2., 0., 0., 100., 0.01, 0.3]
   parameter_names=['I', 'ζ', 'H', 'λ', '2Θ', 'θ-offset', 'C',
                    'I-spec', 'σ-spec', 'αi-max']
   parameter_description={'I': 'Scaling of Off-specular part',
@@ -1503,9 +1503,7 @@ class FitOffspecular(FitFunction):
 
   def fit_function(self, p, x):
     '''
-      Return the Voigt profile of x.
-      It is calculated using the complex error function,
-      see Wikipedia articel on Voigt-profile for the details.
+      Return the Offspecular profile of th.
     '''
     pi=numpy.pi
     cos=numpy.cos
@@ -1514,18 +1512,18 @@ class FitOffspecular(FitFunction):
     H=p[2]
     lamda=p[3]
     tth=p[4]/180.*pi
-    th_offset=p[5]
+    th_offset=p[5]/180.*pi
     C=p[6]
 
     I_spec=p[7]
     sigma_spec=p[8]/180.*pi
     ai_max=p[9]/180.*pi
 
-    alpha_i=(x+th_offset)/180.*pi
+    alpha_i=x/180.*pi
     alpha_f=tth-alpha_i
     Qx=2.*pi/lamda*(cos(alpha_f)-cos(alpha_i))
     Sxy=(1.+Qx**2*xi**2)**(-1.-H)
-    Sspec=numpy.exp(-0.5*(tth/2.-alpha_i)**2/sigma_spec**2)
+    Sspec=numpy.exp(-0.5*(tth/2.-alpha_i+th_offset)**2/sigma_spec**2)
     I=I0*abs(Sxy)**2+I_spec*Sspec
     return numpy.minimum(1., alpha_i/ai_max)*I+C
 

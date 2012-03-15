@@ -109,15 +109,19 @@ class ReflectometerGUI:
     I=PhysicalProperty('I', '°', numpy.hstack(I))
     ai=th//('α_i', '°')
     af=PhysicalProperty('α_f', '°', tth-th)
-    created_map.data=[tth, th, ai, af, I]
+    Qz=(2.*numpy.pi/1.54*(numpy.sin(ai)+numpy.sin(af)))//('Q_z', 'Å^{-1}')
+    Qx=(2.*numpy.pi/1.54*(numpy.cos(af)-numpy.cos(ai)))//('Q_x', 'Å^{-1}')
+    created_map.data=[tth, th, ai, af, I, Qx, Qz]
 
     created_map.yerror=-1
     created_map.SPLIT_SENSITIVITY=0.00001
     created_map.scan_line=0
     created_map.scan_line_constant=1
     created_map.logz=True
+    created_map.plot_options.free_input.append('set pm3d flush center')
     self.active_file_data.append(created_map)
     window.index_mess=len(self.active_file_data)-1
+    window.rebuild_menus()
     window.replot()
 
   def combine_scans(self, action, window, preset=None):
