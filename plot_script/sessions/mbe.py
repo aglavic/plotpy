@@ -13,9 +13,6 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
-import os
-from glob import glob
-from configobj import ConfigObj
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # importing data readout

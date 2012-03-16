@@ -78,7 +78,7 @@ def check_gnuplot_version(session):
                                                              )
         break
     return (float(version), float(patchlevel)), terminals
-  except Exception, error:
+  except:
     return (0., 0.), []
 
 def gnuplot_plot_script(session,
@@ -110,14 +110,12 @@ def gnuplot_plot_script(session,
     @return Gnuplot error message or empty string
   '''
   global gnuplot_instance
-  gp=gnuplot_preferences # short form for gnuplot_preferences
   file_numbers=[]
   if show_persistent:
     global persistent_plots
     tmp_name='tmp_data_p-%i_'%persistent_plots
     persistent_plots+=1
     output_file_prefix=session.TEMP_DIR+tmp_name
-    postscript_export=True
   else:
     tmp_name='tmp_data_'
     output_file_prefix=session.TEMP_DIR+tmp_name
@@ -135,23 +133,12 @@ def gnuplot_plot_script(session,
     datasets[0].export_projections(projections_name)
   if not sample_name:
     sample_name=datasets[0].sample_name
-  if output_file is None:
-    postscript_export=False
-  elif output_file.rsplit('.', 1)[1]=='ps':
-    postscript_export=True
-  else:
-    postscript_export=False
-  script_name=session.TEMP_DIR+replace_ph(session,
-                                          gp.gnuplot_file_name,
-                                          datasets,
-                                          file_name_prefix,
-                                          file_numbers,
-                                          title,
-                                          names,
-                                          sample_name,
-                                          (0, 0, 0),
-                                          postscript_export,
-                                          additional_info)
+  #if output_file is None:
+  #  postscript_export=False
+  #elif output_file.rsplit('.', 1)[1]=='ps':
+  #  postscript_export=True
+  #else:
+  #  postscript_export=False
   gnuplot_file_text=create_plot_script(session,
                                        datasets,
                                        file_name_prefix,

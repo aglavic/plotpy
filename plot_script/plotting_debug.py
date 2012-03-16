@@ -22,16 +22,15 @@ def some_function(some_bla):
 
 import logging
 import warnings
-import sys, os
-from glob import glob
+import sys
 from types import FunctionType, BuiltinFunctionType
 import decorators
 from decorators import log_call, log_input, log_output, log_both
 
-__author__ = "Artur Glavic"
-__credits__ = []
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__ = "Development"
+__author__="Artur Glavic"
+__credits__=[]
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+__status__="Development"
 
 logger=logging
 
@@ -66,7 +65,7 @@ class RedirectOutput(object):
       connection(self.buffer)
       self.buffer=""
     #self.file_object.write(string)
-  
+
   def flush(self):
     '''
       Show last content line in statusbar.
@@ -78,7 +77,7 @@ class RedirectOutput(object):
     connection(self.buffer)
     self.buffer=""
     self.file_object.flush()
-  
+
   def fileno(self):
     return self.file_object.fileno()
 
@@ -102,7 +101,7 @@ def logon(module, log_decorator=log_call):
     # replace the function by a decorated version
     # only replace if the function is originally defined in this module
     if function.__module__==module.__name__:
-      module_dict[function_name]=log_decorator( function )
+      module_dict[function_name]=log_decorator(function)
       # store real function as private
       module_dict['_'+function_name]=function
   for cls_name in modclasses:
@@ -116,8 +115,8 @@ def logon(module, log_decorator=log_call):
         setattr(cls, func_name, log_decorator(getattr(cls, func_name)))
 
 
-def numpy_error_handler(type, flag):
-  logger.warning("Numpy floating point error (%s), with flag %s" % (type, flag))
+def numpy_error_handler(type_, flag):
+  logger.warning("Numpy floating point error (%s), with flag %s"%(type_, flag))
 
 def initialize(log_file, level='INFO', modules=[]):
   '''
@@ -130,9 +129,9 @@ def initialize(log_file, level='INFO', modules=[]):
     level=logging.INFO
   file_handle=logging.FileHandler(log_file, 'w')
   file_handle.setLevel(level)
-  formatter = logging.Formatter("%(asctime)s %(levelname) 8s %(message)s")
+  formatter=logging.Formatter("%(asctime)s %(levelname) 8s %(message)s")
   # add formatter to ch
-  file_handle.setFormatter(formatter)  
+  file_handle.setFormatter(formatter)
   console_handle=logging.StreamHandler()
   console_handle.setLevel(logging.INFO)
   logger=logging.getLogger() # get the root logger
@@ -144,7 +143,7 @@ def initialize(log_file, level='INFO', modules=[]):
   try:
     import numpy
   except:
-    pass  
+    pass
   else:
     # log numpy errors as warnings
     numpy.seterrcall(numpy_error_handler)
@@ -177,7 +176,7 @@ def initialize(log_file, level='INFO', modules=[]):
         imported_module=__import__(module, globals(), locals(), fromlist=(module.split('.')[-1]))
       else:
         imported_module=__import__(module, globals(), locals())
-      logger.debug('    logging moduel %s' % imported_module.__name__)
+      logger.debug('    logging moduel %s'%imported_module.__name__)
       logon(imported_module, log_decorator=log_decorator)
     logger.debug("... ready initializing the debug system.")
     decorators.logger=logger

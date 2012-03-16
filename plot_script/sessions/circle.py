@@ -20,8 +20,6 @@
 # Pleas do not make any changes here unless you know what you are doing.
 
 import os
-import sys
-from time import time
 import numpy
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession

@@ -22,25 +22,26 @@
 # importing python modules
 import os
 import sys
-exit=sys.exit
+
 from time import sleep
 import subprocess
 from cPickle import load, dumps, dump
 from plot_script import  measurement_data_structure
 from plot_script import  measurement_data_plotting
 from plot_script import  parallel
-from plot_script.config import gnuplot_preferences, transformations, templates
+from plot_script.config import gnuplot_preferences, transformations
+from plot_script.config import templates as template_config
 
 # importing own modules
 
 __author__="Artur Glavic"
 __credits__=[]
-from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 # if python version < 2.5 set the sys.exit function as exit
 if hex(sys.hexversion)<'0x2050000':
-  exit=sys.exit
+  exit=sys.exit #@ReservedAssignment
 
 # import gui functions for active config.gui.toolkit
 from plot_script.config import gui as gui_config
@@ -259,26 +260,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Gnuplot.py has no error reporting, so we change some settings
       to make it work.
     '''
-    if (not self.gnuplot_script): # verify gnuplot.py is installed
-      try:
-        # replace os.popen function to make the output readable
-        def new_popen(cmd, ignore, bufsize=0):
-          proc=subprocess.Popen(cmd,
-                                shell=gnuplot_preferences.EMMULATE_SHELL,
-                                creationflags=gnuplot_preferences.PROCESS_FLAGS,
-                                bufsize=bufsize,
-                                stdin=subprocess.PIPE,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-          self.gnuplot_output=(proc.stdout, proc.stderr)
-          return proc.stdin
-        os.popen=new_popen
-        import Gnuplot
-      except ImportError:
-        print "Gnuplot.py not available, falling back to script mode!"
-        self.gnuplot_script=True
     try: # verify mathematic modules needed for fitting
-      import numpy
+      import numpy #@UnusedImport
       self.ALLOW_FIT=True
     except ImportError:
       print "Numpy is not installed, fitting will not be possible."
@@ -314,7 +297,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
             if argument.endswith('.py'):
               template_file=argument
             else:
-              template_file=os.path.join(templates.TEMPLATE_DIRECTORY, argument+'.py') #@UndefinedVariable
+              template_file=os.path.join(template_config.TEMPLATE_DIRECTORY, argument+'.py') #@UndefinedVariable
             template=templates.DataImportTemplate(template_file)
             self.read_file=template
             self.FILE_WILDCARDS=[[template.name]+template.wildcards]
@@ -408,7 +391,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     SCRIPT_PATH=os.path.dirname(os.path.realpath(__file__).replace('sessions', ''))
     if "library.zip" in SCRIPT_PATH:
       # py2exe puts all modules into a zipfile, so we get the own folder from sys.argv
-      from plot import __file__ as plot_file
       SCRIPT_PATH=SCRIPT_PATH.split('library.zip')[0]
     if os.path.isfile(SCRIPT_PATH):
       # for cxFreeze remove the script name from the path
@@ -478,7 +460,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       if not os.path.join(user_folder, 'plugins') in sys.path:
         sys.path.append(os.path.join(user_folder, 'plugins'))
       plugin_sources=os.listdir(os.path.join(user_folder, 'plugins'))
-      plugin_sources=filter(lambda file: file.endswith('.py'), plugin_sources)
+      plugin_sources=filter(lambda file_: file_.endswith('.py'), plugin_sources)
       for plugin_source in plugin_sources:
         try:
           plugin=__import__(plugin_source[:-3])
@@ -626,7 +608,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       datasets=self.read_file(filename)
       if datasets!=[] and datasets!='NULL' and self.mds_create:
         if zip_mds:
-          import gzip
+          import gzip #@Reimport
           pickling=gzip.open(mds_name, 'wb')
         else:
           pickling=open(mds_name, 'wb')
@@ -663,7 +645,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
   def __iter__(self): # see next()
     return self
 
-  def next(self):
+  def next(self): #@ReservedAssignment
     ''' 
       Function to iterate through the file_data dictionary. Object can be used in "for name in data:".
       Also changes the active_file_data and active_file_name.
@@ -684,7 +666,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
     if not self.single_picture:
       for dataset in self.active_file_data:
-        self.plot(dataset.plot_together, self.active_file_name, dataset.short_info, ['' for i in range(len(dataset.plot_together))])
+        self.plot(dataset.plot_together, self.active_file_name, dataset.short_info, ['' for ignore in range(len(dataset.plot_together))])
         sleep(0.0001) # Can get into troubles without waiting.
     else:
       self.plot(self.active_file_data, self.active_file_name, '', [dataset.short_info for dataset in self.active_file_data])
@@ -713,16 +695,16 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       (self, datasets, file_name_prefix, '.out', title, names, self.plot_with_errorbars, additional_info=add_info)
     return output
 
-  def change_active(self, object=None, name=None):
+  def change_active(self, object_=None, name=None):
     '''
-      Change the active data file by object or name.
+      Change the active data file by object_ or name.
     '''
     name_list=[item[0] for item in self.file_data.items()]
     name_list.sort()
-    if object!=None:
-      self.active_file_name=object[0]
-      self.active_file_data=object[1]
-      self.index=name_list.index(object[0])
+    if object_!=None:
+      self.active_file_name=object_[0]
+      self.active_file_data=object_[1]
+      self.index=name_list.index(object_[0])
     elif name!=None:
       try:
         self.active_file_data=self.file_data[name]
@@ -859,7 +841,7 @@ def read_full_snapshot(name):
     user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')
     if not os.path.join(user_folder, 'plugins') in sys.path:
       sys.path.append(os.path.join(user_folder, 'plugins'))
-    from plot_script.plugins import global_plugins
+    from plot_script.plugins import global_plugins #@UnusedImport
     print "Reading snapshot from file %s..."%name
     dump_obj=load(dump_file)
     dump_file.close()

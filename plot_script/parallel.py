@@ -108,9 +108,9 @@ if multiprocessing is not None:
       Thread which executes arbitrary code from a never ending main loop.
     '''
 
-    def __init__(self, globals={}, locals={}):
-      self.locals=manager.dict(locals)
-      self.globals=manager.dict(globals)
+    def __init__(self, globals_={}, locals_={}):
+      self.locals=manager.dict(locals_)
+      self.globals=manager.dict(globals_)
       self._options=manager.dict(
                                 execute=False,
                                 finished=True,
@@ -172,7 +172,7 @@ if multiprocessing is not None:
         while not w0._finished:
           sleep(0.001)
       self.workers.append(w0)
-      for i in range(max_threads-1):
+      for ignore in range(max_threads-1):
         wi=Worker(w0.globals, w0.locals)
         wi.start()
         self.workers.append(wi)

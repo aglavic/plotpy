@@ -15,7 +15,7 @@ from copy import deepcopy
 # own modules
 # Module to save and load variables from/to config files
 from configobj import ConfigObj
-from plot_script import measurement_data_plotting
+from plot_script import measurement_data_plotting, fit_data
 from plot_script.config.gnuplot_preferences import output_file_name
 from plot_script import config
 from plot_script.config import gui as gui_config
@@ -25,6 +25,7 @@ import file_actions
 from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, \
                     PrintDatasetDialog, SimpleEntryDialog, DataView, PlotTree, \
                     FileImportDialog, StyleLine, ImportWizard, LabelArrowDialog
+from peakfinder import PeakFinderDialog
 from multiplots import MultiplotCanvas
 from diverse_classes import PlotProfile, RedirectError, RedirectOutput
 from plot_script import read_data
@@ -50,6 +51,8 @@ def main_loop(session):
   else:
     gtk.main() # start GTK engine
 
+
+errorbars=False
 #+++++++++++++++++++++++++ ApplicationMainWindow Class ++++++++++++++++++++++++++++++++++#
 # TODO: Move some functions to other modules to have a smaller file
 class ApplicationMainWindow(gtk.Window):
@@ -2173,6 +2176,22 @@ Gnuplot version %.1f patchlevel %i with terminals:
         self.rebuild_menus()
         self.replot()
 
+  def peak_finder(self, action):
+    '''
+      Find peaks using continous wavelet transform peakfinder.
+    '''
+    dialog=PeakFinderDialog(self, self.active_dataset)
+    if 'PeakDialog' in self.config_object:
+      position=self.config_object['PeakDialog']['position']
+      dialog.move(*position)
+    dialog.show()
+    def store_peak_dialog_gemometry(widget, event):
+      self.config_object['PeakDialog']={
+                               'position': widget.get_position()
+                                       }
+    dialog.connect('configure-event', store_peak_dialog_gemometry)
+    self.open_windows.append(dialog)
+
   def colorcode_points(self, action):
     '''
       Show points colorcoded by their number.
@@ -4251,7 +4270,6 @@ Gnuplot version %.1f patchlevel %i with terminals:
         else:
           I=abs(position[1]-start[1])/4.
           bg=min(position[1], start[1])
-      from plot_script import fit_data
       if (ds.fit_object==None):
         ds.fit_object=fit_data.FitSession(ds)
       if ds.zdata<0:
@@ -4841,6 +4859,9 @@ Gnuplot version %.1f patchlevel %i with terminals:
           <menuitem action='CombinePoints'/>
           <menuitem action='Integrate'/>
           <menuitem action='Derivate'/>
+          <menu action='PeakFinderMenu'>
+            <menuitem action='PeakFinderDialog'/>
+          </menu>
           <menuitem action='ColorcodePoints'/>
           </placeholder>'''
     output+='''
@@ -5109,6 +5130,14 @@ Gnuplot version %.1f patchlevel %i with terminals:
         "Integrate", '<control><shift>D', # label, accelerator
         None, # tooltip
         self.integrate_data),
+      ("PeakFinderMenu", None, # name, stock id
+        "CWT Peak Finder", None, # label, accelerator
+        None, # tooltip
+        None),
+      ("PeakFinderDialog", None, # name, stock id
+        "Find Peaks...", '<control>0', # label, accelerator
+        None, # tooltip
+        self.peak_finder),
       ("ColorcodePoints", None, # name, stock id
         "Show Colorcoded Points", None, # label, accelerator
         None, # tooltip

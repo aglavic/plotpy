@@ -12,7 +12,7 @@ from math import pi, sin, asin, exp
 # import own modules
 from measurement_data_structure import MeasurementData, PlotOptions
 # import gui functions for active config.gui.toolkit
-import config.gui
+from plot_script.config import gui as gui_config
 import parallel
 parallel.add_actions([
                       'import numpy',
@@ -25,9 +25,9 @@ parallel.add_actions([
                               ])
 
 try:
-  FitSessionGUI=__import__(config.gui.toolkit+'gui.gui_fit_data',
+  FitSessionGUI=__import__('plot_script.'+gui_config.toolkit+'gui.gui_fit_data',
                             fromlist=['FitSessionGUI']).FitSessionGUI
-  FitFunctionGUI=__import__(config.gui.toolkit+'gui.gui_fit_data',
+  FitFunctionGUI=__import__('plot_script.'+gui_config.toolkit+'gui.gui_fit_data',
                              fromlist=['FitFunctionGUI']).FitFunctionGUI
 except ImportError:
   class FitSessionGUI(object): pass

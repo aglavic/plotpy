@@ -3,7 +3,6 @@
  Variables for gnuplot options to be used by plot commands.
 '''
 
-from sys import platform
 from os.path import exists, split
 from os.path import join as join_path
 

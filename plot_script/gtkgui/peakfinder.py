@@ -1,0 +1,232 @@
+#-*- coding: utf8 -*-
+'''
+  Dialog for peakfinder algorithm.
+'''
+
+import gtk
+from numpy import ndarray, array, exp, zeros_like
+from plot_script.peakfinder import PeakFinder
+from plot_script.measurement_data_structure import MeasurementData, PhysicalProperty, PlotStyle
+from plot_script.fit_data import FitFunction, FitSession, FitGaussian
+
+def readjust(adjustment, other, move_up):
+  value=adjustment.get_value()
+  ovalue=other.get_value()
+  ostep=other.get_step_increment()
+  if move_up and ovalue<value:
+    other.set_value(value+ostep)
+  elif not move_up and ovalue>value:
+    other.set_value(value-ostep)
+
+
+class PeakFinderDialog(gtk.Dialog):
+  '''
+    A dialog to select the peakfinder parameters and interactively plot the
+    resulting peak positions.
+  '''
+
+  def __init__(self, parent, dataset, title='Peak Finder Parameters'):
+    gtk.Dialog.__init__(self, title=title, parent=parent,
+                        buttons=('Show Peaks', 3, 'Fit&Summary', 2, 'Fit&Show', 1, 'Cancel', 0))
+    self.parent_window=parent
+    self.dataset=dataset
+    self.peakfinder=PeakFinder(dataset.x.view(ndarray),
+                               dataset.y.view(ndarray),
+                               )
+    self._init_entries()
+    self.peaks=[]
+    self.plot_style=PlotStyle()
+    self.plot_style.style='points'
+    self.connect('response', self._responde)
+    self._evaluate()
+    self._responde(None, 3)
+
+  def _init_entries(self):
+    '''
+      Create entry widgets
+    '''
+    self.snr_adjust=gtk.Adjustment(value=2., lower=1., upper=20.,
+                              step_incr=0.25, page_incr=1.)
+    snr_slider=gtk.HScale(self.snr_adjust)
+    self.vbox.add(gtk.Label('Signal to Noise'))
+    self.vbox.add(snr_slider)
+
+    self.min_width_adjust=gtk.Adjustment(value=0.1, lower=0., upper=100.,
+                              step_incr=0.1, page_incr=5.)
+    self.max_width_adjust=gtk.Adjustment(value=50., lower=0., upper=100.,
+                              step_incr=0.1, page_incr=5.)
+    self.min_width_adjust.connect('value-changed', readjust,
+                                  self.max_width_adjust, True)
+    self.max_width_adjust.connect('value-changed', readjust,
+                                  self.min_width_adjust, False)
+    min_width=gtk.HScale(self.min_width_adjust)
+    max_width=gtk.HScale(self.max_width_adjust)
+    self.vbox.add(gtk.Label('Minimal Peak Width'))
+    self.vbox.add(min_width)
+    self.vbox.add(gtk.Label('Maximal Peak Width'))
+    self.vbox.add(max_width)
+
+    self.ridge_adjust=gtk.Adjustment(value=20, lower=1, upper=100,
+                              step_incr=1., page_incr=5.)
+    ridge_slider=gtk.HScale(self.ridge_adjust)
+    self.vbox.add(gtk.Label('CWT peak ridge length'))
+    self.vbox.add(ridge_slider)
+
+    self.auto_plot=gtk.CheckButton('Update Peaks on Change')
+    self.vbox.add(self.auto_plot)
+
+    self.vbox.show_all()
+    # connect events
+    self.snr_adjust.connect('value-changed', self._evaluate)
+    self.min_width_adjust.connect('value-changed', self._evaluate)
+    self.max_width_adjust.connect('value-changed', self._evaluate)
+    self.ridge_adjust.connect('value-changed', self._evaluate)
+
+  def _evaluate(self, *ignore):
+    '''
+      Read all parameters and evaluate the peakfinder with it.
+      Replot the dataset including these peaks.
+    '''
+    min_width_relative=self.min_width_adjust.get_value()
+    max_width_relative=self.max_width_adjust.get_value()
+    ds=self.dataset
+    xwidth=float(ds.x.max()-ds.x.min())
+    min_width=min_width_relative*xwidth*0.01
+    max_width=max_width_relative*xwidth*0.01
+
+    snr=self.snr_adjust.get_value()
+    ridge_length=self.ridge_adjust.get_value()
+    self.peaks=self.peakfinder.get_peaks(snr=snr,
+                                    min_width=min_width,
+                                    max_width=max_width,
+                                    ridge_length=ridge_length,
+                                    analyze=False)
+    print "%i Peaks found"%len(self.peaks)
+    if self.auto_plot.get_active():
+      self._responde(None, 3)
+
+  def _responde(self, ignore, response_id):
+    '''
+      Handle dialog response events.
+    '''
+    if response_id==3:
+      if len(self.peaks)>0:
+        ds=self.dataset
+        peaks=array(self.peaks)
+        xpos=peaks[:, 0]
+        I=peaks[:, 2]
+        md=MeasurementData()
+        md.data.append(PhysicalProperty(
+                                        ds.x.dimension,
+                                        ds.x.unit,
+                                        xpos
+                                        ))
+        md.data.append(PhysicalProperty(
+                                        ds.y.dimension,
+                                        ds.y.unit,
+                                        I,
+                                        ))
+        md.plot_options._special_plot_parameters=self.plot_style
+        md.short_info='Found Peaks'
+        ds.plot_together.append(md)
+        self.parent_window.replot()
+        ds.plot_together.pop(-1)
+      else:
+        self.parent_window.replot()
+    else:
+      if response_id in [1, 2]:
+        self._fit_result()
+      self.destroy()
+
+  def _fit_result(self):
+    '''
+      Fit Gaussians to the peaks found.
+    '''
+    peaks=self.peaks
+    ds=self.dataset
+    #fit=FitMultiGauss(peaks)
+    if self.dataset.fit_object is None:
+      self.dataset.fit_object=FitSession(self.dataset)
+    #self.dataset.fit_object.functions.append([fit, False, True, False, False])
+    #fit.refine(self.dataset.x, self.dataset.y)
+    for x0, sigma, I, ignore, ignore in peaks:
+      fit=FitGaussian([I, x0, sigma, 0.])
+      fit.x_from=x0-2.*sigma
+      fit.x_to=x0+2.*sigma
+      fit.refine(ds.x, ds.y)
+      fit.fit_function_text='I=[I] x_0=[x0] σ=[σ]'
+      self.dataset.fit_object.functions.append([fit, False, True, False, False])
+    ds.fit_object.simulate()
+    self.parent_window.replot()
+
+class FitMultiGauss(FitFunction):
+  '''
+    Fit multiple Gauss functions including linear interpolated background.
+  '''
+
+  name="MultipleGaussian"
+  parameters=[]
+  parameter_names=[]
+  parameter_description={'I': 'Scaling'}
+  fit_function_text=''
+  number_peaks=0
+  max_iter=50
+
+  def __init__(self, peak_params):
+    parameters=[]
+    parameter_names=[]
+    fit_function_text=''
+    constrains={}
+    for i, peak in enumerate(peak_params):
+      parameters.append(peak[2])
+      parameter_names.append("I_%i"%(i+1))
+      parameters.append(peak[0])
+      parameter_names.append("x_%i"%(i+1))
+      parameters.append(peak[1])
+      parameter_names.append("σ_%i"%(i+1))
+      fit_function_text+='I_{%i}=[I_%i]  x_{%i}=[x_%i]  σ_{%i}=[σ_%i]\\n'%tuple([i+1]*6)
+      # only positive intensities
+      constrains[i*3]={'bounds': [0, None], 'tied': ''}
+    parameters.append(0.)
+    parameter_names.append('BG')
+    #for i in range(len(peak_params)):
+    #  parameters.append(0.)
+    #  parameter_names.append('BG_%i'%(i+1))
+    self.parameters=parameters
+    self.parameter_names=parameter_names
+    self.fit_function_text=fit_function_text
+    self.number_peaks=len(peak_params)
+    self.constrains=constrains
+    FitFunction.__init__(self, self.parameters)
+
+  def fit_function(self, p, x):
+    '''
+      Gaussian functions for each peak.
+    '''
+    I=zeros_like(x)
+    for i in range(self.number_peaks):
+      I+=p[i*3]*exp(-0.5*((x-p[i*3+1])/p[i*3+2])**2)
+    I+=p[-1]
+    return I
+
+#  def BG(self, p, x):
+#    '''
+#      Linear interpolated background between all peaks
+#    '''
+#    BG=zeros_like(x)
+#    BGparams=p[self.number_peaks:]
+#    for i in range(self.number_peaks):
+#      if i>0:
+#        x0=p[i*3+1]
+#      else:
+#        x0=x.min()
+#      if i<(self.number_peaks-1):
+#        x1=p[(i+1)*3+1]
+#      else:
+#        x1=x.max()
+#      a=(BGparams[i+1]-BGparams[i])/(x1-x0) # background slope
+#      b=BGparams[i]-a*x0  # background offset
+#      region=(x>=x0)&(x<x1)
+#      BG[region]+=a*x[region]+b
+#    BG[x==x1]=BGparams[-1]
+#    return BG

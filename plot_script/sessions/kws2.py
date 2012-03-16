@@ -95,12 +95,12 @@ class KWS2Session(GUI, GenericSession):
     setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
     setups.indent_type='\t'
     found=False
-    for key, value in setups.items():
+    for key in setups.keys():
       if os.path.join(folder, rel_file) in glob(os.path.join(folder, key)):
         found=True
     if not found and '-' in rel_file:
       rel_file=rel_file.rsplit('-', 1)[0]
-      for key, value in setups.items():
+      for key in setups.keys():
         if os.path.join(folder, rel_file) in glob(os.path.join(folder, key)):
           found=True
     if not found:

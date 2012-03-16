@@ -6,7 +6,6 @@
 
 # Pleas do not make any changes here unless you know what you are doing.
 
-from sys import hexversion
 import os
 from shutil import copyfile
 from copy import deepcopy
@@ -17,7 +16,7 @@ from config.transformations import known_unit_transformations
 
 __author__="Artur Glavic"
 __credits__=[]
-from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__
+from plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 hmd_file_number=0
@@ -408,7 +407,7 @@ class MeasurementData(object):
     if hasattr(x, '__iter__'):
       # scipy interpolation is much better for arrays, try to create it:
       try:
-        from scipy.interpolate import interp1d
+        from scipy.interpolate import interp1d #@UnusedImport
       except ImportError:
         idx=numpy.where(xm<x[0])[0][-1]
         # calculate the interpolation
@@ -443,14 +442,14 @@ class MeasurementData(object):
 
   def _get_plot_options(self): return self._plot_options
 
-  def _set_plot_options(self, input):
+  def _set_plot_options(self, input_):
     '''
       Set the PlotOptions object from a string or item input.
     '''
-    if type(input) is str:
-      self._plot_options=PlotOptions(input)
-    elif type(input) is PlotOptions:
-      self._plot_options=input
+    if type(input_) is str:
+      self._plot_options=PlotOptions(input_)
+    elif type(input_) is PlotOptions:
+      self._plot_options=input_
     else:
       raise TypeError, "plot_options has to be of type PlotOptions or String"
 
@@ -617,7 +616,7 @@ class MeasurementData(object):
   y=property(_get_y, _set_y)
   z=property(_get_z, _set_z)
 
-  def list(self):
+  def list(self): #@ReservedAssignment
     '''
       Get x-y-(z) list of all data points.
       If x or y columns are negative the index is returned instead
@@ -681,7 +680,7 @@ class MeasurementData(object):
       output.data[i]=col.join(other.data[i])
     return output
 
-  def type(self):
+  def type(self): #@ReservedAssignment
     '''
       Short form to get the first constant data column.
     '''
@@ -789,7 +788,6 @@ class MeasurementData(object):
       
       @return The changed column and the applied translation
     '''
-    from copy import deepcopy
     data=deepcopy(self.data[col])
     unit_used=None
     for unit in unit_list:
@@ -1001,21 +999,21 @@ class MeasurementData(object):
       
       @return A string with the data.
     '''
-    cols, lines=data.shape
+    cols, ignore=data.shape
     data=data.transpose()
     # convert data to a long 1d array
     data=numpy.nan_to_num(data.flatten())
     # create the format string for one line of data
     output_line=((format_string+seperator)*cols)[:-len(seperator)]
     # join format string line by line
-    output_list=["\n".join([output_line for j in range(split_indices[0])])]
+    output_list=["\n".join([output_line for ignore in range(split_indices[0])])]
     for i, split_i in enumerate(split_indices[1:]):
-      output_list.append("\n".join([output_line for j in range(split_i-split_indices[i])]))
+      output_list.append("\n".join([output_line for ignore in range(split_i-split_indices[i])]))
     # insert the values in the given format
     output=("\n\n".join(output_list))%tuple(data)
     return output
 
-  def max(self, xstart=None, xstop=None):
+  def max(self, xstart=None, xstop=None): #@ReservedAssignment
     '''
       Returns x and y value of point with maximum x.
     '''
@@ -1029,7 +1027,7 @@ class MeasurementData(object):
     max_point=self.data[self.ydata].values.index(y[indices].max())
     return [self.data[self.xdata].values[max_point], self.data[self.ydata].values[max_point]]
 
-  def min(self, xstart=None, xstop=None):
+  def min(self, xstart=None, xstop=None): #@ReservedAssignment
     '''
       Returns x and y value of point with minimum x.
     '''
@@ -1175,8 +1173,8 @@ class HugeMD(MeasurementData):
       #os.remove(self.tmp_export_file)
     return self._data
 
-  def set_data_object(self, object):
-    self._data=object
+  def set_data_object(self, object_):
+    self._data=object_
     self.store_data()
 
   def units(self):
@@ -1690,30 +1688,30 @@ class PlotOptions(object):
   def get_xrange(self): return self._xrange
   def get_yrange(self): return self._yrange
   def get_zrange(self): return self._zrange
-  def set_xrange(self, range):
-    if len(range)==2:
+  def set_xrange(self, range_):
+    if len(range_)==2:
       try:
-        xrange=[None, None]
-        if range[0] not in  [None, '']:
-          xrange[0]=float(range[0])
-        if range[1] not in  [None, '']:
-          xrange[1]=float(range[1])
-        if None not in xrange and xrange[0]>xrange[1]:
-          xrange=[xrange[1], xrange[0]]
-        self._xrange=xrange
+        x_range=[None, None]
+        if range_[0] not in  [None, '']:
+          x_range[0]=float(range_[0])
+        if range_[1] not in  [None, '']:
+          x_range[1]=float(range_[1])
+        if None not in x_range and x_range[0]>x_range[1]:
+          x_range=[xrange[1], xrange[0]]
+        self._xrange=x_range
       except ValueError:
         raise ValueError, 'xrange has to be a tuple or list with two elements of float or None'
     else:
       raise ValueError, 'xrange has to be a tuple or list with two elements of float or None'
 
-  def set_yrange(self, range):
-    if len(range)==2:
+  def set_yrange(self, range_):
+    if len(range_)==2:
       try:
         yrange=[None, None]
-        if range[0] not in  [None, '']:
-          yrange[0]=float(range[0])
-        if range[1] not in  [None, '']:
-          yrange[1]=float(range[1])
+        if range_[0] not in  [None, '']:
+          yrange[0]=float(range_[0])
+        if range_[1] not in  [None, '']:
+          yrange[1]=float(range_[1])
         if None not in yrange and yrange[0]>yrange[1]:
           yrange=[yrange[1], yrange[0]]
         self._yrange=yrange
@@ -1722,14 +1720,14 @@ class PlotOptions(object):
     else:
       raise ValueError, 'yrange has to be a tuple or list with two elements of float or None'
 
-  def set_zrange(self, range):
-    if len(range)==2:
+  def set_zrange(self, range_):
+    if len(range_)==2:
       try:
         zrange=[None, None]
-        if range[0]:
-          zrange[0]=float(range[0])
-        if range[1]:
-          zrange[1]=float(range[1])
+        if range_[0]:
+          zrange[0]=float(range_[0])
+        if range_[1]:
+          zrange[1]=float(range_[1])
         if None not in zrange and zrange[0]>zrange[1]:
           zrange=[zrange[1], zrange[0]]
         self._zrange=zrange
@@ -1739,7 +1737,7 @@ class PlotOptions(object):
       raise ValueError, 'zrange has to be a tuple or list with two elements of float or None'
 
 
-  xrange=property(get_xrange, set_xrange)
+  xrange=property(get_xrange, set_xrange) #@ReservedAssignment
   yrange=property(get_yrange, set_yrange)
   zrange=property(get_zrange, set_zrange)
 
@@ -1869,17 +1867,17 @@ class PlotStyle(object):
 
 derivatives={# derivatives to numpy base functions for error propagation
              numpy.sin.__str__(): numpy.cos,
-             numpy.cos.__str__(): lambda input:-numpy.sin(input),
-             numpy.tan.__str__(): lambda input: 1./numpy.cos(input)**2,
+             numpy.cos.__str__(): lambda input_:-numpy.sin(input_),
+             numpy.tan.__str__(): lambda input_: 1./numpy.cos(input_)**2,
              numpy.exp.__str__(): numpy.exp,
-             numpy.arcsin.__str__(): lambda input: 1./(1.-input**2)**0.5,
-             numpy.arccos.__str__(): lambda input:-1./(1.-input**2)**0.5,
-             numpy.arctan.__str__(): lambda input: 1./(1.+input**2),
-             numpy.log.__str__(): lambda input: 1./input,
-             numpy.log10.__str__(): lambda input: 1./input,
-             numpy.square.__str__(): lambda input: 2.*input ,
-             numpy.sqrt.__str__(): lambda input: 1./(2.*numpy.sqrt(input)),
-             numpy.abs.__str__(): lambda input: input,
+             numpy.arcsin.__str__(): lambda input_: 1./(1.-input_**2)**0.5,
+             numpy.arccos.__str__(): lambda input_:-1./(1.-input_**2)**0.5,
+             numpy.arctan.__str__(): lambda input_: 1./(1.+input_**2),
+             numpy.log.__str__(): lambda input_: 1./input_,
+             numpy.log10.__str__(): lambda input_: 1./input_,
+             numpy.square.__str__(): lambda input_: 2.*input_ ,
+             numpy.sqrt.__str__(): lambda input_: 1./(2.*numpy.sqrt(input_)),
+             numpy.abs.__str__(): lambda input_: input_,
 
              # functions with two parameters
              numpy.add.__str__(): (lambda input1, input2: 1., lambda input1, input2: 1.),
@@ -2938,7 +2936,7 @@ class PhysicalProperty(numpy.ndarray):
       other=other.view(numpy.ndarray)
     return numpy.ndarray.__ne__(self.view(numpy.ndarray), other)
 
-  def min(self):
+  def min(self): #@ReservedAssignment
     '''
       Get minimal value as PhysicalProperty object.
     '''
@@ -2948,7 +2946,7 @@ class PhysicalProperty(numpy.ndarray):
     else:
       return PhysicalProperty('min('+self.dimension+')', self.unit, [numpy.ndarray.min(self)])
 
-  def max(self):
+  def max(self): #@ReservedAssignment
     '''
       Get maximal value as PhysicalProperty object.
     '''
@@ -2974,7 +2972,7 @@ class PhysicalProperty(numpy.ndarray):
     else:
       return PhysicalProperty('mean('+self.dimension+')', self.unit, [numpy.ndarray.mean(self)])
 
-  def sum(self, *args, **opts):
+  def sum(self, *args, **opts): #@ReservedAssignment
     '''
       Get the sum of value as PhysicalProperty object.
     '''
@@ -3116,7 +3114,7 @@ class PysicalProperty:
   def __iter__(self): # see next()
     return self
 
-  def next(self):
+  def next(self): #@ReservedAssignment
     '''
       Function to iterate through the data-points, object can be used in "for bla in data:".
     '''
@@ -3168,7 +3166,7 @@ class PysicalProperty:
     else:
       return False
 
-  def max(self, from_index=0, to_index=None):
+  def max(self, from_index=0, to_index=None): #@ReservedAssignment
     '''
       Return maximum value in data.
     '''
@@ -3176,7 +3174,7 @@ class PysicalProperty:
       to_index=len(self)-1
     return max([self.values[i] for i in range(from_index, to_index)])
 
-  def min(self, from_index=0, to_index=None):
+  def min(self, from_index=0, to_index=None): #@ReservedAssignment
     '''
       Return minimum value in data.
     '''

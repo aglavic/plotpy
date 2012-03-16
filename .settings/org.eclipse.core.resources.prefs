@@ -1,4 +1,4 @@
-#Wed Feb 29 16:08:51 CET 2012
+#Fri Mar 16 10:57:39 CET 2012
 eclipse.preferences.version=1
 encoding//additions/matplot_npz.py=utf8
 encoding//plot_script/__init__.py=utf-8
@@ -35,6 +35,7 @@ encoding//plot_script/gtkgui/kws2.py=utf-8
 encoding//plot_script/gtkgui/main_window.py=utf-8
 encoding//plot_script/gtkgui/mbe.py=utf8
 encoding//plot_script/gtkgui/multiplots.py=utf-8
+encoding//plot_script/gtkgui/peakfinder.py=utf8
 encoding//plot_script/gtkgui/reflectometer.py=utf-8
 encoding//plot_script/gtkgui/reflectometer_functions.py=utf-8
 encoding//plot_script/gtkgui/sas.py=utf-8
@@ -44,8 +45,11 @@ encoding//plot_script/gtkgui/treff.py=utf-8
 encoding//plot_script/ipkernel_handler.py=utf-8
 encoding//plot_script/measurement_data_plotting.py=utf-8
 encoding//plot_script/measurement_data_structure.py=utf-8
+encoding//plot_script/option_types.py=utf-8
 encoding//plot_script/parallel.py=utf-8
+encoding//plot_script/peakfinder.py=utf8
 encoding//plot_script/plotpy_info.py=utf-8
+encoding//plot_script/plotting_debug.py=utf-8
 encoding//plot_script/read_data/__init__.py=utf-8
 encoding//plot_script/read_data/circle.py=utf-8
 encoding//plot_script/read_data/dns.py=utf-8
@@ -74,5 +78,6 @@ encoding//plot_script/sessions/shg.py=utf-8
 encoding//plot_script/sessions/squid.py=utf-8
 encoding//plot_script/sessions/templates.py=utf-8
 encoding//plot_script/sessions/treff.py=utf-8
+encoding/import_debug.py=utf-8
 encoding/plot.py=utf-8
 encoding/setup.py=utf-8

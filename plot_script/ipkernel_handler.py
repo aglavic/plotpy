@@ -3,7 +3,6 @@
   Module to create an ipython kernel with access to the running plot.py instance.
 '''
 
-import sys
 from threading import Thread
 from IPython.zmq.ipkernel import IPKernelApp
 

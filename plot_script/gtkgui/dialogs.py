@@ -328,6 +328,7 @@ class PreviewDialog(gtk.Dialog):
     '''
       Create an preview of the dataset and render it onto image.
     '''
+    import main_window
     if getattr(self, 'preview_plot', False) and self.show_previews.get_active():
       image, dataset=self.unset_previews.pop(0)
       self.preview_plot(self.preview_session,
@@ -1282,6 +1283,7 @@ class PrintDatasetDialog:
     session.picture_width=str(int(self.width))
     session.picture_height=str(int(self.width/1.414))
     window=self.main_window
+    import main_window
     window.plot(session,
                 [dataset],
                 session.active_file_name,
@@ -1299,6 +1301,7 @@ class PrintDatasetDialog:
     session.picture_width=str(int(self.width))
     session.picture_height=str(int(self.width/1.414))
     window=self.main_window
+    import main_window
     window.plot(session,
                 [item[0] for item in dataset_list],
                 dataset_list[0][1],
@@ -1457,6 +1460,7 @@ class PlotTree(gtk.Dialog):
           if not self.preview_creation_active:
             return
           if getattr(dataset, 'preview', None) is None:
+            import main_window
             self.preview_plot(self.preview_session,
                               [dataset],
                               'preview',
@@ -2716,5 +2720,3 @@ class LabelArrowDialog(gtk.Dialog):
 
 #------------- Dialog to define labels, arrows and lines on the plot --------------------
 
-# import last as this uses some of the classes
-import main_window

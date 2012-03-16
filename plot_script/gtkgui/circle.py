@@ -7,7 +7,7 @@
 
 import os
 import gtk
-from time import time, sleep
+from time import sleep
 import dialogs
 from plot_script import  fit_data
 from plot_script.measurement_data_structure import MeasurementData, PhysicalProperty
@@ -161,7 +161,7 @@ class CircleGUI:
     '''
     for i in range(1, 20):
       ids=[round(pos/(positions[0]/i)) for pos in positions[1:]]
-      divs=[abs(pos-(positions[0]/i*id)) for pos, id in zip(positions[1:], ids)]
+      divs=[abs(pos-(positions[0]/i*id_)) for pos, id_ in zip(positions[1:], ids)]
       if sum(divs)/(len(positions)-1.)<(0.25/i):
         break
     return [round(pos/(positions[0]/i)) for pos in positions]

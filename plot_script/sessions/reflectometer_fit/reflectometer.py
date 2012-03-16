@@ -39,7 +39,7 @@ class RefFitParameters(FitParameters):
       result=True
       parameters=[thickness]+SL+[roughness]
     except (KeyError, TypeError):
-      parameters=[thickness]+[1. for i in range(self.PARAMETER_LENGTH-2)]+[roughness]
+      parameters=[thickness]+[1. for ignore in range(self.PARAMETER_LENGTH-2)]+[roughness]
       material='Unknown'
       result=False
     layer=RefLayerParam(material, parameters)
@@ -72,7 +72,7 @@ class RefFitParameters(FitParameters):
       result=True
     except KeyError:
       material='Unknown'
-      SL=[1. for i in range(self.PARAMETER_LENGTH-2)]
+      SL=[1. for ignore in range(self.PARAMETER_LENGTH-2)]
       result=False
     layer=RefLayerParam(material, [0.]+SL+[roughness])
     self.substrate=layer
@@ -86,7 +86,7 @@ class RefFitParameters(FitParameters):
     ent_string=str(self.radiation[0])+'\tscattering radiaion energy ('+self.radiation[1]+')\n'
     ent_string+=str(self.number_of_points)+'\tnumber of datapoints\n\n'
     ent_string+=str(self.number_of_layers()+1)+'\tnumber of interfaces (number of layers + 1)\n'
-    ent_string_layer, layer_index, para_index=self.__get_ent_str_layers__(use_roughness_gradient)
+    ent_string_layer, ignore, para_index=self.__get_ent_str_layers__(use_roughness_gradient)
     ent_string+=ent_string_layer
     # more global parameters
     ent_string+=str(round(self.background, 4))+'\tbackground\t\t\t\tparametar '+str(para_index)+'\n'
@@ -140,7 +140,7 @@ class RefFitParameters(FitParameters):
       set layer parameters from existing fit
     '''
     para_index=1
-    for i, layer in enumerate(self.layers):
+    for layer in self.layers:
       for j in range(4): # every layer parameter
         if not layer.multilayer==1: # its a single layer
           if (para_index+j) in self.fit_params:
@@ -242,11 +242,11 @@ class RefFitParameters(FitParameters):
     new_fit.theta_max=self.theta_max
     return new_fit
 
-  def read_params_from_file(self, file):
+  def read_params_from_file(self, file_name):
     '''
       read data from .ent file
     '''
-    lines=open(file, 'r').readlines()
+    lines=open(file_name, 'r').readlines()
     lines.reverse()
     self.radiation[0]=float(lines.pop().split()[0])
     lines.pop()
@@ -254,7 +254,7 @@ class RefFitParameters(FitParameters):
     number_of_layers=int(lines.pop().split()[0])
     # read layer data
     self.layers=[]
-    for i in range(number_of_layers-1):
+    for ignore in range(number_of_layers-1):
       comment=lines.pop()
       if comment[0]=='#' and len(comment.split(':'))>=2: # if created by this programm, get name
         name=comment.split(':', 1)[1].strip('\n').lstrip()
@@ -332,10 +332,10 @@ class RefLayerParam(LayerParam):
     '''
       return a parameter list according to params
     '''
-    list=[]
+    output_list=[]
     for i in params:
-      list.append(param_index+i)
-    return list, param_index+4
+      output_list.append(param_index+i)
+    return output_list, param_index+4
 
   def dialog_get_params(self, action, response, thickness, delta, d_over_b, roughness):
     '''
@@ -390,18 +390,18 @@ class RefMultilayerParam(MultilayerParam):
     '''
       return a parameter list according to params (list of param lists for multilayer)
     '''
-    list=[]
+    output_list=[]
     layers=len(self.layers)
     for j in range(layers):
       for i in params[j]:
-        list+=[param_index+i+j*4+k*layers*4 for k in range(self.repititions)]
-    return list, param_index+len(self)*4
+        output_list+=[param_index+i+j*4+k*layers*4 for k in range(self.repititions)]
+    return output_list, param_index+len(self)*4
 
   def get_fit_cons(self, param_index):
     '''
       return a list of constainlists according to multilayers
     '''
-    list=[]
+    output_list=[]
     layers=len(self.layers)
     if self.roughness_gradient==0:
       constrain_params=4
@@ -409,5 +409,5 @@ class RefMultilayerParam(MultilayerParam):
       constrain_params=3
     for j in range(layers): # iterate through layers
       for i in range(constrain_params): # iterate through parameters
-        list.append([param_index+i+j*4+k*layers*4 for k in range(self.repititions)])
-    return list, param_index+len(self)
+        output_list.append([param_index+i+j*4+k*layers*4 for k in range(self.repititions)])
+    return output_list, param_index+len(self)

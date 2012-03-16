@@ -422,7 +422,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
           second_split=compound.split('[')[1].rstrip(']').split('_')
           second_thick=fit_thick.split('-')[0].lstrip('[').rstrip(']').split('_')
           self.active_file_data.fit_object.append_multilayer(second_split, map(float, second_thick),
-                                                             [self.fit_est_roughness for i in second_thick], count)
+                                                             [self.fit_est_roughness for ignore in second_thick], count)
         else: # no multilayer
             if len(fit_thick)>0:
                 self.active_file_data.fit_object.append_layer(compound, float(fit_thick.split('-')[0]),

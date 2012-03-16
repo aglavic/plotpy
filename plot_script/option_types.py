@@ -223,10 +223,10 @@ class StringList(list):
   '''
   name=""
 
-  def __init__(self, input, name=""):
-    input=map(str, input)
+  def __init__(self, input_, name=""):
+    input_=map(str, input_)
     self.name=name
-    list.__init__(self, input)
+    list.__init__(self, input_)
 
   def append(self, item):
     list.append(self, str(item))
@@ -234,8 +234,8 @@ class StringList(list):
   def __setitem__(self, i, item):
     list.__setitem__(self, i, str(item))
 
-  def __setslice__(self, i, j, slice):
-    list.__setslice__(self, i, j, map(str, slice))
+  def __setslice__(self, i, j, slice_):
+    list.__setslice__(self, i, j, map(str, slice_))
 
   def to_dict(self):
     '''
@@ -259,11 +259,11 @@ class PatternList(list):
   _pattern=None
   _description=None
 
-  def __init__(self, input, pattern, description=None, name=""):
+  def __init__(self, input_, pattern, description=None, name=""):
     self.name=name
     self._pattern=pattern
     filtered_input=[]
-    for item in input:
+    for item in input_:
       filtered_input.append([patterni(item[i]) for i, patterni in enumerate(pattern)])
     list.__init__(self, filtered_input)
     if description is None:
@@ -302,9 +302,9 @@ class PatternList(list):
   def __setitem__(self, i, item):
     list.__setitem__(self, i, [patterni(item[idx]) for idx, patterni in enumerate(self._pattern)])
 
-  def __setslice__(self, i, j, slice):
+  def __setslice__(self, i, j, slice_):
     filtered_slice=[]
-    for item in slice:
+    for item in slice_:
       filtered_slice.append([patterni(item[idx]) for idx, patterni in enumerate(self._pattern)])
     list.__setslice__(self, i, j, filtered_slice)
 
@@ -329,15 +329,15 @@ class PatternList(list):
 
 
 class StrType(type):
-  def __new__(cls, input=""):
-    if type(input) is type:
+  def __new__(cls, input_=""):
+    if type(input_) is type:
       return str
-    input=input.lstrip('<type').rstrip('>')
-    if input=="":
+    input_=input_.lstrip('<type').rstrip('>')
+    if input_=="":
       return str
-    if input.lower() in ['integer', 'int']:
+    if input_.lower() in ['integer', 'int']:
       return int
-    elif input.lower() in ['double', 'float', 'floating point', 'single']:
+    elif input_.lower() in ['double', 'float', 'floating point', 'single']:
       return float
     else:
       return str
