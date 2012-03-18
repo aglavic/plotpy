@@ -3,11 +3,16 @@
   Dialog for peakfinder algorithm.
 '''
 
+import os, sys
 import gtk
-from numpy import ndarray, array, exp, zeros_like
+from numpy import ndarray, array, exp, zeros_like, sqrt, argsort
 from plot_script.peakfinder import PeakFinder
 from plot_script.measurement_data_structure import MeasurementData, PhysicalProperty, PlotStyle
 from plot_script.fit_data import FitFunction, FitSession, FitGaussian
+from plot_script.config import user_config
+
+if not 'PeakFinder' in user_config:
+  user_config['PeakFinder']={'Presets':{}}
 
 def readjust(adjustment, other, move_up):
   value=adjustment.get_value()
@@ -27,11 +32,13 @@ class PeakFinderDialog(gtk.Dialog):
 
   def __init__(self, parent, dataset, title='Peak Finder Parameters'):
     gtk.Dialog.__init__(self, title=title, parent=parent,
-                        buttons=('Show Peaks', 3, 'Fit&Summary', 2, 'Fit&Show', 1, 'Cancel', 0))
+                        buttons=('Draw Peaks', 1, 'Summary', 3, 'Fit&Show', 2, 'Cancel', 0))
     self.parent_window=parent
     self.dataset=dataset
-    self.peakfinder=PeakFinder(dataset.x.view(ndarray),
-                               dataset.y.view(ndarray),
+    print "Creating CWT peak finder"
+    sort_idx=argsort(dataset.x)
+    self.peakfinder=PeakFinder(dataset.x.view(ndarray)[sort_idx],
+                               dataset.y.view(ndarray)[sort_idx],
                                )
     self._init_entries()
     self.peaks=[]
@@ -39,19 +46,23 @@ class PeakFinderDialog(gtk.Dialog):
     self.plot_style.style='points'
     self.connect('response', self._responde)
     self._evaluate()
-    self._responde(None, 3)
+    self._responde(None, 1)
+    self.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0],
+                           "..", "config", "logopurple.png").replace('library.zip', ''))
 
   def _init_entries(self):
     '''
       Create entry widgets
     '''
-    self.snr_adjust=gtk.Adjustment(value=2., lower=1., upper=20.,
+    self.snr_adjust=gtk.Adjustment(value=2., lower=0.75, upper=20.,
                               step_incr=0.25, page_incr=1.)
     snr_slider=gtk.HScale(self.snr_adjust)
     self.vbox.add(gtk.Label('Signal to Noise'))
     self.vbox.add(snr_slider)
 
-    self.min_width_adjust=gtk.Adjustment(value=0.1, lower=0., upper=100.,
+    self.min_width_adjust=gtk.Adjustment(value=0., lower=0., upper=100.,
                               step_incr=0.1, page_incr=5.)
     self.max_width_adjust=gtk.Adjustment(value=50., lower=0., upper=100.,
                               step_incr=0.1, page_incr=5.)
@@ -66,7 +77,7 @@ class PeakFinderDialog(gtk.Dialog):
     self.vbox.add(gtk.Label('Maximal Peak Width'))
     self.vbox.add(max_width)
 
-    self.ridge_adjust=gtk.Adjustment(value=20, lower=1, upper=100,
+    self.ridge_adjust=gtk.Adjustment(value=20, lower=0, upper=100,
                               step_incr=1., page_incr=5.)
     ridge_slider=gtk.HScale(self.ridge_adjust)
     self.vbox.add(gtk.Label('CWT peak ridge length'))
@@ -75,12 +86,33 @@ class PeakFinderDialog(gtk.Dialog):
     self.auto_plot=gtk.CheckButton('Update Peaks on Change')
     self.vbox.add(self.auto_plot)
 
-    self.vbox.show_all()
     # connect events
     self.snr_adjust.connect('value-changed', self._evaluate)
     self.min_width_adjust.connect('value-changed', self._evaluate)
     self.max_width_adjust.connect('value-changed', self._evaluate)
     self.ridge_adjust.connect('value-changed', self._evaluate)
+
+    preset_bar=gtk.HBox()
+    self.vbox.add(gtk.Label('Store Options as Preset:'))
+    for i in range(5):
+      preset_button=gtk.Button("%i"%(i+1))
+      preset_bar.add(preset_button)
+      preset_button.connect("clicked", self._save_preset, i+1)
+    self.vbox.add(preset_bar)
+
+
+    preset_bar=gtk.HBox()
+    self.vbox.add(gtk.Label('Load Preset:'))
+    preset_button=gtk.Button("Default")
+    preset_bar.add(preset_button)
+    preset_button.connect("clicked", self._load_preset, 6)
+    for i in range(5):
+      preset_button=gtk.Button("%i"%(i+1))
+      preset_bar.add(preset_button)
+      preset_button.connect("clicked", self._load_preset, i+1)
+    self.vbox.add(preset_bar)
+
+    self.vbox.show_all()
 
   def _evaluate(self, *ignore):
     '''
@@ -103,18 +135,47 @@ class PeakFinderDialog(gtk.Dialog):
                                     analyze=False)
     print "%i Peaks found"%len(self.peaks)
     if self.auto_plot.get_active():
-      self._responde(None, 3)
+      self._responde(None, 1)
+
+  def _save_preset(self, button, index):
+    min_width_relative=self.min_width_adjust.get_value()
+    max_width_relative=self.max_width_adjust.get_value()
+    snr=self.snr_adjust.get_value()
+    ridge_length=self.ridge_adjust.get_value()
+    user_config['PeakFinder']['Presets']["%i"%index]={
+                'PeakWidth': (min_width_relative, max_width_relative),
+                'SNR': snr,
+                'RidgeLength': ridge_length,
+                                                 }
+
+  def _load_preset(self, button, index):
+    if index==6:
+      self.min_width_adjust.set_value(0.)
+      self.max_width_adjust.set_value(50.)
+      self.snr_adjust.set_value(2.)
+      self.ridge_adjust.set_value(20)
+      return
+    str_index="%i"%index
+    if str_index in user_config['PeakFinder']['Presets']:
+      preset=user_config['PeakFinder']['Presets'][str_index]
+      self.min_width_adjust.set_value(preset['PeakWidth'][0])
+      self.max_width_adjust.set_value(preset['PeakWidth'][1])
+      self.snr_adjust.set_value(preset['SNR'])
+      self.ridge_adjust.set_value(preset['RidgeLength'])
 
   def _responde(self, ignore, response_id):
     '''
       Handle dialog response events.
     '''
-    if response_id==3:
+    if response_id==1:
       if len(self.peaks)>0:
         ds=self.dataset
         peaks=array(self.peaks)
         xpos=peaks[:, 0]
-        I=peaks[:, 2]
+        w=peaks[:, 1]
+        BG=array([float(ds.y[(ds.x>=(xposi-2.*wi))&(ds.x<=(xposi+2.*wi))].min())\
+                  for xposi, wi in zip(xpos, w)])
+        I=peaks[:, 2]+BG
         md=MeasurementData()
         md.data.append(PhysicalProperty(
                                         ds.x.dimension,
@@ -134,30 +195,144 @@ class PeakFinderDialog(gtk.Dialog):
       else:
         self.parent_window.replot()
     else:
-      if response_id in [1, 2]:
-        self._fit_result()
+      if response_id>1:
+        self._fit_result(response_id==3)
       self.destroy()
 
-  def _fit_result(self):
+  def _fit_result(self, summary=False):
     '''
       Fit Gaussians to the peaks found.
     '''
-    peaks=self.peaks
-    ds=self.dataset
-    #fit=FitMultiGauss(peaks)
-    if self.dataset.fit_object is None:
-      self.dataset.fit_object=FitSession(self.dataset)
-    #self.dataset.fit_object.functions.append([fit, False, True, False, False])
-    #fit.refine(self.dataset.x, self.dataset.y)
-    for x0, sigma, I, ignore, ignore in peaks:
-      fit=FitGaussian([I, x0, sigma, 0.])
-      fit.x_from=x0-2.*sigma
-      fit.x_to=x0+2.*sigma
-      fit.refine(ds.x, ds.y)
-      fit.fit_function_text='I=[I] x_0=[x0] σ=[σ]'
-      self.dataset.fit_object.functions.append([fit, False, True, False, False])
+    fit_result(self.peaks,
+               self.dataset,
+               self.parent_window,
+               summary)
+    if summary:
+      self._responde(None, 1)
+
+def peaks_from_preset(ds, preset, parent_window=None, summary=False):
+  '''
+    Return peak positions using parameters from a preset.
+  '''
+  print "Creating CWT peak finder"
+  sort_idx=argsort(ds.x)
+  peakfinder=PeakFinder(ds.x.view(ndarray)[sort_idx],
+                        ds.y.view(ndarray)[sort_idx],
+                             )
+  min_width_relative=preset['PeakWidth'][0]
+  max_width_relative=preset['PeakWidth'][1]
+  snr=preset['SNR']
+  ridge_length=preset['RidgeLength']
+  xwidth=float(ds.x.max()-ds.x.min())
+  min_width=min_width_relative*xwidth*0.01
+  max_width=max_width_relative*xwidth*0.01
+  print "Filter peaks with preset options"
+  peaks=peakfinder.get_peaks(snr=snr,
+                            min_width=min_width,
+                            max_width=max_width,
+                            ridge_length=ridge_length,
+                            analyze=False)
+  print "Fit Gaussians to peak parameters"
+  fit_result(peaks, ds, parent_window, summary)
+
+def fit_result(peaks, ds, parent_window=None, summary=False):
+  '''
+    Fit Gaussians to the peaks found.
+  '''
+  if ds.fit_object is None and not summary:
+    ds.fit_object=FitSession(ds)
+  fits=[]
+  for x0, sigma, I, ignore, ignore in peaks:
+    fit=FitGaussian([I, x0, sigma, 0.])
+    fits.append(fit)
+    fit.x_from=x0-2.*sigma
+    fit.x_to=x0+2.*sigma
+    fit.refine(ds.x, ds.y, ds.y.error)
+    fit.fit_function_text='I=[I] x_0=[x0] σ=[σ]'
+    if not summary:
+      ds.fit_object.functions.append([fit, False, True, False, False])
+  if not summary:
     ds.fit_object.simulate()
-    self.parent_window.replot()
+    parent_window.replot()
+  else:
+    parameter_names=['x', 'Δx', 'I', 'ΔI', 'σ', 'Δσ']
+    parameters=[]
+    for fit in fits:
+      covar=fit.last_fit_output.covar
+      errors=[sqrt(covar[j, j]) for j in range(3)]
+      params=fit.parameters
+      parameters.append([params[1], errors[1],
+                         params[0], errors[0],
+                         params[2], errors[2]])
+    dialog=FitSummary(parameter_names, parameters, title='Peak Summary',
+                      parent=parent_window)
+    dialog.set_default_size(700, 400)
+    dialog.show()
+
+class FitSummary(gtk.Dialog):
+  '''
+    Dialog with a treeview of the peak data.
+  '''
+
+  def __init__(self, parameter_names, parameters, **opts):
+    gtk.Dialog.__init__(self, **opts)
+    self.liststore=gtk.ListStore(int, *[float for ignore in range(len(parameter_names))])
+    self.treeview=gtk.TreeView(self.liststore)
+    self.treeview.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+    self.treeview.set_rubber_banding(True)
+    self.columns=parameter_names
+    self.create_columns()
+    # insert the treeview in the dialog
+    sw=gtk.ScrolledWindow()
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add(self.treeview)
+    sw.show_all()
+    self.vbox.add(sw)
+    # insert the data into the treeview
+    self.add_data(parameters)
+    self.set_icon_from_file(os.path.join(
+                            os.path.split(
+                           os.path.realpath(__file__))[0],
+                           "..", "config", "logopurple.png").replace('library.zip', ''))
+    self.clipboard=gtk.Clipboard(gtk.gdk.display_get_default(), "CLIPBOARD")
+    self.treeview.connect('key-press-event', self.key_press_response)
+    self.data=parameters
+
+  def create_columns(self):
+    '''
+      Add columns to the treeview.
+    '''
+    columns=self.columns
+    textrenderer=gtk.CellRendererText()
+    textrenderer.set_property('editable', False)
+    # Add the columns
+    column=gtk.TreeViewColumn('Peak', textrenderer, text=0)
+    column.set_sort_column_id(0)
+    self.treeview.append_column(column)
+    for i, col in enumerate(columns):
+      column=gtk.TreeViewColumn('%s'%(col), textrenderer, text=i+1)
+      column.set_sort_column_id(i+1)
+      self.treeview.append_column(column)
+
+  def add_data(self, parameters):
+    '''
+      Add the data to the treeview.
+    '''
+    for i, peak in enumerate(parameters):
+      self.liststore.append([i+1]+list(peak))
+
+  def key_press_response(self, widget, event):
+    keyname=gtk.gdk.keyval_name(event.keyval)
+    if event.state&gtk.gdk.CONTROL_MASK:
+      # copy selection
+      if keyname=='c':
+        ignore, selection=self.treeview.get_selection().get_selected_rows()
+        indices=map(lambda select: self.liststore[select][0]-1, selection)
+        items=map(lambda index: "\t".join(map(str, self.data[index])), indices)
+        clipboard_content="#"+"\t".join(self.columns)+"\n"+"\n".join(items)
+        self.clipboard.set_text(clipboard_content)
+      if keyname=='a':
+        self.treeview.get_selection().select_all()
 
 class FitMultiGauss(FitFunction):
   '''

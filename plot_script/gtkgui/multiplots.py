@@ -252,8 +252,13 @@ class MultiplotCanvas(gtk.Table):
       items=self.items
       do_replot=True
     else:
-      do_replot=False
+      do_replot=(items==self.items)
     dialog=ItemSortAdd(items, self.parent_gui, do_replot=do_replot)
+    if do_replot:
+      self.parent_gui.frame1.set_current_page(0)
+      if not self.parent_gui.active_multiplot:
+        self.parent_gui.active_multiplot=True
+        self.parent_gui.replot()
     dialog.run()
     dialog.destroy()
 

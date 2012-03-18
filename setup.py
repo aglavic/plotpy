@@ -36,7 +36,7 @@ __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat
                   'plot_script': ['doc/*.html', 'gpl.pdf'],
                   'plot_script.gtkgui': ['icons/*.png'],
                     }
-__data_files__=[('doc', glob('doc/*.html'))]
+__data_files__=[('plot_script/doc', glob('plot_script/doc/*.html'))]
 
 if "py2app" in sys.argv:
   import py2app #@UnusedImport @UnresolvedImport
@@ -48,7 +48,7 @@ if "py2app" in sys.argv:
                            "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
                            "optimize": 1, # Keep docstrings
                            "packages": "encodings, gtk, IPython, plot_script",
-                           "resources": glob("doc/*.html"),
+                           "resources": glob("plot_script/doc/*.html"),
                            "iconfile": "plot_script/config/logo.png",
                            #"argv_emulation": True,
                            },

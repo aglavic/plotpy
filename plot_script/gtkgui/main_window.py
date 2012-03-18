@@ -18,6 +18,7 @@ from configobj import ConfigObj
 from plot_script import measurement_data_plotting, fit_data
 from plot_script.config.gnuplot_preferences import output_file_name
 from plot_script import config
+from plot_script.config import user_config
 from plot_script.config import gui as gui_config
 from plot_script.config import gnuplot_preferences
 from plot_script.config.gui import DOWNLOAD_PAGE_URL
@@ -25,7 +26,7 @@ import file_actions
 from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, \
                     PrintDatasetDialog, SimpleEntryDialog, DataView, PlotTree, \
                     FileImportDialog, StyleLine, ImportWizard, LabelArrowDialog
-from peakfinder import PeakFinderDialog
+from peakfinder import PeakFinderDialog, peaks_from_preset
 from multiplots import MultiplotCanvas
 from diverse_classes import PlotProfile, RedirectError, RedirectOutput
 from plot_script import read_data
@@ -276,6 +277,7 @@ class ApplicationMainWindow(gtk.Window):
 
     # Create region for multiplot list
     self.multiplot=MultiplotCanvas(self)
+    self._multiplot_first_show=True
     self.multiplot.show()
     #self.multi_list=gtk.Label();
     #self.multi_list.set_markup(' Multiplot List: ')
@@ -2179,18 +2181,30 @@ Gnuplot version %.1f patchlevel %i with terminals:
   def peak_finder(self, action):
     '''
       Find peaks using continous wavelet transform peakfinder.
+      Ither opens a dialog to select the search parameters
+      or uses saved preset parameters.
     '''
-    dialog=PeakFinderDialog(self, self.active_dataset)
-    if 'PeakDialog' in self.config_object:
-      position=self.config_object['PeakDialog']['position']
-      dialog.move(*position)
-    dialog.show()
-    def store_peak_dialog_gemometry(widget, event):
-      self.config_object['PeakDialog']={
-                               'position': widget.get_position()
-                                       }
-    dialog.connect('configure-event', store_peak_dialog_gemometry)
-    self.open_windows.append(dialog)
+    name=action.get_name()
+    if name=='PeakFinderDialog':
+      dialog=PeakFinderDialog(self, self.active_dataset)
+      if 'PeakDialog' in self.config_object:
+        position=self.config_object['PeakDialog']['position']
+        dialog.move(*position)
+      dialog.show()
+      def store_peak_dialog_gemometry(widget, event):
+        self.config_object['PeakDialog']={
+                                 'position': widget.get_position()
+                                         }
+      dialog.connect('configure-event', store_peak_dialog_gemometry)
+      self.open_windows.append(dialog)
+    else:
+      index=name[-1]
+      if index in user_config['PeakFinder']['Presets']:
+        preset=user_config['PeakFinder']['Presets'][index]
+        if name.startswith('PeakPresetSummary'):
+          peaks_from_preset(self.active_dataset, preset, self, True)
+        else:
+          peaks_from_preset(self.active_dataset, preset, self, False)
 
   def colorcode_points(self, action):
     '''
@@ -4861,6 +4875,20 @@ Gnuplot version %.1f patchlevel %i with terminals:
           <menuitem action='Derivate'/>
           <menu action='PeakFinderMenu'>
             <menuitem action='PeakFinderDialog'/>
+            <menu action='PeakPresetSummary'>
+              <menuitem action='PeakPresetSummary-1'/>
+              <menuitem action='PeakPresetSummary-2'/>
+              <menuitem action='PeakPresetSummary-3'/>
+              <menuitem action='PeakPresetSummary-4'/>
+              <menuitem action='PeakPresetSummary-5'/>
+            </menu>
+            <menu action='PeakPresetFit'>
+              <menuitem action='PeakPresetFit-1'/>
+              <menuitem action='PeakPresetFit-2'/>
+              <menuitem action='PeakPresetFit-3'/>
+              <menuitem action='PeakPresetFit-4'/>
+              <menuitem action='PeakPresetFit-5'/>
+            </menu>
           </menu>
           <menuitem action='ColorcodePoints'/>
           </placeholder>'''
@@ -5130,14 +5158,6 @@ Gnuplot version %.1f patchlevel %i with terminals:
         "Integrate", '<control><shift>D', # label, accelerator
         None, # tooltip
         self.integrate_data),
-      ("PeakFinderMenu", None, # name, stock id
-        "CWT Peak Finder", None, # label, accelerator
-        None, # tooltip
-        None),
-      ("PeakFinderDialog", None, # name, stock id
-        "Find Peaks...", '<control>0', # label, accelerator
-        None, # tooltip
-        self.peak_finder),
       ("ColorcodePoints", None, # name, stock id
         "Show Colorcoded Points", None, # label, accelerator
         None, # tooltip
@@ -5267,12 +5287,46 @@ Gnuplot version %.1f patchlevel %i with terminals:
         "Toggle lines/linespoints", # tooltip
         self.change_plot_appearance),
 
-    )+self.added_items;
+    )+self.added_items+self.peak_finder_presets();
     # Create the menubar and toolbar
     action_group=gtk.ActionGroup("AppWindowActions")
     action_group.add_actions(entries)
     action_group.add_actions(self.session_added_items, self)
     return action_group
+
+  def peak_finder_presets(self):
+    output=(
+     ("PeakFinderMenu", None, # name, stock id
+        "CWT Peak Finder", None, # label, accelerator
+        None, # tooltip
+        None),
+     ("PeakPresetSummary", None, # name, stock id
+        "Detect and show Summary", None, # label, accelerator
+        None, # tooltip
+        None),
+     ("PeakPresetFit", None, # name, stock id
+        "Detect and add Fits", None, # label, accelerator
+        None, # tooltip
+        None),
+      ("PeakFinderDialog", None, # name, stock id
+        "Find Peaks...", '<control>0', # label, accelerator
+        None, # tooltip
+        self.peak_finder),
+      )
+    for i in range(5):
+      output=output+(
+       ("PeakPresetSummary-%i"%(i+1), None, # name, stock id
+        "Use Preset %i"%(i+1), '<control>%i'%(i+1), # label, accelerator
+        None, # tooltip
+        self.peak_finder),
+       ("PeakPresetFit-%i"%(i+1), None, # name, stock id
+        "Use Preset %i"%(i+1), '<control><alt>%i'%(i+1), # label, accelerator
+        None, # tooltip
+        self.peak_finder),
+       )
+    return output
+
+
 
   def rebuild_menus(self):
     '''

@@ -6,6 +6,7 @@
     Improved peak detection in mass spectrum by incorporating continuous 
     wavelet transform-based pattern matching
     Bioinformatics 22(17) (2006)
+  Implemented by Artur Glavic (artur.glavic@fz-juelich.de) 2012
 '''
 
 import numpy
