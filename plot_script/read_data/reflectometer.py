@@ -25,10 +25,10 @@ def read_data(file_name, DATA_COLUMNS):
   '''
     Read the datafile.
     
-    @param input_file Name of the file to import
-    @param DATA_COLUMNS List of columns to be imported
+    :param input_file: Name of the file to import
+    :param DATA_COLUMNS: List of columns to be imported
     
-    @return List of MeasurementData objects with the file data
+    :return: List of MeasurementData objects with the file data
   '''
   measurement_data=[]
   if os.path.exists(file_name):
@@ -84,9 +84,9 @@ def read_header(input_file_lines):
   '''
     Read header of datafile.
     
-    @param input_file_lines List of lines from the input file
+    :param input_file_lines: List of lines from the input file
     
-    @return Header information 
+    :return: Header information 
   '''
   output=''
   for ignore in input_file_lines:
@@ -105,7 +105,7 @@ def read_data_lines(input_file_lines, info, DATA_COLUMNS):
   '''
     Read data points line by line.
     
-    @return One MeasurementData object for a scan sequence
+    :return: One MeasurementData object for a scan sequence
   '''
   global sample_name
   data_info=''
@@ -172,7 +172,7 @@ def read_simulation(file_name):
   '''
     Read a fit.f90 output file as MeasurementData object.
     
-    @return MeasurementData with the fitted dataset
+    :return: MeasurementData with the fitted dataset
   '''
   sim_file=open(file_name, 'r')
   sim_lines=sim_file.readlines()
@@ -492,4 +492,3 @@ class MeasurementData(measurement_data_structure.MeasurementData):
                              array(other.data[2].values)**2*array(self.data[1].values)**2\
                              /array(other.data[1].values)**4)).tolist()
     return out
-

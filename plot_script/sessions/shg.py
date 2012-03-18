@@ -289,4 +289,3 @@ class ChiMultifit(FitFunction3D):
     '''
     ana, pol, shg=self.get_anapol()
     return FitFunction3D.refine(self, pol, ana, shg, progress_bar_update=progress_bar_update)
-

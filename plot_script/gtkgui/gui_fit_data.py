@@ -38,10 +38,10 @@ class FitSessionGUI:
     '''
       Create a aligned table widget for the interaction with this class.
       
-      @param window The parent Window for the dialog
-      @param dialog The dialog the table will be appendet to
+      :param window: The parent Window for the dialog
+      :param dialog: The dialog the table will be appendet to
       
-      @return A widget object for the Dialog and a list of action widgets inside the table
+      :return: A widget object for the Dialog and a list of action widgets inside the table
     '''
     def set_function_param(action, function, index):
       '''
@@ -175,11 +175,11 @@ class FitSessionGUI:
       Create the widgets for one function and return a table of those.
       The entry widgets are returned in a list to be able to read them.
       
-      @param function The FitFunction object for this line
-      @param dialog The dialog widget this line will be added to
-      @param window The parent window for the dialog
+      :param function: The FitFunction object for this line
+      :param dialog: The dialog widget this line will be added to
+      :param window: The parent window for the dialog
       
-      @return A table widget for this function line and a list of entry widgets.
+      :return: A table widget for this function line and a list of entry widgets.
     '''
     table=gtk.Table(15, (len(function.parameters)*3+3)//12+1, False)
     entries=[]
@@ -340,9 +340,9 @@ class FitSessionGUI:
       Add a function via dialog access.
       Standart parameters are used.
       
-      @param name Entry for the name of the function to be added
-      @param dialog Dialog to recreate with the new function
-      @param window Paranet window for the dialog
+      :param name: Entry for the name of the function to be added
+      :param dialog: Dialog to recreate with the new function
+      :param window: Paranet window for the dialog
     '''
     window.file_actions.activate_action('add_function', name.get_active_text())
     #self.add_function(name.get_active_text())
@@ -355,9 +355,9 @@ class FitSessionGUI:
     '''
       Delete a function via dialog access.
       
-      @param name Entry for the name of the function to be added
-      @param dialog Dialog to recreate with the new function
-      @param window Paranet window for the dialog
+      :param name: Entry for the name of the function to be added
+      :param dialog: Dialog to recreate with the new function
+      :param window: Paranet window for the dialog
     '''
     self.del_function(function)
     size=dialog.get_size()
@@ -369,8 +369,8 @@ class FitSessionGUI:
     '''
       Set the parameters of one function object in the list.
     
-      @param func_index List index of the function to be altered
-      @param values List of values for the parameters to be set
+      :param func_index: List index of the function to be altered
+      :param values: List of values for the parameters to be set
     '''
     function=self.functions[func_index][0]
     if function.is_3d:
@@ -392,9 +392,9 @@ class FitSessionGUI:
     '''
       Trigger the fit, simulation and replot functions.
       
-      @param entries Entry widgets from the dialog to get the function parameters from
-      @param dialog Fit dialog widget
-      @param window Parent window of the dialog.destroy
+      :param entries: Entry widgets from the dialog to get the function parameters from
+      :param dialog: Fit dialog widget
+      :param window: Parent window of the dialog.destroy
     '''
     def get_entry_values(entry, if_not=0):
       '''

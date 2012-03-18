@@ -70,10 +70,10 @@ def calc_intensities_general(S, P):
     the polarization parameters. The matrices used can be found in:
         A.R.Wildes, Review of Scientivic Instruments, Vol. 70, 11 (1999)
     
-    @param S Dictionary of intensities for the Scattering channels '++','--','+-','-+'
-    @param P Dictionary of the instrumental parameters 'F1','F2','p1','p2'
+    :param S: Dictionary of intensities for the Scattering channels '++','--','+-','-+'
+    :param P: Dictionary of the instrumental parameters 'F1','F2','p1','p2'
     
-    @return Dictionary of the calculated intensities
+    :return: Dictionary of the calculated intensities
   '''
   F1=P['F1']
   F2=P['F2']
@@ -176,8 +176,8 @@ def calc_intensities(R, P):
   '''
     Calculate intensities from given reflectivity channels R and given polarizations P.
     
-    @param R Dictionary of ++, --, +-, -+ reflectivities (arrays)
-    @param P Dictionary of polarizer,flipper1,flipper2,analyzer polarization component efficiencies (scalars)
+    :param R: Dictionary of ++, --, +-, -+ reflectivities (arrays)
+    :param P: Dictionary of polarizer,flipper1,flipper2,analyzer polarization component efficiencies (scalars)
   '''
   I={}
   # calculate up-up intensity
@@ -224,8 +224,8 @@ def seperate_scattering(datasets, P):
   '''
     Try to calculate the true reflectivity channels from the polarization components and the measured data.
     
-    @param datasets A list of MeasurementData objects for ++, --, +- and -+ channel
-    @param P Dictionary of polarizer,flipper1,flipper2,analyzer polarization component efficiencies
+    :param datasets: A list of MeasurementData objects for ++, --, +- and -+ channel
+    :param P: Dictionary of polarizer,flipper1,flipper2,analyzer polarization component efficiencies
   '''
   maximum_iterations=100
   stop_iteration_at=1e-10
@@ -474,7 +474,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       The distance of the two off-specular cuts is 2 times the line width of the specular line, this
       way we are quite close to the specular line without counting anything twice.
       
-      @return At the moment True, should be if the extraction was successfull.
+      :return: At the moment True, should be if the extraction was successfull.
     '''
     dataset=self.active_file_data[file_actions.window.index_mess]
     alphai_steps=0.001

@@ -21,7 +21,7 @@ def read_data(file_name, print_comments=True):
   '''
     Read the data of a dns data file.
     
-    @return MeasurementData object with the data from file_name
+    :return: MeasurementData object with the data from file_name
   '''
   if not os.path.exists(file_name): # Test if the file exists
     if print_comments:
@@ -82,7 +82,7 @@ def read_header(file_handler):
   ''' 
     Read file header information.
     
-    @return Header string without # characters
+    :return: Header string without # characters
   '''
   file_handler.readline()
   line=file_handler.readline()
@@ -96,7 +96,7 @@ def read_lambda(file_handler):
   ''' 
     Read wavelength when after comment section.
     
-    @return Float of wavelength
+    :return: Float of wavelength
   '''
   file_handler.readline()
   return abs(float(file_handler.readline().split()[4]))*10
@@ -105,7 +105,7 @@ def read_info(file_handler, info_name):
   ''' 
     Read until specified line.
     
-    @param info_name String of the parameter to search for
+    :param info_name: String of the parameter to search for
   '''
   line=file_handler.readline()
   while (line.find(info_name)==-1):
@@ -116,10 +116,10 @@ def read_detector_data(file_handler, detectors, time_channels):
   '''
     Reads data and stores it in an array.
     
-    @param detectors Number of detectors installed
-    @param time_channels number of channels to read from
+    :param detectors: Number of detectors installed
+    :param time_channels: number of channels to read from
     
-    @return List of data points
+    :return: List of data points
   '''
   data=[]
   data_point=[]
@@ -149,7 +149,7 @@ def read_data_d7(file_name, print_comments=True):
   '''
     Read the data of a d7 data file.
     
-    @return List of MeasurementData objects with the data from file_name
+    :return: List of MeasurementData objects with the data from file_name
   '''
   if not os.path.exists(file_name): # Test if the file exists
     if print_comments:
@@ -215,7 +215,7 @@ def evaluate_header_d7(comments, head_info):
     Reads sample name and additional information as temperature and omega position 
     from d7 file header information.
     
-    @return Dictionary of the read information.
+    :return: Dictionary of the read information.
   '''
   add_info={}
   header_blocks=head_info.split('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')
@@ -264,7 +264,7 @@ def read_vana_d7(file_name, print_comments=True):
   '''
     Readan already corrected vanadium data file from D7.
     
-    @return List of MeasurementData objects with the data from file_name
+    :return: List of MeasurementData objects with the data from file_name
   '''
   if not os.path.exists(file_name): # Test if the file exists
     if print_comments:

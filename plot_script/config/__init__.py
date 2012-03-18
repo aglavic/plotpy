@@ -79,4 +79,3 @@ user_config=ConfigObj(os.path.join(config_path, 'user_config.ini'),
                         unrepr=True, indent_type='    ')
 user_config['last_access_version']=__version__
 atexit.register(user_config.write)
-

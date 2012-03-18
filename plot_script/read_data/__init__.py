@@ -74,7 +74,7 @@ class AsciiImportFilter(object):
     '''
       Constructor initializing the object.
       
-      @param presets Dictionary to load presets from.
+      :param presets: Dictionary to load presets from.
     '''
     # Default settings that should work with most ascii files, which use white space separators
     self.file_types=StringList([])
@@ -195,7 +195,7 @@ class AsciiImportFilter(object):
       due to any error. It also allows to read a file only once for test with several
       options.
       
-      @param input_file Name of the file or file like object to be read from.
+      :param input_file: Name of the file or file like object to be read from.
     '''
     print "Trying to import ASCII (%s) '%s'."%(self.name, input_file)
     self._1clear_all()
@@ -721,4 +721,3 @@ try:
     defined_filters.append(AsciiImportFilter(name, presets=presets))
 except ImportError:
   config=None
-

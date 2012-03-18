@@ -116,10 +116,10 @@ class ApplicationMainWindow(gtk.Window):
     '''
       Class constructor which builds the main window with it's menus, buttons and the plot area.
       
-      @param active_session A session object derived from GenericSession.
-      @param parant Parent window.
-      @param script_suf Suffix for script file name.
-      @param status_dialog The dialog used to show import information.
+      :param active_session: A session object derived from GenericSession.
+      :param parant: Parent window.
+      :param script_suf: Suffix for script file name.
+      :param status_dialog: The dialog used to show import information.
     '''
     # List of sessions which are suspended after changing to another session.
     self.suspended_sessions=[]
@@ -768,7 +768,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       Change different plot settings triggered by different events.
       
-      @param action The action that triggered the event
+      :param action: The action that triggered the event
     '''
     if self._ignore_change:
       return
@@ -900,7 +900,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       Change the session type used to import Data.
       
-      @param transfere A dictionary of measurements to be trasfered to the new session
+      :param transfere: A dictionary of measurements to be trasfered to the new session
     '''
     session_dialog=gtk.Dialog(title='Select Session Type...', buttons=('OK', 1, 'Cancel', 0))
     sessions={
@@ -1004,7 +1004,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       Change the active file measurements from which the plotted sequences are extracted.
       
-      @param measurements A list of MeasurementData objects from one file
+      :param measurements: A list of MeasurementData objects from one file
     '''
     self.active_session.change_active(measurements)
     self.measurement=self.active_session.active_file_data
@@ -1027,7 +1027,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       Import one or more new datafiles of the same type.
       
-      @return List of names that have been imported.
+      :return: List of names that have been imported.
     '''
     #++++++++++++++++File selection dialog+++++++++++++++++++#
     file_dialog=FileImportDialog(self.active_folder, self.active_session.FILE_WILDCARDS)
@@ -1146,7 +1146,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       Import one or more new datafiles of the same type.
       
-      @return List of names that have been imported.
+      :return: List of names that have been imported.
     '''
     wiz=ImportWizard(file_name)
     result=wiz.run()
@@ -1494,8 +1494,8 @@ Gnuplot version %.1f patchlevel %i with terminals:
       Reroute the plot options button and remove the textbox when dialog is closed.
       If this is not done, the textbox gets destroyed and we can't reopen the dialog.
       
-      @param dialog The dialog widget that will be closed
-      @param sw The scrolledWindow to be unpluged before closing.
+      :param dialog: The dialog widget that will be closed
+      :param sw: The scrolledWindow to be unpluged before closing.
     '''
     dialog.hide()
     sw.remove(self.plot_options_view)
@@ -1762,7 +1762,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       Create all widgets for the filter selection of one filter in 
       change_data_filter dialog and place them in a table.
       
-      @return Sequence of the created widgets.
+      :return: Sequence of the created widgets.
     '''
     column=gtk.combo_box_new_text()
     column.append_text('None')
@@ -2231,7 +2231,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       The user can select a line and width for the cross-section,
       after this the data is extracted and appendet to the fileobject.
       
-      @return If the extraction was successful
+      :return: If the extraction was successful
     '''
     data=self.active_dataset
     dimension_names=[]
@@ -2304,7 +2304,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       Open a dialog to select point as center of a radial integration.
       
-      @return If the extraction was successful
+      :return: If the extraction was successful
     '''
     data=self.active_dataset
     dimension_names=[]
@@ -2351,7 +2351,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       Open a dialog to select points and datasets for integration of intensities.
       Measured data around that point is avaridged and plotted agains a user defined value.
       
-      @return If the extraction was successful
+      :return: If the extraction was successful
     '''
     eii_dialog=gtk.Dialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT,
                           title='Select points and datasets to integrate intensities...')
@@ -2474,7 +2474,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       Show a Dialog with the values of the integrated intensities
       calculated in extract_integrated_intensities
       
-      @param int_int_values List of (x-position,y-position,value,error) for the intensities
+      :param int_int_values: List of (x-position,y-position,value,error) for the intensities
     '''
     message="Calculated integrated intensities:\n\n"
     for item in int_int_values:
@@ -2809,8 +2809,8 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       A dialog to fit the data with a set of functions.
       
-      @param size Window size (x,y)
-      @param position Window position (x,y)
+      :param size: Window size (x,y)
+      :param position: Window position (x,y)
     '''
     if size is None:
       if 'FitDialog' in self.config_object:
@@ -2865,8 +2865,8 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       A dialog to fit several data with a set of functions.
       
-      @param size Window size (x,y)
-      @param position Window position (x,y)
+      :param size: Window size (x,y)
+      :param position: Window position (x,y)
     '''
     if not self.active_session.ALLOW_FIT:
       fit_dialog=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE,
@@ -3868,7 +3868,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       The ConfigObj python module is used to save the settings in an .ini file
       as this is an easy way to store dictionaries.
       
-      @return If the import was successful.
+      :return: If the import was successful.
     '''
     # create the object with association to an inifile in the user folder
     # have to test if this works under windows
@@ -3924,7 +3924,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       Read the wiki download area page to see, if there is a new version available.
       
-      @return Newer version number or None
+      :return: Newer version number or None
     '''
     import socket
     import urllib
@@ -4402,7 +4402,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       Plot via script file instead of using python gnuplot pipeing.
       
-      @return Gnuplot error messages, which have been reported
+      :return: Gnuplot error messages, which have been reported
     '''
     if not self.gnuplot_initialized:
       self.initialize_gnuplot()
@@ -4646,7 +4646,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       The XML text is used for the UIManager to create the bars,for more 
       information see the pygtk documentation for the UIManager.
       
-      @return XML string for all menus and toolbar.
+      :return: XML string for all menus and toolbar.
     '''
     self.added_items=(("xMenu", None, # name, stock id
         "_x-axis", None, # label, accelerator
@@ -4976,7 +4976,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       When the action is triggered it calls a function.
       For more information see the pygtk documentation for the UIManager and ActionGroups.
       
-      @return ActionGroup for all menu entries.
+      :return: ActionGroup for all menu entries.
     '''
     entries=(
       ("FileMenu", None, "_File"), # name, stock id, label
@@ -5386,7 +5386,7 @@ def apihelp(*ignore):
   '''
     Open the API reference manual in a webbrowser.
     
-    @return Return value of webbrowser.open
+    :return: Return value of webbrowser.open
   '''
   import webbrowser
   # get the path of the program
@@ -5397,4 +5397,3 @@ def apihelp(*ignore):
                               , 'index-plot_script.html'
                               )
   return webbrowser.open(help_file)
-

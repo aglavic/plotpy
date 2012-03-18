@@ -144,7 +144,7 @@ class RedirectOutput(object):
     '''
       Class consturctor.
       
-      @param plotting_session A session object derived from GenericSession.
+      :param plotting_session: A session object derived from GenericSession.
     '''
     self.content=[]
     self.plotting_session=plotting_session
@@ -153,7 +153,7 @@ class RedirectOutput(object):
     '''
       Add content.
       
-      @param string Output string of stdout
+      :param string: Output string of stdout
     '''
     #string=string.replace('\b', '')
     if self.second_output:
@@ -204,7 +204,7 @@ class RedirectError(RedirectOutput):
     '''
       Add content and show the dialog.
       
-      @param string Output string of stderr
+      :param string: Output string of stderr
     '''
     string=string.replace('\b', '')
     self.content.append(string)
@@ -234,8 +234,8 @@ class RedirectError(RedirectOutput):
     '''
       Hide the dialog on response and export debug information if response was OK.
       
-      @param dialog The message dialog
-      @param response_id The dialog response ID
+      :param dialog: The message dialog
+      :param response_id: The dialog response ID
     '''
     self.messagebox.hide()
     self.message_pending=False

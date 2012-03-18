@@ -98,16 +98,16 @@ def gnuplot_plot_script(session,
     Function to plot with an additional data and gnuplot file and calling to the gnuplot program.
     Files are stored in temporary folder set in gnuplot_preferences.
     
-    @param session The session object to use
-    @param file_name_prefix Prefix of the used data and gnuplot files
-    @param title The title of the plot
-    @param names The names of the plotted functions
-    @param with_errorbars Use errorbars layout when plotting
-    @param output_file File name for the output picture_height
-    @param additional_info Additional info string for the title
-    @param fit_lorentz Is a fit included in this measurement?
+    :param session: The session object to use
+    :param file_name_prefix: Prefix of the used data and gnuplot files
+    :param title: The title of the plot
+    :param names: The names of the plotted functions
+    :param with_errorbars: Use errorbars layout when plotting
+    :param output_file: File name for the output picture_height
+    :param additional_info: Additional info string for the title
+    :param fit_lorentz: Is a fit included in this measurement?
     
-    @return Gnuplot error message or empty string
+    :return: Gnuplot error message or empty string
   '''
   global gnuplot_instance
   file_numbers=[]
@@ -216,7 +216,7 @@ def replace_ph(session,
   '''
     Replace place holders in a string.
     
-    @return The altered string
+    :return: The altered string
   '''
   datanr=number[0]
   withnr=number[1]
@@ -281,7 +281,7 @@ def create_plot_script(session,
   '''
       Create a script for the gnuplot program.
       
-      @return The text of the script
+      :return: The text of the script
   '''
   if output_file_prefix is None:
     output_file_prefix=session.TEMP_DIR+'tmp_data_'

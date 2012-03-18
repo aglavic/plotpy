@@ -183,7 +183,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Evaluates the command line arguments, creates a file list and
       starts the data readout procedure.
       
-      @param arguments The command line arguments passed to the constructor.
+      :param arguments: The command line arguments passed to the constructor.
     '''
     # The object can be initialized without data by using None as arguments.
     if type(arguments) is list:
@@ -272,8 +272,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Function to evaluate the command line arguments.
       Returns a list of filenames.
       
-      @param arguments The command line arguments to evaluate.
-      @return A list of file names to import.
+      :param arguments: The command line arguments to evaluate.
+      :return: A list of file names to import.
     '''
     input_file_names=[]
     last_argument_option=[False, '']
@@ -376,7 +376,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Dummi function for child classes, which makes it possible to
       add command line options for them.
       
-      @return A Squence depending on the found parameters.
+      :return: A Squence depending on the found parameters.
     '''
     # as function does not contain new options it returns false
     return (False, last_argument_option)
@@ -477,7 +477,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       in linux this is just a dummi method returning the same
       string.
       
-      @return The replaced string.
+      :return: The replaced string.
     '''
     return string
 
@@ -487,7 +487,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       of measurement_data_structure objects splitted into
       sequences. Every child class will overwrite this.
       
-      @return A list of datasets that has been found.
+      :return: A list of datasets that has been found.
     '''
     data_list=[]
     dataset=None
@@ -531,7 +531,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       This function also filteres the dataset for the values given
       by "-s from to" and "-i increment".
       
-      @return The filtered list with the numbers set.
+      :return: The filtered list with the numbers set.
     '''
     filtered_datasets=[]
     for i, dataset in enumerate(datasets):
@@ -566,7 +566,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Transformations are also done here, so childs
       will change this function.
       
-      @return A list of datasets that have been found in the file.
+      :return: A list of datasets that have been found in the file.
     '''
     # for faster access the MeasurementData objects are saved via cPickle
     # when this file exists it is used to reload it.
@@ -684,7 +684,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
       Plot one or a list of datasets.
       
-      @return The stderr and stdout of gnuplot.
+      :return: The stderr and stdout of gnuplot.
     '''
     # TODO: Use one plot function for GUI and script mode with less parameters.
     if len(datasets)>1:

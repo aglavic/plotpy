@@ -26,9 +26,9 @@ def read_data(file_name):
   '''
     Read the data of a shg parameter file and according data files.
     
-    @param file_name The name of the file to import
+    :param file_name: The name of the file to import
     
-    @return list of MeasurementData objects with the file data
+    :return: list of MeasurementData objects with the file data
   '''
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'

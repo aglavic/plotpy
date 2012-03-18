@@ -151,12 +151,12 @@ class PeakFinder(object):
     '''
       Return a list of peaks fulfilling the defined conditions.
       
-      @param snr: Minimal signal to noise ratio
-      @param min_width: Minimal peak width
-      @param max_width: Maximal peak width
-      @param ridge_length: Minimal ridge line length
-      @param analyze: Store information to analyze the filtering
-      @param double_peak_detection: Perform a second run, where the 
+      :param snr:: Minimal signal to noise ratio
+      :param min_width:: Minimal peak width
+      :param max_width:: Maximal peak width
+      :param ridge_length:: Minimal ridge line length
+      :param analyze:: Store information to analyze the filtering
+      :param double_peak_detection:: Perform a second run, where the
                                     ridge_length is reduced near found peaks
     '''
     xdata=self.xdata
@@ -395,4 +395,3 @@ class MexicanHat(Cwt):
         b=s_omega**2/2
         return a*numpy.exp(-b)/1.1529702
         #return s_omega**2*numpy.exp(-s_omega**2/2.0)/1.1529702
-

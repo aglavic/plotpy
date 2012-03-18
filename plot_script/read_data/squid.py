@@ -21,11 +21,11 @@ def read_data(file_name, COLUMNS_MAPPING, MEASUREMENT_TYPES):
   '''
     Read the ppms/mpms datafile.
     
-    @param input_file Name of the file to read
-    @param COLUMNS_MAPPING A list of column names with the associated column in the MeasurementData object
-    @param MEASUREMENT_TYPES List of measurements with at least one constant data column (e.g. T=const)
+    :param input_file: Name of the file to read
+    :param COLUMNS_MAPPING: A list of column names with the associated column in the MeasurementData object
+    :param MEASUREMENT_TYPES: List of measurements with at least one constant data column (e.g. T=const)
     
-    @return List of MeasurementData objects for all measured sequences of 'NULL'
+    :return: List of MeasurementData objects for all measured sequences of 'NULL'
   '''
   if os.path.exists(file_name):
     if file_name.endswith('.gz'):
@@ -71,7 +71,7 @@ def get_columns(input_file):
   '''
     Just return the columns present in the file.
     
-    @return List of measured columns or 'NULL'
+    :return: List of measured columns or 'NULL'
   '''
   if os.path.exists(input_file):
     input_file_handler=open(input_file, 'r')
@@ -95,7 +95,7 @@ def read_header(input_file_lines):
   '''
     Read header of the datafile.
     
-    @return Measurement information and Name of the sample
+    :return: Measurement information and Name of the sample
   '''
   output=['', '']
   for i in range(len(input_file_lines)):
@@ -124,7 +124,7 @@ def read_data_lines(input_file_lines, info, COLUMNS_MAPPING, MEASUREMENT_TYPES):
   '''
     Read data points line by line.
     
-    @return List of MeasurementData objects
+    :return: List of MeasurementData objects
   '''
   output=[] #initialise data array containing data objects
   try:
@@ -257,7 +257,7 @@ def read_data_line(input_file_line, columns):
   '''
     Read one line of data and output the data as a list of floats.
     
-    @return List of floats or 'NULL'
+    :return: List of floats or 'NULL'
   '''
   line=input_file_line.split(',')
   values=[]
@@ -283,10 +283,10 @@ def split_after_read(dataset, split):
   '''
     Split a dataset by a specific column after the file has been read.
     
-    @param dataset A MeasurementData object
-    @param split A list of 'dimension name', 'sensitivity'
+    :param dataset: A MeasurementData object
+    :param split: A list of 'dimension name', 'sensitivity'
     
-    @return list of MeasurementData objects
+    :return: list of MeasurementData objects
   '''
   from copy import deepcopy
   output=[]
@@ -334,4 +334,3 @@ def split_after_read(dataset, split):
         active_data.append(point)
     output.append(active_data)
   return output
-

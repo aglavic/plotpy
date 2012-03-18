@@ -50,9 +50,9 @@ def read_file_header(input_file_lines):
   '''
     Read the header of the file.
     
-    @param input_file_lines List of lines to be evaluated
+    :param input_file_lines: List of lines to be evaluated
     
-    @return The sample name defined in the file or None if the wron filetype.
+    :return: The sample name defined in the file or None if the wron filetype.
   '''
   if not (input_file_lines[0].startswith('#F') and
           input_file_lines[1].startswith('#E') and
@@ -83,9 +83,9 @@ def read_scan_header(input_file_lines):
   '''
     Read header of datafile and return the columns present.
     
-    @param input_file_lines List of lines read from the input file
+    :param input_file_lines: List of lines read from the input file
     
-    @return List of header information and data column names or 'NULL' if not the right format
+    :return: List of header information and data column names or 'NULL' if not the right format
   '''
   output=None
   for ignore in range(len(input_file_lines)):
@@ -111,11 +111,11 @@ def read_data_lines(input_file_lines, sample_name, last_comments):
   '''
     Read data points line by line.
     
-    @param input_file_lines List of lines from the input file
-    @param sample_name Sample Name from file header
-    @param last_comments comment lines from before the scan
+    :param input_file_lines: List of lines from the input file
+    :param sample_name: Sample Name from file header
+    :param last_comments: comment lines from before the scan
     
-    @return MeasurementData objects
+    :return: MeasurementData objects
   '''
   scan_indices=[]
   for i, line in enumerate(input_file_lines):
@@ -253,9 +253,9 @@ def get_scan_header(scan_lines):
   '''
     Read header of scan and return the data lines and some information of the header.
     
-    @param scan_lines lines corresponding to one scan
+    :param scan_lines: lines corresponding to one scan
     
-    @return dictionary with header informations and lines containing data
+    :return: dictionary with header informations and lines containing data
   '''
   scan_header={}
   for i, line in enumerate(scan_lines):

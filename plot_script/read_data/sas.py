@@ -19,9 +19,9 @@ def read_data(file_name):
   '''
     Read the data of a small angle scattering data file.
     
-    @param file_name The name of the file to import
+    :param file_name: The name of the file to import
     
-    @return MeasurementData object with the file data
+    :return: MeasurementData object with the file data
   '''
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'

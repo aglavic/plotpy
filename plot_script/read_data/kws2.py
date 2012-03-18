@@ -35,9 +35,9 @@ def read_data(file_name):
   '''
     Read the data of a kws2 data file.
     
-    @param file_name The name of the file to import
+    :param file_name: The name of the file to import
     
-    @return MeasurementData object with the file data
+    :return: MeasurementData object with the file data
   '''
   if file_name.endswith('.cmb') or file_name.endswith('.cmb.gz'):
     #gnuplot_preferences.plotting_parameters_3d='w points palette pt 5'
@@ -421,7 +421,7 @@ def import_edf_set(file_name):
   '''
     Read a complete set of data and sum the files together.
     
-    @return array of sum of the data and changed header settings.
+    :return: array of sum of the data and changed header settings.
   '''
   if hasattr(file_name, '__iter__'):
     file_list=list(file_name)
@@ -569,7 +569,7 @@ def import_edf_file(file_name):
   '''
     Read the header and data from one edf file.
     
-    @return array of the data and the header string.
+    :return: array of the data and the header string.
   '''
   #  check if file is in gzip format
   if file_name.endswith('.gz'):

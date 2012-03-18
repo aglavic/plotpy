@@ -140,10 +140,10 @@ def import_session_from_name(arguments, measurement_type):
     Import a session object from a string. 
     In this way we don't need to import all sessions in advance.
     
-    @param arguments The command line arguments to pass to the object
-    @param measurement_type The names of the module and object to import
+    :param arguments: The command line arguments to pass to the object
+    :param measurement_type: The names of the module and object to import
     
-    @return The class instance for the measurement type
+    :return: The class instance for the measurement type
   '''
   # Check for wildcards in input
   new_args=[]
@@ -161,7 +161,7 @@ def import_session_from_module_info(module_info, arguments):
   '''
     Import a session object from two strings containing module name and class. 
     
-    @return The class instance for the measurement type
+    :return: The class instance for the measurement type
   '''
   active_session_class=getattr(__import__(module_info[0], {}, {},
                                       [module_info[1]]), module_info[1])
@@ -241,9 +241,9 @@ def initialize_gui(session, status_dialog=None):
   '''
     Initialize the gui main window.
       
-    @param session An object derived from sessions.generic.GenericSession
+    :param session: An object derived from sessions.generic.GenericSession
     
-    @return An ApplicationMainWindow instance ( class defined in {toolkit}gui.generic )
+    :return: An ApplicationMainWindow instance ( class defined in {toolkit}gui.generic )
   '''
   if not gui_main:
     initialize_gui_toolkit()

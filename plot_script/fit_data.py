@@ -160,12 +160,12 @@ class FitFunction(FitFunctionGUI):
       can be overwritten e.g. to increase speed or fit to log(x).
       If the dataset has yerror values they are used as weight.
       
-      @param params Parameters for the function in this iteration
-      @param y List of y values measured
-      @param x List of x values for the measured points
-      @param yerror List of error values for the y values or None if the fit is not weighted
+      :param params: Parameters for the function in this iteration
+      :param y: List of y values measured
+      :param x: List of x values for the measured points
+      :param yerror: List of error values for the y values or None if the fit is not weighted
       
-      @return Residuals (meaning the value to be minimized) of the fit function and the measured data
+      :return: Residuals (meaning the value to be minimized) of the fit function and the measured data
     '''
     # function is called len(x) times, this is just to speed up the lookup procedure
     function=self.fit_function
@@ -190,12 +190,12 @@ class FitFunction(FitFunctionGUI):
       can be overwritten e.g. to increase speed or fit to log(x).
       If the dataset has yerror values they are used as weight.
       
-      @param params Parameters for the function in this iteration
-      @param y List of y values measured
-      @param x List of x values for the measured points
-      @param yerror List of error values for the y values or None if the fit is not weighted
+      :param params: Parameters for the function in this iteration
+      :param y: List of y values measured
+      :param x: List of x values for the measured points
+      :param yerror: List of error values for the y values or None if the fit is not weighted
       
-      @return Residuals (meaning the value to be minimized) of the fit function and the measured data
+      :return: Residuals (meaning the value to be minimized) of the fit function and the measured data
     '''
     # function is called len(x) times, this is just to speed up the lookup procedure
     function=self.fit_function
@@ -223,11 +223,11 @@ class FitFunction(FitFunctionGUI):
       Do the least square refinement to the given dataset. If the fit converges
       the new parameters are stored.
       
-      @param dataset_x list of x values from the dataset
-      @param dataset_y list of y values from the dataset
-      @param dataset_yerror list of errors from the dataset or None for no weighting
+      :param dataset_x: list of x values from the dataset
+      :param dataset_y: list of y values from the dataset
+      :param dataset_yerror: list of errors from the dataset or None for no weighting
       
-      @return The message string of leastsq and the covariance matrix
+      :return: The message string of leastsq and the covariance matrix
     '''
     parameters=[self.parameters[i] for i in self.refine_parameters]
     # only refine inside the selected region
@@ -377,7 +377,7 @@ class FitFunction(FitFunctionGUI):
     '''
       Set new parameters and store old ones in history.
       
-      @param new_params List of new parameters
+      :param new_params: List of new parameters
     '''
     self.parameters_history=self.parameters
     self.parameters=map(numpy.float64, new_params)
@@ -396,11 +396,11 @@ class FitFunction(FitFunctionGUI):
       Calculate the function for the active parameters for x values and some values
       in between.
       
-      @param x List of x values to calculate the function for
-      @param interpolate Number of points to interpolate in between the x values
-      @param inside_fitrange Only simulate points inside the x-constrains of the fit
+      :param x: List of x values to calculate the function for
+      :param interpolate: Number of points to interpolate in between the x values
+      :param inside_fitrange: Only simulate points inside the x-constrains of the fit
     
-      @return simulated y-values for a list of giver x-values.
+      :return: simulated y-values for a list of giver x-values.
     '''
     if parallel.dview is not None:
       return self.simulate_mp(x, interpolate=5, inside_fitrange=False)
@@ -532,7 +532,7 @@ class FitSum(FitFunction):
     '''
       Construct a sum of two functions to use for fit.
       
-      @param funci the functions to add together
+      :param funci: the functions to add together
     '''
     self.name=func1.name+' + '+func2.name
     self.parameters=func1.parameters+func2.parameters
@@ -594,7 +594,7 @@ class FitMultiply(FitFunction):
     '''
       Construct a sum of two functions to use for fit.
       
-      @param funci the functions to add together
+      :param funci: the functions to add together
     '''
     self.name=func1.name+' * '+func2.name
     self.parameters=func1.parameters+func2.parameters
@@ -695,13 +695,13 @@ class FitFunction3D(FitFunctionGUI):
       can be overwritten e.g. to increase speed or fit to log(x).
       If the dataset has yerror values they are used as weight.
       
-      @param params Parameters for the function in this iteration
-      @param z List of z values measured
-      @param y List of y values for the measured points
-      @param x List of x values for the measured points
-      @param yerror List of error values for the y values or None if the fit is not weighted
+      :param params: Parameters for the function in this iteration
+      :param z: List of z values measured
+      :param y: List of y values for the measured points
+      :param x: List of x values for the measured points
+      :param yerror: List of error values for the y values or None if the fit is not weighted
       
-      @return Residuals (meaning the value to be minimized) of the fit function and the measured data
+      :return: Residuals (meaning the value to be minimized) of the fit function and the measured data
     '''
     # function is called len(x) times, this is just to speed up the lookup procedure
     function=self.fit_function
@@ -724,12 +724,12 @@ class FitFunction3D(FitFunctionGUI):
       can be overwritten e.g. to increase speed or fit to log(x).
       If the dataset has yerror values they are used as weight.
       
-      @param params Parameters for the function in this iteration
-      @param y List of y values measured
-      @param x List of x values for the measured points
-      @param yerror List of error values for the y values or None if the fit is not weighted
+      :param params: Parameters for the function in this iteration
+      :param y: List of y values measured
+      :param x: List of x values for the measured points
+      :param yerror: List of error values for the y values or None if the fit is not weighted
       
-      @return Residuals (meaning the value to be minimized) of the fit function and the measured data
+      :return: Residuals (meaning the value to be minimized) of the fit function and the measured data
     '''
     # function is called len(x) times, this is just to speed up the lookup procedure
     function=self.fit_function
@@ -758,12 +758,12 @@ class FitFunction3D(FitFunctionGUI):
       Do the least square refinement to the given dataset. If the fit converges
       the new parameters are stored.
       
-      @param dataset_x list of x values from the dataset
-      @param dataset_y list of y values from the dataset
-      @param dataset_z list of z values from the dataset
-      @param dataset_zerror list of errors from the dataset or None for no weighting
+      :param dataset_x: list of x values from the dataset
+      :param dataset_y: list of y values from the dataset
+      :param dataset_z: list of z values from the dataset
+      :param dataset_zerror: list of errors from the dataset or None for no weighting
       
-      @return The message string of leastsq and the covariance matrix
+      :return: The message string of leastsq and the covariance matrix
     '''
     parameters=[self.parameters[i] for i in self.refine_parameters]
     x=numpy.array(dataset_x, dtype=numpy.float64, copy=False)
@@ -923,7 +923,7 @@ class FitFunction3D(FitFunctionGUI):
     '''
       Set new parameters and store old ones in history.
       
-      @param new_params List of new parameters
+      :param new_params: List of new parameters
     '''
     self.parameters_history=self.parameters
     self.parameters=map(numpy.float64, new_params)
@@ -942,10 +942,10 @@ class FitFunction3D(FitFunctionGUI):
       Calculate the function for the active parameters for x values and some values
       in between.
       
-      @param x List of x values to calculate the function for
-      @param interpolate Number of points to interpolate in between the x values
+      :param x: List of x values to calculate the function for
+      :param interpolate: Number of points to interpolate in between the x values
     
-      @return simulated y-values for a list of giver x-values.
+      :return: simulated y-values for a list of giver x-values.
     '''
     if parallel.dview is not None:
       return self.simulate_mp(y, x)
@@ -1045,7 +1045,7 @@ class FitSum3D(FitFunction3D):
     '''
       Construct a sum of two functions to use for fit.
       
-      @param funci the functions to add together
+      :param funci: the functions to add together
     '''
     self.name=func1.name+' + '+func2.name
     self.parameters=func1.parameters+func2.parameters
@@ -1107,7 +1107,7 @@ class FitMultiply3D(FitFunction3D):
     '''
       Construct a sum of two functions to use for fit.
       
-      @param funci the functions to add together
+      :param funci: the functions to add together
     '''
     self.name=func1.name+' * '+func2.name
     self.parameters=func1.parameters+func2.parameters
@@ -1800,7 +1800,7 @@ class FitSuperlattice(FitFunction):
     '''
       Create a dictionary of the parameters for better readability of all funcions.
       
-      @param p List of parameters to be used
+      :param p: List of parameters to be used
     '''
     params=self._parameter_dictionary
     # reciprocal lattice parameter
@@ -1837,10 +1837,10 @@ class FitSuperlattice(FitFunction):
       The user can select which parts of the structure factor should be plotted by changing the
       F_select parameter. A negativ parameter means no convolution with the resolution function.
       
-      @param p Parameters for the function
-      @param q Reciprocal lattice vector q
+      :param p: Parameters for the function
+      :param q: Reciprocal lattice vector q
       
-      @return The calculated intensities for the selected structure factor + background
+      :return: The calculated intensities for the selected structure factor + background
     '''
     self.rebuild_param_dictionary(p)
     params=self._parameter_dictionary
@@ -1877,10 +1877,10 @@ class FitSuperlattice(FitFunction):
     '''
       Convolute the calculated intensity with the resolution function.
       
-      @param I Calculated intensity to convolute
-      @param q Reciprocal lattice vector q
+      :param I: Calculated intensity to convolute
+      :param q: Reciprocal lattice vector q
       
-      @return Convoluted intensity
+      :return: Convoluted intensity
     '''
     params=self._parameter_dictionary
     sigma_res=params['resolution']
@@ -1898,12 +1898,12 @@ class FitSuperlattice(FitFunction):
       Calculate the structure factor function for one layer. This is the structure factor
       of a crystal with the thickness t_j at the bragg peak q0.
       
-      @param q Reciprocal lattice vector q
-      @param I Scaling factor
-      @param q0 Position of the corresponding bragg peak
-      @param t_j Thickness of the layer
+      :param q: Reciprocal lattice vector q
+      :param I: Scaling factor
+      :param q0: Position of the corresponding bragg peak
+      :param t_j: Thickness of the layer
       
-      @return structure factor for this layer at the origin position.
+      :return: structure factor for this layer at the origin position.
     '''
     # parameter for (q-q0)*width/2
     t=(q-q0)*0.5*t_j*numpy.pi
@@ -1921,12 +1921,12 @@ class FitSuperlattice(FitFunction):
     '''
       Calculate the structurefactor by summing up all unit cells in the region.
       
-      @param q Reciprocal lattice vector q
-      @param I Scaling factor
-      @param q0 Position of the corresponding bragg peak
-      @param t_j Thickness of the layer
+      :param q: Reciprocal lattice vector q
+      :param I: Scaling factor
+      :param q0: Position of the corresponding bragg peak
+      :param t_j: Thickness of the layer
       
-      @return structure factor for this layer at the origin position.
+      :return: structure factor for this layer at the origin position.
     '''
     d=(numpy.pi*2./q0)
     planes=int(t_j/d)
@@ -1939,12 +1939,12 @@ class FitSuperlattice(FitFunction):
     '''
       Calculate the structurefactor by summing up all unit cells in the region.
       
-      @param q Reciprocal lattice vector q
-      @param I Scaling factor
-      @param q0 Position of the corresponding bragg peak
-      @param t_j Thickness of the layer
+      :param q: Reciprocal lattice vector q
+      :param I: Scaling factor
+      :param q0: Position of the corresponding bragg peak
+      :param t_j: Thickness of the layer
       
-      @return structure factor for this layer at the origin position.
+      :return: structure factor for this layer at the origin position.
     '''
     d=(numpy.pi*2./q0)
     planes=int(t_j/d)
@@ -1956,9 +1956,9 @@ class FitSuperlattice(FitFunction):
     '''
       Calculate the structure factor of the substrate (crystal truncation rod at substrate peak position.
       
-      @param q Reciprocal lattice vector q
+      :param q: Reciprocal lattice vector q
       
-      @return structure factor for the substrate
+      :return: structure factor for the substrate
     '''
     params=self._parameter_dictionary
     F_substrate=1j/(q-params['q0_substrat'])
@@ -1971,9 +1971,9 @@ class FitSuperlattice(FitFunction):
     '''
       Calculate the structure factor for a bilayer
 
-      @param q Reciprocal lattice vector q
+      :param q: Reciprocal lattice vector q
       
-      @return the complete Intensity of the multilayer without the substrate
+      :return: the complete Intensity of the multilayer without the substrate
     '''
     # get relevant parameters
     params=self._parameter_dictionary
@@ -1987,9 +1987,9 @@ class FitSuperlattice(FitFunction):
       Calculate the structure factor for a superlattice without any roughness
       using eq(3) from PRB paper.
 
-      @param q Reciprocal lattice vector q
+      :param q: Reciprocal lattice vector q
       
-      @return the complete structure factor of the multilayer (without substrate)
+      :return: the complete structure factor of the multilayer (without substrate)
     '''
     exp=numpy.exp
     # get relevant parameters
@@ -2007,9 +2007,9 @@ class FitSuperlattice(FitFunction):
     '''
       Calculate the avaraged structure factor for the multilayer with thickness variations.
 
-      @param q Reciprocal lattice vector q
+      :param q: Reciprocal lattice vector q
       
-      @return the complete structure factor of the multilayer (without substrate)
+      :return: the complete structure factor of the multilayer (without substrate)
     '''
     # get relevant parameters
     params=self._parameter_dictionary
@@ -2041,9 +2041,9 @@ class FitSuperlattice(FitFunction):
       Calculate the structure factor for a superlattice including fluctuations
       of the interface distance using eq(1) from J.-P. Locquet et al., PRB 38, No. 5 (1988).
 
-      @param q Reciprocal lattice vector q
+      :param q: Reciprocal lattice vector q
       
-      @return the complete Intensity of the multilayer without the substrate
+      :return: the complete Intensity of the multilayer without the substrate
     '''
     # get relevant parameters
     params=self._parameter_dictionary
@@ -2076,9 +2076,9 @@ class FitSuperlattice(FitFunction):
       Calculate the structure factor for a superlattice including fluctuations and of the interface 
       distance roughness using eq(7)-eq(10) from E.E.Fullerton et al., PRB 45, No. 16 (1992).
 
-      @param q Reciprocal lattice vector q
+      :param q: Reciprocal lattice vector q
       
-      @return the complete Intensity of the multilayer without the substrate
+      :return: the complete Intensity of the multilayer without the substrate
     '''
     # get relevant parameters
     params=self._parameter_dictionary
@@ -2133,7 +2133,7 @@ class FitSuperlattice(FitFunction):
     '''
       Calculate xoffset of bilayer.
       
-      @return offset position for every layer
+      :return: offset position for every layer
     '''
     params=self._parameter_dictionary
     x=[]
@@ -2146,7 +2146,7 @@ class FitSuperlattice(FitFunction):
     '''
       Calculate deviation of thickness as discrete gaussians.
       
-      @return deviation of thickness from -3ω to +3ω as numpy array
+      :return: deviation of thickness from -3ω to +3ω as numpy array
     '''
     params=self._parameter_dictionary
     # avarage dspacing
@@ -2163,7 +2163,7 @@ class FitSuperlattice(FitFunction):
     '''
       Calculate the propability for every thickness fluctuation tj.
       
-      @return the propability for the jth deviation
+      :return: the propability for the jth deviation
     '''
     params=self._parameter_dictionary
     omega=params['ω_AB']
@@ -2835,7 +2835,7 @@ class FitSession(FitSessionGUI):
     '''
       Constructor creating pointer to the dataset.
       
-      @param dataset A MeasurementData object
+      :param dataset: A MeasurementData object
     '''
     self.functions=[] # a list of sequences (FitFunction, fit, plot, ignore errors) to be used
     self.data=dataset
@@ -2872,7 +2872,7 @@ class FitSession(FitSessionGUI):
     '''
       Return the fit object at position item.
       
-      @return FitData object or derived class
+      :return: FitData object or derived class
     '''
     return self.functions[item][0]
 
@@ -2939,7 +2939,7 @@ class FitSession(FitSessionGUI):
     '''
       Fit all funcions in the list where the fit parameter is set to True.
       
-      @return The covariance matrices of the fits or [[None]]
+      :return: The covariance matrices of the fits or [[None]]
     '''
     if (self.data.yerror>=0) and (self.data.yerror!=self.data.ydata)\
         and (self.data.yerror!=self.data.xdata):
@@ -2973,7 +2973,7 @@ class FitSession(FitSessionGUI):
     '''
       Fit all funcions in the list where the fit parameter is set to True.
       
-      @return The covariance matrices of the fits or [[None]]
+      :return: The covariance matrices of the fits or [[None]]
     '''
     if (self.data.yerror>=0) and (self.data.yerror!=self.data.zdata)\
         and (self.data.yerror!=self.data.xdata) and (self.data.yerror!=self.data.ydata):
@@ -3170,10 +3170,10 @@ def register_function(function, function_parameter_names=None, function_paramete
   '''
     Convenience method to add a new fittable function.
     
-    @param function The function to be fitted as f(p,x) or f(p,x,y) with p as list of parameters
-    @param function_parameter_names Names of the parameters supplied to the function as p
-    @param function_parameter_default Default values of the parameters when the function is first created
-    @param function_name Name of the function
+    :param function: The function to be fitted as f(p,x) or f(p,x,y) with p as list of parameters
+    :param function_parameter_names: Names of the parameters supplied to the function as p
+    :param function_parameter_default: Default values of the parameters when the function is first created
+    :param function_name: Name of the function
   '''
   import inspect
   numargs=len(inspect.getargspec(function)[0])

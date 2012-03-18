@@ -11,4 +11,3 @@ class IPKernelThread(Thread):
     self.app=IPKernelApp.instance()
     self.app.initialize()
     self.app.start()
-

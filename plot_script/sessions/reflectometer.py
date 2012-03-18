@@ -207,11 +207,11 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       to a avaridge attenuation (polynomial fit to log of data). The result is then
       fourier transformed using the FFT algorithm.
       
-      @param dataset MeasurementData object of reflectivity data
-      @param theta_c Angle of total external reflection
-      @param lambda_x x-ray wavelength
+      :param dataset: MeasurementData object of reflectivity data
+      :param theta_c: Angle of total external reflection
+      :param lambda_x: x-ray wavelength
       
-      @return new MeasurementData object of transformed data.
+      :return: new MeasurementData object of transformed data.
     '''
     import numpy as np
     from scipy.interpolate import interp1d

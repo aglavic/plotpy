@@ -37,9 +37,9 @@ class MeasurementDataTREFF(MeasurementData):
     '''
       Append the data of an other object to this object.
       
-      @param join_type Tell function which objects parameters to use, if there is a conflict. 0=this, 1=other, -1=both
+      :param join_type: Tell function which objects parameters to use, if there is a conflict. 0=this, 1=other, -1=both
       
-      @return Another MeasurementDataTREFF instance.
+      :return: Another MeasurementDataTREFF instance.
     '''
     if self.zdata!=other.zdata:
       return None
@@ -63,9 +63,9 @@ class MeasurementDataTREFF(MeasurementData):
     '''
       Append the data of an other object to this object, called if self is a 3d dataset.
       
-      @param join_type Tell function which objects parameters to use, if there is a conflict. 0=this, 1=other, -1=both
+      :param join_type: Tell function which objects parameters to use, if there is a conflict. 0=this, 1=other, -1=both
       
-      @return Another MeasurementDataTREFF instance.
+      :return: Another MeasurementDataTREFF instance.
     '''
 
     if join_type==1:
@@ -88,11 +88,11 @@ def read_data(file_name, script_path, import_images, return_detector_images):
   '''
     Read the data of a treff raw data file, integrate the corresponding .img files.
     
-    @param file_name Name of the file to import
-    @param script_path Path of the plot scripts to get the treff calibration file
-    @param import_images Boolian to select if only the datafile should be imported or the 2d-detector images, too
+    :param file_name: Name of the file to import
+    :param script_path: Path of the plot scripts to get the treff calibration file
+    :param import_images: Boolian to select if only the datafile should be imported or the 2d-detector images, too
     
-    @return List of MeasurementData objects for the 2d maps and scans splitted by polarization channels
+    :return: List of MeasurementData objects for the 2d maps and scans splitted by polarization channels
   '''
   #
   if file_name.endswith('.d17'):
@@ -307,15 +307,15 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     Integrate detector rows of the image files corresponding to one polarization direction.
     This function is tuned quite much for fast readout, so some parts are a bit tricky.
     
-    @param data_lines List of lines from the inputfile which are already split by columns
-    @param columns Dictionary for the interesting columns
-    @param const_information Dictionary of values which are constat for the whole scan e.g. mag. field
-    @param data_path Path to the image files which should be integrated
-    @param calibration Calibration data for the 2d detector as List of integers
-    @param import_images Boolian to select if only the datafile should be imported or the 2d-detector images, too
-    @param treff_zip ZipFile object which can be used insted of the local folder to get the image files
+    :param data_lines: List of lines from the inputfile which are already split by columns
+    :param columns: Dictionary for the interesting columns
+    :param const_information: Dictionary of values which are constat for the whole scan e.g. mag. field
+    :param data_path: Path to the image files which should be integrated
+    :param calibration: Calibration data for the 2d detector as List of integers
+    :param import_images: Boolian to select if only the datafile should be imported or the 2d-detector images, too
+    :param treff_zip: ZipFile object which can be used insted of the local folder to get the image files
     
-    @return MeasurementData objects for the map and the scan for this polarization channel
+    :return: MeasurementData objects for the map and the scan for this polarization channel
   '''
   detector_images=[]
   sqrt=math.sqrt
@@ -439,15 +439,15 @@ def integrate_one_picture(img_file, line, columns, alphai, alphaf_center, calibr
     Map detector columns to alphai, alphaf and intensities.
     Quite optimized, too.
     
-    @param img_data List of intensities from the detector
-    @param line The corresponding data line from the original input file (contains e.g. Monitor counts)
-    @param columns Dictionary for the interesting columns
-    @param alphai Incident angle of the reflectometer
-    @param alphaf_center Angle from the detector arm to the sample
-    @param calibration Calibration data for the 2d detector as List of integers
-    @param pixel_width Width of one pixel on the 2d detector
+    :param img_data: List of intensities from the detector
+    :param line: The corresponding data line from the original input file (contains e.g. Monitor counts)
+    :param columns: Dictionary for the interesting columns
+    :param alphai: Incident angle of the reflectometer
+    :param alphaf_center: Angle from the detector arm to the sample
+    :param calibration: Calibration data for the 2d detector as List of integers
+    :param pixel_width: Width of one pixel on the 2d detector
 
-    @return List of 256 detector columns with corresponding angle values and errors
+    :return: List of 256 detector columns with corresponding angle values and errors
   '''
   # read the data of an image file and split the lines 
   img_data=img_file.read()[:-1]
@@ -499,15 +499,15 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
     Map detector columns to alphai, alphaf and intensities.
     Quite optimized, too.
     
-    @param img_data 2d numpy array of detector counts
-    @param line The corresponding data line from the original input file (contains e.g. Monitor counts)
-    @param columns Dictionary for the interesting columns
-    @param alphai Incident angle of the reflectometer
-    @param alphaf_center Angle from the detector arm to the sample
-    @param calibration Calibration data for the 2d detector as List of integers
-    @param pixel_width Width of one pixel on the 2d detector
+    :param img_data: 2d numpy array of detector counts
+    :param line: The corresponding data line from the original input file (contains e.g. Monitor counts)
+    :param columns: Dictionary for the interesting columns
+    :param alphai: Incident angle of the reflectometer
+    :param alphaf_center: Angle from the detector arm to the sample
+    :param calibration: Calibration data for the 2d detector as List of integers
+    :param pixel_width: Width of one pixel on the 2d detector
 
-    @return List of 256 detector columns with corresponding angle values and errors
+    :return: List of 256 detector columns with corresponding angle values and errors
   '''
   # read the data of an image file and split the lines 
   img_data=numpy.fromstring(img_file.read(), int, sep=" ")
@@ -547,7 +547,7 @@ def read_simulation(file_name):
   '''
     Read a pnr_multi output file as MeasurementData object.
     
-    @return One MeasurementData object
+    :return: One MeasurementData object
   '''
   sim_file=open(file_name, 'r')
   sim_lines=sim_file.readlines()
@@ -564,11 +564,11 @@ def read_data_maria(file_name, script_path, import_images, return_detector_image
   '''
     Read the data of a maria raw data file, integrate the corresponding .img files.
     
-    @param file_name Name of the file to import
-    @param script_path Path of the plot scripts to get the treff calibration file
-    @param import_images Boolian to select if only the datafile should be imported or the 2d-detector images, too
+    :param file_name: Name of the file to import
+    :param script_path: Path of the plot scripts to get the treff calibration file
+    :param import_images: Boolian to select if only the datafile should be imported or the 2d-detector images, too
     
-    @return List of MeasurementData objects for the 2d maps and scans splitted by polarization channels
+    :return: List of MeasurementData objects for the 2d maps and scans splitted by polarization channels
   '''
   global DETECTOR_ROWS_MAP, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION
   from plot_script.config.maria import DETECTOR_ROWS_MAP, COLUMNS_MAPPING, DETECTOR_PIXELS, PIXEL_WIDTH, CENTER_PIXEL, CENTER_PIXEL_Y, DETECTOR_REGION #@UnusedImport

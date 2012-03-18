@@ -50,13 +50,13 @@ def correct_flipping_ratio(flipping_ratio, pp_data, pm_data,
     As most variables are scaled to sum up as 1. be sure to use floating point numbers
     or arrays of floating point numers.
     
-    @param flipping_ratio The flipping ratio for the solution
-    @param pp_data non spin-flip data measured
-    @param pm_data spin-flip data measured
-    @param scattering_propability Propapility for a neutron to get scattered from the sample
-    @param convergence_criteria Function to test for convergence
+    :param flipping_ratio: The flipping ratio for the solution
+    :param pp_data: non spin-flip data measured
+    :param pm_data: spin-flip data measured
+    :param scattering_propability: Propapility for a neutron to get scattered from the sample
+    :param convergence_criteria: Function to test for convergence
     
-    @return non splin-flip, spin-flip data and if the algorithm converged
+    :return: non splin-flip, spin-flip data and if the algorithm converged
   '''
   # TODO: revisit for negative values
   # as the function can be used for numbers and arrays
@@ -225,7 +225,7 @@ class DNSSession(GUI, GenericSession):
       In contrast to the most sessions this changes the generic constructor
       as the data is collected from a bunch of files corresponding to one measurement.
       
-      @param arguments The command line arguments passed to the constructor.
+      :param arguments: The command line arguments passed to the constructor.
     '''
     #++++++++++++++++ evaluate command line +++++++++++++++++++++++
     names=self.read_arguments(arguments) # get names and set options
@@ -287,7 +287,7 @@ class DNSSession(GUI, GenericSession):
       Initializing the fullauto session, which tries to set every options
       from the file names and the informations in the datafiles.
       
-      @param names List of filenames to be used
+      :param names: List of filenames to be used
     '''
     print "Initializing full automatic session..."
     self.AUTO_BACKGROUND=True
@@ -628,7 +628,7 @@ class DNSSession(GUI, GenericSession):
       Function to read data files for one measurement. 
       The files are split by their prefixes.
       
-      @param file_name Sequence with the options for the file_name import
+      :param file_name: Sequence with the options for the file_name import
     '''
     # read the options for this sequence of files
     prefix=self.file_options[file_name][0]
@@ -671,7 +671,7 @@ class DNSSession(GUI, GenericSession):
       Function to read data files for one D7 measurement. 
       The files are split by their prefixes.
       
-      @param file_name Sequence with the options for the file_name import
+      :param file_name: Sequence with the options for the file_name import
     '''
     # read the options for this sequence of files
     prefix=self.file_options[file_name][0]
@@ -814,7 +814,7 @@ class DNSSession(GUI, GenericSession):
       For Powder data it is only shown as 2Theta vs intensity.
       For single crystal it is a map in q_x,q_y. (Or hkl)
       
-      @param file_name Sequence with the options for the file_name import
+      :param file_name: Sequence with the options for the file_name import
     '''
     # select the raw data for this measurement
     scans=self.file_data[file_name+'|raw_data']
@@ -993,7 +993,7 @@ class DNSSession(GUI, GenericSession):
       Try to find a background data with the right flipper and helmholz currents for this dataset.
       The background data is connected to dataset.background_data.
       
-      @param dataset a DNSMeasurementData object
+      :param dataset: a DNSMeasurementData object
     '''
     # get all detectorbank positions
     detectors=list(set(dataset.data[0].values))
@@ -1058,7 +1058,7 @@ class DNSSession(GUI, GenericSession):
       Set vanadium data for this dataset.
       The vanadium data is connected to dataset.vanadium_data.
       
-      @param dataset A DNSMeasurementData object
+      :param dataset: A DNSMeasurementData object
     '''
     dataset.vanadium_data=self.system_vana
 
@@ -1069,7 +1069,7 @@ class DNSSession(GUI, GenericSession):
       sets of files. The prefix is stored in self.prefixes and the
       numbers in self.file_options.
       
-      @param names A list of file names to process
+      :param names: A list of file names to process
     '''
     for filename in filter(lambda item: item.endswith('.mds') or item.endswith('.mds.gz')\
                   or item.endswith('.mdd') or item.endswith('.mdd.gz'), names):
@@ -1503,8 +1503,8 @@ class DNSSession(GUI, GenericSession):
       The dictionary keys correspond to the flipper and helmholz
       coil currents.
       
-      @param bg_file File name to read from
-      @param bg_data The dictionary to write to
+      :param bg_file: File name to read from
+      :param bg_data: The dictionary to write to
     '''
     dataset=read_data.read_data(bg_file)
     if dataset=='NULL':
@@ -1537,8 +1537,8 @@ class DNSSession(GUI, GenericSession):
       The dictionary keys correspond to the flipper and helmholz
       coil currents.
       
-      @param bg_file File name to read from
-      @param bg_data The dictionary to write to
+      :param bg_file: File name to read from
+      :param bg_data: The dictionary to write to
     '''
     datasets=read_data.read_data_d7(bg_file)
     if datasets=='NULL':
@@ -1571,9 +1571,9 @@ class DNSSession(GUI, GenericSession):
       This function assigns the right NiCr measurements to the data sequences.
       The flipper and Helmolz currents are used to identify the right data.
       
-      @param scattering_propability Propapility of a neutron to get scattered inside the sample (=1-Transmission)
+      :param scattering_propability: Propapility of a neutron to get scattered inside the sample (=1-Transmission)
       
-      @return If files could be found with the right settings.
+      :return: If files could be found with the right settings.
     '''
     # search for appropiate standard measurements
     data_nicr={}
@@ -1864,10 +1864,10 @@ class DNSMeasurementData(MeasurementData):
     '''
       Calculate the flipping ratio correction for all intensity chanels.
       
-      @param item Sequence of NiCr-data, self and other DNSMeasurementData object
-      @param scattering_propability Propability of a neutron to scatter in the sample
+      :param item: Sequence of NiCr-data, self and other DNSMeasurementData object
+      :param scattering_propability: Propability of a neutron to scatter in the sample
       
-      @return If all corrections converged
+      :return: If all corrections converged
     '''
     nc=self.number_of_channels
     converged=True
@@ -1921,9 +1921,9 @@ class DNSMeasurementData(MeasurementData):
         Subtract background from the intensity data and calculate new
         error for these values.
         
-        @param point List of arrays for all columns
+        :param point: List of arrays for all columns
         
-        @return Changed list of arrays
+        :return: Changed list of arrays
       '''
       nc=self.number_of_channels
       # find the background for the right detectors
@@ -1962,9 +1962,9 @@ class DNSMeasurementData(MeasurementData):
         Devide the intensity by the counts measured with vanadium for the
         same detector bank.
         
-        @param point List of arrays for all columns
+        :param point: List of arrays for all columns
         
-        @return Changed list of arrays
+        :return: Changed list of arrays
       '''
       nc=self.number_of_channels
       # find the background for the right detector
@@ -2082,9 +2082,9 @@ class DNSMeasurementData(MeasurementData):
         Subtract background from the intensity data and calculate new
         error for these values.
         
-        @param point A list of column entries
+        :param point: A list of column entries
         
-        @return Altered list of column entries
+        :return: Altered list of column entries
       '''
       nc=self.number_of_channels
       # find the background for the right detector
@@ -2102,9 +2102,9 @@ class DNSMeasurementData(MeasurementData):
         Devide the intensity by the counts measured with vanadium for the
         same detector bank.
         
-        @param point A list of column entries
+        :param point: A list of column entries
         
-        @return Altered list of column entries
+        :return: Altered list of column entries
       '''
       nc=self.number_of_channels
       # find the background for the right detector
@@ -2175,4 +2175,3 @@ class DNSMeasurementData(MeasurementData):
       Calculate the propagated error for x/y.
     '''
     return sqrt(xdata[1]**2/ydata[0]**2+xdata[0]**2/ydata[0]**4*ydata[1]**2)
-

@@ -27,9 +27,9 @@ def read_data(file_name):
   '''
     Read the data of a LEED data file.
     
-    @param file_name The name of the file to import
+    :param file_name: The name of the file to import
     
-    @return MeasurementData object with the file data
+    :return: MeasurementData object with the file data
   '''
   if file_name.endswith('.png'):
     gnuplot_preferences.settings_3dmap=gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
@@ -178,4 +178,3 @@ def read_raw_png_data(file_name):
   data_array=data_array.reshape(*img.size)
   data_array=data_array.astype(float32)
   return data_array
-

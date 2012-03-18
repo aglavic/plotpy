@@ -357,4 +357,3 @@ class CircleSession(GUI, GenericSession):
     #for i, col in enumerate(output.data):
     #  output.data[i]=col[order]
     return [output]
-

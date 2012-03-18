@@ -43,7 +43,7 @@ class RedirectOutput(object):
     '''
       Class consturctor.
       
-      @param plotting_session A session object derived from GenericSession.
+      :param plotting_session: A session object derived from GenericSession.
     '''
     self.file_object=obj
     self.connection=connection
@@ -54,7 +54,7 @@ class RedirectOutput(object):
     '''
       Add content.
       
-      @param string Output string of stdout
+      :param string: Output string of stdout
     '''
     self.buffer+=string
     if "\n" in string:
@@ -86,7 +86,7 @@ def logon(module, log_decorator=log_call):
   '''
    Start logging function calls for all functions of one module.
    
-   @param module A module whose function calls should be logged.
+   :param module: A module whose function calls should be logged.
   '''
   module_dict=module.__dict__
   # get all functions/build-in-function of the module not starting with underscore

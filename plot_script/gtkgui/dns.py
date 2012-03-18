@@ -500,9 +500,9 @@ class DNSGUI:
       Calculate a combination of polarization directions as
       set in the combine_list.
       
-      @param combine_layers List of how the chanels should be combined
-      @param polarization_list The chanels which will be combined
-      @param title Name of the new created chanel
+      :param combine_layers: List of how the chanels should be combined
+      :param polarization_list: The chanels which will be combined
+      :param title: Name of the new created chanel
     '''
     if combine_list[0][1]!='-':
       result=combine_list[0][2]*polarization_list[combine_list[0][0]][0]
@@ -551,4 +551,3 @@ class DNSGUI:
       slold=ds.scan_line, ds.scan_line_constant
       ds.scan_line_constant, ds.scan_line=slold
     window.replot()
-

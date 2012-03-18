@@ -371,4 +371,3 @@ class ItemSortAdd(gtk.Dialog):
     dataset.short_info=entry.get_text()
     if self._do_replot:
       self.parent_gui.replot()
-

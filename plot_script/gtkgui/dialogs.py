@@ -29,7 +29,7 @@ def connect_stdout_dialog():
   '''
     Replace sys.stdout with a dialog window.
     
-    @return The dialog window.
+    :return: The dialog window.
   '''
   status_dialog=StatusDialog('Import Status', buttons=('Close', 0))
   status_dialog.connect('response', lambda*ignore: status_dialog.hide())
@@ -176,7 +176,7 @@ class PreviewDialog(gtk.Dialog):
     '''
       Create the Table which holds all previews with scrollbars.
       
-      @return The Table widget
+      :return: The Table widget
     '''
     if self.main_table:
       return self.main_table
@@ -193,8 +193,8 @@ class PreviewDialog(gtk.Dialog):
     '''
       Add one line of previews to the main table.
       
-      @param key The name of the file the previews in this line belong to.
-      @param datalist List of MeasurementData object.
+      :param key: The name of the file the previews in this line belong to.
+      :param datalist: List of MeasurementData object.
     '''
     if key.endswith('|raw_data'):
       return
@@ -422,7 +422,7 @@ class SimpleEntryDialog(gtk.Dialog):
     '''
       Class constructor. Creates the dialog and label + entries from the list of entries supplied above.
       
-      @param entries a list of tuples containing the values name, start value and function for type conversion.
+      :param entries: a list of tuples containing the values name, start value and function for type conversion.
     '''
     # Initialize this dialog
     opts['title']=title
@@ -681,8 +681,8 @@ class MultipeakDialog(gtk.Dialog):
         fitruns     : list of tuples with parameter indices to be fitted in sequential steps
         fitwidth    : half width of the region where each peak is fitted
       
-      @param fit_class FitFunction derived object
-      @param fit_object FitSession object to attach the functions to
+      :param fit_class: FitFunction derived object
+      :param fit_object: FitSession object to attach the functions to
     '''
     self.fit_class=fit_class
     self.fit_object=fit_object
@@ -798,8 +798,8 @@ class MultipeakDialog(gtk.Dialog):
     '''
       Add a new peak to the table of fits and the dialog.
       
-      @param fit FitFunction object.
-      @param cov Covariance matrix of the last fit
+      :param fit: FitFunction object.
+      :param cov: Covariance matrix of the last fit
     '''
     self.finished_fits.append(fit)
     fits=len(self.finished_fits)
@@ -1003,8 +1003,8 @@ class FileImportDialog(gtk.FileChooserDialog):
       Create a dialog for reading datafiles including an option for
       using templates.
 
-      @param current_folder Folder uppond dialog start.
-      @param wildcards sequance of items (name, pattern1, pattern2, ...).
+      :param current_folder: Folder uppond dialog start.
+      :param wildcards: sequance of items (name, pattern1, pattern2, ...).
     '''
     if template_folder is None:
       template_folder=templates.TEMPLATE_DIRECTORY
@@ -1046,7 +1046,7 @@ class FileImportDialog(gtk.FileChooserDialog):
     '''
       Add a list of wildcards to the dialogs list.
       
-      @param wildcards sequance of items (name, pattern1, pattern2, ...).
+      :param wildcards: sequance of items (name, pattern1, pattern2, ...).
     '''
     global last_filter
     # the first wildcard will be active
@@ -1178,9 +1178,9 @@ class PrintDatasetDialog:
     '''
       Constructor setting setting the objects datasets and running the dialog
       
-      @param datasets A list of MeasurementData objects
-      @param main_window The active ApplicationMainWindow instance
-      @param resolution The resolution the printer, only if A4 is selected.
+      :param datasets: A list of MeasurementData objects
+      :param main_window: The active ApplicationMainWindow instance
+      :param resolution: The resolution the printer, only if A4 is selected.
     '''
     self.datasets=datasets
     self.main_window=main_window
@@ -1249,9 +1249,9 @@ class PrintDatasetDialog:
     '''
       Method called for every page to be rendered. Creates the plot and imports,draws it with cairo.
       
-      @param operation gtk.PrintOperation
-      @param context gtk.PrintContext
-      @param current page number
+      :param operation: gtk.PrintOperation
+      :param context: gtk.PrintContext
+      :param current: page number
     '''
     print "Plotting page %i/%i"%(page_nr+1, len(self.datasets))
     if self.use_multiplot:
@@ -2719,4 +2719,3 @@ class LabelArrowDialog(gtk.Dialog):
 
 
 #------------- Dialog to define labels, arrows and lines on the plot --------------------
-

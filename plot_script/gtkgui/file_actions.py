@@ -82,10 +82,10 @@ class FileActions:
       Every action performed by this class is stored so
       it can be shown in a log or reused in makros for other sequences.
       
-      @param action The function to be called
-      @param *args The arguments of that function
+      :param action: The function to be called
+      :param *args: The arguments of that function
       
-      @return Return values of the called function
+      :return: Return values of the called function
     '''
     # Store the function name and parameters 
     self.history.append((action, args))
@@ -96,9 +96,9 @@ class FileActions:
       Run an action without storing it in the history.
       Used when running a makro.
       
-      @param action Function and parameters to use.
+      :param action: Function and parameters to use.
       
-      @return Return values of the funciton
+      :return: Return values of the funciton
     '''
     return self.actions[action[0]](*action[1])
 
@@ -106,7 +106,7 @@ class FileActions:
     '''
       Store a subset of the history actions as a MakroRepr object.
       
-      @return The MakroRepr object
+      :return: The MakroRepr object
     '''
     conf=ConfigObj(unrepr=True)
     for i, action in enumerate(self.history[from_index:to_index]):
@@ -139,13 +139,13 @@ class FileActions:
       Create a slice through a dataset using the create_cross_section function.
       This funcion is called as the action.
       
-      @param binning Number of points to take a mean value of
-      @param gauss_weighting If mean value of points is calculated the points are weighted by the distance to the crossection line
-      @param sigma_gauss Sigma value of the gauss function used for weighting the points
-      @param at_end Put the created picture at the end of the plot list, not after the picture it was created from
-      @param bin_distance Use a specific distance window for binning, not a fix number of points
+      :param binning: Number of points to take a mean value of
+      :param gauss_weighting: If mean value of points is calculated the points are weighted by the distance to the crossection line
+      :param sigma_gauss: Sigma value of the gauss function used for weighting the points
+      :param at_end: Put the created picture at the end of the plot list, not after the picture it was created from
+      :param bin_distance: Use a specific distance window for binning, not a fix number of points
       
-      @return If the extraction has been sucessful
+      :return: If the extraction has been sucessful
     '''
     dataset=self.window.measurement[self.window.index_mess]
     cs_object=self.create_cross_section(x, x_0, y, y_0, w, binning,
@@ -173,12 +173,12 @@ class FileActions:
     '''
       Create a radial integration around one point of a dataset
       
-      @param x_0 Center point x position
-      @param y_0 Center point y position
-      @param dr  Step width in radius
-      @param max_r Maximal radius to integrate to
+      :param x_0: Center point x position
+      :param y_0: Center point y position
+      :param dr: Step width in radius
+      :param max_r: Maximal radius to integrate to
       
-      @return If the extraction has been sucessful
+      :return: If the extraction has been sucessful
     '''
     data=self.window.measurement[self.window.index_mess]
     try:
@@ -393,7 +393,7 @@ class FileActions:
     '''
       Change the color palette used in pm3d plots.
       
-      @param pattern pattern The string used for the palette in gnuplot
+      :param pattern: pattern The string used for the palette in gnuplot
     '''
     import plot_script.config.gnuplot_preferences as gnuplot_preferences
     options_list_3d=gnuplot_preferences.settings_3d.splitlines()
@@ -413,7 +413,7 @@ class FileActions:
     '''
       Make a unit transformation with the active dataset.
       
-      @param transformations A sequence of the transformation settings
+      :param transformations: A sequence of the transformation settings
     '''
     dataset=self.window.measurement[self.window.index_mess]
     dataset.unit_trans(transformations)
@@ -423,13 +423,13 @@ class FileActions:
     '''
       Integrate the intensities of differt datasets around the position (x_pos, y_pos) up to a distance radius.
       
-      @param x_pos X-position of the reflex to be integrated
-      @param y_pos Y-position of the reflex to be integrated
-      @param radius Maximal distance from (x_pos,y_pos) to which points are included
-      @param destination_dimension The dimension of the values in x to which the integrated points should be assigned to
-      @param destination_unit The unit of the values in x to which the integrated points should be assigned to
-      @param dataset_indices a list of ('name', i) to define the datasets to be integrated
-      @param dataset_destination_values The x value of all datasets from dataset_indices
+      :param x_pos: X-position of the reflex to be integrated
+      :param y_pos: Y-position of the reflex to be integrated
+      :param radius: Maximal distance from (x_pos,y_pos) to which points are included
+      :param destination_dimension: The dimension of the values in x to which the integrated points should be assigned to
+      :param destination_unit: The unit of the values in x to which the integrated points should be assigned to
+      :param dataset_indices: a list of ('name', i) to define the datasets to be integrated
+      :param dataset_destination_values: The x value of all datasets from dataset_indices
     '''
     file_data=self.window.active_session.file_data
     integrated_values=[]
@@ -612,10 +612,10 @@ class FileActions:
     '''
       Create a radial integration around one point (x_0,y_0)
       
-      @param x_0 x-position of the center point
-      @param y_0 y-position of the center point
-      @param dr Step size in radius for the created plot
-      @param max_r Maximal radius to integrate to
+      :param x_0: x-position of the center point
+      :param y_0: y-position of the center point
+      :param dr: Step size in radius for the created plot
+      :param max_r: Maximal radius to integrate to
     '''
     from numpy import sqrt
     data=self.window.measurement[self.window.index_mess].get_filtered_data_matrix()
@@ -666,9 +666,9 @@ class FileActions:
       Sort a dataset and bin the datapoints together. Gaussian weighting if possible and
       errors are calculated.
       
-      @param data A list of datapoints consisting of (x0, x1, x2, y, dy, weighting)
+      :param data: A list of datapoints consisting of (x0, x1, x2, y, dy, weighting)
       
-      @return Binned dataset
+      :return: Binned dataset
     '''
     from math import sqrt, exp
     data.sort()
@@ -723,7 +723,7 @@ class FileActions:
       Integrate the intensities of dataset around the point (x_pos, y_pos) up to
       a distance radius.
       
-      @return The average of the integrated values with their errors.
+      :return: The average of the integrated values with their errors.
     '''
     from numpy import sqrt, where, ndarray
     x=dataset.x.view(ndarray)
@@ -750,12 +750,12 @@ def interpolate_and_smooth(dataset, sigma_x, sigma_y, grid_x, grid_y, use_matrix
     Fill a grid with datapoints from another grid, weighting the points with a gaussian up to a distance of
     3*sigma.
     
-    @param dataset MeasurementData object to be used as source_synopsis
-    @param sigma_x Sigma for the gaussian weighting in x direction
-    @param sigmy_y Sigma for the gaussian weighting in y direction
-    @param grid_xy List of (x,y) tuples for the new grid
+    :param dataset: MeasurementData object to be used as source_synopsis
+    :param sigma_x: Sigma for the gaussian weighting in x direction
+    :param sigmy_y: Sigma for the gaussian weighting in y direction
+    :param grid_xy: List of (x,y) tuples for the new grid
     
-    @return MeasurementData or HugeMD object with the rebinned data
+    :return: MeasurementData or HugeMD object with the rebinned data
   '''
   if dataset.zdata<0:
     raise ValueError, 'Dataset needs to be 3 dimensional for interpolation'
@@ -818,11 +818,11 @@ def rebin_2d(dataset, join_pixels_x, join_pixels_y=None, use_matrix_data_output=
   '''
     Rebin data on a regular grid by summing up pixels in x and y direction.
     
-    @param dataset MeasurementData object as source
-    @param join_pixels_x Number of pixels to sum together in x direction
-    @param join_pixels_y Number of pixels to sum together in y direction, if None use x
+    :param dataset: MeasurementData object as source
+    :param join_pixels_x: Number of pixels to sum together in x direction
+    :param join_pixels_y: Number of pixels to sum together in y direction, if None use x
     
-    @return New MeasurementData object with the rebinned data
+    :return: New MeasurementData object with the rebinned data
   '''
   if join_pixels_y is None:
     join_pixels_y=join_pixels_x
@@ -904,12 +904,12 @@ def calculate_savitzky_golay(dataset, window_size=5, order=2, derivative=1):
   '''
     Calculate smoothed dataset with savitzky golay filter up to a maximal derivative.
     
-    @param dataset The dataset to use for the data
-    @param window_size Size of the filter window in points
-    @param order Order of polynomials to be used for the filtering
-    @param derivative The derivative to be calculated
+    :param dataset: The dataset to use for the data
+    :param window_size: Size of the filter window in points
+    :param order: Order of polynomials to be used for the filtering
+    :param derivative: The derivative to be calculated
     
-    @return a dataset containing the smoothed data and it's derivatives.
+    :return: a dataset containing the smoothed data and it's derivatives.
   '''
   if dataset.zdata>=0:
     return None
@@ -959,12 +959,12 @@ def calculate_butterworth(dataset, filter_steepness=6, filter_cutoff=0.5, deriva
        The Scientist and Engineer’s Guide to Digital Signal Processing, 
        California Technical Publishing, 1997.
     
-    @param dataset MeasurementData object to be used as input
-    @param filter_steepness The steepness of the low pass filter after the cut-off frequency
-    @param filter_cutoff The frequency (as parts from the maximal frequency) where the filter cut-off lies
-    @param derivative Which derivative to calculate with this method.
+    :param dataset: MeasurementData object to be used as input
+    :param filter_steepness: The steepness of the low pass filter after the cut-off frequency
+    :param filter_cutoff: The frequency (as parts from the maximal frequency) where the filter cut-off lies
+    :param derivative: Which derivative to calculate with this method.
     
-    @return a dataset containing the derivated data
+    :return: a dataset containing the derivated data
   '''
   sort_idx=numpy.argsort(dataset.x)
   x=dataset.x[sort_idx].copy()
@@ -1189,12 +1189,12 @@ def savitzky_golay(y, window_size, order, deriv=0):
        Cambridge University Press ISBN-13: 9780521880688
 
 
-    @param y the values of the time history of the signal (array)
-    @param window_size the length of the window, must be an odd integer number.
-    @param order the order of the polynomial used in the filtering, must be less then `window_size` - 1.
-    @param deriv the order of the derivative to compute (default = 0 means only smoothing)
+    :param y: the values of the time history of the signal (array)
+    :param window_size: the length of the window, must be an odd integer number.
+    :param order: the order of the polynomial used in the filtering, must be less then `window_size` - 1.
+    :param deriv: the order of the derivative to compute (default = 0 means only smoothing)
     
-    @return ys the smoothed signal (or it's n-th derivative).
+    :return: ys the smoothed signal (or it's n-th derivative).
 
   '''
   np=numpy

@@ -3,7 +3,7 @@
   Dialog for peakfinder algorithm.
 '''
 
-import os, sys
+import os
 import gtk
 from numpy import ndarray, array, exp, zeros_like, sqrt, argsort
 from plot_script.peakfinder import PeakFinder

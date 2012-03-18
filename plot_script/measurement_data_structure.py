@@ -96,12 +96,12 @@ class MeasurementData(object):
         - creating an empty instance with MeasurementData() and appending each column as
           PhysicalProperty object
       
-      @param columns List of columns [(Unit, Dim), ...] in this object
-      @param const List of constant colums for a sequence
-      @param x Index of x column
-      @param y Index of y column
-      @param yerror Index of error column
-      @param zdata Index of z column or -1 for None
+      :param columns: List of columns [(Unit, Dim), ...] in this object
+      :param const: List of constant colums for a sequence
+      :param x: Index of x column
+      :param y: Index of y column
+      :param yerror: Index of error column
+      :param zdata: Index of z column or -1 for None
     '''
     self.index=0
     self.info=''
@@ -136,7 +136,7 @@ class MeasurementData(object):
     '''
       Return the data as numpy array with applied filters.
       
-      @return numpy array of point lists
+      :return: numpy array of point lists
     '''
     #try:
     data=numpy.vstack(self.data+[item.error for item in self.data if item.has_error])#numpy.array([col.values for col in self.data])
@@ -503,9 +503,9 @@ class MeasurementData(object):
     '''
       Add a point to this sequence.
       
-      @param point List of entries by columns
+      :param point: List of entries by columns
       
-      @return The added point or 'NULL' if an error has occured
+      :return: The added point or 'NULL' if an error has occured
     '''
     data=self.data # speedup data_lookup
     append_fast=PhysicalProperty.append
@@ -765,7 +765,7 @@ class MeasurementData(object):
     '''
       Change units of all columns according to a given list of translations.
       
-      @return List of new dimensions and units
+      :return: List of new dimensions and units
     '''
     for unit in unit_list:
       for value in self.data:
@@ -786,7 +786,7 @@ class MeasurementData(object):
       Change units of one column according to a given list of translations and
       return this column.
       
-      @return The changed column and the applied translation
+      :return: The changed column and the applied translation
     '''
     data=deepcopy(self.data[col])
     unit_used=None
@@ -809,9 +809,9 @@ class MeasurementData(object):
     '''
       Processing a function on every data point.
       
-      @param function Python function to execute on each point
+      :param function: Python function to execute on each point
       
-      @return Last point after function execution
+      :return: Last point after function execution
     '''
     for i in range(self.number_of_points):
       point=self.get_data(i)
@@ -824,9 +824,9 @@ class MeasurementData(object):
       When numpy is installed this is done via one proccess call 
       for arrays. (This leads to a huge speedup)
       
-      @param function Python function to execute on each point
+      :param function: Python function to execute on each point
       
-      @return Last point after function execution
+      :return: Last point after function execution
     '''
     try:
       #arrays=[]
@@ -861,14 +861,14 @@ class MeasurementData(object):
     '''
       Write data in text file.
       
-      @param file_name Name of the export file
-      @param print_info Put a header ontop of the data
-      @param seperator Seperator characters to be used between columns
-      @param xfrom Start value of x for the export
-      @param xto End value of x for the export
-      @param only_fitted_columns Only export columns used for fitting.
+      :param file_name: Name of the export file
+      :param print_info: Put a header ontop of the data
+      :param seperator: Seperator characters to be used between columns
+      :param xfrom: Start value of x for the export
+      :param xto: End value of x for the export
+      :param only_fitted_columns: Only export columns used for fitting.
       
-      @return The number of data lines exported
+      :return: The number of data lines exported
     '''
     # The procedure is extremely optimized for fast exports
     # the bottleneck is the conversion from data array to string. (5/6)
@@ -992,12 +992,12 @@ class MeasurementData(object):
       thus the result is almost as fast as c-code (faster if the c-code is not optimized)
       while having the flexibility to define empty line indices and format options.
       
-      @param seperator A string to seperate each data value.
-      @param data A matrix of data points
-      @param split_indices Index of the points where empty lines should be added
-      @param format_string Specifies the format option to be used for string conversion of the numbers
+      :param seperator: A string to seperate each data value.
+      :param data: A matrix of data points
+      :param split_indices: Index of the points where empty lines should be added
+      :param format_string: Specifies the format option to be used for string conversion of the numbers
       
-      @return A string with the data.
+      :return: A string with the data.
     '''
     cols, ignore=data.shape
     data=data.transpose()
@@ -2218,7 +2218,7 @@ class PhysicalConstant(numpy.ndarray):
       called with one instance from this class. Makes PhysicalConstant objects
       usable with all standart numpy functions.
       
-      @return PhysicalConstant object with values as result from the function
+      :return: PhysicalConstant object with values as result from the function
     '''
     out_const=out_const.view(type(self))
     return out_const
@@ -2241,7 +2241,7 @@ class PhysicalConstant(numpy.ndarray):
       pp % ('m', 1.32, -0.2) -> a copy of the PhysicalProperty with the unit converted to 'm' 
                                 multiplying by 1.32 and subtracting 0.2
       
-      @return New object instance.    
+      :return: New object instance.    
     '''
     if type(conversion) in [str, PhysicalUnit]:
       if (self.unit, conversion) in known_transformations:
@@ -2264,7 +2264,7 @@ class PhysicalConstant(numpy.ndarray):
       Checking if the unit of both is the same otherwise
       try to convert the second argument to the same unit.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     if hasattr(other, 'dimension'):
       # if other is PhysicalProperty or derived use it's function
@@ -2288,7 +2288,7 @@ class PhysicalConstant(numpy.ndarray):
       Checking if the unit of both is the same otherwise
       try to convert the second argument to the same unit.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     if hasattr(other, 'dimension'):
       # if other is PhysicalProperty or derived use it's function
@@ -2311,7 +2311,7 @@ class PhysicalConstant(numpy.ndarray):
       Define multiplication of two PhysicalProperty instances.
       Changes the unit of the resulting object if both objects have a unit.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     if hasattr(other, 'dimension'):
       # if other is PhysicalProperty or derived use it's function
@@ -2330,7 +2330,7 @@ class PhysicalConstant(numpy.ndarray):
     '''
       Define division of two PhysicalProperty instances.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     if hasattr(other, 'dimension'):
       # if other is PhysicalProperty or derived use it's function
@@ -2346,7 +2346,7 @@ class PhysicalConstant(numpy.ndarray):
     '''
       Define division of other object by PhysicalProperty instances.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     output=numpy.ndarray.__rdiv__(self, other)
     if hasattr(other, 'unit'):
@@ -2359,7 +2359,7 @@ class PhysicalConstant(numpy.ndarray):
     '''
       Define calculation of PhysicalProperty instance to a specified power.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     output=numpy.ndarray.__pow__(self, to_power)
     output.unit=self.unit**to_power
@@ -2407,8 +2407,8 @@ class PhysicalProperty(numpy.ndarray):
     '''
       Class constructor when explcidly called.
       
-      @param dimension_in String with the dimensions for that instance
-      @param unit_in String with unit for that instance
+      :param dimension_in: String with the dimensions for that instance
+      :param unit_in: String with unit for that instance
     '''
     #obj=numpy.ndarray.__new__(cls, len(input_data), dtype=numpy.float32)
     obj=numpy.asarray(input_data, dtype=numpy.float32).view(cls).copy()
@@ -2602,7 +2602,7 @@ class PhysicalProperty(numpy.ndarray):
       called with one instance from this class. Makes PhysicalProperty objects
       usable with all standart numpy functions.
       
-      @return PhysicalProperty object with values as result from the function
+      :return: PhysicalProperty object with values as result from the function
     '''
     out_arr=out_arr.view(type(self))
     if self.has_error and context is not None:
@@ -2715,7 +2715,7 @@ class PhysicalProperty(numpy.ndarray):
       Checking if the unit of both is the same otherwise
       try to convert the second argument to the same unit.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     if hasattr(other, 'unit'):
       if self.unit!=other.unit:
@@ -2732,7 +2732,7 @@ class PhysicalProperty(numpy.ndarray):
       Checking if the unit of both is the same otherwise
       try to convert the second argument to the same unit.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     if hasattr(other, 'unit'):
       if self.unit!=other.unit:
@@ -2751,7 +2751,7 @@ class PhysicalProperty(numpy.ndarray):
       Checking if the unit of both is the same otherwise
       try to convert the second argument to the same unit.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     if hasattr(other, 'unit'):
       if self.unit!=other.unit:
@@ -2767,7 +2767,7 @@ class PhysicalProperty(numpy.ndarray):
       Checking if the unit of both is the same otherwise
       try to convert the second argument to the same unit.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     if hasattr(other, 'unit'):
       if self.unit!=other.unit:
@@ -2785,7 +2785,7 @@ class PhysicalProperty(numpy.ndarray):
       Define multiplication of two PhysicalProperty instances.
       Changes the unit of the resulting object if both objects have a unit.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     output=numpy.ndarray.__mul__(self, other)
     if hasattr(other, 'unit'):
@@ -2797,7 +2797,7 @@ class PhysicalProperty(numpy.ndarray):
       Define multiplication of two PhysicalProperty instances.
       Changes the unit of the resulting object if both objects have a unit.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     if hasattr(other, 'unit'):
       self.unit*=other.unit
@@ -2810,7 +2810,7 @@ class PhysicalProperty(numpy.ndarray):
     '''
       Define division of two PhysicalProperty instances.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     output=numpy.ndarray.__div__(self, other)
     if hasattr(other, 'unit'):
@@ -2821,7 +2821,7 @@ class PhysicalProperty(numpy.ndarray):
     '''
       Define division of two PhysicalProperty instances.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     if hasattr(other, 'unit'):
       self.unit/=other.unit
@@ -2831,7 +2831,7 @@ class PhysicalProperty(numpy.ndarray):
     '''
       Define division of other object by PhysicalProperty instances.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     output=numpy.ndarray.__rdiv__(self, other)
     if hasattr(other, 'unit'):
@@ -2844,7 +2844,7 @@ class PhysicalProperty(numpy.ndarray):
     '''
       Define calculation of PhysicalProperty instance to a specified power.
       
-      @return New instance of PhysicalProperty
+      :return: New instance of PhysicalProperty
     '''
     output=numpy.ndarray.__pow__(self, to_power)
     output.unit=self.unit**to_power
@@ -2854,7 +2854,7 @@ class PhysicalProperty(numpy.ndarray):
     '''
       Define calculation of this PhysicalProperty instance to a specified power.
       
-      @return This instance of PhysicalProperty altered
+      :return: This instance of PhysicalProperty altered
     '''
     self.unit**=to_power
     if self.has_error and to_power in [2., 0.5]:
@@ -2869,7 +2869,7 @@ class PhysicalProperty(numpy.ndarray):
       pp // 'new' -> a copy of the PhysicalProperty with the new dimension 'new'
       pp // ('length','m') -> a copy of the PhysicalProperty with the new dimension 'length' and the unit 'm'
       
-      @return New object instance.
+      :return: New object instance.
     '''
     output=deepcopy(self)
     if type(new_dim_unit) is str:
@@ -2891,7 +2891,7 @@ class PhysicalProperty(numpy.ndarray):
       pp % ('m', 1.32, -0.2) -> a copy of the PhysicalProperty with the unit converted to 'm' 
                                 multiplying by 1.32 and subtracting 0.2
       
-      @return New object instance.    
+      :return: New object instance.    
     '''
     output=deepcopy(self)
     if type(conversion) in [str, PhysicalUnit]:

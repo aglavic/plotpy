@@ -42,9 +42,9 @@ class DataImportTemplate(object):
     '''
       Evaluate all settings in the template and add them to this object.
       
-      @param template_code Code object returned by compile function
+      :param template_code: Code object returned by compile function
       
-      @return If evaluation was successful.
+      :return: If evaluation was successful.
     '''
     # run the code, which defines some local variables
     exec(template_code)
@@ -181,9 +181,9 @@ class DataImportTemplate(object):
     '''
       Function directly called to import data.
       
-      @param file_name Input file name to read the data from
+      :param file_name: Input file name to read the data from
       
-      @return A list of MeasurementData or derived objects
+      :return: A list of MeasurementData or derived objects
     '''
     if not os.path.exists(file_name):
       print "File %s not found"%file_name
@@ -228,9 +228,9 @@ class DataImportTemplate(object):
       Get the header size and read needed information from this header.
       Defines the region to start looking for data.
       
-      @param lines Lines from the input file
+      :param lines: Lines from the input file
       
-      @return Part of lines which belogs to the header
+      :return: Part of lines which belogs to the header
     '''
     if not self.header_fixed_length:
       self.header_length=0
@@ -274,9 +274,9 @@ class DataImportTemplate(object):
       Get the footer size and read needed information from this footer.
       Defines the region to end looking for data.
       
-      @param lines Lines from the input file
+      :param lines: Lines from the input file
       
-      @return Part of lines which belogs to the footer
+      :return: Part of lines which belogs to the footer
     '''
     if not self.footer_fixed_length:
       self.footer_length=0
@@ -317,8 +317,8 @@ class DataImportTemplate(object):
     '''
       Read data from input lines and append it to a dataset object.
       
-      @param lines Lines of the file to be used as data
-      @param dataset MeasurementData or derived object
+      :param lines: Lines of the file to be used as data
+      :param dataset: MeasurementData or derived object
     '''
     # remove empty lines
     lines=map(lambda line: line.strip(), lines)
@@ -351,9 +351,9 @@ class DataImportTemplate(object):
     '''
       Calculate new column values from imported columns from functions given in the template.
       
-      @param data_cols the columns of the already read data.
+      :param data_cols: the columns of the already read data.
       
-      @return List of new columns that have been created
+      :return: List of new columns that have been created
     '''
     data_arrays=map(np.array, data_cols)
     output=[]
@@ -375,9 +375,9 @@ class DataImportTemplate(object):
     '''
       Extract measured sequences and inter sequence lines.
       
-      @param lines Lines from the input file
+      :param lines: Lines from the input file
       
-      @return List of sequence lines containing data, List of inter sequence lines
+      :return: List of sequence lines containing data, List of inter sequence lines
     '''
     if self.footer_length>0:
       relevant_lines=lines[self.header_length:-self.footer_length]
@@ -467,7 +467,7 @@ class DataImportTemplate(object):
       Make changes for the next read sequence according to header/intersequence lines.
       Defines the columns to be imported.
       
-      @param lines Header/intersequence lines to be used for the initialization
+      :param lines: Header/intersequence lines to be used for the initialization
     '''
     self.ignore=list(self.columns_ignore)
     if not self.columns_fixed:
@@ -538,7 +538,7 @@ class DataImportTemplate(object):
     '''
       Create a new data object from the active column and replacement settings.
       
-      @return MeasurementData or derived object
+      :return: MeasurementData or derived object
     '''
     dataset=self.MeasurementData(zip(self.dimensions, self.units), (), self.x, self.y, self.error, self.z)
     dataset.sample_name=self.replace(self.sample)
@@ -551,7 +551,7 @@ class DataImportTemplate(object):
     '''
       Replace placeholders in string by the settings read from the input file.
       
-      @return changed string
+      :return: changed string
     '''
     # Find tags starting with < and ending with >
     tags=map(lambda item: item.split('>')[0],
@@ -573,4 +573,3 @@ class DataImportTemplate(object):
       else:
         string=string.replace('<'+tags[i]+'>', '')
     return string
-

@@ -20,9 +20,9 @@ def read_data(file_name):
   '''
     Read the data of a in12 data file.
     
-    @param file_name The name of the file to import
+    :param file_name: The name of the file to import
     
-    @return MeasurementData object with the file data
+    :return: MeasurementData object with the file data
   '''
   if not os.path.exists(file_name):
     print 'File '+file_name+' does not exist.'
@@ -48,7 +48,7 @@ def read_header(lines):
   '''
     Function to read IN12 file header information and check if the file is in the right format.
     
-    @return If right format, sequence with some information and the data columns present in the file.
+    :return: If right format, sequence with some information and the data columns present in the file.
   '''
   # test for correct format with these lines:
   try:
@@ -125,11 +125,11 @@ def read_data_lines(lines, columns, header):
     If the measurement is done using a .pol file the data points are splitted
     into seqences corresponding to the polarizations.
     
-    @param lines List of lines in input file
-    @param coluns List of data columns in that file
-    @param header The header information to use for e.g. the plot title
+    :param lines: List of lines in input file
+    :param coluns: List of data columns in that file
+    :param header: The header information to use for e.g. the plot title
     
-    @return List of MeasurementData objects with the read data
+    :return: List of MeasurementData objects with the read data
   '''
   title=header[2]
   variables=header[4]
@@ -178,7 +178,7 @@ def get_dimensions(item):
     Lookup the dimension of the values in the datafile.
     Uses the mapping defined in config.in12.column_dimensions.
     
-    @return String for the dimension
+    :return: String for the dimension
   '''
   for seq in column_dimensions:
     if item in seq[0]:
@@ -198,7 +198,7 @@ def create_info(header):
   '''
     Use the header list to create an information string which is easier readable.
     
-    @return The information string
+    :return: The information string
   '''
   time, user, title, command, variables, parameters=header
   info_text=['']
@@ -255,4 +255,3 @@ def create_info(header):
 if __name__=='__main__':    #code to execute if called from command-line for testing
   import sys
   read_data(sys.argv[1])
-

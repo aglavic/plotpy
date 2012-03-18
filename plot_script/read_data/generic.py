@@ -99,4 +99,3 @@ class GenericFileReader(object):
     data_lines=filter(lambda line: line is not None, data_lines)
     return numpy.array(data_lines)
 
-

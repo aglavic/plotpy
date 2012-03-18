@@ -2276,4 +2276,3 @@ class machar:
                 self.minlog=log(self.minnum)
                 self.rdwarf=sqrt(self.minnum*1.5)*10
                 self.rgiant=sqrt(self.maxnum)*0.1
-

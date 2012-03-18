@@ -365,4 +365,3 @@ class MBEGUI:
       dataset.plot_options.yrange=[None, None]
       window.rebuild_menus()
       window.replot()
-
