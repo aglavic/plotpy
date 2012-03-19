@@ -5394,6 +5394,6 @@ def apihelp(*ignore):
   help_file=os.path.join(
                               file_path
                               , 'doc'
-                              , 'index-plot_script.html'
+                              , 'index.html'
                               )
   return webbrowser.open(help_file)

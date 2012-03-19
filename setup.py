@@ -33,10 +33,12 @@ __packages__=['plot_script', 'plot_script.config', 'plot_script.config.default_t
             'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui', 'plot_script.plugins'] #'plot_script.wxgui', 
 __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90',
                             'fit/pnr_multi/*.f90', 'logo*.png'],
-                  'plot_script': ['doc/*.html', 'gpl.pdf'],
+                  'plot_script': ['doc/*.*', 'doc/_modules/*.*',
+                                  'doc/_static/*.*', 'doc/_sources/*.*',
+                                  'gpl.pdf'],
                   'plot_script.gtkgui': ['icons/*.png'],
                     }
-__data_files__=[('plot_script/doc', glob('plot_script/doc/*.html'))]
+__data_files__=[('plot_script/doc', glob('plot_script/doc/*.*'))]
 
 if "py2app" in sys.argv:
   import py2app #@UnusedImport @UnresolvedImport

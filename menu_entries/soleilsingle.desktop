@@ -11,4 +11,3 @@ Type=Application
 Exec=/usr/local/bin/plot.py gisas -all-frames -startuppath %d %f
 Categories=GTK;GNOME;Science;
 X-KDE-StartupNotify=true
-MimeType=text/gisas;

@@ -1,4 +1,4 @@
-recursive-include plot_script/doc *.html
+recursive-include plot_script/doc *
 recursive-include plot_script/gtkgui/icons *.png
 include plot_script/config/fit/fit.f90
 include plot_script/config/logo*.*
