@@ -2454,8 +2454,9 @@ class LabelArrowDialog(gtk.Dialog):
   '''
     A tabed dialog with entries for labels, arrows/lines.
   '''
+  _callback_entries=None
 
-  def __init__(self, dataset, parent, title='Labels/Arrows/Lines',
+  def __init__(self, dataset, parent, title='Labels/Lines/Arrows/Rectangles',
                buttons=('New', 3, 'Apply', 2, 'OK', 1, 'Cancel', 0)):
     gtk.Dialog.__init__(self, title=title, buttons=buttons, parent=parent)
     self.plot_window=parent
@@ -2464,8 +2465,10 @@ class LabelArrowDialog(gtk.Dialog):
     self.notebook=gtk.Notebook()
     self.label_table=gtk.Table()
     self.arrow_table=gtk.Table()
+    self.rectangle_table=gtk.Table()
     self.notebook.append_page(self.label_table, gtk.Label('Labels'))
     self.notebook.append_page(self.arrow_table, gtk.Label('Lines/Arrows'))
+    self.notebook.append_page(self.rectangle_table, gtk.Label('Rectangles'))
     self.notebook.show_all()
     self.vbox.add(self.notebook)
     self._init_all()
@@ -2478,6 +2481,7 @@ class LabelArrowDialog(gtk.Dialog):
     '''
     self._init_labels()
     self._init_arrows()
+    self._init_rectangles()
     self._first_init=False
 
   def _init_labels(self):
@@ -2506,6 +2510,9 @@ class LabelArrowDialog(gtk.Dialog):
         table.attach(p_entry, j, j+1, i, i+1)
         entries.append(p_entry)
         p_entry.connect('activate', self._apply)
+      for p_entry in entries[0:2]:
+        p_entry.connect('focus-in-event', self._entry_focus_in,
+                        entries[0], entries[1])
       text_entry=gtk.Entry()
       text_entry.set_text(text)
       #text_entry.set_width_chars(16)
@@ -2597,6 +2604,9 @@ class LabelArrowDialog(gtk.Dialog):
         table.attach(p_entry, j, j+1, i, i+1)
         entries.append(p_entry)
         p_entry.connect('activate', self._apply)
+      for p_entry in entries[0:2]:
+        p_entry.connect('focus-in-event', self._entry_focus_in,
+                        entries[0], entries[1])
       for j, p in enumerate(to_pos):
         p_entry=gtk.Entry()
         p_entry.set_text("%g"%p)
@@ -2604,6 +2614,9 @@ class LabelArrowDialog(gtk.Dialog):
         table.attach(p_entry, j+3, j+4, i, i+1)
         entries.append(p_entry)
         p_entry.connect('activate', self._apply)
+      for p_entry in entries[3:5]:
+        p_entry.connect('focus-in-event', self._entry_focus_in,
+                        entries[3], entries[4])
 
       arrow_toggle=gtk.CheckButton()
       arrow_toggle.set_active(not nohead)
@@ -2653,22 +2666,186 @@ class LabelArrowDialog(gtk.Dialog):
         pass
     self.dataset.plot_options.arrows=new_arrows
 
+  def _init_rectangles(self):
+    '''
+      Create entries of the rectangle table and connect user input actions.
+    '''
+    rectangles=self.dataset.plot_options.rectangles
+    table=self.rectangle_table
+    if self._first_init:
+      table.attach(gtk.Label('From'), 0, 3, 0, 1)
+      table.attach(gtk.Label('To'), 3, 6, 0, 1)
+      table.attach(gtk.Label('Front'), 6, 7, 0, 1)
+      table.attach(gtk.Label('Filled'), 7, 8, 0, 1)
+      table.attach(gtk.Label('Occ.'), 8, 9, 0, 1)
+      table.attach(gtk.Label('F. Color'), 9, 10, 0, 1)
+      table.attach(gtk.Label('Border'), 10, 11, 0, 1)
+      table.attach(gtk.Label('B. Color'), 11, 12, 0, 1)
+      table.attach(gtk.Label('Custom Options'), 12, 13, 0, 1)
+    i=1
+    self.rectangle_entries=[]
+    for position, front, filled, transp, fc, border, bc, settings in rectangles:
+      from_pos, to_pos=position
+      entries=[]
+      self.rectangle_entries.append(entries)
+      for j, p in enumerate(from_pos):
+        p_entry=gtk.Entry()
+        p_entry.set_text("%g"%p)
+        p_entry.set_width_chars(4)
+        table.attach(p_entry, j, j+1, i, i+1)
+        entries.append(p_entry)
+        p_entry.connect('activate', self._apply)
+      for p_entry in entries[0:2]:
+        p_entry.connect('focus-in-event', self._entry_focus_in,
+                        entries[0], entries[1])
+      for j, p in enumerate(to_pos):
+        p_entry=gtk.Entry()
+        p_entry.set_text("%g"%p)
+        p_entry.set_width_chars(4)
+        table.attach(p_entry, j+3, j+4, i, i+1)
+        entries.append(p_entry)
+        p_entry.connect('activate', self._apply)
+      for p_entry in entries[3:5]:
+        p_entry.connect('focus-in-event', self._entry_focus_in,
+                        entries[3], entries[4])
+
+      front_toggle=gtk.CheckButton()
+      front_toggle.set_active(front)
+      table.attach(front_toggle, 6, 7, i, i+1)
+      entries.append(front_toggle)
+      front_toggle.connect('toggled', self._apply)
+
+      filled_toggle=gtk.CheckButton()
+      filled_toggle.set_active(filled)
+      table.attach(filled_toggle, 7, 8, i, i+1)
+      entries.append(filled_toggle)
+      filled_toggle.connect('toggled', self._apply)
+
+      transp_entry=gtk.Entry()
+      transp_entry.set_text("%g"%transp)
+      transp_entry.set_width_chars(4)
+      table.attach(transp_entry, 8, 9, i, i+1)
+      entries.append(transp_entry)
+      transp_entry.connect('activate', self._apply)
+
+      fc_entry=gtk.Entry()
+      fc_entry.set_text(fc)
+      fc_entry.set_width_chars(8)
+      table.attach(fc_entry, 9, 10, i, i+1)
+      entries.append(fc_entry)
+      fc_entry.connect('activate', self._apply)
+
+      border_toggle=gtk.CheckButton()
+      border_toggle.set_active(border)
+      table.attach(border_toggle, 10, 11, i, i+1)
+      entries.append(border_toggle)
+      border_toggle.connect('toggled', self._apply)
+
+      bc_entry=gtk.Entry()
+      bc_entry.set_text(bc)
+      bc_entry.set_width_chars(8)
+      table.attach(bc_entry, 11, 12, i, i+1)
+      entries.append(bc_entry)
+      bc_entry.connect('activate', self._apply)
+
+      settings_entry=gtk.Entry()
+      settings_entry.set_text(settings)
+      #settings_entry.set_width_chars()
+      table.attach(settings_entry, 12, 13, i, i+1)
+      entries.append(settings_entry)
+      settings_entry.connect('activate', self._apply)
+
+      del_button=gtk.Button('DEL')
+      del_button.connect('clicked', self._delete, 'rectangle', i)
+      table.attach(del_button, 13, 14, i, i+1)
+      entries.append(del_button)
+      i+=1
+    table.show_all()
+
+  def _get_rectangles(self, *ignore):
+    '''
+      Collect all entries for labels.
+    '''
+    new_rectangles=[]
+    for entries in self.rectangle_entries:
+      try:
+        pos_fx=float(entries[0].get_text())
+        pos_fy=float(entries[1].get_text())
+        pos_fz=float(entries[2].get_text())
+        pos_tx=float(entries[3].get_text())
+        pos_ty=float(entries[4].get_text())
+        pos_tz=float(entries[5].get_text())
+        front=entries[6].get_active()
+        filled=entries[7].get_active()
+        transp=float(entries[8].get_text())
+        fc=entries[9].get_text()
+        border=entries[10].get_active()
+        bc=entries[11].get_text()
+        settings=entries[12].get_text()
+        new_rectangles.append([((pos_fx, pos_fy, pos_fz), (pos_tx, pos_ty, pos_tz)),
+                             front, filled, transp, fc,
+                             border, bc, settings])
+      except ValueError:
+        pass
+    self.dataset.plot_options.rectangles=new_rectangles
+
   def _clear_all(self, *ignore):
     '''
       Remove all entries form label, arrow ane line tables.
     '''
+    if self._callback_entries is not None:
+      self.plot_window.mouse_position_callback=None
+      self._callback_entries[0].modify_text(gtk.STATE_NORMAL,
+                                            gtk.gdk.color_parse('black'))
+      self._callback_entries[1].modify_text(gtk.STATE_NORMAL,
+                                            gtk.gdk.color_parse('black'))
+      self._callback_entries=None
     for entries in self.label_entries:
       for entry in entries:
         self.label_table.remove(entry)
     for entries in self.arrow_entries:
       for entry in entries:
         self.arrow_table.remove(entry)
+    for entries in self.rectangle_entries:
+      for entry in entries:
+        self.rectangle_table.remove(entry)
 
 
   def _apply(self, *ignore):
+    if self._callback_entries is not None:
+      self.plot_window.mouse_position_callback=None
+      self._callback_entries[0].modify_text(gtk.STATE_NORMAL,
+                                            gtk.gdk.color_parse('black'))
+      self._callback_entries[1].modify_text(gtk.STATE_NORMAL,
+                                            gtk.gdk.color_parse('black'))
+      self._callback_entries=None
     self._get_labels()
     self._get_arrows()
+    self._get_rectangles()
     self.plot_window.replot()
+
+  def _entry_focus_in(self, widget, event, xentry, yentry):
+    '''
+      Focused position entries connect to the mouse click of the main window
+      to allow positions to be defined easily.
+    '''
+    xentry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse('red'))
+    yentry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse('red'))
+    if self._callback_entries is not None:
+      self._callback_entries[0].modify_text(gtk.STATE_NORMAL,
+                                            gtk.gdk.color_parse('black'))
+      self._callback_entries[1].modify_text(gtk.STATE_NORMAL,
+                                            gtk.gdk.color_parse('black'))
+    self._callback_entries=[xentry, yentry]
+    self.plot_window.mouse_position_callback=self._mouse_callback
+
+  def _mouse_callback(self, position):
+    '''
+      Activated when mouse selection has been made.
+    '''
+    xentry, yentry=self._callback_entries
+    xentry.set_text(str(position[0]))
+    yentry.set_text(str(position[1]))
 
   def change_dataset(self, new_dataset):
     self._clear_all()
@@ -2683,6 +2860,10 @@ class LabelArrowDialog(gtk.Dialog):
     elif part=='arrow':
       self._clear_all()
       self.dataset.plot_options.arrows.pop(index-1)
+      self._init_all()
+    elif part=='rectangle':
+      self._clear_all()
+      self.dataset.plot_options.rectangles.pop(index-1)
       self._init_all()
     self._apply()
 
@@ -2699,6 +2880,11 @@ class LabelArrowDialog(gtk.Dialog):
       elif active_page==1:
         self.dataset.plot_options.arrows.append([((0, 0, 1), (0, 0, 1)),
                                                  True, True, ''])
+      elif active_page==2:
+        self.dataset.plot_options.rectangles.append([
+                                ((0, 0, 1), (0, 0, 1)),
+                                True, True, 0.3, 'white',
+                                True, 'black', ''])
       self._clear_all()
       self._init_all()
     elif response_id==2: # Apply
@@ -2716,6 +2902,11 @@ class LabelArrowDialog(gtk.Dialog):
           event.state&gtk.gdk.MOD1_MASK):
       # propagate any <control>+Key and <alt>+Key to the main window.
       self.plot_window.emit('key_press_event', event)
+
+  def destroy(self, *args, **kwargs):
+    if self._callback_entries is not None:
+      self.plot_window.mouse_position_callback=None
+    return gtk.Dialog.destroy(self, *args, **kwargs)
 
 
 #------------- Dialog to define labels, arrows and lines on the plot --------------------

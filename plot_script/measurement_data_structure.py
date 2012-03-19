@@ -1523,6 +1523,8 @@ class PlotOptions(object):
   short_info_in_title=True
   labels=[]
   arrows=[]
+  rectangles=[]
+  ellipses=[]
   tics=[None, None, None]
 
   def __init__(self, initial_text=""):
@@ -1536,6 +1538,8 @@ class PlotOptions(object):
     self._zrange=[None, None]
     self.labels=[]
     self.arrows=[]
+    self.rectangles=[]
+    self.ellipses=[]
     self.tics=[None, None, None]
     self.input_string(initial_text)
 
@@ -1581,7 +1585,7 @@ class PlotOptions(object):
       text=label[1]
       if label[4]:
         # draw box around the label
-        output+='set object %i rect at %g,%g,%g size char strlen("%s "), char 1 front fs transparent solid 0.75 lw 0.5\n'%(
+        output+='set object %i rect at %g,%g,%g size char strlen("%s"), char 1 front fs transparent solid 0.75 lw 0.5 # FRAME\n'%(
                                     i+200, pos[0], pos[1], pos[2], text)
       output+='set label %i "%s" at %g,%g,%g'%(i+100, text, pos[0], pos[1], pos[2])
       if label[2]:
@@ -1601,6 +1605,25 @@ class PlotOptions(object):
       if arrow[2]:
         output+=' front'
       output+=' %s # ARROW\n'%arrow[3]
+    for i, rectangle in enumerate(self.rectangles):
+      pos=rectangle[0]
+      output+='set object %i rectangle from %g,%g,%g to %g,%g,%g'%(i+100,
+                          pos[0][0], pos[0][1], pos[0][2],
+                          pos[1][0], pos[1][1], pos[1][2])
+      if rectangle[1]:
+        output+=' front'
+      if not rectangle[2]:
+        output+=' fs empty'
+      elif rectangle[3]>=1.:
+        output+=' fs solid 1.0'
+      else:
+        output+=' fs transparent solid %g'%rectangle[3]
+      if rectangle[5]:
+        output+=' border rgb "%s"'%rectangle[6]
+      else:
+        output+=' noborder'
+      output+=' fc rgb "%s"'%rectangle[4] # fill color
+      output+=' %s # RECTANGLE\n'%rectangle[7]
     for i, tics in zip(['x', 'y', 'cb'], self.tics):
       if tics is not None:
         output+='set %stics %f\n'%(i, tics)
@@ -1623,6 +1646,7 @@ class PlotOptions(object):
       Get setting information from a text.
     '''
     lines=text.splitlines()
+    last_was_frame=False
     for line in lines:
       if line.startswith("set"):
         split=line.split(" ", 2)
@@ -1659,9 +1683,11 @@ class PlotOptions(object):
             position=map(float, position.split(','))
             front='front' in settings
             point='point pt 7' in settings
+            center='center' in settings
             settings=settings.replace('front', '').replace('point pt 7', '')\
                              .replace('# LABEL', '').strip()
-            self.labels.append([position, label, front, point, settings])
+            self.labels.append([position, label, front, point,
+                                last_was_frame, center, settings])
           except:
             pass
         elif split[1]=='arrow' and ' # ARROW' in split[2]:
@@ -1676,6 +1702,10 @@ class PlotOptions(object):
             self.arrows.append([(pos_from, pos_to), nohead, front, settings])
           except:
             pass
+        elif split[1]=='object':
+          if '# FRAME' in split[2]:
+            last_was_frame=True
+            continue
         else:
           if split[1] in self.settings:
             self.settings[split[1]].append(split[2])
@@ -1683,7 +1713,7 @@ class PlotOptions(object):
             self.settings[split[1]]=[split[2]]
       else:
         self.free_input.append(line)
-
+      last_was_frame=False
 
   def get_xrange(self): return self._xrange
   def get_yrange(self): return self._yrange
