@@ -28,8 +28,11 @@ class PeakFinder(object):
                xdata, ydata,
                resolution=5,
                ):
-    self.xdata=xdata
-    self.ydata=ydata
+    xdata=numpy.array(xdata)
+    ydata=numpy.array(ydata)
+    idx=numpy.argsort(xdata)
+    self.xdata=xdata[idx]
+    self.ydata=ydata[idx]
     self.resolution=resolution
     self.positions=[]
 
@@ -42,7 +45,7 @@ class PeakFinder(object):
       Create the continous wavelet transform for the dataset.
     '''
     self.CWT=MexicanHat(self.ydata,
-                        largestscale=0.5,
+                        largestscale=1,
                         notes=self.resolution,
                         order=1,
                         scaling='log',
@@ -56,7 +59,7 @@ class PeakFinder(object):
       scale. Strong peaks will produce longer ridge lines than
       weaker or noise, as they start at higher scales.
     '''
-    cwt=self.CWT.getdata()
+    cwt=self.CWT.getdata().real
     scales=self.CWT.getscales()
     # initialize ridges starting at smoothest scaling
     ridges=[]
@@ -90,7 +93,7 @@ class PeakFinder(object):
       ridge_intensity=[]
       for rs, rx in ridge:
         ridge_intensity.append(cwt[rs, rx])
-      ridge_intensity=numpy.array(ridge_intensity).real
+      ridge_intensity=numpy.array(ridge_intensity)
       max_idx=numpy.where(ridge_intensity==ridge_intensity.max())[0][0]
       # scale of maximum coefficient on the ridge line
       #info.append(ridge[max_idx][0])
@@ -103,16 +106,17 @@ class PeakFinder(object):
     self.ridge_info=ridge_info
     self.ridge_intensities=ridge_intensities
 
-  def _SNR(self, minimum_noise_level=0.3):
+  def _SNR(self, minimum_noise_level=0.0001):
     '''
       Calculate signal to nois ratio. Signal is the highest
       CWT intensity of all scales, noise is the 95% quantile
       of the lowest scale WT, which is dominated by noise.
     '''
     ridge_info=self.ridge_info
-    cwt=self.CWT.getdata()
+    cwt=self.CWT.getdata().real
+    noise_cwt=cwt[0]
     minimum_noise=float(minimum_noise_level*mquantiles(
-                        cwt[0].real,
+                        noise_cwt,
                         0.95,
                         3./8., 3./8.))
     for info in ridge_info:
@@ -120,7 +124,7 @@ class PeakFinder(object):
       signal=info[3]
       base_left=min(0, (info[1]-scale*3))
       base_right=info[1]+scale*3
-      noise=mquantiles(cwt[0][base_left:base_right+1].real,
+      noise=mquantiles(noise_cwt[base_left:base_right+1],
                        0.95,
                        3./8., 3./8.)
       noise=numpy.nan_to_num(noise)
@@ -218,13 +222,13 @@ class PeakFinder(object):
 
   def visualize(self, snr=2.5,
                 min_width=None, max_width=None,
-                ridge_length=15):
+                ridge_length=15, double_peak_detection=False):
     '''
       Use matplotlib to visualize the peak finding routine.
     '''
     from pylab import figure, plot, errorbar, pcolormesh, show, legend
     figure(101)
-    peaks=self.get_peaks(snr, min_width, max_width, ridge_length, True)
+    peaks=self.get_peaks(snr, min_width, max_width, ridge_length, True, double_peak_detection)
     plot(self.xdata, self.ydata, 'r-', label='Data')
     errorbar([p[0] for p in peaks], [p[2] for p in peaks],
            xerr=[p[1] for p in peaks], fmt='go',
@@ -301,9 +305,9 @@ class Cwt:
 
     def _log2(self, x):
         # utility function to return (integer) log2
-        return int(numpy.log(float(x))/numpy.log(2.0)+0.0001)
+        return int(numpy.log2(float(x)))
 
-    def __init__(self, data, largestscale=1, notes=0, order=2, scaling='linear'):
+    def __init__(self, data, largestscale=1, notes=0, order=2, scaling='log'):
         """
         Continuous wavelet transform of data
 
@@ -346,12 +350,12 @@ class Cwt:
         """
         if scaling=="log":
             if notes<=0: notes=1
-            # adjust nscale so smallest scale is 2 
-            noctave=self._log2(ndata/largestscale/2)
+            # adjust nscale so smallest scale is 1
+            noctave=self._log2(ndata/largestscale)
             self.nscale=notes*noctave
             self.scales=numpy.zeros(self.nscale, float)
             for j in range(self.nscale):
-                self.scales[j]=ndata/(self.scale*(2.0**(float(self.nscale-1-j)/notes)))
+                self.scales[j]=2.0**(float(j)/notes)
         elif scaling=="linear":
             nmax=ndata/largestscale/2
             self.scales=numpy.arange(float(2), float(nmax))

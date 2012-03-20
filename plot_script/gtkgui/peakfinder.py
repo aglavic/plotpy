@@ -56,14 +56,14 @@ class PeakFinderDialog(gtk.Dialog):
     '''
       Create entry widgets
     '''
-    self.snr_adjust=gtk.Adjustment(value=2., lower=0.75, upper=20.,
+    self.snr_adjust=gtk.Adjustment(value=2., lower=0., upper=20.,
                               step_incr=0.25, page_incr=1.)
     snr_slider=gtk.HScale(self.snr_adjust)
     self.vbox.add(gtk.Label('Signal to Noise'))
     self.vbox.add(snr_slider)
 
-    self.min_width_adjust=gtk.Adjustment(value=0., lower=0., upper=100.,
-                              step_incr=0.1, page_incr=5.)
+    self.min_width_adjust=gtk.Adjustment(value=4, lower=0, upper=50,
+                              step_incr=1, page_incr=5)
     self.max_width_adjust=gtk.Adjustment(value=50., lower=0., upper=100.,
                               step_incr=0.1, page_incr=5.)
     self.min_width_adjust.connect('value-changed', readjust,
@@ -72,9 +72,9 @@ class PeakFinderDialog(gtk.Dialog):
                                   self.min_width_adjust, False)
     min_width=gtk.HScale(self.min_width_adjust)
     max_width=gtk.HScale(self.max_width_adjust)
-    self.vbox.add(gtk.Label('Minimal Peak Width'))
+    self.vbox.add(gtk.Label('Minimal Peak Width (points)'))
     self.vbox.add(min_width)
-    self.vbox.add(gtk.Label('Maximal Peak Width'))
+    self.vbox.add(gtk.Label('Maximal Peak Width (%-scan)'))
     self.vbox.add(max_width)
 
     self.ridge_adjust=gtk.Adjustment(value=20, lower=0, upper=100,
@@ -123,7 +123,7 @@ class PeakFinderDialog(gtk.Dialog):
     max_width_relative=self.max_width_adjust.get_value()
     ds=self.dataset
     xwidth=float(ds.x.max()-ds.x.min())
-    min_width=min_width_relative*xwidth*0.01
+    min_width=min_width_relative*xwidth/len(ds.x)
     max_width=max_width_relative*xwidth*0.01
 
     snr=self.snr_adjust.get_value()
@@ -224,7 +224,7 @@ def peaks_from_preset(ds, preset, parent_window=None, summary=False):
   snr=preset['SNR']
   ridge_length=preset['RidgeLength']
   xwidth=float(ds.x.max()-ds.x.min())
-  min_width=min_width_relative*xwidth*0.01
+  min_width=min_width_relative*xwidth/len(ds.x)
   max_width=max_width_relative*xwidth*0.01
   print "Filter peaks with preset options"
   peaks=peakfinder.get_peaks(snr=snr,

@@ -305,9 +305,9 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
         call_params.append(config.FORTRAN_COMPILER_MARCH)
       if sys.argv[0].endswith('.exe'):
         # fix gfortran error when binary folder is not the first in path
-        call_params[0]=os.path.join(self.SCRIPT_PATH, 'gfortran\\bin\\gfortran.exe')
+        call_params[0]=os.path.join(self.SCRIPT_PATH, '..', 'gfortran', 'bin', 'gfortran.exe')
         tmpenv=dict(os.environ)
-        tmpenv['PATH']=os.path.join(self.SCRIPT_PATH, 'gfortran\\bin')
+        tmpenv['PATH']=os.path.join(self.SCRIPT_PATH, '..', 'gfortran', 'bin',)
         callopts['env']=tmpenv
       try:
         proc=subprocess.Popen(call_params, shell=gnuplot_preferences.EMMULATE_SHELL,

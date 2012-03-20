@@ -1607,7 +1607,7 @@ class PlotOptions(object):
       output+=' %s # ARROW\n'%arrow[3]
     for i, rectangle in enumerate(self.rectangles):
       pos=rectangle[0]
-      output+='set object %i rectangle from %g,%g,%g to %g,%g,%g'%(i+100,
+      output+='set object %i rectangle from %g,%g,%g to %g,%g,%g'%(i+300,
                           pos[0][0], pos[0][1], pos[0][2],
                           pos[1][0], pos[1][1], pos[1][2])
       if rectangle[1]:
@@ -1624,6 +1624,25 @@ class PlotOptions(object):
         output+=' noborder'
       output+=' fc rgb "%s"'%rectangle[4] # fill color
       output+=' %s # RECTANGLE\n'%rectangle[7]
+    for i, ellipses in enumerate(self.ellipses):
+      pos=ellipses[0]
+      output+='set object %i ellipse at %g,%g,%g size %g,%g angle %g'%(i+400,
+                          pos[0][0], pos[0][1], pos[0][2],
+                          pos[1][0], pos[1][1], pos[2])
+      if ellipses[1]:
+        output+=' front'
+      if not ellipses[2]:
+        output+=' fs empty'
+      elif ellipses[3]>=1.:
+        output+=' fs solid 1.0'
+      else:
+        output+=' fs transparent solid %g'%ellipses[3]
+      if ellipses[5]:
+        output+=' border rgb "%s"'%ellipses[6]
+      else:
+        output+=' noborder'
+      output+=' fc rgb "%s"'%ellipses[4] # fill color
+      output+=' %s # ELLIPSE\n'%ellipses[7]
     for i, tics in zip(['x', 'y', 'cb'], self.tics):
       if tics is not None:
         output+='set %stics %f\n'%(i, tics)

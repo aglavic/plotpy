@@ -2309,7 +2309,7 @@ class ConfigObj(Section):
         self._original_configspec=None
 
 
-    def reload(self):
+    def reload(self): #@ReservedAssignment
         """
         Reload a ConfigObj from file.
         

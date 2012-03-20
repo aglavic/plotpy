@@ -2466,9 +2466,11 @@ class LabelArrowDialog(gtk.Dialog):
     self.label_table=gtk.Table()
     self.arrow_table=gtk.Table()
     self.rectangle_table=gtk.Table()
+    self.ellipse_table=gtk.Table()
     self.notebook.append_page(self.label_table, gtk.Label('Labels'))
     self.notebook.append_page(self.arrow_table, gtk.Label('Lines/Arrows'))
     self.notebook.append_page(self.rectangle_table, gtk.Label('Rectangles'))
+    self.notebook.append_page(self.ellipse_table, gtk.Label('Ellipses'))
     self.notebook.show_all()
     self.vbox.add(self.notebook)
     self._init_all()
@@ -2482,6 +2484,7 @@ class LabelArrowDialog(gtk.Dialog):
     self._init_labels()
     self._init_arrows()
     self._init_rectangles()
+    self._init_ellipses()
     self._first_init=False
 
   def _init_labels(self):
@@ -2789,6 +2792,133 @@ class LabelArrowDialog(gtk.Dialog):
         pass
     self.dataset.plot_options.rectangles=new_rectangles
 
+  def _init_ellipses(self):
+    '''
+      Create entries of the rectangle table and connect user input actions.
+    '''
+    ellipses=self.dataset.plot_options.ellipses
+    table=self.ellipse_table
+    if self._first_init:
+      table.attach(gtk.Label('Center'), 0, 3, 0, 1)
+      table.attach(gtk.Label('Radii'), 3, 5, 0, 1)
+      table.attach(gtk.Label('Angle'), 5, 6, 0, 1)
+      table.attach(gtk.Label('Front'), 6, 7, 0, 1)
+      table.attach(gtk.Label('Filled'), 7, 8, 0, 1)
+      table.attach(gtk.Label('Occ.'), 8, 9, 0, 1)
+      table.attach(gtk.Label('F. Color'), 9, 10, 0, 1)
+      table.attach(gtk.Label('Border'), 10, 11, 0, 1)
+      table.attach(gtk.Label('B. Color'), 11, 12, 0, 1)
+      table.attach(gtk.Label('Custom Options'), 12, 13, 0, 1)
+    i=1
+    self.ellipse_entries=[]
+    for position, front, filled, transp, fc, border, bc, settings in ellipses:
+      from_pos, rad_pos, angle=position
+      entries=[]
+      self.ellipse_entries.append(entries)
+      for j, p in enumerate(from_pos):
+        p_entry=gtk.Entry()
+        p_entry.set_text("%g"%p)
+        p_entry.set_width_chars(4)
+        table.attach(p_entry, j, j+1, i, i+1)
+        entries.append(p_entry)
+        p_entry.connect('activate', self._apply)
+      for p_entry in entries[0:2]:
+        p_entry.connect('focus-in-event', self._entry_focus_in,
+                        entries[0], entries[1])
+      for j, p in enumerate(rad_pos):
+        p_entry=gtk.Entry()
+        p_entry.set_text("%g"%p)
+        p_entry.set_width_chars(4)
+        table.attach(p_entry, j+3, j+4, i, i+1)
+        entries.append(p_entry)
+        p_entry.connect('activate', self._apply)
+      p_entry=gtk.Entry()
+      p_entry.set_text("%g"%angle)
+      p_entry.set_width_chars(4)
+      table.attach(p_entry, 5, 6, i, i+1)
+      entries.append(p_entry)
+      p_entry.connect('activate', self._apply)
+
+      front_toggle=gtk.CheckButton()
+      front_toggle.set_active(front)
+      table.attach(front_toggle, 6, 7, i, i+1)
+      entries.append(front_toggle)
+      front_toggle.connect('toggled', self._apply)
+
+      filled_toggle=gtk.CheckButton()
+      filled_toggle.set_active(filled)
+      table.attach(filled_toggle, 7, 8, i, i+1)
+      entries.append(filled_toggle)
+      filled_toggle.connect('toggled', self._apply)
+
+      transp_entry=gtk.Entry()
+      transp_entry.set_text("%g"%transp)
+      transp_entry.set_width_chars(4)
+      table.attach(transp_entry, 8, 9, i, i+1)
+      entries.append(transp_entry)
+      transp_entry.connect('activate', self._apply)
+
+      fc_entry=gtk.Entry()
+      fc_entry.set_text(fc)
+      fc_entry.set_width_chars(8)
+      table.attach(fc_entry, 9, 10, i, i+1)
+      entries.append(fc_entry)
+      fc_entry.connect('activate', self._apply)
+
+      border_toggle=gtk.CheckButton()
+      border_toggle.set_active(border)
+      table.attach(border_toggle, 10, 11, i, i+1)
+      entries.append(border_toggle)
+      border_toggle.connect('toggled', self._apply)
+
+      bc_entry=gtk.Entry()
+      bc_entry.set_text(bc)
+      bc_entry.set_width_chars(8)
+      table.attach(bc_entry, 11, 12, i, i+1)
+      entries.append(bc_entry)
+      bc_entry.connect('activate', self._apply)
+
+      settings_entry=gtk.Entry()
+      settings_entry.set_text(settings)
+      #settings_entry.set_width_chars()
+      table.attach(settings_entry, 12, 13, i, i+1)
+      entries.append(settings_entry)
+      settings_entry.connect('activate', self._apply)
+
+      del_button=gtk.Button('DEL')
+      del_button.connect('clicked', self._delete, 'ellipse', i)
+      table.attach(del_button, 13, 14, i, i+1)
+      entries.append(del_button)
+      i+=1
+    table.show_all()
+
+  def _get_ellipses(self, *ignore):
+    '''
+      Collect all entries for labels.
+    '''
+    new_ellipses=[]
+    for entries in self.ellipse_entries:
+      try:
+        pos_fx=float(entries[0].get_text())
+        pos_fy=float(entries[1].get_text())
+        pos_fz=float(entries[2].get_text())
+        rad_x=float(entries[3].get_text())
+        rad_y=float(entries[4].get_text())
+        angle=float(entries[5].get_text())
+        front=entries[6].get_active()
+        filled=entries[7].get_active()
+        transp=float(entries[8].get_text())
+        fc=entries[9].get_text()
+        border=entries[10].get_active()
+        bc=entries[11].get_text()
+        settings=entries[12].get_text()
+        new_ellipses.append([((pos_fx, pos_fy, pos_fz), (rad_x, rad_y), angle),
+                             front, filled, transp, fc,
+                             border, bc, settings])
+      except ValueError:
+        pass
+    self.dataset.plot_options.ellipses=new_ellipses
+
   def _clear_all(self, *ignore):
     '''
       Remove all entries form label, arrow ane line tables.
@@ -2809,6 +2939,9 @@ class LabelArrowDialog(gtk.Dialog):
     for entries in self.rectangle_entries:
       for entry in entries:
         self.rectangle_table.remove(entry)
+    for entries in self.ellipse_entries:
+      for entry in entries:
+        self.ellipse_table.remove(entry)
 
 
   def _apply(self, *ignore):
@@ -2822,6 +2955,7 @@ class LabelArrowDialog(gtk.Dialog):
     self._get_labels()
     self._get_arrows()
     self._get_rectangles()
+    self._get_ellipses()
     self.plot_window.replot()
 
   def _entry_focus_in(self, widget, event, xentry, yentry):
@@ -2865,6 +2999,10 @@ class LabelArrowDialog(gtk.Dialog):
       self._clear_all()
       self.dataset.plot_options.rectangles.pop(index-1)
       self._init_all()
+    elif part=='ellipse':
+      self._clear_all()
+      self.dataset.plot_options.ellipses.pop(index-1)
+      self._init_all()
     self._apply()
 
   def update(self, *ignore):
@@ -2883,6 +3021,11 @@ class LabelArrowDialog(gtk.Dialog):
       elif active_page==2:
         self.dataset.plot_options.rectangles.append([
                                 ((0, 0, 1), (0, 0, 1)),
+                                True, True, 0.3, 'white',
+                                True, 'black', ''])
+      elif active_page==3:
+        self.dataset.plot_options.ellipses.append([
+                                ((0, 0, 1), (0, 0), 0),
                                 True, True, 0.3, 'white',
                                 True, 'black', ''])
       self._clear_all()
