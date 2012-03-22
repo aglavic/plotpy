@@ -942,7 +942,8 @@ Gnuplot version %.1f patchlevel %i with terminals:
           self.measurement=self.active_session.active_file_data
           self.index_mess=0
           if transfere is not None:
-            self.active_session.file_data.update(transfere)
+            for name, datasets in transfere.items():
+              self.active_session.add_data(datasets, name)
           self.rebuild_menus()
           self.activate_plugins()
           self.replot()
@@ -957,10 +958,11 @@ Gnuplot version %.1f patchlevel %i with terminals:
           self.add_file()
         else:
           # Add transfered data to the session
-          self.active_session.file_data=transfere
+          for name, datasets in transfere.items():
+            self.active_session.add_data(datasets, name)
           file_name=sorted(transfere.keys())[0]
-          self.active_session.active_file_data=transfere[file_name]
-          self.measurement=transfere[file_name]
+          self.active_session.active_file_data=self.active_session.file_data[file_name]
+          self.measurement=self.active_session.file_data[file_name]
           self.index_mess=0
           self.active_session.active_file_name=file_name
           self.rebuild_menus()

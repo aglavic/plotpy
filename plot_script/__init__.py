@@ -53,11 +53,6 @@ try:
 except NameError:
   pass
 
-# own modules
-# when installed as module the direct import of config.gui results in a different module object than import from other files
-import sessions.generic
-import config
-
 # will be defined by initialize_gui_toolkit function
 gui_main=None
 
@@ -65,7 +60,7 @@ gui_main=None
 if not "--nolimit" in sys.argv:
   try:
     import resource
-    # Maximum memeroy usage is GiB, otherwise the program could cause
+    # Maximum memory usage is GiB, otherwise the program could cause
     # the system to hang dew to excessive swap memory access
     resource.setrlimit(resource.RLIMIT_AS, (2*1024**3, 2*1024**3))
   except ImportError:
@@ -74,10 +69,9 @@ if not "--nolimit" in sys.argv:
 # compatibility with older versions (snap-shots and plugins)
 # the plot_script package there was not imported properly so
 # we have to define the old module names
-import read_data, fit_data, measurement_data_structure, parallel
+import sessions, config, read_data, measurement_data_structure, parallel
 sys.modules['sessions']=sys.modules['plot_script.sessions']
 sys.modules['read_data']=sys.modules['plot_script.read_data']
-sys.modules['fit_data']=sys.modules['plot_script.fit_data']
 sys.modules['config']=sys.modules['plot_script.config']
 sys.modules['parallel']=sys.modules['plot_script.parallel']
 sys.modules['measurement_data_structure']=sys.modules['plot_script.measurement_data_structure']
@@ -220,6 +214,8 @@ def initialize_gui_toolkit():
   '''
     Load GUI modules dependent on the toolkit.
   '''
+  import fit_data
+  sys.modules['fit_data']=sys.modules['plot_script.fit_data']
   if '-gui' in sys.argv:
     idx=sys.argv.index('-gui')
     sys.argv.pop(idx)
