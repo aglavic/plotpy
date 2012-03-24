@@ -578,9 +578,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     if filename.endswith('.mds.gz') or filename.endswith('.mds') or \
       filename.endswith('.mdd.gz') or filename.endswith('.mdd'):
       # import binary files from this program
+      ds_name=filename.rsplit('.mds', 1)[0].rsplit('.mdd', 1)[0]
+      self.active_file_name=ds_name
       loaded_multiplot=self.reload_snapshot(filename)
       if not loaded_multiplot:
-        self.active_file_name=filename.rsplit('.mds', 1)[0].rsplit('.mdd', 1)[0]
         return self.active_file_data
       else:
         return []
@@ -811,6 +812,9 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       # old type snapshot
       self.file_data[self.active_file_name]=dump_obj
     self.active_file_data=self.file_data[self.active_file_name]
+    for i, ds in enumerate(self.active_file_data):
+      if ds.number=='':
+        ds.number="%i"%i
     return False
 
   def get_active_file_info(self):

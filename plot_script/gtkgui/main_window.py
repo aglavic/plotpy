@@ -627,9 +627,9 @@ class ApplicationMainWindow(gtk.Window):
     dialog.set_authors([__author__]+__credits__)
 
     gp=self.gnuplot_info
-    pyversion="%i.%i.%i"%(sys.version_info.major,
-                          sys.version_info.minor,
-                          sys.version_info.micro)
+    pyversion="%i.%i.%i"%(sys.version_info[0],
+                          sys.version_info[1],
+                          sys.version_info[2])
     try:
       import IPython
       ipversion=IPython.__version__
@@ -1014,8 +1014,8 @@ Gnuplot version %.1f patchlevel %i with terminals:
     # reset index to the first sequence in that file
     self.index_mess=index_mess
     self.active_multiplot=False
-    self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
-    self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
+    self.plot_page_entry.set_width_chars(len(str(len(self.measurement)))+1)
+    self.plot_page_entry.set_text(str('0'))
     for window in self.open_windows:
       window.destroy()
     self.reset_statusbar()
@@ -1128,8 +1128,8 @@ Gnuplot version %.1f patchlevel %i with terminals:
       return True
     self.input_file_name=self.active_session.active_file_name
     self.index_mess=0
-    self.plot_page_entry.set_width_chars(len(self.measurement[-1].number))
-    self.plot_page_entry.set_text(str(int(self.measurement[0].number)))
+    self.plot_page_entry.set_width_chars(len(str(len(self.measurement)))+1)
+    self.plot_page_entry.set_text('0')
     for window in self.open_windows:
       window.destroy()
     if type(sys.stdout)!=file:
@@ -3790,7 +3790,6 @@ Gnuplot version %.1f patchlevel %i with terminals:
       Open a dialog to connect to IPython Cluster.
     '''
     from plot_script import parallel
-    from plot_script.config import user_config
     if parallel.dview is not None:
       parallel.disconnect()
       return
@@ -3826,7 +3825,6 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       Open a dialog to edit the user config file.
     '''
-    from plot_script.config import user_config
     user_config.write()
     dialog=gtk.Dialog(title='Edit User Config...',
                       buttons=('Ok', 1, 'Cancel', 0))
