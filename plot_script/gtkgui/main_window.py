@@ -26,6 +26,7 @@ import file_actions
 from dialogs import PreviewDialog, StatusDialog, ExportFileChooserDialog, \
                     PrintDatasetDialog, SimpleEntryDialog, DataView, PlotTree, \
                     FileImportDialog, StyleLine, ImportWizard, LabelArrowDialog
+from dnd_handling import ImageDND
 from peakfinder import PeakFinderDialog, peaks_from_preset
 from multiplots import MultiplotCanvas
 from diverse_classes import PlotProfile, RedirectError, RedirectOutput
@@ -498,6 +499,8 @@ class ApplicationMainWindow(gtk.Window):
     self.event_box.connect('button-press-event', self.mouse_press)
     self.event_box.connect('button-release-event', self.mouse_release)
     self.connect('motion-notify-event', self.catch_mouse_position)
+    # Drag & Drop
+    self.DnD=ImageDND(self)
     # misc
     self.frame1.connect('switch-page', self.tab_switched)
     #------------- connecting events --------------
@@ -1025,19 +1028,24 @@ Gnuplot version %.1f patchlevel %i with terminals:
       self.plot_tree.add_data()
       self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
 
-  def add_file(self, action=None, hide_status=True):
+  def add_file(self, action=None, hide_status=True, file_names=None):
     '''
       Import one or more new datafiles of the same type.
       
       :return: List of names that have been imported.
     '''
-    #++++++++++++++++File selection dialog+++++++++++++++++++#
-    file_dialog=FileImportDialog(self.active_folder, self.active_session.FILE_WILDCARDS)
-    file_names, folder, template, ascii_filter=file_dialog.run()
-    file_dialog.destroy()
     if file_names is None:
-      # process canceled
-      return
+      #++++++++++++++++File selection dialog+++++++++++++++++++#
+      file_dialog=FileImportDialog(self.active_folder, self.active_session.FILE_WILDCARDS)
+      file_names, folder, template, ascii_filter=file_dialog.run()
+      file_dialog.destroy()
+      if file_names is None:
+        # process canceled
+        return
+    else:
+      folder=self.active_folder
+      template=None
+      ascii_filter=-3
     file_names=map(unicode, file_names)
     folder=unicode(folder)
     self.active_folder=folder
