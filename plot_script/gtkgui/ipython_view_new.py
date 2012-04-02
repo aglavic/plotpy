@@ -74,8 +74,19 @@ class IterableIPShell:
     # perhaps a bit hackkish, review...
 
     excepthook=sys.excepthook
+    config=IPython.frontend.terminal.ipapp.load_default_config() #@UndefinedVariable
+    config.InteractiveShellEmbed=config.TerminalInteractiveShell
+    config.InteractiveShellEmbed.colors='Linux'
+    if not 'edit' in config.InteractiveShellEmbed:
+      # set default editor as GUI editor
+      if os.path.exists('/usr/bin/kate') or os.path.exists('/usr/local/bin/kate'):
+        config.InteractiveShellEmbed.editor='kate -n'
+      elif os.path.exists('/usr/bin/gedit') or os.path.exists('/usr/local/bin/gedit'):
+        config.InteractiveShellEmbed.editor='gedit'
+      elif sys.platform.startswith('win'):
+        config.InteractiveShellEmbed.editor='wordpad'
     self.IP=IPython.frontend.terminal.embed.InteractiveShellEmbed(user_ns=user_ns, #@UndefinedVariable
-                                         user_global_ns=user_global_ns)
+                                         user_global_ns=user_global_ns, config=config)
     self.IP.system=self.IP.system_piped#lambda cmd: self.shell(self.IP.var_expand(cmd),
                                           #  header='IPython system call: ',
                                           # verbose=self.IP.rc.system_verbose)

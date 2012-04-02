@@ -347,7 +347,7 @@ class FileActions:
         names=session.file_data.keys()
         names.sort()
         index=names.index(dsname)
-        if index>1:
+        if index>0:
           index-=1
         else:
           index=len(names)-1

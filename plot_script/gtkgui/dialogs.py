@@ -328,7 +328,7 @@ class PreviewDialog(gtk.Dialog):
     '''
       Create an preview of the dataset and render it onto image.
     '''
-    import main_window
+    import main_window_plotting
     if getattr(self, 'preview_plot', False) and self.show_previews.get_active():
       image, dataset=self.unset_previews.pop(0)
       self.preview_plot(self.preview_session,
@@ -336,7 +336,7 @@ class PreviewDialog(gtk.Dialog):
                                   'preview',
                                   dataset.short_info,
                                   [item.short_info for item in dataset.plot_together],
-                                  main_window.errorbars,
+                                  main_window_plotting.errorbars,
                                   output_file=self.preview_temp_file,
                                   fit_lorentz=False)
       buf=gtk.gdk.pixbuf_new_from_file(self.preview_temp_file).scale_simple(
@@ -1283,13 +1283,13 @@ class PrintDatasetDialog:
     session.picture_width=str(int(self.width))
     session.picture_height=str(int(self.width/1.414))
     window=self.main_window
-    import main_window
+    import main_window_plotting
     window.plot(session,
                 [dataset],
                 session.active_file_name,
                 dataset.short_info,
                 [object_.short_info for object_ in dataset.plot_together],
-                main_window.errorbars,
+                main_window_plotting.errorbars,
                 output_file=session.TEMP_DIR+'plot_temp.png',
                 fit_lorentz=False)
 
@@ -1301,14 +1301,14 @@ class PrintDatasetDialog:
     session.picture_width=str(int(self.width))
     session.picture_height=str(int(self.width/1.414))
     window=self.main_window
-    import main_window
+    import main_window_plotting
     window.plot(session,
                 [item[0] for item in dataset_list],
                 dataset_list[0][1],
                 #plotlist[0][0].short_info,
                 dataset_list.title,
                 [item[0].short_info for item in dataset_list],
-                main_window.errorbars,
+                main_window_plotting.errorbars,
                 output_file=session.TEMP_DIR+'plot_temp.png',
                 fit_lorentz=False,
                 sample_name=dataset_list.sample_name)
@@ -1447,6 +1447,7 @@ class PlotTree(gtk.Dialog):
     '''
       Create a preview of the datasets and render it onto an image.
     '''
+    import main_window_plotting
     if self.preview_creation_active:
       self.preview_button.set_label('Create Previews')
       self.preview_creation_active=False
@@ -1466,7 +1467,7 @@ class PlotTree(gtk.Dialog):
                               'preview',
                               dataset.short_info,
                               [object_.short_info for object_ in dataset.plot_together],
-                              main_window.errorbars,
+                              main_window_plotting.errorbars,
                               output_file=self.preview_temp_file,
                               fit_lorentz=False)
             dataset.preview=gtk.gdk.pixbuf_new_from_file(self.preview_temp_file).scale_simple(100, 50, gtk.gdk.INTERP_BILINEAR)
