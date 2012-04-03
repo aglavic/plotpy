@@ -1268,6 +1268,7 @@ class FitPowerlaw(FitFunction):
 
   def fit_function(self, p, x):
     return p[0]*(x-p[1])**p[2]+p[3]
+FitPolynomialPowerlaw=FitPowerlaw
 
 class FitSinus(FitFunction):
   '''

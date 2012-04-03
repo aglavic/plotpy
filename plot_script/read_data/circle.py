@@ -182,7 +182,8 @@ ${comments}
     # calculate 4-circle monitor error
     index=output.dimensions().index('I_{det/atten}')
     count_idx=output.dimensions().index('I')
-    output.data[index].error=output.data[index]/output.data[count_idx]*output.data[count_idx].error
+    output.data[index].error=output.data[index]/\
+                    numpy.maximum(output.data[count_idx], 1)*output.data[count_idx].error
   recheck_type(output, scan_header)
   return output, scan_header['comments']
 

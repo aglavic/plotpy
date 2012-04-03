@@ -1509,7 +1509,8 @@ def calculate_transformations(transformations):
 # Dictionary of transformations from one unit to another
 known_transformations=calculate_transformations(known_unit_transformations)
 # List of ufunc functions which need an angle as input
-angle_functions=('sin', 'cos', 'tan', 'sec', 'sinh', 'cosh', 'tanh', 'sech')
+angle_functions=('sin', 'cos', 'tan', 'sinh', 'cosh', 'tanh')
+compare_functions=('maximum', 'minimum')
 
 class PlotOptions(object):
   '''
@@ -1915,26 +1916,35 @@ class PlotStyle(object):
   with_errorbars=property(_get_werror)
 
 derivatives={# derivatives to numpy base functions for error propagation
-             numpy.sin.__str__(): numpy.cos,
-             numpy.cos.__str__(): lambda input_:-numpy.sin(input_),
-             numpy.tan.__str__(): lambda input_: 1./numpy.cos(input_)**2,
-             numpy.exp.__str__(): numpy.exp,
-             numpy.arcsin.__str__(): lambda input_: 1./(1.-input_**2)**0.5,
-             numpy.arccos.__str__(): lambda input_:-1./(1.-input_**2)**0.5,
-             numpy.arctan.__str__(): lambda input_: 1./(1.+input_**2),
-             numpy.log.__str__(): lambda input_: 1./input_,
-             numpy.log10.__str__(): lambda input_: 1./input_,
-             numpy.square.__str__(): lambda input_: 2.*input_ ,
-             numpy.sqrt.__str__(): lambda input_: 1./(2.*numpy.sqrt(input_)),
-             numpy.abs.__str__(): lambda input_: input_,
+   numpy.sin.__str__(): numpy.cos,
+   numpy.cos.__str__(): lambda input_:-numpy.sin(input_),
+   numpy.tan.__str__(): lambda input_: 1./numpy.cos(input_)**2,
+   numpy.arcsin.__str__(): lambda input_: 1./(numpy.sqrt(1.-input_**2)),
+   numpy.arccos.__str__(): lambda input_:-1./(numpy.sqrt(1.-input_**2)),
+   numpy.arctan.__str__(): lambda input_: 1./(1.+input_**2),
+   numpy.sinh.__str__(): numpy.cosh,
+   numpy.cosh.__str__(): numpy.sinh,
+   numpy.tanh.__str__(): lambda input_: 1./numpy.cosh(input_)**2,
+   numpy.arcsinh.__str__(): lambda input_: 1./(numpy.sqrt(input_**2+1)),
+   numpy.arccosh.__str__(): lambda input_:-1./(numpy.sqrt(input_**2-1)),
+   numpy.arctanh.__str__(): lambda input_: 1./(1.-input_**2),
+   numpy.exp.__str__(): numpy.exp,
+   numpy.arcsin.__str__(): lambda input_: 1./(1.-input_**2)**0.5,
+   numpy.arccos.__str__(): lambda input_:-1./(1.-input_**2)**0.5,
+   numpy.arctan.__str__(): lambda input_: 1./(1.+input_**2),
+   numpy.log.__str__(): lambda input_: 1./input_,
+   numpy.log10.__str__(): lambda input_: 1./input_,
+   numpy.square.__str__(): lambda input_: 2.*input_ ,
+   numpy.sqrt.__str__(): lambda input_: 1./(2.*numpy.sqrt(input_)),
+   numpy.abs.__str__(): lambda input_: input_,
 
-             # functions with two parameters
-             numpy.add.__str__(): (lambda input1, input2: 1., lambda input1, input2: 1.),
-             numpy.subtract.__str__(): (lambda input1, input2: 1., lambda input1, input2: 1.),
-             numpy.multiply.__str__(): (lambda input1, input2: input2, lambda input1, input2: input1),
-             numpy.divide.__str__(): (lambda input1, input2: 1./input2 , lambda input1, input2:-input1/input2**2),
-             numpy.power.__str__(): (lambda input1, input2: input2*input1**(input2-1),
-                                     lambda input1, input2: numpy.log(input1)*input1**input2),
+   # functions with two parameters
+   numpy.add.__str__(): (lambda input1, input2: 1., lambda input1, input2: 1.),
+   numpy.subtract.__str__(): (lambda input1, input2: 1., lambda input1, input2: 1.),
+   numpy.multiply.__str__(): (lambda input1, input2: input2, lambda input1, input2: input1),
+   numpy.divide.__str__(): (lambda input1, input2: 1./input2 , lambda input1, input2:-input1/input2**2),
+   numpy.power.__str__(): (lambda input1, input2: input2*input1**(input2-1),
+                           lambda input1, input2: numpy.log(input1)*input1**input2),
              }
 
 class LinkedList(list):
@@ -2420,6 +2430,11 @@ class PhysicalConstant(numpy.ndarray):
   def __idiv__(self, other): raise NotImplementedError, "you can't modify physical constants"
   def __ipow__(self, to_power): raise NotImplementedError, "you can't modify physical constants"
 
+class PhysicalWarning(UserWarning):
+  '''
+    Warning raised when array operations don't make physical sense.
+  '''
+
 class PhysicalProperty(numpy.ndarray):
   '''
     Class for any physical property. Stores the data, unit and dimension
@@ -2654,30 +2669,42 @@ class PhysicalProperty(numpy.ndarray):
       :return: PhysicalProperty object with values as result from the function
     '''
     out_arr=out_arr.view(type(self))
-    if self.has_error and context is not None:
-      out_arr=self._propagate_errors(out_arr, context)
     out_arr.unit=self.unit
     out_arr.dimension=self.dimension
     if context:
+      ## make sure only physical properties with the same dimension are compared
+      if context[0].__name__ in compare_functions:
+        if hasattr(context[1][1], 'unit'):
+          if self.unit!=context[1][1].unit:
+            try:
+              other=context[1][1]%self.unit
+            except ValueError:
+              raise PhysicalWarning, "Comparing columns with different units"
+            else:
+              # call the function again with changed unit of other
+              return context[0](self, other)
       ## make sure angular dependent functions are called with radian unit
       if context[0].__name__ in angle_functions:
         if self.unit!='rad':
           try:
-            out_arr=context[0](self%'rad')
+            # call the function again with changed unit
+            return context[0](self%'rad')
           except ValueError:
-            raise ValueError, 'Input to function %s needs to be an angle'%context[0].__name__
+            raise PhysicalWarning, 'Input to function %s needs to be an angle'%context[0].__name__
         out_arr.unit=PhysicalUnit('')
       ## make sure inverse angular functions get called with dimensioinless input
       elif context[0].__name__.startswith('arc'):
         if self.unit=='':
           out_arr.unit=PhysicalUnit('rad')
         else:
-          raise ValueError, "Input to function %s needs to have empty unit"%context[0].__name__
-      elif context[0] in [numpy.exp, numpy.log]:
+          raise PhysicalWarning, "Input to function %s needs to have empty unit"%context[0].__name__
+      elif context[0] in [numpy.exp, numpy.log, numpy.log10, numpy.log2]:
         if self.unit!='':
-          raise ValueError, "Input to function %s needs to have empty unit"%context[0].__name__
+          raise PhysicalWarning, "Input to function %s needs to have empty unit"%context[0].__name__
       elif context[0] is numpy.sqrt:
         out_arr.unit**=0.5
+    if self.has_error and context is not None:
+      out_arr=self._propagate_errors(out_arr, context)
     return out_arr
 
   def __getitem__(self, item):
@@ -2729,6 +2756,17 @@ class PhysicalProperty(numpy.ndarray):
       if len(context[1])==1:
         # only a function of one parameter
         out_arr.error=abs(derivatives[context[0].__str__()](self.view(numpy.ndarray))*self.error)
+      elif context[0].__name__ in compare_functions:
+        other=context[1][1]
+        # if both arguments to compare function have an error value
+        # the error of the item in the result array is taken
+        if getattr(context[1][1], 'error', None) is not None:
+          selfidx=numpy.where(out_arr==self)
+          out_arr.error=other.error[:]
+          if self.error is not None:
+            out_arr.error[selfidx]=self.error
+        elif self.error is not None:
+          out_arr.error=self.error[:]
       else:
         # a function of two patameters
         if context[1][0] is self:
@@ -2749,7 +2787,7 @@ class PhysicalProperty(numpy.ndarray):
           # the second argument is self, so the first is no PhysicalProperty instance
           out_arr.error=abs(derivatives[context[0].__str__()][1](numpy.array(context[1][0]), self.view(numpy.ndarray))*self.error)
     except KeyError:
-      raise NotImplementedError, "no derivative defined for function '%s'"%context[0].__name__
+      raise NotImplementedError, "no derivative defined for error propagation of function '%s'"%context[0].__name__
     return out_arr
 
   def __neg__(self):
