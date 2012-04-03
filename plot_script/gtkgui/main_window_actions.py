@@ -541,7 +541,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
 
   def open_ipy_console(self, action=None, commands=[], show_greetings=True):
     '''
-      In debug mode this opens a window with an IPython console,
+      This opens a window with an IPython console,
       which has direct access to all important objects.
     '''
     import IPython

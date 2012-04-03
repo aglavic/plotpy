@@ -456,4 +456,7 @@ class OptionSwitch(object):
         self.value=in_dict['value']
       else:
         self.value=self.value_defaults[switch]
-        self.value.from_dict(in_dict['value'])
+        if hasattr(self.value, 'from_dict'):
+          self.value.from_dict(in_dict['value'])
+        else:
+          self.value=in_dict['value']
