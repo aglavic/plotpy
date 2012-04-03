@@ -305,6 +305,7 @@ class MainFile(object):
         self.active_multiplot=not self.active_multiplot
       else:
         self.active_multiplot=False
+      self.rebuild_menus()
       return self.replot()
     if action.get_name()=='SaveGPL':
       #++++++++++++++++File selection dialog+++++++++++++++++++#

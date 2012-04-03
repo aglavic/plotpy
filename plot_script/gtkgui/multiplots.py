@@ -96,6 +96,14 @@ class MultiplotItem(gtk.HBox):
     for ignore in range(len(self.items)):
       self.pop(0)
 
+  def __repr__(self):
+    output='%s([ '%(self.__class__.__name__)
+    spacer='   '
+    for item in self.items:
+      output+='\n'+spacer+repr(item[0])
+    output+='\n     ])'
+    return output
+
 
 
 class MultiplotCanvas(gtk.Table):
@@ -284,6 +292,18 @@ class MultiplotCanvas(gtk.Table):
     self.clear(refill=False)
     for items in items_list:
       self.new_item(items=items)
+
+  def __repr__(self):
+    output='<%s [ '%(self.__class__.__name__)
+    spacer='   '
+    for item in self.multiplots:
+      irepr=repr(item).replace('\n', '\n'+spacer)
+      if item is self.active_mp:
+        output+='\n'+spacer[:-1]+'*'+irepr+'*'
+      else:
+        output+='\n'+spacer+irepr
+    output+='\n      ]>'
+    return output
 
 class ItemSortAdd(gtk.Dialog):
   '''

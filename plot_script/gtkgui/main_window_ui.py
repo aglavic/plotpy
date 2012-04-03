@@ -118,11 +118,20 @@ class MainUI(object):
       '''
     if len(self.measurement)>0:
       # Menus for column selection created depending on input measurement
+      if self.active_multiplot:
+        columns=[(i, col.dimension) for i, col in enumerate(self.multiplot[0][0].data)]
+        for dataset, ignore in self.multiplot:
+          columnsi=dataset.dimensions()
+          for item in reversed(columns):
+            if not item[1] in columnsi:
+              columns.remove(item)
+      else:
+        columns=[(i, col.dimension) for i, col in enumerate(self.active_dataset.data)]
       output+='''
             <menu action='xMenu'>
               <menuitem action='x-number'/>
         '''
-      for i, dimension in enumerate(self.active_dataset.dimensions()):
+      for i, dimension in columns:
         output+="         <menuitem action='x-"+str(i)+"'/>\n"
         self.added_items=self.added_items+(("x-"+str(i), None, dimension, None, None, self.change),)
       output+='''
@@ -130,7 +139,7 @@ class MainUI(object):
             <menu action='yMenu'>
               <menuitem action='y-number'/>
         '''
-      for i, dimension in enumerate(self.active_dataset.dimensions()):
+      for i, dimension in columns:
         output+="            <menuitem action='y-"+str(i)+"'/>\n"
         self.added_items=self.added_items+(("y-"+str(i), None, dimension, None, None, self.change),)
       if self.active_dataset.zdata>=0:
@@ -139,7 +148,7 @@ class MainUI(object):
               <placeholder name='zMenu'>
               <menu action='zMenu'>
           '''
-        for i, dimension in enumerate(self.active_dataset.dimensions()):
+        for i, dimension in columns:
           output+="          <menuitem action='z-"+str(i)+"'/>\n"
           self.added_items=self.added_items+(("z-"+str(i), None, dimension, None, None, self.change),)
         if hasattr(self.active_dataset, 'y2data') and \
@@ -148,7 +157,7 @@ class MainUI(object):
                 </menu>
                 <menu action='y2Menu'>
             '''
-          for i, dimension in enumerate(self.active_dataset.dimensions()):
+          for i, dimension in columns:
             output+="          <menuitem action='y2-"+str(i)+"'/>\n"
             self.added_items=self.added_items+(("y2-"+str(i), None, dimension, None, None, self.change),)
         output+="</menu>\n</placeholder>\n"
@@ -156,14 +165,14 @@ class MainUI(object):
         output+='''
               </menu>      
               <placeholder name='zMenu'/>'''
-      output+='''
-            <menu action='dyMenu'>
-        '''
-      for i, dimension in enumerate(self.active_dataset.dimensions()):
-        output+="              <menuitem action='dy-"+str(i)+"'/>\n"
-        self.added_items=self.added_items+(("dy-"+str(i), None, dimension, None, None, self.change),)
+      #output+='''
+      #      <menu action='dyMenu'>
+      #  '''
+      #for i, dimension in enumerate(self.active_dataset.dimensions()):
+      #  output+="              <menuitem action='dy-"+str(i)+"'/>\n"
+      #  self.added_items=self.added_items+(("dy-"+str(i), None, dimension, None, None, self.change),)
       # allways present stuff and toolbar
-      output+='''                   </menu>'''
+      #output+='''                   </menu>'''
     output+='''
         </menu>
         <menu action='Profiles'>

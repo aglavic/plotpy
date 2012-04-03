@@ -908,12 +908,25 @@ class MainPlotting(object):
       return
     # change the plotted columns
     if action.get_name()=='x-number':
-      self.active_dataset.xdata=-1
+      if self.active_multiplot:
+        for dataset, ignore in self.multiplot:
+          dataset.xdata=-1
+      else:
+        self.active_dataset.xdata=-1
     elif action.get_name()=='y-number':
-      self.active_dataset.ydata=-1
+      if self.active_multiplot:
+        for dataset, ignore in self.multiplot:
+          dataset.ydata=-1
+      else:
+        self.active_dataset.ydata=-1
     elif action.get_name()[0]=='x':
       dim=action.get_name()[2:]
-      self.active_dataset.xdata=int(dim)
+      if self.active_multiplot:
+        col=self.multiplot[0][0].data[int(dim)].dimension
+        for dataset, ignore in self.multiplot:
+          dataset.xdata=dataset.dimensions().index(col)
+      else:
+        self.active_dataset.xdata=int(dim)
     elif action.get_name()[0:2]=='y2':
       dim=action.get_name()[3:]
       self.active_dataset.y2data=int(dim)
@@ -926,10 +939,20 @@ class MainPlotting(object):
         self.y2_width.set_text("%g"%ds.slice_width)
     elif action.get_name()[0]=='y':
       dim=action.get_name()[2:]
-      self.active_dataset.ydata=int(dim)
+      if self.active_multiplot:
+        col=self.multiplot[0][0].data[int(dim)].dimension
+        for dataset, ignore in self.multiplot:
+          dataset.ydata=dataset.dimensions().index(col)
+      else:
+        self.active_dataset.ydata=int(dim)
     elif action.get_name()[0]=='z':
       dim=action.get_name()[2:]
-      self.active_dataset.zdata=int(dim)
+      if self.active_multiplot:
+        col=self.multiplot[0][0].data[int(dim)].dimension
+        for dataset, ignore in self.multiplot:
+          dataset.zdata=dataset.dimensions().index(col)
+      else:
+        self.active_dataset.zdata=int(dim)
     elif action.get_name()[0]=='d':
       dim=action.get_name()[3:]
       self.active_dataset.yerror=int(dim)

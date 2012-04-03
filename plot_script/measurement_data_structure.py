@@ -729,13 +729,19 @@ class MeasurementData(object):
     '''
       Get unit of xcolumn.
     '''
-    return str(self.units()[self.xdata])
+    if self.xdata>=0:
+      return str(self.units()[self.xdata])
+    else:
+      return ''
 
   def yunit(self):
     '''
       Get unit of ycolumn.
     '''
-    return str(self.units()[self.ydata])
+    if self.ydata>=0:
+      return str(self.units()[self.ydata])
+    else:
+      return ''
 
   def zunit(self):
     '''
@@ -747,13 +753,19 @@ class MeasurementData(object):
     '''
       Get dimension of xcolumn.
     '''
-    return self.dimensions()[self.xdata]
+    if self.xdata>=0:
+      return self.dimensions()[self.xdata]
+    else:
+      return 'Index'
 
   def ydim(self):
     ''' 
       Get dimension of ycolumn.
     '''
-    return self.dimensions()[self.ydata]
+    if self.ydata>=0:
+      return self.dimensions()[self.ydata]
+    else:
+      return 'Index'
 
   def zdim(self):
     '''
