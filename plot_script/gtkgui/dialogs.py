@@ -1584,7 +1584,10 @@ class DataView(gtk.Dialog):
         indices=map(lambda select: self.liststore[select][0], selection)
         items=map(lambda index: "\t".join(map(str, self.dataset[index])), indices)
         clipboard_content="\n".join(items)
-        self.clipboard.set_text(clipboard_content)
+        header_cols=["%s[%s]"%(d, u) for d, u in zip(self.dataset.dimensions(),
+                                                     self.dataset.units())]
+        clipboard_header="# "+"\t".join(header_cols)+'\n'
+        self.clipboard.set_text(clipboard_header+clipboard_content)
       if keyname=='a':
         self.treeview.get_selection().select_all()
 

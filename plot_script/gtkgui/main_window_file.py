@@ -278,6 +278,19 @@ class MainFile(object):
       self.measurement=self.active_session.active_file_data
     self.replot()
 
+  def export_clipboard(self, action):
+    '''
+      Export the active dataset as text to clipboard.
+    '''
+    clipboard=gtk.Clipboard(gtk.gdk.display_get_default(), "CLIPBOARD")
+    data=self.active_dataset.get_filtered_data_matrix()
+    items=map(lambda dataline: "\t".join(map(str, dataline)), data.transpose())
+    clipboard_content="\n".join(items)
+    header_cols=["%s[%s]"%(d, u) for d, u in zip(self.active_dataset.dimensions(),
+                                                 self.active_dataset.units())]
+    clipboard_header="# "+"\t".join(header_cols)+'\n'
+    clipboard.set_text(clipboard_header+clipboard_content)
+
   def export_plot(self, action):
     '''
       Function for every export action. 

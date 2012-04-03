@@ -70,7 +70,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
       self.index_mess=self.measurement.index(dataset)
     else:
       found=False
-      for name, measurement in self.active_session.file_data.keys():
+      for name, measurement in self.active_session.file_data.items():
         if dataset in measurement:
           self.active_session.active_file_data=measurement
           self.active_session.active_file_name=name
@@ -79,7 +79,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
           found=True
           break
       if not found:
-        raise LookupError, 'Can only set active_dataset from active_session.file_data'
+        self.measurement[self.index_mess]=dataset
 
   active_dataset=property(get_active_dataset, set_active_dataset)
   # stores the geometry of the window and image

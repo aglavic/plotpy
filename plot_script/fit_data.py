@@ -1173,8 +1173,6 @@ class FitLinear(FitFunction):
   fit_function=lambda self, p, x: p[0]*numpy.array(x)+p[1]
   fit_function_text='[a]·x + [b]'
 
-
-
 class ThetaCorrection(FitFunction):
   '''
     Fit a function to peak positions to get a reciprocal lattice parameter and Θ-offset.
@@ -1249,22 +1247,27 @@ class FitQuadratic(FitFunction):
   fit_function=lambda self, p, x: p[0]*numpy.array(x)**2+p[1]*numpy.array(x)+p[2]
   fit_function_text='[a]·x^2 + [b]·x + [c]'
 
-class FitPolynomialPowerlaw(FitFunction):
+class FitPowerlaw(FitFunction):
   '''
-    Fit a quartic polynomial logarithmic function.
+    Fit a powerlaw function.
   '''
 
   # define class variables.
-  name="Powerlaw with Polynom"
-  parameters=[0., 0., 1., 0., 0.]
-  parameter_names=['a', 'b', 'c', 'd', 'e']
-  fit_function_text='exp([a]·x^4 + [b]·x^3 + [c]·x^2 + [d]·x + [e])'
+  name="Powerlaw"
+  parameters=[1., 0., 2., 0.]
+  parameter_names=['C', 'x0', 'α', 'BG']
+  fit_function_text='[C]·x^{[α]}'
+  fit_logarithmic=True
+
+  def __init__(self, initial_parameters=[]):
+    '''
+      Constructor.
+    '''
+    FitFunction.__init__(self, initial_parameters)
+    self.refine_parameters=[0, 2]
 
   def fit_function(self, p, x):
-    x=numpy.array(x)
-    return 10.**(p[0]*x**4+p[1]*x**3+p[2]*x**2+p[3]*x+p[4])
-
-  residuals=FitFunction.residuals_log
+    return p[0]*(x-p[1])**p[2]+p[3]
 
 class FitSinus(FitFunction):
   '''
@@ -1575,7 +1578,6 @@ class FitCuK(FitFunction):
     value2=p[0]/p[5]*wofz(z2).real/wofz(z0).real+p[4]
     return value+value2
 
-
 class FitCrystalLayer(FitFunction):
   '''
     Simulate diffraction from a crystal layer with finite size and roughness.
@@ -1767,7 +1769,6 @@ class FitRelaxingCrystalLayer(FitFunction):
       A_substrate+=1./(mu+1j*(q-q_i))
       #  print q_i
     return A_substrate
-
 
 class FitSuperlattice(FitFunction):
   '''
@@ -2429,8 +2430,6 @@ class FitBrillouineT(FitFunction):
     '''
     return self.brillouine(p, numpy.array(T))+p[4]
 
-
-
 class FitNanoparticleZFC(FitFunction):
   '''
     Fit zero field cooled curves of Nanoparticles.
@@ -2814,7 +2813,7 @@ class FitSession(FitSessionGUI):
                        FitBrillouineT.name: FitBrillouineT,
                        FitFerromagnetic.name: FitFerromagnetic,
                        FitCuK.name: FitCuK,
-                       FitPolynomialPowerlaw.name: FitPolynomialPowerlaw,
+                       FitPowerlaw.name: FitPowerlaw,
                        FitCrystalLayer.name: FitCrystalLayer,
                        FitRelaxingCrystalLayer.name: FitRelaxingCrystalLayer,
                        FitOffspecular.name: FitOffspecular,
@@ -3157,6 +3156,167 @@ class FitSession(FitSessionGUI):
         plot_list.append(result)
     self.data.plot_together=[self.data]+plot_list
 
+class InteractiveFit(FitFunction):
+  '''
+    A class to allow interactive definition of fits,
+    which still are pickleable.
+  '''
+  function_string=''
+
+  def __init__(self, function,
+               function_name,
+               parameters,
+               parameter_names,
+               free_params=None,
+               fit_logarithmic=False):
+    self.parameters=parameters
+    self.parameter_names=parameter_names
+    self.name=function_name
+    self.fit_function_text=str(function)
+    for i in range(len(parameters)):
+      self.fit_function_text=self.fit_function_text.replace('p[%i]'%i,
+                                                 '[%s]'%parameter_names[i])
+    self.function_string=function
+    self.fit_logarithmic=fit_logarithmic
+    FitFunction.__init__(self, parameters)
+    if free_params is not None:
+      self.refine_parameters=list(free_params)
+
+  def fit_function(self, p, x):
+    return eval(self.function_string)
+
+class InteractiveFit3D(FitFunction3D):
+  '''
+    A class to allow interactive definition of fits,
+    which still are pickleable.
+  '''
+  function_string=''
+  is_3d=True
+
+  def __init__(self, function,
+               function_name,
+               parameters,
+               parameter_names,
+               free_params=None,
+               fit_logarithmic=False):
+    self.parameters=parameters
+    self.parameter_names=parameter_names
+    self.name=function_name
+    self.fit_function_text=str(function)
+    for i in range(len(parameters)):
+      self.fit_function_text=self.fit_function_text.replace('p[%i]'%i,
+                                                 '[%s]'%parameter_names[i])
+    self.function_string=function
+    self.fit_logarithmic=fit_logarithmic
+    FitFunction3D.__init__(self, parameters)
+    if free_params is not None:
+      self.refine_parameters=list(free_params)
+
+  def fit_function(self, p, x, y):
+    from numpy import (exp, sin, cos, tan, sqrt, #@UnusedImport
+                       arctan, arcsin, arccos, #@UnusedImport
+                      log10, log, log2) #@UnusedImport
+    return eval(self.function_string)
+
+class InteractiveFitConstructor(object):
+  '''
+    Class that allows to create InteractiveFit objects on demand.
+  '''
+  function_text=''
+  parameters=[]
+  parameter_names=[]
+  free_params=[]
+  name=''
+  fit_logarithmic=False
+  is_3d=False
+
+  def __init__(self, function_text,
+               function_name,
+               parameters,
+               parameter_names,
+               free_params=None,
+               fit_logarithmic=False,
+               is_3d=None):
+    self.function_text=function_text
+    self.name=function_name
+    self.parameters=parameters
+    self.parameter_names=parameter_names
+    self.fit_logarithmic=fit_logarithmic
+    if free_params is None:
+      self.free_params=range(len(parameters))
+    else:
+      self.free_params=free_params
+    if is_3d is None:
+      self.is_3d="y" in function_text
+    else:
+      self.is_3d=is_3d
+
+  def __call__(self, initial_parameters=[]):
+    '''
+      Emmulate the constructor of a FitFunction class and return
+      a InteractiveFit object.
+    '''
+    if initial_parameters==[]:
+      initial_parameters=list(self.parameters)
+    if not self.is_3d:
+      return InteractiveFit(self.function_text,
+                          self.name,
+                          initial_parameters,
+                          self.parameter_names,
+                          free_params=self.free_params,
+                          fit_logarithmic=self.fit_logarithmic)
+    else:
+      return InteractiveFit3D(self.function_text,
+                          self.name,
+                          initial_parameters,
+                          self.parameter_names,
+                          free_params=self.free_params,
+                          fit_logarithmic=self.fit_logarithmic)
+
+def new_function(function_text,
+               function_name=None,
+               parameters=None,
+               parameter_names=None,
+               free_params=None,
+               fit_logarithmic=False,
+               is_3d=None):
+  '''
+    Create a new fit function from a string. Function text is evaluated
+    as one line of code contining parameter list items p and coordinates x (,y).
+    
+    :param function_name: Name of the function in the GUI (default-function_text)
+    :param parameters: Initial fit parameters (default all zero)
+    :param parameter_names: Name of the fit parameters (default p_i)
+    :param free_params: List of parameter indices of fitted parameters
+    :param fit_logarithmic: Should the function be fittet logarithmic as default
+    :param is_3d: If the function is intended for one or two variables 
+                        (default, search for y in function_text)
+    
+    Example:
+      new_function('p[0]*x+p[1]', function_name='Line') 
+                           -> Create a linear regression funciont
+      new_function('x**p[0]+y**p[1]', 'Double Powerlaw', [1.,1.],['α','β'],
+                   fit_logarithmic=True)
+  '''
+  if function_name is None:
+    function_name=function_text
+  if parameters is None:
+    parameters=[]
+    i=0
+    while ("p[%i]"%i) in function_text:
+      parameters.append(0.)
+      i+=1
+  if parameter_names is None:
+    parameter_names=["p_%i"%i for i in range(len(parameters))]
+  constructor=InteractiveFitConstructor(function_text,
+                                        function_name,
+                                        parameters,
+                                        parameter_names,
+                                        free_params,
+                                        fit_logarithmic,
+                                        is_3d)
+  register_class(constructor)
+
 def register_class(function_class):
   '''
     Convenience method to add a new FitFunction derived class to the list of fittables.
@@ -3166,7 +3326,8 @@ def register_class(function_class):
   else:
     FitSession.available_functions_2d[function_class.name]=function_class
 
-def register_function(function, function_parameter_names=None, function_parameter_default=None, function_name=None):
+def register_function(function, function_parameter_names=None,
+                      function_parameter_default=None, function_name=None):
   '''
     Convenience method to add a new fittable function.
     

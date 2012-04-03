@@ -93,6 +93,7 @@ class MainUI(object):
         <menuitem action='Export'/>
         <menuitem action='ExportAs'/>
         <menuitem action='ExportAll'/>
+        <menuitem action='ToClipboard'/>
         <separator name='static1'/>
         <menuitem action='Print'/>
         <menuitem action='PrintAll'/>
@@ -558,6 +559,10 @@ class MainUI(object):
         "Exp. Selection...", "<alt><shift>E", # label, accelerator
         "Export a selection of plots (ALT+SHIFT+E)", # tooltip
         self.export_plot),
+      ("ToClipboard", gtk.STOCK_PASTE, # name, stock id
+        "Copy Data to Clipboard", "<control><shift>C", # label, accelerator
+        None, # tooltip
+        self.export_clipboard),
       ("ErrorBars", gtk.STOCK_ADD, # name, stock id
         "E.Bars", "<alt>E", #'e',                     # label, accelerator
         "Toggle errorbars (ALT+E)", # tooltip
@@ -611,7 +616,7 @@ class MainUI(object):
         None, # tooltip
         self.open_ipy_console),
       ("OpenDataView", None, # name, stock id
-        "Show/Edit Data", "<control><shift>D", # label, accelerator
+        "Show/Edit Data", "<control><alt>D", # label, accelerator
         None, # tooltip
         self.open_dataview_dialog),
       ("ConnectIPython", None, # name, stock id

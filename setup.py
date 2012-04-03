@@ -35,7 +35,7 @@ __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat
                             'fit/pnr_multi/*.f90', 'logo*.png'],
                   'plot_script': ['doc/*.*', 'doc/_modules/*.*',
                                   'doc/_static/*.*', 'doc/_sources/*.*',
-                                  'gpl.pdf'],
+                                  'gpl.pdf', 'gpl.txt'],
                   'plot_script.gtkgui': ['icons/*.png'],
                     }
 __data_files__=[('plot_script/doc', glob('plot_script/doc/*.*'))]

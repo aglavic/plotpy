@@ -80,7 +80,12 @@ Gnuplot version %.1f patchlevel %i with terminals:
                         ))
 
     dialog.set_copyright("© Copyright 2008-2012 Artur Glavic\n artur.glavic@gmail.com")
-    dialog.set_license('''                    GNU GENERAL PUBLIC LICENSE
+    if os.path.exists(os.path.join(self.active_session.SCRIPT_PATH, 'gpl.txt')):
+      dialog.set_license(open(
+                os.path.join(self.active_session.SCRIPT_PATH, 'gpl.txt'),
+                              'r').read())
+    else:
+      dialog.set_license('''                    GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
                        
       The license can be found in the program directory as gpl.pdf''')
@@ -553,7 +558,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     except ImportError:
       scipy=None
     from glob import glob
-    from plot_script.fit_data import register_function
+    from plot_script.fit_data import new_function
 
     if getattr(self, 'active_ipython', False):
       # if there is already an ipython console, show it and exit
@@ -727,7 +732,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
                        'macros': self.file_actions.actions,
                        'action_history': self.file_actions.history,
                        'menus': MenuWrapper(self.menu_bar),
-                       'newfit': register_function,
+                       'newfit': new_function,
                        'makefit': FitWrapper(self, self.active_session),
                        })
     # add common mathematic functions to the namespace
