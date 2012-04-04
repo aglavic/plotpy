@@ -33,6 +33,7 @@ class FitFunctionGUI(object):
 
 class FitSessionGUI:
   restrict_to_region=True
+  progress_bar=None
 
   def get_dialog(self, window, dialog, fit_button_press_event=None):
     '''

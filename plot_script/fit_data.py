@@ -2853,6 +2853,7 @@ class FitSession(FitSessionGUI):
     '''
       Used to pickle the fit object, as the object has instance methods.
     '''
+    self.progress_bar=None
     dict_out=dict(self.__dict__)
     if self.data_is_3d:
       del(dict_out['fit'])
