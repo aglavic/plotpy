@@ -864,9 +864,9 @@ class MainData(object):
     if id_==0:
       widget.destroy()
     elif id_==-1:
-      self.active_dataset=unchanged_dataset
+      self.active_dataset=deepcopy(unchanged_dataset)
       self.replot()
-      widget.dataset=deepcopy(unchanged_dataset)
+      widget.dataset=self.active_dataset
       widget.add_data()
     else:
       self.replot()

@@ -479,8 +479,10 @@ class ReflectometerGUI:
       # selection dialog for material
       SL_selector=gtk.combo_box_new_text()
       SL_selector.append_text('SL')
+      #SL_selector.set_wrap_width(5)
       SL_selector.set_active(0)
-      for i, SL in enumerate(self.active_file_data.fit_object.SCATTERING_LENGTH_DENSITIES.items()):
+      for i, SL in enumerate(sorted(
+         self.active_file_data.fit_object.SCATTERING_LENGTH_DENSITIES.items())):
         SL_selector.append_text(SL[0])
         if layer.delta==SL[1][0] and layer.d_over_b==SL[1][1]:
           SL_selector.set_active(i+1)
@@ -927,7 +929,7 @@ class ReflectometerGUI:
     '''
     for i in range(1, 20):
       ids=[round(pos/(positions[0]/i)) for pos in positions[1:]]
-      divs=[abs(pos-(positions[0]/i*id)) for pos, id in zip(positions[1:], ids)]
+      divs=[abs(pos-(positions[0]/i*idi)) for pos, idi in zip(positions[1:], ids)]
       if sum(divs)/(len(positions)-1.)<(0.25/i):
         break
     return [round(pos/(positions[0]/i)) for pos in positions]

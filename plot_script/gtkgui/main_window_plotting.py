@@ -779,18 +779,22 @@ class MainPlotting(object):
         return float(value)
       except ValueError:
         return None
+    # suggest commen physical units
+    from plot_script.config.transformations import known_unit_transformations
+    unit_suggestions=numpy.array(known_unit_transformations.keys()).flatten()
+    unit_suggestions=numpy.unique(unit_suggestions)
     entries=[
                              ['x-Dimension', dataset.x.dimension, str],
-                             ['x-Unit', dataset.x.unit, str],
+                             ['x-Unit', unit_suggestions, dataset.x.unit, str],
                              ['x-tics', dataset.plot_options.tics[0] or 'auto', float_or_none],
                              ['y-Dimension', dataset.y.dimension, str],
-                             ['y-Unit', dataset.y.unit, str],
+                             ['y-Unit', unit_suggestions, dataset.y.unit, str],
                              ['y-tics', dataset.plot_options.tics[1] or 'auto', float_or_none],
                              ]
     if self.active_dataset.zdata>=0:
       entries+=[
                              ['z-Dimension', dataset.z.dimension, str],
-                             ['z-Unit', dataset.z.unit, str],
+                             ['z-Unit', unit_suggestions, dataset.z.unit, str],
                              ['z-tics', dataset.plot_options.tics[2] or 'auto', float_or_none],
                 ]
     dialog=SimpleEntryDialog('Change label settings...',

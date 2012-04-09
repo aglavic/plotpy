@@ -295,27 +295,28 @@ class FitSessionGUI:
 
   def advanced_parameter_options(self, entry, event, i, function):
     '''
-      Open advanced options dialog on double klick on Entries.
+      Open advanced options dialog on double click on Entries.
       Allows for constrained parameters.
     '''
     if event.button==1 and (event.state&gtk.gdk.CONTROL_MASK):
-      def float_of_none(input_):
+      def float_or_none(input_):
         try:
           output=float(input_)
         except ValueError:
           output=None
         return output
+      columns=["[%s]"%pi for pi in function.parameter_names]
       if function.constrains is None or i not in function.constrains:
         entries=[
-               ('Lower Bound', None, float_of_none),
-               ('Upper Bound', None, float_of_none),
-               ('Constrain', '', str)
+               ('Lower Bound', None, float_or_none),
+               ('Upper Bound', None, float_or_none),
+               ('Constrain', columns, '', str)
                ]
       else:
         entries=[
-               ('Lower Bound', function.constrains[i]['bounds'][0], float_of_none),
-               ('Upper Bound', function.constrains[i]['bounds'][1], float_of_none),
-               ('Constrain', function.constrains[i]['tied'], str)
+               ('Lower Bound', function.constrains[i]['bounds'][0], float_or_none),
+               ('Upper Bound', function.constrains[i]['bounds'][1], float_or_none),
+               ('Constrain', columns, function.constrains[i]['tied'], str)
                ]
       advanced_dialog=SimpleEntryDialog('Advanced options for parameter [%s]'%function.parameter_names[i],
                                         entries)

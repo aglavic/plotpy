@@ -5,6 +5,7 @@
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
+import numpy
 import gtk
 import cairo
 import sys, os
@@ -476,14 +477,27 @@ class SimpleEntryDialog(gtk.Dialog):
         label.show()
         # If entry is a list, there will be a dropdown menu to choose from
         if hasattr(entry_list[1], '__iter__'):
-          entry=gtk.combo_box_new_text()
-          for selection_entry in entry_list[1]:
-            entry.append_text(selection_entry)
-          entry.set_active(entry_list[2])
-          entry.show()
-          self.entries[key]=entry
-          self.values[key]=entry_list[1][entry_list[2]]
-          self.conversions[key]=entry_list[1]
+          if type(entry_list[1]) is int:
+            entry=gtk.combo_box_new_text()
+            for selection_entry in entry_list[1]:
+              entry.append_text(selection_entry)
+            entry.set_active(entry_list[2])
+            entry.show()
+            self.entries[key]=entry
+            self.values[key]=entry_list[1][entry_list[2]]
+            self.conversions[key]=entry_list[1]
+          else:
+            # dropdown with entry
+            entry=gtk.combo_box_entry_new_text()
+            entry_c=entry.child
+            for selection_entry in entry_list[1]:
+              entry.append_text(selection_entry)
+            entry_c.set_text(str(entry_list[2]))
+            entry_c.connect('activate', lambda*ignore: self.response(1))
+            entry.show()
+            self.entries[key]=entry_c
+            self.values[key]=entry_list[2]
+            self.conversions[key]=entry_list[3]
         else:
           entry=gtk.Entry()
           entry.show()
@@ -502,7 +516,7 @@ class SimpleEntryDialog(gtk.Dialog):
               1, 2, i, i+1,
               gtk.FILL|gtk.EXPAND, gtk.FILL,
               0, 0)
-        if len(entry_list)==4:
+        if len(entry_list)==4 and type(entry_list[3]) is not type:
           self.table.attach(entry_list[3],
               # X direction #          # Y direction
               2, 3, i, i+1,
@@ -1578,16 +1592,58 @@ class DataView(gtk.Dialog):
   def key_press_response(self, widget, event):
     keyname=gtk.gdk.keyval_name(event.keyval)
     if event.state&gtk.gdk.CONTROL_MASK:
-      # copy selection
-      if keyname=='c':
-        ignore, selection=self.treeview.get_selection().get_selected_rows()
-        indices=map(lambda select: self.liststore[select][0], selection)
+      ignore, selection=self.treeview.get_selection().get_selected_rows()
+      indices=map(lambda select: self.liststore[select][0], selection)
+      if keyname in ['c', 'x']:
+        # copy lines of selection to clipboard
         items=map(lambda index: "\t".join(map(str, self.dataset[index])), indices)
         clipboard_content="\n".join(items)
         header_cols=["%s[%s]"%(d, u) for d, u in zip(self.dataset.dimensions(),
                                                      self.dataset.units())]
         clipboard_header="# "+"\t".join(header_cols)+'\n'
         self.clipboard.set_text(clipboard_header+clipboard_content)
+      if keyname in ['x']:
+        # remove lines of selection from the dataset
+        from copy import deepcopy
+        newdata=[]
+        indices=numpy.array(indices)
+        for col in self.dataset.data:
+          newdata.append(deepcopy(numpy.delete(col, indices)))
+        self.dataset.data=newdata
+        self.add_data()
+      if keyname=='v':
+        # put the data from clipboard in the selected position
+        from plot_script.measurement_data_structure import PhysicalProperty
+        newdata=self.clipboard.wait_for_text()
+        newdata_lines=newdata.splitlines()
+        cols=len(self.dataset[0])
+        newdata_splitlines=[]
+        insert_index=indices[0]
+        end_index=len(self.dataset)
+        for line in newdata_lines:
+          try:
+            line_data=map(float, line.split())
+          except ValueError:
+            continue
+          else:
+            if len(line_data)==cols:
+              newdata_splitlines.append(line_data)
+        for line in newdata_splitlines:
+          self.dataset.append(line)
+        newdata=[]
+        indices=numpy.array(indices)
+        for col in self.dataset.data:
+          cunit=col.unit
+          cdim=col.dimension
+          if col.has_error:
+            error=col.error
+            error=numpy.hstack([error[:insert_index], error[end_index:], error[insert_index:end_index]])
+          else:
+            error=None
+          col=numpy.hstack([col[:insert_index], col[end_index:], col[insert_index:end_index]])
+          newdata.append(PhysicalProperty(cunit, cdim, col, error))
+        self.dataset.data=newdata
+        self.add_data()
       if keyname=='a':
         self.treeview.get_selection().select_all()
 
