@@ -6,8 +6,6 @@
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
 
 import os
-import gtk
-gtk.gdk.threads_init()
 import gobject
 from time import sleep
 from threading import Thread
@@ -85,7 +83,7 @@ class CircleGUI:
     if window is None:
       window=self._window
     if hasattr(self.active_file_data[-1], 'last_import'):
-      if self.active_file_data[-1].last_import>=os.path.getctime(self.active_file_name):
+      if self.active_file_data[-1].last_import>=os.path.getmtime(self.active_file_name):
         return
     new_data=self.read_file(self.active_file_name)
     for i, dataset in enumerate(new_data):
@@ -94,7 +92,7 @@ class CircleGUI:
         self.active_file_data[i].data=dataset.data
       else:
         self.active_file_data.append(dataset)
-    self.active_file_data[-1].last_import=os.path.getctime(self.active_file_name)
+    self.active_file_data[-1].last_import=os.path.getmtime(self.active_file_name)
     window.replot(echo=False)
     window.statusbar.push(0, 'Filedata Updated')
 
@@ -126,11 +124,11 @@ class CircleGUI:
     '''
       Function called as new thread to check if the file changed.
     '''
-    last_change=os.path.getctime(self.active_file_name)
+    last_change=os.path.getmtime(self.active_file_name)
     while self.autoreload_active:
-      if last_change!=os.path.getctime(self.active_file_name):
+      if last_change!=os.path.getmtime(self.active_file_name):
         gobject.idle_add(self.reload_active_measurement, None, None)
-        last_change=os.path.getctime(self.active_file_name)
+        last_change=os.path.getmtime(self.active_file_name)
       sleep(0.1)
 
   def fit_positions(self, action, window):

@@ -41,7 +41,13 @@ def main_loop(session):
     while gtk.events_pending():
       gtk.main_iteration(False)
   else:
+    # wrap main loop with thread_enter,
+    # otherwise py2exe will crash on main loop enter
+    # when using threads
+    gtk.gdk.threads_init()
+    gtk.gdk.threads_enter()
     gtk.main() # start GTK engine
+    gtk.gdk.threads_leave()
 
 
 #+++++++++++++++++++++++++ ApplicationMainWindow Class ++++++++++++++++++++++++++++++++++#
