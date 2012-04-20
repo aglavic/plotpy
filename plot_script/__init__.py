@@ -172,8 +172,6 @@ def initialize(arguments):
       numpy.seterr(all='ignore')
     except:
       pass
-    # ignore python warnings
-    warnings.simplefilter('ignore')
   # parent class
   from sessions.generic import GenericSession, read_full_snapshot
   if (len(arguments)==0):
@@ -379,6 +377,9 @@ def _run():
     sys.argv=map(lambda arg: unicode(arg.decode('mbcs')), sys.argv)
   if '--debug' in sys.argv:
     initialize_debug()
+  else:
+    # ignore python warnings if not in debug mode
+    warnings.simplefilter('ignore')
   if not ('-scp' in sys.argv or '-ipdrop' in sys.argv):
     initialize_gui_toolkit()
   active_session=initialize(sys.argv[1:])

@@ -8,7 +8,7 @@ import gtk
 import numpy
 from time import sleep
 from plot_script import measurement_data_plotting
-from plot_script.config import gnuplot_preferences
+from plot_script.config import gnuplot_preferences, user_config
 from dialogs import LabelArrowDialog, StyleLine, SimpleEntryDialog, \
                     PreviewDialog
 from diverse_classes import PlotProfile
@@ -256,7 +256,7 @@ class MainPlotting(object):
         gnuplot_preferences.plotting_parameters=gnuplot_preferences.plotting_parameters_lines
     self.replot()
 
-  def replot(self):
+  def replot(self, echo=True):
     '''
       Recreate the current plot and clear the statusbar.
     '''
@@ -267,7 +267,8 @@ class MainPlotting(object):
     logitems=self.active_dataset
     if self.active_multiplot:
       if len(self.multiplot)==0:
-        print "Empty multiplot!"
+        if echo:
+          print "Empty multiplot!"
         return
       logitems=self.multiplot[0][0]
     else:
@@ -288,13 +289,16 @@ class MainPlotting(object):
     self.logy.set_active(logitems.logy)
     self.logz.set_active(logitems.logz)
     self._ignore_change=False
+    #if self.font_size_label is None:
+    #  self.font_size.set_
 
-    # wait for all gtk events to finish to get the right size
-    print "Plotting"
-    i=0
-    while gtk.events_pending() and i<10:
-      gtk.main_iteration(False)
-      i+=1
+    if echo:
+      print "Plotting"
+      i=0
+      # wait for all gtk events to finish to get the right size
+      while gtk.events_pending() and i<10:
+        gtk.main_iteration(False)
+        i+=1
     self.frame1.set_current_page(0)
     self.active_session.picture_width=str(self.image.get_allocation().width)
     self.active_session.picture_height=str(self.image.get_allocation().height)
@@ -336,7 +340,8 @@ class MainPlotting(object):
         self.set_image()
       except:
         pass
-      print 'Gnuplot error, see "View->Show Plot Parameters" for more details!'
+      if echo:
+        print 'Gnuplot error, see "View->Show Plot Parameters" for more details!'
       #self.show_last_plot_params(None)
     else:
       self.set_title('Plotting GUI - '+self.input_file_name+" - "+str(self.index_mess))
@@ -787,15 +792,18 @@ class MainPlotting(object):
                              ['x-Dimension', dataset.x.dimension, str],
                              ['x-Unit', unit_suggestions, dataset.x.unit, str],
                              ['x-tics', dataset.plot_options.tics[0] or 'auto', float_or_none],
+                             ['Exponential x-labels', dataset.plot_options.exp_format[0]],
                              ['y-Dimension', dataset.y.dimension, str],
                              ['y-Unit', unit_suggestions, dataset.y.unit, str],
                              ['y-tics', dataset.plot_options.tics[1] or 'auto', float_or_none],
+                             ['Exponential y-labels', dataset.plot_options.exp_format[1]],
                              ]
     if self.active_dataset.zdata>=0:
       entries+=[
                              ['z-Dimension', dataset.z.dimension, str],
                              ['z-Unit', unit_suggestions, dataset.z.unit, str],
                              ['z-tics', dataset.plot_options.tics[2] or 'auto', float_or_none],
+                             ['Exponential z-labels', dataset.plot_options.exp_format[2]],
                 ]
     dialog=SimpleEntryDialog('Change label settings...',
                              entries
@@ -808,10 +816,13 @@ class MainPlotting(object):
       dataset.y.unit=value['y-Unit']
       dataset.plot_options.tics[0]=value['x-tics']
       dataset.plot_options.tics[1]=value['y-tics']
+      dataset.plot_options.exp_format[0]=value['Exponential x-labels']
+      dataset.plot_options.exp_format[1]=value['Exponential y-labels']
       if self.active_dataset.zdata>=0:
         dataset.z.dimension=value['z-Dimension']
         dataset.z.unit=value['z-Unit']
         dataset.plot_options.tics[2]=value['z-tics']
+        dataset.plot_options.exp_format[2]=value['Exponential z-labels']
       self.replot()
     dialog.destroy()
 
@@ -1037,6 +1048,8 @@ class MainPlotting(object):
     # set the font size
     try:
       self.active_session.font_size=float(self.font_size.get_text())
+    except AttributeError:
+      pass
     except ValueError:
       self.active_session.font_size=24.
       self.font_size.set_text('24')
@@ -1141,4 +1154,22 @@ class MainPlotting(object):
     # remove the deleted profile from the menu
     self.rebuild_menus()
 
+  def change_font(self, button):
+    fname=button.get_font_name()
+    #print fname
+    #font_path, font_name=os.path.split(fontconfig.fc[fname])
+    font, fontsize=fname.rsplit(' ', 1)
+    font=font.strip(',')
+    gnuplot_preferences.FONT_DESCRIPTION=font
+    self.active_session.font_size=float(fontsize)
+
+    dia=gtk.MessageDialog(parent=self, type=gtk.MESSAGE_QUESTION,
+                          buttons=gtk.BUTTONS_YES_NO,
+                          message_format='Set font as default?')
+    result=dia.run()
+    dia.destroy()
+    if result:
+      user_config['plot']['font']=font
+      user_config['plot']['font-size']=self.active_session.font_size
+    self.replot()
 

@@ -14,6 +14,7 @@ from plot_script import measurement_data_plotting
 from plot_script.config.gnuplot_preferences import output_file_name
 from plot_script import config
 from plot_script.config import gui as gui_config
+from plot_script.config import fontconfig
 import file_actions
 from main_window_actions import MainActions
 from main_window_ui import MainUI
@@ -60,6 +61,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
   plot_tree=None
   open_windows=[]
   _ignore_change=False
+  active_threads=[]
 
   def get_active_dataset(self):
     # convenience method to get the active dataset
@@ -297,14 +299,27 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     align_table.attach(self.y_range_label, 5, 7, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
     align_table.attach(self.y_range_in, 7, 9, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
     # font size entry
-    self.font_size=gtk.Entry()
-    self.font_size.set_width_chars(5)
-    self.font_size.set_text(str(self.active_session.font_size))
-    self.font_size_label=gtk.Label()
-    self.font_size_label.set_markup('F. size:')
-    self.font_size_label.set_padding(5, 0)
+    if fontconfig.font_config is not None or sys.platform.startswith('win'):
+      self.font_size=gtk.FontButton()
+      if 'font' in config.user_config['plot']:
+        self.font_size.set_font_name(config.user_config['plot']['font']
+                                     +', '+str(self.active_session.font_size))
+      else:
+        self.font_size.set_font_name('Arial, '+str(self.active_session.font_size))
+      self.font_size.set_title('Select Plot Font...')
+      self.font_size.set_show_style(False)
+      self.font_size.set_show_size(True)
+      self.font_size.connect("font-set", self.change_font)
+      self.font_size_label=None
+    else:
+      self.font_size=gtk.Entry()
+      self.font_size.set_width_chars(5)
+      self.font_size.set_text(str(self.active_session.font_size))
+      self.font_size_label=gtk.Label()
+      self.font_size_label.set_markup('F. size:')
+      self.font_size_label.set_padding(5, 0)
+      align_table.attach(self.font_size_label, 11, 12, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
     align_table.attach(self.font_size, 12, 13, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
-    align_table.attach(self.font_size_label, 11, 12, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
     # checkboxes for log x and log y
     self.logx=gtk.CheckButton(label='log x', use_underline=True)
     self.logy=gtk.CheckButton(label='log y', use_underline=True)
@@ -534,6 +549,9 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
       When window is closed save the settings in home folder.
       All open dialogs are closed before exit.
     '''
+    # join active threads
+    for thread_killer in self.active_threads:
+      thread_killer()
     # exit persistent gnuplot instances
     persistent_plot_instances=measurement_data_plotting.persistent_plot_instances
     for p in persistent_plot_instances:

@@ -12,7 +12,7 @@ import os
 import sys
 exit=sys.exit #@ReservedAssignment
 import subprocess
-from config import gnuplot_preferences
+import plot_script.config.gnuplot_preferences as gp
 #from time import sleep
 
 __author__="Artur Glavic"
@@ -54,8 +54,8 @@ def check_gnuplot_version(session):
   params=[session.GNUPLOT_COMMAND, script_name]
   try:
     proc=subprocess.Popen(params,
-                        shell=gnuplot_preferences.EMMULATE_SHELL,
-                        creationflags=gnuplot_preferences.PROCESS_FLAGS,
+                        shell=gp.EMMULATE_SHELL,
+                        creationflags=gp.PROCESS_FLAGS,
                         stderr=subprocess.STDOUT,
                         stdout=subprocess.PIPE,
                         stdin=subprocess.PIPE,
@@ -65,16 +65,16 @@ def check_gnuplot_version(session):
     terminals=terminals.strip().split()
     terminals=[t.strip() for t in terminals]
     # set the terminal options according to available terminals
-    for term in gnuplot_preferences.gui_terminals:
+    for term in gp.gui_terminals:
       if term in terminals:
-        gnuplot_preferences.set_output_terminal_gui=" ".join(
-              [term]+gnuplot_preferences.gui_terminal_options[term]
+        gp.set_output_terminal_gui=" ".join(
+              [term]+gp.gui_terminal_options[term]
                                                              )
         break
-    for term in gnuplot_preferences.image_terminals:
+    for term in gp.image_terminals:
       if term in terminals:
-        gnuplot_preferences.set_output_terminal_image=" ".join(
-              [term]+gnuplot_preferences.image_terminal_options[term]
+        gp.set_output_terminal_image=" ".join(
+              [term]+gp.image_terminal_options[term]
                                                              )
         break
     return (float(version), float(patchlevel)), terminals
@@ -88,7 +88,7 @@ def gnuplot_plot_script(session,
                         title,
                         names,
                         with_errorbars,
-                        output_file=gnuplot_preferences.output_file_name,
+                        output_file=gp.output_file_name,
                         additional_info='',
                         fit_lorentz=False,
                         sample_name=None,
@@ -96,7 +96,7 @@ def gnuplot_plot_script(session,
                         get_xy_ranges=False):
   '''
     Function to plot with an additional data and gnuplot file and calling to the gnuplot program.
-    Files are stored in temporary folder set in gnuplot_preferences.
+    Files are stored in temporary folder set in gp.
     
     :param session: The session object to use
     :param file_name_prefix: Prefix of the used data and gnuplot files
@@ -170,8 +170,8 @@ def gnuplot_plot_script(session,
     #params=
     try:
       persistent=subprocess.Popen([session.GNUPLOT_COMMAND],
-                          shell=gnuplot_preferences.EMMULATE_SHELL,
-                          creationflags=gnuplot_preferences.PROCESS_FLAGS,
+                          shell=gp.EMMULATE_SHELL,
+                          creationflags=gp.PROCESS_FLAGS,
                           stderr=subprocess.STDOUT,
                           stdout=subprocess.PIPE,
                           stdin=subprocess.PIPE,
@@ -220,7 +220,6 @@ def replace_ph(session,
   '''
   datanr=number[0]
   withnr=number[1]
-  gp=gnuplot_preferences
   if '[titles_add]' in string:
     titles_add=replace_ph(session,
                                     names[number[2]],
@@ -236,6 +235,8 @@ def replace_ph(session,
   else:
     titles_add=''
   string=string.\
+  replace('[font]', gp.FONT_DESCRIPTION).\
+  replace('[font-file]', gp.FONT_FILE).\
   replace('[font-path]', gp.FONT_PATH).\
   replace('[width]', session.picture_width).\
   replace('[height]', session.picture_height).\
@@ -258,7 +259,7 @@ def replace_ph(session,
   replace('[const_value]', str(datasets[datanr].plot_together[withnr].last()[datasets[datanr].plot_together[withnr].type()]))
 # translations for postscript export (special characters other than in png export)
 # should be enlongated with other characters
-  if postscript_export: # see gnuplot_preferences.py for this function
+  if postscript_export: # see gp.py for this function
     string=postscript_replace(string)
   string=further_replacement(string)
   string=session.replace_systemdependent(string)
@@ -271,7 +272,7 @@ def create_plot_script(session,
                        title,
                        names,
                        with_errorbars,
-                       output_file=gnuplot_preferences.output_file_name,
+                       output_file=gp.output_file_name,
                        additional_info='',
                        fit_lorentz=False,
                        output_file_prefix=None,
@@ -328,7 +329,6 @@ def script_plotlines(session, datasets, file_name_prefix, output_file_prefix, fi
     Plot lines for 2d plots. (x vs. y)
   '''
   gnuplot_file_text=''
-  gp=gnuplot_preferences
   if datasets[0].plot_options.with_errorbars is not None:
     if datasets[0].plot_options.with_errorbars and (datasets[0].yerror>=0 or datasets[0].y.error is not None):
         plotting_param=gp.plotting_parameters_errorbars
@@ -416,7 +416,6 @@ def script_plotlines_3d(session, datasets, file_name_prefix, output_file_prefix,
     Plot lines for 3d plots. (x,y vs. z)
   '''
   gnuplot_file_text=''
-  gp=gnuplot_preferences
   plotting_param=gp.plotting_parameters_3d
   gnuplot_file_text+='set view '+str(datasets[0].view_x)+','+str(datasets[0].view_z)+'\n'+\
       'set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
@@ -485,7 +484,6 @@ def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_fi
     Plot lines for 3d plots as multiplot layout (data, fit, data-fit, log(data)-log(fit)). (x,y vs. z)
   '''
   from math import log
-  gp=gnuplot_preferences
   plotting_param=gp.plotting_parameters_3d
   output_file_prefix=os.path.normpath(output_file_prefix)
   cols=int(log((len(datasets[0].plot_together))+1, 2))
@@ -542,7 +540,6 @@ def script_plotlines_3d_projection(session, datasets, file_name_prefix, output_f
     Plot lines for 3d plots with projections on the axes. (x,y vs. z)
   '''
   gnuplot_file_text='unset title\n'
-  gp=gnuplot_preferences
 
   dataset=datasets[0]
   output_file_prefix=os.path.normpath(output_file_prefix)
@@ -644,7 +641,6 @@ def script_header(show_persistent, datasets, output_file):
   '''
     Create the header of the script with global settings.
   '''
-  gp=gnuplot_preferences
   if show_persistent or output_file is None:
     postscript_export=True
     terminal=gp.set_output_terminal_gui
@@ -690,7 +686,7 @@ def postscript_replace(string):
   '''
     Replace special characters when using Postscript export instead of png.
   '''
-  for from_char, to_char in gnuplot_preferences.postscript_characters:
+  for from_char, to_char in gp.postscript_characters:
     string=string.replace(from_char, to_char)
   return string
 

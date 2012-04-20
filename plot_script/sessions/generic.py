@@ -29,7 +29,7 @@ from cPickle import load, dumps, dump
 from plot_script import  measurement_data_structure
 from plot_script import  measurement_data_plotting
 from plot_script import  parallel
-from plot_script.config import gnuplot_preferences, transformations
+from plot_script.config import gnuplot_preferences, transformations, user_config
 from plot_script.config import templates as template_config
 
 # importing own modules
@@ -200,6 +200,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     self.os_path_stuff() # create temp folder according to OS
     self.try_import_externals()
+    if 'plot' in user_config and 'font-size' in user_config['plot']:
+      self.font_size=user_config['plot']['font-size']
     self.import_plugins() # search the plugin folder for modules
     files.sort()
     remove=[]
@@ -233,6 +235,15 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       Start a gnuplot instance for the main plotting.
     '''
     if measurement_data_plotting.gnuplot_instance is None:
+      # if fontconfig is available use it to set GDLibrarayPath
+      from plot_script.config import fontconfig
+      if fontconfig.font_config is not None:
+        font_paths=fontconfig.fc.get_font_folders()
+        os.environ['GDLIBRARYPATH']=":".join(font_paths)
+        opts=gnuplot_preferences.image_terminal_options['png']
+        for i, opt in enumerate(opts):
+          if '[font-path]/[font-file]' in opt:
+            opts[i]=opt.replace('[font-path]/[font-file]', '[font]')
       program=self.GNUPLOT_COMMAND
       try:
         if gnuplot_preferences.EMMULATE_SHELL:

@@ -182,8 +182,15 @@ ${comments}
     # calculate 4-circle monitor error
     index=output.dimensions().index('I_{det/atten}')
     count_idx=output.dimensions().index('I')
-    output.data[index].error=output.data[index]/\
-                    numpy.maximum(output.data[count_idx], 1)*output.data[count_idx].error
+    atten_factor=output.data[index]/numpy.maximum(output.data[count_idx], 1)
+    output.data[index].error=atten_factor*output.data[count_idx].error
+    max_factor=atten_factor[atten_factor.nonzero()].max()
+    min_factor=atten_factor[atten_factor.nonzero()].min()
+    if max_factor!=min_factor:
+      if output.zdata<0:
+        output.ydata=index
+      else:
+        output.zdata=index
   recheck_type(output, scan_header)
   return output, scan_header['comments']
 

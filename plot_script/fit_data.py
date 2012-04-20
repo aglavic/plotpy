@@ -316,12 +316,19 @@ class FitFunction(FitFunctionGUI):
     if parallel.dview is not None:
       dview=parallel.dview
       function_keywords={}
-      dview.scatter('x', x)
-      dview.scatter('y', y)
+      x_from=self.x_from
+      x_to=self.x_to
+      if x_from is None:
+        x_from=x.min()
+      if x_to is None:
+        x_to=x.max()
+      filter_indices=numpy.where((x>=x_from)*(x<=x_to))[0]
+      dview.scatter('x', x[filter_indices])
+      dview.scatter('y', y[filter_indices])
       if dy is None:
         dview.execute('dy=None')
       else:
-        dview.scatter('dy', dy)
+        dview.scatter('dy', dy[filter_indices])
       dview['self']=self
       if self.fit_logarithmic:
         def function(p, fjac=None, x=None, y=None, dy=None):
@@ -403,7 +410,7 @@ class FitFunction(FitFunctionGUI):
       :return: simulated y-values for a list of giver x-values.
     '''
     if parallel.dview is not None:
-      return self.simulate_mp(x, interpolate=5, inside_fitrange=False)
+      return self.simulate_mp(x, interpolate=5, inside_fitrange=inside_fitrange)
     x=numpy.array(x, dtype=numpy.float64, copy=False)
     if inside_fitrange:
       x_from=self.x_from
@@ -3111,7 +3118,7 @@ class FitSession(FitSessionGUI):
           fd=function[0](data.x, data.y)
           fit.data[2].values=fd
           div.data[2].values=data.z-fd
-          logdiv.data[2].values=10.**(numpy.log10(data.z)-numpy.log10(fd))
+          logdiv.data[2].values=10.**(numpy.log10(data.z.view(numpy.ndarray))-numpy.log10(fd))
           function_text=function[0].fit_function_text_eval
           fit.short_info=function_text
           div.short_info='data-%s'%function_text

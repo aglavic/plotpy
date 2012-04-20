@@ -65,7 +65,15 @@ else:
   except ImportError:
     # if there is no pygame module installed, use the fonts from this program
     FONT_PATH=''
+FONT_FILE='Arial.ttf'
 
+from plot_script.config import user_config
+if not 'plot' in user_config:
+  user_config['plot']={}
+if not 'font' in user_config['plot']:
+  FONT_DESCRIPTION='Arial'
+else:
+  FONT_DESCRIPTION=user_config['plot']['font']
 
 # character encoding in gnuplot (>=4.4)
 ENCODING='utf8'
@@ -74,9 +82,9 @@ ENCODING='utf8'
 image_terminals=['pngcairo', 'png', 'gif', 'jpeg']
 image_terminal_options={
       'pngcairo': ['enhanced', 'size [width],[height]',
-                   'font "Arial,[font-size]"', 'lw 2'],
+                   'font "[font],[font-size]"', 'lw 2'],
       'png': ['enhanced', 'size [width],[height]',
-              'font "'+join_path('[font-path]', 'Arial.ttf')+'" [font-size]',
+              'font "'+join_path('[font-path]', '[font-file]')+'" [font-size]',
               'lw 2'],
                         }
 image_terminal_options['gif']=image_terminal_options['png']
@@ -84,14 +92,14 @@ image_terminal_options['jpeg']=image_terminal_options['png']
 
 # fallback if terminal was not selected
 set_output_terminal_image='png enhanced size [width],[height] font "'+\
-                          join_path('[font-path]', 'Arial.ttf')+'" [font-size]'
+                          join_path('[font-path]', '[font-file]')+'" [font-size]'
 # used is determined by file name
-set_output_terminal_ps='postscript landscape enhanced colour "Arial" 16 solid lw 2'
+set_output_terminal_ps='postscript landscape enhanced colour "[font]" 16 solid lw 2'
 
 # terminal for external gnuplot window
 gui_terminals=['qt', 'windows', 'wxt', 'aqua', 'x11']
 gui_terminal_options={
-          'wxt': ['enhanced', 'font "'+join_path('[font-path]', 'Arial.ttf')+'" 16'],
+          'wxt': ['enhanced', 'font "'+join_path('[font-path]', '[font-file]')+'" 16'],
                       }
 gui_terminal_options['aqua']=gui_terminal_options['wxt']
 gui_terminal_options['qt']=gui_terminal_options['wxt']

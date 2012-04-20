@@ -1539,6 +1539,7 @@ class PlotOptions(object):
   rectangles=[]
   ellipses=[]
   tics=[None, None, None]
+  exp_format=[False, False, False] # set the axis label format to 10^{%L} for xyz
 
   def __init__(self, initial_text=""):
     '''
@@ -1569,6 +1570,7 @@ class PlotOptions(object):
     other.labels=deepcopy(self.labels)
     other.arrows=deepcopy(self.arrows)
     other.tics=deepcopy(self.tics)
+    other.exp_format=deepcopy(self.exp_format)
     return other
 
   def __str__(self):
@@ -1659,6 +1661,11 @@ class PlotOptions(object):
     for i, tics in zip(['x', 'y', 'cb'], self.tics):
       if tics is not None:
         output+='set %stics %f\n'%(i, tics)
+    for i, exp_format in zip(['x', 'y', 'cb'], self.exp_format):
+      if exp_format:
+        output+='set format %s "10^{%%L}"\n'%(i)
+    if self.exp_format[2]:
+      output+='set cblabel offset 1.5\n'
     return output
 
   def __add__(self, input_string):

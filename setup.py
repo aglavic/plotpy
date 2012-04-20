@@ -123,14 +123,14 @@ if 'install' in sys.argv:
       dependencies_ok=False
   # GUI dependencies
   try:
-    import gobject
-    import gtk
+    import gobject #@UnusedImport
+    import gtk #@UnusedImport
   except ImportError:
     print "PyGTK with gobject has to be installed to use GTK GUI."
     dependencies_ok=False
   # fitting dependencies, not crucial
   try:
-    import numpy
+    import numpy #@UnusedImport
   except ImportError:
     print "For fitting to work, numpy has to be installed."
     dependencies_ok=False
@@ -163,7 +163,6 @@ setup(name=__name__,
 # as these are the versions used in the latest ubuntu versions
 if ('bdist' in sys.argv):
   print "Moving distribution files..."
-  from glob import glob
   os.chdir('archiv')
   os.rename(__name__+'-'+__version__+'-1.noarch.rpm', __name__+'-'+__version__+'.rpm')
   os.remove(__name__+'-'+__version__+'-1.src.rpm')
@@ -302,7 +301,6 @@ if "py2exe" in sys.argv and not py2exe_test:
                     ('plot_script\\gtkgui\\icons', 'plot_script\\gtkgui\\icons'),
                     ]:
     xcopy_to_folder(src, dest)
-  from glob import glob
   for script_file in glob('scripts\\*.bat'):
     sf=open(script_file, 'r').read()
     open(os.path.join('archiv', os.path.split(script_file)[1]), 'w').write(sf.replace('plot.py', 'plot'))

@@ -7,7 +7,10 @@
 
 import os
 import gtk
+gtk.gdk.threads_init()
+import gobject
 from time import sleep
+from threading import Thread
 import dialogs
 from plot_script import  fit_data
 from plot_script.measurement_data_structure import MeasurementData, PhysicalProperty
@@ -24,6 +27,7 @@ class CircleGUI:
   '''
     GUI functions for the GTK toolkit
   '''
+  autoreload_thread=None
 
   def create_menu(self):
     '''
@@ -78,17 +82,21 @@ class CircleGUI:
     '''
       Reload the data of the active file.
     '''
+    if window is None:
+      window=self._window
     if hasattr(self.active_file_data[-1], 'last_import'):
       if self.active_file_data[-1].last_import>=os.path.getctime(self.active_file_name):
         return
     new_data=self.read_file(self.active_file_name)
     for i, dataset in enumerate(new_data):
+      self.counts_to_cps(dataset)
       if i<len(self.active_file_data):
         self.active_file_data[i].data=dataset.data
       else:
         self.active_file_data.append(dataset)
     self.active_file_data[-1].last_import=os.path.getctime(self.active_file_name)
-    window.replot()
+    window.replot(echo=False)
+    window.statusbar.push(0, 'Filedata Updated')
 
   def autoreload_dataset(self, action, window):
     '''
@@ -96,15 +104,34 @@ class CircleGUI:
     '''
     if self.autoreload_active:
       print "Deactivate Autoreload"
-      self.autoreload_active=False
+      self.autoreloader_off()
     else:
       print "Activate Autoreload"
       self.autoreload_active=True
-      while self.autoreload_active:
-        self.reload_active_measurement(action, window)
-        while gtk.events_pending():
-          gtk.main_iteration(False)
-        sleep(0.1)
+      if self.autoreload_thread is not None:
+        self.autoreloader_off()
+      self._window=window
+      self.autoreload_thread=Thread(target=self.autoreloader)
+      self.autoreload_thread.start()
+      if not self.autoreloader_off in window.active_threads:
+        window.active_threads.append(self.autoreloader_off)
+
+  def autoreloader_off(self):
+    if self.autoreload_thread is not None:
+      self.autoreload_active=False
+      self.autoreload_thread.join()
+      self.autoreload_thread=None
+
+  def autoreloader(self):
+    '''
+      Function called as new thread to check if the file changed.
+    '''
+    last_change=os.path.getctime(self.active_file_name)
+    while self.autoreload_active:
+      if last_change!=os.path.getctime(self.active_file_name):
+        gobject.idle_add(self.reload_active_measurement, None, None)
+        last_change=os.path.getctime(self.active_file_name)
+      sleep(0.1)
 
   def fit_positions(self, action, window):
     '''

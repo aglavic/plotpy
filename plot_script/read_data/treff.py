@@ -78,7 +78,7 @@ class MeasurementDataTREFF(MeasurementData):
     # use tuple hash values to find unique items
     xyitems=map(tuple, xy)
     xyitems=map(tuple.__hash__, xyitems)
-    ignore, indices=numpy.unique1d(xyitems, return_index=True)
+    ignore, indices=numpy.unique(xyitems, return_index=True)
     for i, col in enumerate(new.data):
       col.append(add_obj.data[i])
       new.data[i]=col[indices]
