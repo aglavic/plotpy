@@ -10,9 +10,12 @@ if sys.platform.startswith('win'):
 else:
   import ctypes
   try:
-    font_config=ctypes.cdll.LoadLibrary('libfontconfig.so')
+    font_config=ctypes.cdll.LoadLibrary('libfontconfig.so.1')
   except OSError:
-    font_config=None
+    try:
+      font_config=ctypes.cdll.LoadLibrary('libfontconfig.so')
+    except OSError:
+      font_config=None
 
 class FontConfig(object):
   '''

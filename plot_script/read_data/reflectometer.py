@@ -54,6 +54,7 @@ def read_data(file_name, DATA_COLUMNS):
     while len(input_file_lines)>0:
       measurement_info=read_header(input_file_lines)
       if measurement_info=='NULL':
+        print 'No valid header found'
         return 'NULL'
       sequence=read_data_lines(input_file_lines, measurement_info, DATA_COLUMNS)
       if sequence!='NULL':
@@ -97,6 +98,9 @@ def read_header(input_file_lines):
       while ";" in input_file_lines[0]:
         line=input_file_lines.pop(0)
       return [output, scantype]
+    elif 'CPS' in line:
+      scantype=line[1:].rstrip('\r\n')
+      return [output, scantype]
     else:
       output=output+line.rstrip('\n').rstrip('\r').lstrip('_').lstrip(';')+'\n'
   return 'NULL'
@@ -108,6 +112,10 @@ def read_data_lines(input_file_lines, info, DATA_COLUMNS):
     :return: One MeasurementData object for a scan sequence
   '''
   global sample_name
+  if info[1].endswith('CPS'):
+    cps=True
+  else:
+    cps=False
   data_info=''
   scantype=None
   _count_time=1.
@@ -136,7 +144,7 @@ def read_data_lines(input_file_lines, info, DATA_COLUMNS):
   raw_data=[]
   while len(input_file_lines)>0: # append data from one sequence to the object or create new object for the next sequence
     line=input_file_lines.pop(0)
-    next_data=read_data_line(line)
+    next_data=read_data_line(line, cps, _count_time)
     if len(next_data)==2 and next_data!='NULL':
       raw_data.append((start_angle+i*increment_angle, next_data[0], next_data[1]))
       i+=1
@@ -154,7 +162,7 @@ def read_data_lines(input_file_lines, info, DATA_COLUMNS):
   data.data=[x, y]
   return data
 
-def read_data_line(input_file_line):
+def read_data_line(input_file_line, cps, ctime):
   '''
     Read one line and output data as list of floats.
   '''
@@ -165,8 +173,16 @@ def read_data_line(input_file_line):
     if len(line)==0:
       return 'NULL'
     elif len(line)==1:
-      return [float(line[0]), math.sqrt(abs(float(line[0])))]
-    return [float(line[0]), float(line[1]), math.sqrt(abs(float(line[1])))]
+      if cps:
+        return [float(line[0])*ctime, math.sqrt(abs(float(line[0])*ctime))]
+      else:
+        return [float(line[0]), math.sqrt(abs(float(line[0])))]
+    if cps:
+      return [float(line[0]), float(line[1])*ctime,
+              math.sqrt(abs(float(line[1])*ctime))]
+    else:
+      return [float(line[0]), float(line[1]),
+              math.sqrt(abs(float(line[1])))]
 
 def read_simulation(file_name):
   '''

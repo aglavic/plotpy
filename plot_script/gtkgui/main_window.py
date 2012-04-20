@@ -299,7 +299,9 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     align_table.attach(self.y_range_label, 5, 7, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
     align_table.attach(self.y_range_in, 7, 9, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
     # font size entry
-    if fontconfig.font_config is not None or sys.platform.startswith('win'):
+    if fontconfig.font_config is not None \
+        or 'pngcairo' in self.gnuplot_info['terminals']\
+        or sys.platform.startswith('win'):
       self.font_size=gtk.FontButton()
       if 'font' in config.user_config['plot']:
         self.font_size.set_font_name(config.user_config['plot']['font']
