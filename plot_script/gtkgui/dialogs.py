@@ -477,7 +477,7 @@ class SimpleEntryDialog(gtk.Dialog):
         label.show()
         # If entry is a list, there will be a dropdown menu to choose from
         if hasattr(entry_list[1], '__iter__'):
-          if type(entry_list[1]) is int:
+          if type(entry_list[2]) is int:
             entry=gtk.combo_box_new_text()
             for selection_entry in entry_list[1]:
               entry.append_text(selection_entry)
@@ -487,7 +487,7 @@ class SimpleEntryDialog(gtk.Dialog):
             self.values[key]=entry_list[1][entry_list[2]]
             self.conversions[key]=entry_list[1]
           else:
-            # dropdown with entry
+            # dropdown-menu with entry
             entry=gtk.combo_box_entry_new_text()
             entry_c=entry.child
             for selection_entry in entry_list[1]:
@@ -1475,7 +1475,6 @@ class PlotTree(gtk.Dialog):
           if not self.preview_creation_active:
             return
           if getattr(dataset, 'preview', None) is None:
-            import main_window
             self.preview_plot(self.preview_session,
                               [dataset],
                               'preview',
