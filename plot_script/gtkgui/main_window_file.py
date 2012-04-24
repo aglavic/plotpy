@@ -13,6 +13,7 @@ from dialogs import FileImportDialog, StatusDialog, ExportFileChooserDialog, \
 from plot_script import read_data, measurement_data_plotting
 from plot_script.config import gnuplot_preferences
 from plot_script.configobj import ConfigObj
+from plot_script.read_data import GENERIC_FORMATS
 import main_window_plotting
 
 __author__="Artur Glavic"
@@ -34,7 +35,9 @@ class MainFile(object):
     '''
     if file_names is None:
       #++++++++++++++++File selection dialog+++++++++++++++++++#
-      file_dialog=FileImportDialog(self.active_folder, self.active_session.FILE_WILDCARDS)
+      wildcards=self.active_session.FILE_WILDCARDS+\
+                [(item[1][0], '*'+item[0]) for item in GENERIC_FORMATS.items()]
+      file_dialog=FileImportDialog(self.active_folder, wildcards)
       file_names, folder, template, ascii_filter=file_dialog.run()
       file_dialog.destroy()
       if file_names is None:
@@ -60,7 +63,7 @@ class MainFile(object):
         status_dialog=self.status_dialog
       status_dialog.show_all()
       sys.stdout.second_output=status_dialog
-    # try to import the selected files and append them to the active sesssion
+    # try to import the selected files and append them to the active session
     if template is None:
       if ascii_filter==-3:
         # normal import

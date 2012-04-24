@@ -31,6 +31,7 @@ from plot_script import  measurement_data_plotting
 from plot_script import  parallel
 from plot_script.config import gnuplot_preferences, transformations, user_config
 from plot_script.config import templates as template_config
+from plot_script.read_data import GENERIC_FORMATS
 
 # importing own modules
 
@@ -617,7 +618,14 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       pickled.close()
     else:
       print "Trying to import '"+filename+"'."
-      datasets=self.read_file(filename)
+      is_generic=False
+      for suffix, item in GENERIC_FORMATS.items():
+        if filename.endswith(suffix):
+          datasets=item[1](filename)
+          is_generic=True
+          break
+      if not is_generic:
+        datasets=self.read_file(filename)
       if datasets!=[] and datasets!='NULL' and self.mds_create:
         if zip_mds:
           import gzip #@Reimport

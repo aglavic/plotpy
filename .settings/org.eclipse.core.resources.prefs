@@ -65,6 +65,7 @@ encoding//plot_script/read_data/generic.py=utf-8
 encoding//plot_script/read_data/in12.py=utf-8
 encoding//plot_script/read_data/kws2.py=utf-8
 encoding//plot_script/read_data/mbe.py=utf-8
+encoding//plot_script/read_data/qtiplot.py=utf8
 encoding//plot_script/read_data/reflectometer.py=utf-8
 encoding//plot_script/read_data/sas.py=utf-8
 encoding//plot_script/read_data/shg.py=utf-8

@@ -8,6 +8,7 @@
 from numpy import *
 import os
 
+from qtiplot import read_data as read_qti
 from plot_script.option_types import *
 
 try: # For the use in external programs where no MeasurementData objects are available
@@ -18,6 +19,12 @@ except ImportError:
   config=None
 
 defined_filters=[]
+
+GENERIC_FORMATS={
+      '.qti': ('QtiPlot', read_qti),
+                 }
+
+
 
 #+++++++++++++++++++++++++++++++++++AbstractImportFilter-Class+++++++++++++++++++++++++++++++++++++++++++++++++++#
 
