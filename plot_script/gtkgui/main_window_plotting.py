@@ -785,6 +785,8 @@ class MainPlotting(object):
       except ValueError:
         return None
     # suggest commen physical units
+    exponent_values=['Off', 'No prefactor', 'With Prefactor',
+                     'Prefix', 'Prefix+Unit', 'Short', 'Short Exp.']
     from plot_script.config.transformations import known_unit_transformations
     unit_suggestions=numpy.array(known_unit_transformations.keys()).flatten()
     unit_suggestions=numpy.unique(unit_suggestions)
@@ -792,18 +794,18 @@ class MainPlotting(object):
                              ['x-Dimension', dataset.x.dimension, str],
                              ['x-Unit', unit_suggestions, dataset.x.unit, str],
                              ['x-tics', dataset.plot_options.tics[0] or 'auto', float_or_none],
-                             ['Exponential x-labels', dataset.plot_options.exp_format[0]],
+                             ['Exponential x-labels', exponent_values, int(dataset.plot_options.exp_format[0])],
                              ['y-Dimension', dataset.y.dimension, str],
                              ['y-Unit', unit_suggestions, dataset.y.unit, str],
                              ['y-tics', dataset.plot_options.tics[1] or 'auto', float_or_none],
-                             ['Exponential y-labels', dataset.plot_options.exp_format[1]],
+                             ['Exponential y-labels', exponent_values, int(dataset.plot_options.exp_format[1])],
                              ]
     if self.active_dataset.zdata>=0:
       entries+=[
                              ['z-Dimension', dataset.z.dimension, str],
                              ['z-Unit', unit_suggestions, dataset.z.unit, str],
                              ['z-tics', dataset.plot_options.tics[2] or 'auto', float_or_none],
-                             ['Exponential z-labels', dataset.plot_options.exp_format[2]],
+                             ['Exponential z-labels', exponent_values, int(dataset.plot_options.exp_format[2])],
                 ]
     dialog=SimpleEntryDialog('Change label settings...',
                              entries
@@ -816,13 +818,13 @@ class MainPlotting(object):
       dataset.y.unit=value['y-Unit']
       dataset.plot_options.tics[0]=value['x-tics']
       dataset.plot_options.tics[1]=value['y-tics']
-      dataset.plot_options.exp_format[0]=value['Exponential x-labels']
-      dataset.plot_options.exp_format[1]=value['Exponential y-labels']
+      dataset.plot_options.exp_format[0]=exponent_values.index(value['Exponential x-labels'])
+      dataset.plot_options.exp_format[1]=exponent_values.index(value['Exponential y-labels'])
       if self.active_dataset.zdata>=0:
         dataset.z.dimension=value['z-Dimension']
         dataset.z.unit=value['z-Unit']
         dataset.plot_options.tics[2]=value['z-tics']
-        dataset.plot_options.exp_format[2]=value['Exponential z-labels']
+        dataset.plot_options.exp_format[2]=exponent_values.index(value['Exponential z-labels'])
       self.replot()
     dialog.destroy()
 

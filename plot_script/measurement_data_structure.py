@@ -1539,7 +1539,7 @@ class PlotOptions(object):
   rectangles=[]
   ellipses=[]
   tics=[None, None, None]
-  exp_format=[False, False, False] # set the axis label format to 10^{%L} for xyz
+  exp_format=[0, 0, 0] # set the axis label format to 10^{%L} for xyz
 
   def __init__(self, initial_text=""):
     '''
@@ -1555,6 +1555,7 @@ class PlotOptions(object):
     self.rectangles=[]
     self.ellipses=[]
     self.tics=[None, None, None]
+    self.exp_format=[0, 0, 0]
     self.input_string(initial_text)
 
   def overwrite_copy(self, other):
@@ -1662,8 +1663,18 @@ class PlotOptions(object):
       if tics is not None:
         output+='set %stics %f\n'%(i, tics)
     for i, exp_format in zip(['x', 'y', 'cb'], self.exp_format):
-      if exp_format:
-        output+='set format %s "10^{%%L}"\n'%(i)
+      if exp_format==1:
+        output+='set format %s "10^{%%T}"\n'%(i)
+      elif exp_format==2:
+        output+='set format %s "%%.1t·10^{%%T}"\n'%(i)
+      elif exp_format==3:
+        output+='set format %s "%%.0s %%c"\n'%(i)
+      elif exp_format==4:
+        output+='set format %s "%%.0s %%c[%s-unit]"\n'%(i, i)
+      elif exp_format==5:
+        output+='set format %s "%%.1t{/=[small-font-size] x10^{%%T}}"\n'%(i)
+      elif exp_format==6:
+        output+='set format %s "%%.1te%%T"\n'%(i)
     if self.exp_format[2]:
       output+='set cblabel offset 1.5\n'
     return output

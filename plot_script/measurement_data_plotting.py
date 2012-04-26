@@ -241,6 +241,7 @@ def replace_ph(session,
   replace('[width]', session.picture_width).\
   replace('[height]', session.picture_height).\
   replace('[font-size]', str(int(session.font_size/1000.*int(session.picture_height)))).\
+  replace('[small-font-size]', str(int(session.font_size/1500.*int(session.picture_height)))).\
   replace('[name]', file_name_prefix).\
   replace('[sample]', sample_name).\
   replace('[nr]', datasets[datanr].number).\
