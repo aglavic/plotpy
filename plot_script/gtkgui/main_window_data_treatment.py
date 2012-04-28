@@ -4,6 +4,7 @@
 '''
 
 import gtk
+import numpy
 from copy import deepcopy
 from peakfinder import PeakFinderDialog, peaks_from_preset
 from dialogs import SimpleEntryDialog, DataView
@@ -546,6 +547,54 @@ class MainData(object):
           peaks_from_preset(self.active_dataset, preset, self, True)
         else:
           peaks_from_preset(self.active_dataset, preset, self, False)
+
+  def peak_info(self, action):
+    '''
+      Calculate peak parameters and set a label accordigly.
+    '''
+    dataset=self.active_dataset
+    if dataset.plot_options.scan_info[0]:
+      dataset.plot_options.scan_info[0]=False
+      self.replot()
+      return
+    x=dataset.x.view(numpy.ndarray)
+    y=dataset.y.view(numpy.ndarray)
+    sidx=numpy.argsort(x)
+    x=x[sidx]
+    y=y[sidx]
+    ymax=y.max()
+    xmax=x[numpy.where(y==ymax)[0][0]]
+    info="Maximum %g at %g"%(ymax, xmax)
+    HM=ymax/2.
+
+    # get half maximum positions
+    lhalf_high=numpy.where((x<=xmax)&(y>HM))[0][0]
+    rhalf_high=numpy.where((x>=xmax)&(y>HM))[0][-1]
+    try:
+      lhalf_low=numpy.where((x<xmax)&(y<HM))[0][-1]
+      rhalf_low=numpy.where((x>xmax)&(y<HM))[0][0]
+    except IndexError:
+      pass
+    else:
+      # get relative difference to half maximum
+      lrel_low=HM-y[lhalf_low]
+      lrel_high=y[lhalf_high]-HM
+      rrel_low=HM-y[rhalf_low]
+      rrel_high=y[rhalf_high]-HM
+      # left and right x value of half maximum position
+      lx=(x[lhalf_low]*lrel_high+\
+          x[lhalf_high]*lrel_low)/\
+         (lrel_low+lrel_high)
+      rx=(x[rhalf_low]*rrel_high+\
+          x[rhalf_high]*rrel_low)/\
+         (rrel_low+rrel_high)
+      info="Peak at %g FWHM: %g\\n"%((lx+rx)/2., rx-lx)+info
+    # calculate center of mass
+    COM=(y*x).sum()/y.sum()
+    info+="\\nCenter of mass: %g"%COM
+    dataset.plot_options.scan_info[0]=True
+    dataset.plot_options.scan_info[1]=info
+    self.replot()
 
   def extract_cross_section(self, action):
     '''

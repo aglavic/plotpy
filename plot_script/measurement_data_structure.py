@@ -1540,6 +1540,7 @@ class PlotOptions(object):
   ellipses=[]
   tics=[None, None, None]
   exp_format=[0, 0, 0] # set the axis label format to 10^{%L} for xyz
+  scan_info=[False, None]
 
   def __init__(self, initial_text=""):
     '''
@@ -1556,6 +1557,7 @@ class PlotOptions(object):
     self.ellipses=[]
     self.tics=[None, None, None]
     self.exp_format=[0, 0, 0]
+    self.scan_info=[False, None]
     self.input_string(initial_text)
 
   def overwrite_copy(self, other):
@@ -1611,6 +1613,8 @@ class PlotOptions(object):
       if label[4] or label[5]:
         output+=' center'
       output+=' %s # LABEL\n'%label[6]
+    if self.scan_info[0]:
+      output+='set label 50 "%s" at graph 0,1 front offset 1.5,-1 # SCAN-INFO\n'%self.scan_info[1]
     for i, arrow in enumerate(self.arrows):
       pos=arrow[0]
       output+='set arrow %i from %g,%g,%g to %g,%g,%g'%(i+100,

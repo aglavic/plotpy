@@ -267,6 +267,7 @@ class MainUI(object):
           <menuitem action='CombinePoints'/>
           <menuitem action='Integrate'/>
           <menuitem action='Derivate'/>
+          <menuitem action='PeakInfo'/>
           <menu action='PeakFinderMenu'>
             <menuitem action='PeakFinderDialog'/>
             <menu action='PeakPresetSummary'>
@@ -552,6 +553,10 @@ class MainUI(object):
         "Integrate", '<control><shift>D', # label, accelerator
         None, # tooltip
         self.integrate_data),
+      ("PeakInfo", None, # name, stock id
+        "Generate Peak Info", "<alt><shift>I", # label, accelerator
+        None, # tooltip
+        self.peak_info),
       ("ColorcodePoints", None, # name, stock id
         "Show Colorcoded Points", None, # label, accelerator
         None, # tooltip
