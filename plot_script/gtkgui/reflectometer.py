@@ -862,7 +862,7 @@ class ReflectometerGUI:
     dialog=dialogs.SimpleEntryDialog('Fourier Analysis Calculus - Settings...', (
                                ('Θc', 0.3, float),
                                ('λ', 1.54, float),
-                               ('Interpolation Type', ['linear', 'cubic', 'nearest'], 0),
+                               ('Interpolation Type', ['linear', 'cubic', 'nearest'], 2),
                                ))
     options, accepted=dialog.run()
     if accepted:
@@ -872,10 +872,12 @@ class ReflectometerGUI:
       interpolation_type=options['Interpolation Type']
       index=window.index_mess
       dataset=self.active_file_data[index]
-      fourier=self.fourier_analysis(dataset, theta_c, lambda_x=lambda_x, interpolation_type=interpolation_type)
+      fourier=self.fourier_analysis(dataset, theta_c, lambda_x=lambda_x,
+                                    interpolation_type=interpolation_type)
       fourier.number=str(index+1)
       self.active_file_data.insert(index+1, fourier)
       window.index_mess+=1
+      window.rebuild_menus()
       window.replot()
     else:
       dialog.destroy()

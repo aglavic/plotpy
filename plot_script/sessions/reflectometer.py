@@ -197,7 +197,8 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       self.file_data={}
     self.file_data[name]=FitList(data_list)
 
-  def fourier_analysis(self, dataset, theta_c, lambda_x=1.54, interpolation_type='linear'):
+  def fourier_analysis(self, dataset, theta_c,
+                         lambda_x=1.54, interpolation_type='linear'):
     '''
       Apply the fourier transform calculus found in 
         K.Sakurai et. all, Jpn. J. Appl. Phys. Vol 31 (1992) pp. L113-L115
@@ -216,7 +217,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     import numpy as np
     from scipy.interpolate import interp1d
     from plot_script.measurement_data_structure import MeasurementData, PhysicalProperty
-    from plot_script.fit_data import FitPolynomialPowerlaw
+    from plot_script.fit_data import FitPowerlaw
     dataset.unit_trans([['Q', 'Å^{-1}', lambda_x/4./np.pi**2*180., 0., 'Θ', '°'],
                         ['2Θ', '°', 0.5, 0., 'Θ', '°']])
     region=np.where(dataset.x>theta_c)
@@ -226,11 +227,18 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     y_uneven=dataset.y[region]
     f=interp1d(x_uneven, y_uneven, kind=interpolation_type, copy=False)
     y=f(x)
-    # normalize by a polynomial fit to the logarithmic data
-    fit=FitPolynomialPowerlaw([0., 0., 0.,-1., 1.])
+    # normalize by a powerlaw fit to the logarithmic data
+    fit=FitPowerlaw([1.,-0.001,-4., y.min()])
+    fit.refine_parameters=range(3)
     fit.refine(x, y)
-    y=y/fit(x)
-    # Calculate the fourier transform of the data
+    fit.refine_parameters=range(4)
+    fit.refine(x, y)
+    # remove background
+    #y-=fit.parameters[3]
+    #fit.parameters[3]=0.
+    y/=fit(x)
+    y-=y.mean()
+    # Calculate the Fourier transform of the logarithmic data
     fft_result=np.fft.rfft(y)[1:]
     fft_y=np.abs(fft_result)
     fft_x=np.linspace(1./(2.*x.max()), 1./(2.*x.max())*len(fft_y), len(fft_y))
@@ -239,6 +247,13 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     out.append_column(PhysicalProperty('d-spacing', 'Å', fft_x))
     out.append_column(PhysicalProperty('Amplitude', 'a.u.', fft_y))
     out.append_column(PhysicalProperty('phase', 'rad', fft_phi))
+    out.logx=True
+
+    #out=MeasurementData()
+    #out.append_column(PhysicalProperty('x', '', x))
+    #out.append_column(PhysicalProperty('y_{scaled}', '', y))
+    #out.append_column(PhysicalProperty('y_{interp}', '', f(x)))
+
     out.sample_name=dataset.sample_name
     out.short_info='Fourier Analysis with Θ_c=%g%s'%(theta_c, dataset.x.unit)
     #out2=MeasurementData()
