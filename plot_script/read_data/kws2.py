@@ -10,7 +10,7 @@ import os, sys
 from copy import deepcopy
 from numpy import sqrt, array, pi, sin, arctan, maximum, linspace, \
                  where, float32, uint16, int16, fromstring, \
-                 arange, zeros, asarray
+                 arange, zeros, asarray, meshgrid
 from configobj import ConfigObj
 from glob import glob
 from plot_script.measurement_data_structure import HugeMD, PhysicalProperty
@@ -64,6 +64,9 @@ def read_data(file_name):
   elif file_name.endswith('.png'):
     gnuplot_preferences.settings_3dmap=gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
     return read_png_data(file_name)
+  elif file_name.endswith('.mat'):
+    gnuplot_preferences.settings_3dmap=gnuplot_preferences.settings_3dmap.replace('interpolate 3,3', '')
+    return read_mat_data(file_name)
   folder, rel_file_name=os.path.split(os.path.realpath(file_name))
   setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
   for key, value in setups.items():
@@ -1022,6 +1025,89 @@ def read_raw_png_data(file_name):
   data_array=data_array.reshape(*img.size)
   data_array=data_array.astype(float32)
   return data_array
+
+def read_mat_data(file_name):
+  '''
+    Read matlab .mat file from B1.
+  '''
+  try:
+    from scipy.io import loadmat #@UnusedImport
+  except ImportError:
+    print "Scipy not found, can't import .mat files"
+    return 'NULL'
+  folder, rel_file_name=os.path.split(os.path.realpath(file_name))
+  setups=ConfigObj(os.path.join(folder, 'gisas_setup.ini'), unrepr=True)
+  for key, value in setups.items():
+    if os.path.join(folder, rel_file_name) in glob(os.path.join(folder, key)):
+      setup=value
+  sys.stdout.write("\tReading .mat file...")
+  sys.stdout.flush()
+  I, dI=read_raw_mat_data(file_name)
+  if I is None:
+    print "Wrong file format for B1, need Intensity and Error data"
+    return 'NULL'
+  if setup['BACKGROUND'] is not None:
+    sys.stdout.write("\b\b\b subtracting background %s..."%setup['BACKGROUND'])
+    sys.stdout.flush()
+    #error propagation
+    Ibg, dIbg=read_raw_mat_data(setup['BACKGROUND'])
+    I-=Ibg
+    dI=sqrt(dI**2+dIbg**2)
+  if setup['DETECTOR_SENSITIVITY'] is not None:
+    sys.stdout.write("\b\b\b correcting detector sensitivity %s..."%setup['DETECTOR_SENSITIVITY'])
+    sys.stdout.flush()
+    Isens, dIsens=read_raw_mat_data(setup['DETECTOR_SENSITIVITY'])
+    #error propagation
+    dI=sqrt((dI/Isens)**2+(Isens*dIsens/I**2)**2)
+    I/=Isens
+  pixels_y, pixels_x=I.shape
+  x, y=meshgrid(arange(pixels_x), arange(pixels_y))
+  I=I.flatten()
+  dI=dI.flatten()
+  x=x.flatten()
+  y=y.flatten()
+  sys.stdout.write("\b\b\b, processing data...")
+  sys.stdout.flush()
+
+  detector_distance=setup['DETECTOR_DISTANCE'] #mm
+  pixelsize_x=setup['SIZE_X']/pixels_x
+  pixelsize_y=setup['SIZE_Y']/pixels_y
+  center_x=setup['CENTER_X']
+  center_y=setup['CENTER_Y']
+  lambda_x=setup['LAMBDA_N']
+
+  Qy=4.*pi/lambda_x*\
+           sin(arctan((x-center_x)*pixelsize_x/detector_distance/2.))
+  Qz=4.*pi/lambda_x*\
+           sin(arctan((y-center_y)*pixelsize_y/detector_distance/2.))
+  if setup['SWAP_YZ']:
+    # swap the directions
+    tmp=Qy
+    Qy=Qz
+    Qz=tmp
+
+  output=HugeMD(x=3, y=4, zdata=2)
+  output.data.append(PhysicalProperty('x', 'pix', x))
+  output.data.append(PhysicalProperty('y', 'pix', y))
+  output.data.append(PhysicalProperty('I', 'a.u.', I, dI))
+  output.data.append(PhysicalProperty('Q_y', 'Å^{-1}', Qy))
+  output.data.append(PhysicalProperty('Q_z', 'Å^{-1}', Qz))
+  output.number='0'
+  output.sample_name=os.path.split(file_name[:-4])[1]
+  output.logz=True
+  sys.stdout.write("\b\b\b, finished.\n")
+  sys.stdout.flush()
+  return [output]
+
+def read_raw_mat_data(file_name):
+  from scipy.io import loadmat
+  file_data=loadmat(file_name)
+  if 'Intensity' in file_data and 'Error' in file_data:
+    I=file_data['Intensity']
+    dI=file_data['Error']
+    return I, dI
+  else:
+    return None, None
 
 class KWS2MeasurementData(HugeMD):
   '''

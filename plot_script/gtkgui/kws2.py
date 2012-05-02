@@ -37,7 +37,7 @@ class KWS2GUI:
     label_center_x=gtk.Label('Horizontal Beamcenter:')
     label_center_y=gtk.Label('Vertical Beamcenter:')
     label_detector_distance=gtk.Label('Detector distance:')
-    if file_type in ['edf', 'cmb', 'bin', 'tif', 'bmp', 'png']:
+    if file_type in ['edf', 'cmb', 'bin', 'tif', 'bmp', 'png', 'mat']:
       label_lambda_n=gtk.Label('X-ray Wavelength λ:')
     else:
       label_lambda_n=gtk.Label('Neutron Wavelength λ:')
@@ -76,7 +76,7 @@ class KWS2GUI:
     label_width_y=gtk.Label('Detector size vertical:')
     rl_width_x=gtk.Label('mm')
     rl_width_y=gtk.Label('mm')
-    if file_type in ['tif', 'png', 'bmp']:
+    if file_type in ['tif', 'png', 'bmp', 'mat']:
       # add to table
       table.attach(label_width_x, 0, 1, 2, 3, gtk.FILL, 0, 0, 0);
       table.attach(label_width_y, 0, 1, 3, 4, gtk.FILL, 0, 0, 0);
