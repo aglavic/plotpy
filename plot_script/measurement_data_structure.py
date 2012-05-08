@@ -165,6 +165,37 @@ class MeasurementData(object):
       data=data[:, data_indices[0]]
     return data
 
+  def get_filter_indices(self):
+    '''
+      Return the boolean array of not filtered data points.
+      
+      :return: numpy array of filters
+    '''
+    data=numpy.vstack(self.data+[item.error for item in self.data if item.has_error])
+    # initialize true array
+    indices=(data[0]==data[0])
+    filters=self.filters
+    lnot=numpy.logical_not
+    for data_filter in filters:
+      filter_column=data[data_filter[0]]
+      filter_from, filter_to=data_filter[1:3]
+      if filter_from>filter_to:
+        filter_from=data_filter[2]
+        filter_to=data_filter[1]
+      if data_filter[3]:
+        if filter_from is None:
+          filter_from=filter_column.min()
+        if filter_to is None:
+          filter_to=filter_column.max()
+        indices&=(filter_column>=filter_from)&(filter_column<=filter_to)
+      else:
+        if filter_from is None:
+          filter_from=filter_column.max()
+        if filter_to is None:
+          filter_to=filter_column.min()
+        indices&=lnot((filter_column>=filter_from)&(filter_column<=filter_to))
+    return indices
+
   def __getstate__(self):
     '''
       Define how the class is pickled and copied.
@@ -958,7 +989,15 @@ class MeasurementData(object):
       Quick export only the xyz values as binary file.
     '''
     # Create data as list of x1,y1,z1,x2,y2,z2...,xn,yn,zn
-    xyz=numpy.vstack([self.x, self.y, self.z]).astype(numpy.float32).transpose().flatten()
+    filter_indices=numpy.logical_not(self.get_filter_indices())
+    x=self.x
+    y=self.y
+    z=numpy.array(self.z, copy=True, dtype=numpy.float32)
+    if numpy.any(filter_indices):
+      # although matrix points cannot be left out,
+      # filtered points are changed to NaN
+      z[filter_indices]=numpy.nan
+    xyz=numpy.vstack([x, y, z]).astype(numpy.float32).transpose().flatten()
     xyz.tofile(open(file_name, 'wb'))
 
   def export_npz(self, file_name):
