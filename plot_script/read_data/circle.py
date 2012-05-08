@@ -150,6 +150,9 @@ def read_scan(scan_lines, last_comments):
     output.scan_line=1
     output.filters=[(9,-1.0, 0.5, False)]
     output=MeasurementData4D.from_md(output, y2=2)
+  if scan_header['type'].split()[0]=='circle_mesh':
+    output.scan_line_constant=0
+    output.scan_line=1
   data=numpy.array(map(lambda line: numpy.fromstring(line, sep=" "), scan_data)).transpose()
   for i, col in enumerate(columns):
     output.data.append(PhysicalProperty(col[0], col[1], data[i]))
@@ -228,6 +231,9 @@ def get_type_columns(type_line, columns):
     first_index=columns.index(first_angle)
     second_index=columns.index(second_angle)
     return first_index, second_index, intensity_error, intensity
+  elif type_=='circle_mesh':
+    items=options.strip().split()
+    return columns.index(items[0].lower()), columns.index(items[1].lower()), intensity_error, intensity
   elif type_=='mesh3d':
     items=options.strip().split()
     first_angle='Theta' #items[0]

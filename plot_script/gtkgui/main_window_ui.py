@@ -73,7 +73,7 @@ class MainUI(object):
         None, # tooltip
         self.change),
     ("FilesMenu", None, # name, stock id
-        "_Change", None, # label, accelerator
+        "Change", None, # label, accelerator
         None, # tooltip
         None),)
   # Menus allways present
@@ -265,6 +265,10 @@ class MainUI(object):
           <placeholder name='z-actions'/>
           <placeholder name='y-actions'>
           <menuitem action='CombinePoints'/>
+          <menu action='SimpleCorrections'>
+            <menuitem action='XYOffset'/>
+            <menuitem action='Normalize'/>
+          </menu>
           <menuitem action='Integrate'/>
           <menuitem action='Derivate'/>
           <menuitem action='PeakInfo'/>
@@ -378,7 +382,7 @@ class MainUI(object):
       ("ViewMenu", None, "_View"), # name, stock id, label
       ("AxesMenu", None, "_Axes"), # name, stock id, label
       ("TreatmentMenu", None, "_Data treatment"), # name, stock id, label
-      ("ExtrasMenu", None, "E_xtras"), # name, stock id, label
+      ("ExtrasMenu", None, "Extras"), # name, stock id, label
       ("HelpMenu", None, "_Help"), # name, stock id, label
       ("ToolBar", None, "Toolbar"), # name, stock id, label
       ("Navigate", None, "Navigate"), # name, stock id, label
@@ -522,7 +526,7 @@ class MainUI(object):
         None, # tooltip
         self.unit_transformation),
       ("CrossSection", None, # name, stock id
-        "Cross-Section...", None, #'s',                     # label, accelerator
+        "Cross-Section...", '<alt>C', #'s',                     # label, accelerator
         None, # tooltip
         self.extract_cross_section),
       ("InterpolateSmooth", None, # name, stock id
@@ -534,7 +538,7 @@ class MainUI(object):
         None, # tooltip
         self.rebin_3d_data_dialog),
       ("RadialIntegration", None, # name, stock id
-        "Calculate Radial Integration...", None, # label, accelerator
+        "Calculate Radial/Arc Integration...", "<alt>R", # label, accelerator
         None, # tooltip
         self.extract_radial_integration),
       ("IntegrateIntensities", None, # name, stock id
@@ -542,9 +546,21 @@ class MainUI(object):
         None, # tooltip
         self.extract_integrated_intensities),
       ("CombinePoints", None, # name, stock id
-        "Combine points", None, # label, accelerator
+        "Combine points", '<alt>C', # label, accelerator
         None, # tooltip
         self.combine_data_points),
+      ("SimpleCorrections", None, # name, stock id
+        "Correct the Dataset", None, # label, accelerator
+        None, # tooltip
+        None),
+      ("XYOffset", None, # name, stock id
+        "xy-Offset", '<alt>X', # label, accelerator
+        None, # tooltip
+        self.correct_offset),
+      ("Normalize", None, # name, stock id
+        "Normalization", '<alt>N', # label, accelerator
+        None, # tooltip
+        self.normalize_data),
       ("Derivate", None, # name, stock id
         "Derivate or Smoothe", '<control>D', # label, accelerator
         None, # tooltip

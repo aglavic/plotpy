@@ -169,7 +169,9 @@ class FileActions:
     except ValueError:
       return False
 
-  def radial_integration(self, x_0, y_0, dr, max_r, at_end=False):
+  def radial_integration(self, x_0, y_0, dr, max_r,
+                                  phi_0=0., dphi=180., symmetric=True,
+                                  at_end=False):
     '''
       Create a radial integration around one point of a dataset
       
@@ -182,11 +184,17 @@ class FileActions:
     '''
     data=self.window.measurement[self.window.index_mess]
     try:
-      cs_object=self.create_radial_integration(x_0, y_0, dr, max_r)
+      cs_object=self.create_radial_integration(x_0, y_0, dr, max_r,
+                                               phi_0, dphi, symmetric)
       if cs_object is None:
         return False
       cs_object.number=data.number
-      cs_object.short_info='%s - Radial integration around (%g,%g)'%(
+      if dphi<180.:
+        cs_object.short_info='%s - Arc integration with φ=%g±%g from (%g,%g)'%(
+                           data.short_info, phi_0, dphi,
+                           x_0, y_0)
+      else:
+        cs_object.short_info='%s - Radial integration around (%g,%g)'%(
                            data.short_info, x_0, y_0)
       cs_object.sample_name=data.sample_name
       cs_object.info=data.info
@@ -608,7 +616,8 @@ class FileActions:
     out_dataset.append_column(PhysicalProperty(dataset.y.dimension, dataset.y.unit, data[2]))
     return out_dataset
 
-  def create_radial_integration(self, x_0, y_0, dr, max_r):
+  def create_radial_integration(self, x_0, y_0, dr, max_r,
+                                    phi_0=0., dphi=180., symmetric=True):
     '''
       Create a radial integration around one point (x_0,y_0)
       
@@ -616,8 +625,10 @@ class FileActions:
       :param y_0: y-position of the center point
       :param dr: Step size in radius for the created plot
       :param max_r: Maximal radius to integrate to
+      :param phi: Direction of radian
+      :param dphi: Width of arc
+      :param symmetric: Join negative and positive directions
     '''
-    from numpy import sqrt
     data=self.window.measurement[self.window.index_mess].get_filtered_data_matrix()
     dims=self.window.measurement[self.window.index_mess].dimensions()
     units=self.window.measurement[self.window.index_mess].units()
@@ -627,13 +638,15 @@ class FileActions:
           self.window.measurement[self.window.index_mess].yerror)
     # new_cols=[(dims[col], units[col]) for col in cols]
     # Distances to the point
-    dist_r=sqrt((data[cols[0]]-x_0)**2+(data[cols[1]]-y_0)**2)
-    max_r=min(dist_r.max(), max_r)
+    r=numpy.sqrt((data[cols[0]]-x_0)**2+(data[cols[1]]-y_0)**2)
     values=data[cols[2]]
     errors=data[cols[3]]
+    max_r=min(r.max(), max_r)
     first_dim="r"
     first_unit=units[cols[0]]
-    new_cols=[(first_dim, first_unit), (dims[cols[2]], units[cols[2]]), (dims[cols[3]], units[cols[3]])]
+    new_cols=[(first_dim, first_unit),
+              (dims[cols[2]], units[cols[2]]),
+              (dims[cols[3]], units[cols[3]])]
     output=MeasurementData([],
                            [],
                            0,
@@ -644,15 +657,28 @@ class FileActions:
     # the result is than calculated as hist(intensity)/hist(1)
     # and sqrt(hist(error²))/hist(1)
     points=int(max_r/dr)+1
-    hy, ignore=numpy.histogram(dist_r, points, weights=values)
-    hdy, ignore=numpy.histogram(dist_r, points, weights=errors**2)
+    if dphi<180.:
+      # take out just one arc region for the integration
+      phi=numpy.arctan2(data[cols[1]]-y_0, data[cols[0]]-x_0)/numpy.pi*180.
+      phi_region=numpy.where(((phi-phi_0)%180.)<=dphi)
+      r=r[phi_region]
+      values=values[phi_region]
+      errors=errors[phi_region]
+      if not symmetric:
+        phi=phi[phi_region]
+        r[((phi-phi_0)%360.)>180]*=-1.
+        points=int(max_r/dr)*2+1
+    hy, ignore=numpy.histogram(r, points, weights=values)
+    hdy, ignore=numpy.histogram(r, points, weights=errors**2)
     hdy=numpy.sqrt(hdy)
-    count, hx=numpy.histogram(dist_r, points)
+    count, hx=numpy.histogram(r, points)
     hy/=count
     hdy/=count
     hx=(hx[:-1]+hx[1:])/2.
     output.data.append(PhysicalProperty(new_cols[0][0], new_cols[0][1], hx))
     output.data.append(PhysicalProperty(new_cols[1][0], new_cols[1][1], hy, hdy))
+    if self.window.measurement[self.window.index_mess].logz:
+      output.logy=True
     if len(output)==0:
       return None
     else:

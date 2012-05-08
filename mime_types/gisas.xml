@@ -6,5 +6,6 @@
      <glob pattern="*.edf.gz"/>
      <glob pattern="*.cmb"/>
      <glob pattern="*.cmb.gz"/>
+     <glob pattern="*.mat"/>
    </mime-type>
 </mime-info>

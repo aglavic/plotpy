@@ -10,8 +10,8 @@ _plot() {
       "dns") COMPREPLY=($(compgen -G "$curw*.d_dat") $(compgen -G "$curw*.d_dat.gz") $(compgen -S/ -d -- $curw));;
       "mbe") COMPREPLY=($(compgen -G "$curw*.dat") $(compgen -G "$curw*.png") $(compgen -G "$curw*.log") $(compgen -S/ -d -- $curw));;
       "4circle") COMPREPLY=($(compgen -G "$curw*.spec") $(compgen -G "$curw*.spec.gz") $(compgen -G "$curw*.[0-9][0-9][0-9][0-9]") $(compgen -G "$curw*.fio") $(compgen -G "$curw*.fio.gz") $(compgen -S/ -d -- $curw));;
-      "kws2") COMPREPLY=($(compgen -G "$curw*.DAT") $(compgen -G "$curw*.edf") $(compgen -G "$curw*.cmb") $(compgen -G "$curw*.bin") $(compgen -G "$curw*.gz") $(compgen -S/ -d -- $curw));;
-      "gisas") COMPREPLY=($(compgen -G "$curw*.DAT") $(compgen -G "$curw*.edf") $(compgen -G "$curw*.cmb") $(compgen -G "$curw*.bin") $(compgen -G "$curw*.gz") $(compgen -S/ -d -- $curw));;
+      "kws2") COMPREPLY=($(compgen -G "$curw*.DAT") $(compgen -G "$curw*.edf") $(compgen -G "$curw*.cmb") $(compgen -G "$curw*.bin") $(compgen -G "$curw*.gz") $(compgen -G "$curw*.mat") $(compgen -S/ -d -- $curw));;
+      "gisas") COMPREPLY=($(compgen -G "$curw*.DAT") $(compgen -G "$curw*.edf") $(compgen -G "$curw*.cmb") $(compgen -G "$curw*.bin") $(compgen -G "$curw*.gz") $(compgen -G "$curw*.mat") $(compgen -S/ -d -- $curw));;
       "in12") COMPREPLY=($(compgen -o default));;
       "refl") COMPREPLY=($(compgen -G "$curw*.[Uu][Xx][Dd]") $(compgen -G "$curw*.raw") $(compgen -G "$curw*.xrdml") $(compgen -G "$curw*.txt") $(compgen -G "$curw*.gz") $(compgen -S/ -d -- $curw));;
       "sas") COMPREPLY=($(compgen -G "$curw*.dat") $(compgen -G "$curw*.txt") $(compgen -G "$curw*.gz") $(compgen -S/ -d -- $curw));;

@@ -671,6 +671,58 @@ class MainData(object):
       self.replot()
     return gotit
 
+  def correct_offset(self, action):
+    '''
+      Simple xy-offset correction.
+    '''
+    data=self.active_dataset
+    dimension_names=[]
+    dims=data.dimensions()
+    dimension_names.append(dims[data.xdata])
+    dimension_names.append(dims[data.ydata])
+    dialog=SimpleEntryDialog('Correct xy-Offset:',
+                                [
+                                ('x-offset', 0., float),
+                                ('y-offset', 0., float),
+                                ],
+                                description='Click to select the xy-origin'
+                                )
+    dialog.register_mouse_callback(self, [[('x-offset', 0), ('y-offset', 1)]])
+    values, result=dialog.run()
+    dialog.destroy()
+    if result:
+      data.x-=values['x-offset']
+      data.y-=values['y-offset']
+      self.replot()
+
+  def normalize_data(self, action):
+    '''
+      Simple xy-offset correction.
+    '''
+    data=self.active_dataset
+    dimension_names=[]
+    dims=data.dimensions()
+    dimension_names.append(dims[data.xdata])
+    dimension_names.append(dims[data.ydata])
+    dialog=SimpleEntryDialog('Normalize Data:',
+                                [
+                                ('Normalization', 1., float),
+                                ],
+                                description='Click to select value'
+                                )
+    dialog.register_mouse_callback(self, [[('Normalization', 1)]])
+    values, result=dialog.run()
+    dialog.destroy()
+    if result:
+      norm=values['Normalization']
+      ynorm=data.y/norm
+      ynorm.unit='a.u.'
+      ynorm.dimension=ynorm.dimension+'_{Norm}'
+      data.data.append(ynorm)
+      data.ydata=len(data.data)-1
+      self.rebuild_menus()
+      self.replot()
+
   def extract_radial_integration(self, action):
     '''
       Open a dialog to select point as center of a radial integration.
@@ -688,6 +740,9 @@ class MainData(object):
                                 ('y0', 0, float),
                                 ('Δr', 0.001, float),
                                 ('r_max', 1e10, float),
+                                ('φ (x-axis)', 0., float),
+                                ('Δφ', 180., float),
+                                ('Symmetric', True),
                                 ],
                                 description='Click on the graph to select a xy-position.'
                                 )
@@ -699,8 +754,12 @@ class MainData(object):
       x0=values['x0']
       y0=values['y0']
       mr=values['r_max']
+      phi=values['φ (x-axis)']
+      dphi=values['Δφ']
+      symmetric=values['Symmetric']
       gotit=self.file_actions.activate_action('radial_integration',
-                                        x0, y0, dr, mr, False
+                                        x0, y0, dr, mr,
+                                        phi, dphi, symmetric, False
                                         )
       if not gotit:
         message=gtk.MessageDialog(parent=self,

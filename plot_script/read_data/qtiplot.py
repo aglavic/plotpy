@@ -43,10 +43,12 @@ def process_tables(name, table, index):
     Read the data of one table using the header to define column names.
   '''
   header, data=table.split('<data>')
-  data=data.split('</data>')[0].strip()
+  data=data.strip().split('</data>')[0]
   header_info=process_header(header)
+  # split data by lines and columns
   data_lines=data.splitlines()
-  data_items=map(str.split, data_lines)
+  data_items=map(lambda line: line.split('\t'), data_lines)
+  # convert to numbers
   data=[map(float_convert, line) for line in data_items]
   data=numpy.array(data).transpose()
   column_names=header_info['columns']
@@ -88,5 +90,12 @@ def float_convert(item):
   try:
     return float(item)
   except ValueError:
-    return 0.
+    if ':' in item:
+      try:
+        h, m, s=item.split(':')
+        return 3600.*float(h)+60.*float(m)+float(s)
+      except:
+        return 0.
+    else:
+      return 0.
 

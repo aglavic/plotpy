@@ -47,8 +47,9 @@ class KWS2Session(GUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('GISAS', '*.DAT', '*.DAT.gz', '*.cmb', '*.cmb.gz', '*.edf', '*.edf.gz', '*.tif', '*.bin', '*.bin.gz',
-                   '*.bmp'), ]
+  FILE_WILDCARDS=[('GISAS', '*.DAT', '*.DAT.gz', '*.cmb', '*.cmb.gz',
+                   '*.edf', '*.edf.gz', '*.tif', '*.bin', '*.bin.gz',
+                   '*.mat', '*.bmp'), ]
   mds_create=False
   read_directly=True
 
