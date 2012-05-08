@@ -190,7 +190,7 @@ class FileActions:
         return False
       cs_object.number=data.number
       if dphi<180.:
-        cs_object.short_info='%s - Arc integration with φ=%g±%g from (%g,%g)'%(
+        cs_object.short_info='%s - Arc integration with φ=%g±%g° from (%g,%g)'%(
                            data.short_info, phi_0, dphi,
                            x_0, y_0)
       else:
@@ -675,6 +675,10 @@ class FileActions:
     hy/=count
     hdy/=count
     hx=(hx[:-1]+hx[1:])/2.
+    # remove empty bins
+    hy=hy[count!=0]
+    hdy=hdy[count!=0]
+    hx=hx[count!=0]
     output.data.append(PhysicalProperty(new_cols[0][0], new_cols[0][1], hx))
     output.data.append(PhysicalProperty(new_cols[1][0], new_cols[1][1], hy, hdy))
     if self.window.measurement[self.window.index_mess].logz:

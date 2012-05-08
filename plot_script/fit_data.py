@@ -2949,16 +2949,13 @@ class FitSession(FitSessionGUI):
       
       :return: The covariance matrices of the fits or [[None]]
     '''
+    data=self.data.get_filtered_data_matrix()
+    data_x=data[self.data.xdata]
+    data_y=data[self.data.ydata]
     if (self.data.yerror>=0) and (self.data.yerror!=self.data.ydata)\
         and (self.data.yerror!=self.data.xdata):
-      data=self.data.list_err()
-      data_x=[d[0] for d in data]
-      data_y=[d[1] for d in data]
-      data_yerror=[d[2] for d in data]
+      data_yerror=data[self.data.yerror]
     else:
-      data=self.data.list()
-      data_x=[d[0] for d in data]
-      data_y=[d[1] for d in data]
       data_yerror=None
     covariance_matices=[]
     for i, function in enumerate(self.functions):
@@ -2983,18 +2980,15 @@ class FitSession(FitSessionGUI):
       
       :return: The covariance matrices of the fits or [[None]]
     '''
+    data=self.data.get_filtered_data_matrix()
+    data_x=data[self.data.xdata]
+    data_y=data[self.data.ydata]
+    data_z=data[self.data.zdata]
+
     if (self.data.yerror>=0) and (self.data.yerror!=self.data.zdata)\
         and (self.data.yerror!=self.data.xdata) and (self.data.yerror!=self.data.ydata):
-      data=self.data.list_err()
-      data_x=[d[0] for d in data]
-      data_y=[d[1] for d in data]
-      data_z=[d[2] for d in data]
-      data_zerror=[d[3] for d in data]
+      data_zerror=data[self.data.yerror]
     else:
-      data=self.data.list()
-      data_x=[d[0] for d in data]
-      data_y=[d[1] for d in data]
-      data_z=[d[2] for d in data]
       data_zerror=None
     covariance_matices=[]
     for i, function in enumerate(self.functions):

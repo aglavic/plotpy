@@ -652,24 +652,26 @@ class MeasurementData(object):
       Get x-y-(z) list of all data points.
       If x or y columns are negative the index is returned instead
     '''
+    data=self.get_filtered_data_matrix()
     xd=self.xdata
     yd=self.ydata
     zd=self.zdata
     if (xd>=0) and (yd>=0):
       if (zd<0):
-        return [[point[xd], point[yd]] for point in self]
-      return [[point[xd], point[yd], point[zd]] for point in self]
+        return data[numpy.array([xd, yd])].tolist()
+      return data[numpy.array([xd, yd, zd])].tolist()
     elif yd>=0:
-      return [[i+1, point[yd]] for i, point in enumerate(self)]
+      return numpy.vstack([numpy.arange(len(data[0])), data[yd]]).transpose().tolist()
     elif xd>=0:
-      return [[point[xd], i+1] for i, point in enumerate(self)]
-    return [[i+1, i+1] for i, point in enumerate(self)]
+      return numpy.vstack([ data[xd], numpy.arange(len(data[0]))]).transpose().tolist()
+    return numpy.vstack([numpy.arange(len(data[0])), numpy.arange(len(data[0]))]).transpose().tolist()
 
   def list_err(self):
     '''
       Get x-y-dy list of all data.
       If x or y columns are negative the index is returned instead
     '''
+    data=self.get_filtered_data_matrix()
     xd=self.xdata
     yd=self.ydata
     ye=self.yerror
@@ -678,13 +680,14 @@ class MeasurementData(object):
       return [point+[0] for point in self.list()]
     if (xd>=0) and (yd>=0):
       if (zd<0):
-        return [[point[xd], point[yd], point[ye]] for point in self]
-      return [[point[xd], point[yd], point[zd], point[ye]] for point in self]
+        return data[numpy.array([xd, yd, ye])].tolist()
+      return data[numpy.array([xd, yd, zd, ye])].tolist()
     elif yd>=0:
-      return [[i+1, point[yd], point[ye]] for i, point in enumerate(self)]
+      return numpy.vstack([numpy.arange(len(data[0])),
+                           data[numpy.array([yd, ye])]]).transpose().tolist()
     elif xd>=0:
-      return [[point[xd], i+1, point[ye]] for i, point in enumerate(self)]
-    return [[i+1, i+1, point[ye]] for i, point in enumerate(self)]
+      return numpy.vstack([ data[xd], numpy.arange(len(data[0]))]).transpose().tolist()
+    return numpy.vstack([numpy.arange(len(data[0])), numpy.arange(len(data[0]))]).transpose().tolist()
 
   def listxy(self, x, y):
     '''
