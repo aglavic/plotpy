@@ -1,22 +1,25 @@
 # -*- encoding: utf-8 -*-
 '''
-  Module to log all interesting events in a debugging session. With the --debug and --logmodules or --logall option 
-  even function calls are stored in the log file. Single functions can be recorded using decorators.
+  Module to log all interesting events in a debugging session. With the 
+  --debug and --logmodules or --logall option even function calls are stored 
+  in the log file. Single functions can be recorded using decorators.
   
-  CAREFUL: The --logall option can create a huge amount of data, be sure not to reproduce errors rapidly after starting
-           the program to let the file size stay at a minimum. (a 1MB log file just after starting the Program is not 
-           unlikely)
+  CAREFUL: The --logall option can create a huge amount of data, be sure 
+  not to reproduce errors rapidly after starting the program to let the 
+  file size stay at a minimum. (a 1MB log file just after starting the 
+  Program is not unlikely)
            
   Example of the decorator usage:
+  ::
   
-# logging for debug
-from decorators import log_call, log_input, log_output, log_both
-@log_call
-def some_function(some_bla):
-  ...
-   .
-  ...
-  return whatever
+    # logging for debug
+    from decorators import log_call, log_input, log_output, log_both
+    @log_call
+    def some_function(some_bla):
+      ...
+       .
+      ...
+      return whatever
 
 '''
 
@@ -173,7 +176,8 @@ def initialize(log_file, level='INFO', modules=[]):
       else:
         log_decorator=log_call
       if len(module.split('.'))>1:
-        imported_module=__import__(module, globals(), locals(), fromlist=(module.split('.')[-1]))
+        imported_module=__import__(module, globals(), locals(),
+                                   fromlist=(module.split('.')[-1]))
       else:
         imported_module=__import__(module, globals(), locals())
       logger.debug('    logging moduel %s'%imported_module.__name__)

@@ -1,17 +1,8 @@
 # -*- encoding: utf-8 -*-
 '''
-  class for DNS data sessions and derived MeasurementData object.
+  Class for DNS (Diffuse Neutron Scattering) data sessions and 
+  derived MeasurementData object.
 '''
-#################################################################################################
-#                        Script to plot DNS-measurements with gnuplot                           #
-#                                                                                               #
-#                                   Written by Artur Glavic                                     #
-#                         please report bugs to a.glavic@fz-juelich.de                          #
-#                                                                                               #
-#                                                                                               #
-#################################################################################################
-
-# Pleas do not make any changes here unless you know what you are doing.
 
 # import external modules
 import os

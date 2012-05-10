@@ -6,6 +6,5 @@ plugins Package
 
 .. automodule:: plot_script.plugins
     :members:
-    :undoc-members:
     :show-inheritance:
 

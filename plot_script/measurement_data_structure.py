@@ -29,29 +29,55 @@ class MeasurementData(object):
     Sample name and measurement informations are stored as well as plot options and columns 
     which have to stay constant in one sequence.
     
-    Main Attributes:
-      number_of_points          Number of datapoints stored in the class
-      data                      List of PhysicalProperty instances for every data column
-      [x,y,z]data/.yerror       Indices of the plotted columns in the .data list. 
-                                If z=-1 the plot is 2d
-      log[x,y,z]                Boolean defining the logarithmic scale plotting of the columns
-      crop_zdata                Boolean to set z data to be croped when the zrange is smaller 
-                                than the datarange. For plot to be without empty spots
-      short_info                Second part of the plot title and name of line in multiplot
-      sample_name               First part of the plot title.
-      filters                   List of filters which are applied to the dataset before export 
-                                for plotting.
-      plot_options              PlotOptions object storing the visualization options
+    ======================    =================================================
+    Main Attributes           Description
+    ======================    =================================================
+    number_of_points          Number of datapoints stored in the class
+    ----------------------    -------------------------------------------------
+    data                      List of PhysicalProperty instances for every 
+                              data column
+    ----------------------    -------------------------------------------------
+    [x,y,z]data/.yerror       Indices of the plotted columns in the .data list. 
+                              If z=-1 the plot is 2d
+    ----------------------    -------------------------------------------------
+    log[x,y,z]                Boolean defining the logarithmic scale plotting 
+                              of the columns
+    ----------------------    -------------------------------------------------
+    crop_zdata                Boolean to set z data to be croped when the 
+                              zrange is smaller than the data range. 
+                              For plot to be without empty spots
+    ----------------------    -------------------------------------------------
+    short_info                Second part of the plot title and 
+                              name of line in multiplot
+    ----------------------    -------------------------------------------------
+    sample_name               First part of the plot title.
+    filters                   List of filters which are applied to the 
+                              dataset before export for plotting.
+    ----------------------    -------------------------------------------------
+    plot_options              PlotOptions object storing the visualization 
+                              options
+    ======================    =================================================
     
-    Main Methods:
-      append                    Append a datapoint at the end of the dataset
-      append_column             Add a new datacolumn to the object
-      dimensions                Return the dimensions of all columns
-      export                    Export the data to a file
-      process_function          Call a function for all data of the object, e.g. square the y data
-      sort                      Sort the datapoints for one column
-      unit_trans                Transform units
-      units                     Return the units of all columns
+    ======================    =================================================
+    Main Methods              Description
+    ======================    =================================================
+    append                    Append a datapoint at the end of the dataset
+    ----------------------    -------------------------------------------------
+    append_column             Add a new datacolumn to the object
+    ----------------------    -------------------------------------------------
+    dimensions                Return the dimensions of all columns
+    ----------------------    -------------------------------------------------
+    export                    Export the data to a file
+    ----------------------    -------------------------------------------------
+    process_function          Call a function for all data of the object, 
+                              e.g. square the y data
+    ----------------------    -------------------------------------------------
+    sort                      Sort the datapoints for one column
+    ----------------------    -------------------------------------------------
+    unit_trans                Transform units
+    ----------------------    -------------------------------------------------
+    units                     Return the units of all columns
+    ======================    =================================================
   '''
   index=0
   # every data value is a pysical property
@@ -2517,31 +2543,39 @@ class PhysicalProperty(numpy.ndarray):
     to make unit transformations possible. Can be used with numpy functions.
     Error values are stored and propagated in arithmetric operations.
     
-    Attributes:
+    ===========  ========================================
+    Attributes
+    ===========  ========================================
       dimension  String for the dimension of the instance
       unit       PhysicalUnit object
       error      Error value as array
+    ===========  ========================================
     
     Hints:
       PhysicalProperty can be used with different convenience operators/functions,
       for a PhysicalProperty 'P' these are e.g.:
       
+      ==========================  =============================================
       P % [unit]                  Transform the instance to the unit
-      P % ([name], [mul], [add])  Transform the instance to [name] using the multiplyer [mul]
-                                  and adding [add]
+      P % ([name], [mul], [add])  Transform the instance to [name] using the 
+                                  multiplyer [mul] and adding [add]
       P // [dim]                  Get P with different dimension name [dim]
       P // ([dim], [unit])        Get P with different dimension and unit name
+      ==========================  =============================================
       
       Additionally PhysicalProperty instances can be used like numpy arrays in functions
       and with respect to slicing. Addition and subtraction is unit dependent and angular
       functions only take angles as input.
   '''
   dimension=''
-  # if defined this is the error value of the property
-  # the error will be automatically propagated when functions
-  # get called with instances of this class
   _error=None
-  unit_save=True # if true changes units after arithmetic operation and checks if correct
+  '''
+    if defined this is the error value of the property
+    the error will be automatically propagated when functions
+    get called with instances of this class
+  '''
+
+  unit_save=True #: if true changes units after arithmetic operation and checks if correct
 
   def __new__(cls, dimension_in, unit_in, input_data=[], input_error=None, unit_save=True):
     '''

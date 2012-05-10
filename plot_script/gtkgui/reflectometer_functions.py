@@ -163,7 +163,7 @@ class ReflectometerFitGUI:
 
   def toggle_fit_option(self, action, list_, number):
     '''
-      add or remove parameter from list_
+      add or remove parameter from list
     '''
     if number in list_:
       list_.remove(number)

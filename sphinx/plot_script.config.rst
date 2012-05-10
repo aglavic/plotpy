@@ -6,7 +6,6 @@ config Package
 
 .. automodule:: plot_script.config
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`circle` Module
@@ -14,7 +13,6 @@ config Package
 
 .. automodule:: plot_script.config.circle
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`diamagnetism_table` Module
@@ -22,7 +20,6 @@ config Package
 
 .. automodule:: plot_script.config.diamagnetism_table
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`dns` Module
@@ -30,7 +27,6 @@ config Package
 
 .. automodule:: plot_script.config.dns
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`gnuplot_preferences` Module
@@ -38,7 +34,6 @@ config Package
 
 .. automodule:: plot_script.config.gnuplot_preferences
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`gui` Module
@@ -46,7 +41,6 @@ config Package
 
 .. automodule:: plot_script.config.gui
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`in12` Module
@@ -54,7 +48,6 @@ config Package
 
 .. automodule:: plot_script.config.in12
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`kws2` Module
@@ -62,7 +55,6 @@ config Package
 
 .. automodule:: plot_script.config.kws2
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`maria` Module
@@ -70,7 +62,6 @@ config Package
 
 .. automodule:: plot_script.config.maria
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`mbe` Module
@@ -78,7 +69,6 @@ config Package
 
 .. automodule:: plot_script.config.mbe
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`parallel` Module
@@ -86,7 +76,6 @@ config Package
 
 .. automodule:: plot_script.config.parallel
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`reflectometer` Module
@@ -94,7 +83,6 @@ config Package
 
 .. automodule:: plot_script.config.reflectometer
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`scattering_length_table` Module
@@ -102,7 +90,6 @@ config Package
 
 .. automodule:: plot_script.config.scattering_length_table
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`squid` Module
@@ -110,7 +97,6 @@ config Package
 
 .. automodule:: plot_script.config.squid
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`templates` Module
@@ -118,7 +104,6 @@ config Package
 
 .. automodule:: plot_script.config.templates
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`transformations` Module
@@ -126,7 +111,6 @@ config Package
 
 .. automodule:: plot_script.config.transformations
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`treff` Module
@@ -134,7 +118,6 @@ config Package
 
 .. automodule:: plot_script.config.treff
     :members:
-    :undoc-members:
     :show-inheritance:
 
 Subpackages

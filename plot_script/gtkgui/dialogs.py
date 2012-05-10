@@ -68,6 +68,14 @@ class StatusDialog(gtk.Dialog):
                             os.path.split(
                            os.path.realpath(__file__))[0],
                            "..", "config", "logogreen.png").replace('library.zip', ''))
+    self.connect('delete-event', self._no_destroy)
+
+  def _no_destroy(self, widget, data=None):
+    '''
+      Make sure the window is not destoryed when it gets closed.
+    '''
+    self.hide()
+    return True
 
   def show(self):
     self.scrollwidget.show()

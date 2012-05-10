@@ -712,7 +712,7 @@ class AsciiImportFilter(object):
 
 def append_filter(filter_):
   '''
-    Add a filter_ to the list of known import filters.
+    Add a filter to the list of known import filters.
   '''
   if filter_ in defined_filters:
     return

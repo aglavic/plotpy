@@ -4,11 +4,14 @@
   Plot-script package for data plotting and analyzing for different instruments.
   
   The data model is based on the following hirarchy:
-                 GUI-Interface        <->         session-Object
-                                                session.file_data
-              gnuplot-Interface       <->     MeasurementData-Object  (measurement_data_structure)
-                                              MeasurementData.data
-                                             PhysicalProperty-Objects (measurement_data_structure)
+  
+    =================  ===  ====================================================
+    GUI-Interface      <->         session-Object
+                                        session.file_data
+    gnuplot-Interface  <->  MeasurementData-Object (measurement_data_structure)
+                            MeasurementData.data
+                            PhysicalProperty-Objects (measurement_data_structure)
+    =================  ===  ====================================================
   
     As top level the session-object (which is different for each instrument) handles the
     data readout and storage. The active session object stores the data read from each file in
@@ -94,14 +97,6 @@ from plotpy_info import __copyright__, __license__, __version__, __maintainer__,
 __status__="Production"
 
 
-'''
-  Dictionary for the known measurement types, to create a new measureing type
-  it is only needed to create the seesion class and add it to this dictionary.
-  
-  Although the commandline parameter order is not importent for all other options
-  the type has to be set first, as the other parameters are evaluated according to
-  the session.
-'''
 known_measurement_types={
                          'squid': ('squid', 'SquidSession', ['dat', 'raw', 'DAT', 'RAW'], []),
                          '4circle': ('circle', 'CircleSession', ['spec'], []),
@@ -116,9 +111,16 @@ known_measurement_types={
                          'sas': ('sas', 'SASSession', ['___'], []),
                          'gisas': ('kws2', 'KWS2Session', ['DAT', 'edf', 'cmb', 'tif', 'bmp'], []),
                          'shg': ('shg', 'SHGSession', ['par'], []),
-                         #'scd': ('single_diff', 'SingleDiffSession', ['___']), 
                          'generic': ('generic', 'GenericSession', ['___'], []),
                          }
+'''
+  Dictionary for the known measurement types, to create a new measureing type
+  it is only needed to create the seesion class and add it to this dictionary.
+  
+  Although the commandline parameter order is not importent for all other options
+  the type has to be set first, as the other parameters are evaluated according to
+  the session.
+'''
 
 '''
 ############################################################################

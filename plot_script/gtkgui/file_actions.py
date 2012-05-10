@@ -83,7 +83,7 @@ class FileActions:
       it can be shown in a log or reused in makros for other sequences.
       
       :param action: The function to be called
-      :param *args: The arguments of that function
+      :param args: The arguments of that function
       
       :return: Return values of the called function
     '''
@@ -583,10 +583,11 @@ class FileActions:
       data=numpy.array([dist1, xdata, ydata, zdata, dzdata, dist]).transpose().tolist()
     else:
       data=numpy.array([dist1, xdata, ydata, zdata, dist]).transpose().tolist()
-    if len(data)<3:
-      return None
     data=self.sort_and_bin(data, binning, gauss_weighting,
                            sigma_gauss, bin_distance)
+    if len(data)<3:
+      # if step size was too big there are not enough data points
+      return None
     data=numpy.array(data).transpose()
     out_dataset=MeasurementData()
     out_dataset.yerror=-1
@@ -642,6 +643,12 @@ class FileActions:
     values=data[cols[2]]
     errors=data[cols[3]]
     max_r=min(r.max(), max_r)
+    # remove points with too large r value
+    rfilter=numpy.where(r<=max_r)
+    r=r[rfilter]
+    values=values[rfilter]
+    errors=errors[rfilter]
+
     first_dim="r"
     first_unit=units[cols[0]]
     new_cols=[(first_dim, first_unit),
@@ -656,10 +663,10 @@ class FileActions:
     # calculate the histogam of points weighted by intensity, error² and 1
     # the result is than calculated as hist(intensity)/hist(1)
     # and sqrt(hist(error²))/hist(1)
-    points=int(max_r/dr)+1
     if dphi<180.:
       # take out just one arc region for the integration
       phi=numpy.arctan2(data[cols[1]]-y_0, data[cols[0]]-x_0)/numpy.pi*180.
+      phi=phi[rfilter]
       phi_region=numpy.where(((phi-phi_0)%180.)<=dphi)
       r=r[phi_region]
       values=values[phi_region]
@@ -667,11 +674,11 @@ class FileActions:
       if not symmetric:
         phi=phi[phi_region]
         r[((phi-phi_0)%360.)>180]*=-1.
-        points=int(max_r/dr)*2+1
-    hy, ignore=numpy.histogram(r, points, weights=values)
-    hdy, ignore=numpy.histogram(r, points, weights=errors**2)
+    hx=numpy.arange(r.min()-r.min()%dr, r.max()+dr-r.max()%dr, dr)
+    hy, ignore=numpy.histogram(r, hx, weights=values)
+    hdy, ignore=numpy.histogram(r, hx, weights=errors**2)
     hdy=numpy.sqrt(hdy)
-    count, hx=numpy.histogram(r, points)
+    count, ignore=numpy.histogram(r, hx)
     hy/=count
     hdy/=count
     hx=(hx[:-1]+hx[1:])/2.
@@ -683,7 +690,7 @@ class FileActions:
     output.data.append(PhysicalProperty(new_cols[1][0], new_cols[1][1], hy, hdy))
     if self.window.measurement[self.window.index_mess].logz:
       output.logy=True
-    if len(output)==0:
+    if len(output)<3:
       return None
     else:
       return output
@@ -693,10 +700,10 @@ class FileActions:
                    sigma_gauss=1e10,
                    bin_distance=None):
     '''
-      Sort a dataset and bin the datapoints together. Gaussian weighting if possible and
-      errors are calculated.
+      Sort a dataset and bin the datapoints together. Gaussian weighting is 
+      possible and errors are calculated.
       
-      :param data: A list of datapoints consisting of (x0, x1, x2, y, dy, weighting)
+      :param data: A list of data points consisting of (x0, x1, x2, y, dy, weighting)
       
       :return: Binned dataset
     '''
@@ -985,9 +992,10 @@ def calculate_butterworth(dataset, filter_steepness=6, filter_cutoff=0.5, deriva
   '''
     Calculate a smoothed function as spectral estimate with a Butterworth low-pass
     filter in frouier space. This can be used to calculate derivatives.
+    
       S. Smith, 
-       The Scientist and Engineer’s Guide to Digital Signal Processing, 
-       California Technical Publishing, 1997.
+      The Scientist and Engineer’s Guide to Digital Signal Processing, 
+      California Technical Publishing, 1997.
     
     :param dataset: MeasurementData object to be used as input
     :param filter_steepness: The steepness of the low pass filter after the cut-off frequency
@@ -1203,20 +1211,20 @@ def savitzky_golay(y, window_size, order, deriv=0):
     features of the signal better than other types of filtering
     approaches, such as moving averages techhniques.
 
-    Notes
-    -----
-    The Savitzky-Golay is a type of low-pass filter, particularly
-    suited for smoothing noisy data. The main idea behind this
-    approach is to make for each point a least-square fit with a
-    polynomial of high order over a odd-sized window centered at
-    the point.
-    ----------
-    .. [1] A. Savitzky, M. J. E. Golay, Smoothing and Differentiation of
-       Data by Simplified Least Squares Procedures. Analytical
-       Chemistry, 1964, 36 (8), pp 1627-1639.
-    .. [2] Numerical Recipes 3rd Edition: The Art of Scientific Computing
-       W.H. Press, S.A. Teukolsky, W.T. Vetterling, B.P. Flannery
-       Cambridge University Press ISBN-13: 9780521880688
+    Notes:
+    
+      The Savitzky-Golay is a type of low-pass filter, particularly
+      suited for smoothing noisy data. The main idea behind this
+      approach is to make for each point a least-square fit with a
+      polynomial of high order over a odd-sized window centered at
+      the point.
+
+      . [1] A. Savitzky, M. J. E. Golay, Smoothing and Differentiation of
+        Data by Simplified Least Squares Procedures. Analytical
+        Chemistry, 1964, 36 (8), pp 1627-1639.
+      . [2] Numerical Recipes 3rd Edition: The Art of Scientific Computing
+        W.H. Press, S.A. Teukolsky, W.T. Vetterling, B.P. Flannery
+        Cambridge University Press ISBN-13: 9780521880688
 
 
     :param y: the values of the time history of the signal (array)

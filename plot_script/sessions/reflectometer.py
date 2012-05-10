@@ -1,24 +1,7 @@
 # -*- encoding: utf-8 -*-
 '''
-  classes for reflectometer sessions and fits with fit.f90
+  Session for reflectometer data and fits with fit.f90.
 '''
-#################################################################################################
-#                     Script to plot reflectometer uxd-files with gnuplot                       #
-#                                                                                               #
-#                                   Written by Artur Glavic                                     #
-#                         please report bugs to a.glavic@fz-juelich.de                          #
-#                                                                                               #
-# Features at the moment:                                                                       #
-# -import uxd files                                                                             #
-# -plot every sequence as extra picture or in one graph                                         # 
-#    (phi,th,chi scan found automatically)                                                      #
-# -convert to counts/s                                                                          #
-# -create .ent file for fit.f90 script from Emmanuel Kentzinger and refine some parameters      #
-# -complete GUI control over the fit program                                                    #
-#                                                                                               #
-#################################################################################################
-
-# Pleas do not make any changes here unless you know what you are doing.
 
 # import buildin modules
 import os
@@ -201,7 +184,9 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
                          lambda_x=1.54, interpolation_type='linear'):
     '''
       Apply the fourier transform calculus found in 
+      
         K.Sakurai et. all, Jpn. J. Appl. Phys. Vol 31 (1992) pp. L113-L115
+        
       to the dataset to get thickness components of the measured sample.
       
       The dataset is expressed as a function of sqrt(Θ²-Θc²)/λ and is than normalized

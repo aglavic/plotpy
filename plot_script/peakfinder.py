@@ -1,12 +1,14 @@
 #-*- coding: utf8 -*-
 '''
-  Peak finder algorithm based on the continuous wavelet transform (CWT) method
-  discribed in:
-    Du P, Kibbe WA, Lin SM.
-    Improved peak detection in mass spectrum by incorporating continuous 
-    wavelet transform-based pattern matching
-    Bioinformatics 22(17) (2006)
-  Implemented by Artur Glavic (artur.glavic@fz-juelich.de) 2012
+    Peak finder algorithm based on the continuous wavelet transform (CWT) method
+    discribed in:
+
+        Du P, Kibbe WA, Lin SM.
+        Improved peak detection in mass spectrum by incorporating continuous 
+        wavelet transform-based pattern matching
+        Bioinformatics 22(17) (2006)
+    
+    Implemented by Artur Glavic (artur.glavic@fz-juelich.de) 2012
 '''
 
 import numpy
@@ -17,6 +19,7 @@ class PeakFinder(object):
     Peak finder which can be reevaluated with different thresholds 
     without recalculation all steps.
     The steps performed are:
+    
       - CWT of the dataset (which also removes the baseline)
       - Finding ridged lines by walking through different CWT scales
       - Calculate signal to noise ratio (SNR)
@@ -155,13 +158,12 @@ class PeakFinder(object):
     '''
       Return a list of peaks fulfilling the defined conditions.
       
-      :param snr:: Minimal signal to noise ratio
-      :param min_width:: Minimal peak width
-      :param max_width:: Maximal peak width
-      :param ridge_length:: Minimal ridge line length
-      :param analyze:: Store information to analyze the filtering
-      :param double_peak_detection:: Perform a second run, where the
-                                    ridge_length is reduced near found peaks
+      :param snr: Minimal signal to noise ratio
+      :param min_width: Minimal peak width
+      :param max_width: Maximal peak width
+      :param ridge_length: Minimal ridge line length
+      :param analyze: Store information to analyze the filtering
+      :param double_peak_detection: Perform a second run, where the ridge_length is reduced near found peaks
     '''
     xdata=self.xdata
     if min_width is None:
