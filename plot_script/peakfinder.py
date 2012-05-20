@@ -12,7 +12,10 @@
 '''
 
 import numpy
-from scipy.stats.mstats import mquantiles
+try:
+  from scipy.stats.mstats import mquantiles
+except ImportError:
+  pass
 
 class PeakFinder(object):
   '''

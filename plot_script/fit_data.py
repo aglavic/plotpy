@@ -3149,8 +3149,9 @@ class FitSession(FitSessionGUI):
         data_x=[d[0] for d in data_xy]
         # only interpolate if the number of points isn't too large
         use_interpolate=min(5, 5000/len(data_x))
-        fit_x, fit_y=function[0].simulate(data_x, inside_fitrange=getattr(self, 'restrict_to_region', False),
-                                          interpolate=use_interpolate)
+        fit_x, fit_y=function[0].simulate(data_x,
+                    inside_fitrange=getattr(self, 'restrict_to_region', False),
+                    interpolate=use_interpolate)
         for i in range(len(fit_x)):
           result.append((fit_x[i], fit_y[i]))
         function_text=function[0].fit_function_text_eval

@@ -435,7 +435,8 @@ class SimpleEntryDialog(gtk.Dialog):
     '''
     # Initialize this dialog
     opts['title']=title
-    opts['buttons']=('OK', 1, 'Cancel', 0)
+    if not 'buttons' in opts:
+      opts['buttons']=('OK', 1, 'Cancel', 0)
     if 'description' in opts:
       description=gtk.Label(opts['description'])
       del(opts['description'])

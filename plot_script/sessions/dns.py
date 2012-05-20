@@ -532,7 +532,7 @@ class DNSSession(GUI, GenericSession):
           file_postfix=str(last_argument_option[2][3][0])+last_argument_option[2][4]
           try:
             first_file=sorted([file_ for file_ in os.listdir(directory) \
-                               if file.startswith(file_prefix) and file.endswith(file_postfix)])[0]
+                               if file_.startswith(file_prefix) and file_.endswith(file_postfix)])[0]
           except IndexError:
             erg=last_argument_option[2]
             print """No file found for the -files options:
@@ -639,18 +639,18 @@ class DNSSession(GUI, GenericSession):
     if len(file_list)==0:
       return None
     file_list.sort()
-    # Read the raw data
-    self.file_data[file_name+'|raw_data']=[]
     print "Reading files %s{num}%s with num from %i to %i."%(prefix, postfix, num_range[0], num_range[1])
-    for file_name in file_list:
+    self.file_data[file_name+'|raw_data']=[]
+    for file_i in file_list:
+      # Read the raw data
       # get integer number of the file_name, catch errors form wrong file_name selection
       try:
-        active_number=int(os.path.join(folder, file_name).rsplit(postfix)[0].split(prefix, 1)[1])
+        active_number=int(os.path.join(folder, file_i).rsplit(postfix)[0].split(prefix, 1)[1])
       except ValueError:
         continue
       if (active_number>=num_range[0]) and (active_number<=num_range[1] or num_range[1]==-1):
         # read the datafile into a MeasurementData object.
-        dataset=read_data.read_data(os.path.join(folder, file_name))
+        dataset=read_data.read_data(os.path.join(folder, file_i))
         dataset.number=str(active_number)
         self.file_data[file_name+'|raw_data'].append(dataset)
     print "\tRead, creating map."

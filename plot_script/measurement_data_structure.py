@@ -684,8 +684,8 @@ class MeasurementData(object):
     zd=self.zdata
     if (xd>=0) and (yd>=0):
       if (zd<0):
-        return data[numpy.array([xd, yd])].tolist()
-      return data[numpy.array([xd, yd, zd])].tolist()
+        return data[numpy.array([xd, yd])].transpose().tolist()
+      return data[numpy.array([xd, yd, zd])].transpose().tolist()
     elif yd>=0:
       return numpy.vstack([numpy.arange(len(data[0])), data[yd]]).transpose().tolist()
     elif xd>=0:
@@ -706,8 +706,8 @@ class MeasurementData(object):
       return [point+[0] for point in self.list()]
     if (xd>=0) and (yd>=0):
       if (zd<0):
-        return data[numpy.array([xd, yd, ye])].tolist()
-      return data[numpy.array([xd, yd, zd, ye])].tolist()
+        return data[numpy.array([xd, yd, ye])].transpose().tolist()
+      return data[numpy.array([xd, yd, zd, ye])].transpose().tolist()
     elif yd>=0:
       return numpy.vstack([numpy.arange(len(data[0])),
                            data[numpy.array([yd, ye])]]).transpose().tolist()
@@ -2865,7 +2865,8 @@ class PhysicalProperty(numpy.ndarray):
     try:
       if len(context[1])==1:
         # only a function of one parameter
-        out_arr.error=abs(derivatives[context[0].__str__()](self.view(numpy.ndarray))*self.error)
+        out_arr.error=abs(derivatives[context[0].__str__()](
+                                      self.view(numpy.ndarray))*self.error)
       elif context[0].__name__ in compare_functions:
         other=context[1][1]
         # if both arguments to compare function have an error value
@@ -2892,7 +2893,8 @@ class PhysicalProperty(numpy.ndarray):
                                     )
           # only the first argument has an error value
           else:
-            out_arr.error=abs(derivatives[context[0].__str__()][0](self.view(numpy.ndarray), numpy.array(other))*self.error)
+            out_arr.error=abs(derivatives[context[0].__str__()][0](self.view(numpy.ndarray),
+                                                                   numpy.array(other))*self.error)
         else:
           # the second argument is self, so the first is no PhysicalProperty instance
           out_arr.error=abs(derivatives[context[0].__str__()][1](numpy.array(context[1][0]), self.view(numpy.ndarray))*self.error)
