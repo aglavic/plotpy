@@ -363,6 +363,7 @@ class FileActions:
         session.active_file_data=session.file_data[new_name]
         session.active_file_name=new_name
         self.window.measurement=session.active_file_data
+        self.window.input_file_name=new_name
       elif action_name=='Down':
         self.window.index_mess=0
         session=self.window.active_session
@@ -378,6 +379,7 @@ class FileActions:
         session.active_file_data=session.file_data[new_name]
         session.active_file_name=new_name
         self.window.measurement=session.active_file_data
+        self.window.input_file_name=new_name
       else:
         try:
           if len(self.window.measurement)>int(self.window.plot_page_entry.get_text()):

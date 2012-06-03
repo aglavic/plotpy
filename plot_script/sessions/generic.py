@@ -707,7 +707,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
     name_list=[item[0] for item in self.file_data.items()]
     name_list.sort()
-    if object_!=None:
+    if object_ is not None:
       self.active_file_name=object_[0]
       self.active_file_data=object_[1]
       self.index=name_list.index(object_[0])
