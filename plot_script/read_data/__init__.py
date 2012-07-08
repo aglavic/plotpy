@@ -577,7 +577,7 @@ class AsciiImportFilter(object):
     '''
       Convert the string lines into a floating point data matrix.
     '''
-    # Strip empty space befoe and after each line
+    # Strip empty space before and after each line
     if not self.skip_linestripping:
       data_lines=map(str.strip, data_lines)
     # split each line into columns
@@ -637,6 +637,10 @@ class AsciiImportFilter(object):
     elif self.columns==2:
       # search for a key string and define columns from the following characters
       keystr, line_offset, char_offset, split_str, unit_start, unit_end=self.columns.value
+      if split_str=='None' or split_str=='':
+        split_str=None
+      elif split_str=='\\t':
+        split_str='\t'
       for i, line in enumerate(header_lines):
         if keystr in line:
           colstr=header_lines[i+line_offset][char_offset:]

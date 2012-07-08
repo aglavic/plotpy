@@ -3275,7 +3275,7 @@ class MultiplotList(list):
                             self[0][0].x.unit, self[0][0].y.unit)
   def __contains__(self, item):
     if hasattr(item, '__iter__') and len(item)==2:
-      return item in self
+      return list.__contains__(self, item)
     else:
       return item in [i[0] for i in self]
 

@@ -2280,6 +2280,20 @@ class FitSQUIDSignal(FitFunction):
     self.parameters=[1., 3., 1., 0., 0.]
     FitFunction.__init__(self, initial_parameters)
 
+class FitLangevin(FitFunction):
+  '''
+    Fit Langevin function.
+  '''
+  # define class variables.
+  name="Langevin"
+  parameters=[1., 1., 0., 0.]
+  parameter_names=['M_S', 'w', 'x_0', 'BG']
+  fit_function=lambda self, p, x: p[0]*(
+                      1./numpy.tanh(p[1]*(x-p[2]))-1./(p[1]*(x-p[2]))
+                                        )+p[3]
+  fit_function_text='Langevin'
+
+
 class FitFerromagnetic(FitFunction):
   '''
     Fit a Brillouine's function for the magnetic behaviour of a ferromagnet
@@ -2819,6 +2833,7 @@ class FitSession(FitSessionGUI):
                        FitSQUIDSignal.name: FitSQUIDSignal,
                        FitBrillouineB.name: FitBrillouineB,
                        FitBrillouineT.name: FitBrillouineT,
+                       FitLangevin.name: FitLangevin,
                        FitFerromagnetic.name: FitFerromagnetic,
                        FitCuK.name: FitCuK,
                        FitPowerlaw.name: FitPowerlaw,

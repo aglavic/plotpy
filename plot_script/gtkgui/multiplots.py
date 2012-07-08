@@ -46,7 +46,10 @@ class MultiplotItem(gtk.HBox):
     if not just_labels:
       oldfit=dataset.fit_object
       dataset.fit_object=None
-      self.items.append((deepcopy(dataset), name))
+      if (dataset, name) in self.items:
+        self.items.append((deepcopy(dataset), name))
+      else:
+        self.items.append((dataset, name))
       dataset.fit_object=oldfit
     label=gtk.Label('%s\n%s'%(name, dataset.short_info))
     label.show()

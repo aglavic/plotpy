@@ -279,7 +279,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('TREFF/MARIA/D17', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]', '*.zip', '*.d17'),
+  FILE_WILDCARDS=[('TREFF/MARIA/D17', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]', '*.zip', '*.d17', '*.dat'),
                   ]
   TRANSFORMATIONS=[\
                   ['mrad', 1/config.GRAD_TO_MRAD, 0, '°'],
