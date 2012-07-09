@@ -1092,9 +1092,15 @@ def calculate_integral(dataset):
   output.append_column(x)
   xa=x.view(numpy.ndarray)
   ya=y.view(numpy.ndarray)
-  inty=[ya[0]*(xa[1]-xa[0])]
-  for i in range(1, len(x)):
-    inty.append(numpy.trapz(ya[:i], xa[:i]))
+  try:
+    # if available use scipy's cumulative trapezoidal integration function
+    from scipy.integrate import cumtrapz
+  except ImportError:
+    inty=[ya[0]*(xa[1]-xa[0])]
+    for i in range(1, len(x)):
+      inty.append(numpy.trapz(ya[:i], xa[:i]))
+  else:
+    inty=cumtrapz(ya, xa)
   output.append_column(PhysicalProperty(
                                         'int('+y.dimension+')',
                                         y.unit*x.unit,
