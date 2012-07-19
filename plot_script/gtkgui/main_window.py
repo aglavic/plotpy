@@ -14,7 +14,7 @@ from plot_script import measurement_data_plotting
 from plot_script.config.gnuplot_preferences import output_file_name
 from plot_script import config
 from plot_script.config import gui as gui_config
-from plot_script.config import fontconfig
+from plot_script.config import fontconfig, user_config
 import file_actions
 from main_window_actions import MainActions
 from main_window_ui import MainUI
@@ -195,11 +195,21 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
         gtk.EXPAND|gtk.FILL, 0,
         0, 0)
     # put toolbar below menubar, only expand in x direction
-    bar=self.UIManager.get_widget("/ToolBar")
-    bar.set_tooltips(True)
-    bar.set_style(gtk.TOOLBAR_ICONS)
-    bar.show()
-    table.attach(bar,
+    barbox=gtk.VBox()
+    barbox.show()
+    if not 'GUI' in user_config:
+      user_config['GUI']={
+                  'show_toolbars': [0,1],
+                  'show_statusbar': True,
+                  'seperate_view': False,
+                  }
+    for i in user_config['GUI']['show_toolbars']:
+      bar=self.UIManager.get_widget("/ToolBar%i"%(i+1))
+      bar.set_tooltips(True)
+      bar.set_style(gtk.TOOLBAR_ICONS)
+      bar.show()
+      barbox.add(bar)
+    table.attach(barbox,
         # X direction #       # Y direction
         0, 3, 1, 2,
         gtk.EXPAND|gtk.FILL, 0,
@@ -237,8 +247,14 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
 
     # frame region for the image
     self.frame1=gtk.Notebook()
+    self.frame1.set_group_id(0)
     align=gtk.Alignment(0.5, 0.5, 1, 1)
     align.add(self.frame1)
+    table.attach(align,
+        # X direction           Y direction
+        0, 3, 3, 4,
+        gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL,
+        0, 0)
     # image object for the plots
     self.image=gtk.Image()
     self.image_shown=False # variable to decrease changes in picture size
@@ -248,11 +264,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     self.event_box=gtk.EventBox()
     self.event_box.add(self.image)
     self.frame1.append_page(self.event_box, gtk.Label("Plot"))
-    table.attach(align,
-        # X direction           Y direction
-        0, 3, 3, 4,
-        gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL,
-        0, 0)
+    self.frame1.set_tab_detachable(self.event_box, True)
     #---------- create image region and image for the plot ----------
 
     # Create region for multiplot list
@@ -269,6 +281,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     sw.show()
     # put multiplot list
     self.frame1.append_page(sw, gtk.Label("Multiplot List"))
+    self.frame1.set_tab_detachable(sw, True)
     # Create region for Dataset Info
     self.info_label=gtk.Label();
     self.info_label.set_markup('')
@@ -280,6 +293,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     sw.add_with_viewport(self.info_label)
     # put Dataset Info
     self.frame1.append_page(sw, gtk.Label("Dataset Info"))
+    self.frame1.set_tab_detachable(sw, True)
 
     #++++++++++ Create additional setting input for the plot ++++++++++
     align_table=gtk.Table(12, 2, False)
@@ -409,11 +423,12 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     self.statusbar=gtk.Statusbar()
     self.statusbar.set_has_resize_grip(True)
     # put statusbar below everything
-    table.attach(self.statusbar,
-        # X direction           Y direction
-        0, 3, 5, 6,
-        gtk.EXPAND|gtk.FILL, 0,
-        0, 0)
+    if user_config['GUI']['show_statusbar']:
+      table.attach(self.statusbar,
+          # X direction           Y direction
+          0, 3, 5, 6,
+          gtk.EXPAND|gtk.FILL, 0,
+          0, 0)
 
     #-------Build widgets in table structure--------
 

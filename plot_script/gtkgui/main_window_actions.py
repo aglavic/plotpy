@@ -12,7 +12,7 @@ from copy import deepcopy
 from time import time
 
 import file_actions
-from dialogs import PreviewDialog, PlotTree, PrintDatasetDialog
+from dialogs import PreviewDialog, PlotTree, PrintDatasetDialog, NotebookDialog
 from plot_script import measurement_data_plotting, config
 from plot_script.config import user_config
 from plot_script.config.gui import DOWNLOAD_PAGE_URL
@@ -366,6 +366,17 @@ Gnuplot version %.1f patchlevel %i with terminals:
         self.do_add_multiplot(self.index_mess)
     elif action.get_name()=='AddMultiplot':
       self.multiplot.sort_add()
+  
+  def toggle_multiplot_copymode(self, action):
+    '''
+      Toggle between copy and non-copy mode in multiplot.
+    '''
+    if self.multiplot.items.copy_mode:
+      self.multiplot.items.copy_mode=False
+      print "New multiplot items will be linked to their originals"
+    else:
+      self.multiplot.items.copy_mode=True
+      print "New multiplot items will independent copies of their originals"
 
   def print_plot(self, action):
     '''
@@ -538,6 +549,11 @@ Gnuplot version %.1f patchlevel %i with terminals:
     message.add_button('OK', 1)
     message.run()
     message.destroy()
+
+  def open_tabdialog(self, action=None):
+    dia=NotebookDialog(self, title='Plot.py Notebook')
+    dia.set_default_size(600,400)
+    dia.show()
 
   def open_ipy_console(self, action=None, commands=[], show_greetings=True):
     '''
@@ -1038,7 +1054,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     if self.active_multiplot:
       return
     active_data=self.measurement[index]
-    if active_data in self.multiplot:
+    if active_data in self.multiplot and not self.multiplot.items.copy_mode:
       self.multiplot.remove(active_data)
       print 'Plot '+active_data.number+' removed.'
     else:

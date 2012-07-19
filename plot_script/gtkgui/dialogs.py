@@ -113,6 +113,35 @@ class StatusDialog(gtk.Dialog):
 
 #------------------------ StatusDialog to show an updated text -------------------------
 
+#+++++++++++++++++++++++++++ NotebookDialog to drop tabs to ++++++++++++++++++++++++++++
+
+class NotebookDialog(gtk.Dialog):
+  
+  def __init__(self, parent, *args, **opts):
+    opts['parent']=parent
+    self.key_parent=parent
+    gtk.Dialog.__init__(self, *args, **opts)
+    self.notebook=gtk.Notebook()
+    self.notebook.show()
+    self.notebook.set_group_id(0)
+    self.vbox.add(self.notebook)
+    self.connect('key-press-event', self.keyPress)
+    self.connect('destroy', self.remove_tabs)
+
+  def keyPress(self, widget, event):
+    self.key_parent.emit('key_press_event', event)
+  
+  def remove_tabs(self, event):
+    parent=self.key_parent
+    pages=self.notebook.get_n_pages()
+    for ignore in range(pages):
+      widget=self.notebook.get_nth_page(0)
+      label=self.notebook.get_tab_label(widget)
+      self.notebook.remove_page(0)
+      parent.frame1.append_page(widget, label)
+      parent.frame1.set_tab_detachable(widget, True)
+
+#--------------------------- NotebookDialog to drop tabs to ----------------------------
 
 #++++++++++++++++++++++++++ PreviewDialog to select one plot +++++++++++++++++++++++++++
 
