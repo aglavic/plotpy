@@ -2,6 +2,6 @@
 
 __copyright__="Copyright 2008-2012"
 __license__="GPL v3"
-__version__="0.7.14.2"
+__version__="0.7.14.4"
 __maintainer__="Artur Glavic"
-__email__="artur.glavic@googlemail.com"
+__email__="artur.glavic@gmail.com"

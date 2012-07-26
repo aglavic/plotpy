@@ -25,7 +25,7 @@
 #                                                                                               #
 #                                   Written by Artur Glavic                                     #
 #                                    please report bugs to                                      #
-#            http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki/doku.php?id=bug-reports          #
+#                  http://plotpy.sourceforge.net/plotwiki/doku.php?id=bug-reports               #
 #                                                                                               #
 # Additional Files: plot_generic_data.py - session class, parent for the other sessions         #
 #                   measurement_data_structure.py - classes storing the measured data           #

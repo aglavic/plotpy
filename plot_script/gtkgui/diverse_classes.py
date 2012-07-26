@@ -294,7 +294,7 @@ comment: ''')
       debug_log.close()
       info.destroy()
       msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log.gz has been created in\n%s.\n\n"%(os.path.abspath('.'))+\
-        "Please upload it to the bugreport at\n\nhttp://iffwww.iff.kfa-juelich.de/~glavic/plotwiki\n\nwith some additional information,\n"+\
+        "Please upload it to the bugreport at\n\nhttp://plotpy.sourceforge.net/plotwiki\n\nwith some additional information,\n"+\
         "or send an email to %s."%(__email__))
       msg.run()
       msg.destroy()
