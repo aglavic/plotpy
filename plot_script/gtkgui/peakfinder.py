@@ -83,6 +83,15 @@ class PeakFinderDialog(gtk.Dialog):
     self.vbox.add(gtk.Label('CWT peak ridge length'))
     self.vbox.add(ridge_slider)
 
+    self.detect_double_peaks=gtk.CheckButton('Double Peak Detection')
+    self.vbox.add(self.detect_double_peaks)
+    self.double_ridge_adjust=gtk.Adjustment(value=3, lower=0, upper=100,
+                              step_incr=1., page_incr=5.)
+    ridge_slider=gtk.HScale(self.double_ridge_adjust)
+    self.vbox.add(gtk.Label('Reduced ridge length'))
+    self.vbox.add(ridge_slider)
+    
+    
     self.auto_plot=gtk.CheckButton('Update Peaks on Change')
     self.vbox.add(self.auto_plot)
 
@@ -91,6 +100,8 @@ class PeakFinderDialog(gtk.Dialog):
     self.min_width_adjust.connect('value-changed', self._evaluate)
     self.max_width_adjust.connect('value-changed', self._evaluate)
     self.ridge_adjust.connect('value-changed', self._evaluate)
+    self.detect_double_peaks.connect('toggled', self._evaluate)
+    self.double_ridge_adjust.connect('value-changed', self._evaluate)
 
     preset_bar=gtk.HBox()
     self.vbox.add(gtk.Label('Store Options as Preset:'))
@@ -125,14 +136,18 @@ class PeakFinderDialog(gtk.Dialog):
     xwidth=float(ds.x.max()-ds.x.min())
     min_width=min_width_relative*xwidth/len(ds.x)
     max_width=max_width_relative*xwidth*0.01
-
+    double_peak_detection=self.detect_double_peaks.get_active()
+    
     snr=self.snr_adjust.get_value()
     ridge_length=self.ridge_adjust.get_value()
+    double_ridge_length=self.double_ridge_adjust.get_value()
     self.peaks=self.peakfinder.get_peaks(snr=snr,
-                                    min_width=min_width,
-                                    max_width=max_width,
-                                    ridge_length=ridge_length,
-                                    analyze=False)
+                        min_width=min_width,
+                        max_width=max_width,
+                        ridge_length=ridge_length,
+                        analyze=False,
+                        double_peak_detection=double_peak_detection,
+                        double_peak_reduced_ridge_length=double_ridge_length)
     print "%i Peaks found"%len(self.peaks)
     if self.auto_plot.get_active():
       self._responde(None, 1)
@@ -142,10 +157,14 @@ class PeakFinderDialog(gtk.Dialog):
     max_width_relative=self.max_width_adjust.get_value()
     snr=self.snr_adjust.get_value()
     ridge_length=self.ridge_adjust.get_value()
+    double_peak_detection=self.detect_double_peaks.get_active()
+    double_ridge_length=self.double_ridge_adjust.get_value()
     user_config['PeakFinder']['Presets']["%i"%index]={
                 'PeakWidth': (min_width_relative, max_width_relative),
                 'SNR': snr,
                 'RidgeLength': ridge_length,
+                'DoublePeaks': double_peak_detection,
+                'DoublePeakRidgeLength': double_ridge_length,
                                                  }
 
   def _load_preset(self, button, index):
@@ -154,6 +173,8 @@ class PeakFinderDialog(gtk.Dialog):
       self.max_width_adjust.set_value(50.)
       self.snr_adjust.set_value(2.)
       self.ridge_adjust.set_value(20)
+      self.double_ridge_adjust.set_value(3)
+      self.detect_double_peaks.set_active(False)
       return
     str_index="%i"%index
     if str_index in user_config['PeakFinder']['Presets']:
@@ -162,6 +183,9 @@ class PeakFinderDialog(gtk.Dialog):
       self.max_width_adjust.set_value(preset['PeakWidth'][1])
       self.snr_adjust.set_value(preset['SNR'])
       self.ridge_adjust.set_value(preset['RidgeLength'])
+      if 'DoublePeaks' in preset:
+        self.detect_double_peaks.set_active(preset['DoublePeaks'])
+        self.double_ridge_adjust.set_value(preset['DoublePeakRidgeLength'])
 
   def _responde(self, ignore, response_id):
     '''
@@ -226,12 +250,20 @@ def peaks_from_preset(ds, preset, parent_window=None, summary=False):
   xwidth=float(ds.x.max()-ds.x.min())
   min_width=min_width_relative*xwidth/len(ds.x)
   max_width=max_width_relative*xwidth*0.01
+  if 'DoublePeaks' in preset:
+    double_peak_detection=preset['DoublePeaks']
+    double_peak_reduced_ridge_length=preset['DoublePeakRidgeLength']
+  else:
+    double_peak_detection=False
+    double_peak_reduced_ridge_length=3.
   print "Filter peaks with preset options"
   peaks=peakfinder.get_peaks(snr=snr,
-                            min_width=min_width,
-                            max_width=max_width,
-                            ridge_length=ridge_length,
-                            analyze=False)
+              min_width=min_width,
+              max_width=max_width,
+              ridge_length=ridge_length,
+              analyze=False,
+              double_peak_detection=double_peak_detection,
+              double_peak_reduced_ridge_length=double_peak_reduced_ridge_length)
   print "Fit Gaussians to peak parameters"
   fit_result(peaks, ds, parent_window, summary)
 
