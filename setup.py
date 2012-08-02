@@ -22,7 +22,7 @@ __name__='plot-script' #@ReservedAssignment
 __author__="Artur Glavic"
 from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __author_email__=__email__
-__url__="http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki"
+__url__="http://plotpy.sourceforge.net/plotwiki"
 __description__='''Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.'''
 
 __scripts__=['plot.py']

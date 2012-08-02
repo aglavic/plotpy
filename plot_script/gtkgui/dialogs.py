@@ -742,7 +742,7 @@ class MultipeakDialog(gtk.Dialog):
     self._evaluate_options(opts)
     opts['parent']=main_window
     # Initialize this dialog
-    opts['buttons']=('Pop Last', 2, 'Finished', 1, 'Cancel', 0)
+    opts['buttons']=('Autodetect', 3, 'Pop Last', 2, 'Finished', 1, 'Cancel', 0)
     gtk.Dialog.__init__(self, *args, **opts)
     self.set_icon_from_file(os.path.join(
                             os.path.split(
@@ -750,18 +750,18 @@ class MultipeakDialog(gtk.Dialog):
                            "..", "config", "logopurple.png").replace('library.zip', ''))
     self.connect('destroy', self.cleanup)
     self.register_mouse_callback()
-    self.table=gtk.Table(4, 5, False)
-    self.table.show()
+    self.added_items=gtk.VBox()
+    self.added_items.show()
     self.new_peak_table=gtk.Table(3, 2, False)
     self.new_peak_table.show()
-    self.vbox.pack_start(self.table, True)
+    self.vbox.pack_start(self.added_items, True)
     align=gtk.Alignment(0.5, 0, 0, 0)
     align.add(self.new_peak_table)
     align.show()
     self.vbox.pack_end(align, False)
     # List of FitFunction objects already finished
     self.finished_fits=[]
-    self.peak_labels=[]
+    self.peak_items=[]
     self.peak_data=[]
     self._init_entries()
 
@@ -811,24 +811,28 @@ class MultipeakDialog(gtk.Dialog):
     self.new_peak_table.attach(fit_button, 2, 3, 0, 2, gtk.FILL, gtk.FILL, 0, 0)
     self.new_peak_table.show_all()
 
-  def fit_peak(self, widget=None, action=None):
+  def fit_peak(self, widget=None, action=None, peak_xy=None):
     '''
       Fit a new function to the peak position defined in the dialog or by mouse click.
     '''
-    peak_x, peak_y=self.peak_entries
-    try:
-      x=float(peak_x.get_text())
-    except ValueError:
-      peak_x.set_text('')
-      return
-    try:
-      y=float(peak_y.get_text())
-    except ValueError:
-      if peak_y.get_text()=='Auto':
-        y=self._start_parameters[self.y_parameter]
-      else:
-        peak_y.set_text('Auto')
+    if peak_xy is None:
+      peak_x, peak_y=self.peak_entries
+      try:
+        x=float(peak_x.get_text())
+      except ValueError:
+        peak_x.set_text('')
         return
+      try:
+        y=float(peak_y.get_text())
+      except ValueError:
+        if peak_y.get_text()=='Auto':
+          y=self._start_parameters[self.y_parameter]
+        else:
+          peak_y.set_text('Auto')
+          return
+    else:
+      x=peak_xy[0]
+      y=peak_xy[1]
     start_params=list(self._start_parameters)
     start_params[self.x_parameter]=x
     start_params[self.y_parameter]=y
@@ -854,7 +858,7 @@ class MultipeakDialog(gtk.Dialog):
       :param cov: Covariance matrix of the last fit
     '''
     self.finished_fits.append(fit)
-    fits=len(self.finished_fits)
+    #fits=len(self.finished_fits)
     x=fit.parameters[self.x_parameter]
     y=fit.parameters[self.y_parameter]
     if cov is None:
@@ -863,25 +867,69 @@ class MultipeakDialog(gtk.Dialog):
     else:
       dx=sqrt(cov[self.x_parameter][self.x_parameter])
       dy=sqrt(cov[self.y_parameter][self.y_parameter])
-    label=gtk.Label("%i: \t%f±%f"%(fits, x, dx))
+    label=gtk.Label("%g±%g"%(x, dx))
     label.show()
-    self.peak_labels.append(label)
-    self.table.attach(label,
-                      0, 4, fits, fits+1,
-                      gtk.FILL, gtk.FILL, 0, 0
-                      )
+    button=gtk.Button('Del')
+    button.show()
+    button.connect('clicked', self.pop_peak)
+    peak_item=gtk.HBox()
+    peak_item.add(label)
+    peak_item.add(button)
+    peak_item.show()
+    self.added_items.add(peak_item)
+    self.peak_items.append((peak_item, button))
     self.peak_data.append([x, dx, y, dy])
 
-  def remove_peak(self):
+  def remove_peak(self, item=-1):
     '''
       Remove the last fited peak.
     '''
-    self.peak_data.pop(-1)
-    self.finished_fits.pop(-1)
-    self.fit_object.functions.pop(-1)
+    self.peak_data.pop(item)
+    self.finished_fits.pop(item)
+    self.fit_object.functions.pop(item)
     self.fit_object.simulate()
-    self.table.remove(self.peak_labels.pop(-1))
+    self.added_items.remove(self.peak_items.pop(item)[0])
     self._callback_window.replot()
+  
+  def pop_peak(self, button):
+    buttons=[item[1] for item in self.peak_items]
+    idx=buttons.index(button)
+    self.remove_peak(idx)
+    
+  def autodetect_peaks(self):
+    '''
+      Use CWD peak finder to automatically detect peaks.
+    '''
+    from plot_script.peakfinder import PeakFinder
+    from plot_script.config import user_config
+    ds=self.fit_object.data
+    print "Creating CWT peak finder"
+    preset=user_config['PeakFinder']['Presets']['1']
+    peakfinder=PeakFinder(ds.x,ds.y)
+    min_width_relative=preset['PeakWidth'][0]
+    max_width_relative=preset['PeakWidth'][1]
+    snr=preset['SNR']
+    ridge_length=preset['RidgeLength']
+    xwidth=float(ds.x.max()-ds.x.min())
+    min_width=min_width_relative*xwidth/len(ds.x)
+    max_width=max_width_relative*xwidth*0.01
+    if 'DoublePeaks' in preset:
+      double_peak_detection=preset['DoublePeaks']
+      double_peak_reduced_ridge_length=preset['DoublePeakRidgeLength']
+    else:
+      double_peak_detection=False
+      double_peak_reduced_ridge_length=3.
+    print "Filter peaks with preset options"
+    peaks=peakfinder.get_peaks(snr=snr,
+                min_width=min_width,
+                max_width=max_width,
+                ridge_length=ridge_length,
+                analyze=False,
+                double_peak_detection=double_peak_detection,
+                double_peak_reduced_ridge_length=double_peak_reduced_ridge_length)
+    print "Fit peak parameters"
+    for peak in peaks:
+      self.fit_peak(peak_xy=(peak[0], peak[2]))
 
   def run(self):
     '''
@@ -890,9 +938,13 @@ class MultipeakDialog(gtk.Dialog):
     '''
     if self._callback_window is None:
       result=gtk.Dialog.run(self)
-      while result==2:
-        self.remove_peak()
-        result=gtk.Dialog.run(self)
+      while result not in [0,1]:
+        if result==2:
+          self.remove_peak()
+          result=gtk.Dialog.run(self)
+        else:
+          self.autodetect_peaks()
+          result=gtk.Dialog.run(self)
     else:
       # if a mouse callback is registered it doesn't
       # work with Dialog.run
@@ -901,10 +953,13 @@ class MultipeakDialog(gtk.Dialog):
         self._result=response_id
       self.connect('response', set_result)
       self.show_all()
-      while self._result is None or self._result==2:
+      while self._result is None or self._result in [3,2]:
         if self._result==2:
           self._result=None
           self.remove_peak()
+        if self._result==3:
+          self._result=None
+          self.autodetect_peaks()
         while gtk.events_pending():
           gtk.main_iteration(False)
         sleep(0.1)

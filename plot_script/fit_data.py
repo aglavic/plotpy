@@ -1189,7 +1189,7 @@ class ThetaCorrection(FitFunction):
   name="Peak Positions"
   parameters=[3., 0.]
   parameter_names=['a*', 'Θ_0']
-  parameter_description={'a*': 'Reciprocal Lattice Vector'}
+  parameter_description={'a*': 'Reciprocal Lattice Vector (2π/d)'}
   fit_function_text='a^*=[a*|6] [y-unit]    Θ_0=[Θ_0] °'
   lambda_factor=1.540/(4.*numpy.pi) # Cu-k_alpha prefactor
 

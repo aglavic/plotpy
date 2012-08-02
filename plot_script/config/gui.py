@@ -16,7 +16,7 @@ __status__="Development"
 #toolkit='wx'
 toolkit='gtk'
 
-DOWNLOAD_PAGE_URL='http://iffwww.iff.kfa-juelich.de/~glavic/plotupdate.py'
+DOWNLOAD_PAGE_URL='http://plotpy.sourceforge.net/plotupdate.py'
 
 ICONS={
                'Apply': 'apply.png',
