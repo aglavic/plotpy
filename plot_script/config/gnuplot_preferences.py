@@ -159,6 +159,9 @@ defined_color_patterns={
 # title for a curve
 titles='[titles_add]'
 
+# User defined commands executed directly before the plot line
+additional_user_commands=''
+
 postscript_characters=[
           ('µ', '{/Symbol m}'),
           ('°', '\\260'),

@@ -7,6 +7,7 @@
 
 import numpy
 import gtk
+import gobject
 import cairo
 import sys, os
 from time import sleep
@@ -116,7 +117,7 @@ class StatusDialog(gtk.Dialog):
 #+++++++++++++++++++++++++++ NotebookDialog to drop tabs to ++++++++++++++++++++++++++++
 
 class NotebookDialog(gtk.Dialog):
-  
+
   def __init__(self, parent, *args, **opts):
     opts['parent']=parent
     self.key_parent=parent
@@ -130,7 +131,7 @@ class NotebookDialog(gtk.Dialog):
 
   def keyPress(self, widget, event):
     self.key_parent.emit('key_press_event', event)
-  
+
   def remove_tabs(self, event):
     parent=self.key_parent
     pages=self.notebook.get_n_pages()
@@ -890,12 +891,12 @@ class MultipeakDialog(gtk.Dialog):
     self.fit_object.simulate()
     self.added_items.remove(self.peak_items.pop(item)[0])
     self._callback_window.replot()
-  
+
   def pop_peak(self, button):
     buttons=[item[1] for item in self.peak_items]
     idx=buttons.index(button)
     self.remove_peak(idx)
-    
+
   def autodetect_peaks(self):
     '''
       Use CWD peak finder to automatically detect peaks.
@@ -905,7 +906,7 @@ class MultipeakDialog(gtk.Dialog):
     ds=self.fit_object.data
     print "Creating CWT peak finder"
     preset=user_config['PeakFinder']['Presets']['1']
-    peakfinder=PeakFinder(ds.x,ds.y)
+    peakfinder=PeakFinder(ds.x, ds.y)
     min_width_relative=preset['PeakWidth'][0]
     max_width_relative=preset['PeakWidth'][1]
     snr=preset['SNR']
@@ -938,7 +939,7 @@ class MultipeakDialog(gtk.Dialog):
     '''
     if self._callback_window is None:
       result=gtk.Dialog.run(self)
-      while result not in [0,1]:
+      while result not in [0, 1]:
         if result==2:
           self.remove_peak()
           result=gtk.Dialog.run(self)
@@ -953,7 +954,7 @@ class MultipeakDialog(gtk.Dialog):
         self._result=response_id
       self.connect('response', set_result)
       self.show_all()
-      while self._result is None or self._result in [3,2]:
+      while self._result is None or self._result in [3, 2]:
         if self._result==2:
           self._result=None
           self.remove_peak()
@@ -2410,7 +2411,7 @@ class StyleLine(gtk.Table):
                'color': '<auto>',
                'pointtype': PlotStyle.pointtype,
                }
-    self.toggle_custom=gtk.CheckButton(label='Custom Style  ', use_underline=True)
+    self.toggle_custom=gtk.CheckButton(label='Custom ', use_underline=True)
     self.toggle_custom.show()
     self.attach(self.toggle_custom, 0, 1, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     if type(self.plot_options._special_plot_parameters) is PlotStyle:
@@ -2599,6 +2600,86 @@ class StyleLine(gtk.Table):
     self.callback()
 
 #----------------- Dialog to change the color and style of a plot -----------------------
+
+#+++++++++++++++++++++++++ Entry for a list of strings +++++++++++++++++++++++++++++++++
+
+class VListEntry(gtk.VBox):
+  list_entries=None
+  list_link=None
+
+  def __init__(self, in_list, title='String List', entry_type=str):
+    gtk.VBox.__init__(self)
+    self.list_link=in_list
+    self.list_entries=[]
+    button_p=gtk.Button('+')
+    button_p.connect('clicked', self.add_item)
+    line=gtk.HBox()
+    line.add(gtk.Label(title))
+    line.add(button_p)
+    line.show_all()
+    self.add(line)
+    self.entry_type=entry_type
+    for item in self.list_link:
+      self._add_item(item)
+
+  def _add_item(self, item):
+    if self.entry_type is str:
+      entry=gtk.Entry()
+      entry.set_text(item)
+    elif self.entry_type is int:
+      entry=gtk.SpinButton(adjustment=gtk.Adjustment(value=item,
+                                                     lower=-1e30,
+                                                     upper=1e30,
+                                                     step_incr=1, page_incr=10),
+                           climb_rate=1, digits=0)
+    elif self.entry_type is float:
+      entry=gtk.SpinButton(adjustment=gtk.Adjustment(value=item,
+                                                     lower=-1e30,
+                                                     upper=1e30,
+                                                     step_incr=1., page_incr=10.),
+                           climb_rate=1, digits=6)
+    entry.connect('changed', self.entry_changed)
+    entry.connect('activate', self.entry_activated)
+    button_m=gtk.Button('-')
+    button_m.connect('clicked', self.remove_item)
+    line=gtk.HBox()
+    line.add(entry)
+    line.add(button_m)
+    line.show_all()
+    self.add(line)
+    self.list_entries.append([line, entry, button_m])
+
+  def add_item(self, button):
+    self.list_link.append(self.entry_type())
+    self._add_item(self.entry_type())
+
+  def remove_item(self, button):
+    buttons=[item[2] for item in self.list_entries]
+    idx=buttons.index(button)
+    self.list_link.pop(idx)
+    line, ignore, ignore=self.list_entries.pop(idx)
+    self.remove(line)
+
+  def entry_changed(self, entry):
+    entries=[item[1] for item in self.list_entries]
+    idx=entries.index(entry)
+    if self.entry_type is str:
+      self.list_link[idx]=entry.get_text()
+    elif self.entry_type is int:
+      self.list_link[idx]=entry.get_value_as_int()
+    elif self.entry_type is float:
+      self.list_link[idx]=entry.get_value()
+
+  def entry_activated(self, entry):
+    self.emit('activate', self, entry)
+
+gobject.type_register(VListEntry)
+gobject.signal_new("activate", VListEntry, gobject.SIGNAL_RUN_FIRST,
+                   gobject.TYPE_NONE, (object, object,))
+
+#------------------------- Entry for a list of strings ---------------------------------
+
+#+++++++++++++ Dialog to define labels, arrows and lines on the plot ++++++++++++++++++++
 
 #+++++++++++++ Dialog to define labels, arrows and lines on the plot ++++++++++++++++++++
 

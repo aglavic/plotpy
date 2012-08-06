@@ -1606,6 +1606,8 @@ class PlotOptions(object):
   arrows=[]
   rectangles=[]
   ellipses=[]
+  free_input=[]
+  free_input_after=[]
   tics=[None, None, None]
   exp_format=[0, 0, 0] # set the axis label format to 10^{%L} for xyz
   scan_info=[False, None]
@@ -1616,6 +1618,7 @@ class PlotOptions(object):
     '''
     self.settings={}
     self.free_input=[]
+    self.free_input_after=[]
     self._xrange=[None, None]
     self._yrange=[None, None]
     self._zrange=[None, None]
@@ -1636,6 +1639,7 @@ class PlotOptions(object):
     other._yrange=deepcopy(self._yrange)
     other._zrange=deepcopy(self._zrange)
     other.free_input=deepcopy(self.free_input)
+    other.free_input_after=deepcopy(self.free_input_after)
     other.settings=deepcopy(self.settings)
     other._special_plot_parameters=deepcopy(self._special_plot_parameters)
     other.labels=deepcopy(self.labels)
@@ -1749,6 +1753,8 @@ class PlotOptions(object):
         output+='set format %s "%%.1te%%T"\n'%(i)
     if self.exp_format[2]:
       output+='set cblabel offset 1.5\n'
+    for value in self.free_input_after:
+      output+=value+"\n"
     return output
 
   def __add__(self, input_string):

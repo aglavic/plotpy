@@ -365,7 +365,7 @@ class MainPlotting(object):
     '''
     # TODO: Add gnuplot help functions and character selector
     #+++++++++++++++++ Adding input fields in table +++++++++++++++++
-    dialog=gtk.Dialog(title='Custom Gnuplot settings')
+    dialog=gtk.Dialog(title='Custom Global Gnuplot settings', parent=self)
     table=gtk.Table(6, 13, False)
 
     # PNG terminal
@@ -395,29 +395,42 @@ class MainPlotting(object):
     label=gtk.Label()
     label.set_markup('x-label:')
     table.attach(label, 0, 1, 4, 5, 0, 0, 0, 0);
-    x_label=gtk.Entry()
+    cbe=gtk.combo_box_entry_new_text()
+    cbe.append_text('[x-dim] [[x-unit]]')
+    x_label=cbe.get_child()
+    x_label.set_width_chars(14)
     x_label.set_text(gnuplot_preferences.x_label)
-    table.attach(x_label, 1, 2, 4, 5, 0, 0, 0, 0);
+    table.attach(cbe, 1, 2, 4, 5, 0, 0, 0, 0);
     label=gtk.Label()
     label.set_markup('y-label:')
     table.attach(label, 2, 3, 4, 5, 0, 0, 0, 0);
-    y_label=gtk.Entry()
+    cbe=gtk.combo_box_entry_new_text()
+    cbe.append_text('[y-dim] [[y-unit]]')
+    y_label=cbe.get_child()
+    y_label.set_width_chars(14)
     y_label.set_text(gnuplot_preferences.y_label)
-    table.attach(y_label, 3, 4, 4, 5, 0, 0, 0, 0);
+    table.attach(cbe, 3, 4, 4, 5, 0, 0, 0, 0);
     label=gtk.Label()
     label.set_markup('z-label:')
     table.attach(label, 4, 5, 4, 5, 0, 0, 0, 0);
-    z_label=gtk.Entry()
+    cbe=gtk.combo_box_entry_new_text()
+    cbe.append_text('[z-dim] [[z-unit]]')
+    z_label=cbe.get_child()
+    z_label.set_width_chars(14)
     z_label.set_text(gnuplot_preferences.z_label)
-    table.attach(z_label, 5, 6, 4, 5, 0, 0, 0, 0);
+    table.attach(cbe, 5, 6, 4, 5, 0, 0, 0, 0);
 
     # parameters for plot
     label=gtk.Label()
     label.set_markup('Parameters for normal plot:')
     table.attach(label, 0, 6, 5, 6, 0, 0, 0, 0);
-    plotting_parameters=gtk.Entry()
+    cbe=gtk.combo_box_entry_new_text()
+    cbe.append_text('w lines lw 1.5')
+    cbe.append_text('w lines')
+    cbe.append_text('w linespoints lw 1 pt 7 ps 1')
+    plotting_parameters=cbe.get_child()
     plotting_parameters.set_text(gnuplot_preferences.plotting_parameters)
-    table.attach(plotting_parameters,
+    table.attach(cbe,
                 # X direction #          # Y direction
                 0, 3, 6, 7,
                 gtk.EXPAND|gtk.FILL, 0,
@@ -426,9 +439,14 @@ class MainPlotting(object):
     label=gtk.Label()
     label.set_markup('Parameters for plot with errorbars:')
     table.attach(label, 0, 6, 7, 8, 0, 0, 0, 0);
-    plotting_parameters_errorbars=gtk.Entry()
+    cbe=gtk.combo_box_entry_new_text()
+    cbe.append_text('w errorbars pt 5 ps 0.5 lw 1.5')
+    cbe.append_text('w errorbars')
+    cbe.append_text('w errorlines pt 5 ps 0.5 lw 1.5')
+    cbe.append_text('w errorlines')
+    plotting_parameters_errorbars=cbe.get_child()
     plotting_parameters_errorbars.set_text(gnuplot_preferences.plotting_parameters_errorbars)
-    table.attach(plotting_parameters_errorbars,
+    table.attach(cbe,
                 # X direction #          # Y direction
                 0, 3, 8, 9,
                 gtk.EXPAND|gtk.FILL, 0,
@@ -460,20 +478,20 @@ class MainPlotting(object):
                 0, 5);
 
     # additional Gnuplot commands
-    label=gtk.Label()
-    label.set_markup('Gnuplot commands executed additionally:')
-    table.attach(label, 0, 6, 12, 13, 0, 0, 0, 0);
-    sw=gtk.ScrolledWindow()
+    #label=gtk.Label()
+    #label.set_markup('Gnuplot commands executed additionally:')
+    #table.attach(label, 0, 6, 12, 13, 0, 0, 0, 0);
+    #sw=gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
     # scrollbars.
-    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    sw.add(self.plot_options_view) # add textbuffer view widget
-    table.attach(sw,
-                # X direction #          # Y direction
-                0, 6, 13, 14,
-                gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL,
-                0, 0);
+    #sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    #sw.add(self.plot_options_view) # add textbuffer view widget
+    #table.attach(sw,
+    #            # X direction #          # Y direction
+    #            0, 6, 13, 14,
+    #            gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL,
+    #            0, 0);
     table.show_all()
     if self.active_dataset.zdata<0:
       label3d.hide()
@@ -495,15 +513,15 @@ class MainPlotting(object):
                                plotting_settings_3d,
                                plotting_settings_3dmap)
     # befor the widget gets destroyed the textbuffer view widget is removed
-    dialog.connect("destroy", self.close_plot_options_window, sw)
+    #dialog.connect("destroy", self.close_plot_options_window, sw)
     dialog.show()
     # reroute the button to close the dialog, not open it
     self.plot_options_button.disconnect(self.plot_options_handler_id)
     self.plot_options_handler_id=self.plot_options_button.connect("clicked", lambda*w: dialog.destroy())
     self.plot_options_window_open=True
     # connect dialog to main window
-    self.open_windows.append(dialog)
-    dialog.connect("destroy", lambda*w: self.open_windows.remove(dialog))
+    #self.open_windows.append(dialog)
+    #dialog.connect("destroy", lambda*w: self.open_windows.remove(dialog))
 
   def close_plot_options_window(self, dialog, sw):
     '''
@@ -732,6 +750,10 @@ class MainPlotting(object):
       Open a Dialog to chang the style of the current plot.
     '''
     dialog=gtk.Dialog(title='Plot style settings...', parent=self)
+    nb=gtk.Notebook()
+    nb.show()
+    dialog.vbox.add(nb)
+    main_items=gtk.VBox()
     if self.active_multiplot:
       itemlist=[item[0] for item in self.multiplot]
       i=0
@@ -750,7 +772,7 @@ class MainPlotting(object):
           tentry.connect('activate', self.change_plot_shortinfo, dataset)
           line=StyleLine(dataset.plot_options, self.replot)
           line.show()
-          dialog.vbox.add(line)
+          main_items.add(line)
           i+=1
     else:
       datasets=self.active_dataset.plot_together
@@ -765,10 +787,20 @@ class MainPlotting(object):
         tentry.connect('activate', self.change_plot_shortinfo, dataset)
         title.add(entry)
         title.add(tentry)
-        dialog.vbox.add(title)
+        main_items.add(title)
         line=StyleLine(dataset.plot_options, self.replot)
         line.show()
-        dialog.vbox.add(line)
+        main_items.add(line)
+    sw=gtk.ScrolledWindow()
+    sw.add_with_viewport(main_items)
+    sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+    sw.show_all()
+    nb.append_page(sw, gtk.Label('Line Styles'))
+    # Create entries for the advanced options of the PlotOptions class
+    advanced_items=gtk.VBox()
+    #
+    advanced_items.show_all()
+    nb.append_page(advanced_items, gtk.Label('Advanced Gnuplot Settings'))
     dialog.show()
     self.open_windows.append(dialog)
 

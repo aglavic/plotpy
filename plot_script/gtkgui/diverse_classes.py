@@ -127,15 +127,13 @@ class PlotProfile:
     '''
     self.__dict__=config_object[self.name]
 
-
-
 #------------------------------ PlotProfile Class ---------------------------------------#
 
 #++++++++++++++++++++++++++++ Redirection Filelike Objects +++++++++++++++++++++++++++++
 
 class RedirectOutput(object):
   '''
-    Class to redirect all print statements to the statusbar when useing the GUI.
+    Class to redirect all print statements to the statusbar when using the GUI.
   '''
 
   second_output=None
@@ -180,7 +178,7 @@ class RedirectOutput(object):
 
 class RedirectError(RedirectOutput):
   '''
-    Class to redirect all error messages to a message dialog when useing the GUI.
+    Class to redirect all error messages to a message dialog when using the GUI.
     The message dialog has an option to export a bugreport, which includes the active
     measurement to help debugging.
   '''

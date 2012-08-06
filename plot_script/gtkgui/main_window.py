@@ -199,7 +199,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     barbox.show()
     if not 'GUI' in user_config:
       user_config['GUI']={
-                  'show_toolbars': [0,1],
+                  'show_toolbars': [0, 1],
                   'show_statusbar': True,
                   'seperate_view': False,
                   }
@@ -492,7 +492,8 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     self.font_size.connect("activate", self.change_range)
     self.logx.connect("toggled", self.change)
     self.logy.connect("toggled", self.change)
-    self.plot_options_handler_id=self.plot_options_button.connect("clicked", self.open_plot_options_window)
+    self.plot_options_handler_id=self.plot_options_button.connect("clicked",
+                                                                self.open_plot_options_window)
     self.z_range_in.connect("activate", self.change_range)
     self.logz.connect("toggled", self.change)
     self.y2_slicing.connect("toggled", self.change)
