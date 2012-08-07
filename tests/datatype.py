@@ -4,7 +4,7 @@
 '''
 
 from plot_script.measurement_data_structure import PhysicalProperty
-from numpy import *
+from numpy import array, ndarray, arange, float32, sqrt, zeros_like, ones_like, pi, sin
 import unittest
 
 class TestPhysicalProperty(unittest.TestCase):

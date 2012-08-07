@@ -8,6 +8,7 @@ import gtk
 import gobject
 from main_window_actions import apihelp
 from plot_script.config import gui as gui_config
+from autodialogs import FunctionHandler
 
 
 __author__="Artur Glavic"
@@ -332,6 +333,8 @@ class MainUI(object):
         <menu action='PluginMenu'>
       '''+plugin_menu
       self.session_added_items=self.session_added_items+(("PluginMenu", None, "Plugins", None, None, None),)
+    output+=FunctionHandler.get_menu_string()
+    self.session_added_items=self.session_added_items+FunctionHandler.get_menu_actions()
     output+='''
       </menu>
     </menubar>
@@ -791,7 +794,7 @@ class MainUI(object):
     height=buf.get_height()
     scale=min(size/width, size/height)
     buf=buf.scale_simple(int(width*scale), int(height*scale), gtk.gdk.INTERP_BILINEAR)
-    
+
     for i in range(2):
       toolbutton=self.UIManager.get_widget('/ui/ToolBar%i/'%(i+1)+item)
       if toolbutton is not None:

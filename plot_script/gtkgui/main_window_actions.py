@@ -366,7 +366,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
         self.do_add_multiplot(self.index_mess)
     elif action.get_name()=='AddMultiplot':
       self.multiplot.sort_add()
-  
+
   def toggle_multiplot_copymode(self, action):
     '''
       Toggle between copy and non-copy mode in multiplot.
@@ -552,7 +552,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
 
   def open_tabdialog(self, action=None):
     dia=NotebookDialog(self, title='Plot.py Notebook')
-    dia.set_default_size(600,400)
+    dia.set_default_size(600, 400)
     dia.show()
 
   def open_ipy_console(self, action=None, commands=[], show_greetings=True):
@@ -575,6 +575,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       scipy=None
     from glob import glob
     from plot_script.fit_data import new_function
+    from plot_script.gtkgui.autodialogs import FunctionHandler
 
     if getattr(self, 'active_ipython', False):
       # if there is already an ipython console, show it and exit
@@ -607,15 +608,13 @@ Gnuplot version %.1f patchlevel %i with terminals:
 
     Functions:
       replot \tFunction to replot the dataset
-      dataset \tFunction to get the active MeasurementData object
-      getxyz/\tReturn 3/all PhysicalProperty instances of the x,y and z columns 
-        getall\tfrom the active dataset
+      dataset \tGet the active MeasurementData object (see attributes x,y,z,data)
       newxyz/ \tCreate a new plot with changed columns, takes three/several lists or 
         newall\tarrays as input. For line plots the last parameter is 'None'.
-      mapdata \tApply a function to all datasets in the active file data
-      mapall  \tApply a function to all datasets from all files
+      mapdata \tApply a function to all datasets in the active file data (see mapall)
       newfit  \tAdd a function to the fit dialog functions, should be defined as
               \tither f(p,x) of f(p,x,y) for 2d or 3d datasets respectively.
+      newmenu \tAdd a menu entry which opens a dialog for parameter entry (see newmenu?)
       makefit \tClass which holds all fittable functions as properties. To fit
               \te.g. a linear regression to the current dataset use:
               \tmakefit.Linear_Regression([0.5, 2]) (-> parameters after fit)
@@ -626,7 +625,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
               \tThe data for the selected file is in session.active_file_data
       plot_gui \tThe window object with all window related funcitons
       macros  \tDictionary containing all functions which can be run as 'macros'
-      menus   \tAccess all GUI menus as properties of this object, e.g. "menus.File.Open_File()".
+      menus   \tAccess all GUI menus as properties of this object.
       action_history \tList of macros activated through the GUI (key, (parameters)).
     Modules:
       np \tNumpy
@@ -727,6 +726,38 @@ Gnuplot version %.1f patchlevel %i with terminals:
         for dataset in datasets:
           output[key].append(function(dataset))
       return output
+    def newmenu(function, menu_entry=None, description=None, shortcut=None):
+      '''
+        Create an entry in the "User-Func." menu which opens a parameter
+        dialog and after that calls the function. The dialog is created
+        directly from function inspection so the function needs to have
+        one of the following two forms:
+        
+          my_function(dataset, param1=12., param2=23, param3='abc')
+          my_function(datasets, d_index, param1=12., param2=23, param3='abc')
+          
+        Where the naming convention of dataset/datasets/d_index is fixed
+        while the parameters can be named as desired. Parameters must be 
+        ither int, float, str or list of only one type of these. 
+        The docstring of the function can be used to further change the 
+        dialog appearance of the parameters by supplieng lines of type:
+        
+          :param param1: [lower_bound:upper_bound] - param item name - description
+          or
+          :param param1: param item name - description
+          or
+          :param param1: description
+        
+        If this is not supplied the dialog will use the parameter names and leave
+        empty descriptions.
+        
+        The optional arguments to newmenu can define the name of the menu item,
+        a descriptive text at the top of the dialog and a keystroke shortcut
+        as "<control>U".
+      '''
+      FunctionHandler.add_function(function, menu_entry, description, shortcut)
+      self.rebuild_menus()
+
     # add variables to ipython namespace
     ipview.updateNamespace({
                        'session': self.active_session,
@@ -750,6 +781,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
                        'menus': MenuWrapper(self.menu_bar),
                        'newfit': new_function,
                        'makefit': FitWrapper(self, self.active_session),
+                       'newmenu': newmenu,
                        })
     # add common mathematic functions to the namespace
     math_functions=['exp', 'log', 'log10', 'pi',
