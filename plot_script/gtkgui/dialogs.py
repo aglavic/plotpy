@@ -2652,6 +2652,7 @@ class VListEntry(gtk.VBox):
   def add_item(self, button):
     self.list_link.append(self.entry_type())
     self._add_item(self.entry_type())
+    self.emit('activate', self, None)
 
   def remove_item(self, button):
     buttons=[item[2] for item in self.list_entries]
@@ -2659,6 +2660,7 @@ class VListEntry(gtk.VBox):
     self.list_link.pop(idx)
     line, ignore, ignore=self.list_entries.pop(idx)
     self.remove(line)
+    self.emit('activate', self, None)
 
   def entry_changed(self, entry):
     entries=[item[1] for item in self.list_entries]

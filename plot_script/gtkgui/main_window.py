@@ -579,10 +579,12 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     # exit persistent gnuplot instances
     persistent_plot_instances=measurement_data_plotting.persistent_plot_instances
     for p in persistent_plot_instances:
-      if p.stdin.is_open():
-        p.stdin.write('quit\n')
+      try:
+        p.stdin.write('\nquit\n')
         p.stdin.flush()
-      p.communicate()
+        p.communicate()
+      except:
+        pass
     # save settings to ini file
     if store_config:
       if not os.path.exists(os.path.expanduser('~')+'/.plotting_gui'):
@@ -609,3 +611,6 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     except RuntimeError:
       pass
 
+gobject.type_register(ApplicationMainWindow)
+gobject.signal_new("plot-drawn", ApplicationMainWindow, gobject.SIGNAL_RUN_FIRST,
+                   gobject.TYPE_NONE, ())

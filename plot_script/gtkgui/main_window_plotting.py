@@ -10,7 +10,7 @@ from time import sleep
 from plot_script import measurement_data_plotting
 from plot_script.config import gnuplot_preferences, user_config
 from dialogs import LabelArrowDialog, StyleLine, SimpleEntryDialog, \
-                    PreviewDialog
+                    PreviewDialog, VListEntry
 from diverse_classes import PlotProfile
 
 errorbars=False
@@ -357,6 +357,7 @@ class MainPlotting(object):
     # make sure hugeMD objects are removed from memory after plotting
     if hasattr(self.active_dataset, 'tmp_export_file'):
       self.active_dataset.store_data()
+    self.emit('plot-drawn')
 
   def open_plot_options_window(self, action):
     '''
@@ -616,12 +617,12 @@ class MainPlotting(object):
     param_dialog=gtk.Dialog(title='Last plot parameters:')
     param_dialog.set_default_size(600, 600)
     # alignment table
-    table=gtk.Table(1, 2, False)
+    vbox1=gtk.VBox()
     paned=gtk.VPaned()
 
     # Label
     label=gtk.Label('Gnuplot input for the last plot:')
-    table.attach(label, 0, 1, 0, 1, 0, 0, 0, 0);
+    vbox1.pack_start(label, expand=False)
 
     # plot options
     sw=gtk.ScrolledWindow()
@@ -629,30 +630,60 @@ class MainPlotting(object):
     # POLICY_AUTOMATIC will automatically decide whether you need
     # scrollbars.
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    text_field=gtk.Label(plot_text)
+    text_field1=gtk.Label(plot_text)
     #text_filed.set_markup(plot_text.replace('<', '[').replace('>', ']'))
-    sw.add_with_viewport(text_field) # add textbuffer view widget
-    table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0)
-    paned.add(table)
+    sw.add_with_viewport(text_field1) # add textbuffer view widget
+    vbox1.add(sw)
+    paned.add1(vbox1)
     # errors of the last plot
-    if self.last_plot_text!='':
-      table=gtk.Table(1, 2, False)
-      # Label
-      label=gtk.Label('Error during execution:')
-      table.attach(label, 0, 1, 0, 1, 0, 0, 0, 0);
-      sw=gtk.ScrolledWindow()
-      # Set the adjustments for horizontal and vertical scroll bars.
-      # POLICY_AUTOMATIC will automatically decide whether you need
-      # scrollbars.
-      sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-      text_field=gtk.Label(self.last_plot_text)
-      #text_field.set_markup()
-      sw.add_with_viewport(text_field) # add textbuffer view widget
-      table.attach(sw, 0, 1, 1, 2, gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL, 0, 0)
-      paned.add(table)
-      paned.set_position(400)
+    vbox2=gtk.VBox()
+    # Label
+    label=gtk.Label('Error during execution:')
+    vbox2.pack_start(label, expand=False)
+    sw=gtk.ScrolledWindow()
+    # Set the adjustments for horizontal and vertical scroll bars.
+    # POLICY_AUTOMATIC will automatically decide whether you need
+    # scrollbars.
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    text_field2=gtk.Label(self.last_plot_text)
+    #text_field.set_markup()
+    sw.add_with_viewport(text_field2) # add textbuffer view widget
+    vbox2.add(sw)
+    paned.add2(vbox2)
+    paned.set_position(400)
     param_dialog.vbox.add(paned)
     param_dialog.show_all()
+    if self.last_plot_text=='':
+      paned.set_position(580)
+    def update_text(ignore):
+      # recreate string after replot command
+      if self.active_multiplot:
+        itemlist=[item[0] for item in self.multiplot]
+        if self.active_dataset in itemlist:
+          new_plot_text=measurement_data_plotting.create_plot_script(
+                            self.active_session,
+                            [item[0] for item in self.multiplot],
+                            self.active_session.active_file_name,
+                            '',
+                            self.multiplot[0][0].short_info,
+                            [item[0].short_info for item in self.multiplot],
+                            errorbars,
+                            self.active_session.TEMP_DIR+'plot_temp.png',
+                            fit_lorentz=False)
+      else:
+        new_plot_text=measurement_data_plotting.create_plot_script(
+                           self.active_session,
+                           [self.active_dataset],
+                           self.active_session.active_file_name,
+                           '',
+                           self.active_dataset.short_info,
+                           [ds.short_info for ds in self.active_dataset.plot_together],
+                           errorbars,
+                           output_file=self.active_session.TEMP_DIR+'plot_temp.png',
+                           fit_lorentz=False)
+      text_field1.set_text(new_plot_text)
+      text_field2.set_text(self.last_plot_text)
+    self.connect('plot-drawn', update_text)
     # connect dialog to main window
     self.open_windows.append(param_dialog)
     param_dialog.connect("destroy", lambda*w: self.open_windows.remove(param_dialog))
@@ -750,6 +781,7 @@ class MainPlotting(object):
       Open a Dialog to chang the style of the current plot.
     '''
     dialog=gtk.Dialog(title='Plot style settings...', parent=self)
+    dialog.set_default_size(600, 300)
     nb=gtk.Notebook()
     nb.show()
     dialog.vbox.add(nb)
@@ -768,11 +800,11 @@ class MainPlotting(object):
           tentry.show()
           title.add(entry)
           title.add(tentry)
-          dialog.vbox.add(title)
+          dialog.vbox.pack_start(title, expand=False)
           tentry.connect('activate', self.change_plot_shortinfo, dataset)
           line=StyleLine(dataset.plot_options, self.replot)
           line.show()
-          main_items.add(line)
+          main_items.pack_start(line, expand=False)
           i+=1
     else:
       datasets=self.active_dataset.plot_together
@@ -787,10 +819,10 @@ class MainPlotting(object):
         tentry.connect('activate', self.change_plot_shortinfo, dataset)
         title.add(entry)
         title.add(tentry)
-        main_items.add(title)
+        main_items.pack_start(title, expand=False)
         line=StyleLine(dataset.plot_options, self.replot)
         line.show()
-        main_items.add(line)
+        main_items.pack_start(line, expand=False)
     sw=gtk.ScrolledWindow()
     sw.add_with_viewport(main_items)
     sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
@@ -799,7 +831,22 @@ class MainPlotting(object):
     # Create entries for the advanced options of the PlotOptions class
     advanced_items=gtk.VBox()
     #
+    pre_entry=VListEntry(self.active_dataset.plot_options.free_input,
+                         title='Custom commands before script')
+    pre_entry.show()
+    advanced_items.pack_start(pre_entry, expand=False)
     advanced_items.show_all()
+    pre_entry.connect('activate', lambda *ignore: self.replot())
+    post_entry=VListEntry(self.active_dataset.plot_options.free_input_after,
+                         title='Custom commands after settings')
+    post_entry.show()
+    advanced_items.pack_start(post_entry, expand=False)
+    button=gtk.Button('Show gnuplot script')
+    button.connect('clicked', self.show_last_plot_params)
+    advanced_items.pack_end(button, expand=False)
+    advanced_items.show_all()
+    post_entry.connect('activate', lambda *ignore: self.replot())
+    #
     nb.append_page(advanced_items, gtk.Label('Advanced Gnuplot Settings'))
     dialog.show()
     self.open_windows.append(dialog)

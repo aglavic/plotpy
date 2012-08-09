@@ -14,6 +14,7 @@ from measurement_data_structure import MeasurementData, PlotOptions
 # import gui functions for active config.gui.toolkit
 from plot_script.config import gui as gui_config
 import parallel
+#prepare other processes by importing all importend modules
 parallel.add_actions([
                       'import numpy',
                       'from mpfit import mpfit',
@@ -2293,6 +2294,51 @@ class FitLangevin(FitFunction):
                                         )+p[3]
   fit_function_text='Langevin'
 
+class FitHysteresis(FitFunction):
+  '''
+    Fit two Langevin functions with hysteretic offset and exchange bias shift.
+  '''
+  # define class variables.
+  name="Hysteresis"
+  parameters=[1.e-7, 0.1, 0., 20.]
+  parameter_names=['M_S', 'H_C', 'H_EB', 'w']
+  fit_function_text='M_S=[M_S]  H_C=[H_C|2]  H_{EB}=[H_EB]  w=[w|2]'
+
+  constrains={
+              0: {'bounds': [0., None], 'tied': ''},
+              1: {'bounds': [0., None], 'tied': ''},
+              3: {'bounds': [0., None], 'tied': ''},
+             }
+
+
+  def fit_function(self, p, x):
+    '''
+      Fit two Langevin functions with horizontal offset.
+      Use the x change direction to determine hysteresis branches.
+    '''
+    M_S=p[0]
+    H_C=p[1]
+    H_EB=p[2]
+    w=p[3]
+    left_pos=x[1]>x[0]
+    # find point where direction changes
+    switch_idx=numpy.where(
+                           (((-1)**left_pos*(x[:-2]-x[1:-1]))>=0)&
+                           (((-1)**left_pos*(x[1:-1]-x[2:]))<0)
+                           )[0][0]+1
+    x1=x[:switch_idx]
+    x2=x[switch_idx:]
+    out1=M_S*self.Langevin(x1-H_EB+((-1)**left_pos*H_C), w)
+    out2=M_S*self.Langevin(x2-H_EB-((-1)**left_pos*H_C), w)
+    return numpy.append(out1, out2)
+
+  def Langevin(self, H, w):
+    wH=w*H
+    res=numpy.zeros_like(H)
+    pos=wH!=0
+    res[pos]=1./numpy.tanh(wH[pos])-1./(wH[pos])
+    return res
+
 
 class FitFerromagnetic(FitFunction):
   '''
@@ -2834,6 +2880,7 @@ class FitSession(FitSessionGUI):
                        FitBrillouineB.name: FitBrillouineB,
                        FitBrillouineT.name: FitBrillouineT,
                        FitLangevin.name: FitLangevin,
+                       FitHysteresis.name: FitHysteresis,
                        FitFerromagnetic.name: FitFerromagnetic,
                        FitCuK.name: FitCuK,
                        FitPowerlaw.name: FitPowerlaw,
