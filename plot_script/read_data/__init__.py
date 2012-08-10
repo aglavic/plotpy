@@ -5,9 +5,9 @@
   data files for the diverse import modes of plot.py.
 '''
 
-from numpy import *
 import os
 
+from numpy import array, float32
 from qtiplot import read_data as read_qti
 from plot_script.option_types import *
 

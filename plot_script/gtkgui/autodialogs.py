@@ -169,6 +169,10 @@ class FunctionHandler(object):
       raise ValueError, 'function does not have the right format'
     if function.__doc__ is None:
       function.__doc__=''
+    # remove the former registered function if it was already registered
+    known_funcs=[item[0].__name__ for item in self.registered_functions]
+    if function.__name__ in known_funcs:
+      self.registered_functions.pop(known_funcs.index(function.__name__))
     self.registered_functions.append((function, menu_entry, description, shortcut))
 
   @classmethod
@@ -179,11 +183,12 @@ class FunctionHandler(object):
     argspec=inspect.getargspec(function)
     args=argspec.args
     if args[0]=='dataset':
-      if len(args)!=(1+len(argspec.defaults)):
+      if argspec.defaults is not None and len(args)!=(1+len(argspec.defaults)):
         return False
       return True
     elif args[0]=='datasets':
-      if args[1]!='d_index' or len(args)!=(2+len(argspec.defaults)):
+      if args[1]!='d_index' or (argspec.defaults is not None and
+                                len(args)!=(2+len(argspec.defaults))):
         return False
       return True
     else:
@@ -226,16 +231,22 @@ class FunctionHandler(object):
     action_names=[item[0].__name__.replace('_', '') for item in self.registered_functions]
     action_index=action_names.index(action_name)
     function, menu_entry, description, ignore=self.registered_functions[action_index]
-    dialog=AutoDialog(function, description_text=description, title=menu_entry)
-    result=dialog.run()
+    argspec=inspect.getargspec(function)
+    if argspec.defaults is None:
+      args={}
+      result=True
+    else:
+      dialog=AutoDialog(function, description_text=description, title=menu_entry)
+      result=dialog.run()
+      args=dialog.get_result()
+      dialog.destroy()
     if result:
       datasets=main_window.active_session.active_file_data
       d_index=main_window.index_mess
-      argspec=inspect.getargspec(function)
       if argspec.args[0]=='dataset':
-        result=function(datasets[d_index], **dialog.get_result())
+        result=function(datasets[d_index], **args)
       else:
-        result=function(datasets, d_index, **dialog.get_result())
+        result=function(datasets, d_index, **args)
       if result is None:
         main_window.rebuild_menus()
         main_window.replot()
@@ -244,6 +255,5 @@ class FunctionHandler(object):
         main_window.index_mess=len(datasets)-1
         main_window.rebuild_menus()
         main_window.replot()
-    dialog.destroy()
 
 

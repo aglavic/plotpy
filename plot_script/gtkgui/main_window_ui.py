@@ -309,14 +309,6 @@ class MainUI(object):
         <menuitem action='ConnectIPython'/>
         <separator name='extras3'/>
         <menuitem action='EditUserConfig'/>
-      </menu>
-      <separator name='static13'/>
-      <menu action='HelpMenu'>
-        <menuitem action='ShowConfigPath'/>
-        <menuitem action='APIReference'/>
-        <menuitem action='CheckForUpdate'/>
-      <separator name='help1'/>
-        <menuitem action='About'/>
         '''
     if self.active_session.DEBUG:
       output+='''
@@ -336,6 +328,14 @@ class MainUI(object):
     output+=FunctionHandler.get_menu_string()
     self.session_added_items=self.session_added_items+FunctionHandler.get_menu_actions()
     output+='''
+      </menu>
+      <separator name='static13'/>
+      <menu action='HelpMenu'>
+        <menuitem action='ShowConfigPath'/>
+        <menuitem action='APIReference'/>
+        <menuitem action='CheckForUpdate'/>
+      <separator name='help1'/>
+        <menuitem action='About'/>
       </menu>
     </menubar>
     <toolbar  name='ToolBar1'>
