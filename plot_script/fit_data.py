@@ -1558,6 +1558,10 @@ class FitCuK(FitFunction):
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
 
+  constrains={
+              4: {'bounds': [0., None], 'tied': ''},
+              }
+
   def __init__(self, initial_parameters):
     '''
       Constructor setting the initial values of the parameters.

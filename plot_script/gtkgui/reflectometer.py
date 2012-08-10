@@ -901,7 +901,7 @@ class ReflectometerGUI:
       else:
         dataset.xdata=dataset.dimensions().index('Q_z')
       window.replot()
-      
+
     dialog=dialogs.MultipeakDialog(fit_data.FitCuK,
                                    dataset.fit_object,
                                    window,

@@ -905,7 +905,20 @@ class MultipeakDialog(gtk.Dialog):
     from plot_script.config import user_config
     ds=self.fit_object.data
     print "Creating CWT peak finder"
-    preset=user_config['PeakFinder']['Presets']['1']
+    try:
+      preset=user_config['PeakFinder']['Presets']['1']
+    except KeyError:
+      message=gtk.MessageDialog(parent=self, buttons=gtk.BUTTONS_CLOSE,
+                                message_format='''
+You need to define the CWT peakfinder preset 1 to use this action. Go to 
+  
+"CWT Peak Finder->Find Peaks..." (<CTRL>0),
+  
+find suitable parameters and save them as preset 1.
+                                ''')
+      message.run()
+      message.destroy()
+      return
     peakfinder=PeakFinder(ds.x, ds.y)
     min_width_relative=preset['PeakWidth'][0]
     max_width_relative=preset['PeakWidth'][1]
