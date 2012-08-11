@@ -2306,7 +2306,7 @@ class FitHysteresis(FitFunction):
   name="Hysteresis"
   parameters=[1.e-7, 0.1, 0., 20.]
   parameter_names=['M_S', 'H_C', 'H_EB', 'w']
-  fit_function_text='M_S=[M_S]  H_C=[H_C|2]  H_{EB}=[H_EB]  w=[w|2]'
+  fit_function_text='M_S=[M_S]  H_C=[H_C|2]  H_{EB}=[H_EB]'
 
   constrains={
               0: {'bounds': [0., None], 'tied': ''},

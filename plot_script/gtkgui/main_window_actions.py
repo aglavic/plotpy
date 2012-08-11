@@ -34,6 +34,7 @@ class MainActions(MainFile, MainData, MainPlotting, MainMouse):
   '''
     Combined actions used in the main window.
   '''
+  page2_not_initialized=True
 
   def activate_about(self, action):
     '''
@@ -911,8 +912,14 @@ Gnuplot version %.1f patchlevel %i with terminals:
                                     }
 
   def tab_switched(self, notebook, page, page_num):
-    if page_num==1:
+    if page_num==1 and self.page2_not_initialized:
+      # entries are not shown when first switching to this tab
+      self.multiplot.hide()
+      while gtk.events_pending():
+        gtk.main_iteration(False)
       self.multiplot.update_labels()
+      self.multiplot.show()
+      self.page2_not_initialized=False
 
   #----------------------------Interrupt Events----------------------------------#
 
