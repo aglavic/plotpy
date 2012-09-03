@@ -596,6 +596,10 @@ import types
 #        **********
 
 class mpfit:
+
+        use_mp=False
+        mp_pool=None
+
         def __init__(self, fcn, xall=None, functkw={}, parinfo=None,
                                  ftol=1.e-10, xtol=1.e-10, gtol=1.e-10,
                                  damp=0., maxiter=200, factor=100., nprint=1,
@@ -1547,6 +1551,11 @@ class mpfit:
                         wh=(nonzero(mask))[0]
                         if len(wh)>0: put(h, wh,-take(h, wh))
                 ## Loop through parameters, computing the derivative for each
+                # TODO: Introduce multiprocessing here as it's possible for any problem
+                if self.use_mp:
+                  if self.mp_pool is None:
+                    from multiprocessing import Pool
+                    self.mp_pool=Pool()
                 for j in range(n):
                         xp=xall.copy()
                         xp[ifree[j]]=xp[ifree[j]]+h[j]

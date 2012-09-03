@@ -1100,7 +1100,7 @@ def calculate_integral(dataset):
     for i in range(1, len(x)):
       inty.append(numpy.trapz(ya[:i], xa[:i]))
   else:
-    inty=cumtrapz(ya, xa)
+    inty=numpy.append([0], cumtrapz(ya, xa))
   output.append_column(PhysicalProperty(
                                         'int('+y.dimension+')',
                                         y.unit*x.unit,

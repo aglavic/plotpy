@@ -2623,6 +2623,9 @@ class PhysicalProperty(numpy.ndarray):
     numpy.ndarray.__setstate__(self, state[1:5])
     self.__dict__=state[5]
 
+  def asarray(self):
+    return self.view(numpy.ndarray)
+
   def append(self, item):
     '''
       Append an item to the end of the data, if the array is to small it is enlarged.
