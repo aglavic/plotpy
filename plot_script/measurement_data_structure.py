@@ -29,29 +29,55 @@ class MeasurementData(object):
     Sample name and measurement informations are stored as well as plot options and columns 
     which have to stay constant in one sequence.
     
-    Main Attributes:
-      number_of_points          Number of datapoints stored in the class
-      data                      List of PhysicalProperty instances for every data column
-      [x,y,z]data/.yerror       Indices of the plotted columns in the .data list. 
-                                If z=-1 the plot is 2d
-      log[x,y,z]                Boolean defining the logarithmic scale plotting of the columns
-      crop_zdata                Boolean to set z data to be croped when the zrange is smaller 
-                                than the datarange. For plot to be without empty spots
-      short_info                Second part of the plot title and name of line in multiplot
-      sample_name               First part of the plot title.
-      filters                   List of filters which are applied to the dataset before export 
-                                for plotting.
-      plot_options              PlotOptions object storing the visualization options
+    ======================    =================================================
+    Main Attributes           Description
+    ======================    =================================================
+    number_of_points          Number of datapoints stored in the class
+    ----------------------    -------------------------------------------------
+    data                      List of PhysicalProperty instances for every 
+                              data column
+    ----------------------    -------------------------------------------------
+    [x,y,z]data/.yerror       Indices of the plotted columns in the .data list. 
+                              If z=-1 the plot is 2d
+    ----------------------    -------------------------------------------------
+    log[x,y,z]                Boolean defining the logarithmic scale plotting 
+                              of the columns
+    ----------------------    -------------------------------------------------
+    crop_zdata                Boolean to set z data to be croped when the 
+                              zrange is smaller than the data range. 
+                              For plot to be without empty spots
+    ----------------------    -------------------------------------------------
+    short_info                Second part of the plot title and 
+                              name of line in multiplot
+    ----------------------    -------------------------------------------------
+    sample_name               First part of the plot title.
+    filters                   List of filters which are applied to the 
+                              dataset before export for plotting.
+    ----------------------    -------------------------------------------------
+    plot_options              PlotOptions object storing the visualization 
+                              options
+    ======================    =================================================
     
-    Main Methods:
-      append                    Append a datapoint at the end of the dataset
-      append_column             Add a new datacolumn to the object
-      dimensions                Return the dimensions of all columns
-      export                    Export the data to a file
-      process_function          Call a function for all data of the object, e.g. square the y data
-      sort                      Sort the datapoints for one column
-      unit_trans                Transform units
-      units                     Return the units of all columns
+    ======================    =================================================
+    Main Methods              Description
+    ======================    =================================================
+    append                    Append a datapoint at the end of the dataset
+    ----------------------    -------------------------------------------------
+    append_column             Add a new datacolumn to the object
+    ----------------------    -------------------------------------------------
+    dimensions                Return the dimensions of all columns
+    ----------------------    -------------------------------------------------
+    export                    Export the data to a file
+    ----------------------    -------------------------------------------------
+    process_function          Call a function for all data of the object, 
+                              e.g. square the y data
+    ----------------------    -------------------------------------------------
+    sort                      Sort the datapoints for one column
+    ----------------------    -------------------------------------------------
+    unit_trans                Transform units
+    ----------------------    -------------------------------------------------
+    units                     Return the units of all columns
+    ======================    =================================================
   '''
   index=0
   # every data value is a pysical property
@@ -164,6 +190,37 @@ class MeasurementData(object):
         data_indices=numpy.where((filter_column>=filter_to)|(filter_column<=filter_from))
       data=data[:, data_indices[0]]
     return data
+
+  def get_filter_indices(self):
+    '''
+      Return the boolean array of not filtered data points.
+      
+      :return: numpy array of filters
+    '''
+    data=numpy.vstack(self.data+[item.error for item in self.data if item.has_error])
+    # initialize true array
+    indices=(data[0]==data[0])
+    filters=self.filters
+    lnot=numpy.logical_not
+    for data_filter in filters:
+      filter_column=data[data_filter[0]]
+      filter_from, filter_to=data_filter[1:3]
+      if filter_from>filter_to:
+        filter_from=data_filter[2]
+        filter_to=data_filter[1]
+      if data_filter[3]:
+        if filter_from is None:
+          filter_from=filter_column.min()
+        if filter_to is None:
+          filter_to=filter_column.max()
+        indices&=(filter_column>=filter_from)&(filter_column<=filter_to)
+      else:
+        if filter_from is None:
+          filter_from=filter_column.max()
+        if filter_to is None:
+          filter_to=filter_column.min()
+        indices&=lnot((filter_column>=filter_from)&(filter_column<=filter_to))
+    return indices
 
   def __getstate__(self):
     '''
@@ -621,24 +678,26 @@ class MeasurementData(object):
       Get x-y-(z) list of all data points.
       If x or y columns are negative the index is returned instead
     '''
+    data=self.get_filtered_data_matrix()
     xd=self.xdata
     yd=self.ydata
     zd=self.zdata
     if (xd>=0) and (yd>=0):
       if (zd<0):
-        return [[point[xd], point[yd]] for point in self]
-      return [[point[xd], point[yd], point[zd]] for point in self]
+        return data[numpy.array([xd, yd])].transpose().tolist()
+      return data[numpy.array([xd, yd, zd])].transpose().tolist()
     elif yd>=0:
-      return [[i+1, point[yd]] for i, point in enumerate(self)]
+      return numpy.vstack([numpy.arange(len(data[0])), data[yd]]).transpose().tolist()
     elif xd>=0:
-      return [[point[xd], i+1] for i, point in enumerate(self)]
-    return [[i+1, i+1] for i, point in enumerate(self)]
+      return numpy.vstack([ data[xd], numpy.arange(len(data[0]))]).transpose().tolist()
+    return numpy.vstack([numpy.arange(len(data[0])), numpy.arange(len(data[0]))]).transpose().tolist()
 
   def list_err(self):
     '''
       Get x-y-dy list of all data.
       If x or y columns are negative the index is returned instead
     '''
+    data=self.get_filtered_data_matrix()
     xd=self.xdata
     yd=self.ydata
     ye=self.yerror
@@ -647,13 +706,14 @@ class MeasurementData(object):
       return [point+[0] for point in self.list()]
     if (xd>=0) and (yd>=0):
       if (zd<0):
-        return [[point[xd], point[yd], point[ye]] for point in self]
-      return [[point[xd], point[yd], point[zd], point[ye]] for point in self]
+        return data[numpy.array([xd, yd, ye])].transpose().tolist()
+      return data[numpy.array([xd, yd, zd, ye])].transpose().tolist()
     elif yd>=0:
-      return [[i+1, point[yd], point[ye]] for i, point in enumerate(self)]
+      return numpy.vstack([numpy.arange(len(data[0])),
+                           data[numpy.array([yd, ye])]]).transpose().tolist()
     elif xd>=0:
-      return [[point[xd], i+1, point[ye]] for i, point in enumerate(self)]
-    return [[i+1, i+1, point[ye]] for i, point in enumerate(self)]
+      return numpy.vstack([ data[xd], numpy.arange(len(data[0]))]).transpose().tolist()
+    return numpy.vstack([numpy.arange(len(data[0])), numpy.arange(len(data[0]))]).transpose().tolist()
 
   def listxy(self, x, y):
     '''
@@ -958,7 +1018,15 @@ class MeasurementData(object):
       Quick export only the xyz values as binary file.
     '''
     # Create data as list of x1,y1,z1,x2,y2,z2...,xn,yn,zn
-    xyz=numpy.vstack([self.x, self.y, self.z]).astype(numpy.float32).transpose().flatten()
+    filter_indices=numpy.logical_not(self.get_filter_indices())
+    x=self.x
+    y=self.y
+    z=numpy.array(self.z, copy=True, dtype=numpy.float32)
+    if numpy.any(filter_indices):
+      # although matrix points cannot be left out,
+      # filtered points are changed to NaN
+      z[filter_indices]=numpy.nan
+    xyz=numpy.vstack([x, y, z]).astype(numpy.float32).transpose().flatten()
     xyz.tofile(open(file_name, 'wb'))
 
   def export_npz(self, file_name):
@@ -1538,6 +1606,8 @@ class PlotOptions(object):
   arrows=[]
   rectangles=[]
   ellipses=[]
+  free_input=[]
+  free_input_after=[]
   tics=[None, None, None]
   exp_format=[0, 0, 0] # set the axis label format to 10^{%L} for xyz
   scan_info=[False, None]
@@ -1548,6 +1618,7 @@ class PlotOptions(object):
     '''
     self.settings={}
     self.free_input=[]
+    self.free_input_after=[]
     self._xrange=[None, None]
     self._yrange=[None, None]
     self._zrange=[None, None]
@@ -1568,6 +1639,7 @@ class PlotOptions(object):
     other._yrange=deepcopy(self._yrange)
     other._zrange=deepcopy(self._zrange)
     other.free_input=deepcopy(self.free_input)
+    other.free_input_after=deepcopy(self.free_input_after)
     other.settings=deepcopy(self.settings)
     other._special_plot_parameters=deepcopy(self._special_plot_parameters)
     other.labels=deepcopy(self.labels)
@@ -1681,6 +1753,8 @@ class PlotOptions(object):
         output+='set format %s "%%.1te%%T"\n'%(i)
     if self.exp_format[2]:
       output+='set cblabel offset 1.5\n'
+    for value in self.free_input_after:
+      output+=value+"\n"
     return output
 
   def __add__(self, input_string):
@@ -2475,31 +2549,39 @@ class PhysicalProperty(numpy.ndarray):
     to make unit transformations possible. Can be used with numpy functions.
     Error values are stored and propagated in arithmetric operations.
     
-    Attributes:
+    ===========  ========================================
+    Attributes
+    ===========  ========================================
       dimension  String for the dimension of the instance
       unit       PhysicalUnit object
       error      Error value as array
+    ===========  ========================================
     
     Hints:
       PhysicalProperty can be used with different convenience operators/functions,
       for a PhysicalProperty 'P' these are e.g.:
       
+      ==========================  =============================================
       P % [unit]                  Transform the instance to the unit
-      P % ([name], [mul], [add])  Transform the instance to [name] using the multiplyer [mul]
-                                  and adding [add]
+      P % ([name], [mul], [add])  Transform the instance to [name] using the 
+                                  multiplyer [mul] and adding [add]
       P // [dim]                  Get P with different dimension name [dim]
       P // ([dim], [unit])        Get P with different dimension and unit name
+      ==========================  =============================================
       
       Additionally PhysicalProperty instances can be used like numpy arrays in functions
       and with respect to slicing. Addition and subtraction is unit dependent and angular
       functions only take angles as input.
   '''
   dimension=''
-  # if defined this is the error value of the property
-  # the error will be automatically propagated when functions
-  # get called with instances of this class
   _error=None
-  unit_save=True # if true changes units after arithmetic operation and checks if correct
+  '''
+    if defined this is the error value of the property
+    the error will be automatically propagated when functions
+    get called with instances of this class
+  '''
+
+  unit_save=True #: if true changes units after arithmetic operation and checks if correct
 
   def __new__(cls, dimension_in, unit_in, input_data=[], input_error=None, unit_save=True):
     '''
@@ -2540,6 +2622,9 @@ class PhysicalProperty(numpy.ndarray):
     '''
     numpy.ndarray.__setstate__(self, state[1:5])
     self.__dict__=state[5]
+
+  def asarray(self):
+    return self.view(numpy.ndarray)
 
   def append(self, item):
     '''
@@ -2789,7 +2874,8 @@ class PhysicalProperty(numpy.ndarray):
     try:
       if len(context[1])==1:
         # only a function of one parameter
-        out_arr.error=abs(derivatives[context[0].__str__()](self.view(numpy.ndarray))*self.error)
+        out_arr.error=abs(derivatives[context[0].__str__()](
+                                      self.view(numpy.ndarray))*self.error)
       elif context[0].__name__ in compare_functions:
         other=context[1][1]
         # if both arguments to compare function have an error value
@@ -2816,7 +2902,8 @@ class PhysicalProperty(numpy.ndarray):
                                     )
           # only the first argument has an error value
           else:
-            out_arr.error=abs(derivatives[context[0].__str__()][0](self.view(numpy.ndarray), numpy.array(other))*self.error)
+            out_arr.error=abs(derivatives[context[0].__str__()][0](self.view(numpy.ndarray),
+                                                                   numpy.array(other))*self.error)
         else:
           # the second argument is self, so the first is no PhysicalProperty instance
           out_arr.error=abs(derivatives[context[0].__str__()][1](numpy.array(context[1][0]), self.view(numpy.ndarray))*self.error)
@@ -3197,7 +3284,7 @@ class MultiplotList(list):
                             self[0][0].x.unit, self[0][0].y.unit)
   def __contains__(self, item):
     if hasattr(item, '__iter__') and len(item)==2:
-      return item in self
+      return list.__contains__(self, item)
     else:
       return item in [i[0] for i in self]
 

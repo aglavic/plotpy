@@ -9,6 +9,8 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import os
 import sys
+from time import strftime, gmtime
+from numpy import float64
 from plot_script.measurement_data_structure import MeasurementData
 from plot_script.config import squid as config
 
@@ -193,6 +195,8 @@ def read_data_lines(input_file_lines, info, COLUMNS_MAPPING, MEASUREMENT_TYPES):
       for type_i in applicable_types:
         if not_found and check_type(data_1, data_2, type_i):
           data=MeasurementData([column[2] for column in columns], type_i[0], type_i[1], type_i[2],-1)
+          # change precision of time column
+          data.data[0]=data.data[0].astype(float64)
           data.append(data_1)
           data.append(data_2)
           data.plot_options=type_i[4]
@@ -250,6 +254,9 @@ def read_data_lines(input_file_lines, info, COLUMNS_MAPPING, MEASUREMENT_TYPES):
     sys.stdout.write('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b'+\
                     'Done!                                              \n')
     sys.stdout.flush()
+  t0=data.data[0][0]
+  data.data[0]-=t0
+  data.info+='\n\nStarting time: %s\n'%strftime("%m/%d/%Y %H:%M:%S", gmtime(t0))
   output.append(data)
   return output
 

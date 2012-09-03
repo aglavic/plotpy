@@ -371,6 +371,10 @@ def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items
   corrected_data_array=input_array/countingtime
   corrected_error_array=error_array/countingtime
   if baseitem is None:
+    tth=0.
+    #if 'DetectorInfo' in header_settings and\
+    #   header_settings['DetectorInfo']=='Maxipix 4 Quadrants':
+    #  tth=float(header_settings['DetectorRotation_2'].split('_')[0])*pi/180.
     # if data is scaled in file, rescale it to apply e.g. error calculations correctly
     #if header_info['DataNormalization'] is not None:
     #  input_array/=header_info['DataNormalization']
@@ -380,7 +384,7 @@ def read_edf_file(file_name, baseitem=None, baseuseindices=None, full_data_items
     y_array=linspace(0, header_info['xdim']*header_info['ydim']-1,
                       header_info['xdim']*header_info['ydim'])//header_info['xdim']
     qy_array=4.*pi/header_info['lambda_γ']*\
-             sin(arctan((x_array-center_x)*header_info['pixelsize_x']/detector_distance)/2.)
+             sin((arctan((x_array-center_x)*header_info['pixelsize_x']/detector_distance)+tth)/2.)
     qz_array=-4.*pi/header_info['lambda_γ']*\
              sin(arctan((y_array-center_y)*header_info['pixelsize_y']/detector_distance)/2.)
     if setup['SWAP_YZ']:

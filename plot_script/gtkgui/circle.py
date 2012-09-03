@@ -136,8 +136,9 @@ class CircleGUI:
       Fit a peak at the center of a scan with Voigt-profile.
     '''
     dataset=self.active_file_data[window.index_mess]
-    if dataset.fit_object is None:
-      window.file_actions.activate_action('create_fit_object')
+    # remove earlier fits
+    dataset.fit_object=None
+    window.file_actions.activate_action('create_fit_object')
     if dataset.x.dimension=='h':
       dataset.xdata=dataset.dimensions().index('Q_x')
       window.replot()

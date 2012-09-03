@@ -8,6 +8,7 @@ import gtk
 import gobject
 from main_window_actions import apihelp
 from plot_script.config import gui as gui_config
+from autodialogs import FunctionHandler
 
 
 __author__="Artur Glavic"
@@ -190,6 +191,7 @@ class MainUI(object):
           <menuitem action='Multiplot'/>
           <menuitem action='AddMultiplot'/>
           <menuitem action='AddAllMultiplot'/>
+          <menuitem action='ToggleMultiplotCopymode'/>
           <menuitem action='NewMultiplot'/>
           <menuitem action='ClearMultiplot'/>
         </menu>
@@ -233,6 +235,7 @@ class MainUI(object):
         <menuitem action='ShowPlotTree'/>
         <menuitem action='ShowPlotparams'/>
         <menuitem action='ShowImportInfo'/>
+        <menuitem action='ShowNotebook'/>
       </menu>
       <menu action='TreatmentMenu'>
         '''
@@ -306,14 +309,6 @@ class MainUI(object):
         <menuitem action='ConnectIPython'/>
         <separator name='extras3'/>
         <menuitem action='EditUserConfig'/>
-      </menu>
-      <separator name='static13'/>
-      <menu action='HelpMenu'>
-        <menuitem action='ShowConfigPath'/>
-        <menuitem action='APIReference'/>
-        <menuitem action='CheckForUpdate'/>
-      <separator name='help1'/>
-        <menuitem action='About'/>
         '''
     if self.active_session.DEBUG:
       output+='''
@@ -330,10 +325,20 @@ class MainUI(object):
         <menu action='PluginMenu'>
       '''+plugin_menu
       self.session_added_items=self.session_added_items+(("PluginMenu", None, "Plugins", None, None, None),)
+    output+=FunctionHandler.get_menu_string()
+    self.session_added_items=self.session_added_items+FunctionHandler.get_menu_actions()
     output+='''
       </menu>
+      <separator name='static13'/>
+      <menu action='HelpMenu'>
+        <menuitem action='ShowConfigPath'/>
+        <menuitem action='APIReference'/>
+        <menuitem action='CheckForUpdate'/>
+      <separator name='help1'/>
+        <menuitem action='About'/>
+      </menu>
     </menubar>
-    <toolbar  name='ToolBar'>
+    <toolbar  name='ToolBar1'>
       <toolitem action='First'/>
       <toolitem action='Prev'/>
       <toolitem action='Next'/>
@@ -365,6 +370,8 @@ class MainUI(object):
       <toolitem action='IteratePlotFit'/>'''
     output+='''
     </toolbar>
+    <toolbar name='ToolBar2'>
+    </toolbar>
     </ui>'''
     return output
 
@@ -384,7 +391,8 @@ class MainUI(object):
       ("TreatmentMenu", None, "_Data treatment"), # name, stock id, label
       ("ExtrasMenu", None, "Extras"), # name, stock id, label
       ("HelpMenu", None, "_Help"), # name, stock id, label
-      ("ToolBar", None, "Toolbar"), # name, stock id, label
+      ("ToolBar1", None, "Toolbar1"), # name, stock id, label
+      ("ToolBar2", None, "Toolbar2"), # name, stock id, label
       ("Navigate", None, "Navigate"), # name, stock id, label
       ("OpenDatafile", gtk.STOCK_OPEN, # name, stock id
         "_Open File", "<control>O", # label, accelerator
@@ -501,6 +509,10 @@ class MainUI(object):
         "Show File Import Informations", None, #'i',                     # label, accelerator
         "Show the information from the file import in this session.", # tooltip
         self.show_status_dialog),
+      ("ShowNotebook", None, # name, stock id
+        "Show Extra Drop Notebook Dialog", '<control><shift>T', #'i',                     # label, accelerator
+        "Show a dialog that allows to drop the plot tab etc.", # tooltip
+        self.open_tabdialog),
       ("ShowPlotTree", None, # name, stock id
         "Show Tree of Datasets", "<control>T", #'i',                     # label, accelerator
         "Show Tree of Datasets...", # tooltip
@@ -617,6 +629,10 @@ class MainUI(object):
         "Add all to Multiplot", '<alt><shift>a', # label, accelerator
         "Add all sequences to Multiplot List", # tooltip
         self.add_multiplot),
+      ("ToggleMultiplotCopymode", gtk.STOCK_COPY, # name, stock id
+        "Toggle Copy-Mode", '<control><alt>m', # label, accelerator
+        "New items are copied when inserted", # tooltip
+        self.toggle_multiplot_copymode),
       ("ClearMultiplot", gtk.STOCK_DELETE, # name, stock id
         "Clear Multiplot List", '<control><alt>a', #'c',                     # label, accelerator
         "Remove all multi-plot list entries", # tooltip
@@ -779,12 +795,13 @@ class MainUI(object):
     scale=min(size/width, size/height)
     buf=buf.scale_simple(int(width*scale), int(height*scale), gtk.gdk.INTERP_BILINEAR)
 
-    toolbutton=self.UIManager.get_widget('/ui/ToolBar/'+item)
-    if toolbutton is not None:
-      img=gtk.Image()
-      img.set_from_pixbuf(buf)
-      img.show()
-      toolbutton.set_icon_widget(img)
+    for i in range(2):
+      toolbutton=self.UIManager.get_widget('/ui/ToolBar%i/'%(i+1)+item)
+      if toolbutton is not None:
+        img=gtk.Image()
+        img.set_from_pixbuf(buf)
+        img.show()
+        toolbutton.set_icon_widget(img)
     for menu in ['FileMenu', 'ViewMenu/ToolbarActions',
                  'FileMenu/SnapshotSub', 'ViewMenu/MultiplotMenu',
                  'ViewMenu/PlotAppearance',

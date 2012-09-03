@@ -19,6 +19,7 @@ class MultiplotItem(gtk.HBox):
   '''
     A list which contains all subplots for a multiplot.
   '''
+  copy_mode=False
 
   def __init__(self, items=None):
     gtk.HBox.__init__(self)
@@ -46,7 +47,13 @@ class MultiplotItem(gtk.HBox):
     if not just_labels:
       oldfit=dataset.fit_object
       dataset.fit_object=None
-      self.items.append((deepcopy(dataset), name))
+      if not (dataset, name) in self.items:
+        self.items.append((dataset, name))
+      elif self.copy_mode:
+        self.items.append((deepcopy(dataset), name))
+      else:
+        raise RuntimeWarning, "Item already in list"
+        return
       dataset.fit_object=oldfit
     label=gtk.Label('%s\n%s'%(name, dataset.short_info))
     label.show()

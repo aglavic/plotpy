@@ -9,7 +9,7 @@ Welcome to Plot.py's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 3
    
    plot_script
 

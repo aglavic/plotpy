@@ -29,8 +29,8 @@ TRANSFORMATIONS_CONST=[\
 #  (every measurement file the positions have to start with 0 and have no holes in between
 # [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
 COLUMNS_MAPPING=[\
-['Time', 0, ['time', 's']]\
-, ['Time Stamp (sec)', 0, ['time', 's']]\
+['Time', 0, ['Time', 's']]\
+, ['Time Stamp (sec)', 0, ['Time', 's']]\
 , ['Magnetic Field (Oe)', 1, ['H', 'Oe']]\
 , ['Field (Oe)', 1, ['H', 'Oe']]\
 , ['Temperature (K)', 2, ['T', 'K']]\

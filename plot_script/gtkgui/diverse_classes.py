@@ -127,15 +127,13 @@ class PlotProfile:
     '''
     self.__dict__=config_object[self.name]
 
-
-
 #------------------------------ PlotProfile Class ---------------------------------------#
 
 #++++++++++++++++++++++++++++ Redirection Filelike Objects +++++++++++++++++++++++++++++
 
 class RedirectOutput(object):
   '''
-    Class to redirect all print statements to the statusbar when useing the GUI.
+    Class to redirect all print statements to the statusbar when using the GUI.
   '''
 
   second_output=None
@@ -180,7 +178,7 @@ class RedirectOutput(object):
 
 class RedirectError(RedirectOutput):
   '''
-    Class to redirect all error messages to a message dialog when useing the GUI.
+    Class to redirect all error messages to a message dialog when using the GUI.
     The message dialog has an option to export a bugreport, which includes the active
     measurement to help debugging.
   '''
@@ -294,7 +292,7 @@ comment: ''')
       debug_log.close()
       info.destroy()
       msg=gtk.MessageDialog(buttons=gtk.BUTTONS_CLOSE, message_format="Log file debug.log.gz has been created in\n%s.\n\n"%(os.path.abspath('.'))+\
-        "Please upload it to the bugreport at\n\nhttp://iffwww.iff.kfa-juelich.de/~glavic/plotwiki\n\nwith some additional information,\n"+\
+        "Please upload it to the bugreport at\n\nhttp://plotpy.sourceforge.net/plotwiki\n\nwith some additional information,\n"+\
         "or send an email to %s."%(__email__))
       msg.run()
       msg.destroy()

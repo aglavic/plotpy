@@ -1,17 +1,7 @@
 # -*- encoding: utf-8 -*-
 '''
-  class for treff data sessions
+  Class for TREFF/MARIA data sessions (polarized neutron reflectivity)
 '''
-#################################################################################################
-#                      Script to plot TREFF-measurements with gnuplot                           #
-#                                                                                               #
-#                                   Written by Artur Glavic                                     #
-#                         please report bugs to a.glavic@fz-juelich.de                          #
-#                                                                                               #
-#                                                                                               #
-#################################################################################################
-
-# Pleas do not make any changes here unless you know what you are doing.
 
 # import buildin modules
 import os
@@ -68,6 +58,7 @@ def calc_intensities_general(S, P):
   '''
     A general formalism to calculate measured intensities from simulated scattering and
     the polarization parameters. The matrices used can be found in:
+    
         A.R.Wildes, Review of Scientivic Instruments, Vol. 70, 11 (1999)
     
     :param S: Dictionary of intensities for the Scattering channels '++','--','+-','-+'
@@ -288,7 +279,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('TREFF/MARIA/D17', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]', '*.zip', '*.d17'),
+  FILE_WILDCARDS=[('TREFF/MARIA/D17', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]', '*.zip', '*.d17', '*.dat'),
                   ]
   TRANSFORMATIONS=[\
                   ['mrad', 1/config.GRAD_TO_MRAD, 0, '°'],
@@ -1293,7 +1284,7 @@ class TreffLayerParam(LayerParam):
 
   def get_fit_params(self, params, param_index):
     '''
-      return a parameter list_ according to params
+      return a parameter list according to params
     '''
     list_=[]
     for i in params:
@@ -1367,7 +1358,7 @@ class TreffMultilayerParam(MultilayerParam):
 
   def get_fit_params(self, params, param_index):
     '''
-      return a parameter list_ according to params (list_ of param lists for multilayer)
+      return a parameter list according to params (list of param lists for multilayer)
     '''
     list_=[]
     layers=len(self.layers)
@@ -1378,7 +1369,7 @@ class TreffMultilayerParam(MultilayerParam):
 
   def get_fit_cons(self, param_index):
     '''
-      return a list_ of constainlists according to multilayers
+      return a list of constainlists according to multilayers
     '''
     list_=[]
     layers=len(self.layers)

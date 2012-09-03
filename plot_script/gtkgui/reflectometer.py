@@ -887,11 +887,21 @@ class ReflectometerGUI:
       Fit a peak at the center of a scan with Voigt-profile.
     '''
     dataset=self.active_file_data[window.index_mess]
-    if dataset.fit_object is None:
-      window.file_actions.activate_action('create_fit_object')
+    # overwrite old fits
+    dataset.fit_object=None
+    window.file_actions.activate_action('create_fit_object')
     if dataset.x.dimension=='Θ' or dataset.x.dimension=='2Θ':
-      dataset.xdata=dataset.dimensions().index('Q_z')
+      if not 'Q_z' in dataset.dimensions():
+        if dataset.x.dimension=='Θ':
+          Qz=4.*numpy.pi/1.54*numpy.sin(dataset.x)//('Q_z', 'Å^{-1}')
+        else:
+          Qz=4.*numpy.pi/1.54*numpy.sin(dataset.x/2.)//('Q_z', 'Å^{-1}')
+        dataset.data.append(Qz)
+        dataset.xdata=len(dataset.data)-1
+      else:
+        dataset.xdata=dataset.dimensions().index('Q_z')
       window.replot()
+
     dialog=dialogs.MultipeakDialog(fit_data.FitCuK,
                                    dataset.fit_object,
                                    window,

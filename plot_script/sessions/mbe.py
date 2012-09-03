@@ -1,17 +1,7 @@
 # -*- encoding: utf-8 -*-
 '''
-  class for KWS2 data sessions
+  Class for Oxide MBE data (logfiles, RHEED, LEED) sessions
 '''
-#################################################################################################
-#                        Script to plot KWS2-measurements with gnuplot                          #
-#                                                                                               #
-#                                   Written by Artur Glavic                                     #
-#                         please report bugs to a.glavic@fz-juelich.de                          #
-#                                                                                               #
-#                                                                                               #
-#################################################################################################
-
-# Pleas do not make any changes here unless you know what you are doing.
 
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession

@@ -17,7 +17,8 @@ cd ../repository
 apt-ftparchive generate ftparchive.conf
 apt-ftparchive -c ftparchive_maverick.conf release dists/maverick/> dists/maverick/Release
 apt-ftparchive -c ftparchive_natty.conf release dists/natty/> dists/natty/Release
+rm dists/maverick/Release.gpg dists/natty/Release.gpg
 gpg -sba -o dists/maverick/Release.gpg dists/maverick/Release
 gpg -sba -o dists/natty/Release.gpg dists/natty/Release
 # sync with server
-rsync -ruvz --delete * ifflinux.iff.kfa-juelich.de:public_html/plotrepo
+rsync -ruvz --delete * aglavic@web.sourceforge.net:/home/project-web/plotpy/htdocs/repository

@@ -7,6 +7,7 @@
 
 import numpy
 import gtk
+import gobject
 import cairo
 import sys, os
 from time import sleep
@@ -68,6 +69,14 @@ class StatusDialog(gtk.Dialog):
                             os.path.split(
                            os.path.realpath(__file__))[0],
                            "..", "config", "logogreen.png").replace('library.zip', ''))
+    self.connect('delete-event', self._no_destroy)
+
+  def _no_destroy(self, widget, data=None):
+    '''
+      Make sure the window is not destoryed when it gets closed.
+    '''
+    self.hide()
+    return True
 
   def show(self):
     self.scrollwidget.show()
@@ -105,6 +114,35 @@ class StatusDialog(gtk.Dialog):
 
 #------------------------ StatusDialog to show an updated text -------------------------
 
+#+++++++++++++++++++++++++++ NotebookDialog to drop tabs to ++++++++++++++++++++++++++++
+
+class NotebookDialog(gtk.Dialog):
+
+  def __init__(self, parent, *args, **opts):
+    opts['parent']=parent
+    self.key_parent=parent
+    gtk.Dialog.__init__(self, *args, **opts)
+    self.notebook=gtk.Notebook()
+    self.notebook.show()
+    self.notebook.set_group_id(0)
+    self.vbox.add(self.notebook)
+    self.connect('key-press-event', self.keyPress)
+    self.connect('destroy', self.remove_tabs)
+
+  def keyPress(self, widget, event):
+    self.key_parent.emit('key_press_event', event)
+
+  def remove_tabs(self, event):
+    parent=self.key_parent
+    pages=self.notebook.get_n_pages()
+    for ignore in range(pages):
+      widget=self.notebook.get_nth_page(0)
+      label=self.notebook.get_tab_label(widget)
+      self.notebook.remove_page(0)
+      parent.frame1.append_page(widget, label)
+      parent.frame1.set_tab_detachable(widget, True)
+
+#--------------------------- NotebookDialog to drop tabs to ----------------------------
 
 #++++++++++++++++++++++++++ PreviewDialog to select one plot +++++++++++++++++++++++++++
 
@@ -427,7 +465,8 @@ class SimpleEntryDialog(gtk.Dialog):
     '''
     # Initialize this dialog
     opts['title']=title
-    opts['buttons']=('OK', 1, 'Cancel', 0)
+    if not 'buttons' in opts:
+      opts['buttons']=('OK', 1, 'Cancel', 0)
     if 'description' in opts:
       description=gtk.Label(opts['description'])
       del(opts['description'])
@@ -704,7 +743,7 @@ class MultipeakDialog(gtk.Dialog):
     self._evaluate_options(opts)
     opts['parent']=main_window
     # Initialize this dialog
-    opts['buttons']=('Pop Last', 2, 'Finished', 1, 'Cancel', 0)
+    opts['buttons']=('Autodetect', 3, 'Pop Last', 2, 'Finished', 1, 'Cancel', 0)
     gtk.Dialog.__init__(self, *args, **opts)
     self.set_icon_from_file(os.path.join(
                             os.path.split(
@@ -712,18 +751,18 @@ class MultipeakDialog(gtk.Dialog):
                            "..", "config", "logopurple.png").replace('library.zip', ''))
     self.connect('destroy', self.cleanup)
     self.register_mouse_callback()
-    self.table=gtk.Table(4, 5, False)
-    self.table.show()
+    self.added_items=gtk.VBox()
+    self.added_items.show()
     self.new_peak_table=gtk.Table(3, 2, False)
     self.new_peak_table.show()
-    self.vbox.pack_start(self.table, True)
+    self.vbox.pack_start(self.added_items, True)
     align=gtk.Alignment(0.5, 0, 0, 0)
     align.add(self.new_peak_table)
     align.show()
     self.vbox.pack_end(align, False)
     # List of FitFunction objects already finished
     self.finished_fits=[]
-    self.peak_labels=[]
+    self.peak_items=[]
     self.peak_data=[]
     self._init_entries()
 
@@ -773,24 +812,28 @@ class MultipeakDialog(gtk.Dialog):
     self.new_peak_table.attach(fit_button, 2, 3, 0, 2, gtk.FILL, gtk.FILL, 0, 0)
     self.new_peak_table.show_all()
 
-  def fit_peak(self, widget=None, action=None):
+  def fit_peak(self, widget=None, action=None, peak_xy=None):
     '''
       Fit a new function to the peak position defined in the dialog or by mouse click.
     '''
-    peak_x, peak_y=self.peak_entries
-    try:
-      x=float(peak_x.get_text())
-    except ValueError:
-      peak_x.set_text('')
-      return
-    try:
-      y=float(peak_y.get_text())
-    except ValueError:
-      if peak_y.get_text()=='Auto':
-        y=self._start_parameters[self.y_parameter]
-      else:
-        peak_y.set_text('Auto')
+    if peak_xy is None:
+      peak_x, peak_y=self.peak_entries
+      try:
+        x=float(peak_x.get_text())
+      except ValueError:
+        peak_x.set_text('')
         return
+      try:
+        y=float(peak_y.get_text())
+      except ValueError:
+        if peak_y.get_text()=='Auto':
+          y=self._start_parameters[self.y_parameter]
+        else:
+          peak_y.set_text('Auto')
+          return
+    else:
+      x=peak_xy[0]
+      y=peak_xy[1]
     start_params=list(self._start_parameters)
     start_params[self.x_parameter]=x
     start_params[self.y_parameter]=y
@@ -816,7 +859,7 @@ class MultipeakDialog(gtk.Dialog):
       :param cov: Covariance matrix of the last fit
     '''
     self.finished_fits.append(fit)
-    fits=len(self.finished_fits)
+    #fits=len(self.finished_fits)
     x=fit.parameters[self.x_parameter]
     y=fit.parameters[self.y_parameter]
     if cov is None:
@@ -825,25 +868,82 @@ class MultipeakDialog(gtk.Dialog):
     else:
       dx=sqrt(cov[self.x_parameter][self.x_parameter])
       dy=sqrt(cov[self.y_parameter][self.y_parameter])
-    label=gtk.Label("%i: \t%f±%f"%(fits, x, dx))
+    label=gtk.Label("%g±%g"%(x, dx))
     label.show()
-    self.peak_labels.append(label)
-    self.table.attach(label,
-                      0, 4, fits, fits+1,
-                      gtk.FILL, gtk.FILL, 0, 0
-                      )
+    button=gtk.Button('Del')
+    button.show()
+    button.connect('clicked', self.pop_peak)
+    peak_item=gtk.HBox()
+    peak_item.add(label)
+    peak_item.add(button)
+    peak_item.show()
+    self.added_items.add(peak_item)
+    self.peak_items.append((peak_item, button))
     self.peak_data.append([x, dx, y, dy])
 
-  def remove_peak(self):
+  def remove_peak(self, item=-1):
     '''
       Remove the last fited peak.
     '''
-    self.peak_data.pop(-1)
-    self.finished_fits.pop(-1)
-    self.fit_object.functions.pop(-1)
+    self.peak_data.pop(item)
+    self.finished_fits.pop(item)
+    self.fit_object.functions.pop(item)
     self.fit_object.simulate()
-    self.table.remove(self.peak_labels.pop(-1))
+    self.added_items.remove(self.peak_items.pop(item)[0])
     self._callback_window.replot()
+
+  def pop_peak(self, button):
+    buttons=[item[1] for item in self.peak_items]
+    idx=buttons.index(button)
+    self.remove_peak(idx)
+
+  def autodetect_peaks(self):
+    '''
+      Use CWD peak finder to automatically detect peaks.
+    '''
+    from plot_script.peakfinder import PeakFinder
+    from plot_script.config import user_config
+    ds=self.fit_object.data
+    print "Creating CWT peak finder"
+    try:
+      preset=user_config['PeakFinder']['Presets']['1']
+    except KeyError:
+      message=gtk.MessageDialog(parent=self, buttons=gtk.BUTTONS_CLOSE,
+                                message_format='''
+You need to define the CWT peakfinder preset 1 to use this action. Go to 
+  
+"CWT Peak Finder->Find Peaks..." (<CTRL>0),
+  
+find suitable parameters and save them as preset 1.
+                                ''')
+      message.run()
+      message.destroy()
+      return
+    peakfinder=PeakFinder(ds.x, ds.y)
+    min_width_relative=preset['PeakWidth'][0]
+    max_width_relative=preset['PeakWidth'][1]
+    snr=preset['SNR']
+    ridge_length=preset['RidgeLength']
+    xwidth=float(ds.x.max()-ds.x.min())
+    min_width=min_width_relative*xwidth/len(ds.x)
+    max_width=max_width_relative*xwidth*0.01
+    if 'DoublePeaks' in preset:
+      double_peak_detection=preset['DoublePeaks']
+      double_peak_reduced_ridge_length=preset['DoublePeakRidgeLength']
+    else:
+      double_peak_detection=False
+      double_peak_reduced_ridge_length=3.
+    print "Filter peaks with preset options"
+    peaks=peakfinder.get_peaks(snr=snr,
+                min_width=min_width,
+                max_width=max_width,
+                ridge_length=ridge_length,
+                analyze=False,
+                double_peak_detection=double_peak_detection,
+                double_peak_reduced_ridge_length=double_peak_reduced_ridge_length)
+    print "Fit peak parameters"
+    for peak in peaks:
+      self.fit_peak(peak_xy=(peak[0], peak[2]))
 
   def run(self):
     '''
@@ -852,9 +952,13 @@ class MultipeakDialog(gtk.Dialog):
     '''
     if self._callback_window is None:
       result=gtk.Dialog.run(self)
-      while result==2:
-        self.remove_peak()
-        result=gtk.Dialog.run(self)
+      while result not in [0, 1]:
+        if result==2:
+          self.remove_peak()
+          result=gtk.Dialog.run(self)
+        else:
+          self.autodetect_peaks()
+          result=gtk.Dialog.run(self)
     else:
       # if a mouse callback is registered it doesn't
       # work with Dialog.run
@@ -863,10 +967,13 @@ class MultipeakDialog(gtk.Dialog):
         self._result=response_id
       self.connect('response', set_result)
       self.show_all()
-      while self._result is None or self._result==2:
+      while self._result is None or self._result in [3, 2]:
         if self._result==2:
           self._result=None
           self.remove_peak()
+        if self._result==3:
+          self._result=None
+          self.autodetect_peaks()
         while gtk.events_pending():
           gtk.main_iteration(False)
         sleep(0.1)
@@ -2317,7 +2424,7 @@ class StyleLine(gtk.Table):
                'color': '<auto>',
                'pointtype': PlotStyle.pointtype,
                }
-    self.toggle_custom=gtk.CheckButton(label='Custom Style  ', use_underline=True)
+    self.toggle_custom=gtk.CheckButton(label='Custom ', use_underline=True)
     self.toggle_custom.show()
     self.attach(self.toggle_custom, 0, 1, 0, 1, xoptions=0, yoptions=0, xpadding=0, ypadding=0)
     if type(self.plot_options._special_plot_parameters) is PlotStyle:
@@ -2506,6 +2613,88 @@ class StyleLine(gtk.Table):
     self.callback()
 
 #----------------- Dialog to change the color and style of a plot -----------------------
+
+#+++++++++++++++++++++++++ Entry for a list of strings +++++++++++++++++++++++++++++++++
+
+class VListEntry(gtk.VBox):
+  list_entries=None
+  list_link=None
+
+  def __init__(self, in_list, title='String List', entry_type=str):
+    gtk.VBox.__init__(self)
+    self.list_link=in_list
+    self.list_entries=[]
+    button_p=gtk.Button('+')
+    button_p.connect('clicked', self.add_item)
+    line=gtk.HBox()
+    line.add(gtk.Label(title))
+    line.add(button_p)
+    line.show_all()
+    self.add(line)
+    self.entry_type=entry_type
+    for item in self.list_link:
+      self._add_item(item)
+
+  def _add_item(self, item):
+    if self.entry_type is str:
+      entry=gtk.Entry()
+      entry.set_text(item)
+    elif self.entry_type is int:
+      entry=gtk.SpinButton(adjustment=gtk.Adjustment(value=item,
+                                                     lower=-1e30,
+                                                     upper=1e30,
+                                                     step_incr=1, page_incr=10),
+                           climb_rate=1, digits=0)
+    elif self.entry_type is float:
+      entry=gtk.SpinButton(adjustment=gtk.Adjustment(value=item,
+                                                     lower=-1e30,
+                                                     upper=1e30,
+                                                     step_incr=1., page_incr=10.),
+                           climb_rate=1, digits=6)
+    entry.connect('changed', self.entry_changed)
+    entry.connect('activate', self.entry_activated)
+    button_m=gtk.Button('-')
+    button_m.connect('clicked', self.remove_item)
+    line=gtk.HBox()
+    line.add(entry)
+    line.add(button_m)
+    line.show_all()
+    self.add(line)
+    self.list_entries.append([line, entry, button_m])
+
+  def add_item(self, button):
+    self.list_link.append(self.entry_type())
+    self._add_item(self.entry_type())
+    self.emit('activate', self, None)
+
+  def remove_item(self, button):
+    buttons=[item[2] for item in self.list_entries]
+    idx=buttons.index(button)
+    self.list_link.pop(idx)
+    line, ignore, ignore=self.list_entries.pop(idx)
+    self.remove(line)
+    self.emit('activate', self, None)
+
+  def entry_changed(self, entry):
+    entries=[item[1] for item in self.list_entries]
+    idx=entries.index(entry)
+    if self.entry_type is str:
+      self.list_link[idx]=entry.get_text()
+    elif self.entry_type is int:
+      self.list_link[idx]=entry.get_value_as_int()
+    elif self.entry_type is float:
+      self.list_link[idx]=entry.get_value()
+
+  def entry_activated(self, entry):
+    self.emit('activate', self, entry)
+
+gobject.type_register(VListEntry)
+gobject.signal_new("activate", VListEntry, gobject.SIGNAL_RUN_FIRST,
+                   gobject.TYPE_NONE, (object, object,))
+
+#------------------------- Entry for a list of strings ---------------------------------
+
+#+++++++++++++ Dialog to define labels, arrows and lines on the plot ++++++++++++++++++++
 
 #+++++++++++++ Dialog to define labels, arrows and lines on the plot ++++++++++++++++++++
 

@@ -1,15 +1,7 @@
 # -*- encoding: utf-8 -*-
 '''
-  class for SHG data sessions
+  Class for SHG data sessions.
 '''
-#################################################################################################
-#                        Script to plot IN12-measurements with gnuplot                          #
-#                                                                                               #
-#                                   Written by Artur Glavic                                     #
-#                         please report bugs to a.glavic@fz-juelich.de                          #
-#                                                                                               #
-#                                                                                               #
-#################################################################################################
 
 import numpy
 # import GenericSession, which is the parent class for the squid_session

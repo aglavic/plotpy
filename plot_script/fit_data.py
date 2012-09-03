@@ -14,6 +14,7 @@ from measurement_data_structure import MeasurementData, PlotOptions
 # import gui functions for active config.gui.toolkit
 from plot_script.config import gui as gui_config
 import parallel
+#prepare other processes by importing all importend modules
 parallel.add_actions([
                       'import numpy',
                       'from mpfit import mpfit',
@@ -1189,7 +1190,7 @@ class ThetaCorrection(FitFunction):
   name="Peak Positions"
   parameters=[3., 0.]
   parameter_names=['a*', 'Θ_0']
-  parameter_description={'a*': 'Reciprocal Lattice Vector'}
+  parameter_description={'a*': 'Reciprocal Lattice Vector (2π/d)'}
   fit_function_text='a^*=[a*|6] [y-unit]    Θ_0=[Θ_0] °'
   lambda_factor=1.540/(4.*numpy.pi) # Cu-k_alpha prefactor
 
@@ -1556,6 +1557,10 @@ class FitCuK(FitFunction):
   fit_function_text='K_α: I=[I] [y-unit]   x_0=[x0] [x-unit]   σ=[σ|2] [x-unit]'
   sqrt2=numpy.sqrt(2)
   sqrt2pi=numpy.sqrt(2*numpy.pi)
+
+  constrains={
+              4: {'bounds': [0., None], 'tied': ''},
+              }
 
   def __init__(self, initial_parameters):
     '''
@@ -2280,6 +2285,65 @@ class FitSQUIDSignal(FitFunction):
     self.parameters=[1., 3., 1., 0., 0.]
     FitFunction.__init__(self, initial_parameters)
 
+class FitLangevin(FitFunction):
+  '''
+    Fit Langevin function.
+  '''
+  # define class variables.
+  name="Langevin"
+  parameters=[1., 1., 0., 0.]
+  parameter_names=['M_S', 'w', 'x_0', 'BG']
+  fit_function=lambda self, p, x: p[0]*(
+                      1./numpy.tanh(p[1]*(x-p[2]))-1./(p[1]*(x-p[2]))
+                                        )+p[3]
+  fit_function_text='Langevin'
+
+class FitHysteresis(FitFunction):
+  '''
+    Fit two Langevin functions with hysteretic offset and exchange bias shift.
+  '''
+  # define class variables.
+  name="Hysteresis"
+  parameters=[1.e-7, 0.1, 0., 20.]
+  parameter_names=['M_S', 'H_C', 'H_EB', 'w']
+  fit_function_text='M_S=[M_S]  H_C=[H_C|2]  H_{EB}=[H_EB]'
+
+  constrains={
+              0: {'bounds': [0., None], 'tied': ''},
+              1: {'bounds': [0., None], 'tied': ''},
+              3: {'bounds': [0., None], 'tied': ''},
+             }
+
+
+  def fit_function(self, p, x):
+    '''
+      Fit two Langevin functions with horizontal offset.
+      Use the x change direction to determine hysteresis branches.
+    '''
+    M_S=p[0]
+    H_C=p[1]
+    H_EB=p[2]
+    w=p[3]
+    left_pos=x[1]>x[0]
+    # find point where direction changes
+    switch_idx=numpy.where(
+                           (((-1)**left_pos*(x[:-2]-x[1:-1]))>=0)&
+                           (((-1)**left_pos*(x[1:-1]-x[2:]))<0)
+                           )[0][0]+1
+    x1=x[:switch_idx]
+    x2=x[switch_idx:]
+    out1=M_S*self.Langevin(x1-H_EB+((-1)**left_pos*H_C), w)
+    out2=M_S*self.Langevin(x2-H_EB-((-1)**left_pos*H_C), w)
+    return numpy.append(out1, out2)
+
+  def Langevin(self, H, w):
+    wH=w*H
+    res=numpy.zeros_like(H)
+    pos=wH!=0
+    res[pos]=1./numpy.tanh(wH[pos])-1./(wH[pos])
+    return res
+
+
 class FitFerromagnetic(FitFunction):
   '''
     Fit a Brillouine's function for the magnetic behaviour of a ferromagnet
@@ -2819,6 +2883,8 @@ class FitSession(FitSessionGUI):
                        FitSQUIDSignal.name: FitSQUIDSignal,
                        FitBrillouineB.name: FitBrillouineB,
                        FitBrillouineT.name: FitBrillouineT,
+                       FitLangevin.name: FitLangevin,
+                       FitHysteresis.name: FitHysteresis,
                        FitFerromagnetic.name: FitFerromagnetic,
                        FitCuK.name: FitCuK,
                        FitPowerlaw.name: FitPowerlaw,
@@ -2949,16 +3015,13 @@ class FitSession(FitSessionGUI):
       
       :return: The covariance matrices of the fits or [[None]]
     '''
+    data=self.data.get_filtered_data_matrix()
+    data_x=data[self.data.xdata]
+    data_y=data[self.data.ydata]
     if (self.data.yerror>=0) and (self.data.yerror!=self.data.ydata)\
         and (self.data.yerror!=self.data.xdata):
-      data=self.data.list_err()
-      data_x=[d[0] for d in data]
-      data_y=[d[1] for d in data]
-      data_yerror=[d[2] for d in data]
+      data_yerror=data[self.data.yerror]
     else:
-      data=self.data.list()
-      data_x=[d[0] for d in data]
-      data_y=[d[1] for d in data]
       data_yerror=None
     covariance_matices=[]
     for i, function in enumerate(self.functions):
@@ -2983,18 +3046,15 @@ class FitSession(FitSessionGUI):
       
       :return: The covariance matrices of the fits or [[None]]
     '''
+    data=self.data.get_filtered_data_matrix()
+    data_x=data[self.data.xdata]
+    data_y=data[self.data.ydata]
+    data_z=data[self.data.zdata]
+
     if (self.data.yerror>=0) and (self.data.yerror!=self.data.zdata)\
         and (self.data.yerror!=self.data.xdata) and (self.data.yerror!=self.data.ydata):
-      data=self.data.list_err()
-      data_x=[d[0] for d in data]
-      data_y=[d[1] for d in data]
-      data_z=[d[2] for d in data]
-      data_zerror=[d[3] for d in data]
+      data_zerror=data[self.data.yerror]
     else:
-      data=self.data.list()
-      data_x=[d[0] for d in data]
-      data_y=[d[1] for d in data]
-      data_z=[d[2] for d in data]
       data_zerror=None
     covariance_matices=[]
     for i, function in enumerate(self.functions):
@@ -3155,8 +3215,9 @@ class FitSession(FitSessionGUI):
         data_x=[d[0] for d in data_xy]
         # only interpolate if the number of points isn't too large
         use_interpolate=min(5, 5000/len(data_x))
-        fit_x, fit_y=function[0].simulate(data_x, inside_fitrange=getattr(self, 'restrict_to_region', False),
-                                          interpolate=use_interpolate)
+        fit_x, fit_y=function[0].simulate(data_x,
+                    inside_fitrange=getattr(self, 'restrict_to_region', False),
+                    interpolate=use_interpolate)
         for i in range(len(fit_x)):
           result.append((fit_x[i], fit_y[i]))
         function_text=function[0].fit_function_text_eval

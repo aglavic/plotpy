@@ -1,22 +1,7 @@
 # -*- encoding: utf-8 -*-
 '''
-  class for squid data sessions
+  Class for SQUID/PPMS data sessions.
 '''
-#################################################################################################
-#                     Script to plot SQUID-measurements with gnuplot                            #
-#                                                                                               #
-#                                   Written by Artur Glavic                                     #
-#                         please report bugs to a.glavic@fz-juelich.de                          #
-#                                                                                               #
-#                                                                                               #
-# Features at the moment:                                                                       #
-# -import mpms and ppms .dat, splitted by sequences                                             #
-# -convert units to SI (or any selected)                                                        #
-# -remove diamagnetic and paramagnetic contribution                                             #
-#  (as constant and calculated from elements and mass)                                          #
-# -process raw data files (sequence splitting see config.squid.py)                              #
-#                                                                                               #
-#################################################################################################
 
 try:
   import scipy.interpolate

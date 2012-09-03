@@ -1,21 +1,13 @@
 # -*- encoding: utf-8 -*-
 '''
-  class for small angle scattering data sessions
+  Class for small angle scattering data sessions.
 '''
-#################################################################################################
-#                        Script to plot SAS-measurements with gnuplot                          #
-#                                                                                               #
-#                                   Written by Artur Glavic                                     #
-#                         please report bugs to a.glavic@fz-juelich.de                          #
-#                                                                                               #
-#                                                                                               #
-#################################################################################################
 
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # importing data readout
 from plot_script.read_data import sas as read_data
-# import gui functions for active config.gui.toolkit
+# import GUI functions for active config.gui.toolkit
 from plot_script.config import gui as gui_config
 try:
   GUI=__import__(gui_config.toolkit+'gui.sas', fromlist=['SASGUI']).SASGUI

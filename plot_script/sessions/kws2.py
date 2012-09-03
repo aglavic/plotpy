@@ -1,17 +1,7 @@
 # -*- encoding: utf-8 -*-
 '''
-  class for KWS2 data sessions
+  Class for KWS2/GISANS/GISAXS data sessions
 '''
-#################################################################################################
-#                        Script to plot KWS2-measurements with gnuplot                          #
-#                                                                                               #
-#                                   Written by Artur Glavic                                     #
-#                         please report bugs to a.glavic@fz-juelich.de                          #
-#                                                                                               #
-#                                                                                               #
-#################################################################################################
-
-# Pleas do not make any changes here unless you know what you are doing.
 
 import os
 from glob import glob

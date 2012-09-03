@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 '''
-  Implementation of a template framework to make it possible for the user to import any ascii column data.
+  Implementation of a template framework to make it possible for the user to i
+  mport any ascii column data.
 '''
 
 __author__="Artur Glavic"

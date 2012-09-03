@@ -2,22 +2,6 @@
 '''
   class for 4 circle data sessions
 '''
-#################################################################################################
-#                     Script to plot 4Circle-measurements with gnuplot                          #
-#                                                                                               #
-#                                   Written by Artur Glavic                                     #
-#                         please report bugs to a.glavic@fz-juelich.de                          #
-#                                                                                               #
-# Features at the moment:                                                                       #
-# -import spec .spec files, splitted by sequences                                               #
-# -plot every sequence as extra picture or in one graph                                         # 
-#    (h,k,l,phi,th,chi scan/mesh found by const. columns)                                       #
-# -convert to counts/s                                                                          #
-# -plot meshes in 3d                                                                            #
-#                                                                                               #
-#################################################################################################
-
-# Pleas do not make any changes here unless you know what you are doing.
 
 import os
 import numpy

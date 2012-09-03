@@ -1,22 +1,28 @@
 #-*- coding: utf8 -*-
 '''
-  Peak finder algorithm based on the continuous wavelet transform (CWT) method
-  discribed in:
-    Du P, Kibbe WA, Lin SM.
-    Improved peak detection in mass spectrum by incorporating continuous 
-    wavelet transform-based pattern matching
-    Bioinformatics 22(17) (2006)
-  Implemented by Artur Glavic (artur.glavic@fz-juelich.de) 2012
+    Peak finder algorithm based on the continuous wavelet transform (CWT) method
+    discribed in:
+
+        Du P, Kibbe WA, Lin SM.
+        Improved peak detection in mass spectrum by incorporating continuous 
+        wavelet transform-based pattern matching
+        Bioinformatics 22(17) (2006)
+    
+    Implemented by Artur Glavic (artur.glavic@fz-juelich.de) 2012
 '''
 
 import numpy
-from scipy.stats.mstats import mquantiles
+try:
+  from scipy.stats.mstats import mquantiles
+except ImportError:
+  pass
 
 class PeakFinder(object):
   '''
     Peak finder which can be reevaluated with different thresholds 
     without recalculation all steps.
     The steps performed are:
+    
       - CWT of the dataset (which also removes the baseline)
       - Finding ridged lines by walking through different CWT scales
       - Calculate signal to noise ratio (SNR)
@@ -151,17 +157,17 @@ class PeakFinder(object):
   def get_peaks(self, snr=2.5,
                 min_width=None, max_width=None,
                 ridge_length=15, analyze=False,
-                double_peak_detection=False):
+                double_peak_detection=False,
+                double_peak_reduced_ridge_length=3):
     '''
       Return a list of peaks fulfilling the defined conditions.
       
-      :param snr:: Minimal signal to noise ratio
-      :param min_width:: Minimal peak width
-      :param max_width:: Maximal peak width
-      :param ridge_length:: Minimal ridge line length
-      :param analyze:: Store information to analyze the filtering
-      :param double_peak_detection:: Perform a second run, where the
-                                    ridge_length is reduced near found peaks
+      :param snr: Minimal signal to noise ratio
+      :param min_width: Minimal peak width
+      :param max_width: Maximal peak width
+      :param ridge_length: Minimal ridge line length
+      :param analyze: Store information to analyze the filtering
+      :param double_peak_detection: Perform a second run, where the ridge_length is reduced near found peaks
     '''
     xdata=self.xdata
     if min_width is None:
@@ -174,11 +180,16 @@ class PeakFinder(object):
       self.length_filtered=filter(lambda item: item[0]<ridge_length,
                      ridge_info)
       self.snr_filtered=filter(lambda item: item[4]<snr, ridge_info)
+    # filter for signal to noise ratio
+    ridge_info=filter(lambda item: item[4]>=snr, ridge_info)
+    if double_peak_detection:
+      # store peaks filtered by ridge length
+      ridge_filtered=filter(lambda item: (item[0]<ridge_length)&
+                            (item[0]>=double_peak_reduced_ridge_length), 
+                            ridge_info)
     # filter for minimum ridge line length
     ridge_info=filter(lambda item: item[0]>=ridge_length,
                      ridge_info)
-    # filter for signal to noise ratio
-    ridge_info=filter(lambda item: item[4]>=snr, ridge_info)
     # calculate peak info from ridge info
     # peak info items are [center_position, width, intensity]
     peak_info=[]
@@ -211,24 +222,66 @@ class PeakFinder(object):
     # filter for peak width
     peak_info=filter(lambda item: (item[1]>=min_width)&(item[1]<=max_width),
                      peak_info)
+    if double_peak_detection:
+      # detect double-peaks by reducing the ridge-length filtering in adjacency of
+      # strong peaks
+      
+      # collect peak information of all ridge filtered peaks
+      double_peak_info=[]
+      for item in ridge_filtered:
+        info=[]
+        # x corresponding to index
+        info.append(xdata[item[1]])
+        # width corresponding to index width
+        i_low=int(item[1]-item[2]/2)
+        i_high=int(item[1]+item[2]/2)
+        if i_low<0:
+          i_low=0
+        elif i_low==item[1]:
+          i_low-=1
+        if i_high>=len(xdata):
+          i_high=len(xdata)-1
+        elif i_high==item[1]:
+          i_high+=1
+        w_low=xdata[i_low]
+        w_high=xdata[i_high]
+        w=w_high-w_low
+        info.append(float(abs(w))/1.6) # estimated peak width
+        # intensity
+        info.append(item[3]*1.41/numpy.sqrt(item[2]))
+        # ridge length
+        info.append(item[0])
+        # SNR
+        info.append(item[4])
+        if (w>=min_width)&(w<=max_width):
+          double_peak_info.append(info)
+      adjecent_peaks=[]
+      for peaki in peak_info:
+        # all peaks in SNR/2-sigmas range are used
+        # this way peaks close to stronger peaks are found
+        adjecent_peaks+=[item for item in double_peak_info if 
+                        (item[0]>=(peaki[0]-peaki[3]/2.*peaki[1]))&(item[0]<=(peaki[0]+peaki[3]/2.*peaki[1]))
+                       #&((item[0]<=(peaki[0]-0.2*peaki[1]))|(item[0]>=(peaki[0]+0.2*peaki[1])))
+                        ]
+      peak_info+=adjecent_peaks
     if analyze:
       width_filtered=zip(ridge_info, peak_info)
       self.width_filtered=filter(lambda item: \
               (item[1][1]>min_width)|(item[1][1]>max_width), width_filtered)
     peak_info.sort()
-    if double_peak_detection:
-      raise NotImplemented, "Double peak detection not available"
     return peak_info
 
   def visualize(self, snr=2.5,
                 min_width=None, max_width=None,
-                ridge_length=15, double_peak_detection=False):
+                ridge_length=15, double_peak_detection=False,
+                double_peak_reduced_ridge_length=3):
     '''
       Use matplotlib to visualize the peak finding routine.
     '''
     from pylab import figure, plot, errorbar, pcolormesh, show, legend
     figure(101)
-    peaks=self.get_peaks(snr, min_width, max_width, ridge_length, True, double_peak_detection)
+    peaks=self.get_peaks(snr, min_width, max_width, ridge_length, True, 
+                         double_peak_detection, double_peak_reduced_ridge_length)
     plot(self.xdata, self.ydata, 'r-', label='Data')
     errorbar([p[0] for p in peaks], [p[2] for p in peaks],
            xerr=[p[1] for p in peaks], fmt='go',

@@ -1,23 +1,9 @@
 # -*- encoding: utf-8 -*-
 '''
-  Gneric session class, parent class for all sessions. This includes commandline argument
-  processing, help text, generic file readout, os specific temp file handling and storing
-  of global variables.
+  Generic session class, parent class for all sessions. This includes command
+  line argument processing, help text, generic file readout, 
+  OS specific temp file handling and storing of global variables.
 '''
-#################################################################################################
-#                    Script to plot different measurements with gnuplot                         #
-#                    this is the class used as parent for every session                         #
-#                                                                                               #
-#                                   Written by Artur Glavic                                     #
-#                         please report bugs to a.glavic@fz-juelich.de                          #
-#                                                                                               #
-# Features at the moment:                                                                       #
-# -process command line parameters                                                              #
-# -process more than one file (wild cards possible)                                             #
-# -select sequences to be plotted                                                               #
-# -send all files to printer after processing (linux commandline printing)                      #
-#                                                                                               #
-#################################################################################################
 
 # importing python modules
 import os
@@ -67,8 +53,7 @@ class GenericSession(GUI):
 \tRun plot.py --help for more information.
 """
   SPECIFIC_HELP='' # help text for child classes
-  LONG_HELP=\
-"""
+  LONG_HELP="""
 Script to plot data of measurements using gnuplot by Artur Glavic.
 \t\tVersion: %s \t Contact: %s
 
@@ -114,20 +99,21 @@ Options:
 \t\t\at the end of the input line
 
 """%(__version__, __email__)
+
   # TODO: implement these settings
-  '''   
-
-  \t-l\t\tList sequences in file.
-  \t-ls\t\tList selected Sequences.
-
-  \t-o\t\tOutput the data to .out files for later use in other programms.
-  \t-ni\t\tDon't put informational header in output files. (can be helpful for usage with other programs)
-  \t-c\t\tJust convert files, do not plot anything
-  \t-sep [sep]\tUse different seperator for output files (if -gs is given it is ignored)
-  \t-p\t\tSend plots to printer specified in gnuplot_perferences.py
-  
-  \t-gui [tk]\tSet the gui toolkit to tk (gtk/wx)
-  '''
+#  '''   
+#
+#  \t-l\t\tList sequences in file.
+#  \t-ls\t\tList selected Sequences.
+#
+#  \t-o\t\tOutput the data to .out files for later use in other programms.
+#  \t-ni\t\tDon't put informational header in output files. (can be helpful for usage with other programs)
+#  \t-c\t\tJust convert files, do not plot anything
+#  \t-sep [sep]\tUse different seperator for output files (if -gs is given it is ignored)
+#  \t-p\t\tSend plots to printer specified in gnuplot_perferences.py
+#  
+#  \t-gui [tk]\tSet the gui toolkit to tk (gtk/wx)
+#  '''
 
   LONG_HELP_END=\
 """
@@ -462,26 +448,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
       Import plugins from the users plugin directory.
     '''
-    plugins=self.plugins
-    if len(plugins)>0:
-      # already imported plugins
-      return
-    # User plugin folder
-    user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')
-    if os.path.exists(user_folder) and os.path.exists(os.path.join(user_folder, 'plugins')):
-      if not os.path.join(user_folder, 'plugins') in sys.path:
-        sys.path.append(os.path.join(user_folder, 'plugins'))
-      plugin_sources=os.listdir(os.path.join(user_folder, 'plugins'))
-      plugin_sources=filter(lambda file_: file_.endswith('.py'), plugin_sources)
-      for plugin_source in plugin_sources:
-        try:
-          plugin=__import__(plugin_source[:-3])
-          plugins.append(plugin)
-        except ImportError, error:
-          print "Error importing plugin %s, skipped. Error message: %s"%(plugin_source, error)
-    # Global plugin folder
-    from plot_script.plugins import global_plugins
-    plugins+=global_plugins
+    from plot_script.plugins import all_plugins
+    self.plugins=all_plugins
 
   def replace_systemdependent(self, string):
     '''
@@ -717,11 +685,11 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
 
   def change_active(self, object_=None, name=None):
     '''
-      Change the active data file by object_ or name.
+      Change the active data file by object or name.
     '''
     name_list=[item[0] for item in self.file_data.items()]
     name_list.sort()
-    if object_!=None:
+    if object_ is not None:
       self.active_file_name=object_[0]
       self.active_file_data=object_[1]
       self.index=name_list.index(object_[0])

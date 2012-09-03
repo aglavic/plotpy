@@ -4,10 +4,6 @@
      <comment>MBE Log File</comment>
      <glob pattern="*.log"/>
    </mime-type>
-   <mime-type type="text/aes">
-     <comment>MBE AES File</comment>
-     <glob pattern="*.dat"/>
-   </mime-type>
    <mime-type type="image/png">
      <comment>PNG image</comment>
      <glob pattern="*.png"/>
