@@ -7,8 +7,8 @@ import unittest
 import os
 import sys
 import gtk
-from plot_script.sessions.circle import CircleSession
-from plot_script.gtkgui.main_window import ApplicationMainWindow
+from plotpy.sessions.circle import CircleSession
+from plotpy.gtkgui.main_window import ApplicationMainWindow
 
 class TestMainWindow(unittest.TestCase):
   '''

@@ -3,7 +3,7 @@
   Testing the datatype framewok.
 '''
 
-from plot_script.measurement_data_structure import PhysicalProperty
+from plotpy.mds import PhysicalProperty
 from numpy import array, ndarray, arange, float32, sqrt, zeros_like, ones_like, pi, sin
 import unittest
 

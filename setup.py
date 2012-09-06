@@ -20,7 +20,7 @@ import subprocess
 
 __name__='plot-script' #@ReservedAssignment
 __author__="Artur Glavic"
-from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __author_email__=__email__
 __url__="http://plotpy.sourceforge.net/plotwiki"
 __description__='''Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.'''
@@ -28,17 +28,17 @@ __description__='''Program to plot measured data with Gnuplot. Provides a GUI in
 __scripts__=['plot.py']
 __py_modules__=[]
 __package_dir__={}
-__packages__=['plot_script', 'plot_script.config', 'plot_script.config.default_templates',
-            'plot_script.read_data', 'plot_script.sessions',
-            'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui', 'plot_script.plugins'] #'plot_script.wxgui', 
-__package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90',
+__packages__=['plotpy', 'plotpy.config', 'plotpy.config.default_templates',
+            'plotpy.read_data', 'plotpy.sessions',
+            'plotpy.sessions.reflectometer_fit', 'plotpy.gtkgui', 'plotpy.plugins'] #'plotpy.wxgui', 
+__package_data__={'plotpy.config': ['plotpy.squid_calibration', '*.dat', 'fit/fit.f90',
                             'fit/pnr_multi/*.f90', 'logo*.png'],
-                  'plot_script': ['doc/*.*', 'doc/_modules/*.*',
+                  'plotpy': ['doc/*.*', 'doc/_modules/*.*',
                                   'doc/_static/*.*', 'doc/_sources/*.*',
                                   'gpl.pdf', 'gpl.txt'],
-                  'plot_script.gtkgui': ['icons/*.png'],
+                  'plotpy.gtkgui': ['icons/*.png'],
                     }
-__data_files__=[('plot_script/doc', glob('plot_script/doc/*.*'))]
+__data_files__=[('plotpy/doc', glob('plotpy/doc/*.*'))]
 
 if "py2app" in sys.argv:
   import py2app #@UnusedImport @UnresolvedImport
@@ -49,9 +49,9 @@ if "py2app" in sys.argv:
               "options": { "py2app": {
                            "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
                            "optimize": 1, # Keep docstrings
-                           "packages": "encodings, gtk, IPython, plot_script",
-                           "resources": glob("plot_script/doc/*.html"),
-                           "iconfile": "plot_script/config/logo.png",
+                           "packages": "encodings, gtk, IPython, plotpy",
+                           "resources": glob("plotpy/doc/*.html"),
+                           "iconfile": "plotpy/config/logo.png",
                            #"argv_emulation": True,
                            },
                           }
@@ -66,7 +66,7 @@ elif "py2exe" in sys.argv:
                               "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio, Image, TiffImagePlugin, PngImagePlugin",
                               "optimize": 1, # Keep docstring (e.g. IPython console usage)
                               "skip_archive": True, # setting not to move compiled code into library.zip file
-                              'packages':'encodings, gtk, IPython, PIL, plot_script',
+                              'packages':'encodings, gtk, IPython, PIL, plotpy',
                               "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'],
                              },
                            }
@@ -297,8 +297,8 @@ if "py2exe" in sys.argv and not py2exe_test:
                     (gtk_folder+'\\share\\icons', 'share\\icons'),
                     (gtk_folder+'\\bin', 'bin'),
                     (gtk_folder+'\\lib', 'lib'),
-                    ('plot_script\\config', 'plot_script\\config'),
-                    ('plot_script\\gtkgui\\icons', 'plot_script\\gtkgui\\icons'),
+                    ('plotpy\\config', 'plotpy\\config'),
+                    ('plotpy\\gtkgui\\icons', 'plotpy\\gtkgui\\icons'),
                     ]:
     xcopy_to_folder(src, dest)
   for script_file in glob('scripts\\*.bat'):

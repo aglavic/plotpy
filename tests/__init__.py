@@ -1,3 +1,3 @@
 '''
-  Package providing unit tests for the plot_script package.
+  Package providing unit tests for the plotpy package.
 '''

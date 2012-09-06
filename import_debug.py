@@ -9,7 +9,7 @@ from cPickle import loads
 
 __author__="Artur Glavic"
 __credits__=[]
-from plot_script.plotpy_info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Production"
 
 def import_from_log(name):
@@ -28,7 +28,7 @@ def import_from_log(name):
 
 if __name__=='__main__':
   m, d, t=import_from_log(sys.argv[1])
-  from plot_script.gtkgui.dialogs import StatusDialog
+  from plotpy.gtkgui.dialogs import StatusDialog
   sd=StatusDialog(title='Error Text', initial_text=m)
   sd.set_default_size(800, 800)
   if t.strip()!='':
@@ -36,14 +36,14 @@ if __name__=='__main__':
     sd2.set_default_size(800, 800)
     sd2.show()
   sd.show()
-  import plot_script.sessions.generic
-  active_session=plot_script.sessions.generic.GenericSession(None)
+  import plotpy.sessions.generic
+  active_session=plotpy.sessions.generic.GenericSession(None)
   active_session.file_data={'import from log': d}
   active_session.active_file_data=d
   active_session.active_file_name='import from log'
   # Start GUI
-  import plot_script.gtkgui.main_window
+  import plotpy.gtkgui.main_window
   import gtk
-  plotting_session=plot_script.gtkgui.main_window.ApplicationMainWindow(active_session)
+  plotting_session=plotpy.gtkgui.main_window.ApplicationMainWindow(active_session)
   gtk.main() # start GTK engine
 
