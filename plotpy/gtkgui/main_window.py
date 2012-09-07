@@ -421,6 +421,16 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     # Create statusbar
     self.statusbar=gtk.Statusbar()
     self.statusbar.set_has_resize_grip(True)
+    self.progressbar=gtk.ProgressBar()
+    self.progressbar.set_size_request(40,-1)
+    self.xindicator=gtk.Label()
+    self.xindicator.set_width_chars(10)
+    self.yindicator=gtk.Label()
+    self.yindicator.set_width_chars(10)
+    self.statusbar.pack_start(self.progressbar, False)
+    self.statusbar.pack_end(self.yindicator, False)
+    self.statusbar.pack_end(gtk.VSeparator(), False)
+    self.statusbar.pack_end(self.xindicator, False)
     # put statusbar below everything
     if user_config['GUI']['show_statusbar']:
       table.attach(self.statusbar,
@@ -477,6 +487,8 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     if self.status_dialog:
       # hide thw status dialog to make it possible to reshow it
       self.status_dialog.hide()
+      self.status_dialog.connected_progress=self.progressbar
+      self.status_dialog.connected_status=self.statusbar
 
     # resize events
     self.connect("event-after", self.update_picture)

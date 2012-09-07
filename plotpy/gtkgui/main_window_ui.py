@@ -506,8 +506,8 @@ class MainUI(object):
         "Show the gnuplot parameters used for plot.", # tooltip
         self.show_last_plot_params),
       ("ShowImportInfo", None, # name, stock id
-        "Show File Import Informations", None, #'i',                     # label, accelerator
-        "Show the information from the file import in this session.", # tooltip
+        "Show Messages", None, #'i',                     # label, accelerator
+        "Show the information from the file import etc.", # tooltip
         self.show_status_dialog),
       ("ShowNotebook", None, # name, stock id
         "Show Extra Drop Notebook Dialog", '<control><shift>T', #'i',                     # label, accelerator

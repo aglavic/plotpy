@@ -21,24 +21,33 @@ class PlotpyError(Exception):
 class PlotpyWarning(Warning):
   pass
 
-class DefaultMessanger(object):
-  active_group=None
-  active_item=None
+class DefaultMessenger(object):
+  '''
+    The default messenger does not show any progress information
+    and directly prints to stdout or raises a Warning/Error.
+  '''
   last_message=None
 
   def format_message(self, message, group, item):
-    if message is None:
-      message=''
     if item is not None:
-      self.active_item=item
-      message=item+' - '+message
-    if group is not None:
-      self.active_group=group
-      message=group+' - '+message
+      if message is None:
+        message=item
+      else:
+        message=item+' - '+message
+    if group is not None and group!='reset':
+      if message is None:
+        message=group
+      else:
+        message=group+' - '+message
     return message
 
   def info(self, message, group=None, item=None, numitems=1, progress=None):
-    print self.format_message(message, group, item)
+    output=self.format_message(message, group, item)
+    if output==self.last_message:
+      pass
+    else:
+      self.last_message=output
+      print output
 
   def warn(self, message, group=None, item=None, numitems=1, progress=None):
     raise PlotpyWarning, self.format_message(message, group, item)
@@ -46,9 +55,9 @@ class DefaultMessanger(object):
   def error(self, message, group=None, item=None, numitems=1, progress=None):
     raise PlotpyError, self.format_message(message, group, item)
 
-class NiceMessanger(object):
+class NiceMessenger(object):
   '''
-    Messanger which does not raise any errors and goups output
+    Messenger which does not raise any errors and goups output
     according to the group and item scheme. Progress is
     indicated independent of output as last line in the 
     console.
@@ -136,41 +145,41 @@ class NiceMessanger(object):
     sys.stdout.write('\r'+' '*60+'\r')
     sys.stdout.flush()
 
-messanger=DefaultMessanger()
+messenger=DefaultMessenger()
 
 def info(message, group=None, item=None, numitems=1, progress=None):
-  messanger.info(message, group=group, item=item, numitems=numitems, progress=progress)
+  messenger.info(message, group=group, item=item, numitems=numitems, progress=progress)
 
 def warn(message, group=None, item=None, numitems=1, progress=None):
-  messanger.warn(message, group=group, item=item, numitems=numitems, progress=progress)
+  messenger.warn(message, group=group, item=item, numitems=numitems, progress=progress)
 
 def error(message, group=None, item=None, numitems=1, progress=None):
-  messanger.error(message, group=group, item=item, numitems=numitems, progress=progress)
+  messenger.error(message, group=group, item=item, numitems=numitems, progress=progress)
 
 
 if __name__=='__main__':
   from time import sleep
-  me=NiceMessanger()
-  me.info('', group='Startgruppe', numitems=2, progress=0)
+  messenger=NiceMessenger()
+  info('', group='Startgruppe', numitems=2, progress=0)
   sleep(1)
-  me.info('Message 1', group='Startgruppe', item='erste', progress=None)
+  info('Message 1', group='Startgruppe', item='erste', progress=None)
   sleep(1)
   for i in range(15, 100):
-    me.info('Message 2', group='Startgruppe', item='erste', progress=i)
+    info('Message 2', group='Startgruppe', item='erste', progress=i)
     sleep(0.1)
-  me.warn('Message 1', group='Startgruppe', item='zweite', progress=None)
+  warn('Message 1', group='Startgruppe', item='zweite', progress=None)
   sleep(1)
   for i in range(100):
-    me.warn('Message 2', group='Startgruppe', item='zweite', progress=i)
+    warn('Message 2', group='Startgruppe', item='zweite', progress=i)
     sleep(0.1)
-  me.info('Start', group='Neue Gruppe', numitems=1, progress=5)
+  info('Start', group='Neue Gruppe', numitems=1, progress=5)
   sleep(1)
-  me.info('Message 1', group='Neue Gruppe', item='erste', progress=50)
+  info('Message 1', group='Neue Gruppe', item='erste', progress=50)
   sleep(1)
-  me.error('Message 2', group='Neue Gruppe', item='erste', progress=60)
+  error('Message 2', group='Neue Gruppe', item='erste', progress=60)
   sleep(1)
-  me.error('Message 3', group='Neue Gruppe', item='erste', progress=70)
+  error('Message 3', group='Neue Gruppe', item='erste', progress=70)
   sleep(1)
-  me.info('Message 4', group='Neue Gruppe', item='erste', progress=80)
+  info('Message 4', group='Neue Gruppe', item='erste', progress=80)
   sleep(1)
   sys.stdout.write('\n')

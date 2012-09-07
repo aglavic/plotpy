@@ -2,7 +2,6 @@
 '''
 '''
 
-# Pleas do not make any changes here unless you know what you are doing.
 import numpy
 from baseread import TextReader
 from plotpy.mds import MeasurementData, PhysicalProperty, MeasurementData4D
@@ -111,7 +110,7 @@ class Spec(TextReader):
     if scan_header[u'type'].split()[0]==u'circle_mesh':
       output.scan_line_constant=0
       output.scan_line=1
-    data=numpy.array(map(lambda line: numpy.fromstring(line, sep=u" "), scan_data)).transpose()
+    data=self.lines2data(scan_data)
     for i, col in enumerate(columns):
       output.data.append(PhysicalProperty(col[0], col[1], data[i]))
       if col[1]==u'counts':
@@ -258,7 +257,7 @@ class Spec(TextReader):
     data_lines=scan_lines[i+1:]
     comment_lines=filter(lambda line: line.startswith(u'#'), data_lines)
     data_lines=filter(lambda line: not (line.startswith(u'#') or line.strip()==u''), data_lines)
-    scan_header[u'comments']=u''.join(comment_lines)
+    scan_header[u'comments']=u'\n'.join(comment_lines)
     return scan_header, data_lines
 
 class Online(TextReader):
@@ -284,7 +283,7 @@ class Online(TextReader):
     data_region=text.split(u'%d')[1].strip().splitlines()
     parameter_region=filter(lambda item: not item.startswith(u'!'), parameter_region)
     data_region=filter(lambda item: not item.startswith(u'!'), data_region)
-    data_region=map(str.strip, data_region)
+    data_region=map(unicode.strip, data_region)
     parameter_region=map(lambda line: line.strip().split(u'=', 1), parameter_region)
     parameters={}
     for param, value in parameter_region:
@@ -306,10 +305,8 @@ class Online(TextReader):
         columns[i]=(col, u'°')
     columns[0]=columns[1]
     columns[1]=[u'None', u'']
-    data_region=map(str.strip, data_region)
-    data=map(str.split, data_region)
-    data=numpy.array(data, dtype=numpy.float32)
-    data=data.transpose()
+    data_region=map(unicode.strip, data_region)
+    data=self.lines2data(data_region)
     output=MeasurementData(x=0, y=2)
     for i, column in enumerate(columns):
       if column[1]==u'counts':
@@ -343,7 +340,7 @@ class APS4ID(TextReader):
   '''
   name=u"4ID"
   description=u"Data taken at the 4ID beamline of APS"
-  glob_patterns=[u'*.txt']
+  glob_patterns=[u'*.[0-9][0-9][0-9][0-9]']
   session=['xrd']
 
   def read(self):
@@ -388,7 +385,7 @@ class APS4ID(TextReader):
     output.sample_name=u''
     return [output]
 
-  def headerinfo(self, header):
+  def extract_headerinfo(self, header):
     '''
       Extract some infor from the file header.
     '''
@@ -447,8 +444,6 @@ class APS4ID(TextReader):
       type_=u'XMCD'
     elif u'Positioner 2' in data_with_head:
       type_=u'e-scan'
-    data_lines=map(str.strip, data_lines)
-    data=map(str.split, data_lines)
-    data=numpy.array(data, dtype=numpy.float32)
-    data=data.transpose()
+    data_lines=map(unicode.strip, data_lines)
+    data=self.lines2data(data_lines)
     return type_, columns, data

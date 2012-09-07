@@ -3,11 +3,6 @@
  Some general settings for the SQUID sessions
 '''
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
-
 # Diamagnetic correction applied to every measurement (for example the used sample holder)
 dia_mag_correct=0
 
@@ -17,77 +12,77 @@ squid_factor=0.00057486103 # scalation factor to calculate the mag. moment
 
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
 TRANSFORMATIONS=[\
-['H', 'Oe', 1e-4, 0, 'µ_0·H', 'T'], \
-['emu', 1e-3, 0, 'A·m^2'], \
-['s', 1./60, 0, 'min']\
+[u'H', u'Oe', 1e-4, 0, u'µ_0·H', u'T'], \
+[u'emu', 1e-3, 0, u'A·m^2'], \
+[u's', 1./60, 0, u'min']\
 ]
 # Transformations for constants (see MEASUREMENT_TYPES)
 TRANSFORMATIONS_CONST=[\
-['T', 1000, 0, 'mT']\
+[u'T', 1000, 0, u'mT']\
 ]
 # Select the read parameters and mapping to columns as well as dimensions and units 
 #  (every measurement file the positions have to start with 0 and have no holes in between
-# [ 'Name in file' , 'column to map to' , [ 'dimension' , 'unit' ]]
+# [ u'Name in file' , u'column to map to' , [ u'dimension' , u'unit' ]]
 COLUMNS_MAPPING=[\
-['Time', 0, ['Time', 's']]\
-, ['Time Stamp (sec)', 0, ['Time', 's']]\
-, ['Magnetic Field (Oe)', 1, ['H', 'Oe']]\
-, ['Field (Oe)', 1, ['H', 'Oe']]\
-, ['Temperature (K)', 2, ['T', 'K']]\
+[u'Time', 0, [u'Time', u's']]\
+, [u'Time Stamp (sec)', 0, [u'Time', u's']]\
+, [u'Magnetic Field (Oe)', 1, [u'H', u'Oe']]\
+, [u'Field (Oe)', 1, [u'H', u'Oe']]\
+, [u'Temperature (K)', 2, [u'T', u'K']]\
 # RSO dat file
-, ['Long Moment (emu)', 3, ['M_{rso}', 'emu'], 'Long Scan Std Dev']\
-#,['Long Scan Std Dev',4,['delta_M','emu']]\
+, [u'Long Moment (emu)', 3, [u'M_{rso}', u'emu'], u'Long Scan Std Dev']\
+#,[u'Long Scan Std Dev',4,[u'delta_M',u'emu']]\
 # AC dat file
-, ["m' (emu)", 3, ['M_{ac}', 'emu'], "m' Scan Std Dev"]\
-#,["m' Scan Std Dev",4,['delta_M','emu']]\
+, [u"m' (emu)", 3, [u'M_{ac}', u'emu'], u"m' Scan Std Dev"]\
+#,[u"m' Scan Std Dev",4,[u'delta_M',u'emu']]\
 # Torque magnetometer
-, ['Torque (Nm)', 3, ['Torque', 'Nm'], 'Torque Std. Dev. (Nm)']\
-#,['Torque Std. Dev. (Nm)',4,['δTorque','Nm']]\
-, ["Sample Position (deg)", 5, ['φ', '°']]\
+, [u'Torque (Nm)', 3, [u'Torque', u'Nm'], u'Torque Std. Dev. (Nm)']\
+#,[u'Torque Std. Dev. (Nm)',4,[u'δTorque',u'Nm']]\
+, [u"Sample Position (deg)", 5, [u'φ', u'°']]\
 # AC PPMS dat file
-, ["M' (emu)", 7, ["M\\047{ac}", 'emu', "M-Std.Dev. (emu)"]]\
-, ["M'' (emu)", 8, ["M\\047\\047_{ac}", 'emu']]\
-#,["M-Std.Dev. (emu)",4,['delta_M','emu']]\
+, [u"M' (emu)", 7, [u"M\\047{ac}", u'emu', u"M-Std.Dev. (emu)"]]\
+, [u"M'' (emu)", 8, [u"M\\047\\047_{ac}", u'emu']]\
+#,[u"M-Std.Dev. (emu)",4,[u'delta_M',u'emu']]\
 # VSM PPMS dat file
-, ["Moment (emu)", 3, ["M", 'emu'], 'M. Std. Err. (emu)']\
-#,['M. Std. Err. (emu)',4,['delta_M','emu']]\
+, [u"Moment (emu)", 3, [u"M", u'emu'], u'M. Std. Err. (emu)']\
+#,[u'M. Std. Err. (emu)',4,[u'delta_M',u'emu']]\
 # for RSO raw data files
-, ['Start Temperature (K)', 2, ['T', 'K']]\
-, ['Position (cm)', 3, ['pos', 'cm']]\
-, ['Long Voltage', 10, ['V_{long}', 'V']]\
-, ['Long Regression Fit', 5, ['V_{Fit}', 'V']]\
-, ['Long Reg Fit', 5, ['V_{Fit}', 'V']]\
-, ['Long Average Voltage', 6, ['V_{avrg}', 'V']]\
-, ['End Temperature (K)', 7, ['T_{End}', 'V']]\
-, ["M'' (emu)", 8, ["M2_{ac}", 'emu']]\
-, ["Frequency (Hz)", 6, ["Frequency", 'Hz']]\
-, ['Long Detrended Voltage', 8, ['V_{det}', 'V']]\
-, ['Long Demeaned Voltage', 9, ['V_{dem}', 'V']]\
-, ['Long Scaled Response', 4, ['V_{SC-long}', 'V']]\
-, ['Long Avg. Scaled Response', 11, ['V_{SC-avrg}', 'V']]\
-, ['Long Voltmeter Gain', 11, ['Range', '']]
+, [u'Start Temperature (K)', 2, [u'T', u'K']]\
+, [u'Position (cm)', 3, [u'pos', u'cm']]\
+, [u'Long Voltage', 10, [u'V_{long}', u'V']]\
+, [u'Long Regression Fit', 5, [u'V_{Fit}', u'V']]\
+, [u'Long Reg Fit', 5, [u'V_{Fit}', u'V']]\
+, [u'Long Average Voltage', 6, [u'V_{avrg}', u'V']]\
+, [u'End Temperature (K)', 7, [u'T_{End}', u'V']]\
+, [u"M'' (emu)", 8, [u"M2_{ac}", u'emu']]\
+, [u"Frequency (Hz)", 6, [u"Frequency", u'Hz']]\
+, [u'Long Detrended Voltage', 8, [u'V_{det}', u'V']]\
+, [u'Long Demeaned Voltage', 9, [u'V_{dem}', u'V']]\
+, [u'Long Scaled Response', 4, [u'V_{SC-long}', u'V']]\
+, [u'Long Avg. Scaled Response', 11, [u'V_{SC-avrg}', u'V']]\
+, [u'Long Voltmeter Gain', 11, [u'Range', u'']]
 ]
 # Measurement types where some parameters are fix and x,y and yerror columns are set.
-# [ 'list of constant parameters [ column , max_div , {same direction} ]' , x-col, y-col, div_y-col , plot options]
+# [ u'list of constant parameters [ column , max_div , {same direction} ]' , x-col, y-col, div_y-col , plot options]
 # The first measurement fitting is used (so you should put stricter rules before others).
 # If no type fits the data collected nothing will be plotted. 
 # Diviations are only compared with last datapoint, so slow increases won't trigger a new sequence.
 MEASUREMENT_TYPES=[\
 # raw data, sequence have same time stamp, temperature should be shown for every sequence (div=300K always true)
-[[['T', 300.], ['time', 1.]], 3, 4, 4, ''], \
+[[[u'T', 300.], [u'time', 1.]], 3, 4, 4, u''], \
 # phi scan of e.g. torque magnetometer
-[[['T', 300.]], 2, 'Torque', 'δTorque', ''], \
+[[[u'T', 300.]], 2, u'Torque', u'δTorque', u''], \
 # MvsT, H is constant
-[[['H', 1.]], 2, 3, 4, ''], \
+[[[u'H', 1.]], 2, 3, 4, u''], \
 # MvsH T is constant
-[[['T', 0.25]], 1, 3, 4, '']\
+[[[u'T', 0.25]], 1, 3, 4, u'']\
 ]
 
 # Split sequences after readout [list_for_scantype, split_by, split_sensitivity]
 SPLIT_AFTER=[
-             ["M\\047{ac}", 'Frequency', 5.],
-             ["T", 'DIRECTION', 0.25],
-             ["T", 'φ', 2.],
+             [u"M\\047{ac}", u'Frequency', 5.],
+             [u"T", u'DIRECTION', 0.25],
+             [u"T", u'φ', 2.],
              ]
 
 # permanent datafilters applied, a list of

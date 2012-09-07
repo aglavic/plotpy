@@ -365,6 +365,10 @@ class MainPlotting(object):
       After opening the button is rerouted.
     '''
     # TODO: Add gnuplot help functions and character selector
+    if self.plot_options_window_open:
+      self.plot_options_window_open.destroy()
+      self.plot_options_window_open=False
+      return
     #+++++++++++++++++ Adding input fields in table +++++++++++++++++
     dialog=gtk.Dialog(title='Custom Global Gnuplot settings', parent=self)
     table=gtk.Table(6, 13, False)
@@ -465,14 +469,22 @@ class MainPlotting(object):
                 0, 0);
     plotting_settings_3d=gtk.TextView()
     plotting_settings_3d.get_buffer().set_text(gnuplot_preferences.settings_3d)
-    table.attach(plotting_settings_3d,
+    sw=gtk.ScrolledWindow()
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add(plotting_settings_3d)
+    sw.show()
+    table.attach(sw,
                 # X direction #          # Y direction
                 3, 6, 10, 11,
                 gtk.EXPAND|gtk.FILL, 0,
                 0, 5);
     plotting_settings_3dmap=gtk.TextView()
     plotting_settings_3dmap.get_buffer().set_text(gnuplot_preferences.settings_3dmap)
-    table.attach(plotting_settings_3dmap,
+    sw=gtk.ScrolledWindow()
+    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.add(plotting_settings_3dmap)
+    sw.show()
+    table.attach(sw,
                 # X direction #          # Y direction
                 3, 6, 11, 12,
                 gtk.EXPAND|gtk.FILL, 0,
@@ -494,11 +506,11 @@ class MainPlotting(object):
     #            gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL,
     #            0, 0);
     table.show_all()
-    if self.active_dataset.zdata<0:
-      label3d.hide()
-      plotting_parameters_3d.hide()
-      plotting_settings_3d.hide()
-      plotting_settings_3dmap.hide()
+    #if self.active_dataset.zdata<0:
+    #  label3d.hide()
+    #  plotting_parameters_3d.hide()
+    #  plotting_settings_3d.hide()
+    #  plotting_settings_3dmap.hide()
     #----------------- Adding input fields in table -----------------
     dialog.vbox.add(table) # add table to dialog box
     dialog.set_default_size(300, 200)
@@ -517,14 +529,16 @@ class MainPlotting(object):
     #dialog.connect("destroy", self.close_plot_options_window, sw)
     dialog.show()
     # reroute the button to close the dialog, not open it
-    self.plot_options_button.disconnect(self.plot_options_handler_id)
-    self.plot_options_handler_id=self.plot_options_button.connect("clicked", lambda*w: dialog.destroy())
-    self.plot_options_window_open=True
+    #self.plot_options_button.disconnect(self.plot_options_handler_id)
+    #self.plot_options_handler_id=self.plot_options_button.connect("clicked",
+    #                                              lambda*w: dialog.destroy())
+    self.plot_options_window_open=dialog
     # connect dialog to main window
     #self.open_windows.append(dialog)
     #dialog.connect("destroy", lambda*w: self.open_windows.remove(dialog))
+    dialog.connect("destroy", self.close_plot_options_window)
 
-  def close_plot_options_window(self, dialog, sw):
+  def close_plot_options_window(self, dialog):
     '''
       Reroute the plot options button and remove the textbox when dialog is closed.
       If this is not done, the textbox gets destroyed and we can't reopen the dialog.
@@ -532,11 +546,11 @@ class MainPlotting(object):
       :param dialog: The dialog widget that will be closed
       :param sw: The scrolledWindow to be unpluged before closing.
     '''
-    dialog.hide()
-    sw.remove(self.plot_options_view)
-    # reroute the button to open a new window
-    self.plot_options_button.disconnect(self.plot_options_handler_id)
-    self.plot_options_handler_id=self.plot_options_button.connect("clicked", self.open_plot_options_window)
+    #dialog.hide()
+    #sw.remove(self.plot_options_view)
+    ## reroute the button to open a new window
+    #self.plot_options_button.disconnect(self.plot_options_handler_id)
+    #self.plot_options_handler_id=self.plot_options_button.connect("clicked", self.open_plot_options_window)
     self.plot_options_window_open=False
 
   def change_plot_options(self, widget, action,
@@ -726,12 +740,12 @@ class MainPlotting(object):
                                     gnuplot_preferences.defined_color_patterns[pattern])
       gptext+='unset multiplot\n'
       # send commands to gnuplot
-      measurement_data_plotting.gnuplot_instance.stdin.write('reset\n') #@UndefinedVariable
-      measurement_data_plotting.gnuplot_instance.stdin.write(gptext) #@UndefinedVariable
-      measurement_data_plotting.gnuplot_instance.stdin.write('\nprint "|||"\n') #@UndefinedVariable
-      output=measurement_data_plotting.gnuplot_instance.stdout.read(3) #@UndefinedVariable
+      plotting.gnuplot_instance.stdin.write('reset\n') #@UndefinedVariable
+      plotting.gnuplot_instance.stdin.write(gptext) #@UndefinedVariable
+      plotting.gnuplot_instance.stdin.write('\nprint "|||"\n') #@UndefinedVariable
+      output=plotting.gnuplot_instance.stdout.read(3) #@UndefinedVariable
       while output[-3:]!='|||':
-        output+=measurement_data_plotting.gnuplot_instance.stdout.read(1) #@UndefinedVariable
+        output+=plotting.gnuplot_instance.stdout.read(1) #@UndefinedVariable
     pattern_box=gtk.combo_box_new_text()
     # drop down menu for the pattern selection
     for i, pattern in enumerate(pattern_names):
@@ -800,7 +814,7 @@ class MainPlotting(object):
           tentry.show()
           title.add(entry)
           title.add(tentry)
-          dialog.vbox.pack_start(title, expand=False)
+          main_items.pack_start(title, expand=False)
           tentry.connect('activate', self.change_plot_shortinfo, dataset)
           line=StyleLine(dataset.plot_options, self.replot)
           line.show()

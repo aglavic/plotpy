@@ -758,7 +758,7 @@ class MeasurementData(object):
 
   def is_type(self, dataset):
     '''
-      Check if a point is consistant with constand data of this sequence.
+      Check if a point is consistent with constant data of this sequence.
     '''
     last=self.last()
     for const in self.const_data:

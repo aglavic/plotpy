@@ -273,7 +273,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       Show the dialog which holds the file import informations.
     '''
     if self.status_dialog:
-      self.status_dialog.show_all()
+      self.status_dialog.show()
 
   def fit_dialog(self, action, size=None, position=None):
     '''

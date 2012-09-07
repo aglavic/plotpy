@@ -24,6 +24,7 @@ encoding//plotpy/config/xrd.py=utf-8
 encoding//plotpy/debug.py=utf-8
 encoding//plotpy/fio/__init__.py=utf8
 encoding//plotpy/fio/baseread.py=utf8
+encoding//plotpy/fio/squid.py=utf-8
 encoding//plotpy/fio/xrd.py=utf-8
 encoding//plotpy/fitdata.py=utf-8
 encoding//plotpy/gtkgui/__init__.py=utf-8

@@ -13,6 +13,7 @@ import sys
 from glob import glob
 from fnmatch import fnmatch
 import gzip
+import numpy
 from plotpy.message import *
 try:
   from cStringIO import StringIO
@@ -20,7 +21,7 @@ except ImportError:
   from  StringIO import StringIO
 try:
   from multiprocessing import Pool
-  USE_MP=False
+  USE_MP=True
 except ImportError:
   USE_MP=False
 
@@ -43,6 +44,7 @@ class Reader(object):
   _data=None
   origin=("", "")
   _max_len_pprint=60
+  _messages=None
 
   def __repr__(self):
     return u"<%s for %s>"%(self.__class__.__name__, ";".join(self.glob_patterns))
@@ -60,7 +62,7 @@ class Reader(object):
 
   pfile=property(_get_pfile)
 
-  def open(self, filename, **kwds):
+  def open(self, filename, in_process=False, **kwds):
     """
       Open a file with this reader. 
       
@@ -70,6 +72,10 @@ class Reader(object):
       
       :param filename: File name to open or open file object to read from
     """
+    if in_process:
+      self._messages=[]
+    else:
+      self._messages=None
     if type(filename) in [str, unicode]:
       self.origin=os.path.split(os.path.abspath(filename))
     else:
@@ -80,7 +86,10 @@ class Reader(object):
     result=self.read()
     if result is None:
       return None
-    return FileData(result, self.origin)
+    if in_process:
+      return self._messages, FileData(result, self.origin)
+    else:
+      return FileData(result, self.origin)
 
   def _read_file(self, filename):
     '''
@@ -116,14 +125,40 @@ class Reader(object):
   def read(self):
     raise NotImplementedError, "Reader can not be used directly, create a subclass defining a read method!"
 
-  def info(self, text, progress=0.):
-    info(text, group='Reading files', item=self.origin[1], progress=progress)
+  def info(self, text=None, progress=0.):
+    if self._messages is None:
+      info(text, group='Reading files', item=self.origin[1], progress=progress)
+    else:
+      self._messages.append(['info', text, self.origin[1], progress])
 
-  def warn(self, text, progress=0.):
-    warn(text, group='Reading files', item=self.origin[1], progress=progress)
+  def warn(self, text=None, progress=0.):
+    if self._messages is None:
+      warn(text, group='Reading files', item=self.origin[1], progress=progress)
+    else:
+      self._messages.append(['warn', text, self.origin[1], progress])
 
-  def error(self, text, progress=0.):
-    error(text, group='Reading files', item=self.origin[1], progress=progress)
+  def error(self, text=None, progress=0.):
+    if self._messages is None:
+      error(text, group='Reading files', item=self.origin[1], progress=progress)
+    else:
+      self._messages.append(['error', text, self.origin[1], progress])
+
+  def lines2data(self, lines, sep=" ", dtype=float):
+    '''
+      Return columns of data from a list of liens.
+    '''
+    return numpy.array(map(lambda line: numpy.fromstring(line, sep=sep, dtype=dtype),
+                           lines), dtype=dtype).transpose()
+
+  def str2data(self, string, sep=" ", dtype=float):
+    '''
+      Return columns of data from a string consisting of only data
+      containing lines.
+    '''
+    return self.lines2data(string.splitlines(), sep=sep, dtype=dtype)
+
+  def save_lines2data(self, lines, sep=" "):
+    raise NotImplementedError, 'Sorry'
 
 class TextReader(Reader):
   """
@@ -194,7 +229,7 @@ class ReaderProxy(object):
       try:
         modi=__import__("plotpy.fio."+module, fromlist=[module])
       except Exception, error:
-        print "Could not import module %s, %s: %s"%(module, error.__class__.__name__, error)
+        warn("Could not import module %s, %s: %s"%(module, error.__class__.__name__, error))
         continue
       items=[item[1] for item in modi.__dict__.items() if not item[0].startswith("_")]
       readers_i=filter(lambda item: type(item) is type
@@ -238,6 +273,8 @@ class ReaderProxy(object):
 
   def open(self, files, **kwds):
     #from time import sleep
+    if USE_MP:
+      kwds.update({'in_process':True})
     if not type(files) in [list, tuple]:
       # input is not a list of files
       files=[files, ]
@@ -272,14 +309,27 @@ class ReaderProxy(object):
       reader=self.match(name.lower())[0]
       if USE_MP:
         # send to worker thread
-        results.append(self._pool.apply_async(_open, args=(reader, filename)))
+        results.append(self._pool.apply_async(_open, args=(reader, filename), kwds=kwds))
       else:
-        results.append(reader.open(filename))
+        results.append(reader.open(filename, **kwds))
       #sleep(0.25)
     if USE_MP:
-      results=[result.get() for result in results]
+      fetched_results=[]
+      for result in results:
+        messages, data=result.get()
+        # To prevent multiple processes to send messages in arbitrary order
+        # they are collected within the process and printed out when retrieving the data.
+        for message in messages:
+          if message[0]=='info':
+            info(message[1], group=u'Reading files', item=message[2], progress=message[3])
+          elif message[0]=='warn':
+            warn(message[1], group=u'Reading files', item=message[2], progress=message[3])
+          else:
+            error(message[1], group=u'Reading files', item=message[2], progress=message[3])
+        fetched_results.append(data)
+      results=fetched_results
     info(u'Finished!', group=u'reset')
-    return results
+    return filter(lambda item: item is not None, results)
 
   def match(self, name):
     matching_readers=[]

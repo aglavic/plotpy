@@ -217,7 +217,7 @@ def initialize_gui_toolkit():
   global gui_main, status_dialog
   gui_main=__import__('plotpy.'+config.gui.toolkit+'gui.main_window' , fromlist=["main_window"])
   if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
-    dialogs=__import__('plotpy.'+config.gui.toolkit+'gui.dialogs' , fromlist=["dialogs"])
+    dialogs=__import__('plotpy.'+config.gui.toolkit+'gui.message_dialog' , fromlist=["message_dialog"])
     status_dialog=dialogs.connect_stdout_dialog()
   else:
     status_dialog=None

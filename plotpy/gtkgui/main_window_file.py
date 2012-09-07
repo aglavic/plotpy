@@ -8,8 +8,9 @@ import sys
 import gtk
 import subprocess
 from diverse_classes import PlotProfile
-from dialogs import FileImportDialog, StatusDialog, ExportFileChooserDialog, \
+from dialogs import FileImportDialog, ExportFileChooserDialog, \
                     PreviewDialog, ImportWizard
+from message_dialog import GUIMessenger
 from plotpy import read_data, plotting
 from plotpy.config import gnuplot_preferences
 from plotpy.configobj import ConfigObj
@@ -54,14 +55,16 @@ class MainFile(object):
     # show a status dialog for the file import
     if type(sys.stdout)!=file:
       if not self.status_dialog:
-        status_dialog=StatusDialog('Import Status', flags=gtk.DIALOG_DESTROY_WITH_PARENT,
-                                  parent=self, buttons=('Close', 0))
+        status_dialog=GUIMessenger('Import Status',
+                                  progressbar=self.progressbar,
+                                  statusbar=self.statusbar,
+                                  flags=gtk.DIALOG_DESTROY_WITH_PARENT,
+                                  parent=self)
         self.status_dialog=status_dialog
-        status_dialog.connect('response', lambda*ignore: status_dialog.hide())
         status_dialog.set_default_size(800, 600)
       else:
         status_dialog=self.status_dialog
-      status_dialog.show_all()
+      #status_dialog.show()
       sys.stdout.second_output=status_dialog
     # try to import the selected files and append them to the active session
     if template is None:
@@ -70,13 +73,12 @@ class MainFile(object):
         if self.active_session.ONLY_IMPORT_MULTIFILE:
           self.active_session.add_file(file_names, append=True)
         else:
-          for file_name in file_names:
-            datasets=self.active_session.add_file(file_name, append=True)
-            if len(datasets)>0:
-              self.active_session.change_active(name=file_name)
-            elif self.active_session.multiplots is not None:
-              self.multiplot.new_from_list(self.active_session.multiplots)
-              self.active_multiplot=True
+          files_data=self.active_session.add_files(file_names, append=True)
+          if len(files_data)>0:
+            self.active_session.change_active(name=os.path.join(*files_data[0].origin))
+          elif self.active_session.multiplots is not None:
+            self.multiplot.new_from_list(self.active_session.multiplots)
+            self.active_multiplot=True
       elif ascii_filter==-2:
         session=self.active_session
         # import with fitting filter_
@@ -99,8 +101,8 @@ class MainFile(object):
             # Dialog was canceled
             if type(sys.stdout)!=file:
               sys.stdout.second_output=None
-              if hide_status:
-                status_dialog.hide()
+              #if hide_status:
+              #  status_dialog.hide()
             return
           read_data.append_filter(filter_)
         else:
@@ -132,8 +134,8 @@ class MainFile(object):
       # this can only be triggered when importing at startup
       if type(sys.stdout)!=file:
         sys.stdout.second_output=None
-        if hide_status:
-          status_dialog.hide()
+        #if hide_status:
+        #  status_dialog.hide()
       return True
     self.input_file_name=self.active_session.active_file_name
     self.index_mess=0
@@ -143,8 +145,8 @@ class MainFile(object):
       window.destroy()
     if type(sys.stdout)!=file:
       sys.stdout.second_output=None
-      if hide_status:
-        status_dialog.hide()
+      #if hide_status:
+      #  status_dialog.hide()
     self.rebuild_menus()
     if hide_status:
       self.replot()

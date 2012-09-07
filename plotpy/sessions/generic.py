@@ -184,18 +184,12 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       self.font_size=user_config['plot']['font-size']
     self.import_plugins() # search the plugin folder for modules
     files.sort()
-    remove=[]
     transformations.known_transformations+=self.TRANSFORMATIONS
     #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
-    for filename in files:
-      if self.add_file(filename)==[]:
-        # if a file is empty or a reading error occured remove it.
-        remove.append(filename)
-    for rem in remove:
-      files.remove(rem)
+    self.add_files(files)
 
     if type(arguments) is list:
-      if len(files)==0: # show help, if there is no valid file in the list
+      if len(self.file_data)==0: # show help, if there is no valid file in the list
         if not self.use_gui and not self.ipdrop:
           print "No valid datafile found!"
           print self.SHORT_HELP
@@ -203,12 +197,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         self.active_file_data=[]
         self.active_file_name="None"
       else:
-        try:
-          self.active_file_data=self.file_data[files[0]]
-          self.active_file_name=files[0]
-        except KeyError:
-          self.active_file_data=self.file_data[files[0].rsplit('.mdd', 1)[0].rsplit('.mds', 1)[0]]
-          self.active_file_name=files[0].rsplit('.mdd', 1)[0].rsplit('.mds', 1)[0]
+        fdkeys=self.file_data.keys()
+        fdkeys.sort()
+        self.active_file_data=self.file_data[fdkeys[0]]
+        self.active_file_name=fdkeys[0]
 
   def initialize_gnuplot(self):
     '''
@@ -239,11 +231,11 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
                   shell=gnuplot_preferences.EMMULATE_SHELL,
                   creationflags=gnuplot_preferences.PROCESS_FLAGS)
         # try to set encoding once, it is not altered by the reset function
-        measurement_data_plotting.gnuplot_instance.stdin.write(#@UndefinedVariable
+        plotting.gnuplot_instance.stdin.write(#@UndefinedVariable
                   'set encoding '+gnuplot_preferences.ENCODING+'\n')
 
-      except:
-        raise RuntimeError, "Problem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s"%program
+      except Exception, error:
+        raise RuntimeError, "Problem communicating with Gnuplot: \n%s\nPlease check your system settings! Gnuplot command used: %s"%(error, program)
 
   def try_import_externals(self):
     '''
@@ -532,6 +524,14 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       self.file_data={}
     if len(data_list)>0:
       self.file_data[name]=data_list
+
+  def add_files(self, files, append=True):
+    files_data=reader.open(files)
+    for datasets in files_data:
+      self.add_data(datasets, os.path.join(*datasets.origin), append)
+      #++++++++++++++++ datatreatment ++++++++++++++++++++++
+      self.new_file_data_treatment(datasets)
+    return files_data # for reuse in child class
 
   def add_file(self, filename, append=True):
     '''
