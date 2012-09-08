@@ -53,10 +53,10 @@ class MainMouse(object):
                                          abs(position[4]-az[4]), abs(position[5]-az[5]))
         self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
         self.statusbar.push(0, 'Zoom: x1=%6g  \ty1=%6g \t x2=%6g \ty2=%6g'%(az[0], az[1], position[0], position[1]))
-        i=0
-        while gtk.events_pending() and i<10:
-          gtk.main_iteration(False)
-          i+=1
+        #i=0
+        #while gtk.events_pending() and i<10:
+        #  gtk.main_iteration(False)
+        #  i+=1
         self.image_pixmap, self.image_mask=self.image_pixbuf.render_pixmap_and_mask()
       elif self.active_fit_selection_from is not None:
         # When a drag is active draw a rectangle on the image
@@ -66,10 +66,10 @@ class MainMouse(object):
                                          abs(position[4]-af[4]), abs(position[5]-af[5]))
         self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
         self.statusbar.push(0, 'Fit-region: x1=%6g  \ty1=%6g \t x2=%6g \ty2=%6g'%(af[0], af[1], position[0], position[1]))
-        i=0
-        while gtk.events_pending() and i<10:
-          gtk.main_iteration(False)
-          i+=1
+        #i=0
+        #while gtk.events_pending() and i<10:
+        #  gtk.main_iteration(False)
+        #  i+=1
         self.image_pixmap, self.image_mask=self.image_pixbuf.render_pixmap_and_mask()
       elif self.mouse_arrow_starting_point is not None:
         # if an arrow drag is active show a different status and draw a line from the starting
@@ -78,20 +78,20 @@ class MainMouse(object):
         self.image_pixmap.draw_line(self.get_style().black_gc, ma[4], ma[5], position[4], position[5])
         self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
         self.statusbar.push(0, 'Draw Arrow: x=%6g  \ty=%6g \t-> \tx=%6g \ty=%6g'%(ma[0], ma[1], position[0], position[1]))
-        i=0
-        while gtk.events_pending() and i<10:
-          gtk.main_iteration(False)
-          i+=1
+        #i=0
+        #while gtk.events_pending() and i<10:
+        #  gtk.main_iteration(False)
+        #  i+=1
         self.image_pixmap, self.image_mask=self.image_pixbuf.render_pixmap_and_mask()
       else:
         # show the position of the cusor on the plot
         info='x=%6g  \ty=%6g'%(position[0], position[1])
-        if action.state.value_names==['GDK_CONTROL_MASK']:
-          info+='\t\tFit peak with gaussian (left), voigt (middle) or lorentzian (right) profile.'
-        elif action.state.value_names==['GDK_SHIFT_MASK']:
-          info+='\t\tPlace label (left), draw arrow (middle) or label position (right).'
+        if 'GDK_CONTROL_MASK' in action.state.value_names:
+          info+='\tFit peak with gaussian (left), voigt (middle) or lorentzian (right) profile.'
+        elif 'GDK_SHIFT_MASK' in action.state.value_names:
+          info+='\tPlace label (left), draw arrow (middle) or label position (right).'
         else:
-          info+='\t\tZoom (right), unzoom (middle). <ctrl>-fit / <shift>-label/arrow'
+          info+='\tZoom (right), unzoom (middle). <ctrl>-fit / <shift>-label/arrow'
         self.statusbar.push(0, info)
       try:
         # if the cusor is inside the plot we change it's icon to a crosshair

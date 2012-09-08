@@ -7,7 +7,7 @@
 
 import gtk
 import sys, os
-
+from plot_script import config
 from plot_script.config import gnuplot_preferences
 
 #----------------------- importing modules --------------------------
@@ -99,7 +99,8 @@ class PlotProfile:
     gnuplot_preferences.settings_3d=self.settings_3d
     gnuplot_preferences.settings_3dmap=self.settings_3dmap
     active_class.active_session.font_size=self.font_size
-    active_class.font_size.set_text(str(self.font_size))
+    active_class.font_size.set_font_name(config.user_config['plot']['font']+', '+
+                                        str(active_class.active_session.font_size))
     active_class.measurement[active_class.index_mess].logx=self.log_xyz[0]
     active_class.measurement[active_class.index_mess].logy=self.log_xyz[1]
     active_class.measurement[active_class.index_mess].logz=self.log_xyz[2]

@@ -71,7 +71,7 @@ def read_dca_log_data(file_name):
   output.sample_name=sample_name
   for i, col in enumerate(cols):
     try:
-      output.data.append(PhysicalProperty(col, '', data[i]))
+      output.data.append(PhysicalProperty(col, '', data[i], dtype=float32))
     except IndexError:
       return 'NULL'
   return [output]

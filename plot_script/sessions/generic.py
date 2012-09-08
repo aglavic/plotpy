@@ -394,7 +394,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       # for cxFreeze remove the script name from the path
       SCRIPT_PATH=os.path.split(SCRIPT_PATH)[0]
     self.GNUPLOT_COMMAND=gnuplot_preferences.GNUPLOT_COMMAND
-    gnuplot_preferences.FONT_PATH=gnuplot_preferences.FONT_PATH.replace('[script-path]', SCRIPT_PATH)
+    gnuplot_preferences.FONT_PATH=gnuplot_preferences.FONT_PATH.replace('[script-path]',
+                                                                        SCRIPT_PATH)
     if 'linux' in sys.platform:
       # Linux case
       self.OPERATING_SYSTEM='linux'
