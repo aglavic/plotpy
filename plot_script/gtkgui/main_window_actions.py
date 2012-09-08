@@ -121,9 +121,21 @@ Gnuplot version %.1f patchlevel %i with terminals:
     self.reset_statusbar()
     # plot the data
     self.replot()
+    self._set_xyz_range_labels()
     if self.plot_tree is not None:
       self.plot_tree.add_data()
       self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
+
+  def _set_xyz_range_labels(self):
+    ds=self.measurement[self.index_mess]
+    def remove_none(item):
+      if item is None:
+        return ''
+      else:
+        return "%g"%item
+    self.x_range_in.set_text(':'.join(map(remove_none, ds.plot_options.xrange)))
+    self.y_range_in.set_text(':'.join(map(remove_none, ds.plot_options.yrange)))
+    self.z_range_in.set_text(':'.join(map(remove_none, ds.plot_options.zrange)))
 
   def show_plot_tree(self, action=None):
     '''
@@ -994,6 +1006,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     self.reset_statusbar()
     self.rebuild_menus()
     self.replot()
+    self._set_xyz_range_labels()
     if self.plot_tree is not None:
       self.plot_tree.add_data()
       self.plot_tree.set_focus_item(self.active_session.active_file_name, self.index_mess)
@@ -1085,6 +1098,104 @@ Gnuplot version %.1f patchlevel %i with terminals:
       self.active_multiplot=False
       self.replot()
       print "Multiplots cleared."
+
+  def range_event(self, widget, event):
+    if event.type==gtk.gdk.BUTTON_PRESS and event.button==3:
+      # open a menu to select a set of ranges for that entry
+      menu=gtk.Menu()
+      all_item=gtk.MenuItem('All')
+      all_item.show()
+      all_menu=gtk.Menu()
+      menu.append(all_item)
+      all_item.set_submenu(all_menu)
+      reset=gtk.MenuItem('Reset')
+      reset.show()
+      reset.connect('activate', self._unset_ranges)
+      all_menu.append(reset)
+      # collect all ranges from other datasets that have
+      # the same x,y,z columns
+      all_data=self.active_session.file_data.items()
+      all_data.sort()
+      d=self.measurement[self.index_mess]
+      if d.z is None:
+        cols=(d.x.dimension, d.x.unit, d.y.dimension, d.y.unit)
+      else:
+        cols=(d.x.dimension, d.x.unit, d.y.dimension, d.y.unit,
+              d.z.dimension, d.z.unit)
+      ranges=[]
+      for ignore, datasets in all_data:
+        for ds in datasets:
+          if ds.z is None:
+            ds_cols=(ds.x.dimension, ds.x.unit, ds.y.dimension, ds.y.unit)
+          else:
+            ds_cols=(ds.x.dimension, ds.x.unit, ds.y.dimension, ds.y.unit,
+                  ds.z.dimension, ds.z.unit)
+          if ds_cols==cols:
+            ri=[ds.plot_options.xrange, ds.plot_options.yrange,
+                           ds.plot_options.zrange]
+            if not ri in ranges:
+              ranges.append(ri)
+      def clean_none(item):
+        if item is None:
+          return ''
+        else:
+          return '%g'%item
+      i=0
+      for ri in ranges:
+        if ri==[[None, None], [None, None], [None, None]]:
+          continue
+        if i>20:
+          break
+        i+=1
+        ritext=map(lambda item: ":".join(map(clean_none, item)), ri)
+        item=gtk.MenuItem('%s/%s/%s'%tuple(ritext))
+        item.connect('activate', self._change_range_all, widget)
+        item.show()
+        all_menu.append(item)
+      if widget is self.x_range_in:
+        ranges=[rangei[0] for rangei in ranges]
+      elif widget is self.y_range_in:
+        ranges=[rangei[1] for rangei in ranges]
+      else:
+        ranges=[rangei[2] for rangei in ranges]
+      set_ranges=[]
+      i=0
+      for ri in ranges:
+        if ri==[None, None] or ri in set_ranges:
+          continue
+        if i>20:
+          break
+        i+=1
+        set_ranges.append(ri)
+        ri=map(clean_none, ri)
+        item=gtk.MenuItem(ri[0]+':'+ri[1])
+        item.connect('activate', self._change_range, widget)
+        item.show()
+        menu.append(item)
+      menu.popup(None, None, None, event.button, 0)
+      return True
+
+  def _unset_ranges(self, widget):
+    dataset=self.measurement[self.index_mess]
+    dataset.plot_options.xrange=[None, None]
+    dataset.plot_options.yrange=[None, None]
+    dataset.plot_options.zrange=[None, None]
+    self.x_range_in.set_text('')
+    self.y_range_in.set_text('')
+    self.z_range_in.set_text('')
+    self.replot()
+
+  def _change_range(self, widget, entry):
+    newrange=widget.get_label()
+    entry.set_text(newrange)
+    entry.activate()
+
+  def _change_range_all(self, widget, entry):
+    x, y, z=widget.get_label().split('/')
+    self.x_range_in.set_text(x)
+    self.y_range_in.set_text(y)
+    self.z_range_in.set_text(z)
+    self.x_range_in.activate()
 
   def do_add_multiplot(self, index):
     '''

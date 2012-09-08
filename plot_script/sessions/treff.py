@@ -456,7 +456,8 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++
 
-  def do_extract_specular_reflectivity(self, file_actions, line_width, center_position_offset=(0., 0.)):
+  def do_extract_specular_reflectivity(self, file_actions, line_width,
+                                       center_position_offset=(0., 0.)):
     '''
       Function to extract the true specular reflectivity from an intensity map. It is appended to the
       file_actions dictionary to make it useable in a makro.
@@ -468,21 +469,26 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       :return: At the moment True, should be if the extraction was successfull.
     '''
     dataset=self.active_file_data[file_actions.window.index_mess]
-    alphai_steps=0.001
+    savex=dataset.x.copy()
     savey=dataset.y.copy()
-    dataset.y-=dataset.x
+    dataset.x-=center_position_offset[0]
+    dataset.y-=center_position_offset[1]
+    dataset.x+=savey
+    dataset.y-=savex
     # Extract the two lines
-    specular=file_actions.create_cross_section(1.0, center_position_offset[0], 0.0, center_position_offset[1],
-                                                      line_width, 1, gauss_weighting=False,
-                                                      sigma_gauss=0.1, bin_distance=alphai_steps)
-    off_spec1=file_actions.create_cross_section(1.0, center_position_offset[0],
-                                                0.0, 2.*line_width+center_position_offset[1],
+    specular=file_actions.create_cross_section(1.0, 0.,
+                                               0.0, 0,
+                                               line_width, 1, gauss_weighting=False,
+                                               sigma_gauss=0.1, bin_distance=line_width/4.)
+    off_spec1=file_actions.create_cross_section(1.0, 0.,
+                                                0.0, 2.*line_width,
                                                 line_width, 1, gauss_weighting=False,
-                                                sigma_gauss=1., bin_distance=alphai_steps)
-    off_spec2=file_actions.create_cross_section(1.0, center_position_offset[0],
-                                                0.0,-2.*line_width+center_position_offset[1],
+                                                sigma_gauss=0.1, bin_distance=line_width/4.)
+    off_spec2=file_actions.create_cross_section(1.0, 0.,
+                                                0.0,-2.*line_width,
                                                 line_width, 1, gauss_weighting=False,
-                                                sigma_gauss=1., bin_distance=alphai_steps)
+                                                sigma_gauss=0.1, bin_distance=line_width/4.)
+    dataset.x=savex
     dataset.y=savey
     # Try to subtract the off-specular part,
     # if no off-specular point is present at the specific 
@@ -507,7 +513,7 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
     #                                 [point.error for point in true_specular_data])
     true_specular_data[numpy.where(true_specular_data<=0)]=true_specular_data[numpy.where(true_specular_data>0)].min()
     true_specular=MeasurementData()
-    true_specular.append_column(PhysicalProperty('Θ', specular.x.unit, specular_x))
+    true_specular.append_column(PhysicalProperty('Θ', specular.x.unit, specular_x)/2.)
     true_specular.append_column(true_specular_data)
     true_specular.append_column(specular.y//'I_{Specular}')
     # add the object to the active_file_data list

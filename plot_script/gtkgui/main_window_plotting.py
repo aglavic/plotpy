@@ -475,7 +475,7 @@ class MainPlotting(object):
     table.attach(sw,
                 # X direction #          # Y direction
                 3, 6, 10, 11,
-                gtk.EXPAND|gtk.FILL, 0,
+                gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL,
                 0, 5);
     plotting_settings_3dmap=gtk.TextView()
     plotting_settings_3dmap.get_buffer().set_text(gnuplot_preferences.settings_3dmap)
@@ -486,7 +486,7 @@ class MainPlotting(object):
     table.attach(sw,
                 # X direction #          # Y direction
                 3, 6, 11, 12,
-                gtk.EXPAND|gtk.FILL, 0,
+                gtk.EXPAND|gtk.FILL, gtk.EXPAND|gtk.FILL,
                 0, 5);
 
     # additional Gnuplot commands
@@ -809,7 +809,7 @@ class MainPlotting(object):
           tentry.show()
           title.add(entry)
           title.add(tentry)
-          dialog.vbox.pack_start(title, expand=False)
+          main_items.pack_start(title, expand=False)
           tentry.connect('activate', self.change_plot_shortinfo, dataset)
           line=StyleLine(dataset.plot_options, self.replot)
           line.show()
