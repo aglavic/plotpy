@@ -9,6 +9,7 @@ import gtk
 import sys, os
 
 from plotpy.config import gnuplot_preferences
+from plotpy.message import error
 
 #----------------------- importing modules --------------------------
 
@@ -183,6 +184,7 @@ class RedirectError(RedirectOutput):
     measurement to help debugging.
   '''
   message_pending=False
+  message_line=''
 
   def __init__(self, plotting_session):
     '''
@@ -193,7 +195,7 @@ class RedirectError(RedirectOutput):
                                       buttons=gtk.BUTTONS_OK_CANCEL,
                                       message_format='Errorbox')
     self.messagebox.connect('response', self.response)
-    self.messagebox.set_title('Unecpected Error!')
+    self.messagebox.set_title('Unexpected Error!')
     # make sure all error messages get reported if the program exits
     import atexit
     atexit.register(self.flush)
@@ -204,8 +206,19 @@ class RedirectError(RedirectOutput):
       
       :param string: Output string of stderr
     '''
-    string=string.replace('\b', '')
+    while '\b' in string:
+      idx=string.index('\b')
+      if idx>0:
+        string=string[:idx-1]+string[idx+1:]
+      else:
+        string=string[1:]
     self.content.append(string)
+    self.message_line+=string
+    if '\n' in self.message_line:
+      lines=self.message_line.split('\n')
+      error('\n'.join(lines[:-1]))
+      self.message_line=lines[-1]
+    # send message to messenger
     while '\n' in self.content:
       self.content.remove('\n')
     message_text='An unexpected error has occured:\n'

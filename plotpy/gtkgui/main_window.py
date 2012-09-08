@@ -489,6 +489,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
       self.status_dialog.hide()
       self.status_dialog.connected_progress=self.progressbar
       self.status_dialog.connected_status=self.statusbar
+      self.status_dialog.set_transient_for(self)
 
     # resize events
     self.connect("event-after", self.update_picture)

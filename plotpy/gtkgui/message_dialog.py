@@ -6,6 +6,7 @@ import os
 import sys
 import gtk
 from plotpy import message
+from time import strftime, time
 
 def connect_stdout_dialog():
   '''
@@ -31,22 +32,26 @@ class GUIMessenger(gtk.Dialog):
     console.
   '''
   active_group=None
+  active_group_iter=None
   active_item=None
+  active_item_iter=None
   last_message=None
   numitems=1
   item_count=0
+  _cell_odd=True
+  _write_text=u''
 
-  def __init__(self, title, progressbar=None, statusbar=None, parent=None,
-               flags=0, buttons=None, initial_text=''):
-    gtk.Dialog.__init__(self, parent=parent, title=title)
-    gtk.Dialog.__init__(self, title, parent, flags, buttons)
+  def __init__(self, title, progressbar=None, statusbar=None, parent=None, initial_text=''):
+    gtk.Dialog.__init__(self, parent=parent, title=title,
+                        flags=gtk.DIALOG_NO_SEPARATOR|gtk.DIALOG_DESTROY_WITH_PARENT)
+    self._init_treeview()
     self.textview=gtk.TextView()
     self.buffer=self.textview.get_buffer()
     self.buffer.set_text(initial_text)
     # attach the textview inside a scrollbar widget
     self.scrollwidget=gtk.ScrolledWindow()
     self.scrollwidget.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    self.scrollwidget.add(self.textview)
+    self.scrollwidget.add(self.treeview)
     self.scrollwidget.show()
     self.textview.show()
     self.vbox.add(self.scrollwidget)
@@ -72,66 +77,108 @@ class GUIMessenger(gtk.Dialog):
     self.hide()
     return True
 
+  def _init_treeview(self):
+    self.treestore=gtk.TreeStore(str, str, str, str)
+    self.treeview=gtk.TreeView(self.treestore)
+    self.treeview.show()
+    self.treeview.set_reorderable(False)
+    self.group_column=gtk.TreeViewColumn('Item')
+    self.message_column=gtk.TreeViewColumn('Message')
+    self.time_column=gtk.TreeViewColumn('Time')
+    self.treeview.append_column(self.group_column)
+    self.treeview.append_column(self.message_column)
+    self.treeview.append_column(self.time_column)
+    cell=gtk.CellRendererText()
+    cell.set_property('background-set', True)
+    self.group_column.pack_start(cell, True)
+    self.group_column.set_attributes(cell, text=0, background=3)
+    cell=gtk.CellRendererText()
+    cell.set_property('background-set', True)
+    self.message_column.pack_start(cell, True)
+    self.message_column.set_attributes(cell, text=1, background=3)
+    cell=gtk.CellRendererText()
+    cell.set_property('background-set', True)
+    self.time_column.pack_start(cell, True)
+    self.time_column.set_attributes(cell, text=2, background=3)
+    #self.vbox.add(self.treeview)
+
   def write(self, text):
     '''
       Append a string to the buffer and scroll at the end, if it was visible before.
     '''
     if type(text) is not unicode:
-      utext=unicode(text, encoding=sys.stdin.encoding, errors='ignore')
+      utext=unicode(text, encoding=sys.stdin.encoding, errors='ignore').strip()
     else:
-      utext=text
-    # if the scrollbar is below 98% it is set to be at the bottom.
-    adj=self.scrollwidget.get_vadjustment()
-    end_visible=((adj.value+adj.page_size)>=adj.upper*0.98)
-    # scroll back if text containes backspace characters
-    if u'\b' in utext:
-      back_split_utext=utext.split(u'\b')
-      for utext in back_split_utext[:-1]:
-        self.buffer.insert(self.end_iter, utext)
-        # remove one character
-        iter1=self.end_iter
-        iter2=iter1.copy()
-        iter2.backward_char()
-        self.buffer.delete(iter2, iter1)
-      utext=back_split_utext[-1]
-    if self.connected_status is not None:
-      self.connected_status.push(0, text.strip())
-    self.buffer.insert(self.end_iter, utext)
-    if end_visible:
-      self.textview.scroll_to_mark(self.end_mark, 0.)
-    while gtk.events_pending():
-      gtk.main_iteration(False)
+      utext=text.strip()
+    while u'\b' in utext:
+      idx=utext.index(u'\b')
+      if idx>0:
+        utext=utext[:idx-1]+utext[idx+1:]
+      else:
+        utext=utext[1:]
+    if utext!=u'':
+      self._write_text+='\n'+utext
 
-  def _write(self, message=None, group=None, item=None, numitems=1, progress=None):
-    if group is None:
-      self.active_group=None
-      self.active_item=None
+  def flush(self):
+    if self._write_text!='':
+      self._write(self._write_text, group=None, item=None)
+    self._write_text=u''
+
+  def _write(self, message=None, group=None, item=None, numitems=1, progress=None,
+             bgcolor='#ffffff'):
+    # decode str input
+    stext=u''
+    if group is not None and type(group) is str:
+      group=unicode(group, sys.stdin.encoding)
+      stext=group+'-'+stext
+    if item is not None and type(item) is str:
+      item=unicode(item, sys.stdin.encoding)
+      stext=item+'-'+stext
+    if message is not None and type(message) is str:
+      message=unicode(message, sys.stdin.encoding)
+      stext+=message
+    if self.connected_status is not None:
+      self.connected_status.push(0, stext.strip())
+    # get timesamp of current message
+    timestr=strftime('%H:%M:%S')+str(time()%1)[1:5]
+    if group is None or group=='reset':
       if not message==self.last_message and message is not None:
-        self.write(message+'\n')
-      self.progress(progress)
-    elif group=='reset':
+        #self.write(message+'\n')
+        if group=='reset':
+          self.treestore.append(self.active_group_iter, [message, '', timestr, bgcolor])
+        else:
+          self.treestore.append(None, ['', message, timestr, bgcolor])
       self.active_group=None
+      self.active_group_iter=None
       self.active_item=None
-      if not message==self.last_message and message is not None:
-        self.write(message+'\n')
+      self.active_item_iter=None
       self.progress(progress)
     else:
       if item is None:
         if group==self.active_group:
           if not message==self.last_message and message is not None:
-            self.write('    '+message+'\n')
+            #self.write('    '+message+'\n')
+            self.treestore.append(self.active_group_iter, ['', message, timestr, bgcolor])
           self.progress(progress)
         else:
           self.active_group=group
           self.numitems=numitems
           self.item_count=0
-          self.write(group+':\n')
+          #self.write(group+':\n')
           if not message==self.last_message and message is not None:
-            self.write('    '+message+'\n')
+            #self.write('    '+message+'\n')
+            if self.active_group_iter is None:
+              self.active_group_iter=self.treestore.append(None,
+                                                           [group, message, timestr, bgcolor])
+            else:
+              self.treestore.append(self.active_group_iter, ['', message, timestr, bgcolor])
+          else:
+            self.active_group_iter=self.treestore.append(None, [group, '', timestr, bgcolor])
           self.progress(progress)
       elif item==self.active_item:
         if not message==self.last_message and message is not None:
-          self.write('        '+message+'\n')
+          #self.write('        '+message+'\n')
+          self.treestore.append(self.active_item_iter, ['', message, timestr, bgcolor])
         if progress is not None:
           self.progress(100.*float(self.item_count-1)/self.numitems+progress/float(self.numitems))
         else:
@@ -139,25 +186,38 @@ class GUIMessenger(gtk.Dialog):
       else:
         self.active_item=item
         self.item_count+=1
-        self.write('    '+item+'\n')
+        #self.write('    '+item+'\n')
         if not message==self.last_message and message is not None:
-          self.write('        '+message+'\n')
+          #self.write('        '+message+'\n')
+          self.active_item_iter=self.treestore.append(self.active_group_iter,
+                                                      [item, message, timestr, bgcolor])
+        else:
+          self.active_item_iter=self.treestore.append(self.active_group_iter,
+                                                      [item, '', timestr, bgcolor])
         if progress is not None:
           self.progress(100.*float(self.item_count-1)/self.numitems+progress/float(self.numitems))
         else:
           self.progress(100.*float(self.item_count-1)/self.numitems)
     self.last_message=message
+    self.treeview.collapse_all()
+    if self.active_item_iter is not None:
+      path=self.treestore.get_path(self.active_item_iter)
+    elif self.active_group_iter is not None:
+      path=self.treestore.get_path(self.active_group_iter)
+    else:
+      return
+    self.treeview.expand_to_path(path)
+    while gtk.events_pending():
+      gtk.main_iteration(False)
 
   def info(self, message, group=None, item=None, numitems=1, progress=None):
     self._write(message, group, item, numitems, progress)
 
   def warn(self, message, group=None, item=None, numitems=1, progress=None):
-    message='WARNING '+message
-    self._write(message, group, item, numitems, progress)
+    self._write(message, group, item, numitems, progress, bgcolor='#aaaaff')
 
   def error(self, message, group=None, item=None, numitems=1, progress=None):
-    message='ERROR '+message
-    self._write(message, group, item, numitems, progress)
+    self._write(message, group, item, numitems, progress, bgcolor='#ffaaaa')
 
   def progress(self, progress):
     if progress is None:
