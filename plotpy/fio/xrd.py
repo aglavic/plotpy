@@ -15,7 +15,7 @@ class Spec(TextReader):
   name=u"Spec"
   description=u"Files recored with the SPEC diffraction software"
   glob_patterns=[u'*.spec']
-  session=['xrd']
+  session='xrd'
 
   def read(self):
     input_file_lines=self.text_data.splitlines()
@@ -267,7 +267,7 @@ class Online(TextReader):
   name=u"Online (DESY)"
   description=u"File format used at diffraction beamlines of PETRA 3 and DORIS"
   glob_patterns=[u'*.fio']
-  session=['xrd']
+  session='xrd'
 
   def read(self):
     '''
@@ -341,7 +341,7 @@ class APS4ID(TextReader):
   name=u"4ID"
   description=u"Data taken at the 4ID beamline of APS"
   glob_patterns=[u'*.[0-9][0-9][0-9][0-9]']
-  session=['xrd']
+  session='xrd'
 
   def read(self):
     '''

@@ -7,10 +7,9 @@
 from generic import GenericSession
 # importing data readout
 from plotpy.read_data import mbe as read_data
-# import gui functions for active config.gui.toolkit
-from plotpy.config import gui as gui_config
+
 try:
-  GUI=__import__(gui_config.toolkit+'gui.mbe', fromlist=['MBEGUI']).MBEGUI
+  from plotpy.gtkgui.mbe import MBEGUI as GUI
 except ImportError:
   class GUI: pass
 
@@ -23,6 +22,7 @@ class MBESession(GUI, GenericSession):
   '''
     Class to handle mbe leed/rheed and other data
   '''
+  name='mbe'
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=''
   #------------------ help text strings ---------------

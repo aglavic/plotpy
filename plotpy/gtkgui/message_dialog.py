@@ -61,12 +61,18 @@ class GUIMessenger(gtk.Dialog):
                             os.path.split(
                            os.path.realpath(__file__))[0],
                            "..", "config", "logogreen.png").replace('library.zip', ''))
-    # Progressbar
+    # Bottombar
+    hbox=gtk.HBox()
     self.progressbar=gtk.ProgressBar()
     self.progressbar.show()
     self.connected_progress=progressbar
     self.connected_status=statusbar
-    self.vbox.pack_end(self.progressbar, False)
+    self.popup_toggle=gtk.CheckButton('Popup on warnings')
+    self.popup_toggle.set_active(True)
+    self.popup_toggle.show()
+    hbox.pack_start(self.popup_toggle, False)
+    hbox.add(self.progressbar)
+    self.vbox.pack_end(hbox, False)
     self.connect('delete-event', self._no_destroy)
     message.messenger=self
 
@@ -215,9 +221,12 @@ class GUIMessenger(gtk.Dialog):
 
   def warn(self, message, group=None, item=None, numitems=1, progress=None):
     self._write(message, group, item, numitems, progress, bgcolor='#aaaaff')
+    if self.popup_toggle.get_active():
+      self.show()
 
   def error(self, message, group=None, item=None, numitems=1, progress=None):
     self._write(message, group, item, numitems, progress, bgcolor='#ffaaaa')
+    self.show()
 
   def progress(self, progress):
     if progress is None:

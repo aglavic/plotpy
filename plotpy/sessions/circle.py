@@ -11,17 +11,17 @@ from plotpy import mds
 # importing preferences and data readout
 from plotpy.read_data import circle as read_data
 from plotpy.config import circle as config
-# import gui functions for active config.gui.toolkit
-from plotpy.config import gui as gui_config
+
 try:
-  GUI=__import__(gui_config.toolkit+'gui.circle', fromlist=['CircleGUI']).CircleGUI
+  from plotpy.gtkgui.circle import CircleGUI as GUI
 except ImportError:
   class GUI: pass
 
-class CircleSession(GUI, GenericSession):
+class XRDSession(GUI, GenericSession):
   '''
     Class to handle 4 circle data sessions
   '''
+  name='xrd'
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
 '''

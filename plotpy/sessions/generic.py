@@ -14,21 +14,16 @@ from cPickle import load, dumps#, dump
 
 # importing own modules
 from plotpy import  mds, plotting, parallel
+from plotpy.message import warn, error
 from plotpy.fio import reader
 from plotpy.config import gnuplot_preferences, transformations, user_config
 from plotpy.config import templates as template_config
 from plotpy.info import __email__, __version__
 
-# if python version < 2.5 set the sys.exit function as exit
-if hex(sys.hexversion)<'0x2050000':
-  exit=sys.exit #@ReservedAssignment
-
-# import gui functions for active config.gui.toolkit
-from plotpy.config import gui as gui_config
 try:
-  GUI=__import__(gui_config.toolkit+'gui.generic', fromlist=['GenericGUI']).GenericGUI
+  from plotpy.gtkgui.generic import GenericGUI as GUI
 except ImportError:
-  class GUI: pass
+  GUI=object
 
 class GenericSession(GUI):
   '''
@@ -39,6 +34,7 @@ class GenericSession(GUI):
 
     Specific measurements are childs of this class!
   '''
+  name='generic'
   #++++++++++++++++++ help text strings +++++++++++++++
   SHORT_HELP=\
 """
@@ -171,10 +167,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       files=self.read_arguments(arguments) # get filenames and set options
       if files is None: # read_arguments returns none, if help option is set
         print self.LONG_HELP+self.SPECIFIC_HELP+self.LONG_HELP_END
-        exit()
+        sys.exit()
       elif len(files)<1 and not self.use_gui and not self.ipdrop: # show help, if there is no file in the list
         print self.SHORT_HELP
-        exit()
+        sys.exit()
     else:
       files=[]
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
@@ -193,7 +189,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         if not self.use_gui and not self.ipdrop:
           print "No valid datafile found!"
           print self.SHORT_HELP
-          exit()
+          sys.exit()
         self.active_file_data=[]
         self.active_file_name="None"
       else:
@@ -804,6 +800,46 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     '''
     return "Data read from %s.\n"%(self.active_file_name)
 
+class SessionProxy(dict):
+  '''
+    Object keeping trac of available sessions.
+  '''
+  def __init__(self):
+    dict.__init__(self)
+    ############## Import all session submodules to search for Sessions ###########
+    package_dir=os.path.split(os.path.abspath(__file__))[0]
+    def recbase(check_class):
+      '''
+        Find bases of a class recursively.
+      '''
+      output=[]
+      try:
+        for item in check_class.__bases__:
+          if item is not object:
+            output+=recbase(item)
+      except AttributeError:
+        pass
+      return output+[check_class]
+    modules=[]
+    for name in os.listdir(package_dir):
+      if name.endswith(".py") or name.endswith(".pyc") or name.endswith(".pyo"):
+        modi=name.rsplit(".py", 1)[0]
+        if not (modi in modules or modi.startswith("_")):
+          modules.append(modi)
+    modules.sort()
+    sessions=[]
+    for module in modules:
+      try:
+        modi=__import__("plotpy.sessions."+module, fromlist=[module])
+      except Exception, error:
+        warn("Could not import module %s,\n %s: %s"%(module, error.__class__.__name__, error))
+        continue
+      items=[item[1] for item in modi.__dict__.items() if not item[0].startswith("_")]
+      sessions_i=filter(lambda item: GenericSession in recbase(item),
+                       items)
+      sessions+=sessions_i
+    for session in sessions:
+      self[session.name]=session
 
 
 #+++++++++++ Additional functions for general usage ++++++++++++++

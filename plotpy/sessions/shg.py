@@ -10,10 +10,9 @@ from plotpy.fitdata import FitFunction3D
 from plotpy.mds import PhysicalProperty, MeasurementData
 # importing data readout
 from plotpy.read_data import shg as read_data
-# import gui functions for active config.gui.toolkit
-from plotpy.config import gui as gui_config
+
 try:
-  GUI=__import__(gui_config.toolkit+'gui.shg', fromlist=['SHGGUI']).SHGGUI
+  from plotpy.gtkgui.shg import SHGGUI as GUI
 except ImportError:
   class GUI: pass
 
@@ -26,6 +25,7 @@ class SHGSession(GUI, GenericSession):
   '''
     Class to handle SHG data sessions
   '''
+  name='shg'
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
 '''

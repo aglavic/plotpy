@@ -466,7 +466,6 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     self.view_right.hide()
     self.frame1.set_current_page(0)
     self.read_window_config()
-    self.show()
 
     while len(self.measurement)==0:
       # if there is no measurement loaded, open a file selection dialog
@@ -483,6 +482,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
           self.status_dialog.destroy()
         return
 
+    self.show()
     # Display the window
     if self.status_dialog:
       # hide thw status dialog to make it possible to reshow it

@@ -20,10 +20,9 @@ from plotpy.mds import PhysicalConstant
 from plotpy.read_data import squid as read_data
 from plotpy.config import squid as config
 from plotpy.config import diamagnetism_table
-# import gui functions for active config.gui.toolkit
-from plotpy.config import gui as gui_config
+
 try:
-  GUI=__import__(gui_config.toolkit+'gui.squid', fromlist=['SquidGUI']).SquidGUI
+  from plotpy.gtkgui.squid import SquidGUI as GUI
 except ImportError:
   class GUI: pass
 
@@ -37,6 +36,7 @@ class SquidSession(GUI, GenericSession):
   '''
     Class to handle squid data sessions
   '''
+  name='squid'
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
 '''

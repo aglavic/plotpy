@@ -9,6 +9,7 @@ import numpy
 from time import sleep
 from plotpy import plotting
 from plotpy.config import gnuplot_preferences, user_config
+from plotpy.message import warn
 from dialogs import LabelArrowDialog, StyleLine, SimpleEntryDialog, \
                     PreviewDialog, VListEntry
 from diverse_classes import PlotProfile
@@ -119,7 +120,7 @@ class MainPlotting(object):
                                   fit_lorentz=False,
                                   show_persistent=True)
     if self.last_plot_text!='':
-      print 'Gnuplot error!'
+      warn(self.last_plot_text, group='Gnuplot Error')
       self.show_last_plot_params(None)
 
   def set_image(self):
@@ -341,7 +342,8 @@ class MainPlotting(object):
       except:
         pass
       if echo:
-        print 'Gnuplot error, see "View->Show Plot Parameters" for more details!'
+        warn(None, group='Gnuplot Error')
+        warn(self.last_plot_text, group='Gnuplot Error')
       #self.show_last_plot_params(None)
     else:
       self.set_title('Plotting GUI - '+self.input_file_name+" - "+str(self.index_mess))

@@ -58,7 +58,6 @@ class MainFile(object):
         status_dialog=GUIMessenger('Import Status',
                                   progressbar=self.progressbar,
                                   statusbar=self.statusbar,
-                                  flags=gtk.DIALOG_DESTROY_WITH_PARENT,
                                   parent=self)
         self.status_dialog=status_dialog
         status_dialog.set_default_size(800, 600)

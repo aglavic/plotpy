@@ -19,7 +19,7 @@ class Spec(TextReader):
   name=u"QD"
   description=u"Files recorded with a Quantum Design MPMS/PPMS instrument"
   glob_patterns=[u'*.dat', u'*.raw']
-  session=['squid']
+  session='squid'
 
   def read(self):
     '''

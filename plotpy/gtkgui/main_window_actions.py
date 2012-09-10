@@ -169,17 +169,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       :param transfere: A dictionary of measurements to be trasfered to the new session
     '''
     session_dialog=gtk.Dialog(title='Select Session Type...', buttons=('OK', 1, 'Cancel', 0))
-    sessions={
-              'SQUID/PPMS': ('squid', 'SquidSession'),
-              '4-Circle': ('circle', 'CircleSession'),
-              'DNS': ('dns', 'DNSSession'),
-              'SAS': ('sas', 'SASSession'),
-              'GISAS': ('kws2', 'KWS2Session'),
-              'Reflectometer': ('reflectometer', 'ReflectometerSession'),
-              'TREFF/MARIA': ('treff', 'TreffSession'),
-              'MBE': ('mbe', 'MBESession'),
-
-              }
+    from plotpy.sessions import sessions
 
     table=gtk.Table(1, len(sessions.keys()), False)
     buttons=[]
@@ -202,7 +192,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
           break
       # If session already in suspended sessions, just switch
       for i, session in enumerate(self.suspended_sessions):
-        if session.__module__=='sessions.%s'%sessions[name][0]:
+        if session.__class__ is sessions[name]:
           self.suspended_sessions.append(self.active_session)
           self.active_session=self.suspended_sessions.pop(i)
           self.measurement=self.active_session.active_file_data
@@ -214,9 +204,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
           self.activate_plugins()
           self.replot()
           return True
-      new_session_class=getattr(__import__('sessions.'+sessions[name][0], globals(), locals(),
-                                      [sessions[name][1]]), sessions[name][1])
-      new_session=new_session_class([])
+      new_session=sessions[name]([])
       if self.active_session is not None:
         self.suspended_sessions.append(self.active_session)
         self.active_session=new_session

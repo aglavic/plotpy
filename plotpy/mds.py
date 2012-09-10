@@ -924,7 +924,7 @@ class MeasurementData(object):
 
   def export(self, file_name, print_info=True, seperator=u' ',
              xfrom=None, xto=None, only_fitted_columns=False,
-             format_string=u"%g"):
+             format_string=None):
     '''
       Write data in text file.
       
@@ -942,6 +942,11 @@ class MeasurementData(object):
     # Tried all ideas from e.g.
     # http://stackoverflow.com/questions/2721521/fastest-way-to-generate-delimited-string-from-1d-numpy-array
     # http://www.skymind.com/~ocrow/python_string/
+    if format_string is None:
+      if numpy.float64 in [self.x.dtype, self.y.dtype]:
+        format_string="%.15g"
+      else:
+        format_string="%.8g"
     xd=self.xdata
     yd=self.ydata
     zd=self.zdata
@@ -2581,7 +2586,8 @@ class PhysicalProperty(numpy.ndarray):
 
   unit_save=True #: if true changes units after arithmetic operation and checks if correct
 
-  def __new__(cls, dimension_in, unit_in, input_data=[], input_error=None, unit_save=True):
+  def __new__(cls, dimension_in, unit_in, input_data=[], input_error=None, unit_save=True,
+              dtype=numpy.float32):
     '''
       Class constructor when explcidly called.
       
@@ -2589,14 +2595,14 @@ class PhysicalProperty(numpy.ndarray):
       :param unit_in: String with unit for that instance
     '''
     #obj=numpy.ndarray.__new__(cls, len(input_data), dtype=numpy.float32)
-    obj=numpy.asarray(input_data, dtype=numpy.float32).view(cls).copy()
+    obj=numpy.asarray(input_data, dtype=dtype).view(cls).copy()
     obj.unit=PhysicalUnit(unit_in)
     obj.dimension=dimension_in
     obj.unit_save=True
     if input_error is not None:
       if len(input_error)!=len(input_data):
         raise ValueError, u'shape mismatch: error and data have different lengths'
-      obj.error=numpy.array(input_error, dtype=numpy.float32)
+      obj.error=numpy.array(input_error, dtype=dtype)
     obj.__setslice__(0, len(input_data), input_data)
     return obj
 

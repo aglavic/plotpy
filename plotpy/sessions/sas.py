@@ -7,10 +7,9 @@
 from generic import GenericSession
 # importing data readout
 from plotpy.read_data import sas as read_data
-# import GUI functions for active config.gui.toolkit
-from plotpy.config import gui as gui_config
+
 try:
-  GUI=__import__(gui_config.toolkit+'gui.sas', fromlist=['SASGUI']).SASGUI
+  from plotpy.gtkgui.sas import SASGUI as GUI
 except ImportError:
   class GUI: pass
 
@@ -23,6 +22,7 @@ class SASSession(GUI, GenericSession):
   '''
     Class to handle small angle scattering data sessions
   '''
+  name='sas'
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
 '''

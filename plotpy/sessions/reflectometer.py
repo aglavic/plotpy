@@ -20,15 +20,12 @@ from plotpy.sessions import templates
 templates.MeasurementDataClass=read_data.MeasurementData
 from plotpy.config import reflectometer as config
 from plotpy.config import gnuplot_preferences
-# import gui functions for active config.gui.toolkit
-from plotpy.config import gui as gui_config
+
 try:
-  GUI=__import__(gui_config.toolkit+'gui.reflectometer', fromlist=['ReflectometerGUI']).ReflectometerGUI
+  from plotpy.gtkgui.reflectometer import ReflectometerGUI as GUI
+  from plotpy.gtkgui.reflectometer_functions import ReflectometerFitGUI
 except ImportError:
   class GUI: pass
-try:
-  ReflectometerFitGUI=__import__(gui_config.toolkit+'gui.reflectometer_functions', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
-except ImportError:
   class ReflectometerFitGUI: pass
 
 if not sys.platform.startswith('win'):
@@ -55,6 +52,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
   '''
     Class to handle reflectometer data sessions
   '''
+  name='xrr'
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
   '''

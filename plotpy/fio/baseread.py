@@ -19,11 +19,11 @@ try:
   from cStringIO import StringIO
 except ImportError:
   from  StringIO import StringIO
-try:
-  from multiprocessing import Pool
-  USE_MP=True
-except ImportError:
-  USE_MP=False
+#try:
+#  from multiprocessing import Pool
+#  USE_MP=True
+#except ImportError:
+USE_MP=False; Pool=None
 
 
 class Reader(object):
@@ -35,7 +35,7 @@ class Reader(object):
   name=u"Reader"
   description=u""
   glob_patterns=[]
-  session=['generic']
+  session='generic'
 
   # additional parameters that can be given to the open function
   # with their default values
@@ -89,7 +89,7 @@ class Reader(object):
     if in_process:
       return self._messages, FileData(result, self.origin)
     else:
-      return FileData(result, self.origin)
+      return FileData(result, self.session, self.origin)
 
   def _read_file(self, filename):
     '''
@@ -191,9 +191,10 @@ class FileData(list):
     The origin attribute stores the files path and name
     where the data was read from.
   """
-  def __init__(self, items=[], origin=(u"", u"")):
+  def __init__(self, items=[], session=None, origin=(u"", u"")):
     list.__init__(self, items)
     self.origin=origin
+    self.session=session
 
   def __repr__(self):
     return "FileData(items=%s, \n         origin=%s)"%(list.__repr__(self), repr(self.origin))
@@ -204,7 +205,7 @@ def _open(reader, filename, **kwds):
 class ReaderProxy(object):
 
   def __init__(self):
-    ############## Import all submodules to search for Readers ###########
+    ############## Import all fio submodules to search for Readers ###########
     package_dir=os.path.split(os.path.abspath(__file__))[0]
     def recbase(check_class):
       '''
@@ -229,7 +230,7 @@ class ReaderProxy(object):
       try:
         modi=__import__("plotpy.fio."+module, fromlist=[module])
       except Exception, error:
-        warn("Could not import module %s, %s: %s"%(module, error.__class__.__name__, error))
+        warn("Could not import module %s,\n %s: %s"%(module, error.__class__.__name__, error))
         continue
       items=[item[1] for item in modi.__dict__.items() if not item[0].startswith("_")]
       readers_i=filter(lambda item: type(item) is type
@@ -278,6 +279,8 @@ class ReaderProxy(object):
     if not type(files) in [list, tuple]:
       # input is not a list of files
       files=[files, ]
+    elif len(files)==0:
+      return []
     results=[]
     for i, filename in enumerate(files):
       if not type(filename) in [str, unicode, file]:

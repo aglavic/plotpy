@@ -10,10 +10,9 @@ from configobj import ConfigObj
 from generic import GenericSession
 # importing data readout
 from plotpy.read_data import kws2 as read_data
-# import gui functions for active config.gui.toolkit
-from plotpy.config import gui as gui_config
+
 try:
-  GUI=__import__(gui_config.toolkit+'gui.kws2', fromlist=['KWS2GUI']).KWS2GUI
+  from plotpy.gtkgui.kws2 import KWS2GUI as GUI
 except ImportError:
   class GUI: pass
 
@@ -22,10 +21,11 @@ __credits__=["Ulrich Ruecker"]
 from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
 __status__="Development"
 
-class KWS2Session(GUI, GenericSession):
+class GISASSession(GUI, GenericSession):
   '''
     Class to handle in12 data sessions
   '''
+  name='gisas'
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
 '''

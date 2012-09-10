@@ -23,15 +23,12 @@ from plotpy.config import transformations, gnuplot_preferences
 from plotpy.config.scattering_length_table import NEUTRON_SCATTERING_LENGTH_DENSITIES
 if not 'Neutron SLD' in user_config:
   user_config['Neutron SLD']=NEUTRON_SCATTERING_LENGTH_DENSITIES
-# import gui functions for active config.gui.toolkit
-from plotpy.config import gui as gui_config
+
 try:
-  GUI=__import__(gui_config.toolkit+'gui.treff', fromlist=['TreffGUI']).TreffGUI
+  from plotpy.gtkgui.treff import TreffGUI as GUI
+  from plotpy.gtkgui.reflectometer_functions import ReflectometerFitGUI
 except ImportError:
   class GUI: pass
-try:
-  ReflectometerFitGUI=__import__(gui_config.toolkit+'gui.reflectometer_functions', fromlist=['ReflectometerFitGUI']).ReflectometerFitGUI
-except ImportError:
   class ReflectometerFitGUI: pass
 
 if not sys.platform.startswith('win'):
@@ -255,10 +252,11 @@ def seperate_scattering(datasets, P):
   output.append(R['-+']*normalization_factor)
   return output
 
-class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
+class PNRSession(GUI, ReflectometerFitGUI, GenericSession):
   '''
     Class to handle treff data sessions
   '''
+  name='pnr'
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
 '''

@@ -6,9 +6,9 @@
 
 ##---add_python_path_here---## # Place holder to add installation directory to python path for non superuser installation.
 
-import plotpy
 import sys
 import os
+import plotpy
 
 if __name__=='__main__':
   if '--profile' in sys.argv:

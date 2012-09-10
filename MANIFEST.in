@@ -1,7 +1,7 @@
-recursive-include plot_script/doc *
-recursive-include plot_script/gtkgui/icons *.png
-include plot_script/config/fit/fit.f90
-include plot_script/config/logo*.*
-recursive-include plot_script/config/fit/pnr_multi *.f90
-recursive-include plot_script/config *.dat squid_calibration
+recursive-include plotpy/doc *
+recursive-include plotpy/gtkgui/icons *.png
+include plotpy/config/fit/fit.f90
+include plotpy/config/logo*.*
+recursive-include plotpy/config/fit/pnr_multi *.f90
+recursive-include plotpy/config *.dat squid_calibration
 include scripts/*
