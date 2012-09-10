@@ -68,6 +68,7 @@ elif "py2exe" in sys.argv:
                               "skip_archive": True, # setting not to move compiled code into library.zip file
                               'packages':'encodings, gtk, IPython, PIL, plot_script',
                               "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'],
+                              "excludes": "matplotlib, pylab, PyQt4, wx, wxPython, idlelib",
                              },
                            }
               }

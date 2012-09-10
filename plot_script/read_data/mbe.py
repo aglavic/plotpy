@@ -8,7 +8,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import os, sys
 
-from numpy import linspace, float32, asarray, array
+from numpy import linspace, float32, float64, asarray, array
 # use PIL image readout
 import Image
 # py2exe hack
@@ -65,13 +65,13 @@ def read_dca_log_data(file_name):
   data_lines=map(str.strip, data_lines)
   data_lines=map(lambda item: item.split('\t'), data_lines)
 
-  data=array(data_lines, dtype=float32).transpose()
+  data=array(data_lines, dtype=float64).transpose()
   output=MeasurementData()
   output.short_info=os.path.split(file_name)[1].rsplit('.', 1)[0]
   output.sample_name=sample_name
   for i, col in enumerate(cols):
     try:
-      output.data.append(PhysicalProperty(col, '', data[i], dtype=float32))
+      output.data.append(PhysicalProperty(col, '', data[i], dtype=float64))
     except IndexError:
       return 'NULL'
   return [output]

@@ -929,7 +929,7 @@ class MeasurementData(object):
 
   def export(self, file_name, print_info=True, seperator=' ',
              xfrom=None, xto=None, only_fitted_columns=False,
-             format_string="%.15g"):
+             format_string=None):
     '''
       Write data in text file.
       
@@ -947,6 +947,11 @@ class MeasurementData(object):
     # Tried all ideas from e.g.
     # http://stackoverflow.com/questions/2721521/fastest-way-to-generate-delimited-string-from-1d-numpy-array
     # http://www.skymind.com/~ocrow/python_string/
+    if format_string is None:
+      if numpy.float64 in [self.x.dtype, self.y.dtype]:
+        format_string="%.15g"
+      else:
+        format_string="%.8g"
     xd=self.xdata
     yd=self.ydata
     zd=self.zdata
