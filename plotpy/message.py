@@ -27,6 +27,7 @@ class DefaultMessenger(object):
     and directly prints to stdout or raises a Warning/Error.
   '''
   last_message=None
+  encoding=sys.stdout.encoding
 
   def format_message(self, message, group, item):
     if item is not None:
@@ -39,7 +40,7 @@ class DefaultMessenger(object):
         message=group
       else:
         message=group+' - '+message
-    return message
+    return message.encode(sys.stdout.encoding)
 
   def info(self, message, group=None, item=None, numitems=1, progress=None):
     output=self.format_message(message, group, item)
@@ -67,6 +68,7 @@ class NiceMessenger(object):
   last_message=None
   numitems=1
   item_count=0
+  encoding=sys.stdout.encoding
 
   def _write(self, message=None, group=None, item=None, numitems=1, progress=None):
     self.clear_line()

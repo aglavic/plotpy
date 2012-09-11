@@ -307,10 +307,12 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     # x,y ranges
     self.x_range_in=gtk.Entry()
     self.x_range_in.set_width_chars(6)
+    self.x_range_in.set_text(':')
     self.x_range_label=gtk.Label()
     self.x_range_label.set_markup('x-range:')
     self.y_range_in=gtk.Entry()
     self.y_range_in.set_width_chars(6)
+    self.y_range_in.set_text(':')
     self.y_range_label=gtk.Label()
     self.y_range_label.set_markup('y-range:')
     align_table.attach(self.x_range_label, 3, 4, 0, 1, gtk.FILL, gtk.FILL, 0, 0)
@@ -357,6 +359,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     # z range and log z checkbox
     self.z_range_in=gtk.Entry()
     self.z_range_in.set_width_chars(6)
+    self.z_range_in.set_text(':')
     self.z_range_label=gtk.Label()
     self.z_range_label.set_markup('z-range:')
     self.logz=gtk.CheckButton(label='log z', use_underline=True)
@@ -500,13 +503,16 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     self.label2.connect("activate", self.change) # changed entry triggers change() function 
     self.plot_page_entry.connect("activate", self.iterate_through_measurements)
     self.x_range_in.connect("activate", self.change_range)
+    self.x_range_in.connect('event', self.range_event)
     self.y_range_in.connect("activate", self.change_range)
+    self.y_range_in.connect('event', self.range_event)
     self.font_size.connect("activate", self.change_range)
     self.logx.connect("toggled", self.change)
     self.logy.connect("toggled", self.change)
     self.plot_options_handler_id=self.plot_options_button.connect("clicked",
                                                                 self.open_plot_options_window)
     self.z_range_in.connect("activate", self.change_range)
+    self.z_range_in.connect('event', self.range_event)
     self.logz.connect("toggled", self.change)
     self.y2_slicing.connect("toggled", self.change)
     self.y2_width.connect("activate", self.change)

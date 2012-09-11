@@ -8,8 +8,6 @@ import numpy
 from generic import GenericSession
 from plotpy.fitdata import FitFunction3D
 from plotpy.mds import PhysicalProperty, MeasurementData
-# importing data readout
-from plotpy.read_data import shg as read_data
 
 try:
   from plotpy.gtkgui.shg import SHGGUI as GUI

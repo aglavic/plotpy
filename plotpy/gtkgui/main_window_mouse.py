@@ -188,10 +188,19 @@ class MainMouse(object):
       x1=max(position[0], self.active_zoom_from[0])
       y0=min(position[1], self.active_zoom_from[1])
       y1=max(position[1], self.active_zoom_from[1])
-      dsp.xrange=[x0, x1]
-      dsp.yrange=[y0, y1]
+      # check range for correctness:
       self.active_zoom_from=None
+      if not (x0==x1 or
+              y0==y1 or
+              x0>float(dataset.x.max()) or
+              x1<float(dataset.x.min()) or
+              y0>float(dataset.y.max()) or
+              y1<float(dataset.y.min())
+              ):
+        dsp.xrange=[x0, x1]
+        dsp.yrange=[y0, y1]
       self.replot()
+      self._set_xyz_range_labels()
     if self.mouse_arrow_starting_point is not None:
       # draw an arrow in the plot
       start=self.mouse_arrow_starting_point

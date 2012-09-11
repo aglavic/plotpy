@@ -5,64 +5,64 @@
 
 from math import pi
 
-__author__="Artur Glavic"
+__author__=u"Artur Glavic"
 __credits__=[]
 from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
+__status__=u"Production"
 
 # define transformations that can be used to convert units
 known_unit_transformations={
                             # angle
-                            ('rad', 'mrad'): (1.e3, 0.),
-                            ('rad', '°'): (180./pi, 0.),
+                            (u'rad', u'mrad'): (1.e3, 0.),
+                            (u'rad', u'°'): (180./pi, 0.),
                             # length
-                            ('Å', 'nm'): (1.e-1, 0.),
-                            ('nm', 'µm'): (1.e-3, 0.),
-                            ('µm', 'mm'): (1.e-3, 0.),
-                            ('mm', 'm'): (1.e-3, 0.),
-                            ('m', 'km'): (1.e-3, 0.),
-                            ('cm', 'm'): (1.e-2, 0.),
-                            ('dm', 'm'): (1.e-1, 0.),
+                            (u'Å', u'nm'): (1.e-1, 0.),
+                            (u'nm', u'µm'): (1.e-3, 0.),
+                            (u'µm', u'mm'): (1.e-3, 0.),
+                            (u'mm', u'm'): (1.e-3, 0.),
+                            (u'm', u'km'): (1.e-3, 0.),
+                            (u'cm', u'm'): (1.e-2, 0.),
+                            (u'dm', u'm'): (1.e-1, 0.),
                             # reciprocal length
-                            ('Å^{-1}', 'nm^{-1}'): (10., 0.),
+                            (u'Å^{-1}', u'nm^{-1}'): (10., 0.),
                             # temperature
-                            ('mK', 'K'): (1.e-3, 0.),
-                            ('K', '°C'): (1.,-273.15),
+                            (u'mK', u'K'): (1.e-3, 0.),
+                            (u'K', u'°C'): (1.,-273.15),
                             # time
-                            ('d', 'h'): (24., 0.),
-                            ('h', 'min'): (60., 0.),
-                            ('min', 's'): (60., 0.),
-                            ('s', 'ms'): (1.e3, 0.),
-                            ('ms', 'µs'): (1.e3, 0.),
+                            (u'd', u'h'): (24., 0.),
+                            (u'h', u'min'): (60., 0.),
+                            (u'min', u's'): (60., 0.),
+                            (u's', u'ms'): (1.e3, 0.),
+                            (u'ms', u'µs'): (1.e3, 0.),
                             # magnetism
-                            ('emu', 'A·m^2'): (1.e-3, 0.),
-                            ('mT', 'T'): (1.e-3, 0.),
-                            ('Oe', 'T'): (1.e-4, 0., 'H', 'μ_0·H')
+                            (u'emu', u'A·m^2'): (1.e-3, 0.),
+                            (u'mT', u'T'): (1.e-3, 0.),
+                            (u'Oe', u'T'): (1.e-4, 0., u'H', u'μ_0·H')
                             }
 
 known_transformations=[
                       # magnetism
-                      ['H', 'Oe', 1e-4, 0, 'µ_0·H', 'T'],
-                      ['emu', 1e-3, 0, 'A·m^2'],
+                      [u'H', u'Oe', 1e-4, 0, u'µ_0·H', u'T'],
+                      [u'emu', 1e-3, 0, u'A·m^2'],
                       # time
-                      ['h', 24, 0, 'd'],
-                      ['h', 60., 0, 'min'],
-                      ['min', 60., 0, 's'],
-                      ['s', 1000., 0, 'ms'],
-                      ['ms', 1000., 0, 'µs'],
+                      [u'h', 24, 0, u'd'],
+                      [u'h', 60., 0, u'min'],
+                      [u'min', 60., 0, u's'],
+                      [u's', 1000., 0, u'ms'],
+                      [u'ms', 1000., 0, u'µs'],
                       # length
-                      ['m', 1./1000, 0, 'km'],
-                      ['mm', 1./1000, 0, 'm'],
-                      ['cm', 1./100, 0, 'm'],
-                      ['µm', 1./1000, 0, 'mm'],
-                      ['nm', 1./1000, 0, 'µm'],
-                      ['Å', 1./10, 0, 'nm'],
+                      [u'm', 1./1000, 0, u'km'],
+                      [u'mm', 1./1000, 0, u'm'],
+                      [u'cm', 1./100, 0, u'm'],
+                      [u'µm', 1./1000, 0, u'mm'],
+                      [u'nm', 1./1000, 0, u'µm'],
+                      [u'Å', 1./10, 0, u'nm'],
                       # angle
-                      ['°', pi/180, 0, 'rad'],
-                      ['rad', 1000., 0, 'mrad'],
-                      ['2Θ', '°', 0.5 , 0, 'Θ', '°'],
-                      ['2Θ', 'rad', 0.5 , 0, 'Θ', 'rad'],
-                      ['2Θ', 'mrad', 0.5 , 0, 'Θ', 'mrad'],
+                      [u'°', pi/180, 0, u'rad'],
+                      [u'rad', 1000., 0, u'mrad'],
+                      [u'2Θ', u'°', 0.5 , 0, u'Θ', u'°'],
+                      [u'2Θ', u'rad', 0.5 , 0, u'Θ', u'rad'],
+                      [u'2Θ', u'mrad', 0.5 , 0, u'Θ', u'mrad'],
                       # temperature
-                      ['K', 1,-273.15, '°C']
+                      [u'K', 1,-273.15, u'°C']
                       ]

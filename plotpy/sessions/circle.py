@@ -9,7 +9,6 @@ import numpy
 from generic import GenericSession
 from plotpy import mds
 # importing preferences and data readout
-from plotpy.read_data import circle as read_data
 from plotpy.config import circle as config
 
 try:
@@ -68,20 +67,6 @@ class XRDSession(GUI, GenericSession):
       else:
         found=False
     return (found, last_argument_option)
-
-
-  def read_file(self, file_name):
-    '''
-      function to read data files
-    '''
-    datasets=read_data.read_data(file_name)
-    if datasets=='NULL':
-      return datasets
-    for dataset in datasets:
-      if 'timescan_cm' in dataset.info:
-        self.filter_fast_energyscan_ue64(dataset)
-    return datasets
-
 
 
   def add_file(self, filename, append=True):

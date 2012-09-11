@@ -2100,6 +2100,8 @@ class PhysicalUnit(object):
     if type(entry_str) is PhysicalUnit:
       self._unit_parts=deepcopy(entry_str._unit_parts)
     else:
+      if type(entry_str) is str:
+        entry_str=unicode(entry_str, sys.stdin.encoding)
       if len(entry_str.split(u'/'))>2:
         raise ValueError, u'the format of the input string should be n1*n2*n3/d1*d2*d3'
       self._unit_parts={}
@@ -2644,7 +2646,7 @@ class PhysicalProperty(numpy.ndarray):
         self._error.resize(length+len(item), refcheck=False)
         self._error.__setslice__(length, length+len(item), item.error)
       self.__setslice__(length, length+len(item), item.view(numpy.ndarray))
-    elif hasattr(item, u'__iter__'):
+    elif hasattr(item, '__iter__'):
       if len(item)==2:
         if len(self)==0:
           self.error=[]
@@ -3110,7 +3112,7 @@ class PhysicalProperty(numpy.ndarray):
       :return: New object instance.    
     '''
     output=deepcopy(self)
-    if type(conversion) in [str, PhysicalUnit]:
+    if type(conversion) in [str, unicode, PhysicalUnit]:
       output.unit_trans(self.unit.get_transformation(conversion))
       return output
     else:

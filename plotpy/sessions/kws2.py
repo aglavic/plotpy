@@ -9,7 +9,6 @@ from configobj import ConfigObj
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # importing data readout
-from plotpy.read_data import kws2 as read_data
 
 try:
   from plotpy.gtkgui.kws2 import KWS2GUI as GUI

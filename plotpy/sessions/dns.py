@@ -17,7 +17,6 @@ use_numpy=True
 from generic import GenericSession
 from plotpy.mds import MeasurementData
 # importing data readout
-from plotpy.read_data import dns as read_data
 from plotpy.config import dns as config
 from plotpy.config import transformations
 

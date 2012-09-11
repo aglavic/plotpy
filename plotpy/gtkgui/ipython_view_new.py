@@ -107,6 +107,7 @@ class IterableIPShell:
     orig_stdout=(sys.stdout, sys.stderr)
     sys.stdout=IPython.utils.io.stdout #@UndefinedVariable
     sys.stderr=IPython.utils.io.stderr #@UndefinedVariable
+    sys.stdout.encoding='utf8'
     try:
       line=self.getCurrentLine()#IPython.utils.io.raw_input_ext()#self.IP.raw_input()
       #if self.IP.autoindent:

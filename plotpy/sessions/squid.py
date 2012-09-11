@@ -17,7 +17,6 @@ import numpy
 from generic import GenericSession
 from plotpy.mds import PhysicalConstant
 # importing preferences and data readout
-from plotpy.read_data import squid as read_data
 from plotpy.config import squid as config
 from plotpy.config import diamagnetism_table
 
@@ -119,12 +118,6 @@ Data columns and unit transformations are defined in config.squid.py.
         found=False
     return (found, last_argument_option)
 
-
-  def read_file(self, file_name):
-    '''
-      function to read data files
-    '''
-    return read_data.read_data(file_name , self.COLUMNS_MAPPING, self.MEASUREMENT_TYPES)
 
   def add_file(self, filename, append=True):
     '''

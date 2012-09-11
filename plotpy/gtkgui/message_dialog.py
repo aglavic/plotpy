@@ -40,6 +40,7 @@ class GUIMessenger(gtk.Dialog):
   item_count=0
   _cell_odd=True
   _write_text=u''
+  encoding='utf8'
 
   def __init__(self, title, progressbar=None, statusbar=None, parent=None, initial_text=''):
     gtk.Dialog.__init__(self, parent=parent, title=title,

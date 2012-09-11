@@ -25,7 +25,7 @@ try:
   from time import sleep
   import signal
   import atexit
-  USE_MP=True
+  USE_MP=False
 except ImportError:
   USE_MP=False
 
@@ -334,12 +334,12 @@ class ReaderProxy(object):
         # send to worker thread
         results.append(_pool.apply_async(_open, args=(reader, filename), kwds=kwds))
       else:
-        try:
-          results.append(reader.open(filename, **kwds))
-        except Exception, err:
-          # don't stop on read exceptions
-          error(err.__class__.__name__+': '+str(err), group=u'Reading files', item=filename)
-          results.append(None)
+        #try:
+        results.append(reader.open(filename, **kwds))
+        #except Exception, err:
+        #  # don't stop on read exceptions
+        #  error(err.__class__.__name__+': '+str(err), group=u'Reading files', item=filename)
+        #  results.append(None)
       #sleep(0.25)
     if USE_MP:
       fetched_results=[]

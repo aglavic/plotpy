@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 '''
+  Data formats from xrd experiments.
 '''
 
 import numpy

@@ -13,11 +13,7 @@ import time
 from generic import GenericSession
 # import parameter class for fits
 from reflectometer_fit.reflectometer import * #@UnusedWildImport
-# importing preferences and data readout
-from plotpy.read_data import reflectometer as read_data
-# use own datastructure also for templates
-from plotpy.sessions import templates
-templates.MeasurementDataClass=read_data.MeasurementData
+
 from plotpy.config import reflectometer as config
 from plotpy.config import gnuplot_preferences
 

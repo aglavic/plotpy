@@ -5,8 +5,6 @@
 
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
-# importing data readout
-from plotpy.read_data import mbe as read_data
 
 try:
   from plotpy.gtkgui.mbe import MBEGUI as GUI

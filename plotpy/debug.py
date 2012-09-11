@@ -50,6 +50,7 @@ class RedirectOutput(object):
     '''
     self.file_object=obj
     self.connection=connection
+    self.encoding=obj.encoding
     self.connect_on_keyword=connect_on_keyword
     self.buffer=""
 

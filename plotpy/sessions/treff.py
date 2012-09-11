@@ -14,9 +14,6 @@ from generic import GenericSession
 # import parameter class for fits
 from reflectometer_fit.parameters import FitParameters, LayerParam, MultilayerParam
 from plotpy.mds import MeasurementData, PhysicalProperty
-# importing data readout
-from plotpy.read_data import treff as read_data
-from plotpy.read_data import treff_addon1
 from plotpy.config import user_config
 from plotpy.config import treff as config
 from plotpy.config import transformations, gnuplot_preferences

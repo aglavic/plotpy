@@ -138,6 +138,7 @@ class RedirectOutput(object):
   '''
 
   second_output=None
+  encoding='utf8'
 
   def __init__(self, plotting_session):
     '''
