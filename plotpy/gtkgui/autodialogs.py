@@ -79,14 +79,19 @@ class AutoDialog(gtk.Dialog):
       arg_doc=':param %s:'%arg
       for line in doc_lines:
         if arg_doc in line:
-          data=line.split(arg_doc, 1)[1].strip().split('-', 2)
+          line=line.split(arg_doc, 1)[1].strip()
+          if '[' in line and ']' in line:
+            data, rline=line.split(']', 1)
+            data=[data]+rline.split('-', 1)
+          else:
+            data=line.split('-', 1)
           if len(data)==1:
             item['description']=data[0]
           elif len(data)==2:
             item['name']=data[0].strip()
             item['description']=data[1].strip()
           elif len(data)==3:
-            item['numrange']=map(float, data[0].lstrip('[ ').rstrip('] ').split(':'))
+            item['numrange']=map(float, data[0].lstrip('[ ').rstrip().split(':'))
             item['name']=data[1].strip()
             item['description']=data[2].strip()
           break

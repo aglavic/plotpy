@@ -15,15 +15,19 @@ from fnmatch import fnmatch
 import gzip
 import numpy
 from plotpy.message import *
+from fileinput import filename
 try:
   from cStringIO import StringIO
 except ImportError:
   from  StringIO import StringIO
-#try:
-#  from multiprocessing import Pool
-#  USE_MP=True
-#except ImportError:
-USE_MP=False; Pool=None
+try:
+  from multiprocessing import Pool, Queue
+  from time import sleep
+  import signal
+  import atexit
+  USE_MP=True
+except ImportError:
+  USE_MP=False
 
 
 class Reader(object):
@@ -62,7 +66,7 @@ class Reader(object):
 
   pfile=property(_get_pfile)
 
-  def open(self, filename, in_process=False, **kwds):
+  def open(self, filename, mp_queue=None, **kwds):
     """
       Open a file with this reader. 
       
@@ -72,10 +76,9 @@ class Reader(object):
       
       :param filename: File name to open or open file object to read from
     """
-    if in_process:
-      self._messages=[]
-    else:
-      self._messages=None
+    self._messages=mp_queue
+    if mp_queue:
+      self._filename=filename
     if type(filename) in [str, unicode]:
       self.origin=os.path.split(os.path.abspath(filename))
     else:
@@ -86,10 +89,7 @@ class Reader(object):
     result=self.read()
     if result is None:
       return None
-    if in_process:
-      return self._messages, FileData(result, self.origin)
-    else:
-      return FileData(result, self.session, self.origin)
+    return FileData(result, self.session, self.origin)
 
   def _read_file(self, filename):
     '''
@@ -129,19 +129,19 @@ class Reader(object):
     if self._messages is None:
       info(text, group='Reading files', item=self.origin[1], progress=progress)
     else:
-      self._messages.append(['info', text, self.origin[1], progress])
+      self._messages.put([self._filename, ['info', text, self.origin[1], progress]])
 
   def warn(self, text=None, progress=0.):
     if self._messages is None:
       warn(text, group='Reading files', item=self.origin[1], progress=progress)
     else:
-      self._messages.append(['warn', text, self.origin[1], progress])
+      self._messages.put([self._filename, ['warn', text, self.origin[1], progress]])
 
   def error(self, text=None, progress=0.):
     if self._messages is None:
       error(text, group='Reading files', item=self.origin[1], progress=progress)
     else:
-      self._messages.append(['error', text, self.origin[1], progress])
+      self._messages.put([self._filename, ['error', text, self.origin[1], progress]])
 
   def lines2data(self, lines, sep=" ", dtype=float):
     '''
@@ -175,7 +175,6 @@ class TextReader(Reader):
   def read(self):
     raise NotImplementedError, "TextReader can not be used directly, create a subclass defining a read method!"
 
-
 class BinReader(Reader):
   """
     Advanced reader class providing data conversion for
@@ -199,8 +198,25 @@ class FileData(list):
   def __repr__(self):
     return "FileData(items=%s, \n         origin=%s)"%(list.__repr__(self), repr(self.origin))
 
+# Multiprocessing helper functions
 def _open(reader, filename, **kwds):
-  return reader.open(filename, **kwds)
+  return reader.open(filename, mp_queue=_open.q, **kwds)
+
+_pool_on_load=False
+def _cleanup():
+  if _pool_on_load:
+    # kill busy child processes on exit
+    _pool.terminate()
+  else:
+    # close non-busy pool
+    _pool.close()
+  _pool.join()
+
+def _init_worker(q):
+  # make child processes ignore keyboard interrupt
+  signal.signal(signal.SIGINT, signal.SIG_IGN)
+  # store the given Queue object for use in _open function
+  _open.q=q
 
 class ReaderProxy(object):
 
@@ -243,7 +259,10 @@ class ReaderProxy(object):
         readers.remove(reader)
     self.set_readers(readers)
     if USE_MP:
-      self._pool=Pool()
+      global _pool, _queue
+      _queue=Queue()
+      _pool=Pool(initializer=_init_worker, initargs=[_queue])
+      atexit.register(_cleanup)
 
   def set_readers(self, readers, prioritys=None):
     '''
@@ -275,7 +294,8 @@ class ReaderProxy(object):
   def open(self, files, **kwds):
     #from time import sleep
     if USE_MP:
-      kwds.update({'in_process':True})
+      global _pool_on_load
+      _pool_on_load=True
     if not type(files) in [list, tuple]:
       # input is not a list of files
       files=[files, ]
@@ -312,25 +332,56 @@ class ReaderProxy(object):
       reader=self.match(name.lower())[0]
       if USE_MP:
         # send to worker thread
-        results.append(self._pool.apply_async(_open, args=(reader, filename), kwds=kwds))
+        results.append(_pool.apply_async(_open, args=(reader, filename), kwds=kwds))
       else:
-        results.append(reader.open(filename, **kwds))
+        try:
+          results.append(reader.open(filename, **kwds))
+        except Exception, err:
+          # don't stop on read exceptions
+          error(err.__class__.__name__+': '+str(err), group=u'Reading files', item=filename)
+          results.append(None)
       #sleep(0.25)
     if USE_MP:
       fetched_results=[]
-      for result in results:
-        messages, data=result.get()
+      fetched_messages=dict((name, []) for name in files)
+      for result, name in zip(results, files):
         # To prevent multiple processes to send messages in arbitrary order
         # they are collected within the process and printed out when retrieving the data.
-        for message in messages:
+        while not result.ready():
+          # read communication channel and make sure only info from current
+          # process is transmitted
+          if not _queue.empty():
+            item=_queue.get()
+            fetched_messages[item[0]].append(item[1])
+          if fetched_messages[name]!=[]:
+            message=fetched_messages[name].pop(0)
+            if message[0]=='info':
+              info(message[1], group=u'Reading files', item=message[2], progress=message[3])
+            elif message[0]=='warn':
+              warn(message[1], group=u'Reading files', item=message[2], progress=message[3])
+            else:
+              error(message[1], group=u'Reading files', item=message[2], progress=message[3])
+          else:
+            sleep(0.001) # make sure parent process is not consuming too much resources
+        while not _queue.empty():
+          item=_queue.get()
+          fetched_messages[item[0]].append(item[1])
+        for message in fetched_messages[name]:
           if message[0]=='info':
             info(message[1], group=u'Reading files', item=message[2], progress=message[3])
           elif message[0]=='warn':
             warn(message[1], group=u'Reading files', item=message[2], progress=message[3])
           else:
             error(message[1], group=u'Reading files', item=message[2], progress=message[3])
+        try:
+          data=result.get()
+        except Exception, err:
+          # don't stop on read exceptions
+          error(err.__class__.__name__+': '+str(err), group=u'Reading files', item=filename)
+          data=None
         fetched_results.append(data)
       results=fetched_results
+      _pool_on_load=False
     info(u'Finished!', group=u'reset')
     return filter(lambda item: item is not None, results)
 
