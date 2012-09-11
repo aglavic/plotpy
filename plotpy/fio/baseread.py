@@ -25,7 +25,7 @@ try:
   from time import sleep
   import signal
   import atexit
-  USE_MP=False
+  USE_MP=True
 except ImportError:
   USE_MP=False
 
@@ -83,12 +83,13 @@ class Reader(object):
       self.origin=os.path.split(os.path.abspath(filename))
     else:
       self.origin=os.path.split(os.path.abspath(filename.name))
-    self.info(None)
+    self.info(self.name+'-Reading')
     self._set_params(kwds)
     self._read_file(filename)
     result=self.read()
     if result is None:
       return None
+    self.info(self.name+'-Success', progress=100)
     return FileData(result, self.session, self.origin)
 
   def _read_file(self, filename):
@@ -184,6 +185,11 @@ class BinReader(Reader):
   def read(self):
     raise NotImplementedError, "BinReader can not be used directly, create a subclass defining a read method!"
 
+  def _get_filelike(self):
+    return StringIO(self.raw_data)
+
+  raw_file=property(_get_filelike, doc='raw data as file like object')
+
 class FileData(list):
   """
     Result from reading a file with a Reader derived class.
@@ -269,15 +275,23 @@ class ReaderProxy(object):
       Collect information from reader classes.
     '''
     if prioritys is None:
-      prioritys=[5 for ignore in readers]
+      prioritys=[getattr(reader, 'priority', 5) for reader in readers]
     priority_dict={}
-    readers=[reader() for reader in readers]
+    instances=[]
     for i, reader in enumerate(readers):
-      priority_dict[reader]=prioritys[i]
+      try:
+        instances.append(reader())
+      except Exception, error:
+        warn('%s could not be initialized:\n%s: %s'%(reader.name,
+                                                      error.__class__.__name__,
+                                                      str(error)),
+              group='Initializing Readers')
+      else:
+        priority_dict[instances[-1]]=prioritys[i]
     self._prioritys=priority_dict
-    self._readers=readers
+    self._readers=instances
     self.patterns={}
-    for reader in readers:
+    for reader in instances:
       for pattern in reader.glob_patterns:
         if pattern in self.patterns:
           self.patterns[pattern].append(reader)
@@ -289,10 +303,19 @@ class ReaderProxy(object):
     glob_list.sort()
     return glob_list
 
+  def _get_by_session(self):
+    outdict={}
+    for reader in self._readers:
+      if reader.session in outdict:
+        outdict[reader.session].append(reader)
+      else:
+        outdict[reader.session]=[reader]
+    return outdict
+
   types=property(_get_types)
+  sessions=property(_get_by_session)
 
   def open(self, files, **kwds):
-    #from time import sleep
     if USE_MP:
       global _pool_on_load
       _pool_on_load=True
@@ -329,18 +352,27 @@ class ReaderProxy(object):
         ignore, name=os.path.split(os.path.abspath(filename.name))
       else:
         ignore, name=os.path.split(os.path.abspath(filename))
-      reader=self.match(name.lower())[0]
+      readers=self.match(name.lower())
+      i=0
       if USE_MP:
         # send to worker thread
-        results.append(_pool.apply_async(_open, args=(reader, filename), kwds=kwds))
+        results.append(_pool.apply_async(_open, args=(readers[i], filename), kwds=kwds))
       else:
         #try:
-        results.append(reader.open(filename, **kwds))
+        results.append(readers[i].open(filename, **kwds))
         #except Exception, err:
         #  # don't stop on read exceptions
         #  error(err.__class__.__name__+': '+str(err), group=u'Reading files', item=filename)
         #  results.append(None)
-      #sleep(0.25)
+        i+=1
+        while results[-1] is None and i<len(readers):
+          # if the reader did not succeed, try another
+          # who is associated to the same file type
+          results[-1]=readers[i].open(filename, **kwds)
+          if results[-1] is not None:
+            # if this reader could open the file, promote it
+            # to a higher rank
+            self.promote(readers[i])
     if USE_MP:
       fetched_results=[]
       fetched_messages=dict((name, []) for name in files)
@@ -382,8 +414,22 @@ class ReaderProxy(object):
         fetched_results.append(data)
       results=fetched_results
       _pool_on_load=False
+      if None in results:
+        # the MP variant of changing the reader is quite hackish....
+        demote_readers=set()
+        missed_files=[]
+        for filename, result in zip(files, results):
+          if result is None:
+            missed_files.append(filename)
+            ignore, name=os.path.split(os.path.abspath(filename))
+            demote_readers.add(self.match(name.lower())[0])
+        for reader in demote_readers:
+          self.demote(reader)
+        info(u'Retry other reader', group=u'reset')
+        return filter(lambda item: item is not None, results)+self.open(missed_files)
     info(u'Finished!', group=u'reset')
-    return filter(lambda item: item is not None, results)
+    output=filter(lambda item: item is not None, results)
+    return output
 
   def match(self, name):
     matching_readers=[]
@@ -393,3 +439,10 @@ class ReaderProxy(object):
     matching_readers.sort(cmp=lambda a, b: cmp(self._prioritys[b],
                                               self._prioritys[a]))
     return matching_readers
+
+  def promote(self, reader, value=1):
+    self._prioritys[reader]+=value
+
+  def demote(self, reader, value=1):
+    self._prioritys[reader]-=value
+

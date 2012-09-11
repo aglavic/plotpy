@@ -12,6 +12,7 @@ from dialogs import FileImportDialog, ExportFileChooserDialog, \
                     PreviewDialog, ImportWizard
 from message_dialog import GUIMessenger
 from plotpy import read_data, plotting
+from plotpy.fio import reader
 from plotpy.config import gnuplot_preferences
 from plotpy.configobj import ConfigObj
 from plotpy.read_data import GENERIC_FORMATS
@@ -36,8 +37,9 @@ class MainFile(object):
     '''
     if file_names is None:
       #++++++++++++++++File selection dialog+++++++++++++++++++#
-      wildcards=self.active_session.FILE_WILDCARDS+\
-                [(item[1][0], '*'+item[0]) for item in GENERIC_FORMATS.items()]
+      #wildcards=self.active_session.FILE_WILDCARDS+\
+      #          [(item[1][0], '*'+item[0]) for item in GENERIC_FORMATS.items()]
+      wildcards=[['All Readers']+reader.types]
       file_dialog=FileImportDialog(self.active_folder, wildcards)
       file_names, folder, template, ascii_filter=file_dialog.run()
       file_dialog.destroy()

@@ -20,18 +20,7 @@
     plot specific information and the measured data as PhysicalProperty-Objects (derived from numpy.ndarray).
 '''
 
-__author__="Artur Glavic"
-__credits__=[]
-from info import __copyright__, __license__, __version__, __maintainer__, __email__
-__status__="Production"
-
-# collect importent components for 'from plotpy import *' usage
-from fio import reader
-
-def nice_output():
-  import message
-  message.messenger=message.NiceMessenger()
-  print "Nice output formating enabled"
+from info import __author__, __copyright__, __license__, __version__, __maintainer__, __email__
 
 def _run(argv=None):
   from initialize import run

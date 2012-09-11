@@ -12,7 +12,7 @@ from baseread import TextReader
 from plotpy.mds import MeasurementData
 from plotpy.config import squid as config
 
-class Spec(TextReader):
+class Squid(TextReader):
   '''
     Read ascii data files from Quantum Design MultiVu software.
   '''
@@ -37,8 +37,8 @@ class Spec(TextReader):
       while input_file_lines.pop(0).find('[Data]')==-1:
         continue
       measurement_data=self.read_data_lines(input_file_lines, measurement_info)
-      if measurement_data==None:
-        print "No valid data found!"
+      if measurement_data is None:
+        self.warn("No valid data found!")
         return None
       for split in config.SPLIT_AFTER:
         new_measurement_data=[]
@@ -56,7 +56,7 @@ class Spec(TextReader):
           new_measurement_data.append(dataset)
       measurement_data=new_measurement_data
     else:
-      print "Wrong file type! Doesn't contain header information."
+      self.warn("Wrong file type! Doesn't contain header information.")
       return None
     return measurement_data
 

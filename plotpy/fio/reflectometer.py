@@ -8,7 +8,7 @@
 # Pleas do not make any changes here unless you know what you are doing.
 import numpy
 from baseread import TextReader, BinReader
-from plotpy.mds import MeasurementData, PhysicalProperty, MeasurementData4D
+from plotpy.mds import MeasurementData, PhysicalProperty
 from plotpy.config.reflectometer import DATA_COLUMNS
 
 class D8Text(TextReader):
@@ -170,6 +170,7 @@ class D8Bin(BinReader):
   description=u"Files recored with the Bruker D8 reflectometer"
   glob_patterns=[u'*.raw']
   session='xrr'
+  priority=6 # increase priority as the type check is very fast 
 
   def read(self):
     '''
@@ -316,121 +317,136 @@ class D8Bin(BinReader):
 #      data.append(point)
 #  return data
 #
-#def read_data_philips(file_name):
-#  '''
-#    Read the data of a philips X'Pert diffractometer file, exported as text files.
-#  '''
-#  file_handler=open(file_name, 'r')
-#  file_string=file_handler.read()
-#  # decode file text and change german numbers to point notation
-#  input_file_lines=codecs.decode(file_string, "ISO 8859-15", 'ignore').replace(',', '.').splitlines()
-#  file_handler.close()
-#  input_file_lines=map(unicode.strip, input_file_lines)
-#  input_file_lines=filter(lambda line: line!="", input_file_lines)
-#  header_info, data_lines, header_lines=read_philips_header(input_file_lines)
-#  # convert data
-#  data_lines=map(lambda line: line.split('\t'), data_lines)
-#  data_array=array(data_lines, dtype=float32)
-#  dataset=MeasurementData()
-#  angles=[]
-#  I=[]
-#  for i, col_i in enumerate(header_info['I-columns']):
-#    angles.append(data_array[:, 0]+float(col_i.strip('°')))
-#    I.append(data_array[:, i+1])
-#  angles=array(angles).flatten()
-#  I=array(I).flatten()
-#  sorting=argsort(angles)
-#  angles=angles[sorting]
-#  I=I[sorting]
-#  if header_info['Scan axis'].strip()=='Omega-2Theta':
-#    col=mds.PhysicalProperty('Θ', '°', angles)
-#  else:
-#    col=mds.PhysicalProperty(header_info['Scan axis'].strip(), '°', angles)
-#  dataset.data.append(col)
-#  count_time=float(header_info['Time per step (s)'])
-#  col=mds.PhysicalProperty('I', 'counts/s', I/count_time,
-#                                                  sqrt(I)/count_time)
-#  dataset.data.append(col)
-#  dataset.sample_name=header_info['Diffraction measurement']
-#  dataset.info="\n".join(header_lines)
-#  return [dataset]
-#
-#def read_philips_header(input_file_lines):
-#  header_info={}
-#  for i, line in enumerate(input_file_lines):
-#    if line.startswith('Angle\t'):
-#      header_info['I-columns']=line.split('\t')[1:]
-#      return header_info, input_file_lines[i+1:], input_file_lines[:i]
-#    if ':' in line:
-#      key, value=line.split(':', 1)
-#      header_info[key.strip()]=value.strip()
-#  return header_info, [], []
-#
-#def read_data_xrdml(input_file):
-#    PhysicalProperty=mds.PhysicalProperty
-#    from xml.dom.minidom import parse
-#    xml_data=parse(input_file).firstChild
-#
-#    # retrieve data
-#    try:
-#      sample_name=xml_data.getElementsByTagName('sample')[0].getElementsByTagName('name')[0].firstChild.nodeValue
-#    except AttributeError:
-#      sample_name=os.path.split(input_file)[1].rsplit('.', 1)[0]
-#    scan=xml_data.getElementsByTagName('xrdMeasurement')[0].getElementsByTagName('scan')[0].getElementsByTagName('dataPoints')[0]
-#    header=xml_data.getElementsByTagName('xrdMeasurement')[0].getElementsByTagName('scan')[0].getElementsByTagName('header')[0]
-#    start_time=header.getElementsByTagName('startTimeStamp')[0].firstChild.nodeValue
-#    try:
-#      user=header.getElementsByTagName('author')[0].getElementsByTagName('name')[0].firstChild.nodeValue
-#    except AttributeError:
-#      user=''
-#
-#
-#    fixed_positions={}
-#    moving_positions={}
-#    for motor in scan.getElementsByTagName('positions'):
-#      axis=motor.attributes['axis'].value
-#      if axis=='2Theta':
-#        axis='2Θ'
-#      if axis=='Omega':
-#        axis='Θ'
-#      unit=motor.attributes['unit'].value
-#      if unit=='deg':
-#        unit='°'
-#      if len(motor.getElementsByTagName('commonPosition'))==0:
-#        start=float(motor.getElementsByTagName('startPosition')[0].firstChild.nodeValue)
-#        end=float(motor.getElementsByTagName('endPosition')[0].firstChild.nodeValue)
-#        moving_positions[axis]=(unit, start, end)
-#      else:
-#        pos=float(motor.getElementsByTagName('commonPosition')[0].firstChild.nodeValue)
-#        fixed_positions[axis]=(unit, pos)
-#
-#    atten_factors=scan.getElementsByTagName('beamAttenuationFactors')[0].firstChild.nodeValue
-#    time=float(scan.getElementsByTagName('commonCountingTime')[0].firstChild.nodeValue)
-#    data=scan.getElementsByTagName('intensities')[0].firstChild.nodeValue
-#    atten_factors=map(float, atten_factors.split())
-#    data=map(float, data.split())
-#    I=array(data)
-#    atten=array(atten_factors)
-#    dI=sqrt(I*atten)
-#    I/=time
-#    dI/=time
-#    cols=[PhysicalProperty('Intensity', 'counts/s', I, dI)]
-#    if 'Θ' in moving_positions:
-#      angles=linspace(moving_positions['Θ'][1], moving_positions['Θ'][2], len(data))
-#      cols.append(PhysicalProperty('Θ', moving_positions['Θ'][0], angles))
-#      del(moving_positions['Θ'])
-#    for key, value in sorted(moving_positions.items()):
-#      angles=linspace(value[1], value[2], len(data))
-#      cols.append(PhysicalProperty(key, value[0], angles))
-#    dataset=mds.MeasurementData(x=1, y=0)
-#    dataset.data=cols
-#    dataset.number='0'
-#    dataset.sample_name=sample_name
-#    dataset.info='User: %s\nStart Time: %s\n\nMotor Positions:\n'%(user, start_time)
-#    for key, value in sorted(moving_positions.items()):
-#      dataset.info+='% 10s = %g-%g %s\n'%(key, value[1], value[2], value[0])
-#    for key, value in sorted(fixed_positions.items()):
-#      dataset.info+='% 10s = %g %s\n'%(key, value[1], value[0])
-#
-#    return [dataset]
+class PhilipsXpert(TextReader):
+  '''
+    Read ascii scan files created by spec (fourc).
+  '''
+  name=u"Philips XPert"
+  description=u"Files recored with the Philips XPert reflectometer"
+  glob_patterns=[u'*.']
+  session='xrr'
+  encoding="ISO 8859-15"
+
+  def read(self):
+    '''
+      Read the data of a philips X'Pert diffractometer file, exported as text files.
+    '''
+    # change german numbers to point notation
+    input_file_lines=self.text_data.replace(',', '.').splitlines()
+    input_file_lines=map(unicode.strip, input_file_lines)
+    input_file_lines=filter(lambda line: line!="", input_file_lines)
+    header_info, data_lines, header_lines=self.read_header(input_file_lines)
+    # convert data
+    data_array=self.lines2data(data_lines, '\t').transpose()
+    dataset=MeasurementData()
+    angles=[]
+    I=[]
+    for i, col_i in enumerate(header_info['I-columns']):
+      angles.append(data_array[:, 0]+float(col_i.strip('°')))
+      I.append(data_array[:, i+1])
+    angles=numpy.array(angles).flatten()
+    I=numpy.array(I).flatten()
+    sorting=numpy.argsort(angles)
+    angles=angles[sorting]
+    I=I[sorting]
+    if header_info['Scan axis'].strip()=='Omega-2Theta':
+      col=PhysicalProperty(u'Θ', u'°', angles)
+    else:
+      col=PhysicalProperty(header_info['Scan axis'].strip(), u'°', angles)
+    dataset.data.append(col)
+    count_time=float(header_info['Time per step (s)'])
+    col=PhysicalProperty('I', 'counts/s', I/count_time,
+                         numpy.sqrt(I)/count_time)
+    dataset.data.append(col)
+    dataset.sample_name=header_info['Diffraction measurement']
+    dataset.info=u"\n".join(header_lines)
+    return [dataset]
+
+  def read_header(self, input_file_lines):
+    header_info={}
+    for i, line in enumerate(input_file_lines):
+      if line.startswith('Angle\t'):
+        header_info['I-columns']=line.split('\t')[1:]
+        return header_info, input_file_lines[i+1:], input_file_lines[:i]
+      if u':' in line:
+        key, value=line.split(u':', 1)
+        header_info[key.strip()]=value.strip()
+    return header_info, [], []
+
+class XRDML(TextReader):
+  '''
+    Read ascii scan files created by spec (fourc).
+  '''
+  name=u"XRDML"
+  description=u"XRDML files"
+  glob_patterns=[u'*.xrdml']
+  session='xrr'
+  encoding="ISO 8859-15"
+
+  def read(self):
+    from xml.dom.minidom import parseString
+    xml_data=parseString(self.text_data).firstChild
+
+    # retrieve data
+    try:
+      sample_name=xml_data.getElementsByTagName('sample')[0].getElementsByTagName('name')[0].firstChild.nodeValue
+    except AttributeError:
+      sample_name=self.origin[1].rsplit('.', 1)[0]
+    scan=xml_data.getElementsByTagName('xrdMeasurement')[0].getElementsByTagName('scan')[0].getElementsByTagName('dataPoints')[0]
+    header=xml_data.getElementsByTagName('xrdMeasurement')[0].getElementsByTagName('scan')[0].getElementsByTagName('header')[0]
+    start_time=header.getElementsByTagName('startTimeStamp')[0].firstChild.nodeValue
+    try:
+      user=header.getElementsByTagName('author')[0].getElementsByTagName('name')[0].firstChild.nodeValue
+    except AttributeError:
+      user=u''
+
+
+    fixed_positions={}
+    moving_positions={}
+    for motor in scan.getElementsByTagName('positions'):
+      axis=motor.attributes['axis'].value
+      if axis=='2Theta':
+        axis=u'2Θ'
+      if axis=='Omega':
+        axis=u'Θ'
+      unit=motor.attributes['unit'].value
+      if unit=='deg':
+        unit='°'
+      if len(motor.getElementsByTagName('commonPosition'))==0:
+        start=float(motor.getElementsByTagName('startPosition')[0].firstChild.nodeValue)
+        end=float(motor.getElementsByTagName('endPosition')[0].firstChild.nodeValue)
+        moving_positions[axis]=(unit, start, end)
+      else:
+        pos=float(motor.getElementsByTagName('commonPosition')[0].firstChild.nodeValue)
+        fixed_positions[axis]=(unit, pos)
+
+    atten_factors=scan.getElementsByTagName('beamAttenuationFactors')[0].firstChild.nodeValue
+    time=float(scan.getElementsByTagName('commonCountingTime')[0].firstChild.nodeValue)
+    data=scan.getElementsByTagName('intensities')[0].firstChild.nodeValue
+    atten_factors=map(float, atten_factors.split())
+    data=map(float, data.split())
+    I=numpy.array(data)
+    atten=numpy.array(atten_factors)
+    dI=numpy.sqrt(I*atten)
+    I/=time
+    dI/=time
+    cols=[PhysicalProperty('Intensity', 'counts/s', I, dI)]
+    if u'Θ' in moving_positions:
+      angles=numpy.linspace(moving_positions[u'Θ'][1], moving_positions[u'Θ'][2], len(data))
+      cols.append(PhysicalProperty(u'Θ', moving_positions[u'Θ'][0], angles))
+      del(moving_positions[u'Θ'])
+    for key, value in sorted(moving_positions.items()):
+      angles=numpy.linspace(value[1], value[2], len(data))
+      cols.append(PhysicalProperty(key, value[0], angles))
+    dataset=MeasurementData(x=1, y=0)
+    dataset.data=cols
+    dataset.number='0'
+    dataset.sample_name=sample_name
+    dataset.info=u'User: %s\nStart Time: %s\n\nMotor Positions:\n'%(user, start_time)
+    for key, value in sorted(moving_positions.items()):
+      dataset.info+=u'% 10s = %g-%g %s\n'%(key, value[1], value[2], value[0])
+    for key, value in sorted(fixed_positions.items()):
+      dataset.info+=u'% 10s = %g %s\n'%(key, value[1], value[0])
+
+    return [dataset]
 

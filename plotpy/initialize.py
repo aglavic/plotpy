@@ -267,11 +267,15 @@ def run(argv=None):
   else:
     # ignore python warnings if not in debug mode
     warnings.simplefilter('ignore')
+    message.messenger=message.NiceMessenger()
   if not ('-scp' in argv or '-ipdrop' in argv):
     initialize_gui_toolkit()
-  elif not '--debug' in argv:
-    message.messenger=message.NiceMessenger()
   active_session=initialize(argv)
+  if active_session is not None:
+    # promote all readers for the selected session
+    from plotpy.fio import reader
+    for sreader in reader.sessions[active_session.name]:
+      reader.promote(sreader, 2)
   if active_session is None or active_session.use_gui: # start a new gui session
     plotting_session=initialize_gui(active_session, status_dialog)
     gui_main.main_loop(plotting_session)

@@ -135,17 +135,20 @@ class GUIMessenger(gtk.Dialog):
              bgcolor='#ffffff'):
     # decode str input
     stext=u''
-    if group is not None and type(group) is str:
-      group=unicode(group, sys.stdin.encoding)
-      stext=group+'-'+stext
-    if item is not None and type(item) is str:
-      item=unicode(item, sys.stdin.encoding)
-      stext=item+'-'+stext
-    if message is not None and type(message) is str:
-      message=unicode(message, sys.stdin.encoding)
+    if item is not None:
+      if type(item) is str:
+        item=unicode(item, sys.stdin.encoding)
+      stext=item+u'-'+stext
+    if group is not None:
+      if type(group) is str:
+        group=unicode(group, sys.stdin.encoding)
+      stext=group+u'-'+stext
+    if message is not None:
+      if type(message) is str:
+        message=unicode(message, sys.stdin.encoding)
       stext+=message
     if self.connected_status is not None:
-      self.connected_status.push(0, stext.strip())
+      self.connected_status.push(0, stext.strip().rstrip('-'))
     # get timesamp of current message
     timestr=strftime('%H:%M:%S')+str(time()%1)[1:5]
     if group is None or group=='reset':
@@ -206,13 +209,13 @@ class GUIMessenger(gtk.Dialog):
         else:
           self.progress(100.*float(self.item_count-1)/self.numitems)
     self.last_message=message
-    self.treeview.collapse_all()
     if self.active_item_iter is not None:
       path=self.treestore.get_path(self.active_item_iter)
     elif self.active_group_iter is not None:
       path=self.treestore.get_path(self.active_group_iter)
     else:
       return
+    self.treeview.collapse_all()
     self.treeview.expand_to_path(path)
     while gtk.events_pending():
       gtk.main_iteration(False)
