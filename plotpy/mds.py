@@ -104,7 +104,7 @@ class MeasurementData(object):
   fit_object=None
   _functional=None
 
-  def __init__(self, columns=[], const=[], x=0, y=1, yerror=-1, zdata=-1):
+  def __init__(self, columns=[], const=[], x=0, y=1, yerror=-1, zdata=-1, dtype=numpy.float32):
     '''
       Constructor for the class.
       If the values are not reinitialized we get problems
@@ -129,7 +129,7 @@ class MeasurementData(object):
     self._plot_options=PlotOptions()
     self.data=[]
     for column in columns: # create Property for every column
-      self.data.append(PhysicalProperty(column[0], column[1]))
+      self.data.append(PhysicalProperty(column[0], column[1], dtype=dtype))
     self.xdata=x
     self.ydata=y
     self.zdata=zdata
@@ -550,6 +550,15 @@ class MeasurementData(object):
       in this object.
     '''
     return u"Dataset containing %i points.\n\nInformation read from header:\n%s"%(self.number_of_points, self.info)
+
+  def get_approx_size(self):
+    '''
+      Return the approximate data size in bytes.
+    '''
+    output=0
+    for col in self.data:
+      output+=col.get_approx_size()
+    return output
 
   def append(self, point):
     '''
@@ -2675,6 +2684,12 @@ class PhysicalProperty(numpy.ndarray):
     if self.has_error:
       output._error=output._error.copy()
     return output
+
+  def get_approx_size(self):
+    '''
+      Return the data size in bytes.
+    '''
+    return len(self.tostring())
 
   def __repr__(self):
     '''

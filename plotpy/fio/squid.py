@@ -60,30 +60,6 @@ class Squid(TextReader):
       return None
     return measurement_data
 
-#  def get_columns(self, input_file):
-#    '''
-#      Just return the columns present in the file.
-#      
-#      :return: List of measured columns or None
-#    '''
-#    if os.path.exists(input_file):
-#      input_file_handler=open(input_file, 'r')
-#      if input_file_handler.readline().find('[Header]')>=0:
-#        lines=[input_file_handler.readline() for ignore in range(50)]
-#        #measurement_info=read_header(lines)
-#        while lines.pop(0).find('[Data]')==-1:
-#          continue
-#      else:
-#        print "Wrong file type! Doesn't contain header information."
-#        return None
-#      out=lines.pop(0).split(',')
-#      input_file_handler.close()
-#      return out
-#    else:
-#      print 'File '+input_file+' does not exist.'
-#      return None
-
-
   def read_header(self, input_file_lines):
     '''
       Read header of the datafile.
@@ -180,12 +156,13 @@ class Squid(TextReader):
         data_1=self.read_data_line(input_file_lines.pop(0), columns)
         data_2=self.read_data_line(input_file_lines.pop(0), columns)
       except IndexError:
-        print "No valid data in file."
+        self.warn("No valid data in file.")
         return None
       if (data_1!=None)&(data_2!=None):
         for type_i in applicable_types:
           if not_found and self.check_type(data_1, data_2, type_i):
-            data=MeasurementData([column[2] for column in columns], type_i[0], type_i[1], type_i[2],-1)
+            data=MeasurementData([column[2] for column in columns],
+                                 type_i[0], type_i[1], type_i[2],-1, dtype=float64)
             # change precision of time column
             data.data[0]=data.data[0].astype(float64)
             data.append(data_1)
@@ -198,7 +175,7 @@ class Squid(TextReader):
     try: # if no sequence of set types is found return null
       data.info=info[0]
     except:
-      print 'No sequence with right type found!'
+      self.warn('No sequence with right type found!')
       return None
     data.sample_name=info[1]
     # trying to speed up function lookup
@@ -221,7 +198,8 @@ class Squid(TextReader):
             not_found=True
             for type_i in applicable_types:
               if self.check_type(next_data, next_data_2, type_i)&not_found:
-                data=MeasurementData([column[2] for column in columns], type_i[0], type_i[1], type_i[2],-1)
+                data=MeasurementData([column[2] for column in columns],
+                                     type_i[0], type_i[1], type_i[2],-1, dtype=float64)
                 data.plot_options=type_i[4]
                 not_found=False
                 data.info=info[0]

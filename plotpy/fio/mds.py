@@ -25,7 +25,7 @@ class MDSReader(BinReader):
       if 'multiplots' in dump_obj and dump_obj['multiplots']:
         self.origin='Multiplot'
       else:
-        if type(dump_obj['origin']) is basestring:
+        if isinstance(dump_obj['origin'], basestring):
           self.origin=os.path.split(dump_obj['origin'])
         else:
           self.origin=dump_obj['origin']

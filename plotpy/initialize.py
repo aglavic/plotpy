@@ -59,6 +59,7 @@ def initialize(argv):
     initialize session and read data files 
   '''
   from sessions import sessions
+  from plotpy.fio import reader
   if not '--debug' in argv:
     try:
       import numpy
@@ -66,14 +67,20 @@ def initialize(argv):
       numpy.seterr(all='ignore')
     except:
       pass
+  else:
+    # switch of multiprocessing in debug mode
+    from plotpy.fio import baseread
+    baseread.USE_MP=False
   if (len(argv)==0):
     return None
   elif argv[0] in sessions.keys():
     # type is found in dictionary, using specific session
+    # promote all readers for the selected session
+    for sreader in reader.sessions[argv[0]]:
+      reader.promote(sreader, 2)
     return sessions[argv[0]](argv[1:])
   else:
     # get session from importing data
-    from fio import reader
     for i, item in enumerate(argv):
       try:
         read_data=reader.open(item)
@@ -271,11 +278,6 @@ def run(argv=None):
   if not ('-scp' in argv or '-ipdrop' in argv):
     initialize_gui_toolkit()
   active_session=initialize(argv)
-  if active_session is not None:
-    # promote all readers for the selected session
-    from plotpy.fio import reader
-    for sreader in reader.sessions[active_session.name]:
-      reader.promote(sreader, 2)
   if active_session is None or active_session.use_gui: # start a new gui session
     plotting_session=initialize_gui(active_session, status_dialog)
     gui_main.main_loop(plotting_session)

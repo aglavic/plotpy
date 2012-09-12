@@ -69,7 +69,7 @@ COLUMNS_MAPPING=[\
 # Diviations are only compared with last datapoint, so slow increases won't trigger a new sequence.
 MEASUREMENT_TYPES=[\
 # raw data, sequence have same time stamp, temperature should be shown for every sequence (div=300K always true)
-[[[u'T', 300.], [u'time', 1.]], 3, 4, 4, u''], \
+[[[u'T', 300.], [u'Time', 1.]], 3, 4, 4, u''], \
 # phi scan of e.g. torque magnetometer
 [[[u'T', 300.]], 2, u'Torque', u'δTorque', u''], \
 # MvsT, H is constant

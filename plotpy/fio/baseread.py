@@ -12,23 +12,27 @@ import os
 import sys
 from glob import glob
 from fnmatch import fnmatch
+from cPickle import dumps, loads
+from time import time, sleep
 import gzip
 import numpy
+
+from plotpy.info import __version__
 from plotpy.message import *
-from fileinput import filename
 try:
   from cStringIO import StringIO
 except ImportError:
   from  StringIO import StringIO
+
+# multiprocessing imports, only work on python 2.6+
 try:
   from multiprocessing import Pool, Queue
-  from time import sleep
   import signal
   import atexit
   USE_MP=True
 except ImportError:
   USE_MP=False
-
+READ_MDS=True
 
 class Reader(object):
   """
@@ -76,21 +80,31 @@ class Reader(object):
       
       :param filename: File name to open or open file object to read from
     """
+    start=time()
     self._messages=mp_queue
     if mp_queue:
       self._filename=filename
-    if type(filename) in [str, unicode]:
+    if isinstance(filename, basestring):
       self.origin=os.path.split(os.path.abspath(filename))
     else:
       self.origin=os.path.split(os.path.abspath(filename.name))
     self.info(self.name+'-Reading')
     self._set_params(kwds)
     self._read_file(filename)
+    checksum=hash(self.raw_data)
+    result=self._check_mds(filename, checksum)
+    if result is not None:
+      return result
     result=self.read()
     if result is None:
       return None
     self.info(self.name+'-Success', progress=100)
-    return FileData(result, self.session, self.origin)
+    result=FileData(result, self.session, self.origin, checksum)
+    readtime=time()-start
+    if readtime>1.:
+      self.info('Storing as .mds for faster readout')
+      result.save_snapshot(filename)
+    return result
 
   def _read_file(self, filename):
     '''
@@ -106,6 +120,30 @@ class Reader(object):
       self.raw_data=gzip.open(filename, "rb").read()
     else:
       self.raw_data=open(filename, "rb").read()
+
+  def _check_mds(self, filename, checksum):
+    if not READ_MDS:
+      return None
+    if os.path.exists(filename+'.mds'):
+      dumpstr=open(filename+'.mds', 'rb').read()
+    elif os.path.exists(filename+'.mds.gz'):
+      dumpstr=gzip.open(filename+'.mds.gz', 'rb').read()
+    else:
+      return None
+    try:
+      dumpobj=loads(dumpstr)
+    except ImportError:
+      return None
+    if not (type(dumpobj) is dict and 'checksum' in dumpobj):
+      return None
+    if dumpobj['checksum']!=checksum:
+      # file content has changed
+      return None
+    if dumpobj['version']!=__version__:
+      # plotpy version has changed (to make sure corrected reader code is used)
+      return None
+    self.info('Restore from .mds file, to reload use -rd option')
+    return dumpobj['data']
 
   def _set_params(self, kwds):
     '''
@@ -196,13 +234,48 @@ class FileData(list):
     The origin attribute stores the files path and name
     where the data was read from.
   """
-  def __init__(self, items=[], session=None, origin=(u"", u"")):
+  checksum=0
+
+  def __init__(self, items=[], session=None, origin=(u"", u""), checksum=0):
     list.__init__(self, items)
     self.origin=origin
     self.session=session
+    self.checksum=checksum
 
   def __repr__(self):
     return "FileData(items=%s, \n         origin=%s)"%(list.__repr__(self), repr(self.origin))
+
+  def get_approx_size(self):
+    '''
+      Return the approximate size of all containing datasets.
+    '''
+    output=0
+    for item in self:
+      output+=item.get_approx_size()
+    return output
+
+  def save_snapshot(self, filename=None, extension='.mds'):
+    size=self.get_approx_size()
+    if filename is None:
+      filename=os.path.join(self.origin)+extension
+    else:
+      filename+=extension
+    if (size/1024**2)>50 and not filename.endswith('.gz'):
+      filename+='.gz'
+    dumpobj={
+            'version': __version__,
+            'session': self.session,
+            'origin':  self.origin,
+            'multiplots': False,
+            'data': self,
+            'checksum': self.checksum,
+             }
+    dumpstr=dumps(dumpobj)
+    if filename.endswith('.gz'):
+      gzip.open(filename, 'wb').write(dumpstr)
+    else:
+      open(filename, 'wb').write(dumpstr)
+
 
 # Multiprocessing helper functions
 def _open(reader, filename, **kwds):
