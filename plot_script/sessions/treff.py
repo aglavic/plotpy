@@ -593,9 +593,9 @@ class TreffSession(GUI, ReflectometerFitGUI, GenericSession):
       fortran_compiler=config.FORTRAN_COMPILER
       if sys.argv[0].endswith('.exe'):
         # fix gfortran error when binary folder is not the first in path
-        fortran_compiler=os.path.join(self.SCRIPT_PATH, 'gfortran\\bin\\gfortran.exe')
+        fortran_compiler=os.path.join(self.SCRIPT_PATH, '..', 'gfortran', 'bin', 'gfortran.exe')
         tmpenv=dict(os.environ)
-        tmpenv['PATH']=os.path.join(self.SCRIPT_PATH, 'gfortran\\bin')
+        tmpenv['PATH']=os.path.join(self.SCRIPT_PATH, '..', 'gfortran', 'bin',)
         callopts['env']=tmpenv
       for i, file_ in enumerate([param_code_file]+subcode_files):
         # compile each source file_ separately
