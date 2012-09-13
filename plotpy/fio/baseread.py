@@ -573,6 +573,10 @@ class ReaderProxy(object):
     return output
 
   def _match(self, name):
+    '''
+      Find all readers, whos glob pattern matches the
+      given file name.
+    '''
     matching_readers=[]
     for pattern, readers in self.patterns.items():
       if fnmatch(name, pattern) or fnmatch(name, pattern+'.gz'):

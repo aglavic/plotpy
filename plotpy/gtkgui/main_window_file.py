@@ -15,7 +15,6 @@ from plotpy import read_data, plotting
 from plotpy.fio import reader
 from plotpy.config import gnuplot_preferences
 from plotpy.configobj import ConfigObj
-from plotpy.read_data import GENERIC_FORMATS
 import main_window_plotting
 
 __author__="Artur Glavic"
@@ -40,6 +39,13 @@ class MainFile(object):
       #wildcards=self.active_session.FILE_WILDCARDS+\
       #          [(item[1][0], '*'+item[0]) for item in GENERIC_FORMATS.items()]
       wildcards=[['All Readers']+reader.types]
+      if self.active_session.name in reader.sessions:
+        session_readers=['%s Readers'%self.active_session.name]
+        for readeri in reader.sessions[self.active_session.name]:
+          for pattern in readeri.glob_patterns:
+            if not pattern in session_readers:
+              session_readers.append(pattern)
+        wildcards.insert(0, session_readers+['*.mdd'])
       file_dialog=FileImportDialog(self.active_folder, wildcards)
       file_names, folder, template, ascii_filter=file_dialog.run()
       file_dialog.destroy()

@@ -29,6 +29,7 @@ encoding//plotpy/fio/mbe.py=utf-8
 encoding//plotpy/fio/qtiplot.py=utf8
 encoding//plotpy/fio/reflectometer.py=utf-8
 encoding//plotpy/fio/squid.py=utf-8
+encoding//plotpy/fio/treff.py=utf-8
 encoding//plotpy/fio/treff_addon1.py=utf-8
 encoding//plotpy/fio/xrd.py=utf-8
 encoding//plotpy/fitdata.py=utf-8

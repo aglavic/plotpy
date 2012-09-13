@@ -1147,15 +1147,6 @@ class FileImportDialog(gtk.FileChooserDialog):
     self.add_filter(filter_)
     if last_filter=='All Files':
       self.set_filter(filter_)
-    filter_=gtk.FileFilter()
-    filter_.set_name('Binary Plot.py')
-    filter_.add_pattern('*.mdd')
-    filter_.add_pattern('*.mdd.gz')
-    filter_.add_pattern('*.mds')
-    filter_.add_pattern('*.mds.gz')
-    self.add_filter(filter_)
-    if last_filter=='Binary Plot.py':
-      self.set_filter(filter_)
     self.add_wildcards(wildcards)
     self.add_ascii_wildcards()
     self.set_icon_from_file(os.path.join(
@@ -1184,6 +1175,7 @@ class FileImportDialog(gtk.FileChooserDialog):
       filter_.set_name(wildcard[0])
       for pattern in wildcard[1:]:
         filter_.add_pattern(pattern)
+        filter_.add_pattern(pattern+'.gz')
       self.add_filter(filter_)
       if last_filter==wildcard[0]:
         self.set_filter(filter_)
