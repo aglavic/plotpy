@@ -48,6 +48,7 @@ class Reader(object):
   # additional parameters that can be given to the open function
   # with their default values
   parameters={}
+  parameter_units={}
 
   _data=None
   origin=("", "")
@@ -68,15 +69,28 @@ class Reader(object):
     else:
       return fullname
 
+  def _get_keywords(self):
+    '''
+      Return a help string for the allowed keywords of an insance.
+    '''
+    output=''
+    for key, value in sorted(self.parameters.items()):
+      output+='%16s: %r'%(key, value)
+      if key in self.parameter_units:
+        output+=' %s\n'%self.parameter_units[key]
+      else:
+        output+='\n'
+    print output
+
   pfile=property(_get_pfile)
+  keywords=property(_get_keywords, doc='Print information on keywords, only for interactive use')
 
   def open(self, filename, mp_queue=None, **kwds):
     """
       Open a file with this reader. 
       
-      Keywords depend on the reader subclass, see the
-      parameters attribute for available keywords and
-      their default values. 
+      Keywords depend on the reader subclass, see instances.keywords
+      attribute for more information.
       
       :param filename: File name to open or open file object to read from
     """
@@ -260,7 +274,7 @@ class FileData(list):
       filename=os.path.join(self.origin)+extension
     else:
       filename+=extension
-    if (size/1024**2)>50 and not filename.endswith('.gz'):
+    if (size/1024**2)>20 and not filename.endswith('.gz'):
       filename+='.gz'
     dumpobj={
             'version': __version__,
@@ -298,6 +312,35 @@ def _init_worker(q):
   _open.q=q
 
 class ReaderProxy(object):
+  '''
+    Abstract handling of file readout using all readers available in the plotpy.fio
+    package. Can be used to retrieve information on the supported file types,
+    get a fitting reader for a given file name/extension or to automatically
+    read a list of given files (with optional multiprocessing).
+        
+    The important attributes/methods are:
+      open(files): Open the given files with a fitting reader 
+                   and return a list of FileData objects.
+         patterns: A dictionary with glob patterns as keys and 
+                   lists of associated readers as values.
+         sessions: As patterns but with session names as keys.
+            types: Same as patterns.keys()
+    kwds_callback: A function taking (reader, path, name) as input
+                   which get's called if a reader supports keyword
+                   arguments to return a dictionary of those arguments
+                   e.g. to give the user an interface to input these
+                   arguments.
+            
+    Using object['name.extension'] can be used to get the best 
+    fitting reader for the given filename or glob pattern.
+    
+    This could look as follows in a user script:
+      from plotpy.fio import reader
+      my_reader=reader['*.my_type']
+      for my_files in my_list:
+        data=my_reader.open(my_file)
+  '''
+  kwds_callback=None # callback function that can be used to retrieve keywords for readers
 
   def __init__(self):
     ############## Import all fio submodules to search for Readers ###########
@@ -336,14 +379,29 @@ class ReaderProxy(object):
     for reader in [Reader, TextReader, BinReader]:
       if reader in readers:
         readers.remove(reader)
-    self.set_readers(readers)
+    self._set_readers(readers)
     if USE_MP:
       global _pool, _queue
       _queue=Queue()
       _pool=Pool(initializer=_init_worker, initargs=[_queue])
       atexit.register(_cleanup)
 
-  def set_readers(self, readers, prioritys=None):
+  def __repr__(self):
+    output=object.__repr__(self)[:-1]
+    output+=' with %i connected readers>'%len(self._readers)
+    return output
+
+  def __getitem__(self, name):
+    '''
+      Return the best matching reader for a given file name or glob pattern.
+    '''
+    readers=self._match(name)
+    if len(readers)>0:
+      return readers[0]
+    else:
+      return None
+
+  def _set_readers(self, readers, prioritys=None):
     '''
       Collect information from reader classes.
     '''
@@ -388,7 +446,7 @@ class ReaderProxy(object):
   types=property(_get_types)
   sessions=property(_get_by_session)
 
-  def open(self, files, **kwds):
+  def open(self, files):
     if USE_MP:
       global _pool_on_load
       _pool_on_load=True
@@ -422,14 +480,15 @@ class ReaderProxy(object):
     info(None, group=u'Reading files', numitems=len(files))
     for filename in files:
       if type(filename) is file:
-        ignore, name=os.path.split(os.path.abspath(filename.name))
+        path, name=os.path.split(os.path.abspath(filename.name))
       else:
-        ignore, name=os.path.split(os.path.abspath(filename))
-      readers=self.match(name.lower())
+        path, name=os.path.split(os.path.abspath(filename))
+      readers=self._match(name.lower())
+      kwds=self._get_kwds(readers[0], path, name)
       i=0
       if USE_MP:
         # send to worker thread
-        results.append(_pool.apply_async(_open, args=(readers[i], filename), kwds=kwds))
+        results.append(_pool.apply_async(_open, args=(readers[0], filename), kwds=kwds))
       else:
         #try:
         results.append(readers[i].open(filename, **kwds))
@@ -443,9 +502,9 @@ class ReaderProxy(object):
           # who is associated to the same file type
           results[-1]=readers[i].open(filename, **kwds)
           if results[-1] is not None:
-            # if this reader could open the file, promote it
+            # if this reader could open the file, _promote it
             # to a higher rank
-            self.promote(readers[i])
+            self._promote(readers[i])
     if USE_MP:
       fetched_results=[]
       fetched_messages=dict((name, []) for name in files)
@@ -488,23 +547,32 @@ class ReaderProxy(object):
       results=fetched_results
       _pool_on_load=False
       if None in results:
+        info(u'Some files could not be read, trying alternatives', group=u'Reading files',
+             numitems=len([ignore for ignore in results if ignore is None]))
         # the MP variant of changing the reader is quite hackish....
-        demote_readers=set()
-        missed_files=[]
-        for filename, result in zip(files, results):
+        for j, filename, result in zip(range(len(files)), files, results):
           if result is None:
-            missed_files.append(filename)
-            ignore, name=os.path.split(os.path.abspath(filename))
-            demote_readers.add(self.match(name.lower())[0])
-        for reader in demote_readers:
-          self.demote(reader)
-        info(u'Retry other reader', group=u'reset')
-        return filter(lambda item: item is not None, results)+self.open(missed_files)
+            path, name=os.path.split(os.path.abspath(filename))
+            readers=self._match(name.lower())
+            if len(readers)==1:
+              continue
+            i=0
+            while result is None and i<len(readers):
+              kwds=self._get_kwds(readers[i], path, name)
+              # if the reader did not succeed, try another
+              # who is associated to the same file type
+              result=readers[i].open(filename, **kwds)
+              i+=1
+              if result is not None:
+                # if this reader could open the file, _promote it
+                # to a higher rank
+                self._promote(readers[i])
+                results[j]=result
     info(u'Finished!', group=u'reset')
     output=filter(lambda item: item is not None, results)
     return output
 
-  def match(self, name):
+  def _match(self, name):
     matching_readers=[]
     for pattern, readers in self.patterns.items():
       if fnmatch(name, pattern) or fnmatch(name, pattern+'.gz'):
@@ -513,9 +581,11 @@ class ReaderProxy(object):
                                               self._prioritys[a]))
     return matching_readers
 
-  def promote(self, reader, value=1):
+  def _promote(self, reader, value=1):
     self._prioritys[reader]+=value
 
-  def demote(self, reader, value=1):
-    self._prioritys[reader]-=value
-
+  def _get_kwds(self, reader, path, name):
+    if reader.parameters=={} or self.kwds_callback is None:
+      return {}
+    else:
+      return self.kwds_callback(reader, path, name)

@@ -77,7 +77,7 @@ def initialize(argv):
     # type is found in dictionary, using specific session
     # promote all readers for the selected session
     for sreader in reader.sessions[argv[0]]:
-      reader.promote(sreader, 2)
+      reader._promote(sreader, 2)
     return sessions[argv[0]](argv[1:])
   else:
     # get session from importing data

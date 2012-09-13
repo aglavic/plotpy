@@ -23,10 +23,10 @@ class Spec(TextReader):
     sample_name, last_comments=self.read_file_header(input_file_lines)
     if not sample_name:
       self.warn(u"Wrong file type, no spec header found (#F,#E,#D,#C)!")
-      sample_name=u''
+      return None
     measurement_data=self.read_data_lines(input_file_lines, sample_name, last_comments)
     if len(measurement_data)==0:
-      self.error(u"No scan data found.")
+      self.warn(u"No scan data found.")
       return None
     return measurement_data
 

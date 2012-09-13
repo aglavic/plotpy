@@ -167,16 +167,14 @@ class GUIMessenger(gtk.Dialog):
       if item is None:
         if group==self.active_group:
           if not message==self.last_message and message is not None:
-            #self.write('    '+message+'\n')
             self.treestore.append(self.active_group_iter, ['', message, timestr, bgcolor])
+
           self.progress(progress)
         else:
           self.active_group=group
           self.numitems=numitems
           self.item_count=0
-          #self.write(group+':\n')
           if not message==self.last_message and message is not None:
-            #self.write('    '+message+'\n')
             if self.active_group_iter is None:
               self.active_group_iter=self.treestore.append(None,
                                                            [group, message, timestr, bgcolor])
@@ -187,7 +185,6 @@ class GUIMessenger(gtk.Dialog):
           self.progress(progress)
       elif item==self.active_item:
         if not message==self.last_message and message is not None:
-          #self.write('        '+message+'\n')
           self.treestore.append(self.active_item_iter, ['', message, timestr, bgcolor])
         if progress is not None:
           self.progress(100.*float(self.item_count-1)/self.numitems+progress/float(self.numitems))
@@ -196,9 +193,7 @@ class GUIMessenger(gtk.Dialog):
       else:
         self.active_item=item
         self.item_count+=1
-        #self.write('    '+item+'\n')
         if not message==self.last_message and message is not None:
-          #self.write('        '+message+'\n')
           self.active_item_iter=self.treestore.append(self.active_group_iter,
                                                       [item, message, timestr, bgcolor])
         else:
@@ -208,6 +203,20 @@ class GUIMessenger(gtk.Dialog):
           self.progress(100.*float(self.item_count-1)/self.numitems+progress/float(self.numitems))
         else:
           self.progress(100.*float(self.item_count-1)/self.numitems)
+    # set color of group if error occured
+    if self.active_group is not None:
+      gcolor=self.treestore.get_value(self.active_group_iter, 3)
+      if bgcolor=='#aaaaff' and gcolor=='#ffffff':
+        self.treestore.set_value(self.active_group_iter, 3, bgcolor)
+      elif bgcolor=='#ffaaaa' and gcolor!='#ffaaaa':
+        self.treestore.set_value(self.active_group_iter, 3, bgcolor)
+    # set color of item if error occured
+    if self.active_item is not None:
+      gcolor=self.treestore.get_value(self.active_item_iter, 3)
+      if bgcolor=='#aaaaff' and gcolor=='#ffffff':
+        self.treestore.set_value(self.active_item_iter, 3, bgcolor)
+      elif bgcolor=='#ffaaaa' and gcolor!='#ffaaaa':
+        self.treestore.set_value(self.active_item_iter, 3, bgcolor)
     self.last_message=message
     if self.active_item_iter is not None:
       path=self.treestore.get_path(self.active_item_iter)
@@ -217,8 +226,10 @@ class GUIMessenger(gtk.Dialog):
       return
     self.treeview.collapse_all()
     self.treeview.expand_to_path(path)
-    while gtk.events_pending():
-      gtk.main_iteration(False)
+    self.treeview.scroll_to_cell(path)
+    #while gtk.events_pending():
+    # while loop too slow
+    gtk.main_iteration(False)
 
   def info(self, message, group=None, item=None, numitems=1, progress=None):
     self._write(message, group, item, numitems, progress)

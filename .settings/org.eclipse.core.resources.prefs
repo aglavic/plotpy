@@ -24,6 +24,7 @@ encoding//plotpy/config/xrd.py=utf-8
 encoding//plotpy/debug.py=utf-8
 encoding//plotpy/fio/__init__.py=utf8
 encoding//plotpy/fio/baseread.py=utf8
+encoding//plotpy/fio/kws2.py=utf-8
 encoding//plotpy/fio/mbe.py=utf-8
 encoding//plotpy/fio/qtiplot.py=utf8
 encoding//plotpy/fio/reflectometer.py=utf-8
