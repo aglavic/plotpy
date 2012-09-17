@@ -8,6 +8,7 @@
 # importing python modules
 import os
 import sys
+import pkgutil
 from time import sleep
 import subprocess
 from cPickle import load, dumps#, dump
@@ -821,19 +822,17 @@ class SessionProxy(dict):
         pass
       return output+[check_class]
     modules=[]
-    for name in os.listdir(package_dir):
-      if name.endswith(".py") or name.endswith(".pyc") or name.endswith(".pyo"):
-        modi=name.rsplit(".py", 1)[0]
-        if not (modi in modules or modi.startswith("_")):
-          modules.append(modi)
-    modules.sort()
-    sessions=[]
-    for module in modules:
-      try:
-        modi=__import__("plotpy.sessions."+module, fromlist=[module])
-      except Exception, error:
-        warn("Could not import module %s,\n %s: %s"%(module, error.__class__.__name__, error))
+    for ignore, name, ispackage in pkgutil.iter_modules([package_dir]):
+      if ispackage or name in ["generic"]:
         continue
+      try:
+        modi=__import__("plotpy.sessions."+name, fromlist=[name])
+      except Exception, error:
+        warn("Could not import module %s,\n %s: %s"%(name, error.__class__.__name__, error))
+        continue
+      modules.append(modi)
+    sessions=[]
+    for modi in modules:
       items=[item[1] for item in modi.__dict__.items() if not item[0].startswith("_")]
       sessions_i=filter(lambda item: GenericSession in recbase(item),
                        items)

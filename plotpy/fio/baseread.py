@@ -10,6 +10,7 @@
 
 import os
 import sys
+import pkgutil
 from glob import glob
 from fnmatch import fnmatch
 from cPickle import dumps, loads
@@ -356,20 +357,17 @@ class ReaderProxy(object):
       return output+[check_class]
 
     modules=[]
-    for name in os.listdir(package_dir):
-      if name.endswith(".py") or name.endswith(".pyc") or name.endswith(".pyo"):
-        modi=name.rsplit(".py", 1)[0]
-        if not (modi in modules or modi.startswith("_")
-                or modi in ["baseread", "basewrite"]):
-          modules.append(modi)
-    modules.sort()
-    readers=[]
-    for module in modules:
-      try:
-        modi=__import__("plotpy.fio."+module, fromlist=[module])
-      except Exception, error:
-        warn("Could not import module %s,\n %s: %s"%(module, error.__class__.__name__, error))
+    for ignore, name, ispackage in pkgutil.iter_modules([package_dir]):
+      if ispackage or name in ["baseread", "basewrite"]:
         continue
+      try:
+        modi=__import__("plotpy.fio."+name, fromlist=[name])
+      except Exception, error:
+        warn("Could not import module %s,\n %s: %s"%(name, error.__class__.__name__, error))
+        continue
+      modules.append(modi)
+    readers=[]
+    for modi in modules:
       items=[item[1] for item in modi.__dict__.items() if not item[0].startswith("_")]
       readers_i=filter(lambda item: type(item) is type
                                      and item not in [Reader, TextReader, BinReader]
