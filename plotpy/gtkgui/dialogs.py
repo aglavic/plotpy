@@ -13,6 +13,7 @@ import sys, os
 from time import sleep
 from math import sqrt
 from plotpy.config import gnuplot_preferences
+from plotpy.config.gui import ICONS
 from plotpy.mds import PlotStyle
 from plotpy.option_types import * #@UnusedWildImport
 from plotpy.read_data import AsciiImportFilter, defined_filters
@@ -65,10 +66,7 @@ class StatusDialog(gtk.Dialog):
     self.vbox.add(self.scrollwidget)
     self.end_iter=self.buffer.get_end_iter()
     self.end_mark=self.buffer.create_mark('End', self.end_iter, False)
-    self.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logogreen.png").replace('library.zip', ''))
+    self.set_icon_from_file(ICONS['LogoG'])
     self.connect('delete-event', self._no_destroy)
 
   def _no_destroy(self, widget, data=None):
@@ -187,10 +185,7 @@ class PreviewDialog(gtk.Dialog):
     select_none_button.connect('button_press_event', self.select_none)
     bottom_table.show_all()
     self.vbox.pack_end(bottom_table, False)
-    self.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logopurple.png").replace('library.zip', ''))
+    self.set_icon_from_file(ICONS['LogoP'])
 
   def run(self):
     '''
@@ -483,10 +478,7 @@ class SimpleEntryDialog(gtk.Dialog):
     self.table.show()
     self.vbox.add(self.table)
     self._init_entries(entries)
-    self.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logopurple.png").replace('library.zip', ''))
+    self.set_icon_from_file(ICONS['LogoP'])
     self.connect('destroy', self.cleanup)
 
   def _init_entries(self, entries):
@@ -745,10 +737,7 @@ class MultipeakDialog(gtk.Dialog):
     # Initialize this dialog
     opts['buttons']=('Autodetect', 3, 'Pop Last', 2, 'Finished', 1, 'Cancel', 0)
     gtk.Dialog.__init__(self, *args, **opts)
-    self.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logopurple.png").replace('library.zip', ''))
+    self.set_icon_from_file(ICONS['LogoP'])
     self.connect('destroy', self.cleanup)
     self.register_mouse_callback()
     self.added_items=gtk.VBox()
@@ -1084,10 +1073,7 @@ class ExportFileChooserDialog(gtk.FileChooserDialog):
             0, gtk.FILL,
             0, 0)
     table.show_all()
-    self.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logopurple.png").replace('library.zip', ''))
+    self.set_icon_from_file(ICONS['LogoP'])
 
   def get_with_height(self):
     '''
@@ -1149,10 +1135,7 @@ class FileImportDialog(gtk.FileChooserDialog):
       self.set_filter(filter_)
     self.add_wildcards(wildcards)
     self.add_ascii_wildcards()
-    self.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logopurple.png").replace('library.zip', ''))
+    self.set_icon_from_file(ICONS['LogoP'])
 
   def add_wildcards(self, wildcards):
     '''
@@ -1634,10 +1617,7 @@ class DataView(gtk.Dialog):
     # insert the data into the treeview
     self.add_data()
     self.clipboard=gtk.Clipboard(gtk.gdk.display_get_default(), "CLIPBOARD")
-    self.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logogreen.png").replace('library.zip', ''))
+    self.set_icon_from_file(ICONS['LogoG'])
 
   def create_columns(self, columns):
     '''

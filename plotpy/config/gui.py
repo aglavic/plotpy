@@ -1,23 +1,26 @@
 '''
   Configurations for the GUI frontend.
-  Mostly used for the global parameter 'toolkit' which is a string
-  defining the prefix for the gui package, e.g. 'gtk' for using the
-  gtkgui package.
-  
-  At the moment the gtk version is much more mature and feature rich 
-  so it is recommanded to use this if possible.
 '''
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
-
-#toolkit='wx'
-toolkit='gtk'
+import os
 
 DOWNLOAD_PAGE_URL='http://plotpy.sourceforge.net/plotupdate.py'
 
+# locate icons
+own_path=os.path.dirname(os.path.abspath(__file__))
+if '.zip' in own_path:
+  from zipfile import ZipFile
+  import tempfile
+  z=ZipFile(own_path.split('.zip')[0]+'.zip')
+  tmp_folder=os.path.join(tempfile.gettempdir(), 'plotpy_gui')
+  if not os.path.exists(tmp_folder):
+    os.mkdir(tmp_folder)
+    names=z.namelist()
+    names=filter(lambda item: item.startswith('plotpy/gtkgui/icons'), names)
+    z.extractall(tmp_folder, members=names)
+  ICON_PATH=os.path.join(tmp_folder, 'plotpy', 'gtkgui', 'icons')
+else:
+  ICON_PATH=os.path.join(os.path.split(own_path)[0], 'gtkgui', 'icons')
 ICONS={
                'Apply': 'apply.png',
                'ErrorBars': 'errorbars.png',
@@ -40,6 +43,13 @@ ICONS={
                'PlotToggleLinespoints': 'linespoints.png',
                'ShowPersistent': 'plotexternal.png',
                'XYProjections': 'togglexyprojection.png',
+               'Logo': 'logo.png',
+               'LogoP': 'logopurple.png',
+               'LogoG': 'logogreen.png',
+               'LogoB': 'logoblue.png',
+               'LogoY': 'logoyellow.png',
 
                }
 ICON_SIZE=24
+for key, value in ICONS.items():
+  ICONS[key]=os.path.join(ICON_PATH, value)

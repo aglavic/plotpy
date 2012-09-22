@@ -15,7 +15,7 @@ import file_actions
 from dialogs import PreviewDialog, PlotTree, PrintDatasetDialog, NotebookDialog
 from plotpy import plotting, config
 from plotpy.config import user_config
-from plotpy.config.gui import DOWNLOAD_PAGE_URL
+from plotpy.config.gui import DOWNLOAD_PAGE_URL, ICONS
 from plotpy.configobj import ConfigObj
 import main_window_plotting as mwp
 from main_window_file import MainFile
@@ -27,7 +27,6 @@ __author__="Artur Glavic"
 __credits__=['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika',
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
 from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
 
 
 class MainActions(MainFile, MainData, MainPlotting, MainMouse):
@@ -153,10 +152,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       self.plot_tree.set_default_size(*self.config_object['plot_tree']['size'])
       self.plot_tree.move(*self.config_object['plot_tree']['position'])
       self.config_object['plot_tree']['shown']=True
-      self.plot_tree.set_icon_from_file(os.path.join(
-                              os.path.split(
-                             os.path.realpath(__file__))[0],
-                             "..", "config", "logoblue.png").replace('library.zip', ''))
+      self.plot_tree.set_icon_from_file(ICONS['LogoB'])
       self.plot_tree.show_all()
     else:
       self.plot_tree.destroy()
@@ -299,10 +295,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       self.file_actions.activate_action('create_fit_object')
     fit_session=dataset.fit_object
     fit_dialog=gtk.Dialog(title='Fit...')
-    fit_dialog.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logopurple.png").replace('library.zip', ''))
+    fit_dialog.set_icon_from_file(ICONS['LogoP'])
     sw=gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
@@ -597,10 +590,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     else:
       ipython_dialog.set_default_size(750, 600)
     ipython_dialog.set_resizable(True)
-    ipython_dialog.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logoyellow.png").replace('library.zip', ''))
+    ipython_dialog.set_icon_from_file(ICONS['LogoY'])
     sw=gtk.ScrolledWindow()
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
     greeting="""    This is an interactive IPython session with direct access to the program.

@@ -100,19 +100,10 @@ def initialize_gui_toolkit():
   '''
     Load GUI modules dependent on the toolkit.
   '''
-  if '-gui' in sys.argv:
-    idx=sys.argv.index('-gui')
-    sys.argv.pop(idx)
-    toolkit=sys.argv.pop(idx)
-    if toolkit in ['gtk', 'wx']:
-      config.gui.toolkit=toolkit
-      print "Setting GUI toolkit to %s."%toolkit
-  if config.gui.toolkit=='wx':
-    sys.argv.append('--debug')
   global gui_main, status_dialog
-  gui_main=__import__('plotpy.'+config.gui.toolkit+'gui.main_window' , fromlist=["main_window"])
+  import plotpy.gtkgui.main_window as gui_main #@UnusedImport
   if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
-    dialogs=__import__('plotpy.'+config.gui.toolkit+'gui.message_dialog' , fromlist=["message_dialog"])
+    import plotpy.gtkgui.message_dialog as dialogs
     status_dialog=dialogs.connect_stdout_dialog()
   else:
     status_dialog=None
@@ -253,6 +244,16 @@ def ipdrop(session):
                                 banner1=banner, display_banner=True)
     shell()
 
+def get_types():
+  from plotpy.fio import reader
+  types=reader.types
+  types+=[item+'.gz' for item in types]
+  types+=[item.upper() for item in types]
+  return types
+
+def get_sessions():
+  from plotpy.sessions import sessions
+  return sessions.keys()
 
 def run(argv=None):
   '''
@@ -260,7 +261,14 @@ def run(argv=None):
   '''
   if argv is None:
     argv=sys.argv[1:]
-  argv=map(lambda arg: unicode(arg, sys.stdin.encoding), argv)
+  argv=map(lambda arg: unicode(arg, message.in_encoding), argv)
+  # interfact to autogenerate bash completion
+  if argv[0]=='--types':
+    print u" ".join(get_types())
+    exit(0)
+  if argv[0]=='--sessions':
+    print u" ".join(get_sessions())
+    exit(0)
   #+++++++++++++ Limit Memory Usage ++++++++++++++
   if not "--nolimit" in sys.argv:
     try:

@@ -13,7 +13,16 @@
 
 import sys
 
-__all__=['info', 'warn', 'error']
+if sys.stdin.encoding is None:
+  in_encoding='utf8'
+else:
+  in_encoding=sys.stdin.encoding
+if sys.stdout.encoding is None:
+  out_encoding='utf8'
+else:
+  out_encoding=sys.stdout.encoding
+
+__all__=['info', 'warn', 'error', 'in_encoding', 'out_encoding']
 
 class PlotpyError(Exception):
   pass
@@ -27,7 +36,7 @@ class DefaultMessenger(object):
     and directly prints to stdout or raises a Warning/Error.
   '''
   last_message=None
-  encoding=sys.stdout.encoding
+  encoding=out_encoding
 
   def format_message(self, message, group, item):
     if item is not None:
@@ -40,7 +49,7 @@ class DefaultMessenger(object):
         message=group
       else:
         message=group+' - '+message
-    return message.encode(sys.stdout.encoding)
+    return message.encode(out_encoding)
 
   def info(self, message, group=None, item=None, numitems=1, progress=None):
     output=self.format_message(message, group, item)
@@ -68,7 +77,7 @@ class NiceMessenger(object):
   last_message=None
   numitems=1
   item_count=0
-  encoding=sys.stdout.encoding
+  encoding=out_encoding
 
   def _write(self, message=None, group=None, item=None, numitems=1, progress=None):
     self.clear_line()

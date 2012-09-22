@@ -2,10 +2,10 @@
   GUI replacement for the default command line messenger.
 '''
 
-import os
 import sys
 import gtk
 from plotpy import message
+from plotpy.config.gui import ICONS
 from time import strftime, time
 
 def connect_stdout_dialog():
@@ -58,10 +58,7 @@ class GUIMessenger(gtk.Dialog):
     self.vbox.add(self.scrollwidget)
     self.end_iter=self.buffer.get_end_iter()
     self.end_mark=self.buffer.create_mark('End', self.end_iter, False)
-    self.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logogreen.png").replace('library.zip', ''))
+    self.set_icon_from_file(ICONS['LogoG'])
     # Bottombar
     hbox=gtk.HBox()
     self.progressbar=gtk.ProgressBar()
@@ -114,7 +111,7 @@ class GUIMessenger(gtk.Dialog):
       Append a string to the buffer and scroll at the end, if it was visible before.
     '''
     if type(text) is not unicode:
-      utext=unicode(text, encoding=sys.stdin.encoding, errors='ignore').strip()
+      utext=unicode(text, encoding=message.in_encoding, errors='ignore').strip()
     else:
       utext=text.strip()
     while u'\b' in utext:
@@ -131,33 +128,33 @@ class GUIMessenger(gtk.Dialog):
       self._write(self._write_text, group=None, item=None)
     self._write_text=u''
 
-  def _write(self, message=None, group=None, item=None, numitems=1, progress=None,
+  def _write(self, text=None, group=None, item=None, numitems=1, progress=None,
              bgcolor='#ffffff'):
     # decode str input
     stext=u''
     if item is not None:
       if type(item) is str:
-        item=unicode(item, sys.stdin.encoding)
+        item=unicode(item, message.in_encoding)
       stext=item+u'-'+stext
     if group is not None:
       if type(group) is str:
-        group=unicode(group, sys.stdin.encoding)
+        group=unicode(group, message.in_encoding)
       stext=group+u'-'+stext
-    if message is not None:
-      if type(message) is str:
-        message=unicode(message, sys.stdin.encoding)
-      stext+=message
+    if text is not None:
+      if type(text) is str:
+        text=unicode(text, message.in_encoding)
+      stext+=text
     if self.connected_status is not None:
       self.connected_status.push(0, stext.strip().rstrip('-'))
     # get timesamp of current message
     timestr=strftime('%H:%M:%S')+str(time()%1)[1:5]
     if group is None or group=='reset':
-      if not message==self.last_message and message is not None:
-        #self.write(message+'\n')
+      if not text==self.last_message and text is not None:
+        #self.write(text+'\n')
         if group=='reset':
-          self.treestore.append(self.active_group_iter, [message, '', timestr, bgcolor])
+          self.treestore.append(self.active_group_iter, [text, '', timestr, bgcolor])
         else:
-          self.treestore.append(None, ['', message, timestr, bgcolor])
+          self.treestore.append(None, ['', text, timestr, bgcolor])
       self.active_group=None
       self.active_group_iter=None
       self.active_item=None
@@ -166,26 +163,26 @@ class GUIMessenger(gtk.Dialog):
     else:
       if item is None:
         if group==self.active_group:
-          if not message==self.last_message and message is not None:
-            self.treestore.append(self.active_group_iter, ['', message, timestr, bgcolor])
+          if not text==self.last_message and text is not None:
+            self.treestore.append(self.active_group_iter, ['', text, timestr, bgcolor])
 
           self.progress(progress)
         else:
           self.active_group=group
           self.numitems=numitems
           self.item_count=0
-          if not message==self.last_message and message is not None:
+          if not text==self.last_message and text is not None:
             if self.active_group_iter is None:
               self.active_group_iter=self.treestore.append(None,
-                                                           [group, message, timestr, bgcolor])
+                                                           [group, text, timestr, bgcolor])
             else:
-              self.treestore.append(self.active_group_iter, ['', message, timestr, bgcolor])
+              self.treestore.append(self.active_group_iter, ['', text, timestr, bgcolor])
           else:
             self.active_group_iter=self.treestore.append(None, [group, '', timestr, bgcolor])
           self.progress(progress)
       elif item==self.active_item:
-        if not message==self.last_message and message is not None:
-          self.treestore.append(self.active_item_iter, ['', message, timestr, bgcolor])
+        if not text==self.last_message and text is not None:
+          self.treestore.append(self.active_item_iter, ['', text, timestr, bgcolor])
         if progress is not None:
           self.progress(100.*float(self.item_count-1)/self.numitems+progress/float(self.numitems))
         else:
@@ -193,9 +190,9 @@ class GUIMessenger(gtk.Dialog):
       else:
         self.active_item=item
         self.item_count+=1
-        if not message==self.last_message and message is not None:
+        if not text==self.last_message and text is not None:
           self.active_item_iter=self.treestore.append(self.active_group_iter,
-                                                      [item, message, timestr, bgcolor])
+                                                      [item, text, timestr, bgcolor])
         else:
           self.active_item_iter=self.treestore.append(self.active_group_iter,
                                                       [item, '', timestr, bgcolor])
@@ -217,7 +214,7 @@ class GUIMessenger(gtk.Dialog):
         self.treestore.set_value(self.active_item_iter, 3, bgcolor)
       elif bgcolor=='#ffaaaa' and gcolor!='#ffaaaa':
         self.treestore.set_value(self.active_item_iter, 3, bgcolor)
-    self.last_message=message
+    self.last_message=text
     if self.active_item_iter is not None:
       path=self.treestore.get_path(self.active_item_iter)
     elif self.active_group_iter is not None:

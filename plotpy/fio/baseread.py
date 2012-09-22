@@ -9,7 +9,6 @@
 '''
 
 import os
-import sys
 import pkgutil
 from glob import glob
 from fnmatch import fnmatch
@@ -19,7 +18,7 @@ import gzip
 import numpy
 
 from plotpy.info import __version__
-from plotpy.message import *
+from plotpy.message import info, warn, error
 try:
   from cStringIO import StringIO
 except ImportError:
@@ -459,7 +458,7 @@ class ReaderProxy(object):
         raise ValueError, "Can only read data from file objects or file names"
       if type(filename) is str:
         # encode non unicode names using stdin encoding
-        files[i]=unicode(filename, sys.stdin.encoding)
+        files[i]=unicode(filename, in_encoding)
     i=0
     while i<len(files):
       filename=files[i]

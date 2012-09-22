@@ -87,7 +87,7 @@ class IterableIPShell:
     self.history_level=0
     orig_stdout=sys.stdout
     sys.stdout=IPython.Shell.Term.cout #@UndefinedVariable
-    sys.stdout.encoding='utf8'
+    out_encoding='utf8'
     try:
       line=self.IP.raw_input(None, self.iter_more)
       if self.IP.autoindent:

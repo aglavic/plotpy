@@ -14,10 +14,13 @@ try:
   ez_setup.use_setuptools()
 except ImportError:
   pass
+try:
+  from setuptools import setup
+except ImportError:
+  from distutils.core import setup
 
 import subprocess
 from glob import glob
-from distutils.core import setup
 
 __name__='plotpy' #@ReservedAssignment
 __author__="Artur Glavic"
@@ -33,7 +36,7 @@ __packages__=['plotpy', 'plotpy.config', 'plotpy.config.default_templates',
             'plotpy.read_data', 'plotpy.sessions',
             'plotpy.sessions.reflectometer_fit', 'plotpy.gtkgui', 'plotpy.plugins'] #'plotpy.wxgui', 
 __package_data__={'plotpy.config': ['plotpy.squid_calibration', '*.dat', 'fit/fit.f90',
-                            'fit/pnr_multi/*.f90', 'logo*.png'],
+                            'fit/pnr_multi/*.f90'],
                   'plotpy': ['doc/*.*', 'doc/_modules/*.*',
                                   'doc/_static/*.*', 'doc/_sources/*.*',
                                   'gpl.pdf', 'gpl.txt'],

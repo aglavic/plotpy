@@ -147,10 +147,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
 
     # Create the toplevel window
     gtk.Window.__init__(self)
-    self.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logo.png").replace('library.zip', ''))
+    self.set_icon_from_file(gui_config.ICONS['Logo'])
     # Reading config file
     self.read_config_file()
     # When the window gets destroyed, process some cleanup and save the configuration

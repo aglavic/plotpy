@@ -284,7 +284,7 @@ class MeasurementData(object):
       output+=u", x='%s', y='%s', z='%s'>"%(self.x.dimension,
                                             self.y.dimension,
                                             self.z.dimension)
-    return output.encode(sys.stdout.encoding)
+    return output.encode(out_encoding)
 
   def __add__(self, other):
     '''
@@ -1359,7 +1359,7 @@ class HugeMD(MeasurementData):
         output+=u", x='%s', y='%s'>"%(self.x.dimension, self.y.dimension)
       else:
         output+=u", x='%s', y='%s', z='%s'>"%(self.x.dimension, self.y.dimension, self.z.dimension)
-    return output.encode(sys.stdout.encoding)
+    return output.encode(out_encoding)
 
   def __del__(self):
     '''
@@ -2110,7 +2110,7 @@ class PhysicalUnit(object):
       self._unit_parts=deepcopy(entry_str._unit_parts)
     else:
       if type(entry_str) is str:
-        entry_str=unicode(entry_str, sys.stdin.encoding)
+        entry_str=unicode(entry_str, in_encoding)
       if len(entry_str.split(u'/'))>2:
         raise ValueError, u'the format of the input string should be n1*n2*n3/d1*d2*d3'
       self._unit_parts={}
@@ -2214,7 +2214,7 @@ class PhysicalUnit(object):
     return output_str
 
   def __str__(self):
-    return self.str().encode(sys.stdout.encoding)
+    return self.str().encode(out_encoding)
 
   def __repr__(self):
     return "<PhysicalUnit '%s'>"%self.__str__()
@@ -2389,9 +2389,9 @@ class PhysicalConstant(numpy.ndarray):
     else:
       pre=u''
     if self.discription!=u'':
-      return (pre+str(self[0])+u' '+self.unit+u' - '+self.discription).encode(sys.stdout.encoding)
+      return (pre+str(self[0])+u' '+self.unit+u' - '+self.discription).encode(out_encoding)
     else:
-      return (pre+str(self[0])+u' '+self.unit).encode(sys.stdout.encoding)
+      return (pre+str(self[0])+u' '+self.unit).encode(out_encoding)
 
   def __array_wrap__(self, out_const, context=None):
     '''
@@ -2713,7 +2713,7 @@ class PhysicalProperty(numpy.ndarray):
     else:
       output+=u"],\tdimension='%s', unit='%s', length=%i)"%(self.dimension, self.unit.str(),
                                                             len(self))
-    return output.encode(sys.stdout.encoding)
+    return output.encode(out_encoding)
 
   def __str__(self):
     '''

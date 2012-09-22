@@ -10,8 +10,10 @@
 .ropeproject
 MANIFEST
 archiv
+dist
 build
 doc
+plotpy.egg*
 debug/*.mds
 debug/*.mdd
 debug/*.raw

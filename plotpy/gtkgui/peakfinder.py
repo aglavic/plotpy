@@ -3,13 +3,13 @@
   Dialog for peakfinder algorithm.
 '''
 
-import os
 import gtk
 from numpy import ndarray, array, exp, zeros_like, sqrt, argsort
 from plotpy.peakfinder import PeakFinder
 from plotpy.mds import MeasurementData, PhysicalProperty, PlotStyle
 from plotpy.fitdata import FitFunction, FitSession, FitGaussian
 from plotpy.config import user_config
+from plotpy.config.gui import ICONS
 
 if not 'PeakFinder' in user_config:
   user_config['PeakFinder']={'Presets':{}}
@@ -47,10 +47,7 @@ class PeakFinderDialog(gtk.Dialog):
     self.connect('response', self._responde)
     self._evaluate()
     self._responde(None, 1)
-    self.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logopurple.png").replace('library.zip', ''))
+    self.set_icon_from_file(ICONS['LogoP'])
 
   def _init_entries(self):
     '''
@@ -322,10 +319,7 @@ class FitSummary(gtk.Dialog):
     self.vbox.add(sw)
     # insert the data into the treeview
     self.add_data(parameters)
-    self.set_icon_from_file(os.path.join(
-                            os.path.split(
-                           os.path.realpath(__file__))[0],
-                           "..", "config", "logopurple.png").replace('library.zip', ''))
+    self.set_icon_from_file(ICONS['LogoP'])
     self.clipboard=gtk.Clipboard(gtk.gdk.display_get_default(), "CLIPBOARD")
     self.treeview.connect('key-press-event', self.key_press_response)
     self.data=parameters

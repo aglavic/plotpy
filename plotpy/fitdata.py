@@ -11,8 +11,6 @@ from mpfit import mpfit
 from math import pi, sin, asin, exp
 # import own modules
 from mds import MeasurementData, PlotOptions
-# import gui functions for active config.gui.toolkit
-from plotpy.config import gui as gui_config
 import parallel
 #prepare other processes by importing all importend modules
 parallel.add_actions([
@@ -26,18 +24,10 @@ parallel.add_actions([
                               ])
 
 try:
-  FitSessionGUI=__import__('plotpy.'+gui_config.toolkit+'gui.gui_fit_data',
-                            fromlist=['FitSessionGUI']).FitSessionGUI
-  FitFunctionGUI=__import__('plotpy.'+gui_config.toolkit+'gui.gui_fit_data',
-                             fromlist=['FitFunctionGUI']).FitFunctionGUI
+  from plotpy.gtkgui.gui_fit_data import FitSessionGUI, FitFunctionGUI
 except ImportError:
   class FitSessionGUI(object): pass
   class FitFunctionGUI(object): pass
-
-__author__="Artur Glavic"
-__credits__=[]
-from info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
 
 class ConnectedDict(dict):
   '''
