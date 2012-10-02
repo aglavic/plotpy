@@ -19,11 +19,13 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
         rivers@cars.uchicago.edu
         Updated versions can be found at http://cars.uchicago.edu/software
 
- Sergey Koposov converted the Mark's Python version from Numeric to numpy
+ Sergey Koposov converted Mark's Python version from Numeric to numpy
         Sergey Koposov, Max Planck Institute for Astronomy
         Heidelberg, Germany, D-69117
         koposov@mpia.de
         Updated versions can be found at http://code.google.com/p/astrolibpy/source/browse/trunk/
+
+ Artur Glavic added the multiprocessing support to the module.
 
                                                                  DESCRIPTION
 
@@ -405,13 +407,19 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
    Translated from MPFIT (Craig Markwardt's IDL package) to Python,
    August, 2002.  Mark Rivers
    Converted from Numeric to numpy (Sergey Koposov, July 2008)
+   Added multiprocessing support (Artur Glavic, October 2012)
 """
 from numpy import sum, abs, put, sqrt, max, shape, choose, rank, arange, \
                   nonzero, asarray, diagonal, float, tanh, \
                   zeros, clip, take, repeat, log, logical_or, logical_and
 import numpy
 import types
-
+try:
+  # multiprocessing is only supported in python >= 2.4
+  from multiprocessing import Pool
+  USE_MP=True
+except ImportError:
+  USE_MP=False
 
 #        Original FORTRAN documentation
 #        **********
@@ -595,9 +603,19 @@ import types
 #
 #        **********
 
+
+# helper functions for multiprocessing
+def mp_caller(*args, **opts):
+  # wrapper for the fittable function
+  return mp_fcn(*args, **opts)
+
+def mp_init(fcn):
+  # add the wrapped function to global namespace on multiprocessing.Pool init
+  global mp_fcn
+  mp_fcn=fcn
+
 class mpfit:
 
-        use_mp=False
         mp_pool=None
 
         def __init__(self, fcn, xall=None, functkw={}, parinfo=None,
@@ -1438,20 +1456,26 @@ class mpfit:
 
         ## Call user function or procedure, with _EXTRA or not, with
         ## derivatives or not.
-        def call(self, fcn, x, functkw, fjac=None):
+        def call(self, fcn, x, functkw, fjac=None, async=False):
                 if (self.debug): print 'Entering call...'
                 if (self.qanytied): x=self.tie(x, self.ptied)
                 self.nfev=self.nfev+1
-                if (fjac==None):
-                        [status, f]=fcn(x, fjac=fjac, **functkw)
-                        if (self.damp>0):
-                                ## Apply the damping if requested.  This replaces the residuals
-                                ## with their hyperbolic tangent.  Thus residuals larger than
-                                ## DAMP are essentially clipped.
-                                f=tanh(f/self.damp)
-                        return([status, f])
+                if async:
+                  kwds={'fjac':fjac}
+                  kwds.update(functkw)
+                  return self.mp_pool.apply_async(mp_caller, args=(x,),
+                                                  kwds=kwds)
                 else:
-                        return(fcn(x, fjac=fjac, **functkw))
+                  if (fjac==None):
+                          [status, f]=fcn(x, fjac=fjac, **functkw)
+                          if (self.damp>0):
+                                  ## Apply the damping if requested.  This replaces the residuals
+                                  ## with their hyperbolic tangent.  Thus residuals larger than
+                                  ## DAMP are essentially clipped.
+                                  f=tanh(f/self.damp)
+                          return([status, f])
+                  else:
+                          return(fcn(x, fjac=fjac, **functkw))
 
 
         def enorm(self, vec):
@@ -1552,31 +1576,81 @@ class mpfit:
                         if len(wh)>0: put(h, wh,-take(h, wh))
                 ## Loop through parameters, computing the derivative for each
                 # TODO: Introduce multiprocessing here as it's possible for any problem
-                if self.use_mp:
+                if USE_MP:
+                  # if called the first time create a pool of workers
                   if self.mp_pool is None:
-                    from multiprocessing import Pool
-                    self.mp_pool=Pool()
-                for j in range(n):
-                        xp=xall.copy()
-                        xp[ifree[j]]=xp[ifree[j]]+h[j]
-                        [status, fp]=self.call(fcn, xp, functkw)
-                        if (status<0): return(None)
+                    # the function has to be given to the pool when created
+                    # as it can't be pickled as instance method
+                    self.mp_pool=Pool(initializer=mp_init, initargs=(fcn,))
+                    # test if the multiprocessing makes any problems
+                    # e.g. if the function is dynamically created
+                    try:
+                      res=self.call(fcn, xall.copy(), functkw, async=True)
+                      res.get()
+                    except:
+                      self.mp_pool=None
+                if self.mp_pool is not None:
+                  step1results=[]
+                  for j in range(n):
+                          xp=xall.copy()
+                          xp[ifree[j]]=xp[ifree[j]]+h[j]
+                          step1results.append(self.call(fcn, xp, functkw, async=True))
+                  step2results=[]
+                  print step1results
+                  for j in range(n):
+                          [status, fp]=step1results[j].get()
+                          if (fjac==None) and (self.damp>0):
+                                  ## Apply the damping if requested.  This replaces the residuals
+                                  ## with their hyperbolic tangent.  Thus residuals larger than
+                                  ## DAMP are essentially clipped.
+                                  fp=tanh(fp/self.damp)
+                          if (status<0): return(None)
 
-                        if abs(dside[j])<=1:
-                                ## COMPUTE THE ONE-SIDED DERIVATIVE
-                                ## Note optimization fjac(0:*,j)
-                                fjac[0:, j]=(fp-fvec)/h[j]
+                          if abs(dside[j])<=1:
+                                  ## COMPUTE THE ONE-SIDED DERIVATIVE
+                                  ## Note optimization fjac(0:*,j)
+                                  fjac[0:, j]=(fp-fvec)/h[j]
 
-                        else:
-                                ## COMPUTE THE TWO-SIDED DERIVATIVE
-                                xp[ifree[j]]=xall[ifree[j]]-h[j]
+                          else:
+                                  ## COMPUTE THE TWO-SIDED DERIVATIVE
+                                  xp[ifree[j]]=xall[ifree[j]]-h[j]
 
-                                mperr=0 #@UnusedVariable
-                                [status, fm]=self.call(fcn, xp, functkw)
-                                if (status<0): return(None)
+                                  mperr=0 #@UnusedVariable
+                                  step2results.append((j, fp,
+                                                       self.call(fcn, xp, functkw, async=True)))
+                  for j, fp, result in step2results:
+                                  [status, fm]=result.get()
+                                  if (status<0): return(None)
+                                  if (fjac==None) and (self.damp>0):
+                                          ## Apply the damping if requested.  This replaces the residuals
+                                          ## with their hyperbolic tangent.  Thus residuals larger than
+                                          ## DAMP are essentially clipped.
+                                          fm=tanh(fm/self.damp)
 
-                                ## Note optimization fjac(0:*,j)
-                                fjac[0:, j]=(fp-fm)/(2*h[j])
+                                  ## Note optimization fjac(0:*,j)
+                                  fjac[0:, j]=(fp-fm)/(2*h[j])
+                else:
+                  for j in range(n):
+                          xp=xall.copy()
+                          xp[ifree[j]]=xp[ifree[j]]+h[j]
+                          [status, fp]=self.call(fcn, xp, functkw)
+                          if (status<0): return(None)
+
+                          if abs(dside[j])<=1:
+                                  ## COMPUTE THE ONE-SIDED DERIVATIVE
+                                  ## Note optimization fjac(0:*,j)
+                                  fjac[0:, j]=(fp-fvec)/h[j]
+
+                          else:
+                                  ## COMPUTE THE TWO-SIDED DERIVATIVE
+                                  xp[ifree[j]]=xall[ifree[j]]-h[j]
+
+                                  mperr=0 #@UnusedVariable
+                                  [status, fm]=self.call(fcn, xp, functkw)
+                                  if (status<0): return(None)
+
+                                  ## Note optimization fjac(0:*,j)
+                                  fjac[0:, j]=(fp-fm)/(2*h[j])
                 return(fjac)
 
 

@@ -18,7 +18,7 @@ import gzip
 import numpy
 
 from plotpy.info import __version__
-from plotpy.message import info, warn, error
+from plotpy.message import info, warn, error, in_encoding
 try:
   from cStringIO import StringIO
 except ImportError:

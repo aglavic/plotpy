@@ -588,16 +588,17 @@ def import_edf_file(file_name):
   if header_settings['DataType']=='UnsignedShort':
     # load data as binary integer values
     input_array=array_module.array('H')
-    input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2))
-    input_array=array(input_array)-200
+    input_array=fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2),
+                           uint16).astype(float)
+    input_array-=-200
   elif header_settings['DataType']=='SignedInteger':
     # load data as binary integer values
-    input_array=array_module.array('i')
-    input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*4))
+    input_array=fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*2),
+                           int16).astype(float)
   elif header_settings['DataType']=='FloatValue':
     # load data as binary integer values
-    input_array=array_module.array('f')
-    input_array.fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*4))
+    input_array=fromstring(file_handler.read(header_info['xdim']*header_info['ydim']*4),
+                           float32)
     input_array=maximum(0., input_array)
   else:
     raise IOError, 'Unknown data format in header: %s'%header_settings['DataType']

@@ -19,7 +19,6 @@ from glob import glob
 gui_main=None
 
 import message
-import config.gui
 #----------------------- importing modules --------------------------
 
 def import_session_from_name(arguments, measurement_type):
