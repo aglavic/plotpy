@@ -40,6 +40,7 @@ encoding//plotpy/gtkgui/diverse_classes.py=utf-8
 encoding//plotpy/gtkgui/dnd_handling.py=utf8
 encoding//plotpy/gtkgui/dns.py=utf-8
 encoding//plotpy/gtkgui/file_actions.py=utf-8
+encoding//plotpy/gtkgui/fio_dialogs.py=utf8
 encoding//plotpy/gtkgui/generic.py=utf-8
 encoding//plotpy/gtkgui/gui_fit_data.py=utf-8
 encoding//plotpy/gtkgui/in12.py=utf-8

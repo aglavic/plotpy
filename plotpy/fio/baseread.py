@@ -47,8 +47,9 @@ class Reader(object):
 
   # additional parameters that can be given to the open function
   # with their default values
-  parameters={}
+  parameters=[]
   parameter_units={}
+  parameter_description={} # hover text for description
 
   _data=None
   origin=("", "")
@@ -71,10 +72,10 @@ class Reader(object):
 
   def _get_keywords(self):
     '''
-      Return a help string for the allowed keywords of an insance.
+      Return a help string for the allowed keywords of an instance.
     '''
     output=''
-    for key, value in sorted(self.parameters.items()):
+    for key, value in self.parameters:
       output+='%16s: %r'%(key, value)
       if key in self.parameter_units:
         output+=' %s\n'%self.parameter_units[key]
@@ -164,10 +165,11 @@ class Reader(object):
       Set object parameters according to keywords and default
       options set in self.parameters dictionary.
     '''
+    parnames=[item[0] for item in self.parameters]
     for key in kwds.keys():
-      if not key in self.parameters:
+      if not key in parnames:
         raise ValueError, "%s is not a valid parameter"%key
-    for param, default in self.parameters.items():
+    for param, default in self.parameters:
       if param in kwds:
         # convert to default type
         parameter=type(default)(kwds[param])
@@ -495,6 +497,7 @@ class ReaderProxy(object):
         #  results.append(None)
         i+=1
         while results[-1] is None and i<len(readers):
+          kwds=self._get_kwds(readers[0], path, name)
           # if the reader did not succeed, try another
           # who is associated to the same file type
           results[-1]=readers[i].open(filename, **kwds)
@@ -586,7 +589,12 @@ class ReaderProxy(object):
     self._prioritys[reader]+=value
 
   def _get_kwds(self, reader, path, name):
-    if reader.parameters=={} or self.kwds_callback is None:
+    if reader.parameters==[]:
       return {}
     else:
+      if self.kwds_callback is None:
+        info(u'''No kwds_callback function defined!
+    %s reader can't be customized without parameters.'''%reader.name,
+             group=u'Reading files')
+        return {}
       return self.kwds_callback(reader, path, name)

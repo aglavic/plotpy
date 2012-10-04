@@ -106,6 +106,10 @@ def initialize_gui_toolkit():
     status_dialog=dialogs.connect_stdout_dialog()
   else:
     status_dialog=None
+  # keyword dialog for file imports
+  from plotpy.gtkgui.fio_dialogs import reader_kwd_callback
+  from plotpy.fio import reader
+  reader.kwds_callback=reader_kwd_callback
 
 def initialize_gui(session, status_dialog=None):
   '''
