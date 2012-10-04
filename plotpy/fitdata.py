@@ -6,6 +6,7 @@
 '''
 
 # import mathematic functions and least square fit which uses the Levenberg-Marquardt algorithm.
+import sys
 import numpy
 from mpfit import mpfit
 from math import pi, sin, asin, exp
@@ -332,12 +333,21 @@ class FitFunction(FitFunctionGUI):
           dview.execute('err=self.residuals(p,y,x,dy)')
           return [0, dview.gather('err')]
     # call the fit routine
-    result=mpfit(function, xall=parameters, functkw=function_keywords,
+    old_std=sys.stdout, sys.stderr
+    sys.stdout=sys.__stdout__
+    sys.stderr=sys.__stderr__
+    try:
+      result=mpfit(function, xall=parameters, functkw=function_keywords,
                  parinfo=parinfo,
                  maxiter=self.max_iter, iterfunct=iterfunct,
-                 fastnorm=1, # faster computation of Chi², can be less stable
                  quiet=1
                  )
+    except Exception, error:
+      result=None
+    finally:
+      sys.stdout, sys.stderr=old_std
+    if result is None:
+      raise error
     # evaluate the fit result
     if result.status==-1:
       # The fit was stopped by the user, treat as if the maximum iterations were reached
@@ -883,7 +893,6 @@ class FitFunction3D(FitFunctionGUI):
     result=mpfit(function, xall=parameters, functkw=function_keywords,
                  parinfo=parinfo,
                  maxiter=self.max_iter, iterfunct=iterfunct,
-                 fastnorm=1, # faster computation of Chi², can be less stable
                  quiet=1
                  )
     if result.status==-1:
