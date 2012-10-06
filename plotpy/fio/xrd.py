@@ -19,6 +19,8 @@ class Spec(TextReader):
   session='xrd'
 
   def read(self):
+    self.info(u"\n".join(map(repr, [self.F_test, self.I_test, self.S_test, self.fname,
+                                   self.T_test, self.B_test])))
     input_file_lines=self.text_data.splitlines()
     sample_name, last_comments=self.read_file_header(input_file_lines)
     if not sample_name:

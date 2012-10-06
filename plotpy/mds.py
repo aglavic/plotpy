@@ -5,13 +5,13 @@
 '''
 
 import os
-import sys
 from shutil import copyfile
 from copy import deepcopy
 from cPickle import load, dump
 import numpy
 from tempfile import gettempdir
 from config.transformations import known_unit_transformations
+from plotpy.message import in_encoding
 
 hmd_file_number=0
 TEMP_DIR=gettempdir()

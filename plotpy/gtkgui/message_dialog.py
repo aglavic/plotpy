@@ -73,6 +73,7 @@ class GUIMessenger(gtk.Dialog):
     self.vbox.pack_end(hbox, False)
     self.connect('delete-event', self._no_destroy)
     message.messenger=self
+    self._stored_position=self.get_size()
 
   def _no_destroy(self, widget, data=None):
     '''
@@ -80,6 +81,14 @@ class GUIMessenger(gtk.Dialog):
     '''
     self.hide()
     return True
+
+  def show(self):
+    self.set_default_size(*self._stored_position)
+    gtk.Dialog.show(self)
+
+  def hide(self):
+    self._stored_position=self.get_size()
+    gtk.Dialog.hide(self)
 
   def _init_treeview(self):
     self.treestore=gtk.TreeStore(str, str, str, str)

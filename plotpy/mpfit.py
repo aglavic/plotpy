@@ -418,7 +418,7 @@ from time import time
 try:
     # multiprocessing is only supported in python >= 2.4
     from multiprocessing import Pool
-    USE_MP=True
+    USE_MP=True # this constant can be changed during runtime to switch MP off
 except ImportError:
     USE_MP=False
 MP_LIMIT=10. # default limit for function evaluation time in ms before MP is used

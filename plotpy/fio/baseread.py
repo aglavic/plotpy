@@ -52,6 +52,7 @@ class Reader(object):
   parameter_description={} # hover text for description
 
   _data=None
+  store_mds=True
   origin=("", "")
   _max_len_pprint=60
   _messages=None
@@ -116,7 +117,7 @@ class Reader(object):
     self.info(self.name+'-Success', progress=100)
     result=FileData(result, self.session, self.origin, checksum)
     readtime=time()-start
-    if readtime>1.:
+    if readtime>1. and self.store_mds:
       self.info('Storing as .mds for faster readout')
       result.save_snapshot(filename)
     return result
@@ -126,7 +127,7 @@ class Reader(object):
       Read the raw data from the file.
     '''
     if type(filename) is file:
-      if filename.name.endswith('.gz'):
+      if filename.name.lower().endswith('.gz'):
         bindata=StringIO(filename.read())
         self.raw_data=gzip.GzipFile(fileobj=bindata, mode='rb').read()
       else:
@@ -157,7 +158,7 @@ class Reader(object):
     if dumpobj['version']!=__version__:
       # plotpy version has changed (to make sure corrected reader code is used)
       return None
-    self.info('Restore from .mds file, to reload use -rd option')
+    self.info('Restore from .mds file, to reload from file use -rd option')
     return dumpobj['data']
 
   def _set_params(self, kwds):
@@ -170,11 +171,23 @@ class Reader(object):
       if not key in parnames:
         raise ValueError, "%s is not a valid parameter"%key
     for param, default in self.parameters:
+      tp=type(default)
       if param in kwds:
         # convert to default type
-        parameter=type(default)(kwds[param])
+        parameter=kwds[param]
       else:
         parameter=default
+      if tp is tuple:
+        if type(parameter) is tuple:
+          parameter=parameter[0]
+        if type(parameter) is int:
+          parameter=default[parameter]
+      elif tp is str:
+        if not type(parameter) is unicode:
+          parameter=unicode(parameter, encoding=in_encoding)
+      else:
+        # convert to appropriate type
+        parameter=tp(parameter)
       setattr(self, param, parameter)
 
   def read(self):
