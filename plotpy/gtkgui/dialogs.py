@@ -1149,7 +1149,8 @@ class FileImportDialog(gtk.FileChooserDialog):
     filter_=gtk.FileFilter()
     filter_.set_name(wildcard[0])
     for pattern in wildcard[1:]:
-      filter_.add_pattern(pattern)
+      filter_.add_pattern(pattern.lower())
+      filter_.add_pattern(pattern.upper())
     self.add_filter(filter_)
     if last_filter is None or last_filter==wildcard[0]:
       self.set_filter(filter_)
@@ -1157,8 +1158,10 @@ class FileImportDialog(gtk.FileChooserDialog):
       filter_=gtk.FileFilter()
       filter_.set_name(wildcard[0])
       for pattern in wildcard[1:]:
-        filter_.add_pattern(pattern)
-        filter_.add_pattern(pattern+'.gz')
+        filter_.add_pattern(pattern.lower())
+        filter_.add_pattern(pattern.upper())
+        filter_.add_pattern((pattern+'.gz').lower())
+        filter_.add_pattern((pattern+'.gz').upper())
       self.add_filter(filter_)
       if last_filter==wildcard[0]:
         self.set_filter(filter_)

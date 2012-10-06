@@ -41,7 +41,7 @@ class ReaderOptionDialog(gtk.Dialog):
       entry=self._get_entry(key, value)
       if key in self.units:
         unit=self.units[key]
-        if unit=='file':
+        if unit.startswith('file'):
           entry.set_position(-1)
           entry.connect('changed', self._check_file)
           fbutton=gtk.FileChooserButton('Select %s file'%key)
@@ -49,6 +49,21 @@ class ReaderOptionDialog(gtk.Dialog):
           fbutton.set_current_folder(os.path.dirname(self.fpath))
           fbutton.set_filename(os.path.basename(self.fpath))
           fbutton.connect('file-set', self._select_file, entry)
+          if '(' in unit:
+            wildcard=unit.split('(', 1)[1].rsplit(')')[0]
+            filter_=gtk.FileFilter()
+            filter_.set_name('Filtered')
+            filter_.add_pattern(wildcard.lower())
+            filter_.add_pattern(wildcard.upper())
+            fbutton.add_filter(filter_)
+            fbutton.set_filter(filter_)
+            filter_=gtk.FileFilter()
+            filter_.set_name('All')
+            filter_.add_pattern('*')
+            fbutton.add_filter(filter_)
+            for pattern in wildcard[1:]:
+              filter_.add_pattern(pattern)
+
           line.pack_end(fbutton, False)
           fbutton.show()
         else:
