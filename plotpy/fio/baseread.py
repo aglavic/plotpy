@@ -56,6 +56,7 @@ class Reader(object):
   origin=("", "")
   _max_len_pprint=60
   _messages=None
+  allow_multiread=False
 
   def __repr__(self):
     return u"<%s for %s>"%(self.__class__.__name__, ";".join(self.glob_patterns))
@@ -96,13 +97,23 @@ class Reader(object):
       
       :param filename: File name to open or open file object to read from
     """
+    self.unread_files=[]
     start=time()
     self._messages=mp_queue
-    if mp_queue:
-      self._filename=filename
     if isinstance(filename, basestring):
+      self._filename=filename
       self.origin=os.path.split(os.path.abspath(filename))
+    elif hasattr(filename, '__iter__'):
+      self._filename=filename[0]
+      if not self.allow_multiread:
+        self.warn('%s reader does not support multiple file readouts'%self.__class__.__name__)
+        return None
+      self.origin=os.path.split(os.path.abspath(filename[0]))
+      # set first file for readout
+      self.unread_files=filename[1:]
+      filename=filename[0]
     else:
+      self._filename=filename.name
       self.origin=os.path.split(os.path.abspath(filename.name))
     self.info(self.name+'-Reading')
     self._set_params(kwds)
@@ -137,7 +148,24 @@ class Reader(object):
     else:
       self.raw_data=open(filename, "rb").read()
 
+  def next(self):
+    '''
+      For multifile read the next method reads the next file.
+      Intentionally there is no way to iterate over all 
+      files as this could lead to readers which access
+      the same file data multiple times.
+    '''
+    if len(self.unread_files)==0:
+      raise StopIteration, "unread files list is empty"
+    filename=self.unread_files.pop(0)
+    self._read_file(filename)
+    return filename
+
   def _check_mds(self, filename, checksum):
+    '''
+      Check if a corresponding .mds file exists before
+      evaluating the file data.
+    '''
     if not READ_MDS:
       return None
     if os.path.exists(filename+'.mds'):
@@ -482,19 +510,31 @@ class ReaderProxy(object):
         files.pop(i-1)
         globbed_files=glob(filename)
         if len(globbed_files)==0:
-          error(u"File %s does not exist"%filename, group=u'Checking Files')
-          i-=1
+          # check if the string defines a set of files and if
+          # this is the case create a list of these files
+          multifile=self._check_multifile(filename)
+          if not multifile:
+            error(u"File %s does not exist"%filename, group=u'Checking Files')
+            i-=1
+          else:
+            files.insert(i-1, multifile)
         else:
           # add files to the list
           for newfile in reversed(sorted(globbed_files)):
             files.insert(i-1, newfile)
           i+=len(globbed_files)-1
     info(None, group=u'Reading files', numitems=len(files))
+    first_names=[] # list of string names, first if file list
     for filename in files:
       if type(filename) is file:
         path, name=os.path.split(os.path.abspath(filename.name))
+        first_names.append(filename.name)
+      elif type(filename) is list:
+        path, name=os.path.split(os.path.abspath(filename[0]))
+        first_names.append(filename[0])
       else:
         path, name=os.path.split(os.path.abspath(filename))
+        first_names.append(filename)
       readers=self._match(name.lower())
       kwds=self._get_kwds(readers[0], path, name)
       i=0
@@ -520,8 +560,8 @@ class ReaderProxy(object):
             self._promote(readers[i])
     if USE_MP:
       fetched_results=[]
-      fetched_messages=dict((name, []) for name in files)
-      for result, name in zip(results, files):
+      fetched_messages=dict((name, []) for name in first_names)
+      for result, name in zip(results, first_names):
         # To prevent multiple processes to send messages in arbitrary order
         # they are collected within the process and printed out when retrieving the data.
         while not result.ready():
@@ -597,6 +637,66 @@ class ReaderProxy(object):
     matching_readers.sort(cmp=lambda a, b: cmp(self._prioritys[b],
                                               self._prioritys[a]))
     return matching_readers
+
+  def _check_multifile(self, filestring):
+    '''
+      Generate a list of files from a pattern string if possible.
+      There are two types of patterns, - separated and + integer.
+      Example:
+        file.bla-file5.bla (create a list of files between file.bla
+                            and file5.bla)
+        file.bla-file3.bla-file5.bla (create a list containing only
+                            the three given names)
+        file.bla+5         (create a list with file.bla and the 5
+                            following files of the same type)
+    '''
+    # check if name consists of filenames separated
+    # by - and if all these files exist
+    if filestring.lower().endswith('.gz'):
+      psplit=filestring.rsplit('.', 1)[0].rsplit('.', 1)
+      postfix=filestring[-3:]
+    else:
+      psplit=filestring.rsplit('.', 1)
+      postfix=''
+    if len(psplit)==2:
+      postfix=psplit[1]+postfix
+      minus_split=psplit[0].split('.%s-'%postfix)
+      flist=[mfile+'.'+postfix for mfile in minus_split]
+      not_found=False
+      for filename in flist:
+        if not os.path.exists(filename):
+          not_found=True
+          break
+      if not not_found:
+        if len(flist)==2:
+          # get all files between the given names
+          path, ignore=os.path.split(flist[0])
+          glist=glob(os.path.join(path, '*.'+postfix))
+          glist.sort()
+          start_idx=glist.index(flist[0])
+          end_idx=glist.index(flist[1])
+          flist=[os.path.abspath(item) for item in glist[start_idx:end_idx+1]]
+          return flist
+        else:
+          return flist
+    # check if name is an existing file proceded with + and an integer
+    # this defines to read this file and the next integer ones
+    psplit=filestring.rsplit('+', 1)
+    if len(psplit)==2:
+      if not (psplit[1].isdigit() and os.path.exists(psplit[0])):
+        return None
+      path, ignore=os.path.split(psplit[0])
+      if psplit[0].lower().endswith('.gz'):
+        postfix=psplit[0][:-3].rsplit('.', 1)[1]+psplit[0][-3:]
+      else:
+        postfix=psplit[0].rsplit('.', 1)[1]
+      glist=glob(os.path.join(path, '*.'+postfix))
+      glist.sort()
+      start_idx=glist.index(psplit[0])
+      end_idx=start_idx+int(psplit[1])
+      flist=[os.path.abspath(item) for item in glist[start_idx:end_idx+1]]
+      return flist
+    return None
 
   def _promote(self, reader, value=1):
     self._prioritys[reader]+=value

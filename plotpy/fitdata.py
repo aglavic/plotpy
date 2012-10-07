@@ -2365,8 +2365,8 @@ class FitFerromagnetic(FitFunction):
     FitFunction.__init__(self, initial_parameters)
     self.refine_parameters=[0, 1, 2]
 
-  def simulate(self, x, ignore=None):
-    return FitFunction.simulate(self, x, interpolate=1)
+  def simulate(self, x, interpolate=None, inside_fitrange=False):
+    return FitFunction.simulate(self, x, interpolate=1, inside_fitrange=inside_fitrange)
 
   def residuals(self, params, y, x, yerror=None):
     '''
@@ -2500,6 +2500,44 @@ class FitBrillouineT(FitFunction):
       Return the brillouine function of B.
     '''
     return self.brillouine(p, numpy.array(T))+p[4]
+
+class FitFerromagneticOrderparameter(FitFunction):
+  '''
+    Order parameter from 
+      M. D. Kuz’min, PRL 94, 107204 (2005)
+  '''
+
+  # define class variables.
+  name="FM Orderparameter"
+  parameters=[1., 100., 1., 5./2., 0., 0.]
+  parameter_names=['M_S', 'T_C', 's', 'p', 'C_P', 'C_D']
+  fit_function_text='Parameters: M_S=[M_S] s=[s|2] T_C=[T_C]'
+
+  parameter_description={
+                  'M_S': 'Saturation magnetization',
+                  'T_C': 'Transition temperature',
+                  's': 'Shape parameter, see (PRL 94, 107204 (2005))',
+                  'p': 'Shape parameter (5/2 in most cases), see (PRL 94, 107204 (2005))',
+                  'C_P': 'Paramagnetic correction factor',
+                  'C_D': 'Diamagnetic correction factor',
+                         }
+
+  def __init__(self, initial_parameters):
+    '''
+      Constructor setting the initial values of the parameters.
+    '''
+    FitFunction.__init__(self, initial_parameters)
+    self.refine_parameters=[0, 1, 2, 4, 5]
+
+  def fit_function(self, p, T):
+    Ms=p[0]
+    tau=T/p[1]
+    s=p[2]
+    P=p[3]
+    C_P=p[4]
+    C_D=p[5]
+    m=numpy.where(tau<1, (1.-s*tau**(2./3.)-(1.-s)*tau**P)**(1./3.), 0.)
+    return Ms*m+C_P/T+C_D
 
 class FitNanoparticleZFC(FitFunction):
   '''
@@ -2890,6 +2928,7 @@ class FitSession(FitSessionGUI):
                        FitCrystalLayer.name: FitCrystalLayer,
                        FitRelaxingCrystalLayer.name: FitRelaxingCrystalLayer,
                        FitOffspecular.name: FitOffspecular,
+                       FitFerromagneticOrderparameter.name: FitFerromagneticOrderparameter,
                        #FitNanoparticleZFC.name: FitNanoparticleZFC, 
                        #FitNanoparticleZFC2.name: FitNanoparticleZFC2, 
                        }

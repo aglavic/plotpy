@@ -187,6 +187,7 @@ class EDFReader(BinReader, GISASBase):
                          } # hover text for description
 
   store_mds=False
+  allow_multiread=True
 
   cached_background={}
 
@@ -207,9 +208,9 @@ class EDFReader(BinReader, GISASBase):
     if not self.read_data():
       return None
 
-    return [self.create_dataobj()]
+    return [self.create_dataobj(start_progess=50.)]
 
-  def read_header(self, do_eval=True):
+  def read_header(self, do_eval=True, echo=True):
     '''
       Read the header of an edf file from an open file object.
     '''
@@ -224,18 +225,20 @@ class EDFReader(BinReader, GISASBase):
     header_items=map(lambda line: line.rstrip(' ;').split('=', 1), header_lines)
     self.header_settings=map(lambda item: (item[0].strip(), item[1].strip()), header_items)
     if do_eval:
-      return self.eval_header()
+      return self.eval_header(echo=echo)
     return True
 
-  def eval_header(self):
+  def eval_header(self, echo):
     # Read some settings
     settings=dict(self.header_settings)
     if 'ESRF_ID01_PSIC_HAI' in settings:
-      self.info('Found ID01 Header')
+      if echo:
+        self.info('Found ID01 Header')
       self.eval_header_id01(settings)
       return True
     elif 'Intensity(I11-C-C07__DT__MI_DIODE.5)' in settings:
-      self.info('Found SWING Header')
+      if echo:
+        self.info('Found SWING Header')
       self.eval_header_swing(settings)
       return True
     else:
@@ -277,22 +280,32 @@ class EDFReader(BinReader, GISASBase):
       
       :return: array of the data and the header string.
     '''
+    input_files=len(self.unread_files)+1
+
+    offset=0
     if self.datatype=='UnsignedShort':
-      # load data as binary integer values
-      self.data_array=numpy.fromstring(self.raw_data[self.head_sep+1:],
-                                  dtype=numpy.uint16).astype(numpy.float32)
-      self.data_array-=200.
+      dtype=numpy.uint16
+      offset=200.
     elif self.datatype=='SignedInteger':
-      # load data as binary integer values
-      self.data_array=numpy.fromstring(self.raw_data[self.head_sep+1:],
-                                  dtype=numpy.int32).astype(numpy.float32)
+      dtype=numpy.uint32
     elif self.datatype=='FloatValue':
-      # load data as binary integer values
-      self.data_array=numpy.fromstring(self.raw_data[self.head_sep+1:],
-                                  dtype=numpy.float32)
+      dtype=numpy.float32
     else:
       self.warning('Unknown data format in header: %s'%self.datatype)
       return False
+    data_array=numpy.fromstring(self.raw_data[self.head_sep+1:],
+                                dtype=dtype).astype(numpy.float32)-offset
+    exposure_time=self.exposure_time
+    for i in range(input_files-1):
+      self.info(progress=10+i*40./input_files)
+      # add data from additional files
+      self.next()
+      self.read_header(self, echo=False)
+      exposure_time+=self.exposure_time
+      data_array+=numpy.fromstring(self.raw_data[self.head_sep+1:],
+                                dtype=dtype).astype(numpy.float32)-offset
+    self.data_array=data_array
+    self.exposure_time=exposure_time
     return True
 
 class P08Reader(BinReader, GISASBase):
