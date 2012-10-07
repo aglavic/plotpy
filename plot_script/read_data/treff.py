@@ -151,6 +151,7 @@ def read_data(file_name, script_path, import_images, return_detector_images):
            '2DWindow': columns_line.index('2DWind.'),
            'DetectorTotal': columns_line.index('2DTotal'),
            'Time': columns_line.index('Time'),
+           'Scanunit': 'mrad',
            'omega':-1,
            'detector':-1
            }
@@ -178,6 +179,10 @@ def read_data(file_name, script_path, import_images, return_detector_images):
         elif line[-1]=='sampletable':
           columns['omega']=1
           negative_omega=True
+      elif line[0]=='Timescan':
+        columns['Scantype']='t'
+        columns['t']=0
+        columns['Scanunit']='s'
       else:
         const_information[line[0]]=float(line[1])
     except IndexError:
@@ -320,7 +325,7 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
   detector_images=[]
   sqrt=math.sqrt
   # create the data object
-  scan_data_object=MeasurementDataTREFF([[columns['Scantype'], 'mrad'],
+  scan_data_object=MeasurementDataTREFF([[columns['Scantype'], columns['Scanunit']],
                                ['2DWindow', 'counts'],
                                ['DetectorTotal', 'counts'],
                                ['error', 'counts'],
@@ -422,14 +427,24 @@ def integrate_pictures(data_lines, columns, const_information, data_path, calibr
     map(data_append, data_list)
   scan_data_append=scan_data_object.append
   # sqrt of intensities is error
-  def sqrt_34_gtm(point):
-    point[0]=GRAD_TO_MRAD*point[0]
-    point[3]=sqrt(point[3])
-    point[4]=sqrt(point[4])
-    point[5]=point[1]/point[5]
-    point[6]=point[3]/point[6]
-    point[7]=point[1]/point[7]
-    point[8]=point[3]/point[8]
+  if columns['Scanunit']=='mrad':
+    def sqrt_34_gtm(point):
+      point[0]=GRAD_TO_MRAD*point[0]
+      point[3]=sqrt(point[3])
+      point[4]=sqrt(point[4])
+      point[5]=point[1]/point[5]
+      point[6]=point[3]/point[6]
+      point[7]=point[1]/point[7]
+      point[8]=point[3]/point[8]
+  else:
+    def sqrt_34_gtm(point):
+      point[0]=point[0]*point[7]
+      point[3]=sqrt(point[3])
+      point[4]=sqrt(point[4])
+      point[5]=point[1]/point[5]
+      point[6]=point[3]/point[6]
+      point[7]=point[1]/point[7]
+      point[8]=point[3]/point[8]
   map(sqrt_34_gtm, scan_data_list)
   map(scan_data_append, scan_data_list)
   return data_object, scan_data_object, detector_images
@@ -601,7 +616,7 @@ set size square
   headers=filter(lambda i: not comments[lines_columns.index(i)], lines_columns)
   data_lines=filter(lambda i: comments[lines_columns.index(i)], lines_columns)
   # define the data columns
-  columns={}
+  columns={'Scanunit': 'mrad'}
   if headers[-1][0][0]=='#' and headers[-1][0].strip()!='#':
     headers[-1].insert(1, headers[-1][0][1:])
   columns_line=headers[-1][1:]
