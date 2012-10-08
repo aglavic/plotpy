@@ -148,11 +148,11 @@ class FitSessionGUI:
     new_function=gtk.combo_box_new_text()
     add_button=gtk.Button(label='Add Function')
     map(new_function.append_text, self.get_functions())
-    sum_button=gtk.Button(label='Combine')
+    combine_button=gtk.Button(label='Combine')
     fit_button=gtk.Button(label='Fit and Replot')
     # connect the window signals to the handling methods
     add_button.connect('clicked', self.add_function_dialog, new_function, dialog, window)
-    sum_button.connect('clicked', self.combine_dialog, dialog, window)
+    combine_button.connect('clicked', self.combine_dialog, dialog, window)
     fit_button.connect('clicked', self.fit_from_dialog, entries, dialog, window)
     for subentries in entries:
       for entry in subentries[:-2]:
@@ -169,7 +169,8 @@ class FitSessionGUI:
     toggle_region=gtk.CheckButton(label='region')
     toggle_region.set_active(self.restrict_to_region)
     toggle_region.connect('toggled', toggle_show_region, self)
-    return align, [toggle_region, toggle_covariance, new_function, add_button, sum_button, fit_button], progress_bar_hbox
+    return align, [toggle_region, toggle_covariance, new_function, add_button, combine_button,
+                   fit_button], progress_bar_hbox
 
   def function_line(self, function, dialog, window):
     '''
@@ -481,29 +482,39 @@ class FitSessionGUI:
       A dialog window to combine two fit functions e.g. sum them up.
     '''
     # TODO: Make a(b) working.
-    if len(self.functions)<2:
+    if len(self.functions)<1:
       return False
     function_1=gtk.combo_box_new_text()
-    for i, function in enumerate(self.functions):
-      function_1.append_text(str(i)+': '+function[0].name)
     function_2=gtk.combo_box_new_text()
     for i, function in enumerate(self.functions):
+      function_1.append_text(str(i)+': '+function[0].name)
       function_2.append_text(str(i)+': '+function[0].name)
+    function_1.set_active(0)
+    function_2.set_active(0)
     combine_dialog=gtk.Dialog(title='Fit...')
     combine_dialog.set_default_size(400, 150)
     combine_dialog.vbox.add(function_1)
     combine_dialog.vbox.add(function_2)
+    combine_dialog.add_button('Add Resolution', 4)
     combine_dialog.add_button('Add: a + b', 2)
     combine_dialog.add_button('Multiply: a * b', 3)
     combine_dialog.add_button('Cancel', 1)
     combine_dialog.show_all()
+    if len(self.functions)==1:
+      function_2.hide()
     result=combine_dialog.run()
-    selected=[int(function_1.get_active_text().split(':')[0]), int(function_2.get_active_text().split(':')[0])]
-    if result in [2, 3]:
+    if result in [2, 3, 4]:
       if result==2:
+        selected=[int(function_1.get_active_text().split(':')[0]),
+              int(function_2.get_active_text().split(':')[0])]
         window.file_actions.activate_action('sum_up_functions', selected[0], selected[1])
       if result==3:
+        selected=[int(function_1.get_active_text().split(':')[0]),
+              int(function_2.get_active_text().split(':')[0])]
         window.file_actions.activate_action('multiply_functions', selected[0], selected[1])
+      if result==4:
+        selected=int(function_1.get_active_text().split(':')[0])
+        window.file_actions.activate_action('add_gaussian_resolution', selected)
       size=dialog.get_size()
       position=dialog.get_position()
       dialog.destroy()
