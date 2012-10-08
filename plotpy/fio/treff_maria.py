@@ -10,10 +10,9 @@ import os
 import gzip
 import numpy
 from baseread import TextReader, BinReader
-from plotpy.mds import HugeMD, PhysicalProperty, PhysicalConstant, MeasurementData
+from plotpy.mds import PhysicalProperty, PhysicalConstant, MeasurementData
 from plotpy.config.treff import DETECTOR_CALIBRATION as TREFF_CALIBRATION
 
-MARIA_REDUCE_RESOLUTION=False
 GRAD_TO_MRAD=numpy.pi/180.*1000.
 GRAD_TO_RAD=numpy.pi/180.
 
@@ -23,17 +22,14 @@ class TreffMariaReader(TextReader):
   glob_patterns=[u'*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]']
   session='pnr'
 
-  store_mds=False
   allow_multiread=True
 
   def set_treff(self):
     # define parameters for TREFF readout
     self.detector_pixels=256
-    #self.detector_region=(0, 256, 0, 256) # usable area of detector
+    self.detector_region=(35, 222, 35, 222) # usable area of detector
     self.center_x=130.8 # pix
     self.center_y=128.5 # pix
-    #DETECTOR_ROWS_MAP=[[j+i*DETECTOR_PIXELS for i in range(DETECTOR_PIXELS)]
-    #                   for j in range(DETECTOR_PIXELS)]
     self.pixelsize=-0.014645 # mrad
     self.lambda_n=PhysicalConstant(4.75, 'Å', symbol=u'λ_n',
                                    discription=u'TREFF neutron wavelength')
@@ -47,6 +43,7 @@ class TreffMariaReader(TextReader):
                 u'Time': 's',
                 u'2Θ': u'°',
                 u'ω': u'°',
+                u'H': 'Gauss',
                 }
     # import calibration from file, need to get this as relative path
     calibration=numpy.array(TREFF_CALIBRATION, dtype=numpy.float32)
@@ -56,11 +53,12 @@ class TreffMariaReader(TextReader):
 
   def set_maria(self):
     # define parameters for MARIA readout
-    self.detector_pixels=1024.
-    self.calibration=1.
-    self.center_y=512.
-    self.center_x=512.
-    self.pixelsize=0.01
+    self.detector_pixels=1024
+    self.calibration=numpy.ones(1024)
+    self.center_y=512.5
+    self.center_x=512.5
+    self.pixelsize=0.019
+    self.detector_region=(207, 836, 197, 826)
     self.is_maria=True
     self.constants={}
     self.lambda_n=None
@@ -136,6 +134,7 @@ class TreffMariaReader(TextReader):
     self.foot_sep=len(self.lines_data)-i
 
   def eval_header(self):
+    self.sample_name=self.origin[1].replace('_', ' ')
     if self.is_maria:
       return self.eval_head_maria()
     return self.eval_head_treff()
@@ -222,11 +221,15 @@ class TreffMariaReader(TextReader):
              'ROI9': 'I_8',
              'ROI8': 'I_9',
              'Coinc.': 'I_{total}',
+             'full': 'I_{total}',
              'Mon1': 'I_{monitor}',
+             'monitor1': 'I_{monitor}',
              'omega': u'ω',
              'detarm': u'2Θ',
              'Time[sec]': 'Time',
+             'time': 'Time',
              'selector': u'λ_n',
+             'wavelength': u'λ_n',
             }
     columns=[column.rsplit('[', 1)[0] for column in columns]
     for item, newname in mapping.items():
@@ -297,10 +300,12 @@ class TreffMariaReader(TextReader):
       ai=dataobj[u'ω']
       af=dataobj[u'2Θ']-ai
       if self.k_n is None:
+        # wavelength column
         k_n=2.*numpy.pi/dataobj[u'λ_n']
         Qz=(k_n*(numpy.sin(af)+numpy.sin(ai)))//'Q_z'
         Qx=(k_n*(numpy.cos(af)-numpy.cos(ai)))//'Q_x'
       else:
+        # fixed wavelength
         Qz=(self.k_n*(numpy.sin(af)+numpy.sin(ai)))//'Q_z'
         Qx=(self.k_n*(numpy.cos(af)-numpy.cos(ai)))//'Q_x'
       dataobj.data.append(Qz)
@@ -317,11 +322,12 @@ class TreffMariaReader(TextReader):
   def read_images(self):
     if self.image_col is None:
       return
-    y_detector=numpy.arange(self.detector_pixels, dtype=numpy.float32)
+    dr=self.detector_region
+    y_detector=numpy.arange(self.detector_pixels, dtype=numpy.float32)[dr[2]:dr[3]]
     tth_detector=(y_detector-self.center_y)*self.pixelsize
     fcount=0.
     fmax=len(self.file_names)
-    factor=1./self.calibration
+    factor=1./self.calibration[dr[2]:dr[3]]
     for channel in self.data['channels']:
       files=self.file_names[self.data[channel+'_indices']]
       self.info('Channel %s - %i/%i files'%(channel, len(files), fmax),
@@ -341,6 +347,7 @@ class TreffMariaReader(TextReader):
           continue
         data=numpy.fromstring(data, sep=' ', dtype=int).astype(numpy.float32)
         data=data.reshape(numpy.sqrt(data.shape[0]),-1) # create matrix
+        data=data[dr[0]:dr[1], dr[2]:dr[3]]# crop to detector region
         I=data.sum(axis=0)
         dI=numpy.sqrt(I)
         scan_lines.append((scan[i], I*factor, dI*factor))
@@ -397,6 +404,10 @@ class TreffMariaReader(TextReader):
       imgobj.plot_options.xrange=[0., float("%.2g"%ai.max())]
       imgobj.plot_options.yrange=[0., float("%.2g"%ai.max())]
       imgobj.plot_options.zrange=[float("%.2g"%(1./sdata[monitor_col].mean())), None]
+
+      if len(imgobj)>100000:
+        # speedup plotting for large datasets
+        imgobj.is_matrix_data=True
       self.data[channel+'_map']=imgobj
 
   def get_file_data(self, filename):
@@ -423,7 +434,7 @@ class TreffMariaReader(TextReader):
     info=u"\n".join(['---Header---']+self.lines_data[:self.head_sep]+
                     ['', '---Footer---']+self.lines_data[self.foot_sep:])
     for item in output:
-      item.sample_name=self.origin[1].replace('_', ' ')
+      item.sample_name=self.sample_name
       item.info=info
     return output
 
@@ -467,4 +478,111 @@ class ZippedTreffMaria(TreffMariaReader, BinReader):
     except:
       return None
 
+class GisansMariaReader(TreffMariaReader):
+  name=u"TREFF/MARIA"
+  description=u"Polarized GISANS measured with MARIA at FRM-II"
+  glob_patterns=[u'*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]']
+  session='gisas'
 
+  store_mds=False
+  allow_multiread=True
+
+  def read_images(self):
+    if self.image_col is None:
+      return
+    dr=self.detector_region
+    x_detector=numpy.arange(self.detector_pixels, dtype=numpy.float32)[dr[0]:dr[1]]
+    y_detector=numpy.arange(self.detector_pixels, dtype=numpy.float32)[dr[2]:dr[3]]
+    phi_detector=(x_detector-self.center_x)*self.pixelsize
+    tth_detector=(y_detector-self.center_y)*self.pixelsize
+    Y, X=numpy.meshgrid(y_detector, x_detector)
+    X=X.flatten();Y=Y.flatten()
+    Tth, Phi=numpy.meshgrid(tth_detector, phi_detector)
+    Phi=PhysicalProperty('φ', '°', Phi.flatten()); Tth=PhysicalProperty('φ', '°', Tth.flatten())
+    fcount=0.
+    fmax=len(self.file_names)
+    #factor=1./self.calibration[dr[2]:dr[3]]
+    for channel in self.data['channels']:
+      self.data[channel+'_map']=[]
+      files=self.file_names[self.data[channel+'_indices']]
+      self.info('Channel %s - %i/%i files'%(channel, len(files), fmax),
+                progress=20+70.*fcount/fmax)
+      scan=self.data[channel]
+      sdata=scan.data
+      om_col=scan.dimensions().index(u'ω')
+      tth_col=scan.dimensions().index(u'2Θ')
+      monitor_col=scan.dimensions().index(u'I_{monitor}')
+      if u'λ_n' in scan.dimensions():
+        lambda_col=scan.dimensions().index(u'λ_n')
+      else:
+        lambda_col=None
+      for i, filename in enumerate(files):
+        if filename.endswith('.gz'):
+          filename=filename[:-3]
+        fcount+=1.
+        data=self.get_file_data(filename)
+        # update progress
+        self.info(progress=20+70.*fcount/fmax)
+        if data is None:
+          continue
+        data=numpy.fromstring(data, sep=' ', dtype=int).astype(numpy.float32)
+        data=data.reshape(numpy.sqrt(data.shape[0]),-1) # create matrix
+        data=data[dr[0]:dr[1], dr[2]:dr[3]]# crop to detector region
+        I=data.flatten()
+        dI=numpy.sqrt(I)
+        tth=Tth+sdata[tth_col][i]
+        monitor=sdata[monitor_col][i]
+        if lambda_col is None:
+          k_n=self.k_n
+        else:
+          k_n=PhysicalConstant(2.*numpy.pi/sdata[lambda_col][i], 'Å^{-1}')
+        imgobj=MeasurementData(x=6, y=7, zdata=5)
+        imgobj.scan_line=0
+        imgobj.scan_line_constant=1
+        imgobj.data.append(PhysicalProperty(u'x', 'pix', X))
+        imgobj.data.append(PhysicalProperty(u'y', 'pix', Y))
+        imgobj.data.append(PhysicalProperty(u'φ', sdata[om_col].unit, Phi))
+        imgobj.data.append(PhysicalProperty(u'2Θ', sdata[tth_col].unit, tth))
+        imgobj.data.append(PhysicalProperty('I', 'counts', I, dI))
+        imgobj.data.append(PhysicalProperty('I_{norm}', '', I/monitor, dI/monitor))
+        #ai=imgobj[u'ω'][i]
+        #af=(imgobj[u'2Θ'][i]-ai)
+        Qz=(2.*k_n*(numpy.sin(tth/2.)))//'Q_z'
+        Qy=(2.*k_n*(numpy.sin(Phi/2.)))//'Q_x'
+        imgobj.data.append(Qy)
+        imgobj.data.append(Qz)
+
+        imgobj.logz=True
+        imgobj.is_matrix_data=True
+        #imgobj.plot_options.xrange=[0., float("%.2g"%ai.max())]
+        #imgobj.plot_options.yrange=[0., float("%.2g"%ai.max())]
+        imgobj.plot_options.zrange=[float("%.2g"%(1./monitor)), None]
+
+        self.data[channel+'_map'].append(imgobj)
+
+  def collect_objects(self):
+    output=[]
+    for channel in self.data['channels']:
+      if channel+'_map' in self.data:
+        items=self.data[channel+'_map']
+        for i, item in enumerate(items):
+          item.short_info=self.polarization_mapping[channel]+u'#%02i'%i
+          output.append(item)
+    info=u"\n".join(['---Header---']+self.lines_data[:self.head_sep]+
+                    ['', '---Footer---']+self.lines_data[self.foot_sep:])
+    for item in output:
+      item.sample_name=self.sample_name
+      item.info=info
+    return output
+
+class ZippedGisansMariaReader(ZippedTreffMaria, GisansMariaReader):
+  name=u"zip(TREFF/MARIA)"
+  description=u"Polarized GISANS measured with MARIA at FRM-II"
+  glob_patterns=[u'*.zip']
+  session='gisas'
+
+  store_mds=False
+  allow_multiread=True
+
+  collect_objects=GisansMariaReader.collect_objects
+  read_images=GisansMariaReader.read_images
