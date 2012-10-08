@@ -237,7 +237,10 @@ class MeasurementData(object):
     '''
       MeasurementData[index] returns one datapoint.
     '''
-    if hasattr(index, u'__iter__'):
+    if isinstance(index, basestring):
+      dims=self.dimensions()
+      return self.data[dims.index(index)]
+    elif hasattr(index, u'__iter__'):
       output=deepcopy(self)
       for i, col in enumerate(output.data):
         output.data[i]=col[index]
@@ -258,8 +261,19 @@ class MeasurementData(object):
     '''
       Set data at index reverse of __getitem__
     '''
-    for col, data in zip(self.data, item):
-      col[index]=data
+    if isinstance(index, basestring):
+      if not len(item)==len(self):
+        raise ValueError, 'Can only assign columns with length %i'%len(self)
+      dims=self.dimensions()
+      if index in dims:
+        self.data[dims.index(index)]=item
+      elif hasattr(item, 'dimension'):
+        self.data.append(item)
+      else:
+        self.data.append(PhysicalProperty(index, '', item))
+    else:
+      for col, data in zip(self.data, item):
+        col[index]=data
 
   def __setslice__(self, i, j, items):
     '''
@@ -1859,9 +1873,9 @@ class PlotOptions(object):
     if len(range_)==2:
       try:
         x_range=[None, None]
-        if range_[0] not in  [None, u'']:
+        if range_[0] not in [None, u'']:
           x_range[0]=float(range_[0])
-        if range_[1] not in  [None, u'']:
+        if range_[1] not in [None, u'']:
           x_range[1]=float(range_[1])
         if None not in x_range and x_range[0]>x_range[1]:
           x_range=[xrange[1], xrange[0]]

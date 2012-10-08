@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 '''
-  Treff GTK gui class.
+  PNR GTK gui class.
 '''
 
 #+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
@@ -8,11 +8,8 @@
 import gtk
 import os
 
-from plotpy.sessions.reflectometer_fit.treff import * #@UnusedWildImport
+from plotpy.sessions.reflectometer_fit.pnr import * #@UnusedWildImport
 from plotpy.mds import PlotStyle
-from plotpy.read_data.kws2 import KWS2MeasurementData
-from plotpy.config import treff as config
-from plotpy.read_data import treff as read_data
 from dialogs import SimpleEntryDialog
 
 #----------------------- importing modules --------------------------
@@ -24,58 +21,50 @@ from plotpy.info import __copyright__, __license__, __version__, __maintainer__,
 __status__="Production"
 
 
-class TreffGUI:
+class PNRGUI:
   '''
-    Treff GUI functions for the GTK toolkit.
+    PNR GUI functions for the GTK toolkit.
   '''
   def create_menu(self):
     '''
-      create a specifig menu for the TREFF session
+      create a specifig menu for the PNR session
     '''
-    if len(self.active_file_data)>0 and type(self.active_file_data[0]) is KWS2MeasurementData:
-      string='''
-        <menu action='GISANSMenu'>
-          <menuitem action='SeperateScattering'/>
-          <menuitem action='SmoothData'/>
-        </menu>
-      '''
-    else:
-      # Create XML for squid menu
-      string='''
-        <menu action='TreffMenu'>
-          <menuitem action='TreffFit'/>
-          <menuitem action='TreffSelectPol'/>
-          <menuitem action='TreffImportFit'/>
-          <menuitem action='TreffExportFit'/>
-          <separator name='Treff1'/>
-          <menuitem action='TreffSpecRef'/>
-          <menuitem action='TreffJoinDS'/>
-          <menuitem action='TreffFR'/>
-        </menu>
-      '''
+    # Create XML for squid menu
+    string='''
+      <menu action='PNRMenu'>
+        <menuitem action='PNRFit'/>
+        <menuitem action='PNRSelectPol'/>
+        <menuitem action='PNRImportFit'/>
+        <menuitem action='PNRExportFit'/>
+        <separator name='PNR1'/>
+        <menuitem action='PNRSpecRef'/>
+        <menuitem action='PNRJoinDS'/>
+        <menuitem action='PNRFR'/>
+      </menu>
+    '''
     # Create actions for the menu
     actions=(
-            ("TreffMenu", None, # name, stock id
-                "TREFF", None, # label, accelerator
+            ("PNRMenu", None, # name, stock id
+                "PNR", None, # label, accelerator
                 None, # tooltip
                 None),
-            ("TreffFit", None, # name, stock id
+            ("PNRFit", None, # name, stock id
                 "Fit...", "<control><shift>F", # label, accelerator
                 None, # tooltip
                 self.fit_window),
-            ("TreffSpecRef", None, # name, stock id
+            ("PNRSpecRef", None, # name, stock id
                 "Extract specular reflectivity...", '<control>R', # label, accelerator
                 None, # tooltip
                 self.extract_specular_reflectivity),
-            ("TreffSelectPol", None, # name, stock id
+            ("PNRSelectPol", None, # name, stock id
                 "Select polarization channels...", None, # label, accelerator
                 None, # tooltip
                 self.select_fittable_sequences),
-            ("TreffExportFit", None, # name, stock id
+            ("PNRExportFit", None, # name, stock id
                 "Export Fit...", None, # label, accelerator
                 None, # tooltip
                 self.export_fit_dialog),
-            ("TreffImportFit", None, # name, stock id
+            ("PNRImportFit", None, # name, stock id
                 "Import Fit...", None, # label, accelerator
                 None, # tooltip
                 self.import_fit_dialog),
@@ -87,7 +76,7 @@ class TreffGUI:
                 "Seperate Scattering", None, # label, accelerator
                 "Calculate seperated scattering parts from polarization directions.", # tooltip
                 self.seperate_scattering),
-            ("TreffFR", None, # name, stock id
+            ("PNRFR", None, # name, stock id
                 "Flipping Ration correction", None, # label, accelerator
                 "Calculate the correction for finite flipping ratio.", # tooltip
                 self.separate_active_scattering_d17_dialog),
@@ -95,11 +84,11 @@ class TreffGUI:
                 "Gaussian Smoothing...", None, # label, accelerator
                 "Calculate convolution of data with gaussian.", # tooltip
                 self.smooth_dataset_dialog),
-            ("TreffJoinDS", None, # name, stock id
+            ("PNRJoinDS", None, # name, stock id
                 "Join Datasets...", '<control>J', # label, accelerator
                 "Combine two datasets to one.", # tooltip
                 self.join_datasets_dialog),
-#            ("TreffChangeSLD", None, #
+#            ("PNRChangeSLD", None, #
 #                "Change SLD list...", None, # label, accelerator
 #                None, # tooltip
 #                self.change_sld_list),
@@ -831,12 +820,12 @@ class TreffGUI:
       #os.remove(self.TEMP_DIR+'fit_temp.ref')
       self.active_file_data.fit_object.fit=0
     elif response==3: # new layer
-      new_layer=TreffLayerParam()
+      new_layer=PNRLayerParam()
       self.active_file_data.fit_object.layers.append(new_layer)
       self.rebuild_dialog(dialog, window)
     elif response==4: # new multilayer
-      multilayer=TreffMultilayerParam()
-      multilayer.layers.append(TreffLayerParam())
+      multilayer=PNRMultilayerParam()
+      multilayer.layers.append(PNRLayerParam())
       self.active_file_data.fit_object.layers.append(multilayer)
       self.rebuild_dialog(dialog, window)
 
@@ -1153,7 +1142,7 @@ class TreffGUI:
       return False
     file_dialog.destroy()
     #----------------File selection dialog-------------------#
-    self.active_file_data.fit_object=TreffFitParameters()
+    self.active_file_data.fit_object=PNRFitParameters()
     if x_ray_import.get_active():
       self.active_file_data.fit_object.read_params_from_X_file(file_name)
     else:
@@ -1325,7 +1314,7 @@ class TreffGUI:
     '''
       add a layer to the multilayer after button is pressed
     '''
-    new_layer=TreffLayerParam()
+    new_layer=PNRLayerParam()
     multilayer.layers.append(new_layer)
     self.rebuild_dialog(dialog, window)
 

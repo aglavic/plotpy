@@ -86,7 +86,7 @@ def initialize(argv):
         read_data=reader.open(item)
       except message.PlotpyError:
         continue
-      if read_data[0] is not None and read_data[0].session in sessions.keys():
+      if len(read_data)>0 and read_data[0] is not None and read_data[0].session in sessions.keys():
         session=sessions[read_data[0].session](argv[:i]+argv[i+1:])
         fname=os.path.join(*read_data[0].origin)
         session.file_data[fname]=read_data[0]

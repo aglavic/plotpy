@@ -22,10 +22,10 @@ if not 'Neutron SLD' in user_config:
   user_config['Neutron SLD']=NEUTRON_SCATTERING_LENGTH_DENSITIES
 
 try:
-  from plotpy.gtkgui.treff import TreffGUI as GUI
+  from plotpy.gtkgui.pnr import PNRGUI
   from plotpy.gtkgui.reflectometer_functions import ReflectometerFitGUI
 except ImportError:
-  class GUI: pass
+  class PNRGUI: pass
   class ReflectometerFitGUI: pass
 
 if not sys.platform.startswith('win'):
@@ -249,7 +249,7 @@ def seperate_scattering(datasets, P):
   output.append(R['-+']*normalization_factor)
   return output
 
-class PNRSession(GUI, ReflectometerFitGUI, GenericSession):
+class PNRSession(PNRGUI, ReflectometerFitGUI, GenericSession):
   '''
     Class to handle treff data sessions
   '''
@@ -274,25 +274,16 @@ class PNRSession(GUI, ReflectometerFitGUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('TREFF/MARIA/D17', '*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]', '*.zip', '*.d17', '*.dat'),
+  TRANSFORMATIONS=[
+                  ['mrad', 0.05729578, 0, '°'],
                   ]
-  TRANSFORMATIONS=[\
-                  ['mrad', 1/config.GRAD_TO_MRAD, 0, '°'],
-                  ['detector', 'mrad', 1., 0, '2Θ', 'mrad'],
-                  ['detector', 'rad', 1., 0, '2Θ', 'rad'],
-                  ['detector', '°', 1., 0, '2Θ', '°'],
-                  ['omega', 'mrad', 1., 0, 'Θ', 'mrad'],
-                  ['omega', 'rad', 1., 0, 'Θ', 'rad'],
-                  ['omega', '°', 1., 0, 'Θ', '°'],
-                  ]
-  import_images=True
-  import_detector_images=False
   x_from=5 # fit only x regions between x_from and x_to
   x_to=''
   max_iter=50 # maximal iterations in fit
   max_hr=5000 # Parameter in fit_pnr_multi
   max_alambda=10 # maximal power of 10 which alamda should reach in fit.f90
-  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+['no-img', 'add', 'ft1', 'maria', 'dimg', 'sim', 'bin', 'speedup']
+  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+[
+                             'no-img', 'add', 'ft1', 'maria', 'dimg', 'sim', 'bin', 'speedup']
   MARIA=False
   replot=None
   add_to_files={}
@@ -307,7 +298,6 @@ class PNRSession(GUI, ReflectometerFitGUI, GenericSession):
     '''
       class constructor expands the GenericSession constructor
     '''
-    self.read_data=read_data.read_data
     self.RESULT_FILE=config.RESULT_FILE
     GenericSession.__init__(self, arguments)
     if self.add_simdata:
@@ -341,9 +331,6 @@ class PNRSession(GUI, ReflectometerFitGUI, GenericSession):
       self.file_data[key]=FitList(self.file_data[key])
       if key=='simulation':
         self.file_data[key].fit_datasets=[ds for ds in self.file_data[key]]
-    transformations.known_transformations.append(['Θ', '°', config.PI_4_OVER_LAMBDA*config.GRAD_TO_RAD, 0., 'Q', 'Å^{-1}'])
-    transformations.known_transformations.append(['Θ', 'rad', config.PI_4_OVER_LAMBDA, 0., 'Q', 'Å^{-1}'])
-    transformations.known_transformations.append(['Θ', 'mrad', config.PI_4_OVER_LAMBDA/1000., 0., 'Q', 'Å^{-1}'])
     try:
       self.active_file_data=self.file_data[self.active_file_name]
     except KeyError:
@@ -370,22 +357,6 @@ class PNRSession(GUI, ReflectometerFitGUI, GenericSession):
           last_argument_option=[False, '']
         else:
           found=False
-      elif argument=='-ft1':
-        self.read_data=treff_addon1.read_data
-        self.mds_create=False
-      elif argument=='-speedup':
-        read_data.treff.MeasurementDataTREFF.is_matrix_data=True
-      elif argument=='-maria':
-        self.maria=True
-        self.read_data=read_data.read_data_maria
-      elif argument=='-gisans':
-        print "Entering GISANS mode!"
-        self.maria=True
-        self.read_data=read_data.read_data_maria
-        self.import_detector_images=True
-        self.gisans=True
-        self.mds_create=False
-        self.read_directly=True
       elif argument=='-no-img':
         self.import_images=False
         found=True

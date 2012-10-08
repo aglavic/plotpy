@@ -8,7 +8,6 @@
 import numpy
 from baseread import BinReader, TextReader
 from plotpy.mds import HugeMD, PhysicalProperty, MeasurementData
-from plotpy.message import in_encoding
 
 # planck times speed of light
 h_c=1.239842e4 #eV⋅Å
@@ -26,6 +25,7 @@ class GISASBase(object):
     '''
       Creat a HugeMD object for the data
     '''
+    self.info('Processing Data', start_progess)
     steps=4.
     if self.background_file!='':
       steps+=1
@@ -189,8 +189,6 @@ class EDFReader(BinReader, GISASBase):
   store_mds=False
   allow_multiread=True
 
-  cached_background={}
-
   SWING_DETECTOR_SIZE_X=170.96704#mm
   SWING_DETECTOR_SIZE_Y=170.96704#mm
 
@@ -249,7 +247,7 @@ class EDFReader(BinReader, GISASBase):
     self.y_dim=int(settings['Dim_2'])
     self.sample_detector_distance=float(settings['SampleDistance'].rstrip('m'))*1000.#mm
     self.lambda_rays=float(settings['WaveLength'].rstrip('m'))*1e10# angstrom
-    self.sample_name=unicode(settings['Title'].split('( hai')[0], encoding=in_encoding)
+    self.sample_name=unicode(settings['Title'].split('( hai')[0], encoding='latin1')
     self.exposure_time=float(settings['ExposureTime'].rstrip('s (Seconds)'))
     self.center_x=float(settings['Center_1'].rstrip('pixel'))
     self.center_y=float(settings['Center_2'].rstrip('pixel'))
@@ -266,8 +264,8 @@ class EDFReader(BinReader, GISASBase):
     self.sample_detector_distance=float(settings['Distance_sample-detector'].rstrip('mm'))
     energy=float(settings['Monochromator_energy'].rstrip('keV'))*1000. # eV
     self.lambda_rays=h_c/energy
-    self.sample_name=unicode(settings['Title'].split('_im_')[0], encoding=in_encoding)
-    self.short_info=unicode(settings['Sample_comments'], encoding=in_encoding)
+    self.sample_name=unicode(settings['Title'].split('_im_')[0], encoding='latin1')
+    self.short_info=unicode(settings['Sample_comments'], encoding='latin1')
     self.exposure_time=float(settings['Exposure_time'].rstrip('ms'))*0.001
     self.size_x=self.SWING_DETECTOR_SIZE_X/float(self.x_dim)
     self.size_y=self.SWING_DETECTOR_SIZE_Y/float(self.y_dim)
@@ -335,6 +333,7 @@ class P08Reader(BinReader, GISASBase):
                          } # hover text for description
 
   store_mds=False
+  allow_multiread=True
 
   def read(self):
     while 4096%self.join_pixels!=0:
@@ -360,10 +359,16 @@ class P08Reader(BinReader, GISASBase):
     '''
       Read the raw data of p08 file.
     '''
-    #header=self.raw_data[:216]
-    data=numpy.fromstring(self.raw_data[216:], numpy.uint16).reshape(4096, 4096)
-    self.data_array=data.astype(numpy.float32)
     self.header_settings=[]
+    #header=self.raw_data[:216]
+    data=numpy.fromstring(self.raw_data[216:], numpy.uint16).astype(numpy.float32)
+    input_files=len(self.unread_files)
+    for i in range(input_files):
+      self.info(progress=10+i*20./input_files)
+      # add more files
+      self.next()
+      data+=numpy.fromstring(self.raw_data[216:], numpy.uint16).astype(numpy.float32)
+    self.data_array=data.reshape(4096, 4096)
 
     # adding up pixels
     if self.join_pixels>1:

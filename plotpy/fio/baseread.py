@@ -29,7 +29,7 @@ try:
   from multiprocessing import Pool, Queue
   import signal
   import atexit
-  USE_MP=True
+  USE_MP=False
 except ImportError:
   USE_MP=False
 READ_MDS=True
@@ -137,7 +137,7 @@ class Reader(object):
     '''
       Read the raw data from the file.
     '''
-    if type(filename) is file:
+    if hasattr(filename, 'read') and hasattr(filename, 'name'):
       if filename.name.lower().endswith('.gz'):
         bindata=StringIO(filename.read())
         self.raw_data=gzip.GzipFile(fileobj=bindata, mode='rb').read()
@@ -487,26 +487,36 @@ class ReaderProxy(object):
   sessions=property(_get_by_session)
 
   def open(self, files):
+    '''
+      Load a list of files by automatically choosing the appropriate
+      reader according to the file pattern. Readers with the same
+      patterns are tried one after another and increased in
+      priority after on successful read attempt. 
+    '''
     if USE_MP:
       global _pool_on_load
       _pool_on_load=True
-    if not type(files) in [list, tuple]:
+    if not hasattr(files, '__iter__'):
       # input is not a list of files
       files=[files, ]
     elif len(files)==0:
       return []
     results=[]
     for i, filename in enumerate(files):
-      if not type(filename) in [str, unicode, file]:
-        raise ValueError, "Can only read data from file objects or file names"
+      if not type(filename) in [str, unicode, file, list]:
+        raise ValueError, "Can only read data from file objects, lists or file names"
       if type(filename) is str:
         # encode non unicode names using stdin encoding
         files[i]=unicode(filename, in_encoding)
+      if type(filename) is list:
+        files[i]=map(os.path.abspath, filename)
     i=0
     while i<len(files):
       filename=files[i]
       i+=1
-      if not (type(filename) is file or os.path.exists(filename)):
+      if not (type(filename) is file
+              or (type(filename) is list and all(map(os.path.exists, filename)))
+              or os.path.exists(filename)):
         files.pop(i-1)
         globbed_files=glob(filename)
         if len(globbed_files)==0:
@@ -603,9 +613,10 @@ class ReaderProxy(object):
         info(u'Some files could not be read, trying alternatives', group=u'Reading files',
              numitems=len([ignore for ignore in results if ignore is None]))
         # the MP variant of changing the reader is quite hackish....
-        for j, filename, result in zip(range(len(files)), files, results):
+        for j, firstname, filename, result in zip(range(len(files)),
+                                                  first_names, files, results):
           if result is None:
-            path, name=os.path.split(os.path.abspath(filename))
+            path, name=os.path.split(os.path.abspath(firstname))
             readers=self._match(name.lower())
             if len(readers)==1:
               continue
@@ -634,8 +645,7 @@ class ReaderProxy(object):
     for pattern, readers in self.patterns.items():
       if fnmatch(name, pattern) or fnmatch(name, pattern+'.gz'):
         matching_readers+=readers
-    matching_readers.sort(cmp=lambda a, b: cmp(self._prioritys[b],
-                                              self._prioritys[a]))
+    matching_readers.sort(cmp=lambda a, b: cmp(self._prioritys[b], self._prioritys[a]))
     return matching_readers
 
   def _check_multifile(self, filestring):
@@ -661,7 +671,7 @@ class ReaderProxy(object):
     if len(psplit)==2:
       postfix=psplit[1]+postfix
       minus_split=psplit[0].split('.%s-'%postfix)
-      flist=[mfile+'.'+postfix for mfile in minus_split]
+      flist=[os.path.abspath(mfile+'.'+postfix) for mfile in minus_split]
       not_found=False
       for filename in flist:
         if not os.path.exists(filename):
@@ -675,8 +685,7 @@ class ReaderProxy(object):
           glist.sort()
           start_idx=glist.index(flist[0])
           end_idx=glist.index(flist[1])
-          flist=[os.path.abspath(item) for item in glist[start_idx:end_idx+1]]
-          return flist
+          return glist[start_idx:end_idx+1]
         else:
           return flist
     # check if name is an existing file proceded with + and an integer

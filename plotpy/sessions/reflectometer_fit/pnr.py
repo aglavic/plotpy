@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 '''
-  classes for treff sessions and fits with fit.f90
+  classes for PNR sessions and fits with fit.f90
 '''
 
 from parameters import FitParameters, LayerParam, MultilayerParam
@@ -17,7 +17,7 @@ if not 'Neutron SLD' in user_config:
   user_config['Neutron SLD']=NEUTRON_SCATTERING_LENGTH_DENSITIES
 
 
-class TreffFitParameters(FitParameters):
+class PNRFitParameters(FitParameters):
   '''
     Class to store the parameters of a simulation or fit from the fit.f90 program.
     Mostly just storing different variables for the layers.
@@ -49,7 +49,7 @@ class TreffFitParameters(FitParameters):
       parameters=[thickness]+[1. for ignore in range(self.PARAMETER_LENGTH-4)]+[90., 90., roughness]
       material='Unknown'
       result=False
-    layer=TreffLayerParam(material, parameters)
+    layer=PNRLayerParam(material, parameters)
     self.layers.append(layer)
     return result
 
@@ -64,8 +64,8 @@ class TreffFitParameters(FitParameters):
       return False
     layer_list=[]
     for i, SL in enumerate(SLs):
-      layer_list.append(TreffLayerParam(materials[i], [thicknesses[i]]+SL+[90., 90., roughnesses[i]]))
-    multilayer=TreffMultilayerParam(repititions, name, layer_list)
+      layer_list.append(PNRLayerParam(materials[i], [thicknesses[i]]+SL+[90., 90., roughnesses[i]]))
+    multilayer=PNRMultilayerParam(repititions, name, layer_list)
     self.layers.append(multilayer)
     return True
 
@@ -81,7 +81,7 @@ class TreffFitParameters(FitParameters):
       material='Unknown'
       SL=[1. for ignore in range(self.PARAMETER_LENGTH-4)]
       result=False
-    layer=TreffLayerParam(material, [0.]+SL+[90., 90., roughness])
+    layer=PNRLayerParam(material, [0.]+SL+[90., 90., roughness])
     self.substrate=layer
     return result
 
@@ -368,7 +368,7 @@ class TreffFitParameters(FitParameters):
       create a copy of this object
     '''
     from copy import deepcopy as copy
-    new_fit=FitParameters.copy(self, TreffFitParameters())
+    new_fit=FitParameters.copy(self, PNRFitParameters())
     new_fit.wavelength=copy(self.wavelength)
     new_fit.input_file_names=copy(self.input_file_names)
     new_fit.slits=copy(self.slits)
@@ -420,7 +420,7 @@ class TreffFitParameters(FitParameters):
         layers_in_multi.append(layer)
       lines.pop()
       repititions_of_multi=int(lines.pop().split()[0])
-      self.layers.append(TreffMultilayerParam(repititions=repititions_of_multi,
+      self.layers.append(PNRMultilayerParam(repititions=repititions_of_multi,
                                               name=multi_name,
                                               layer_list=layers_in_multi))
     else:
@@ -443,7 +443,7 @@ class TreffFitParameters(FitParameters):
     self.polarization_parameters[1]=float(lines.pop().split()[0])
     self.polarization_parameters[2]=float(lines.pop().split()[0])
     self.polarization_parameters[3]=float(lines.pop().split()[0])
-    self.combine_layers(TreffMultilayerParam)
+    self.combine_layers(PNRMultilayerParam)
 
   def read_layer_params_from_file(self, lines, substrate=False):
     comment=lines.pop()
@@ -457,7 +457,7 @@ class TreffFitParameters(FitParameters):
         parameters.append(0.)
       else:
         parameters.append(float(lines.pop().split()[0]))
-    layer=TreffLayerParam(name=name, parameters_list=parameters)
+    layer=PNRLayerParam(name=name, parameters_list=parameters)
     return layer
 
   def read_params_from_X_file(self, name):
@@ -484,7 +484,7 @@ class TreffFitParameters(FitParameters):
     ### null multilayer above
     #layers_in_multi=[]
     #repititions_of_multi = 0
-    #self.layers.append(sessions.treff.TreffMultilayerParam(0, name="NoName", layer_list=layers_in_multi))
+    #self.layers.append(sessions.PNR.PNRMultilayerParam(0, name="NoName", layer_list=layers_in_multi))
 
     def get_layer_parameter(layer):
         name=layer.name
@@ -501,12 +501,12 @@ class TreffFitParameters(FitParameters):
         parameters.append(90)
         parameters.append(90)
         parameters.append(layer.roughness)
-        return TreffLayerParam(name, parameters_list=parameters)
+        return PNRLayerParam(name, parameters_list=parameters)
 
     for layer in x_ray_fitdata.layers:
       ### multilayer
       if layer.multilayer:
-        multilayer=TreffMultilayerParam(layer.repititions, layer.name,)
+        multilayer=PNRMultilayerParam(layer.repititions, layer.name,)
         for sub_layer in layer.layers:
           multilayer.layers.append(get_layer_parameter(sub_layer))
         self.layers.append(multilayer)
@@ -525,7 +525,7 @@ class TreffFitParameters(FitParameters):
 #            parameters.append(90)
 #            parameters.append(90)
 #            parameters.append(x_ray_fitdata.layers[i].layers[k].roughness)
-#            layer=sessions.treff.TreffLayerParam(name, parameters_list=parameters)
+#            layer=sessions.PNR.PNRLayerParam(name, parameters_list=parameters)
 #            self.layers.append(layer)
       else:
         ### single layer
@@ -546,7 +546,7 @@ class TreffFitParameters(FitParameters):
     parameters.append(90)
     parameters.append(90)
     parameters.append(x_ray_fitdata.substrate.roughness)
-    self.substrate=TreffLayerParam(name=x_ray_fitdata.substrate.name, parameters_list=parameters)
+    self.substrate=PNRLayerParam(name=x_ray_fitdata.substrate.name, parameters_list=parameters)
 
 
     ### global parameters
@@ -557,7 +557,7 @@ class TreffFitParameters(FitParameters):
     self.polarization_parameters[2]=1.0
     self.polarization_parameters[3]=1.0
 
-class TreffLayerParam(LayerParam):
+class PNRLayerParam(LayerParam):
   '''
     class for one layer data
     layer and multilay have the same function to create .ent file text
@@ -595,7 +595,7 @@ class TreffLayerParam(LayerParam):
     '''
       create a copy of this object
     '''
-    return TreffLayerParam(name=self.name, \
+    return PNRLayerParam(name=self.name, \
                      parameters_list=[\
                           self.thickness, \
                           self.scatter_density_Nb, \
@@ -671,13 +671,13 @@ class TreffLayerParam(LayerParam):
     layer_index+=1
     return text, layer_index, para_index
 
-class TreffMultilayerParam(MultilayerParam):
+class PNRMultilayerParam(MultilayerParam):
   '''
     class for multilayer data
   '''
 
   def copy(self):
-    return MultilayerParam.copy(self, TreffMultilayerParam())
+    return MultilayerParam.copy(self, PNRMultilayerParam())
 
   def get_fit_params(self, params, param_index):
     '''
