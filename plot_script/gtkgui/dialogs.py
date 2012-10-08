@@ -1133,7 +1133,8 @@ class FileImportDialog(gtk.FileChooserDialog):
       options['title']='Open new datafile...'
     options['action']=gtk.FILE_CHOOSER_ACTION_OPEN
     if not 'buttons' in options:
-      options['buttons']=('Use Template', 66, gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+      options['buttons']=('Use Template', 66, gtk.STOCK_OPEN, gtk.RESPONSE_OK,
+                          gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
     gtk.FileChooserDialog.__init__(self, **options)
     self.set_select_multiple(True)
     self.set_default_response(gtk.RESPONSE_OK)

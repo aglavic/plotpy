@@ -42,6 +42,7 @@ class FileActions:
                   'add_function': self.fit_functions['add'],
                   'sum_up_functions': self.fit_functions['sum'],
                   'multiply_functions': self.fit_functions['mul'],
+                  'add_gaussian_resolution': self.fit_functions['res'],
                   'set_function_parameters': self.fit_functions['set_parameters'],
                   'fit_functions': self.fit_functions['fit'],
                   'simmulate_functions': self.fit_functions['simulate'],
@@ -67,6 +68,8 @@ class FileActions:
                   self.window.measurement[self.window.index_mess].fit_object.sum(*args),
                  "mul": lambda*args: \
                   self.window.measurement[self.window.index_mess].fit_object.multiply(*args),
+                 "res": lambda*args: \
+                  self.window.measurement[self.window.index_mess].fit_object.resolution(*args),
                  "set_parameters": lambda*args: \
                   self.window.measurement[self.window.index_mess].fit_object.set_function_parameters(*args),
                  "fit": lambda*args:  \

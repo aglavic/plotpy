@@ -653,6 +653,60 @@ class FitMultiply(FitFunction):
     else:
       self.origin[1].toggle_refine_parameter(action, index-len(self.origin[0].parameters))
 
+class GaussianResolution(FitFunction):
+  '''
+    Combine a given function with a gaussian resolution function.
+  '''
+
+  parameters=[0.1, 12]
+  parameter_names=['σ_res', 'Res.Points']
+  resolution_width=3
+
+  def __init__(self, func):
+    '''
+      Construct a sum of two functions to use for fit.
+      
+      :param funci: the functions to add together
+    '''
+    self.name=func.name+'+Res.'
+    self.parameters=func.parameters+GaussianResolution.parameters
+    self.refine_parameters=func.refine_parameters+[len(func.parameters)]
+    self.parameter_names=func.parameter_names+GaussianResolution.parameter_names
+    self.fit_function_text=func.fit_function_text+' σ_{res}=[σ_res]'
+    if func.constrains is not None:
+      self.constrains=dict(func.constrains)
+    self.origin=func
+    self._plot_options=PlotOptions()
+
+  def fit_function(self, p, x):
+    '''
+      Combine the functions by adding their values together.
+    '''
+    respoints=p[-2]*self.resolution_width*numpy.linspace(-1., 1., p[-1])
+    P=numpy.exp(-0.5*respoints**2/p[-2]**2)
+    # normalize
+    P/=numpy.trapz(P)
+    output=[]
+    for Pi, xi in zip(P, respoints):
+      output.append(Pi*self.origin.fit_function(p[:-2], x+xi))
+    output=numpy.array(output)
+    return numpy.trapz(output, axis=0)
+
+  def set_parameters(self, new_params):
+    '''
+      Set new parameters and pass them to origin functions.
+    '''
+    FitFunction.set_parameters(self, new_params)
+    self.origin.set_parameters(self.parameters[:-2])
+
+  def toggle_refine_parameter(self, action, index):
+    '''
+      Change the refined parameters in the origin functions.
+    '''
+    FitFunction.toggle_refine_parameter(self, action, index)
+    if index<len(self.origin.parameters):
+      self.origin.toggle_refine_parameter(action, index)
+
 class FitFunction3D(FitFunctionGUI):
   '''
     Root class for fittable functions with x,y and z data. Parant of all other functions.
@@ -3008,6 +3062,15 @@ class FitSession(FitSessionGUI):
       functions.append([Mul(functions[index_1][0], functions[index_2][0]), True, True, False])
       functions[index_1][1]=False
       functions[index_2][1]=False
+
+  def resolution(self, index_f):
+    '''
+      Create a multiplication of the functions with index 1 and 2.
+      Function 1 and 2 are set not to be fitted.
+    '''
+    functions=self.functions
+    if index_f<len(functions):
+      functions[index_f][0]=GaussianResolution(functions[index_f][0])
 
   def fit(self):
     '''
