@@ -1,9 +1,9 @@
 Source: plot-script
 Section: scientific
 Priority: extra
-Maintainer: Artur Glavic <a.glavic@fz-juelich.de>
+Maintainer: Artur Glavic <artur.glavic@gmail.com>
 Standards-Version: 3.8.1
-Homepage: http://iffwww.iff.kfa-juelich.de/~glavic/plotwiki
+Homepage: http://plotpy.sourceforge.net/plotwiki/
 
 Package: plot-script
 Architecture: all
