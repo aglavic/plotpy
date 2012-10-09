@@ -6,11 +6,11 @@ cd ..
 cd archiv
 FILE=`ls -t *_maverick.deb| head -1`
 FILE_ALL=`echo $FILE|sed 's/_maverick.deb//'`_all.deb
-cp $FILE ../repository/binary/dists/maverick/$FILE_ALL
+cp -u $FILE ../repository/binary/dists/maverick/$FILE_ALL
 # create Python 2.7 package:
 FILE=`ls -t *_natty.deb| head -1`
 FILE_ALL=`echo $FILE|sed 's/_natty.deb//'`_all.deb
-cp $FILE ../repository/binary/dists/natty/$FILE_ALL
+cp -u $FILE ../repository/binary/dists/natty/$FILE_ALL
 
 cd ../repository
 # Repo update
