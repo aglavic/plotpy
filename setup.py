@@ -309,3 +309,16 @@ if "py2exe" in sys.argv and not py2exe_test:
 # py2app specific stuff to make it work: 
 #if "py2app" in sys.argv:
 #  subprocess.call(['cp', '-r','config/*','archiv/plot-script.app/Contents/Resources/lib/python2.7/config'])
+if 'clean' in sys.argv:
+  print "Removing byte compiled files"
+  # go through all directories and remove .pyo and .pyc files
+  def rec_find_pyc(folder):
+    output=glob(os.path.join(folder, '*.pyc'))
+    output+=glob(os.path.join(folder, '*.pyo'))
+    for item in glob(os.path.join(folder, '*')):
+      if os.path.isdir(item):
+        output+=rec_find_pyc(item)
+    return output
+  files=rec_find_pyc('plot_script')
+  for filename in files:
+    os.remove(filename)
