@@ -20,7 +20,7 @@ from plotpy.info import __copyright__, __license__, __version__, __maintainer__,
 __status__="Production"
 
 
-class KWS2GUI:
+class GISASGUI:
   def new_configuration(self, setups, file_name, folder):
     '''
       Create a new intrumental setup.

@@ -465,10 +465,10 @@ class PNRFitParameters(FitParameters):
       Convert Parameters from x-ray .ent file to neutrons and import it
       for usage with this fit.
     '''
-    import plotpy.sessions.reflectometer
+    import plotpy.sessions.xrr
 
     ### reading X-ray data
-    x_ray_fitdata=plotpy.sessions.reflectometer.RefFitParameters()
+    x_ray_fitdata=plotpy.sessions.xrr.RefFitParameters()
     x_ray_fitdata.read_params_from_file(name)
 
     ### instument settings

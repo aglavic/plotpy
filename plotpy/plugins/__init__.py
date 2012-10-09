@@ -3,7 +3,8 @@
   Plot.py global plugins package. Scans the global and user plugins folder 
   for python files and imports them.
   
-  To import all plugin modules directly use:
+  To import all plugin modules directly use::
+  
     from plotpy.plugins import * # import to namespace
      or
     from plotpy.plugins import all_plugins # import list of modules

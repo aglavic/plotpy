@@ -1,23 +1,33 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''
-  Plot-script package for data plotting and analyzing for different instruments.
+  Plotpy package for data plotting and analyzing for different instruments.
   
-  The data model is based on the following hierarchy:
+  Subpackages and modules:
   
-    =================  ===  ====================================================
-    GUI-Interface      <->         session-Object
-                                        session.file_data
-    gnuplot-Interface  <->  MeasurementData-Object (mds)
-                            MeasurementData.data
-                            PhysicalProperty-Objects (mds)
-    =================  ===  ====================================================
-  
-    As top level the session-object (which is different for each instrument) handles the
-    data readout and storage. The active session object stores the data read from each file in
-    a dictionary. The dictionary key is the input file name and the value as a list of 
-    MeasurementData object. The MeasurementData object stands for one Measurement/Scan and stores
-    plot specific information and the measured data as PhysicalProperty-Objects (derived from numpy.ndarray).
+    ========== === =============================================
+    Name       P/M Description
+    ========== === =============================================
+    config     P   Configurational parameters for many modules
+    fio        P   Datafile input and output functionality.
+                   Can be used by external projects to read
+                   datafiles (from plotpy.fio import reader)
+    gtkgui     P   Graphical user interface modules
+    plugins    P   Plugin facility autoloading available modules
+    sessions   P   Modules for the dfferent experimental types
+    configobj  M   A configuration writer with .ini format
+    fitdata    M   Fit function framework and set of default
+                   functions
+    mds        M   Measurement data structure classes used
+                   to store and process data.
+    message    M   Plotpy message facility used for GUI and
+                   command line.
+    peakfinder M   Continous wavelet transform peakfinder 
+                   routine, can be used as stand alone module.
+    plotting   M   Functions to communicate with gnuplot  
+    ========== === =============================================
+    
+  The program is started using the _run function.
 '''
 
 from info import __author__, __copyright__, __license__, __version__, __maintainer__, __email__

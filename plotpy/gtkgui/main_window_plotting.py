@@ -1140,7 +1140,7 @@ class MainPlotting(object):
 
   def change_range(self, action):
     '''
-      Change plotting range_ according to textinput.
+      Change plotting range according to textinput.
     '''
     # set the font size
     try:

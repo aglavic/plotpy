@@ -26,7 +26,6 @@ class MBESession(GUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('MBE', '*.png', '*.dat', '*.log'), ]
   mds_create=False
   read_directly=True
 
@@ -42,20 +41,5 @@ class MBESession(GUI, GenericSession):
       class constructor expands the GenericSession constructor
     '''
     GenericSession.__init__(self, arguments)
-
-  def read_file(self, file_name):
-    '''
-      Function to read data files.
-    '''
-    #folder, rel_file=os.path.split(os.path.realpath(file_name))
-    #setups=ConfigObj(os.path.join(folder, 'leed_setup.ini'), unrepr=True)
-    #setups.indent_type='\t'
-    #found=False
-    #for key, ignore in setups.items():
-    #  if os.path.join(folder, rel_file) in glob(os.path.join(folder, key)):
-    #    found=True
-    #if not found:
-    #  self.new_configuration(setups, rel_file, folder)
-    return read_data.read_data(file_name)
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++

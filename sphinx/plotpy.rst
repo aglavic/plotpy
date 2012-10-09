@@ -1,6 +1,11 @@
 plotpy Package
 ===================
 
+
+.. automodule:: plotpy.__init__
+    :members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
@@ -11,7 +16,6 @@ Subpackages
     plotpy.gtkgui
     plotpy.plugins
     plotpy.sessions
-
 
 :mod:`initialize` Module
 --------------------------

@@ -5,13 +5,14 @@
 
 import os
 from glob import glob
-from configobj import ConfigObj
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # importing data readout
+from plotpy.fio import reader
+from plotpy.configobj import ConfigObj
 
 try:
-  from plotpy.gtkgui.kws2 import KWS2GUI as GUI
+  from plotpy.gtkgui.gisas import GISASGUI as GUI
 except ImportError:
   class GUI: pass
 
@@ -36,9 +37,6 @@ class GISASSession(GUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('GISAS', '*.DAT', '*.DAT.gz', '*.cmb', '*.cmb.gz',
-                   '*.edf', '*.edf.gz', '*.tif', '*.bin', '*.bin.gz',
-                   '*.mat', '*.bmp'), ]
   mds_create=False
   read_directly=True
 
@@ -70,7 +68,7 @@ class GISASSession(GUI, GenericSession):
         else:
           found=False
       elif argument=='-all-frames':
-        read_data.kws2.import_subframes=True
+        #read_data.kws2.import_subframes=True
         found=True
       else:
         found=False
@@ -96,13 +94,13 @@ class GISASSession(GUI, GenericSession):
     if not found:
       self.new_configuration(setups, rel_file, folder)
     if self.auto_background is not None:
-      datasets=read_data.read_data(file_name)
+      datasets=reader.open(file_name)
       print "\tAutosubtracting background"
       for dataset in datasets:
         self.autosubtract_background(dataset, self.auto_background)
       return datasets
     else:
-      return read_data.read_data(file_name)
+      return reader.open(file_name)
 
   def autosubtract_background(self, dataset, fraction=5.):
     '''

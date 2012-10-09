@@ -121,12 +121,6 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
     return (found, last_argument_option)
 
 
-  def read_file(self, file_name):
-    '''
-      function to read data files
-    '''
-    return read_data.read_data(file_name , self.DATA_COLUMNS)
-
   def add_file(self, filename, append=True):
     '''
       Add the data of a new file to the session.

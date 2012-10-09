@@ -16,7 +16,7 @@ from reflectometer_fit.parameters import FitParameters, LayerParam, MultilayerPa
 from plotpy.mds import MeasurementData, PhysicalProperty
 from plotpy.config import user_config
 from plotpy.config import treff as config
-from plotpy.config import transformations, gnuplot_preferences
+from plotpy.config import gnuplot_preferences
 from plotpy.config.scattering_length_table import NEUTRON_SCATTERING_LENGTH_DENSITIES
 if not 'Neutron SLD' in user_config:
   user_config['Neutron SLD']=NEUTRON_SCATTERING_LENGTH_DENSITIES
