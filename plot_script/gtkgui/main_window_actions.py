@@ -872,6 +872,19 @@ Gnuplot version %.1f patchlevel %i with terminals:
         status_dialog.hide()
     dialog.destroy()
 
+  def activate_mpfit(self, action):
+    import plot_script.mpfit
+    try:
+      import multiprocessing
+    except ImportError:
+      return
+    else:
+      plot_script.mpfit.USE_MP=not plot_script.mpfit.USE_MP
+      if plot_script.mpfit.USE_MP:
+        print "MP is active"
+      else:
+        print "MP is inactive"
+
   def edit_user_config(self, action):
     '''
       Open a dialog to edit the user config file.

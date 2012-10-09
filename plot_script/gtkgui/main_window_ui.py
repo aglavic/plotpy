@@ -307,6 +307,7 @@ class MainUI(object):
         <menuitem action='OpenDataView'/>
         <separator name='extras2'/>
         <menuitem action='ConnectIPython'/>
+        <menuitem action='ActivateMPFit'/>
         <separator name='extras3'/>
         <menuitem action='EditUserConfig'/>
         '''
@@ -669,6 +670,10 @@ class MainUI(object):
         "IP-Cluster...", None, # label, accelerator
         None, # tooltip
         self.connect_cluster),
+      ("ActivateMPFit", None, # name, stock id
+        "Activate/Deactivate multiprocessing in slow fits...", None, # label, accelerator
+        None, # tooltip
+        self.activate_mpfit),
       ("EditUserConfig", None, # name, stock id
         "Edit User Config", None, # label, accelerator
         None, # tooltip

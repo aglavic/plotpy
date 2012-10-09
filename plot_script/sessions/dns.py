@@ -222,7 +222,7 @@ class DNSSession(GUI, GenericSession):
     names=self.read_arguments(arguments) # get names and set options
     if names==None: # read_arguments returns none, if help option is set
       print self.LONG_HELP+self.SPECIFIC_HELP+self.LONG_HELP_END
-      exit()
+      sys.exit()
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     if self.FULLAUTO:
       # Initialize full automatic search for appropriate sequences
@@ -493,7 +493,7 @@ class DNSSession(GUI, GenericSession):
             last_argument_option[2].append(float(argument))
           except ValueError:
             print "Check your Syntax! Omega offset has to be a number, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]"%argument
-            exit()
+            sys.exit()
           last_argument_option=[True, 'files_2', last_argument_option[2]]
         # increment
         elif last_argument_option[1]=='files_2':
@@ -501,7 +501,7 @@ class DNSSession(GUI, GenericSession):
             last_argument_option[2].append(int(argument))
           except ValueError:
             print "Check your Syntax! Increment has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]"%argument
-            exit()
+            sys.exit()
           last_argument_option=[True, 'files_3', last_argument_option[2]]
         # from
         elif last_argument_option[1]=='files_3':
@@ -509,7 +509,7 @@ class DNSSession(GUI, GenericSession):
             last_argument_option[2].append([int(argument)])
           except ValueError:
             print "Check your Syntax! From has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]"%argument
-            exit()
+            sys.exit()
           last_argument_option=[True, 'files_4', last_argument_option[2]]
         # to
         elif last_argument_option[1]=='files_4':
@@ -517,7 +517,7 @@ class DNSSession(GUI, GenericSession):
             last_argument_option[2][3].append(int(argument))
           except ValueError:
             print "Check your Syntax! To has to be integer, got '%s'.\nSyntax for -files: [prefix] [ooff] [inc] [from] [to] [postfix]"%argument
-            exit()
+            sys.exit()
           last_argument_option=[True, 'files_5', last_argument_option[2]]
         # postfix
         elif last_argument_option[1]=='files_5':
@@ -541,7 +541,7 @@ class DNSSession(GUI, GenericSession):
             Increment='%i'
             From,To='%i','%i'
             Postfix='%s' """%(erg[0], erg[1], erg[2], erg[3][0], erg[3][1], erg[4])
-            exit()
+            sys.exit()
           self.prefixes.append(directory+os.sep+first_file)
           self.file_options[directory+os.sep+first_file]=last_argument_option[2]
           last_argument_option=[False, '']

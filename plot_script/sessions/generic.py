@@ -178,10 +178,10 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       files=self.read_arguments(arguments) # get filenames and set options
       if files is None: # read_arguments returns none, if help option is set
         print self.LONG_HELP+self.SPECIFIC_HELP+self.LONG_HELP_END
-        exit()
+        sys.exit()
       elif len(files)<1 and not self.use_gui and not self.ipdrop: # show help, if there is no file in the list
         print self.SHORT_HELP
-        exit()
+        sys.exit()
     else:
       files=[]
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
@@ -206,7 +206,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
         if not self.use_gui and not self.ipdrop:
           print "No valid datafile found!"
           print self.SHORT_HELP
-          exit()
+          sys.exit()
         self.active_file_data=[]
         self.active_file_name="None"
       else:

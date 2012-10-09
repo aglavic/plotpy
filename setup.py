@@ -138,7 +138,7 @@ if 'install' in sys.argv:
   if not dependencies_ok:
     answer=raw_input('Do you still want to install? (y/n): ')
     if answer!='y':
-      exit()
+      sys.exit()
 
 
 #### Run the setup command with the selected parameters ####
@@ -277,7 +277,7 @@ if "py2exe" in sys.argv and not py2exe_test:
     except OSError:
       print "\tDirectory %s already exists."%dest
     try:
-      handle=os.popen('xcopy %s %s /y /e'%(src, dest))
+      handle=os.popen(r'C:\WINDOWS\system32\xcopy.exe %s %s /y /e'%(src, dest))
       files=len(handle.read().splitlines())
       print "\t%i Files"%files
     except:
