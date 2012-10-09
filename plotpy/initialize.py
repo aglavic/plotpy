@@ -266,11 +266,11 @@ def run(argv=None):
     argv=sys.argv[1:]
   argv=map(lambda arg: unicode(arg, message.in_encoding), argv)
   # interfact to autogenerate bash completion
-  if argv[0]=='--types':
-    print u" ".join(get_types())
+  if '--types' in argv[:1]:
+    print u" ".join(sorted(get_types()))
     exit(0)
-  if argv[0]=='--sessions':
-    print u" ".join(get_sessions())
+  if '--sessions' in argv[:1]:
+    print u" ".join(sorted(get_sessions()))
     exit(0)
   #+++++++++++++ Limit Memory Usage ++++++++++++++
   if not "--nolimit" in sys.argv:

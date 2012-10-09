@@ -12,13 +12,13 @@ import time
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 # import parameter class for fits
-from reflectometer_fit.reflectometer import * #@UnusedWildImport
+from reflectometer_fit.xrr import * #@UnusedWildImport
 
-from plotpy.config import reflectometer as config
+from plotpy.config import xrr as config
 from plotpy.config import gnuplot_preferences
 
 try:
-  from plotpy.gtkgui.reflectometer import ReflectometerGUI as GUI
+  from plotpy.gtkgui.xrr import ReflectometerGUI as GUI
   from plotpy.gtkgui.reflectometer_functions import ReflectometerFitGUI
 except ImportError:
   class GUI: pass

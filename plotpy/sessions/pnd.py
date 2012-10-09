@@ -113,9 +113,9 @@ def correct_flipping_ratio(flipping_ratio, pp_data, pm_data,
 
 class DNSSession(GUI, GenericSession):
   '''
-    Class to handle dns data sessions
+    Class to handle polarized neutron diffraction data
   '''
-  name='dns'
+  name='pnd'
   #++++++++++++++ help text string +++++++++++++++++++++++++++
   SPECIFIC_HELP=\
 '''
@@ -164,7 +164,6 @@ class DNSSession(GUI, GenericSession):
   #------------------ help text strings ---------------
 
   #++++++++++++++++++ local variables +++++++++++++++++
-  FILE_WILDCARDS=[('DNS', '*.d_dat', '*.d_dat.gz'), ('D7', '*.d7', '*.d7.gz')]
 
   TRANSFORMATIONS=[\
   ]
