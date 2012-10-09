@@ -16,8 +16,20 @@ except ImportError:
   pass
 try:
   from setuptools import setup
+  __options__={
+               'zip_safe': True,
+               'install_requires': '''numpy
+                                      PyGTK''',
+               'license': 'GPLv3',
+               'classifiers': [
+                            "Intended Audience :: Science/Research",
+                            "License :: OSI Approved :: GNU General Public License (GPLv3)",
+                            "Operating System :: Windows,Linux",
+                            ],
+               }
 except ImportError:
   from distutils.core import setup
+  __options__={}
 
 import subprocess
 from glob import glob
@@ -48,7 +60,7 @@ if "py2app" in sys.argv:
   import py2app #@UnusedImport @UnresolvedImport
   __scripts__=['plot.py']
   #__data_files__+=[('../Frameworks', glob('/usr/lib/libwx_mac*'))]
-  __options__={
+  __options__.update({
               "app": ['plot.py'],
               "options": { "py2app": {
                            "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio",
@@ -59,10 +71,10 @@ if "py2app" in sys.argv:
                            #"argv_emulation": True,
                            },
                           }
-              }
+              })
 elif "py2exe" in sys.argv:
   import py2exe #@UnusedImport @UnresolvedImport
-  __options__={
+  __options__.update({
                 #"setup_requires": ['py2exe'], 
                 #"console": [ "__init__.py"], # set the executable for py2exe
                 "windows": [ "plot.py" ], # executable for py2exe is windows application            
@@ -75,11 +87,9 @@ elif "py2exe" in sys.argv:
                               "excludes": "matplotlib, pylab, PyQt4, wx, wxPython, idlelib",
                              },
                            }
-              }
-else:
-  __options__={}
+              })
 
-__requires__=['pygtk', 'gobject', 'numpy']
+__requires__=['pygtk', 'numpy']
 
 # extensions modules written in C
 __extensions_modules__=[]
