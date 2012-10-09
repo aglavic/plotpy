@@ -4,7 +4,7 @@ reflectometer_fit Package
 :mod:`reflectometer_fit` Package
 --------------------------------
 
-.. automodule:: plot_script.sessions.reflectometer_fit
+.. automodule:: plotpy.sessions.reflectometer_fit
     :members:
     :undoc-members:
     :show-inheritance:
@@ -12,7 +12,7 @@ reflectometer_fit Package
 :mod:`parameters` Module
 ------------------------
 
-.. automodule:: plot_script.sessions.reflectometer_fit.parameters
+.. automodule:: plotpy.sessions.reflectometer_fit.parameters
     :members:
     :undoc-members:
     :show-inheritance:
@@ -20,15 +20,15 @@ reflectometer_fit Package
 :mod:`reflectometer` Module
 ---------------------------
 
-.. automodule:: plot_script.sessions.reflectometer_fit.reflectometer
+.. automodule:: plotpy.sessions.reflectometer_fit.reflectometer
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`treff` Module
+:mod:`pnr` Module
 -------------------
 
-.. automodule:: plot_script.sessions.reflectometer_fit.treff
+.. automodule:: plotpy.sessions.reflectometer_fit.pnr
     :members:
     :undoc-members:
     :show-inheritance:

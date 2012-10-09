@@ -4,7 +4,7 @@ plugins Package
 :mod:`plugins` Package
 ----------------------
 
-.. automodule:: plot_script.plugins
+.. automodule:: plotpy.plugins
     :members:
     :show-inheritance:
 

@@ -37,7 +37,57 @@ READ_MDS=True
 class Reader(object):
   """
     Basic class for data file readers. Loads and caches file binary
-    data. Files with .gz extenstion get automatically unpacked.
+    data. Files with .gz extensions get automatically unpacked.
+    The class has no __init__ method, this should be used for derived
+    readers to e.g. import non standard libraries or for setup purpose.
+    Strings should always be given as unicode.
+    
+    A defived class should supply at least the following attributes/methods:
+    
+      ===================== ============================================
+      name                  Identifier for the reader class
+      description           Information text on the type of file the 
+                            reader supports
+      glob_parterns         List of file patterns the reader supports
+      session               The default session name for the type
+      read(self)            The method to be called when the raw
+                            data has been read.               
+      ===================== ============================================
+    
+    Additional class attributes that can be overwritten by children:
+    
+      ===================== ============================================
+      parameters            List of (name, default) tuples of 
+                            additional parameters needed by the reader
+                            to treat the data.
+                            
+                            The reader can access each parameter as
+                            attribute when *read* is called.
+                            E.g. for the item ('param1', 5.3) the reader
+                            could use self.param1 to get it's value.
+                            The name needs to be a valid python 
+                            identifier (no spaces etc.).
+                            
+                            The type is determined by the default value
+                            so it is not possible to supply an float
+                            when the default was integer. A tuple of
+                            strings can be used to give a selection,
+                            where the first parameter is the default.
+                            
+      parameter_units       Dictionary containing phisical units of 
+                            the parameters. Not all parameters need
+                            to be available. The special case of unit
+                            'file(* .fil)' is used in the GUI to treat
+                            a text input as filename with an according
+                            dialog. 
+      parameter_description Short info text for each parameter, which
+                            is shown when the mouse hovers the input.
+      store_mds             If set to False the data will not be saved
+                            to a .mds file after readout.
+      allow_multiread       If set to True the reader must support
+                            the readout of multiple files, e.g. to
+                            sum up several images.
+      ===================== ============================================
   """
 
   name=u"Reader"
@@ -45,11 +95,9 @@ class Reader(object):
   glob_patterns=[]
   session='generic'
 
-  # additional parameters that can be given to the open function
-  # with their default values
   parameters=[]
   parameter_units={}
-  parameter_description={} # hover text for description
+  parameter_description={}
 
   _data=None
   store_mds=True
@@ -261,6 +309,9 @@ class TextReader(Reader):
     Advanced reader class converting raw binary file
     data to unicode and providing simple sting to
     data conversion methods.
+    When read is called the data is available as self.text_data.
+    
+    See Reader documentation for details.
   """
   encoding="utf8"
 
@@ -275,6 +326,10 @@ class BinReader(Reader):
   """
     Advanced reader class providing data conversion for
     binary data types.
+    When read is called the data is available as self.raw_data,
+    and a filelike object as self.raw_file.
+    
+    See Reader documentation for details.
   """
 
   def read(self):
@@ -362,22 +417,26 @@ class ReaderProxy(object):
     read a list of given files (with optional multiprocessing).
         
     The important attributes/methods are:
-      open(files): Open the given files with a fitting reader 
+    
+    ============== ===================================================
+      open(files)  Open the given files with a fitting reader 
                    and return a list of FileData objects.
-         patterns: A dictionary with glob patterns as keys and 
+         patterns  A dictionary with glob patterns as keys and 
                    lists of associated readers as values.
-         sessions: As patterns but with session names as keys.
-            types: Same as patterns.keys()
-    kwds_callback: A function taking (reader, path, name) as input
+         sessions  As patterns but with session names as keys.
+            types  Same as patterns.keys()
+    kwds_callback  A function taking (reader, path, name) as input
                    which get's called if a reader supports keyword
                    arguments to return a dictionary of those arguments
                    e.g. to give the user an interface to input these
                    arguments.
+    ============== ===================================================
             
     Using object['name.extension'] can be used to get the best 
     fitting reader for the given filename or glob pattern.
     
-    This could look as follows in a user script:
+    This could look as follows in a user script::
+    
       from plotpy.fio import reader
       my_reader=reader['*.my_type']
       for my_files in my_list:

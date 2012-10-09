@@ -1,12 +1,15 @@
 '''
   Module to provide a general message system for command line and GUI
   usage.
-  Messages are one of information, warning and error and can be grouped
+  Messages are one of information, warning or error and can be grouped
   into global groups and item messages. For example:
-    When reading a bunch of files (10) the reader would call:
+  
+  When reading a bunch of files (10) the reader would call::
+    
       info(None, group='Reading files', numitems=10)
       for item in items:
         info('Reading...', group='Reading files', item=item)
+        
   Each item could call info again to update the progress or show additional
   information using the same group and item argument.
 '''

@@ -607,7 +607,7 @@ class PNRLayerParam(LayerParam):
 
   def get_fit_params(self, params, param_index):
     '''
-      return a parameter list_ according to params
+      return a parameter list according to params
     '''
     list_=[]
     for i in params:
@@ -681,7 +681,7 @@ class PNRMultilayerParam(MultilayerParam):
 
   def get_fit_params(self, params, param_index):
     '''
-      return a parameter list_ according to params (list_ of param lists for multilayer)
+      return a parameter list according to params (list of param lists for multilayer)
     '''
     list_=[]
     layers=len(self.layers)
@@ -692,7 +692,7 @@ class PNRMultilayerParam(MultilayerParam):
 
   def get_fit_cons(self, param_index):
     '''
-      return a list_ of constainlists according to multilayers
+      return a list of constainlists according to multilayers
     '''
     list_=[]
     layers=len(self.layers)
