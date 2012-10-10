@@ -1,81 +1,77 @@
 # -*- encoding: utf-8 -*-
 '''
-  Package containing configuration moduls.
-  This folder containes all files which define constants and parameters
-  for the plot and diverse import modes of plot.py.
+  Package containing configuration modules.
+  This folder contains all files which define constants and parameters
+  for the plot and diverse import modes of plotpy.
+  
+  The config package facilitates a special ConfigProxy interface that
+  acts like a dictionary, which is automatically generated from the
+  submodules. Constants (variables using only capital letters) are
+  directly taken from the module, others are first taken from the
+  module and than stored in a user config file defined by the
+  "config_file" variable in the module and read from there on the
+  next import. To get access to the configuration other modules
+  only need to import "[module_name]config", which can be ither
+  used as dictionary or by accessing the object attributes.
+  
+  For example the module "user1" could look like this::
+    
+    # module docstring
+    config_file="user"
+    CONST1=12.3
+    CONST2=431.2
+    opt1=12
+    opt2=1
+  
+  The module that wants to use these information will be similar to::
+  
+    from plotpy.config import user1config
+    
+    print user1config.CONS1 # directly read from module
+    print user1config['opt1'] # first time read from module than from user.ini file 
 '''
 
-from plotpy.info import __copyright__, __license__, __version__, \
-                                    __maintainer__, __email__
+import os as _os
+import pkgutil as _pkgutil
+from baseconfig import ConfigProxy as _ConfigProxy
+from plotpy.message import warn as _warn
 
-# as the configuration files could be in a folder without user write access,
-# we test if it is possible to write to the configuration folder and otherwise
-# copy the files to our home directory and relink the module. This makes
-# user specific config files possible as well.
-import os
+_package_dir=_os.path.split(_os.path.abspath(__file__))[0]
 
-config_path=os.path.expanduser('~/.plotting_gui')
-os.environ['IPYTHONDIR']=os.path.join(config_path, 'ipython')
-if not os.path.exists(config_path):
-  os.mkdir(config_path)
-#if not os.access(__path__[0], os.W_OK):
-#  user_path=os.path.join(config_path, 'config')
-#  if not os.path.exists(user_path):
-#    os.mkdir(user_path)
-#  # create new config files if the script version is newer
-#  try:
-#    if not os.path.exists(os.path.join(user_path, "gnuplot_preferences.py")) or \
-#        os.path.getmtime(os.path.join(user_path, "gnuplot_preferences.py"))<os.path.getmtime(os.path.abspath(__file__)):
-#        # copy all files to the users directory
-#        files=filter(lambda file_: file_.endswith('.py'), os.listdir(__path__[0]))
-#        for file_ in files:
-#          from_name=os.path.join(__path__[0], file_)
-#          to_name=os.path.join(user_path, file_)
-#          open(to_name, 'wb').write(open(from_name, 'rb').read())
-#  except Exception, error:
-#    raise error
-#    # if the files are not present or accessible, use the variables to create them
-#    def typecheck():
-#      pass
-#    subpackage_items=[
-#                       'circle',
-#                       'diamagnetism_table',
-#                       'dns',
-#                       'gnuplot_preferences',
-#                       'gui',
-#                       'in12',
-#                       'kws2',
-#                       'maria',
-#                       'reflectometer',
-#                       'scattering_length_table',
-#                       'squid',
-#                       'templates',
-#                       'transformations',
-#                       'treff',
-#                       ]
-#    for package in subpackage_items:
-#      active_config=__import__('plotpy.config.'+package, fromlist=[package])
-#      export_file=open(os.path.join(user_path, package+'.py'), 'w')
-#      variables=filter(lambda item: '__' not in item, dir(active_config))
-#      for name in variables:
-#        if type(getattr(active_config, name)) is type(typecheck) or \
-#          type(getattr(active_config, name)) is type(os):
-#          continue
-#        export_file.write('%s = %s\n'%(name, getattr(active_config, name).__repr__()))
-#      # for code executed when importing the modules we would loose information
-#      # so this code is doubled in the __configadd__ variable.
-#      if '__configadd__' in dir(active_config):
-#        export_file.write(active_config.__configadd__)
-#      export_file.close()
-#  # reassociate this module to use the user files
-#  __path__=[user_path] #@ReservedAssignment
+# prepare user config, if it does not exist
+_config_path=_os.path.expanduser('~/.plotting_gui')
+if not _os.path.exists(_config_path):
+  _os.mkdir(_config_path)
+# define ipython config path to seperate it from normal ipython configuration
+_os.environ['IPYTHONDIR']=_os.path.join(_config_path, 'ipython')
 
+proxy=None
+__all__=[]
 
-# load user config, it will be saved automatically on exit
-from configobj import ConfigObj
-import atexit
+def _create_proxy():
+  global proxy, __all__
+  proxy=_ConfigProxy(_config_path)
+  for ignore, name, ispackage in _pkgutil.iter_modules([_package_dir]):
+    if ispackage:
+      continue
+    try:
+      modi=__import__('plotpy.config.'+name, fromlist=[name])
+    except Exception, error:
+      _warn("Could not import module %s,\n %s: %s"%(name, error.__class__.__name__, error))
+      continue
+    moddict={}
+    for key, value in modi.__dict__.items():
+      if key.startswith('_') or key=='config_file' or\
+         hasattr(value, '__file__') or hasattr(value, '__module__'):
+        continue
+      moddict[key]=value
+    if 'config_file' in modi.__dict__:
+      config_holder=proxy.add_config(name, moddict, storage=modi.config_file) #@UnusedVariable
+    else:
+      config_holder=proxy.add_config(name, moddict, storage=None) #@UnusedVariable
+    # add item to the package
+    __all__.append(name+'config')
+    exec "global %sconfig;%sconfig=config_holder"%(name, name)
 
-user_config=ConfigObj(os.path.join(config_path, 'user_config.ini'),
-                        unrepr=True, indent_type='    ')
-user_config['last_access_version']=__version__
-atexit.register(user_config.write)
+if proxy is None:
+  _create_proxy()

@@ -2,6 +2,7 @@ eclipse.preferences.version=1
 encoding//additions/matplot_npz.py=utf8
 encoding//plotpy/__init__.py=utf-8
 encoding//plotpy/config/__init__.py=utf-8
+encoding//plotpy/config/baseconfig.py=utf-8
 encoding//plotpy/config/circle.py=utf-8
 encoding//plotpy/config/default_templates/default_template.py=utf-8
 encoding//plotpy/config/diamagnetism_table.py=utf-8

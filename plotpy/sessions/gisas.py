@@ -74,7 +74,6 @@ class GISASSession(GUI, GenericSession):
         found=False
     return (found, last_argument_option)
 
-
   def read_file(self, file_name):
     '''
       Function to read data files.

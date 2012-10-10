@@ -3,13 +3,10 @@
  Some general settings for the 4circle session
 '''
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
+config_file='user'
 
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
-TRANSFORMATIONS=[\
+transformations=[\
 ]
 # Transformations for constants (see MEASUREMENT_TYPES)
 TRANSFORMATIONS_CONST=[]

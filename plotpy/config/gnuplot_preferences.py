@@ -6,11 +6,6 @@
 from os.path import exists, split
 from os.path import join as join_path
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
-
 #
 # place holders:
 #
@@ -67,13 +62,13 @@ else:
     FONT_PATH=''
 FONT_FILE='Arial.ttf'
 
-from plotpy.config import user_config
-if not 'plot' in user_config:
-  user_config['plot']={}
-if not 'font' in user_config['plot']:
-  FONT_DESCRIPTION='Arial'
-else:
-  FONT_DESCRIPTION=user_config['plot']['font']
+#from plotpy.config import user_config
+#if not 'plot' in user_config:
+#  user_config['plot']={}
+#if not 'font' in user_config['plot']:
+FONT_DESCRIPTION='Arial'
+#else:
+#  FONT_DESCRIPTION=user_config['plot']['font']
 
 # character encoding in gnuplot (>=4.4)
 ENCODING='utf8'
