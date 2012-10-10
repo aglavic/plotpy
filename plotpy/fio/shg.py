@@ -10,11 +10,6 @@ import os
 from plotpy.mds import MeasurementData, PhysicalProperty
 import numpy
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
-
 column_rename={
                'Temp. sample holder': 'T_{sample}',
                'Temp. needle valve': 'T_{cryo}',

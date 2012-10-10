@@ -7,11 +7,6 @@
 import sys
 from cPickle import loads
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
-
 def import_from_log(name):
   '''
     Open the log file and import the message and the pickled datasets.

@@ -8,17 +8,13 @@
 import gtk
 import os
 
+from plotpy.fio import reader
+from plotpy.config import pnr as config
 from plotpy.sessions.reflectometer_fit.pnr import * #@UnusedWildImport
 from plotpy.mds import PlotStyle
 from dialogs import SimpleEntryDialog
 
 #----------------------- importing modules --------------------------
-
-
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
 
 
 class PNRGUI:
@@ -854,7 +850,7 @@ class PNRGUI:
       if dataset:
         # if data for the channel was selected combine data and fit together
         try:
-          simu=read_data.read_simulation(self.TEMP_DIR+output_names[i])
+          simu=reader.open(self.TEMP_DIR+output_names[i])
           simu.number='sim_'+dataset.number
           simu.short_info='simulation '+names[i]
           simu.sample_name=dataset.sample_name
@@ -866,7 +862,7 @@ class PNRGUI:
         dataset.plot_together[1].plot_options._special_plot_parameters=PlotStyle()
         dataset.plot_together[1].plot_options._special_plot_parameters.color=i+1
       elif self.active_file_data.fit_object.simulate_all_channels:
-        simu=read_data.read_simulation(self.TEMP_DIR+output_names[i])
+        simu=reader.open(self.TEMP_DIR+output_names[i])
         simu.number='%i'%i
         simu.short_info='simulation '+names[i]
         simu.plot_options._special_plot_parameters=PlotStyle()
@@ -1323,7 +1319,7 @@ class PNRGUI:
       Replot the simulated and measured data.
     '''
     dataset=window.measurement[window.index_mess]
-    simu=read_data.read_simulation(self.TEMP_DIR+'simulation_pp')
+    simu=reader.open(self.TEMP_DIR+'simulation_pp')
     simu.number='sim_'+dataset.number
     simu.short_info='simulation'
     simu.sample_name=dataset.sample_name

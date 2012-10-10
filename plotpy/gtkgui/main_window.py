@@ -11,9 +11,9 @@ import gtk
 # own modules
 # Module to save and load variables from/to config files
 from plotpy import plotting, config
-from plotpy.config.gnuplot_preferences import output_file_name
+from plotpy.config import gnuplot_preferences
 from plotpy.config import gui as gui_config
-from plotpy.config import fontconfig, user_config
+from plotpy.config import fontconfig
 import file_actions
 from main_window_actions import MainActions
 from main_window_ui import MainUI
@@ -123,7 +123,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     self.status_dialog=status_dialog
     self.heightf=100 # picture frame height
     self.widthf=100 # pricture frame width
-    self.set_file_type=output_file_name.rsplit('.', 1)[1] # export file type
+    self.set_file_type=gnuplot_preferences.output_file_name.rsplit('.', 1)[1] # export file type
     self.measurement=active_session.active_file_data # active data file measurements
     self.input_file_name=active_session.active_file_name # name of source data file
     self.script_suf=script_suf # suffix for script mode gnuplot input data
@@ -193,13 +193,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     # put toolbar below menubar, only expand in x direction
     barbox=gtk.VBox()
     barbox.show()
-    if not 'GUI' in user_config:
-      user_config['GUI']={
-                  'show_toolbars': [0, 1],
-                  'show_statusbar': True,
-                  'seperate_view': False,
-                  }
-    for i in user_config['GUI']['show_toolbars']:
+    for i in gui_config['show_toolbars']:
       bar=self.UIManager.get_widget("/ToolBar%i"%(i+1))
       bar.set_tooltips(True)
       bar.set_style(gtk.TOOLBAR_ICONS)
@@ -321,11 +315,8 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
         or 'pngcairo' in self.gnuplot_info['terminals']\
         or sys.platform.startswith('win'):
       self.font_size=gtk.FontButton()
-      if 'font' in config.user_config['plot']:
-        self.font_size.set_font_name(config.user_config['plot']['font']
-                                     +', '+str(self.active_session.font_size))
-      else:
-        self.font_size.set_font_name('Arial, '+str(self.active_session.font_size))
+      self.font_size.set_font_name(gnuplot_preferences.font+', '+
+                                   str(self.active_session.font_size))
       self.font_size.set_title('Select Plot Font...')
       self.font_size.set_show_style(False)
       self.font_size.set_show_size(True)
@@ -432,7 +423,7 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     self.statusbar.pack_end(gtk.VSeparator(), False)
     self.statusbar.pack_end(self.xindicator, False)
     # put statusbar below everything
-    if user_config['GUI']['show_statusbar']:
+    if gui_config['show_statusbar']:
       table.attach(self.statusbar,
           # X direction           Y direction
           0, 3, 5, 6,

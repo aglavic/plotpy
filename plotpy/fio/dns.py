@@ -12,11 +12,6 @@ from plotpy.mds import MeasurementData
 from plotpy.config import dns as config
 from plotpy.config.dns import * #@UnusedWildImport
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
-
 def read_data(file_name, print_comments=True):
   '''
     Read the data of a dns data file.

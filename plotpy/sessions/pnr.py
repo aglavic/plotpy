@@ -14,12 +14,9 @@ from generic import GenericSession
 # import parameter class for fits
 from reflectometer_fit.parameters import FitParameters, LayerParam, MultilayerParam
 from plotpy.mds import MeasurementData, PhysicalProperty
-from plotpy.config import user_config
-from plotpy.config import treff as config
+from plotpy.config import pnr as config
 from plotpy.config import gnuplot_preferences
-from plotpy.config.scattering_length_table import NEUTRON_SCATTERING_LENGTH_DENSITIES
-if not 'Neutron SLD' in user_config:
-  user_config['Neutron SLD']=NEUTRON_SCATTERING_LENGTH_DENSITIES
+from plotpy.config import sld
 
 try:
   from plotpy.gtkgui.pnr import PNRGUI
@@ -677,7 +674,7 @@ class TreffFitParameters(FitParameters):
   ntest=1 # number of times chi has to be not improvable before the fit stops (I think)
   PARAMETER_LENGTH=7
   simulate_all_channels=False
-  NEUTRON_SCATTERING_LENGTH_DENSITIES=user_config['Neutron SLD']
+  NEUTRON_SCATTERING_LENGTH_DENSITIES=sld.neutron_sld
 
   def append_layer(self, material, thickness, roughness):
     '''
@@ -1108,10 +1105,10 @@ class TreffFitParameters(FitParameters):
       Convert Parameters from x-ray .ent file to neutrons and import it
       for usage with this fit.
     '''
-    import plotpy.sessions.reflectometer
+    import plotpy.sessions.xrr
 
     ### reading X-ray data
-    x_ray_fitdata=plotpy.sessions.reflectometer.RefFitParameters()
+    x_ray_fitdata=plotpy.sessions.xrr.RefFitParameters()
     x_ray_fitdata.read_params_from_file(name)
 
     ### instument settings

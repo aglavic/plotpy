@@ -4,7 +4,13 @@ config Package
 :mod:`config` Package
 ---------------------
 
-.. automodule:: plotpy.config
+.. automodule:: plotpy.config.__init__
     :members:
-    :show-inheritance:
 
+:mod:`baseconfig` Module
+------------------------
+
+.. automodule:: plotpy.config.baseconfig
+    :members:
+    :undoc-members:
+    :private-members:

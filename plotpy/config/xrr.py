@@ -3,13 +3,9 @@
   Some general settings for the reflectometer sessions
 '''
 
-# import modules
 import os
 
-__author__=u"Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__=u"Production"
+config_file='instruments'
 
 # Transformations for differnt units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
 TRANSFORMATIONS=[\

@@ -9,12 +9,6 @@ from plotpy.mds import MultiplotList
 from dialogs import PreviewDialog
 from copy import deepcopy
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
-
-
 class MultiplotItem(gtk.HBox):
   '''
     A list which contains all subplots for a multiplot.

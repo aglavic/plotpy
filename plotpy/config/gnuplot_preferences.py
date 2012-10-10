@@ -6,6 +6,8 @@
 from os.path import exists, split
 from os.path import join as join_path
 
+config_file='plotting'
+
 #
 # place holders:
 #
@@ -43,32 +45,28 @@ PROCESS_FLAGS=0
 # font path for export
 if exists('/usr/share/fonts/truetype/msttcorefonts'):
   ## - DEBIAN - ## 
-  FONT_PATH='/usr/share/fonts/truetype/msttcorefonts'
+  font_path='/usr/share/fonts/truetype/msttcorefonts'
 elif exists('C:\\WINDOWS\\Fonts'):
-  FONT_PATH='C:\\WINDOWS\\Fonts'
+  font_path='C:\\WINDOWS\\Fonts'
 elif exists('/Library/Fonts'):
-  FONT_PATH='/Library/Fonts'
+  font_path='/Library/Fonts'
 else:
   try:
     # try to get the font path from the pygame module
     from pygame.font import match_font
     file_path=match_font('arial')
     if file_path:
-      FONT_PATH=split(file_path)[0]
+      font_path=split(file_path)[0]
     else:
-      FONT_PATH=''
+      font_path=''
   except ImportError:
     # if there is no pygame module installed, use the fonts from this program
-    FONT_PATH=''
+    font_path=''
 FONT_FILE='Arial.ttf'
+font='Arial'
+font_size=24.
 
-#from plotpy.config import user_config
-#if not 'plot' in user_config:
-#  user_config['plot']={}
-#if not 'font' in user_config['plot']:
 FONT_DESCRIPTION='Arial'
-#else:
-#  FONT_DESCRIPTION=user_config['plot']['font']
 
 # character encoding in gnuplot (>=4.4)
 ENCODING='utf8'

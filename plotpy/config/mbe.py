@@ -3,11 +3,7 @@
   Configurations for the kws2 file import.
 '''
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
-
+config_file='instruments'
 
 #Å^{-1}·eV^{1/2} - electron wavelength factor for 1/sqrt(energy in eV)
 H_over_2m=12.26426

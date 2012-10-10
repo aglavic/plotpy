@@ -4,17 +4,7 @@
 '''
 
 from parameters import FitParameters, LayerParam, MultilayerParam
-
-
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
-
-from plotpy.config import user_config
-from plotpy.config.scattering_length_table import NEUTRON_SCATTERING_LENGTH_DENSITIES
-if not 'Neutron SLD' in user_config:
-  user_config['Neutron SLD']=NEUTRON_SCATTERING_LENGTH_DENSITIES
+from plotpy.config import sld
 
 
 class PNRFitParameters(FitParameters):
@@ -34,7 +24,7 @@ class PNRFitParameters(FitParameters):
   ntest=1 # number of times chi has to be not improvable before the fit stops (I think)
   PARAMETER_LENGTH=7
   simulate_all_channels=False
-  NEUTRON_SCATTERING_LENGTH_DENSITIES=user_config['Neutron SLD']
+  NEUTRON_SCATTERING_LENGTH_DENSITIES=sld.neutron_sld
 
   def append_layer(self, material, thickness, roughness):
     '''

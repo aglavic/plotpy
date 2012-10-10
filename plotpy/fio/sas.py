@@ -10,11 +10,6 @@ import os
 import numpy
 from plotpy.mds import MeasurementData, PhysicalProperty
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
-
 def read_data(file_name):
   '''
     Read the data of a small angle scattering data file.

@@ -8,16 +8,10 @@
 import os
 import gtk
 # own modules
-from plotpy.config import kws2 as config
+from plotpy.config import gisas as config
 from dialogs import SimpleEntryDialog
 
 #----------------------- importing modules --------------------------
-
-
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
 
 
 class GISASGUI:

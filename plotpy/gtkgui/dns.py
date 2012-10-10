@@ -14,13 +14,6 @@ from plotpy.config import dns as config
 #----------------------- importing modules --------------------------
 
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
-
-
-
 class DNSGUI:
   '''
     DNS GUI functions for the GTK Toolkit.

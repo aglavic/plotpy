@@ -3,7 +3,12 @@
  Some general settings for the treff sessions
 '''
 
-from numpy import pi
+config_file='instruments'
+
+treff_detector_region=(35, 222, 35, 222) # usable area of detector
+treff_center_x=130.8 # pix
+treff_center_y=128.5 # pix
+
 
 # Files to combine for the pnr_multi.f90 program
 PROGRAM_FILES=[ 'fit_pnr_mult_newcons.f90',
@@ -46,7 +51,7 @@ FORTRAN_OUTPUT_OPTION='-o'
 FORTRAN_COMPILER_MARCH=None #'-march=nocona'
 
 # detector calibration file measured for TREFF
-DETECTOR_CALIBRATION=[ 0.        , 0.        , 0.        , 0.        , 0.        ,
+TREFF_CALIBRATION=[ 0.        , 0.        , 0.        , 0.        , 0.        ,
         0.        , 0.        , 0.        , 0.        , 0.        ,
         0.        , 0.        , 0.        , 0.        , 0.        ,
         0.        , 0.        , 0.        , 0.        , 0.        ,

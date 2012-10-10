@@ -4,16 +4,7 @@
 '''
 
 from parameters import FitParameters, LayerParam, MultilayerParam
-from plotpy.config import user_config
-from plotpy.config.scattering_length_table import SCATTERING_LENGTH_DENSITIES
-if not 'X-ray SLD' in user_config:
-  user_config['X-ray SLD']=SCATTERING_LENGTH_DENSITIES
-
-
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
+from plotpy.config import sld
 
 
 class RefFitParameters(FitParameters):
@@ -27,7 +18,7 @@ class RefFitParameters(FitParameters):
   resolution=3.5 # resolution in q in 1e-3 A^-1
   theta_max=2.3 # angle of total coverage for recalibration
 
-  SCATTERING_LENGTH_DENSITIES=user_config['X-ray SLD']
+  SCATTERING_LENGTH_DENSITIES=sld.xray_sld
 
   def append_layer(self, material, thickness, roughness):
     '''

@@ -18,7 +18,7 @@ from generic import GenericSession
 from plotpy.mds import PhysicalConstant
 # importing preferences and data readout
 from plotpy.config import squid as config
-from plotpy.config import diamagnetism_table
+from plotpy.config import diamagnetism
 
 try:
   from plotpy.gtkgui.squid import SquidGUI as GUI
@@ -201,7 +201,7 @@ Data columns and unit transformations are defined in config.squid.py.
     input_string=self.dia_calc[1].lower()
     if input_string is '':
       return True, 0.
-    element_dia=diamagnetism_table.ELEMENT_DIA
+    element_dia=diamagnetism.element_dia
     mol_mass=0
     mol_dia=0
     # split the elements by '_' and '-' or just Capitals

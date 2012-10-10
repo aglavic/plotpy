@@ -3,12 +3,7 @@
   Transformations for physical units.
 '''
 
-from math import pi
-
-__author__=u"Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__=u"Production"
+from numpy import pi
 
 # define transformations that can be used to convert units
 known_unit_transformations={

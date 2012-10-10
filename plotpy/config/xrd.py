@@ -3,13 +3,9 @@
  Some general settings for the 4circle session
 '''
 
-# Transformations for different units to be made ( [(from_dim,)from_unit,a,b,(to_dim,)to_unit] to=a*from+b)
-TRANSFORMATIONS=[\
-]
-# Transformations for constants (see MEASUREMENT_TYPES)
-TRANSFORMATIONS_CONST=[]
+config_file='instruments'
 
-KNOWN_COLUMNS={
+known_columns={
                u'H': (u'h', u''),
                u'K': (u'k', u''),
                u'L': (u'l', u''),
@@ -59,13 +55,13 @@ KNOWN_COLUMNS={
                u'Sample Z': (u'z_{sample}', u'mm'),
                }
 
-INTENSITY_COLUMNS=[
+intensity_columns=[
                    u'I_{norm}',
                    u'I',
                    u'I_{drain_{norm}}',
                    ]
 
-P09_COLUMNS_MAPPING={
+P09_columns_mapping={
                      u'EXP_C01_POINT_DETECTOR': (u'I_{RAW}', u'counts'),
                      u'EXP_VFC01_BEAM_MONITOR_VERT.': (u'Monitor_{vert}', u'counts'),
                      u'EXP_VFC02_BM_MONITOR_HOR.': (u'Monitor_{hor}', u'counts'),
@@ -87,7 +83,7 @@ P09_COLUMNS_MAPPING={
                      u'EXP_MOT17': (u'φ', u'°'),
                      }
 
-ID4_SCANS={
+ID4_scans={
            u'XMCD': ([(1, u'E', u'eV'),
                      (15, u'XMCD (TFY)', u''), (12, u'Total Fluorescense Yield', u''),
                      (11, u'Electron Yield', u''), (14, u'XMCD (EY)', u''),
@@ -114,7 +110,7 @@ ID4_SCANS={
                       (10, u'Fluorescense Yield 2nd window', u'counts')])
            }
 
-ID4_MAPPING={
+ID4_mapping={
              u'7T Sample Z': u'Z',
              u'Magnet X': u'X',
              u'Magnet Y': u'Y',

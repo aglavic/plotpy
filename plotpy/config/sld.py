@@ -3,16 +3,13 @@
   A table of compounds and their scattering length density for x-ray K_alpha and Neutrons.
 '''
 
-__author__="Artur Glavic"
-__credits__=["Esther Pfuhl", "Paul Zakalek"]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
+config_file='user'
 
 #
 # {'name': [sl_density,delta/beta]}
 #
 # 
-SCATTERING_LENGTH_DENSITIES={
+xray_sld={
   #     All values given here are calculated using crystal structures from
   #     the ICSD database and the index of Refraction calculator at 
   #     http://henke.lbl.gov/ .
@@ -59,7 +56,7 @@ SCATTERING_LENGTH_DENSITIES={
 # {'name': [Nb', Nb'', Np]}
 #
 # 
-NEUTRON_SCATTERING_LENGTH_DENSITIES={
+neutron_sld={
     'Al':[2.08, 3.63e-5, 0.],
     'Si':[2.15, 1.44e-5, 0.],
     'Ti':[-1.95, 9.17e-4, 0.],

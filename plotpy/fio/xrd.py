@@ -6,8 +6,7 @@
 import numpy
 from baseread import TextReader
 from plotpy.mds import MeasurementData, PhysicalProperty, MeasurementData4D
-from plotpy.config.xrd import KNOWN_COLUMNS, INTENSITY_COLUMNS, P09_COLUMNS_MAPPING, \
-                               ID4_SCANS, ID4_MAPPING
+from plotpy.config import xrd as xrdconfig
 
 class Spec(TextReader):
   '''
@@ -99,8 +98,8 @@ class Spec(TextReader):
       return None, None
     columns=[]
     for col in scan_header[u'columns']:
-      if col in KNOWN_COLUMNS:
-        columns.append(KNOWN_COLUMNS[col])
+      if col in xrdconfig.known_columns:
+        columns.append(xrdconfig.known_columns[col])
       else:
         columns.append((col, u''))
     xcol, ycol, errorcol, zcol=self.get_type_columns(scan_header[u'type'], [col[0] for col in columns])
@@ -165,7 +164,7 @@ class Spec(TextReader):
     type_, options=type_line.split(None, 1)
     intensity=len(columns)-1
     intensity_error=-1
-    for col in INTENSITY_COLUMNS:
+    for col in xrdconfig.intensity_columns:
       if col in columns:
         intensity=columns.index(col)
         break
@@ -183,11 +182,11 @@ class Spec(TextReader):
     elif type_==u'mesh':
       items=options.strip().split()
       first_angle=items[0]
-      if first_angle in KNOWN_COLUMNS:
-        first_angle=KNOWN_COLUMNS[first_angle][0]
+      if first_angle in xrdconfig.known_columns:
+        first_angle=xrdconfig.known_columns[first_angle][0]
       second_angle=items[4]
-      if second_angle in KNOWN_COLUMNS:
-        second_angle=KNOWN_COLUMNS[second_angle][0]
+      if second_angle in xrdconfig.known_columns:
+        second_angle=xrdconfig.known_columns[second_angle][0]
       first_index=columns.index(first_angle)
       second_index=columns.index(second_angle)
       return first_index, second_index, intensity_error, intensity
@@ -198,11 +197,11 @@ class Spec(TextReader):
     elif type_==u'mesh3d':
       items=options.strip().split()
       first_angle=u'Theta' #items[0]
-      if first_angle in KNOWN_COLUMNS:
-        first_angle=KNOWN_COLUMNS[first_angle][0]
+      if first_angle in xrdconfig.known_columns:
+        first_angle=xrdconfig.known_columns[first_angle][0]
       second_angle=u'Chi' #items[4]
-      if second_angle in KNOWN_COLUMNS:
-        second_angle=KNOWN_COLUMNS[second_angle][0]
+      if second_angle in xrdconfig.known_columns:
+        second_angle=xrdconfig.known_columns[second_angle][0]
       first_index=columns.index(first_angle)
       second_index=columns.index(second_angle)
       return first_index, second_index, intensity_error, intensity
@@ -302,8 +301,8 @@ class Online(TextReader):
         data_region=data_region[i:]
         break
     for i, col in enumerate(columns):
-      if col in P09_COLUMNS_MAPPING:
-        columns[i]=P09_COLUMNS_MAPPING[col]
+      if col in xrdconfig.P09_columns_mapping:
+        columns[i]=xrdconfig.P09_columns_mapping[col]
       else:
         columns[i]=(col, u'°')
     columns[0]=columns[1]
@@ -362,11 +361,11 @@ class APS4ID(TextReader):
       return None
     output=MeasurementData(x=0, y=1)
     used_columns=[0]
-    for i, column, unit in ID4_SCANS[type_]:
+    for i, column, unit in xrdconfig.ID4_scans[type_]:
       if column is None:
         column, unit=file_columns[i]
-        if column in ID4_MAPPING:
-          column=ID4_MAPPING[column]
+        if column in xrdconfig.ID4_mapping:
+          column=xrdconfig.ID4_mapping[column]
       if unit==u'counts':
         output.append_column(PhysicalProperty(column, unit, data[i], numpy.sqrt(data[i])))
       else:
@@ -376,8 +375,8 @@ class APS4ID(TextReader):
       if i not in used_columns:
         column, unit=file_columns[i]
         column=u"% 2i: "%i+column
-        if column in ID4_MAPPING:
-          column=ID4_MAPPING[column]
+        if column in xrdconfig.ID4_mapping:
+          column=xrdconfig.ID4_mapping[column]
         if unit==u'counts':
           output.append_column(PhysicalProperty(column, unit, data[i], numpy.sqrt(data[i])))
         else:

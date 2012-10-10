@@ -5,11 +5,6 @@
 
 import os, sys
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
-
 min_prefix_length=3
 
 FIRST_DETECTOR_ANGLE=0.0

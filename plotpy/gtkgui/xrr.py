@@ -10,19 +10,13 @@ import os
 import math
 import numpy
 # own modules
-from plotpy.read_data import reflectometer as read_data
-from plotpy.sessions.reflectometer_fit.reflectometer import * #@UnusedWildImport
+from plotpy.fio import reader
+from plotpy.sessions.reflectometer_fit.xrr import * #@UnusedWildImport
 import dialogs
 from plotpy import fitdata
 from plotpy.mds import MeasurementData, PhysicalProperty
 
 #----------------------- importing modules --------------------------
-
-
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
 
 
 class ReflectometerGUI:
@@ -731,7 +725,7 @@ class ReflectometerGUI:
       print "fit.f90 program finished in %.2g seconds."%float(exec_time.splitlines()[-1])
     else:
       self.open_status_dialog(window)
-    simu=read_data.read_simulation(self.TEMP_DIR+'fit_temp.sim')
+    simu=reader.open(self.TEMP_DIR+'fit_temp.sim')
     simu.number='sim_'+dataset.number
     simu.short_info='simulation'
     simu.sample_name=dataset.sample_name
@@ -839,7 +833,7 @@ class ReflectometerGUI:
 
   def replot_present(self, session, window):
     dataset=window.measurement[window.index_mess]
-    simu=read_data.read_simulation(self.TEMP_DIR+'fit_temp.sim')
+    simu=reader.open(self.TEMP_DIR+'fit_temp.sim')
     simu.number='sim_'+dataset.number
     simu.short_info='simulation'
     simu.sample_name=dataset.sample_name

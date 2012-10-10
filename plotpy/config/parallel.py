@@ -3,10 +3,7 @@
  Settings used for parallel computing with the IPython cluster interface.
 '''
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
+config_file='user'
 
 import os
 

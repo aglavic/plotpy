@@ -4,7 +4,13 @@
 
 import os
 
+config_file='gui'
+
 DOWNLOAD_PAGE_URL='http://plotpy.sourceforge.net/plotupdate.py'
+
+show_toolbars=[0, 1]
+show_statusbar=True
+seperate_view=False
 
 # locate icons
 own_path=os.path.dirname(os.path.abspath(__file__))
@@ -53,3 +59,5 @@ ICONS={
 ICON_SIZE=24
 for key, value in ICONS.items():
   ICONS[key]=os.path.join(ICON_PATH, value)
+del(key)
+del(value)

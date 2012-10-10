@@ -3,10 +3,7 @@
   Configurations for the IN12 file import.
 '''
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
+config_file='instruments'
 
 column_dimensions=(
                    (('A1', 'A2', 'A3', 'A4', 'A5', 'A6'), '°'),

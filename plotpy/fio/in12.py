@@ -11,11 +11,6 @@ from math import sqrt
 from plotpy.mds import MeasurementData
 from plotpy.config.in12 import column_dimensions, name_replacements
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
-
 def read_data(file_name):
   '''
     Read the data of a in12 data file.

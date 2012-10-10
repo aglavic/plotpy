@@ -14,9 +14,9 @@ from time import time
 import file_actions
 from dialogs import PreviewDialog, PlotTree, PrintDatasetDialog, NotebookDialog
 from plotpy import plotting, config
-from plotpy.config import user_config
-from plotpy.config.gui import DOWNLOAD_PAGE_URL, ICONS
-from plotpy.configobj import ConfigObj
+from plotpy.config import gui as guiconfig
+from plotpy.config import parallel as parallelconfig
+from plotpy.config import proxy as configproxy
 import main_window_plotting as mwp
 from main_window_file import MainFile
 from main_window_data_treatment import MainData
@@ -152,7 +152,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       self.plot_tree.set_default_size(*self.config_object['plot_tree']['size'])
       self.plot_tree.move(*self.config_object['plot_tree']['position'])
       self.config_object['plot_tree']['shown']=True
-      self.plot_tree.set_icon_from_file(ICONS['LogoB'])
+      self.plot_tree.set_icon_from_file(guiconfig.ICONS['LogoB'])
       self.plot_tree.show_all()
     else:
       self.plot_tree.destroy()
@@ -295,7 +295,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       self.file_actions.activate_action('create_fit_object')
     fit_session=dataset.fit_object
     fit_dialog=gtk.Dialog(title='Fit...')
-    fit_dialog.set_icon_from_file(ICONS['LogoP'])
+    fit_dialog.set_icon_from_file(guiconfig.ICONS['LogoP'])
     sw=gtk.ScrolledWindow()
     # Set the adjustments for horizontal and vertical scroll bars.
     # POLICY_AUTOMATIC will automatically decide whether you need
@@ -590,7 +590,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     else:
       ipython_dialog.set_default_size(750, 600)
     ipython_dialog.set_resizable(True)
-    ipython_dialog.set_icon_from_file(ICONS['LogoY'])
+    ipython_dialog.set_icon_from_file(guiconfig.ICONS['LogoY'])
     sw=gtk.ScrolledWindow()
     sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
     greeting="""    This is an interactive IPython session with direct access to the program.
@@ -823,7 +823,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       parallel.disconnect()
       return
 
-    parameters=user_config['Parallel']
+    parameters=parallelconfig['CLIENT_KW']
     parameters=",\n".join(map(lambda item: "%s=%s"%(item[0], repr(item[1])),
                             parameters.items()))
     dialog=gtk.Dialog(title='IPython Cluster Options...',
@@ -840,7 +840,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       buff_text=text_buffer.get_text(text_buffer.get_start_iter(),
                                      text_buffer.get_end_iter())
       parameters=eval('dict('+buff_text+')')
-      user_config['Parallel']=parameters
+      parallelconfig['CLIENT_KW']=parameters
       status_dialog=self.status_dialog
       status_dialog.show()
       sys.stdout.second_output=status_dialog
@@ -854,36 +854,36 @@ Gnuplot version %.1f patchlevel %i with terminals:
     '''
       Open a dialog to edit the user config file.
     '''
-    user_config.write()
-    dialog=gtk.Dialog(title='Edit User Config...',
-                      buttons=('Ok', 1, 'Cancel', 0))
-    dialog.set_default_size(400, 600)
-    entry=gtk.TextView()
-    entry.show()
-    buffer_=entry.get_buffer()
-    buffer_.set_text(open(user_config.filename, 'r').read())
-    sw=gtk.ScrolledWindow()
-    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    sw.add_with_viewport(entry)
-    sw.show()
-    dialog.vbox.add(sw)
-    result=dialog.run()
-    while result==1:
-      text=buffer_.get_text(buffer_.get_start_iter(), buffer_.get_end_iter())
-      try:
-        tmpfile=os.path.join(self.active_session.TEMP_DIR, 'user_config.ini')
-        open(tmpfile, 'w').write(text)
-        ConfigObj(tmpfile, unrepr=True)
-        open(user_config.filename, 'w').write(text)
-        print "User config changed"
-        user_config.clear()
-        user_config._errors=[]
-        user_config._load(tmpfile, user_config._original_configspec)
-        break
-      except Exception, error:
-        print "Error in text, config not saved. %s"%error
-        result=dialog.run()
-    dialog.destroy()
+    configproxy.store()
+#    dialog=gtk.Dialog(title='Edit User Config...',
+#                      buttons=('Ok', 1, 'Cancel', 0))
+#    dialog.set_default_size(400, 600)
+#    entry=gtk.TextView()
+#    entry.show()
+##    buffer_=entry.get_buffer()
+##    buffer_.set_text(open(user_config.filename, 'r').read())
+#    sw=gtk.ScrolledWindow()
+#    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+#    sw.add_with_viewport(entry)
+#    sw.show()
+#    dialog.vbox.add(sw)
+#    result=dialog.run()
+#    while result==1:
+#      text=buffer_.get_text(buffer_.get_start_iter(), buffer_.get_end_iter())
+#      try:
+#        tmpfile=os.path.join(self.active_session.TEMP_DIR, 'user_config.ini')
+#        open(tmpfile, 'w').write(text)
+#        ConfigObj(tmpfile, unrepr=True)
+#        open(user_config.filename, 'w').write(text)
+#        print "User config changed"
+#        user_config.clear()
+#        user_config._errors=[]
+#        user_config._load(tmpfile, user_config._original_configspec)
+#        break
+#      except Exception, error:
+#        print "Error in text, config not saved. %s"%error
+#        result=dialog.run()
+#    dialog.destroy()
 
   #++++++++++++++++++++++++++++Interrupt Events++++++++++++++++++++++++++++++++++#
   def update_size(self, widget, event):
@@ -1240,7 +1240,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     socket.setdefaulttimeout(3)
     # Download the update information and run the installation
     try:
-      download_page=urllib.urlopen(DOWNLOAD_PAGE_URL)
+      download_page=urllib.urlopen(guiconfig.DOWNLOAD_PAGE_URL)
     except IOError, ertext:
       print 'Error accessing update server: %s'%ertext
       return None

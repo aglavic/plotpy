@@ -9,10 +9,10 @@ import numpy
 from generic import GenericSession
 from plotpy import mds
 # importing preferences and data readout
-from plotpy.config import circle as config
+from plotpy.config import xrd as config
 
 try:
-  from plotpy.gtkgui.circle import CircleGUI as GUI
+  from plotpy.gtkgui.xrd import CircleGUI as GUI
 except ImportError:
   class GUI: pass
 
@@ -46,7 +46,7 @@ class XRDSession(GUI, GenericSession):
     '''
       class constructor expands the GenericSession constructor
     '''
-    self.TRANSFORMATIONS=config.TRANSFORMATIONS
+    self.TRANSFORMATIONS=[]
     GenericSession.__init__(self, arguments)
     if self.join_p09:
       self.join_sequences_p09()

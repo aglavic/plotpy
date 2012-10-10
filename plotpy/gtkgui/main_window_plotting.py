@@ -730,7 +730,7 @@ class MainPlotting(object):
   set multiplot layout %i,1
       """%(
              (len(pattern_names)*30),
-             os.path.join(gnuplot_preferences.FONT_PATH, 'Arial.ttf'),
+             os.path.join(gnuplot_preferences.font_path, 'Arial.ttf'),
              os.path.join(self.active_session.TEMP_DIR, 'colormap.jpg').replace('\\', '\\\\'),
              len(pattern_names),
              )

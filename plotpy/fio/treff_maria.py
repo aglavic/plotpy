@@ -11,7 +11,7 @@ import gzip
 import numpy
 from baseread import TextReader, BinReader
 from plotpy.mds import PhysicalProperty, PhysicalConstant, MeasurementData
-from plotpy.config.treff import DETECTOR_CALIBRATION as TREFF_CALIBRATION
+from plotpy.config import pnr, maria
 
 GRAD_TO_MRAD=numpy.pi/180.*1000.
 GRAD_TO_RAD=numpy.pi/180.
@@ -27,9 +27,9 @@ class TreffMariaReader(TextReader):
   def set_treff(self):
     # define parameters for TREFF readout
     self.detector_pixels=256
-    self.detector_region=(35, 222, 35, 222) # usable area of detector
-    self.center_x=130.8 # pix
-    self.center_y=128.5 # pix
+    self.detector_region=pnr.treff_detector_region
+    self.center_x=pnr.treff_center_x # pix
+    self.center_y=pnr.treff_center_y # pix
     self.pixelsize=-0.014645 # mrad
     self.lambda_n=PhysicalConstant(4.75, 'Å', symbol=u'λ_n',
                                    discription=u'TREFF neutron wavelength')
@@ -46,19 +46,19 @@ class TreffMariaReader(TextReader):
                 u'H': 'Gauss',
                 }
     # import calibration from file, need to get this as relative path
-    calibration=numpy.array(TREFF_CALIBRATION, dtype=numpy.float32)
+    calibration=numpy.array(pnr.TREFF_CALIBRATION, dtype=numpy.float32)
     calibration*=calibration[calibration!=0.].mean() # normalize to about 1
     calibration[calibration==0.]=1.
     self.calibration=calibration
 
   def set_maria(self):
     # define parameters for MARIA readout
-    self.detector_pixels=1024
-    self.calibration=numpy.ones(1024)
-    self.center_y=512.5
-    self.center_x=512.5
+    self.detector_pixels=maria.DETECTOR_PIXELS
+    self.calibration=numpy.ones(self.detector_pixels)
+    self.center_y=maria.center_x
+    self.center_x=maria.center_y
     self.pixelsize=0.019
-    self.detector_region=(207, 836, 197, 826)
+    self.detector_region=maria.detector_region
     self.is_maria=True
     self.constants={}
     self.lambda_n=None

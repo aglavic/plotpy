@@ -1,20 +1,22 @@
 #-*- coding: utf-8 -*-
 '''
-  Basis of the configuration system. The ConfigProxy object
-  combines module parameter with temporary and user changable
+  Basis of the configuration system. The :class:`ConfigProxy` object
+  combines module parameter with temporary and user changeable
   configuration file options. When used in other modules
   this facility is completely hidden to the API. 
 '''
 
 import os
 import atexit
-from configobj import ConfigObj
+from plotpy.configobj import ConfigObj
 
 
 class ConfigProxy(object):
   '''
   Handling of configuration options with temporal and fixed storage to .ini files
   in the use folder.
+  Each configuration has it's own ConfigHolder object for access but one .ini file
+  can hold several configurations.
   '''
 
   default_storage='general'
@@ -33,6 +35,8 @@ class ConfigProxy(object):
   def add_config(self, name, items, storage=''):
     '''
     Crate a new dictionary connected to a storage config file.
+    
+    :returns: The corresponding :class:`ConfigHolder` object.
     '''
     if storage=='':
       storage=self.default_storage
@@ -63,7 +67,7 @@ class ConfigProxy(object):
     return self[name]
 
   def store(self):
-    # store configuration data into .ini files.
+    """store configuration data into .ini files."""
     for item in self.storages.values():
       if not hasattr(item, 'write'):
         continue
@@ -84,6 +88,7 @@ class ConfigProxy(object):
       raise KeyError, "Only strings are allowed as keys"
 
   def get_config_item(self, config, item):
+    """Called by :class:`ConfigHolder` to retreive an item"""
     if not config in self.configs:
       raise KeyError, "%s is no known configuration"%config
     storage=self.configs[config]
@@ -93,6 +98,7 @@ class ConfigProxy(object):
     return self.storages[storage][config][item]
 
   def set_config_item(self, config, item, value, temporary=False):
+    """Called by :class:`ConfigHolder` to set an item value"""
     if not config in self.configs:
       raise KeyError, "%s is no known configuration"%config
     storage=self.configs[config]
@@ -103,12 +109,14 @@ class ConfigProxy(object):
       self.storages[storage][config][item]=value
 
   def get_config_keys(self, config):
+    """Called by :class:`ConfigHolder` to get the keys for it's config"""
     if not config in self.configs:
       raise KeyError, "%s is no known configuration"%config
     storage=self.configs[config]
     return self.storages[storage][config].keys()
 
   def keys(self):
+    """Return the available configurations"""
     keys=self.configs.keys()
     keys.sort()
     return keys
@@ -131,12 +139,12 @@ class ConfigProxy(object):
 
 class ConfigHolder(object):
   '''
-  Dictionary like object connected to the a ConfigProxy reading
+  Dictionary like object connected to the a :class:`ConfigProxy` reading
   and writing values directly to that object.
   Each key can also be accessed as attribute of the object.
   
   To store items temporarily, the object supports a "temp"
-  attribute, which itself is ConfigHolder derived object. 
+  attribute, which itself is a ConfigHolder object. 
   '''
 
   def __init__(self, proxy, name, storetmp=False):
@@ -148,7 +156,7 @@ class ConfigHolder(object):
     return ConfigHolder(self._proxy, self._name, storetmp=True)
 
   temp=property(_get_tmporary,
-          doc="A representation of this ConfigHolder which stores items only for this session.")
+          doc="A representation of this :class:`ConfigHolder` which stores items only for this session.")
 
   def __getattribute__(self, name):
     if name.startswith('_') or name in dir(ConfigHolder):
@@ -166,7 +174,7 @@ class ConfigHolder(object):
                                   temporary=self._storetmp)
 
   def __getitem__(self, name):
-    return self.__getattr__(name)
+    return self.__getattribute__(name)
 
   def __setitem__(self, name, value):
     return self.__setattr__(name, value)

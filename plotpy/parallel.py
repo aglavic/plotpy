@@ -3,15 +3,7 @@
  Functions to parallelize some functions of the program using the IPython multiprocessing features.
 '''
 
-__author__="Artur Glavic"
-__credits__=[]
-from info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
-
-from plotpy.config.parallel import CLIENT_KW, CLUSTER_PLOTPY_DIR
-from plotpy.config import user_config
-if not 'Parallel' in user_config:
-  user_config['Parallel']=CLIENT_KW
+from plotpy.config import parallel as config
 
 import sys
 import numpy
@@ -33,7 +25,7 @@ def connect():
   from IPython.parallel import Client
   from IPython.parallel.error import CompositeError
   try:
-    client=Client(**user_config['Parallel'])
+    client=Client(**config.CLIENT_KW)
   except Exception, error:
     print "Could not connect to cluster:\n  %s - %s"%(type(error).__name__, error)
     return False
@@ -49,8 +41,8 @@ def connect():
             'import numpy',
             'import sys',
             'import os',
-            'if not "%s" in sys.path: sys.path.append("%s");'%(CLUSTER_PLOTPY_DIR,
-                                                               CLUSTER_PLOTPY_DIR),
+            'if not "%s" in sys.path: sys.path.append("%s");'%(config.CLUSTER_PLOTPY_DIR,
+                                                               config.CLUSTER_PLOTPY_DIR),
             'import plotpy.plugins',
             "user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')",
             '''if os.path.exists(user_folder) and os.path.exists(os.path.join(user_folder, 'plugins')) \
@@ -229,8 +221,8 @@ if multiprocessing is not None:
               'import numpy',
               'import sys',
               'import os',
-              'if not "%s" in sys.path: sys.path.append("%s");'%(CLUSTER_PLOTPY_DIR,
-                                                                 CLUSTER_PLOTPY_DIR),
+              'if not "%s" in sys.path: sys.path.append("%s");'%(config.CLUSTER_PLOTPY_DIR,
+                                                                 config.CLUSTER_PLOTPY_DIR),
               'import plugins',
               "user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')",
               '''if os.path.exists(user_folder) and os.path.exists(os.path.join(user_folder, 'plugins')) \

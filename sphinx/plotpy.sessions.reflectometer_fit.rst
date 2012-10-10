@@ -20,7 +20,7 @@ reflectometer_fit Package
 :mod:`reflectometer` Module
 ---------------------------
 
-.. automodule:: plotpy.sessions.reflectometer_fit.reflectometer
+.. automodule:: plotpy.sessions.reflectometer_fit.xrr
     :members:
     :undoc-members:
     :show-inheritance:

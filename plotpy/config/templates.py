@@ -3,11 +3,6 @@
  Some general settings for the template framework
 '''
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
-
 import os
 
 # Path for the template file

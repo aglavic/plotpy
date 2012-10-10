@@ -22,12 +22,6 @@ from plotpy.config import templates
 #----------------------- importing modules --------------------------
 
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
-
-
 def connect_stdout_dialog():
   '''
     Replace sys.stdout with a dialog window.

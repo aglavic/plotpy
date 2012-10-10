@@ -10,11 +10,6 @@ import numpy as np
 from plotpy.mds import MeasurementData
 #from config.treff import GRAD_TO_MRAD, GRAD_TO_RAD
 
-__author__="Artur Glavic"
-__credits__=["Daniel Schumacher"]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
-
 PI_4_OVER_LAMBDA=np.pi*4./4.73
 
 def read_data(file_name, script_path, import_images, return_detector_images):

@@ -11,11 +11,6 @@ import subprocess
 import gtk
 import time
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
-
 class ReflectometerFitGUI:
   def dialog_activate(self, action, dialog):
     ''' just responde the right signal, when input gets activated '''

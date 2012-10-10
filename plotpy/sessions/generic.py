@@ -17,7 +17,7 @@ from cPickle import load, dumps#, dump
 from plotpy import  mds, plotting, parallel
 from plotpy.message import warn, error
 from plotpy.fio import reader
-from plotpy.config import gnuplot_preferences, transformations, user_config
+from plotpy.config import gnuplot_preferences, transformations
 from plotpy.config import templates as template_config
 from plotpy.info import __email__, __version__
 
@@ -177,8 +177,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     #++++++++++++++++ initialize the session ++++++++++++++++++++++
     self.os_path_stuff() # create temp folder according to OS
     self.try_import_externals()
-    if 'plot' in user_config and 'font-size' in user_config['plot']:
-      self.font_size=user_config['plot']['font-size']
+    self.font_size=gnuplot_preferences.font_size
     self.import_plugins() # search the plugin folder for modules
     files.sort()
     transformations.known_transformations+=self.TRANSFORMATIONS
@@ -376,7 +375,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       # for cxFreeze remove the script name from the path
       SCRIPT_PATH=os.path.split(SCRIPT_PATH)[0]
     self.GNUPLOT_COMMAND=gnuplot_preferences.GNUPLOT_COMMAND
-    gnuplot_preferences.FONT_PATH=gnuplot_preferences.FONT_PATH.replace('[script-path]', SCRIPT_PATH)
+    gnuplot_preferences.font_path=gnuplot_preferences.font_path.replace('[script-path]', SCRIPT_PATH)
     if 'linux' in sys.platform:
       # Linux case
       self.OPERATING_SYSTEM='linux'

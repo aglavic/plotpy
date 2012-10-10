@@ -3,18 +3,6 @@
   IN12 GTK GUI class.
 '''
 
-#+++++++++++++++++++++++ importing modules ++++++++++++++++++++++++++
-
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-
-#----------------------- importing modules --------------------------
-
-
-__author__="Artur Glavic"
-__credits__=[]
-__status__="Production"
-
-
 
 class IN12GUI:
   def create_menu(self):

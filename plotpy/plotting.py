@@ -237,7 +237,7 @@ def replace_ph(session,
   string=string.\
   replace('[font]', gp.FONT_DESCRIPTION).\
   replace('[font-file]', gp.FONT_FILE).\
-  replace('[font-path]', gp.FONT_PATH).\
+  replace('[font-path]', gp.font_path).\
   replace('[width]', session.picture_width).\
   replace('[height]', session.picture_height).\
   replace('[font-size]', str(int(session.font_size/1000.*int(session.picture_height)))).\

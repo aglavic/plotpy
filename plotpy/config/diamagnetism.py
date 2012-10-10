@@ -3,16 +3,13 @@
  A table of elements, their diamagnetic moment per mol and elemental weight.
 '''
 
-__author__="Artur Glavic"
-__credits__=[]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
+config_file='user'
 
 #
 # ['name',mol mass,mol dia(10^-6emu/Oe/mol)]
 #
 # Values from Kalzium elemental table and G.A.Bain and J.F.Berry J.Chem.Edu. Vol.85 No.4 (2008)
-ELEMENT_DIA=[\
+element_dia=[\
 # Anions
 ['O', 15.9994, 12]\
 , ['F', 18.9984032, 9.1]\
