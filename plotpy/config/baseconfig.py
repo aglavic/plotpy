@@ -179,6 +179,9 @@ class ConfigHolder(object):
   def __setitem__(self, name, value):
     return self.__setattr__(name, value)
 
+  def __contains__(self, other):
+    return other in self.keys()
+
   def keys(self):
     return self._proxy.get_config_keys(self._name)
 

@@ -1578,45 +1578,6 @@ class MeasurementData4D(MeasurementData):
 
 
 
-def calculate_transformations():
-  '''
-    Use a dictionary of unit transformations to calculate
-    all combinations of the transformations inside.
-  '''
-  trans=transformations.unit_transformations
-  output=dict([(tuple(key.split('->', 1)), value) for key, value in trans.items()])
-  keys=list(output.keys())
-  # calculate inverse transformations
-  for key in keys:
-    if len(output[key])==2:
-      output[(key[1], key[0])]=(1./output[key][0],-(output[key][1]/output[key][0]))
-    else:
-      output[(key[1], key[0])]=(1./output[key][0],-(output[key][1]/output[key][0]),
-                              output[key][3], output[key][2])
-  # calculate transformations from units and prefixes
-  prefixes=dict(transformations.unit_prefixes)
-  prefixes.update({'':1.})
-  SI_units=transformations.SI_base_units
-  for unit in SI_units:
-    for prefix, factor in prefixes.items():
-      for prefix2, factor2 in prefixes.items():
-        output[(prefix+unit, prefix2+unit)]=(factor/factor2, 0.)
-  # calculate transformations over two or more units.
-  done=False
-  while not done:
-    # while there are still transformations changed, try to find new ones.
-    done=True
-    for key in list(output.keys()):
-      for key2 in list(output.keys()):
-        if key[1]==key2[0] and key[0]!=key2[1] and (key[0], key2[1]) not in output and\
-              len(output[key])==2 and len(output[key2])==2:
-          done=False
-          output[(key[0], key2[1])]=(output[key][0]*output[key2][0], output[key2][0]*output[key][1]+output[key2][1])
-          output[(key2[1], key[0])]=(1./output[(key[0], key2[1])][0],-(output[(key[0], key2[1])][1]/output[(key[0], key2[1])][0]))
-  return output
-
-# Dictionary of transformations from one unit to another
-known_transformations=calculate_transformations()
 # List of ufunc functions which need an angle as input
 angle_functions=(u'sin', u'cos', u'tan', u'sinh', u'cosh', u'tanh')
 compare_functions=(u'maximum', u'minimum')
@@ -2154,14 +2115,14 @@ class PhysicalUnit(object):
             self._unit_parts[new_unit]=new_power
           if entry_str[i] in [u'/', u'÷']:
             nummerator=False
-      new_region=entry_str[begin:]
-      new_power, new_unit=self._get_unit_exponent(new_region)
-      if not nummerator:
-        new_power=-new_power
-      if new_unit in self._unit_parts:
-        self._unit_parts[new_unit]+=new_power
-      else:
-        self._unit_parts[new_unit]=new_power
+        new_region=entry_str[begin:]
+        new_power, new_unit=self._get_unit_exponent(new_region)
+        if not nummerator:
+          new_power=-new_power
+        if new_unit in self._unit_parts:
+          self._unit_parts[new_unit]+=new_power
+        else:
+          self._unit_parts[new_unit]=new_power
     self._clean_units()
 
   def _get_unit_exponent(self, new_region):
@@ -2348,9 +2309,11 @@ class PhysicalUnit(object):
 
   def __hash__(self):
     '''
-      Defines the hash index for e.g. dict usage.
+      Defines the hash index for e.g. dict usage as the
+      hash of the unicode string of it's representation.
+      Makes sure that units can be compared with strings.
     '''
-    return self.__str__().__hash__()
+    return self.str().__hash__()
 
   def simplify(self):
     '''
@@ -2456,8 +2419,8 @@ class PhysicalConstant(numpy.ndarray):
     Quite similar to PhysicalProperty but only as scalar.
   '''
 
-  def __new__(cls, value, unit, symbol=u'', description=u''):
-    obj=numpy.ndarray.__new__(cls, 1, dtype=numpy.float32)
+  def __new__(cls, value, unit, symbol=u'', description=u'', dtype=numpy.float64):
+    obj=numpy.ndarray.__new__(cls, 1, dtype=dtype)
     obj.__setitem__(0, value)
     obj.unit=PhysicalUnit(unit)
     if type(symbol) is str:
@@ -2477,9 +2440,9 @@ class PhysicalConstant(numpy.ndarray):
   unit=property(_get_unit, _set_unit)
 
   def __array_finalize__(self, obj):
-    self.unit=getattr(obj, u'unit', PhysicalUnit(u''))
-    self.symbol=getattr(obj, u'symbol', u'')
-    self.description=getattr(obj, u'description', u'')
+    self.unit=getattr(obj, 'unit', PhysicalUnit(u''))
+    self.symbol=getattr(obj, 'symbol', u'')
+    self.description=getattr(obj, 'description', u'')
 
   def __str__(self):
     if self.symbol!=u'':
@@ -2723,9 +2686,9 @@ class PhysicalProperty(numpy.ndarray):
     return obj
 
   def __array_finalize__(self, obj):
-    self.unit=getattr(obj, u'unit', PhysicalUnit(u''))
-    self.dimension=getattr(obj, u'dimension', u"")
-    self._error=getattr(obj, u'_error', None)
+    self.unit=getattr(obj, 'unit', PhysicalUnit(u''))
+    self.dimension=getattr(obj, 'dimension', u"")
+    self._error=getattr(obj, '_error', None)
     #print u"finalize", self.__dict__
 
   def __reduce__(self):
@@ -3210,17 +3173,21 @@ class PhysicalProperty(numpy.ndarray):
     '''
     output=deepcopy(self)
     if isinstance(new_dim_unit, basestring):
+      if type(new_dim_unit) is str:
+        new_dim_unit=unicode(new_dim_unit, in_encoding)
       output.dimension=new_dim_unit
       return output
     else:
-      if getattr(new_dim_unit, u'__iter__', False) and len(new_dim_unit)>=2 and \
+      if getattr(new_dim_unit, u'__iter__', False) and len(new_dim_unit)==2 and \
           isinstance(new_dim_unit[0], basestring) and \
           isinstance(new_dim_unit[1], basestring):
+        if type(new_dim_unit[0]) is str:
+          new_dim_unit=(unicode(new_dim_unit[0], in_encoding), new_dim_unit[1])
         output.dimension=new_dim_unit[0]
         output.unit=PhysicalUnit(new_dim_unit[1])
         return output
       else:
-        raise ValueError, u'// only defined with str or iterable object of at least two strings'
+        raise ValueError, '// only defined with string or iterable object of two strings'
 
   def __mod__(self, conversion):
     '''
@@ -3428,4 +3395,53 @@ class MultiplotList(list):
       return list.index(self, item)
     else:
       return [i[0] for i in self].index(item)
+
+def calculate_transformations():
+  '''
+    Use a dictionary of unit transformations to calculate
+    all combinations of the transformations inside.
+  '''
+  trans=transformations.unit_transformations
+  output=dict([(tuple(key.split(u'->', 1)), value) for key, value in trans.items()])
+  keys=list(output.keys())
+  # calculate inverse transformations
+  for key in keys:
+    if len(output[key])==2:
+      output[(key[1], key[0])]=(1./output[key][0],-(output[key][1]/output[key][0]))
+    else:
+      output[(key[1], key[0])]=(1./output[key][0],-(output[key][1]/output[key][0]),
+                              output[key][3], output[key][2])
+  # calculate transformations from units and prefixes
+  prefixes=dict(transformations.unit_prefixes)
+  prefixes.update({'':1.})
+  SI_units=transformations.SI_base_units
+  for unit in SI_units:
+    for prefix, factor in prefixes.items():
+      for prefix2, factor2 in prefixes.items():
+        output[(prefix+unit, prefix2+unit)]=(factor/factor2, 0.)
+  # calculate transformations over two or more units.
+  done=False
+  while not done:
+    # while there are still transformations changed, try to find new ones.
+    done=True
+    for key in list(output.keys()):
+      for key2 in list(output.keys()):
+        if key[1]==key2[0] and key[0]!=key2[1] and (key[0], key2[1]) not in output and\
+              len(output[key])==2 and len(output[key2])==2:
+          done=False
+          output[(key[0], key2[1])]=(output[key][0]*output[key2][0],
+                                     output[key2][0]*output[key][1]+output[key2][1])
+          output[(key2[1], key[0])]=(1./output[(key[0], key2[1])][0],
+                                     -(output[(key[0], key2[1])][1]/output[(key[0], key2[1])][0]))
+  return output
+
+# Dictionary of transformations from one unit to another
+if 'calculated' in transformations:
+  known_transformations=dict([(tuple(key.split('->', 1)), value)
+                              for key, value in transformations['calculated'].items()])
+else:
+  # calculate once and store in config
+  known_transformations=calculate_transformations()
+  transformations['calculated']=dict([(u'->'.join(key), value)
+                              for key, value in known_transformations.items()])
 

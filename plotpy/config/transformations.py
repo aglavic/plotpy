@@ -5,6 +5,8 @@
 
 from numpy import pi as _pi
 
+config_file='units'
+
 # common prefixes for units
 unit_prefixes={
                u'G': 1e9,
@@ -19,7 +21,7 @@ unit_prefixes={
                u'f': 1e-15,
                }
 # base SI units where these prfixes apply to
-SI_base_units=[u'm', u'g', u'K', u'°', u'T', 'A', 's']
+SI_base_units=[u'm', u'g', u'K', u'T', u'A', u's', u'eV', u'rad']
 
 # define transformations that can be used to convert units
 #                            u'from->to': (factor, offset, [name_from, name_to]),
@@ -36,7 +38,8 @@ unit_transformations={
                             u'h->min': (60., 0.),
                             u'min->s': (60., 0.),
                             # magnetism
-                            u'emu->A·m^2': (1.e-3, 0.),
+                            u'emu->A·m²': (1.e-3, 0.),
+                            u'eV->g·m²/s²': (1.602177e-16, 0.),
                             u'Oe->T': (1.e-4, 0., u'H', u'μ_0·H')
                             }
 

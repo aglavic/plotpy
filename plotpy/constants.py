@@ -21,7 +21,7 @@ m_e=_C(9.1094e-28, 'g', 'm_e', 'electron mass')
 m_n=_C(1.67493e-24, 'g', 'm_n', 'neutron mass')
 
 r_e=_C(2.81794e-15, 'm', 'r_e', 'classical electron radius')
-r_0=_C(5.291772e-11, 'm', 'r_0', 'Bohr radius')
+a_0=_C(5.291772e-11, 'm', 'r_0', 'Bohr radius')
 
 mu_0=_C(_pi*4e-7, u'V·s/(A·m)', u'µ_0', 'permeability of the free space')
 epsilon_0=_C((1./(mu_0*c**2))%u'A·s/(V·m)', u'A·s/(V·m)',
