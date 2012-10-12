@@ -16,14 +16,14 @@
 
 import sys
 
-if sys.stdin.encoding is None:
+if sys.__stdin__.encoding is None:
   in_encoding='utf8'
 else:
-  in_encoding=sys.stdin.encoding
-if sys.stdout.encoding is None:
+  in_encoding=sys.__stdin__.encoding
+if sys.__stdout__.encoding is None:
   out_encoding='utf8'
 else:
-  out_encoding=sys.stdout.encoding
+  out_encoding=sys.__stdout__.encoding
 
 __all__=['info', 'warn', 'error', 'in_encoding', 'out_encoding']
 

@@ -4,7 +4,6 @@
   The default xy-axes are Qy and Qz.
 '''
 
-# Pleas do not make any changes here unless you know what you are doing.
 import numpy
 from baseread import BinReader, TextReader
 from plotpy.mds import HugeMD, PhysicalProperty, MeasurementData

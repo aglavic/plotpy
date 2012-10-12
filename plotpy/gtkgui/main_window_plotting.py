@@ -8,7 +8,7 @@ import gtk
 import numpy
 from time import sleep
 from plotpy import plotting
-from plotpy.config import gnuplot_preferences, user_config
+from plotpy.config import gnuplot_preferences
 from plotpy.message import warn
 from dialogs import LabelArrowDialog, StyleLine, SimpleEntryDialog, \
                     PreviewDialog, VListEntry
@@ -1266,7 +1266,7 @@ class MainPlotting(object):
     result=dia.run()
     dia.destroy()
     if result:
-      user_config['plot']['font']=font
-      user_config['plot']['font-size']=self.active_session.font_size
+      gnuplot_preferences.font=font
+      gnuplot_preferences.font_size=self.active_session.font_size
     self.replot()
 

@@ -8,11 +8,8 @@ from numpy import ndarray, array, exp, zeros_like, sqrt, argsort
 from plotpy.peakfinder import PeakFinder
 from plotpy.mds import MeasurementData, PhysicalProperty, PlotStyle
 from plotpy.fitdata import FitFunction, FitSession, FitGaussian
-from plotpy.config import user_config
-from plotpy.config.gui import ICONS
-
-if not 'PeakFinder' in user_config:
-  user_config['PeakFinder']={'Presets':{}}
+from plotpy.config import gui as gui_config
+from plotpy.config import peakfinder as config
 
 def readjust(adjustment, other, move_up):
   value=adjustment.get_value()
@@ -47,7 +44,7 @@ class PeakFinderDialog(gtk.Dialog):
     self.connect('response', self._responde)
     self._evaluate()
     self._responde(None, 1)
-    self.set_icon_from_file(ICONS['LogoP'])
+    self.set_icon_from_file(gui_config.ICONS['LogoP'])
 
   def _init_entries(self):
     '''
@@ -156,7 +153,7 @@ class PeakFinderDialog(gtk.Dialog):
     ridge_length=self.ridge_adjust.get_value()
     double_peak_detection=self.detect_double_peaks.get_active()
     double_ridge_length=self.double_ridge_adjust.get_value()
-    user_config['PeakFinder']['Presets']["%i"%index]={
+    config.presets["%i"%index]={
                 'PeakWidth': (min_width_relative, max_width_relative),
                 'SNR': snr,
                 'RidgeLength': ridge_length,
@@ -174,8 +171,8 @@ class PeakFinderDialog(gtk.Dialog):
       self.detect_double_peaks.set_active(False)
       return
     str_index="%i"%index
-    if str_index in user_config['PeakFinder']['Presets']:
-      preset=user_config['PeakFinder']['Presets'][str_index]
+    if str_index in config.presets:
+      preset=config.presets[str_index]
       self.min_width_adjust.set_value(preset['PeakWidth'][0])
       self.max_width_adjust.set_value(preset['PeakWidth'][1])
       self.snr_adjust.set_value(preset['SNR'])
@@ -319,7 +316,7 @@ class FitSummary(gtk.Dialog):
     self.vbox.add(sw)
     # insert the data into the treeview
     self.add_data(parameters)
-    self.set_icon_from_file(ICONS['LogoP'])
+    self.set_icon_from_file(gui_config.ICONS['LogoP'])
     self.clipboard=gtk.Clipboard(gtk.gdk.display_get_default(), "CLIPBOARD")
     self.treeview.connect('key-press-event', self.key_press_response)
     self.data=parameters

@@ -40,8 +40,6 @@ import pkgutil as _pkgutil
 from baseconfig import ConfigProxy as _ConfigProxy
 from plotpy.message import warn as _warn
 
-user_config={} # remove when fixed
-
 _package_dir=_os.path.split(_os.path.abspath(__file__))[0]
 
 # prepare user config, if it does not exist
@@ -55,6 +53,11 @@ proxy=None
 __all__=[]
 
 def _create_proxy():
+  '''
+  Read all submodules and if config_file is defined
+  add them to the ConfigProxy object that stores
+  all information in .ini files.
+  '''
   global proxy, __all__
   proxy=_ConfigProxy(_config_path)
   for ignore, name, ispackage in _pkgutil.iter_modules([_package_dir]):

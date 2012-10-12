@@ -11,8 +11,8 @@ from diverse_classes import PlotProfile
 from dialogs import FileImportDialog, ExportFileChooserDialog, \
                     PreviewDialog, ImportWizard
 from message_dialog import GUIMessenger
-from plotpy import read_data, plotting
-from plotpy.fio import reader
+from plotpy import plotting
+from plotpy.fio import reader, ascii
 from plotpy.config import gnuplot_preferences
 from plotpy.configobj import ConfigObj
 import main_window_plotting
@@ -91,7 +91,7 @@ class MainFile(object):
         # import with fitting filter_
         for file_name in file_names:
           file_type=file_name.rsplit('.', 1)[1]
-          for filter_ in read_data.defined_filters:
+          for filter_ in ascii.defined_filters:
             if file_type in filter_.file_types:
               ds=filter_.read_data(file_name)
               ds=session.create_numbers(ds)
@@ -111,9 +111,9 @@ class MainFile(object):
               #if hide_status:
               #  status_dialog.hide()
             return
-          read_data.append_filter(filter_)
+          ascii.append_filter(filter_)
         else:
-          filter_=read_data.defined_filters[ascii_filter]
+          filter_=ascii.defined_filters[ascii_filter]
         session=self.active_session
         for file_name in file_names:
           ds=filter_.read_data(file_name)

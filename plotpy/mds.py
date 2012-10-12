@@ -10,7 +10,7 @@ from copy import deepcopy
 from cPickle import load, dump
 import numpy
 from tempfile import gettempdir
-from config.transformations import known_unit_transformations
+from config import transformations
 from plotpy.message import in_encoding, out_encoding
 
 hmd_file_number=0
@@ -450,9 +450,6 @@ class MeasurementData(object):
     self.__dict__=state
     if not hasattr(self, u'_plot_options'):
       self._plot_options=PlotOptions()
-    for i, col in enumerate(self.data):
-      if col.__class__ is PysicalProperty:
-        self.data[i]=PhysicalProperty(col.dimension, col.unit, col.values)
 
   def __call__(self, x):
     '''
@@ -1581,27 +1578,36 @@ class MeasurementData4D(MeasurementData):
 
 
 
-def calculate_transformations(transformations):
+def calculate_transformations():
   '''
     Use a dictionary of unit transformations to calculate
     all combinations of the transformations inside.
   '''
-  output=deepcopy(transformations)
-  keys=transformations.keys()
+  trans=transformations.unit_transformations
+  output=dict([(tuple(key.split('->', 1)), value) for key, value in trans.items()])
+  keys=list(output.keys())
   # calculate inverse transformations
   for key in keys:
-    if len(transformations[key])==2:
-      output[(key[1], key[0])]=(1./transformations[key][0],-(transformations[key][1]/transformations[key][0]))
+    if len(output[key])==2:
+      output[(key[1], key[0])]=(1./output[key][0],-(output[key][1]/output[key][0]))
     else:
-      output[(key[1], key[0])]=(1./transformations[key][0],-(transformations[key][1]/transformations[key][0]),
-                              transformations[key][3], transformations[key][2])
+      output[(key[1], key[0])]=(1./output[key][0],-(output[key][1]/output[key][0]),
+                              output[key][3], output[key][2])
+  # calculate transformations from units and prefixes
+  prefixes=dict(transformations.unit_prefixes)
+  prefixes.update({'':1.})
+  SI_units=transformations.SI_base_units
+  for unit in SI_units:
+    for prefix, factor in prefixes.items():
+      for prefix2, factor2 in prefixes.items():
+        output[(prefix+unit, prefix2+unit)]=(factor/factor2, 0.)
   # calculate transformations over two or more units.
   done=False
   while not done:
     # while there are still transformations changed, try to find new ones.
     done=True
-    for key in output.keys():
-      for key2 in output.keys():
+    for key in list(output.keys()):
+      for key2 in list(output.keys()):
         if key[1]==key2[0] and key[0]!=key2[1] and (key[0], key2[1]) not in output and\
               len(output[key])==2 and len(output[key2])==2:
           done=False
@@ -1610,7 +1616,7 @@ def calculate_transformations(transformations):
   return output
 
 # Dictionary of transformations from one unit to another
-known_transformations=calculate_transformations(known_unit_transformations)
+known_transformations=calculate_transformations()
 # List of ufunc functions which need an angle as input
 angle_functions=(u'sin', u'cos', u'tan', u'sinh', u'cosh', u'tanh')
 compare_functions=(u'maximum', u'minimum')
@@ -2111,42 +2117,34 @@ class PhysicalUnit(object):
     Object to store physical units. Implements combining units and exponential of units.
   '''
 
+
   def __init__(self, entry_str):
     '''
       Create the object data from an input string.
-      The input string should be of the form n1*n2*n3/d1*d2*d3 where n are units in the 
+      The input string should be of the form n1*n2*n3/(d1*d2*d3) where n are units in the 
       nummerator and d units in the denominator.
     '''
     if type(entry_str) not in [str, unicode, PhysicalUnit]:
-      raise ValueError, u'can only construc unit from string or other PhysicalUnit not %s'%type(entry_str)
-    object.__init__(self)
+      raise ValueError, 'can only construct unit from string or other PhysicalUnit not %s'%type(entry_str)
     if type(entry_str) is PhysicalUnit:
       self._unit_parts=deepcopy(entry_str._unit_parts)
     else:
       if type(entry_str) is str:
+        # conver string to unicode
         entry_str=unicode(entry_str, in_encoding)
-      if len(entry_str.split(u'/'))>2:
-        raise ValueError, u'the format of the input string should be n1*n2*n3/d1*d2*d3'
+      if len(entry_str.split(u'/'))>2 or len(entry_str.split(u'÷'))>2:
+        raise ValueError, 'the format of the input string should be n1*n2*n3/d1*d2*d3'
       self._unit_parts={}
       begin=0
       nummerator=True
       if len(entry_str)>0:
         for i in range(1, len(entry_str)):
-          if entry_str[i] in [u'*', u'/']:
-            pass
-          elif entry_str[i]==u'·':
-            # unicode items have to bytes
+          if entry_str[i] in [u'*', u'/', u'·', u'÷']:
             pass
           else:
             continue
           new_region=entry_str[begin:i]
-          pow_idx=new_region.find(u'^')
-          if pow_idx==-1:
-            new_unit=new_region
-            new_power=1.
-          else:
-            new_unit=new_region[:pow_idx]
-            new_power=float(new_region[pow_idx+1:].strip(u'{}'))
+          new_power, new_unit=self._get_unit_exponent(new_region)
           if not nummerator:
             new_power=-new_power
           begin=i+1
@@ -2154,29 +2152,57 @@ class PhysicalUnit(object):
             self._unit_parts[new_unit]+=new_power
           else:
             self._unit_parts[new_unit]=new_power
-          if entry_str[i]==u'/':
+          if entry_str[i] in [u'/', u'÷']:
             nummerator=False
-          if entry_str[i]==u'·':
-            begin+=1
       new_region=entry_str[begin:]
-      pow_idx=new_region.find(u'^')
-      if pow_idx==-1:
-        new_unit=new_region
-        new_power=1.
-      else:
-        new_unit=new_region[:pow_idx]
-        new_power=float(new_region[pow_idx+1:].strip(u'{}'))
+      new_power, new_unit=self._get_unit_exponent(new_region)
       if not nummerator:
         new_power=-new_power
       if new_unit in self._unit_parts:
         self._unit_parts[new_unit]+=new_power
       else:
         self._unit_parts[new_unit]=new_power
+    self._clean_units()
+
+  def _get_unit_exponent(self, new_region):
+    '''
+      Extract the name and exponent of a unit from string.
+    '''
+    if len(new_region)==0:
+      return '', 0
+    new_region=new_region.strip(' ({[]})')
+    pow_idx=new_region.find(u'^')
+    if pow_idx==-1:
+      if new_region[-1]==u'²':
+        new_power=2.
+        new_region=new_region[:-1]
+      elif new_region[-1]==u'³':
+        new_power=3.
+        new_region=new_region[:-1]
+      elif new_region[0]==u'√':
+        new_power=0.5
+        new_region=new_region[1:]
+      else:
+        new_power=1.
+      new_unit=new_region
+    else:
+      new_unit=new_region[:pow_idx]
+      new_power=float(new_region[pow_idx+1:].strip(u'([{}])'))
+    return new_power, new_unit
+
+  def _clean_units(self):
     if u'1' in self._unit_parts:
       del(self._unit_parts[u'1'])
     if u'' in self._unit_parts:
       del(self._unit_parts[u''])
-
+#    keys=list(self._unit_parts.keys())
+#    for i, key in enumerate(keys):
+#      for key2 in keys[i+1:]:
+#        if (key, key2) in known_transformations:
+#          if key2 in transformations.SI_base_units:
+#            pass
+#          else:
+#            pass
 
   def str(self):
     '''
@@ -2200,7 +2226,12 @@ class PhysicalUnit(object):
         output_str+=name
       else:
         if len(u"%g"%exponent)==1:
-          output_str+=u"%s^%g"%(name, exponent)
+          if exponent==2:
+            output_str+=u"%s²"%(name)
+          elif exponent==3:
+            output_str+=u"%s³"%(name)
+          else:
+            output_str+=u"%s^%g"%(name, exponent)
         else:
           output_str+=u"%s^{%g}"%(name, exponent)
     if len(denominator)>0 and len(nummerator)!=0:
@@ -2220,7 +2251,12 @@ class PhysicalUnit(object):
         output_str+=name
       else:
         if len(u"%g"%(swap_exponen*exponent))==1:
-          output_str+=u"%s^%g"%(name, (swap_exponen*exponent))
+          if (swap_exponen*exponent)==2:
+            output_str+=u"%s²"%(name)
+          elif (swap_exponen*exponent)==3:
+            output_str+=u"%s³"%(name)
+          else:
+            output_str+=u"%s^%g"%(name, (swap_exponen*exponent))
         else:
           output_str+=u"%s^{%g}"%(name, (swap_exponen*exponent))
     if len(denominator)>1:
@@ -2228,6 +2264,7 @@ class PhysicalUnit(object):
     return output_str
 
   def __str__(self):
+    # make sure output is str not unicode
     return self.str().encode(out_encoding)
 
   def __repr__(self):
@@ -2237,19 +2274,23 @@ class PhysicalUnit(object):
     '''
       Implements adding a string to a unit.
     '''
-    if isinstance(other, basestring):
+    if type(other) is str:
+      return str(self)+other
+    elif type(other) is unicode:
       return self.str()+other
     else:
-      raise TypeError, u"unsupported operand type(s) for +: 'PhysicalUnit' and '%s'"%type(other).__name__
+      raise TypeError, "unsupported operand type(s) for +: 'PhysicalUnit' and '%s'"%type(other).__name__
 
   def __radd__(self, other):
     '''
       Implements adding a unit to a string.
     '''
-    if isinstance(other, basestring):
+    if type(other) is str:
+      return other+str(self)
+    elif type(other) is unicode:
       return other+self.str()
     else:
-      raise TypeError, u"unsupported operand type(s) for +: 'PhysicalUnit' and '%s'"%type(other).__name__
+      raise TypeError, "unsupported operand type(s) for +: 'PhysicalUnit' and '%s'"%type(other).__name__
 
   def __mul__(self, other):
     '''
@@ -2311,34 +2352,79 @@ class PhysicalUnit(object):
     '''
     return self.__str__().__hash__()
 
+  def simplify(self):
+    '''
+      Try simplify the unit with the known transformations.
+      
+      :returns: Tuple of simplified unit and a factor needed for the transformation.
+    '''
+    i=0
+    factor=1.
+    #offset=0.
+    new=deepcopy(self)
+    while (i+1)<len(new._unit_parts):
+      item1=sorted(new._unit_parts.keys())[i]
+      j=i+1
+      while j<len(new._unit_parts):
+        item2=sorted(new._unit_parts.keys())[j]
+        if (item1, item2) in known_transformations:
+          if item2 in transformations.SI_base_units:
+            trans=known_transformations[(item1, item2)]
+            if trans[1]!=0:
+              j+=1
+              continue
+            exponent=new._unit_parts[item1]
+            new._unit_parts[item2]+=exponent
+            del(new._unit_parts[item1])
+            factor*=trans[0]**exponent
+            #offset=offset*trans[0]**exponent+trans[1]
+            item1=sorted(new._unit_parts.keys())[i]
+            j=i+1
+          else:
+            trans=known_transformations[(item2, item1)]
+            if trans[1]!=0:
+              j+=1
+              continue
+            exponent=new._unit_parts[item2]
+            new._unit_parts[item1]+=exponent
+            del(new._unit_parts[item2])
+            factor*=trans[0]**exponent
+            #offset=offset*trans[0]**exponent+trans[1]
+        else:
+          j+=1
+      i+=1
+    return new, factor#, offset)
+
   def get_transformation(self, conversion):
     '''
       Try to calculate a transformation to a given unit.
     '''
-    conversion=PhysicalUnit(conversion)
-    if (self, conversion) in known_transformations:
+    other=PhysicalUnit(conversion)
+    if (self, other) in known_transformations:
       # if complete conversion in the list, use it
-      return [self, known_transformations[(self, conversion)][0],
-                    known_transformations[(self, conversion)][1], conversion]
-    output=[self, 1., 0., conversion]
+      return [self, known_transformations[(self, other)][0],
+                    known_transformations[(self, other)][1], other]
+    unit1, factor1=self.simplify()
+    unit2, factor2=other.simplify()
+    output=[self, factor1/factor2, 0., other]
     # go through each partial unit of the conversion
     # and check if it is the same in this unit
     # or if it can be transformed
-    own_parts=self._unit_parts
+    own_parts=unit1._unit_parts
     found_keys=[]
     # try to extract conversions for all parts of the unit
-    for key, value in conversion._unit_parts.items():
+    for key, value in unit2._unit_parts.items():
       if key in own_parts:
         if value==own_parts[key]:
           found_keys.append(key)
         else:
-          raise ValueError, u"conversion from '%s'->'%s' is impossible"%(self, conversion)
+          raise ValueError, "conversion from '%s'->'%s' is impossible"%(self, other)
       else:
         found=False
         for own_key in own_parts.keys():
           if (own_key, key) in known_transformations:
             if not own_parts[own_key]==value:
-              raise ValueError, u"conversion from '%s'->'%s' is impossible"%(self, conversion)
+              raise ValueError, "conversion from '%s'->'%s' is impossible"%(self, other)
             found=True
             # get base unit conversion
             multiplyer, addition=known_transformations[(own_key, key)]
@@ -2351,31 +2437,35 @@ class PhysicalUnit(object):
             elif value==-1.:
               pass
             else:
-              raise ValueError, u"automatic conversion not implemented for '%s'->'%s' because of unit offset."%(self, conversion)
+              raise ValueError, "automatic conversion not implemented for '%s'->'%s' because of unit offset."%(self, other)
             output[1]*=multiplyer
             output[2]=output[2]*multiplyer+addition
         if not found:
-          raise ValueError, u"automatic conversion not implemented for '%s'->'%s'."%(self, conversion)
+          raise ValueError, "automatic conversion not implemented for '%s'->'%s'."%(self, other)
         else:
           found_keys.append(own_key)
     if len(found_keys)!=len(own_parts.keys()):
-      raise ValueError, u"automatic conversion not implemented for '%s'->'%s'."%(self, conversion)
+      raise ValueError, "automatic conversion not implemented for '%s'->'%s'."%(self, other)
     return output
 
 
 class PhysicalConstant(numpy.ndarray):
   '''
-    Class to store physical constants. Adds a unit, symbol/name and discription to
+    Class to store physical constants. Adds a unit, symbol/name and description to
     the float value.
     Quite similar to PhysicalProperty but only as scalar.
   '''
 
-  def __new__(cls, value, unit, symbol=u'', discription=u''):
+  def __new__(cls, value, unit, symbol=u'', description=u''):
     obj=numpy.ndarray.__new__(cls, 1, dtype=numpy.float32)
     obj.__setitem__(0, value)
     obj.unit=PhysicalUnit(unit)
+    if type(symbol) is str:
+      symbol=unicode(symbol, in_encoding)
+    if type(description) is str:
+      description=unicode(description, in_encoding)
     obj.symbol=symbol
-    obj.discription=discription
+    obj.description=description
     return obj
 
   def _get_unit(self):
@@ -2389,21 +2479,21 @@ class PhysicalConstant(numpy.ndarray):
   def __array_finalize__(self, obj):
     self.unit=getattr(obj, u'unit', PhysicalUnit(u''))
     self.symbol=getattr(obj, u'symbol', u'')
-    self.discription=getattr(obj, u'discription', u'')
+    self.description=getattr(obj, u'description', u'')
 
   def __str__(self):
     if self.symbol!=u'':
-      return self.symbol
+      return (self.symbol).encode(out_encoding)
     else:
-      return str(self[0])+u' '+self.unit
+      return (str(self[0])+u' '+self.unit).encode(out_encoding)
 
   def __repr__(self):
     if self.symbol:
       pre=self.symbol+u'='
     else:
       pre=u''
-    if self.discription!=u'':
-      return (pre+str(self[0])+u' '+self.unit+u' - '+self.discription).encode(out_encoding)
+    if self.description!=u'':
+      return (pre+str(self[0])+u' '+self.unit+u' - '+self.description).encode(out_encoding)
     else:
       return (pre+str(self[0])+u' '+self.unit).encode(out_encoding)
 
@@ -2416,6 +2506,9 @@ class PhysicalConstant(numpy.ndarray):
       :return: PhysicalConstant object with values as result from the function
     '''
     out_const=out_const.view(type(self))
+    # after calculation the symbol and description will most likely be wrong
+    out_const.symbol=u''
+    out_const.description=u''
     return out_const
 
   def unit_trans(self, transfere):
@@ -2438,13 +2531,9 @@ class PhysicalConstant(numpy.ndarray):
       
       :return: New object instance.    
     '''
-    if type(conversion) in [str, PhysicalUnit]:
-      if (self.unit, conversion) in known_transformations:
-        multiplyer, addition=known_transformations[(self.unit, conversion)]
-        output=self.unit_trans([self.unit, multiplyer, addition, conversion])
-        return output
-      else:
-        raise ValueError, u"Automatic conversion not implemented for '%s'->'%s'."%(self.unit, conversion)
+    if type(conversion) in [str, unicode, PhysicalUnit]:
+      output=self.unit_trans(self.unit.get_transformation(conversion))
+      return output
     else:
       if getattr(conversion, u'__iter__', False) and len(conversion)>=3 and \
           type(conversion[0]) in [str, PhysicalUnit] and type(conversion[1]) in (float, int) and type(conversion[2]) in (float, int):
@@ -2455,11 +2544,11 @@ class PhysicalConstant(numpy.ndarray):
 
   def __add__(self, other):
     '''
-      Define addition of two PhysicalProperty instances.
+      Define addition of two PhysicalConstant instances.
       Checking if the unit of both is the same otherwise
       try to convert the second argument to the same unit.
       
-      :return: New instance of PhysicalProperty
+      :return: New instance of PhysicalConstant
     '''
     if hasattr(other, u'dimension'):
       # if other is PhysicalProperty or derived use it's function
@@ -2469,7 +2558,7 @@ class PhysicalConstant(numpy.ndarray):
         try:
           other=other%self.unit
         except ValueError:
-          raise ValueError, u"Wrong unit, %s!=%s"%(self.unit, other.unit)
+          raise ValueError, "Wrong unit, %s!=%s"%(self.unit, other.unit)
     output=numpy.ndarray.__add__(self, other)
     output.unit=self.unit
     return output
@@ -2622,6 +2711,8 @@ class PhysicalProperty(numpy.ndarray):
     #obj=numpy.ndarray.__new__(cls, len(input_data), dtype=numpy.float32)
     obj=numpy.asarray(input_data, dtype=dtype).view(cls).copy()
     obj.unit=PhysicalUnit(unit_in)
+    if type(dimension_in) is str:
+      dimension_in=unicode(dimension_in, in_encoding)
     obj.dimension=dimension_in
     obj.unit_save=True
     if input_error is not None:
@@ -3338,94 +3429,3 @@ class MultiplotList(list):
     else:
       return [i[0] for i in self].index(item)
 
-
-#################### Old psd #######################
-class PysicalProperty:
-  '''
-    Class for any physical property. Stores the data, unit and dimension
-    to make unit transformations possible.
-  '''
-  index=0
-  values=[]
-  unit=u''
-  dimension=u''
-
-  def __init__(self, dimension_in, unit_in):
-    '''
-      Class constructor.
-    '''
-    self.values=[]
-    self.index=0
-    self.unit=unit_in
-    self.dimension=dimension_in
-
-  def __iter__(self): # see next()
-    return self
-
-  def next(self): #@ReservedAssignment
-    '''
-      Function to iterate through the data-points, object can be used in u"for bla in data:".
-    '''
-    if self.index==len(self.values):
-      self.index=0
-      raise StopIteration
-    self.index=self.index+1
-    return self.values[self.index-1]
-
-  def __len__(self):
-    '''
-      len(PhysicalProperty) returns number of Datapoints.
-    '''
-    return len(self.values)
-
-  def append(self, number):
-    '''
-      Add value.
-    '''
-    self.values.append(number)
-
-  def unit_trans(self, transfere):
-    '''
-      Transform one unit to another. transfere variable is of type [from,b,a,to].
-    '''
-    if transfere[0]==self.unit: # only transform if right u'from' parameter
-      new_values=[]
-      for value in self.values:
-        new_values.append(value*transfere[1]+transfere[2])
-      self.values=new_values
-      self.unit=transfere[3]
-      return True
-    else:
-      return False
-
-  def dim_unit_trans(self, transfere):
-    '''
-      Transform dimension and unit to another. Variable transfere is of type
-      [from_dim,from_unit,b,a,to_dim,to_unit].
-    '''
-    if len(transfere)>0 and (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right u'from_dim' and u'from_unit'
-      new_values=[]
-      for value in self.values:
-        new_values.append(value*transfere[2]+transfere[3])
-      self.values=new_values
-      self.unit=transfere[5]
-      self.dimension=transfere[4]
-      return True
-    else:
-      return False
-
-  def max(self, from_index=0, to_index=None): #@ReservedAssignment
-    '''
-      Return maximum value in data.
-    '''
-    if to_index==None:
-      to_index=len(self)-1
-    return max([self.values[i] for i in range(from_index, to_index)])
-
-  def min(self, from_index=0, to_index=None): #@ReservedAssignment
-    '''
-      Return minimum value in data.
-    '''
-    if to_index==None:
-      to_index=len(self)-1
-    return min([self.values[i] for i in range(from_index, to_index)])

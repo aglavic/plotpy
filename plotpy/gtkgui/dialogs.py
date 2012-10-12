@@ -16,7 +16,7 @@ from plotpy.config import gnuplot_preferences
 from plotpy.config.gui import ICONS
 from plotpy.mds import PlotStyle
 from plotpy.option_types import * #@UnusedWildImport
-from plotpy.read_data import AsciiImportFilter, defined_filters
+from plotpy.fio.ascii import AsciiImportFilter, defined_filters
 from plotpy.config import templates
 
 #----------------------- importing modules --------------------------

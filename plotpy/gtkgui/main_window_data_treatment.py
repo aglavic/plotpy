@@ -8,7 +8,7 @@ import numpy
 from copy import deepcopy
 from peakfinder import PeakFinderDialog, peaks_from_preset
 from dialogs import SimpleEntryDialog, DataView
-from plotpy.config import user_config, transformations
+from plotpy.config import transformations, peakfinder
 
 __author__="Artur Glavic"
 __credits__=['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika',
@@ -541,8 +541,8 @@ class MainData(object):
       self.open_windows.append(dialog)
     else:
       index=name[-1]
-      if index in user_config['PeakFinder']['Presets']:
-        preset=user_config['PeakFinder']['Presets'][index]
+      if index in peakfinder.presets:
+        preset=peakfinder.presets[index]
         if name.startswith('PeakPresetSummary'):
           peaks_from_preset(self.active_dataset, preset, self, True)
         else:
