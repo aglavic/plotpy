@@ -253,6 +253,9 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     # put image in an eventbox to catch e.g. mouse events
     self.event_box=gtk.EventBox()
     self.event_box.add(self.image)
+    self.event_box.set_events(gtk.gdk.POINTER_MOTION_MASK
+                              |gtk.gdk.BUTTON_PRESS_MASK
+                              |gtk.gdk.BUTTON_RELEASE_MASK)
     self.frame1.append_page(self.event_box, gtk.Label("Plot"))
     self.frame1.set_tab_detachable(self.event_box, True)
     #---------- create image region and image for the plot ----------
@@ -514,9 +517,10 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     # mouse and keyboad events
     self.event_box.connect('button-press-event', self.mouse_press)
     self.event_box.connect('button-release-event', self.mouse_release)
-    self.connect('motion-notify-event', self.catch_mouse_position)
+    self.event_box.connect('motion-notify-event', self.catch_mouse_position)
     # Drag & Drop
     self.DnD=ImageDND(self)
+    self.connect('drag-data-get', self.send_image_on_drag)
     # misc
     self.frame1.connect('switch-page', self.tab_switched)
     #------------- connecting events --------------

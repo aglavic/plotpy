@@ -26,12 +26,6 @@ class ImageDND(object):
                                          self._rec_targets,
                                          gtk.gdk.ACTION_COPY)
     self.main_window.image.connect("drag_data_received", self.receive_data)
-    # set up drag for png export
-    #self.main_window.image.connect("drag_begin", self.set_drag_icon)
-    #self.main_window.image.connect("drag_data_get", self.send_data)
-    #self.main_window.image.drag_source_set(gtk.gdk.BUTTON1_MASK,
-    #                                       self._send_targets,
-    #                                       gtk.gdk.ACTION_COPY)
 
   ### Destinatione event handling  ###
 
@@ -39,6 +33,8 @@ class ImageDND(object):
     '''
       Extract the file names and import the files.
     '''
+    if context.get_source_widget() is not None:
+      return
     items=selection.get_text().strip().split('\n')
     file_names=[item.split('file://')[1] for item in items if item.startswith('file://')]
     self.main_window.add_file(file_names=file_names)

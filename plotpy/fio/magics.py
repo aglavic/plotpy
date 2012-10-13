@@ -15,8 +15,13 @@ class MagicsReader(Reader):
   session='pnr'
 
   parameters=[('tth_offset', 0.), ('phi_offset', 0.),
+              ('tth_window', 0.1), ('phi_window', 0.5),
               ('show_tth_phi', False), ('show_tth_lambda', False)]
   parameter_units={
+                   'tth_offset': u'°',
+                   'phi_offset': u'°',
+                   'tth_window': u'°',
+                   'phi_window': u'°',
                    }
   parameter_description={
                          'swap_xy': 'Switch x- and y-axes',
@@ -34,7 +39,6 @@ class MagicsReader(Reader):
                     'degree': u'°',
                     'metre': u'm',
                     'millimetre': u'mm',
-
                     }
 
   def __init__(self):
@@ -122,18 +126,24 @@ class MagicsReader(Reader):
       ds.short_info=self.block_key
       ds.is_matrix_data=True
       ds.plot_options.rectangles.append([
-                                         [[2*float(tth_2%u'°')-0.1,-0.5, 1.],
-                                         [2*float(tth_2%u'°')+0.1, 0.5, 1.]],
+                                         [[2*float(tth_2%u'°')-self.tth_window,
+                                           -self.phi_window, 1.],
+                                         [2*float(tth_2%u'°')+self.tth_window,
+                                          self.phi_window, 1.]],
                                          True, True, 0.5, '#ffffff', True, '#000000', '',
                                          ])
       ds.plot_options.rectangles.append([
-                                         [[2*float(tth_2%u'°')-0.1, 0.5, 1.],
-                                         [2*float(tth_2%u'°')+0.1, 1., 1.]],
+                                         [[2*float(tth_2%u'°')-self.tth_window,
+                                           self.phi_window, 1.],
+                                         [2*float(tth_2%u'°')+self.tth_window,
+                                          2*self.phi_window, 1.]],
                                          True, True, 0.5, '#ff0000', True, '#000000', '',
                                          ])
       ds.plot_options.rectangles.append([
-                                         [[2*float(tth_2%u'°')-0.1,-1., 1.],
-                                         [2*float(tth_2%u'°')+0.1,-0.5, 1.]],
+                                         [[2*float(tth_2%u'°')-self.tth_window,
+                                           -2*self.phi_window, 1.],
+                                         [2*float(tth_2%u'°')+self.tth_window,
+                                          -self.phi_window, 1.]],
                                          True, True, 0.5, '#ff0000', True, '#000000', '',
                                          ])
       output.append(ds)
@@ -154,16 +164,17 @@ class MagicsReader(Reader):
       output.append(ds)
     # create reflectivity data
     Qz=(4.*numpy.pi/lambda_n*numpy.sin(tth_2))//u'Q_z'
-    x_reg=numpy.where((numpy.abs(tth-tth_2*2)%u'°')<0.1)[0]
-    y_reg=numpy.where((numpy.abs(phi)%u'°')<=0.5)[0]
-    y_bg=numpy.where(((numpy.abs(phi)%u'°')>0.5)&((numpy.abs(phi)%u'°')<=1.))[0]
+    x_reg=numpy.where((numpy.abs(tth-tth_2*2)%u'°')<self.tth_window)[0]
+    y_reg=numpy.where((numpy.abs(phi)%u'°')<=self.phi_window)[0]
+    y_bg=numpy.where(((numpy.abs(phi)%u'°')>self.phi_window)
+                     &((numpy.abs(phi)%u'°')<=2*self.phi_window))[0]
 
     ds=MeasurementData()
     ds.scan_line=1
     ds.scan_line_constant=0
     ds.data.append(Qz)
-    Is=I[x_reg, :, :][:, y_reg, :].sum(axis=0).sum(axis=0)
-    Ib=I[x_reg, :, :][:, y_bg, :].sum(axis=0).sum(axis=0)
+    Is=I[x_reg][:, y_reg].sum(axis=0).sum(axis=0)
+    Ib=I[x_reg][:, y_bg].sum(axis=0).sum(axis=0)
     Ib*=float(len(Is))/len(Ib)
     ds.data.append(PhysicalProperty('I_{corr}', 'counts', Is-Ib, numpy.sqrt(Is)))
     ds.data.append(PhysicalProperty('I_{raw}', 'counts', Is, numpy.sqrt(Is)))

@@ -5,6 +5,8 @@
 
 import numpy
 import gtk
+import os
+import shutil
 
 from dialogs import SimpleEntryDialog
 from plotpy import fitdata
@@ -83,7 +85,7 @@ class MainMouse(object):
           info='Zoom (right), unzoom (middle). <ctrl>-fit / <shift>-label/arrow'
         self.statusbar.push(0, info)
       try:
-        # if the cusor is inside the plot we change it's icon to a crosshair
+        # if the cursor is inside the plot we change it's icon to a crosshair
         self.image.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.CROSSHAIR))
       except AttributeError:
         # catch an example when event is triggered after window got closed
@@ -122,9 +124,18 @@ class MainMouse(object):
           self.image_pixmap, self.image_mask=self.image_pixbuf.render_pixmap_and_mask()
         else:
           self.active_zoom_from=None
-      if action.button==1 and position is not None and self.mouse_position_callback is not None:
-        # activate a function registered as callback
-        self.mouse_position_callback(position)
+      if action.button==1:
+        if position is not None and self.mouse_position_callback is not None:
+          # activate a function registered as callback
+          self.mouse_position_callback(position)
+        else:
+          # start a drag operation of the image
+          context=self.drag_begin([("text/uri-list", 0, 1),
+                                   ("text/plain", 0, 1),
+                                   ("image/x-xpixbuf", 0, 1)], gtk.gdk.ACTION_COPY,
+                                  action.button, action)
+          context.set_icon_pixbuf(self.image_pixbuf.scale_simple(100, 70,
+                                                                 gtk.gdk.INTERP_BILINEAR), 0, 0)
       if action.button==2:
         # unzoom the plot
         dataset.plot_options.xrange=[None, None]
@@ -171,6 +182,21 @@ class MainMouse(object):
             if self.label_arrow_dialog is not None:
               self.label_arrow_dialog.update()
         self.replot()
+
+  def send_image_on_drag(self, widget, drag_context, selection_data, info, timestamp):
+    '''
+      Called when the image is successfully dragged to a destination window.
+    '''
+    dest=(self.active_session.TEMP_DIR+os.path.split(self.active_session.active_file_name)[1]+
+          u'_%i.png'%(self.index_mess+1))
+    if selection_data.target=='text/plain':
+      shutil.copy(self.active_session.TEMP_DIR+'plot_temp.png', dest)
+      selection_data.set_text('file://'+dest+'\n',-1)
+    elif selection_data.target=='text/uri-list':
+      shutil.copy(self.active_session.TEMP_DIR+'plot_temp.png', dest)
+      selection_data.set_uris(['file://'+dest])
+    else:
+      selection_data.set_pixbuf(self.image_pixbuf)
 
   def mouse_release(self, widget, action):
     '''
