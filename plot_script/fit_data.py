@@ -1416,6 +1416,22 @@ class FitGaussian(FitFunction):
   fit_function=lambda self, p, x: p[0]*numpy.exp(-0.5*((x-p[1])/p[2])**2)+p[3]
   fit_function_text='Gaussian: I=[I] x_0=[x0] σ=[σ|2]'
 
+class FitLogNormal(FitFunction):
+  '''
+    Fit a log-normal distribution.
+  '''
+
+  # define class variables.
+  name="LogNormal"
+  parameters=[1., 1., 1., 0.]
+  parameter_names=['I', 'x0', 'σ_rel', 'C']
+  parameter_description={'I': 'Scaling',
+                         'x0': 'Peak Position',
+                         'σ_rel': 'Relative Variance',
+                         'C':'Offset'}
+  fit_function=lambda self, p, x: p[0]*numpy.exp(-0.5*((numpy.log(x)-numpy.log(p[1]))/(0.01*p[2]))**2)+p[3]
+  fit_function_text='Gaussian: I=[I] x_0=[x0] σ_{rel}=[σ_rel|2]%'
+
 class FitLorentzian(FitFunction):
   '''
     Fit a lorentz function.
@@ -2647,7 +2663,7 @@ class FitNanoparticleZFC2(FitFunction):
     r=p[1]
     delta_r=p[2]
     H_factor=p[3]
-    delta_r_array=numpy.arange(-3.*delta_r, 3.*delta_r, delta_r/numpy.float64(len(T)))
+    delta_r_array=numpy.arange(-3.*delta_r, 3.*delta_r, delta_r/5.)
     r_array=r+delta_r_array
     V_array=4./3.*numpy.pi*r_array**3
     P_array=numpy.exp(-0.5*(delta_r_array/delta_r)**2)
@@ -2977,6 +2993,7 @@ class FitSession(FitSessionGUI):
                        FitSinus.name: FitSinus,
                        FitExponential.name: FitExponential,
                        FitGaussian.name: FitGaussian,
+                       FitLogNormal.name: FitLogNormal,
                        FitVoigt.name: FitVoigt,
                        FitOneOverX.name: FitOneOverX,
                        FitLorentzian.name: FitLorentzian,
@@ -2993,6 +3010,7 @@ class FitSession(FitSessionGUI):
                        FitRelaxingCrystalLayer.name: FitRelaxingCrystalLayer,
                        FitOffspecular.name: FitOffspecular,
                        FitFerromagneticOrderparameter.name: FitFerromagneticOrderparameter,
+                       FitNanoparticleZFC.name: FitNanoparticleZFC,
                        #FitNanoparticleZFC.name: FitNanoparticleZFC, 
                        #FitNanoparticleZFC2.name: FitNanoparticleZFC2, 
                        }
@@ -3299,6 +3317,10 @@ class FitSession(FitSessionGUI):
             # show differences only when fitting
             plot_list.append(div)
             plot_list.append(logdiv)
+      if getattr(data, 'is_matrix_data', False):
+        fit.is_matrix_data=True
+        div.is_matrix_data=True
+        logdiv.is_matrix_data=True
     self.data.plot_together=[self.data]+plot_list
     if len(plot_list)>0:
       self.data.plot_together_zindex=-1

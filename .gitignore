@@ -37,3 +37,4 @@ repository/source
 repository/dists
 repository/packages-*
 sphinx/_*
+plotpy.egg-info
