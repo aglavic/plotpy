@@ -1119,6 +1119,11 @@ Gnuplot version %.1f patchlevel %i with terminals:
         else:
           return '%g'%item
       i=0
+      if d.zdata<0:
+        full_range=[[d.x.min(), d.x.max()], [d.y.min(), d.y.max()], [None, None]]
+      else:
+        full_range=[[d.x.min(), d.x.max()], [d.y.min(), d.y.max()], [d.z.min(), d.z.max()]]
+      ranges.insert(0, full_range)
       for ri in ranges:
         if ri==[[None, None], [None, None], [None, None]]:
           continue

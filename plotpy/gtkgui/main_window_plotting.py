@@ -9,7 +9,7 @@ import numpy
 from time import sleep
 from plotpy import plotting
 from plotpy.config import gnuplot_preferences
-from plotpy.message import warn
+from plotpy.message import warn, info
 from dialogs import LabelArrowDialog, StyleLine, SimpleEntryDialog, \
                     PreviewDialog, VListEntry
 from diverse_classes import PlotProfile
@@ -61,24 +61,25 @@ class MainPlotting(object):
       self.initialize_gnuplot()
     try:
       output, variables=plotting.gnuplot_plotpy(session,
-                                                         datasets,
-                                                         file_name_prefix,
-                                                         self.script_suf,
-                                                         title,
-                                                         names,
-                                                         with_errorbars,
-                                                         output_file,
-                                                         fit_lorentz=False,
-                                                         sample_name=sample_name,
-                                                         show_persistent=show_persistent,
-                                                         get_xy_ranges=self.mouse_mode)
+                                               datasets,
+                                               file_name_prefix,
+                                               self.script_suf,
+                                               title,
+                                               names,
+                                               with_errorbars,
+                                               output_file,
+                                               fit_lorentz=False,
+                                               sample_name=sample_name,
+                                               show_persistent=show_persistent,
+                                               get_xy_ranges=self.mouse_mode)
     except RuntimeError:
-      print "Gnuplot instance lost, try to restart ..."
+      warn("Gnuplot instance lost, try to restart ...")
       # gnuplot instance was somehow killed, try to restart
       self.active_session.initialize_gnuplot()
       return self.splot(session, datasets, file_name_prefix, title, names,
             with_errorbars, output_file, fit_lorentz, sample_name, show_persistent)
     if output=='' and variables is not None and len(variables)==8:
+      # calculations to map mouse position to plot xy positions
       img_size=self.image.get_allocation()
       mr_x=variables[0]/img_size.width
       mr_width=(variables[1]-variables[0])/img_size.width
@@ -294,7 +295,8 @@ class MainPlotting(object):
     #  self.font_size.set_
 
     if echo:
-      print "Plotting"
+      self.statusbar.push(0, 'Plotting')
+      self.progressbar.set_fraction(0.)
       i=0
       # wait for all gtk events to finish to get the right size
       while gtk.events_pending() and i<10:
@@ -335,21 +337,22 @@ class MainPlotting(object):
     if self.last_plot_text!='':
       self.set_title('Plotting GUI - '+self.input_file_name+" - "+str(self.index_mess))
       self.active_plot_geometry=(self.widthf, self.heightf)
-      self.reset_statusbar()
       try:
         # try to read the plot image even if there was an error
         self.set_image()
+        self.progressbar.set_fraction(1.)
       except:
         pass
       if echo:
+        self.progressbar.set_fraction(0.5)
         warn(None, group='Gnuplot Error')
         warn(self.last_plot_text, group='Gnuplot Error')
       #self.show_last_plot_params(None)
     else:
       self.set_title('Plotting GUI - '+self.input_file_name+" - "+str(self.index_mess))
       self.active_plot_geometry=(self.widthf, self.heightf)
-      self.reset_statusbar()
       self.set_image()
+      self.progressbar.set_fraction(1.)
       if not self.active_multiplot:
         self.active_dataset.preview=self.image_pixbuf.scale_simple(100, 50,
                                                         gtk.gdk.INTERP_BILINEAR)
@@ -359,6 +362,7 @@ class MainPlotting(object):
     # make sure hugeMD objects are removed from memory after plotting
     if hasattr(self.active_dataset, 'tmp_export_file'):
       self.active_dataset.store_data()
+    self.reset_statusbar()
     self.emit('plot-drawn')
 
   def open_plot_options_window(self, action):
