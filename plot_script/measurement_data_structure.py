@@ -1669,10 +1669,20 @@ class PlotOptions(object):
       output+=("set yrange [-%s:%s]\n"%(self._yrange[1], self._yrange[1])).replace("-None", "").replace("None", "")
       output+=("set rrange [%s:%s]\n"%(self._xrange[0], self._xrange[1])).replace("None", "")
     else:
-      output+=("set xrange [%s:%s]\n"%(self._xrange[0], self._xrange[1])).replace("None", "")
-      output+=("set yrange [%s:%s]\n"%(self._yrange[0], self._yrange[1])).replace("None", "")
-      output+=("set zrange [%s:%s]\n"%(self._zrange[0], self._zrange[1])).replace("None", "")
-      output+=("set cbrange [%s:%s]\n"%(self._zrange[0], self._zrange[1])).replace("None", "")
+      if self._xrange==[None, None]:
+        output+="set autoscale x\n"
+      else:
+        output+=("set xrange [%s:%s]\n"%(self._xrange[0], self._xrange[1])).replace("None", "")
+      if self._yrange==[None, None]:
+        output+="set autoscale x\n"
+      else:
+        output+=("set yrange [%s:%s]\n"%(self._yrange[0], self._yrange[1])).replace("None", "")
+      if self._zrange==[None, None]:
+        output+="set autoscale z\n"
+        output+="set autoscale cb\n"
+      else:
+        output+=("set zrange [%s:%s]\n"%(self._zrange[0], self._zrange[1])).replace("None", "")
+        output+=("set cbrange [%s:%s]\n"%(self._zrange[0], self._zrange[1])).replace("None", "")
     if not self.bar_endmarks:
       output+='set bars small\n'
     for i, label in enumerate(self.labels):

@@ -499,6 +499,7 @@ def script_plotlines_multiplot_3d(session, datasets, file_name_prefix, output_fi
       title+=' '+subdata.short_info
     gnuplot_file_text+='set title "%s"\n'%(title)
     gnuplot_file_text+='set zlabel "'+gp.z_label+'"\n'+'set cblabel "'+gp.z_label+'"\n'
+    gnuplot_file_text+=subdata.plot_options
     gnuplot_file_text=replace_ph(session,
                              gnuplot_file_text,
                              datasets,

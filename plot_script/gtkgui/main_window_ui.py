@@ -166,14 +166,14 @@ class MainUI(object):
         output+='''
               </menu>      
               <placeholder name='zMenu'/>'''
-      #output+='''
-      #      <menu action='dyMenu'>
-      #  '''
-      #for i, dimension in enumerate(self.active_dataset.dimensions()):
-      #  output+="              <menuitem action='dy-"+str(i)+"'/>\n"
-      #  self.added_items=self.added_items+(("dy-"+str(i), None, dimension, None, None, self.change),)
-      # allways present stuff and toolbar
-      #output+='''                   </menu>'''
+      output+='''
+            <menu action='dyMenu'>
+        '''
+      for i, dimension in enumerate(self.active_dataset.dimensions()):
+        output+="              <menuitem action='dy-"+str(i)+"'/>\n"
+        self.added_items=self.added_items+(("dy-"+str(i), None, dimension, None, None, self.change),)
+        #allways present stuff and toolbar
+      output+='''                   </menu>'''
     output+='''
         </menu>
         <menu action='Profiles'>

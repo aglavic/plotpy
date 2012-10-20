@@ -214,6 +214,8 @@ def initialize_gui_toolkit():
   '''
     Load GUI modules dependent on the toolkit.
   '''
+  import mpfit
+  sys.modules['mpfit']=sys.modules['plot_script.mpfit']
   import fit_data
   sys.modules['fit_data']=sys.modules['plot_script.fit_data']
   if '-gui' in sys.argv:

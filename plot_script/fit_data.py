@@ -8,6 +8,7 @@
 # import mathematic functions and least square fit which uses the Levenberg-Marquardt algorithm.
 import sys
 import numpy
+from copy import deepcopy
 from mpfit import mpfit
 from math import pi, sin, asin, exp
 # import own modules
@@ -3010,7 +3011,6 @@ class FitSession(FitSessionGUI):
                        FitRelaxingCrystalLayer.name: FitRelaxingCrystalLayer,
                        FitOffspecular.name: FitOffspecular,
                        FitFerromagneticOrderparameter.name: FitFerromagneticOrderparameter,
-                       FitNanoparticleZFC.name: FitNanoparticleZFC,
                        #FitNanoparticleZFC.name: FitNanoparticleZFC, 
                        #FitNanoparticleZFC2.name: FitNanoparticleZFC2, 
                        }
@@ -3181,10 +3181,11 @@ class FitSession(FitSessionGUI):
     data_z=data[self.data.zdata]
 
     if (self.data.yerror>=0) and (self.data.yerror!=self.data.zdata)\
-        and (self.data.yerror!=self.data.xdata) and (self.data.yerror!=self.data.ydata):
+        and (self.data.yerror!=self.data.xdata) and (self.data.yerror!=self.data.ydata) \
+        and (self.data.yerror is not None):
       data_zerror=data[self.data.yerror]
     else:
-      data_zerror=None
+      data_zerror=data_z.error # take error from z column, if available
     covariance_matices=[]
     for i, function in enumerate(self.functions):
       pgu=None
@@ -3194,9 +3195,11 @@ class FitSession(FitSessionGUI):
         pgu=self.update_progress
       if function[1]:
         if not function[3]:
-          _mesg, cov_out=function[0].refine(data_x, data_y, data_z, data_zerror, progress_bar_update=pgu)
+          _mesg, cov_out=function[0].refine(data_x, data_y, data_z,
+                                            data_zerror, progress_bar_update=pgu)
         else:
-          _mesg, cov_out=function[0].refine(data_x, data_y, data_z, None, progress_bar_update=pgu)
+          _mesg, cov_out=function[0].refine(data_x, data_y, data_z,
+                                            None, progress_bar_update=pgu)
         covariance_matices.append(cov_out)
       else:
         covariance_matices.append([[None]])
@@ -3208,6 +3211,7 @@ class FitSession(FitSessionGUI):
     '''
     self.result_data=[]
     data=self.data
+    set_matrix=getattr(data, 'is_matrix_data', False)
     dimensions=data.dimensions()
     units=data.units()
     column_1=(dimensions[self.data.xdata], units[self.data.xdata])
@@ -3223,8 +3227,9 @@ class FitSession(FitSessionGUI):
                                                 -1, # yerror-column
                                                 2   # z-column
                                                 )
-      fit.data[0]=data.x.copy()
-      fit.data[1]=data.y.copy()
+      if set_matrix: fit.is_matrix_data=True
+      fit.data[0]=data.x
+      fit.data[1]=data.y
       fit.data[2]=numpy.zeros_like(data.z)
       function_text=function[0].fit_function_text
       fit.short_info=function_text
@@ -3236,6 +3241,7 @@ class FitSession(FitSessionGUI):
                                                 -1, # yerror-column
                                                 2   # z-column
                                                 )
+        if set_matrix: div.is_matrix_data=True
         logdiv=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
@@ -3243,14 +3249,26 @@ class FitSession(FitSessionGUI):
                                                 -1, # yerror-column
                                                 2   # z-column
                                                 )
+        if set_matrix: logdiv.is_matrix_data=True
         div.data[0]=data.x
         div.data[1]=data.y
         div.data[2]=data.z.copy()
         logdiv.data[0]=data.x
         logdiv.data[1]=data.y
-        logdiv.data[2]=numpy.log10(data.z)
-        div.plot_options=data.plot_options
-        logdiv.plot_options=data.plot_options
+        logdiv.data[2]=numpy.log10(data.z//(data.z.dimension, ''))
+        div.plot_options=deepcopy(data.plot_options)
+        div.plot_options.free_input_after.append('unset log cb')
+        div.plot_options.free_input_after.append('unset log z')
+        if fit.plot_options.zrange[1] is None:
+          div.plot_options.zrange=[None, None]
+        else:
+          div.plot_options.zrange=[-fit.plot_options.zrange[1], fit.plot_options.zrange[1]]
+        logdiv.plot_options=deepcopy(data.plot_options)
+        if fit.plot_options.zrange[1] is None:
+          logdiv.plot_options.zrange=[None, None]
+        else:
+          logdiv.plot_options.zrange=[-numpy.log10(fit.plot_options.zrange[1]),
+                                      numpy.log10(fit.plot_options.zrange[1])]
         div.short_info='data-%s'%function_text
         logdiv.short_info='log(data)-log(%s)'%function_text
       fit.plot_options=data.plot_options
@@ -3265,10 +3283,6 @@ class FitSession(FitSessionGUI):
         plot_list=[fit, div, logdiv]
       else:
         plot_list=[fit]
-      if getattr(data, 'is_matrix_data', False):
-        fit.is_matrix_data=True
-        div.is_matrix_data=True
-        logdiv.is_matrix_data=True
     else:
       for function in self.functions:
         fit=data.__class__([column_1, column_2, column_3], # columns
@@ -3278,6 +3292,7 @@ class FitSession(FitSessionGUI):
                                                 -1, # yerror-column
                                                 2   # z-column
                                                 )
+        if set_matrix: fit.is_matrix_data=True
         div=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
@@ -3285,6 +3300,7 @@ class FitSession(FitSessionGUI):
                                                 -1, # yerror-column
                                                 2   # z-column
                                                 )
+        if set_matrix: div.is_matrix_data=True
         logdiv=data.__class__([column_1, column_2, column_3], # columns
                                                 [], # const_columns
                                                 0, # x-column
@@ -3292,10 +3308,22 @@ class FitSession(FitSessionGUI):
                                                 -1, # yerror-column
                                                 2   # z-column
                                                 )
+        if set_matrix: logdiv.is_matrix_data=True
         self.result_data.append(fit)
         fit.plot_options=data.plot_options
-        div.plot_options=data.plot_options
-        logdiv.plot_options=data.plot_options
+        div.plot_options=deepcopy(data.plot_options)
+        div.plot_options.free_input_after.append('unset log cb')
+        div.plot_options.free_input_after.append('unset log z')
+        if fit.plot_options.zrange[1] is None:
+          div.plot_options.zrange=[None, None]
+        else:
+          div.plot_options.zrange=[-fit.plot_options.zrange[1], fit.plot_options.zrange[1]]
+        logdiv.plot_options=deepcopy(data.plot_options)
+        if fit.plot_options.zrange[1] is None:
+          logdiv.plot_options.zrange=[None, None]
+        else:
+          logdiv.plot_options.zrange=[-numpy.log10(fit.plot_options.zrange[1]),
+                                      numpy.log10(fit.plot_options.zrange[1])]
         _result=self.result_data[-1]
         if function[2]:
           fit.data[0]=data.x
@@ -3304,10 +3332,11 @@ class FitSession(FitSessionGUI):
           div.data[1]=data.y
           logdiv.data[0]=data.x
           logdiv.data[1]=data.y
+          #
           fd=function[0](data.x, data.y)
-          fit.data[2].values=fd
-          div.data[2].values=data.z-fd
-          logdiv.data[2].values=10.**(numpy.log10(data.z.view(numpy.ndarray))-numpy.log10(fd))
+          fit.data[2]=numpy.zeros_like(data.z)+fd
+          div.data[2]=data.z-fd
+          logdiv.data[2]=numpy.log10(data.z//(data.z.dimension, ''))-numpy.log10(fd)
           function_text=function[0].fit_function_text_eval
           fit.short_info=function_text
           div.short_info='data-%s'%function_text
@@ -3317,10 +3346,6 @@ class FitSession(FitSessionGUI):
             # show differences only when fitting
             plot_list.append(div)
             plot_list.append(logdiv)
-      if getattr(data, 'is_matrix_data', False):
-        fit.is_matrix_data=True
-        div.is_matrix_data=True
-        logdiv.is_matrix_data=True
     self.data.plot_together=[self.data]+plot_list
     if len(plot_list)>0:
       self.data.plot_together_zindex=-1
