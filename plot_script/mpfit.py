@@ -418,10 +418,10 @@ from time import time
 try:
     # multiprocessing is only supported in python >= 2.4
     from multiprocessing import Pool
-    USE_MP=False # this constant can be changed during runtime to switch MP off
+    USE_MP=False  # this constant can be changed during runtime to switch MP off
 except ImportError:
     USE_MP=False
-MP_LIMIT=10. # default limit for function evaluation time in ms before MP is used
+MP_LIMIT=10.  # default limit for function evaluation time in ms before MP is used
 
 #        Original FORTRAN documentation
 #        **********
@@ -945,7 +945,7 @@ class mpfit:
                 pfixed=self.parinfo(parinfo, 'fixed', default=0, n=npar)
                 pfixed=(pfixed==1)
                 for i in range(npar):
-                        pfixed[i]=pfixed[i] or (ptied[i]!='') # Tied parameters are also effectively fixed
+                        pfixed[i]=pfixed[i] or (ptied[i]!='')  # Tied parameters are also effectively fixed
 
                 # Finite differencing step, absolute and relative, and sidedness of deriv.
                 step=self.parinfo(parinfo, 'step', default=0., n=npar)
@@ -956,7 +956,7 @@ class mpfit:
                 maxstep=self.parinfo(parinfo, 'mpmaxstep', default=0., n=npar)
                 minstep=self.parinfo(parinfo, 'mpminstep', default=0., n=npar)
                 qmin=minstep!=0
-                qmin[:]=False # Remove minstep for now!!
+                qmin[:]=False  # Remove minstep for now!!
                 qmax=maxstep!=0
                 if numpy.any(qmin&qmax&(maxstep<minstep)):
                         self.errmsg='ERROR: MPMINSTEP is greater than MPMAXSTEP'
@@ -972,7 +972,7 @@ class mpfit:
                         return
 
                 # Compose only VARYING parameters
-                self.params=xall.copy()         # self.params is the set of parameters to be returned
+                self.params=xall.copy()  # self.params is the set of parameters to be returned
                 x=self.params[ifree]  # x is the set of free parameters
 
                 # LIMITED parameters ?
@@ -1180,8 +1180,8 @@ class mpfit:
                         # Check for overflow.  This should be a cheap test here since FJAC
                         # has been reduced to a (small) square matrix, and the test is
                         # O(N^2).
-                        #wh = where(finite(fjac) EQ 0, ct)
-                        #if ct GT 0 then goto, FAIL_OVERFLOW
+                        # wh = where(finite(fjac) EQ 0, ct)
+                        # if ct GT 0 then goto, FAIL_OVERFLOW
 
                         # Compute the norm of the scaled gradient
                         catch_msg='computing the scaled gradient'
@@ -1379,8 +1379,8 @@ class mpfit:
                                                 'infinite; check model function for over- 'and underflow''')
                                         self.status=-16
                                         break
-                                #wh = where(finite(wa1) EQ 0 OR finite(wa2) EQ 0 OR finite(x) EQ 0, ct)
-                                #if ct GT 0 OR finite(ratio) EQ 0 then begin
+                                # wh = where(finite(wa1) EQ 0 OR finite(wa2) EQ 0 OR finite(x) EQ 0, ct)
+                                # if ct GT 0 OR finite(ratio) EQ 0 then begin
 
                         if self.status!=0:
                                 break;
@@ -1448,7 +1448,7 @@ class mpfit:
                            'errmsg': self.errmsg,
                            'nfev': self.nfev,
                            'damp': self.damp
-                           #,'machar':self.machar
+                           # ,'machar':self.machar
                            }.__str__()
 
         # Default procedure to be called every iteration.  It simply prints
@@ -1642,20 +1642,20 @@ class mpfit:
                   for j in range(n):
                           [status, fp]=step1results[j].get()
                           if (fjac==None) and (self.damp>0):
-                                  ## Apply the damping if requested.  This replaces the residuals
-                                  ## with their hyperbolic tangent.  Thus residuals larger than
-                                  ## DAMP are essentially clipped.
+                                  # # Apply the damping if requested.  This replaces the residuals
+                                  # # with their hyperbolic tangent.  Thus residuals larger than
+                                  # # DAMP are essentially clipped.
                                   fp=numpy.tanh(fp/self.damp)
                           if status<0:
                                   return None
 
                           if numpy.abs(dside[j])<=1:
-                                  ## COMPUTE THE ONE-SIDED DERIVATIVE
-                                  ## Note optimization fjac(0:*,j)
+                                  # # COMPUTE THE ONE-SIDED DERIVATIVE
+                                  # # Note optimization fjac(0:*,j)
                                   fjac[0:, j]=(fp-fvec)/h[j]
 
                           else:
-                                  ## COMPUTE THE TWO-SIDED DERIVATIVE
+                                  # # COMPUTE THE TWO-SIDED DERIVATIVE
                                   xp[ifree[j]]=xall[ifree[j]]-h[j]
 
                                   mperr=0
@@ -1666,12 +1666,12 @@ class mpfit:
                                   if status<0:
                                           return(None)
                                   if (fjac==None) and (self.damp>0):
-                                          ## Apply the damping if requested.  This replaces the residuals
-                                          ## with their hyperbolic tangent.  Thus residuals larger than
-                                          ## DAMP are essentially clipped.
+                                          # # Apply the damping if requested.  This replaces the residuals
+                                          # # with their hyperbolic tangent.  Thus residuals larger than
+                                          # # DAMP are essentially clipped.
                                           fm=numpy.tanh(fm/self.damp)
 
-                                  ## Note optimization fjac(0:*,j)
+                                  # # Note optimization fjac(0:*,j)
                                   fjac[0:, j]=(fp-fm)/(2*h[j])
                 else:
                         for j in range(n):
@@ -2053,7 +2053,7 @@ class mpfit:
                         wa[nsing:]=0
 
                 if nsing>=1:
-                        wa[nsing-1]=wa[nsing-1]/sdiag[nsing-1] # Degenerate case
+                        wa[nsing-1]=wa[nsing-1]/sdiag[nsing-1]  # Degenerate case
                         # *** Reverse loop ***
                         for j in range(nsing-2,-1,-1):
                                 sum0=sum(r[j+1:nsing, j]*wa[j+1:nsing])
@@ -2205,8 +2205,8 @@ class mpfit:
                 parl=0.
                 if nsing>=n:
                         wa1=diag[ipvt]*wa2[ipvt]/dxnorm
-                        wa1[0]=wa1[0]/r[0, 0] # Degenerate case
-                        for j in range(1, n):   # Note "1" here, not zero
+                        wa1[0]=wa1[0]/r[0, 0]  # Degenerate case
+                        for j in range(1, n):  # Note "1" here, not zero
                                 sum0=sum(r[0:j, j]*wa1[0:j])
                                 wa1[j]=(wa1[j]-sum0)/r[j, j]
 
@@ -2256,7 +2256,7 @@ class mpfit:
                         for j in range(n-1):
                                 wa1[j]=wa1[j]/sdiag[j]
                                 wa1[j+1:n]=wa1[j+1:n]-r[j+1:n, j]*wa1[j]
-                        wa1[n-1]=wa1[n-1]/sdiag[n-1] # Degenerate case
+                        wa1[n-1]=wa1[n-1]/sdiag[n-1]  # Degenerate case
 
                         temp=self.enorm(wa1)
                         parc=((fp/delta)/temp)/temp
