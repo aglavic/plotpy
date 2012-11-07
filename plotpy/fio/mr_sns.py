@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 '''
   Read reflectometry data from the SNS magnetism reflectometer.
 '''
@@ -8,18 +8,20 @@ from baseread import Reader
 from plotpy.mds import PhysicalConstant, PhysicalProperty, MeasurementData
 from plotpy.constants import m_n, h
 
-class MagicsReader(Reader):
-  name=u"MAGICS"
+class MRReader(Reader):
+  name=u"MR_SNS"
   description=u"Data of magnetism reflectometer at SNS"
   glob_patterns=[u'*.nxs']
   session='pnr'
 
   parameters=[('tth_offset', 0.), ('phi_offset', 0.),
+              ("alpha_i_offset", 0.),
               ('tth_window', 0.1), ('phi_window', 0.5),
               ('show_tth_phi', False), ('show_tth_lambda', False)]
   parameter_units={
                    'tth_offset': u'°',
                    'phi_offset': u'°',
+                   'alpha_i_offset': u'°',
                    'tth_window': u'°',
                    'phi_window': u'°',
                    }
@@ -27,7 +29,7 @@ class MagicsReader(Reader):
                          'swap_xy': 'Switch x- and y-axes',
                          'center_x': 'Direct beam center in x direction (ignored for ID01)',
                          'center_y': 'Direct beam center in y direction (ignored for ID01)',
-                         } # hover text for description
+                         }  # hover text for description
 
   store_mds=False
   allow_multiread=True
@@ -43,7 +45,7 @@ class MagicsReader(Reader):
 
   def __init__(self):
     global h5py
-    import h5py #@UnusedImport
+    import h5py  # @UnusedImport
 
   def _read_file(self, filename):
     '''
@@ -78,14 +80,14 @@ class MagicsReader(Reader):
     
     '''
     items=dict(
-      title=u'collection_title', # measurement title
+      title=u'collection_title',  # measurement title
       sample=u'sample/name',
       gemoetry_file=u'instrument/SNSgeometry_file_name',
       monitor=u'proton_charge',
       time=u'start_time',
       alpha_i=u'sample/SANGLE',
       tth=u'instrument/bank1/DANGLE/average_value',
-      #detector_angle2=u'instrument/bank1/DANGLE0',
+      # detector_angle2=u'instrument/bank1/DANGLE0',
       sample_detector_distance=u'instrument/bank1/SampleDetDis',
       sample_tof_distance=u'instrument/moderator/ModeratorSamDis',
                         )
@@ -100,8 +102,8 @@ class MagicsReader(Reader):
                +self.header_info['sample_detector_distance'])
     tof=self.get_value('bank1/time_of_flight')%'s'
     tof=(tof[:-1]+tof[1:])/2.
-    lambda_n=(((h/m_n)*(tof/full_dist))%u'Å')//u'λ_n' # h/(m·v)=λ
-    #SDdistance=block['instrument']['bank1']['distance'] # distance of each pixel
+    lambda_n=(((h/m_n)*(tof/full_dist))%u'Å')//u'λ_n'  # h/(m·v)=λ
+    # SDdistance=block['instrument']['bank1']['distance'] # distance of each pixel
     I=self.get_value('bank1/data')
     x=self.get_value('bank1/x_pixel_offset', 'pix_x')
     y=self.get_value('bank1/y_pixel_offset', 'pix_y')
@@ -109,7 +111,7 @@ class MagicsReader(Reader):
          +self.header_info['tth']-self.tth_offset)//u'2Θ'
     phi=(numpy.arctan(y%'m'/(self.header_info['sample_detector_distance']%'m'))
          -self.phi_offset)//u'φ'
-    tth_2=self.header_info['alpha_i']
+    alpha_i=self.header_info['alpha_i']-self.alpha_i_offset
 
     if self.show_tth_phi:
       # create phi, tth, I grid data
@@ -126,23 +128,23 @@ class MagicsReader(Reader):
       ds.short_info=self.block_key
       ds.is_matrix_data=True
       ds.plot_options.rectangles.append([
-                                         [[2*float(tth_2%u'°')-self.tth_window,
+                                         [[2*float(alpha_i%u'°')-self.tth_window,
                                            -self.phi_window, 1.],
-                                         [2*float(tth_2%u'°')+self.tth_window,
+                                         [2*float(alpha_i%u'°')+self.tth_window,
                                           self.phi_window, 1.]],
                                          True, True, 0.5, '#ffffff', True, '#000000', '',
                                          ])
       ds.plot_options.rectangles.append([
-                                         [[2*float(tth_2%u'°')-self.tth_window,
+                                         [[2*float(alpha_i%u'°')-self.tth_window,
                                            self.phi_window, 1.],
-                                         [2*float(tth_2%u'°')+self.tth_window,
+                                         [2*float(alpha_i%u'°')+self.tth_window,
                                           2*self.phi_window, 1.]],
                                          True, True, 0.5, '#ff0000', True, '#000000', '',
                                          ])
       ds.plot_options.rectangles.append([
-                                         [[2*float(tth_2%u'°')-self.tth_window,
+                                         [[2*float(alpha_i%u'°')-self.tth_window,
                                            -2*self.phi_window, 1.],
-                                         [2*float(tth_2%u'°')+self.tth_window,
+                                         [2*float(alpha_i%u'°')+self.tth_window,
                                           -self.phi_window, 1.]],
                                          True, True, 0.5, '#ff0000', True, '#000000', '',
                                          ])
@@ -160,11 +162,10 @@ class MagicsReader(Reader):
       ds.data.append(PhysicalProperty('I', 'counts', Is, numpy.sqrt(Is)))
       ds.sample_name=self.header_info['sample']
       ds.short_info=self.block_key
-      ds.is_matrix_data=True
       output.append(ds)
     # create reflectivity data
-    Qz=(4.*numpy.pi/lambda_n*numpy.sin(tth_2))//u'Q_z'
-    x_reg=numpy.where((numpy.abs(tth-tth_2*2)%u'°')<self.tth_window)[0]
+    Qz=(4.*numpy.pi/lambda_n*numpy.sin(alpha_i))//u'Q_z'
+    x_reg=numpy.where((numpy.abs(tth-alpha_i*2)%u'°')<self.tth_window)[0]
     y_reg=numpy.where((numpy.abs(phi)%u'°')<=self.phi_window)[0]
     y_bg=numpy.where(((numpy.abs(phi)%u'°')>self.phi_window)
                      &((numpy.abs(phi)%u'°')<=2*self.phi_window))[0]

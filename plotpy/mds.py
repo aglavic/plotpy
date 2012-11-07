@@ -85,10 +85,10 @@ class MeasurementData(object):
   logx=False
   logy=False
   logz=False
-  crop_zdata=True # Crop the z-range values to the selected plot range
-  scan_line_constant=-1 # the column to sort the data for when using 3d plots.
-  scan_line=-1 # the column changed in one scan.
-  const_data=[] # select, which data should not be varied in this maesurement and the accouracy
+  crop_zdata=True  # Crop the z-range values to the selected plot range
+  scan_line_constant=-1  # the column to sort the data for when using 3d plots.
+  scan_line=-1  # the column changed in one scan.
+  const_data=[]  # select, which data should not be varied in this maesurement and the accouracy
   info=u''
   short_info=u''
   number=u''
@@ -128,23 +128,23 @@ class MeasurementData(object):
     self.sample_name=u''
     self._plot_options=PlotOptions()
     self.data=[]
-    for column in columns: # create Property for every column
+    for column in columns:  # create Property for every column
       self.data.append(PhysicalProperty(column[0], column[1], dtype=dtype))
     self.xdata=x
     self.ydata=y
     self.zdata=zdata
-    self.view_x=0 #3d view point
+    self.view_x=0  # 3d view point
     self.view_z=0
     self.logx=False
     self.logy=False
     self._yerror=yerror
     self.const_data=[]
-    for con in const: # create const_data column,Property for every const
+    for con in const:  # create const_data column,Property for every const
       self.const_data.append([con[0], PhysicalProperty(self.data[con[0]].dimension, self.data[con[0]].unit)])
       self.const_data[-1][1].append(con[1])
-    self.plot_together=[self] # list of datasets, which will be plotted together
+    self.plot_together=[self]  # list of datasets, which will be plotted together
 
-  def __iter__(self): # see next()
+  def __iter__(self):  # see next()
     '''
       Function to iterate through the data-points, object can be used in u"for bla in data:".
       Skippes pointes that are filtered.
@@ -158,11 +158,11 @@ class MeasurementData(object):
       
       :return: numpy array of point lists
     '''
-    #try:
-    data=numpy.vstack(self.data+[item.error for item in self.data if item.has_error])#numpy.array([col.values for col in self.data])
-    #except ValueError:
-      #min_length=min([len(col.values) for col in self.data])
-      #data=numpy.array([col.values[:min_length] for col in self.data])
+    # try:
+    data=numpy.vstack(self.data+[item.error for item in self.data if item.has_error])  # numpy.array([col.values for col in self.data])
+    # except ValueError:
+      # min_length=min([len(col.values) for col in self.data])
+      # data=numpy.array([col.values[:min_length] for col in self.data])
     filters=self.filters
     for data_filter in filters:
       filter_column=data[data_filter[0]]
@@ -470,7 +470,7 @@ class MeasurementData(object):
     if hasattr(x, u'__iter__'):
       # scipy interpolation is much better for arrays, try to create it:
       try:
-        from scipy.interpolate import interp1d #@UnusedImport
+        from scipy.interpolate import interp1d  # @UnusedImport
       except ImportError:
         idx=numpy.where(xm<x[0])[0][-1]
         # calculate the interpolation
@@ -579,7 +579,7 @@ class MeasurementData(object):
       
       :return: The added point or u'NULL' if an error has occured
     '''
-    data=self.data # speedup data_lookup
+    data=self.data  # speedup data_lookup
     append_fast=PhysicalProperty.append
     nop=self.number_of_points
     if len(point)==len(data):
@@ -688,7 +688,7 @@ class MeasurementData(object):
   y=property(_get_y, _set_y)
   z=property(_get_z, _set_z)
 
-  def list(self): #@ReservedAssignment
+  def list(self):  # @ReservedAssignment
     '''
       Get x-y-(z) list of all data points.
       If x or y columns are negative the index is returned instead
@@ -755,7 +755,7 @@ class MeasurementData(object):
       output.data[i]=col.join(other.data[i])
     return output
 
-  def type(self): #@ReservedAssignment
+  def type(self):  # @ReservedAssignment
     '''
       Short form to get the first constant data column.
     '''
@@ -916,20 +916,20 @@ class MeasurementData(object):
       :return: Last point after function execution
     '''
     try:
-      #arrays=[]
-      #for column in self.data:
-        #array=numpy.array(column.values)
-        #arrays.append(array)
+      # arrays=[]
+      # for column in self.data:
+        # array=numpy.array(column.values)
+        # arrays.append(array)
       processed_data=function(self.data)
       self.data=processed_data
-      #for i, array in enumerate(self.data):
+      # for i, array in enumerate(self.data):
         # self.data[i].values=list(array)
     except (TypeError,
             ValueError,
             IndexError,
-            ZeroDivisionError), error: # if the function does not work with arrays the conventional method is used.
+            ZeroDivisionError), error:  # if the function does not work with arrays the conventional method is used.
       raise ValueError, u"could not process function: %s"%error
-      #self.process_function_nonumpy(function)
+      # self.process_function_nonumpy(function)
     return self.last()
 
   def sort(self, column=None):
@@ -1031,7 +1031,7 @@ class MeasurementData(object):
     write_file.write(data_string)
     write_file.write(u'\n')
     write_file.close()
-    return data.shape[1] # return the number of exported data lines
+    return data.shape[1]  # return the number of exported data lines
 
   def export_matrix(self, file_name):
     '''
@@ -1113,7 +1113,7 @@ class MeasurementData(object):
     output=(u"\n\n".join(output_list))%tuple(data)
     return output
 
-  def max(self, xstart=None, xstop=None): #@ReservedAssignment
+  def max(self, xstart=None, xstop=None):  # @ReservedAssignment
     '''
       Returns x and y value of point with maximum x.
     '''
@@ -1127,7 +1127,7 @@ class MeasurementData(object):
     max_point=self.data[self.ydata].values.index(y[indices].max())
     return [self.data[self.xdata].values[max_point], self.data[self.ydata].values[max_point]]
 
-  def min(self, xstart=None, xstop=None): #@ReservedAssignment
+  def min(self, xstart=None, xstop=None):  # @ReservedAssignment
     '''
       Returns x and y value of point with minimum x.
     '''
@@ -1218,7 +1218,7 @@ class MeasurementData(object):
     '''
       Export x and y projections to a 4-column file.
     '''
-    #file_handler=open(file_name, u'w')
+    # file_handler=open(file_name, u'w')
     xx, xy=self.get_xprojection(numpoints)
     yx, yy=self.get_yprojection(numpoints)
     if len(xx)<len(yx):
@@ -1227,11 +1227,11 @@ class MeasurementData(object):
     elif len(yx)<len(xx):
       yx.resize(len(xx), refcheck=False)
       yy.resize(len(xx), refcheck=False)
-    #file_handler.write(u'# Projection on x and y axes of %s-%s map\n' % (self.sample_name,self.short_info))
-    #columns=u' '.join(col.dimension+u'['+col.units+u']' for col in [xx, xy, yx, yy])
-    #write_file.write(u'#\n#\n# Begin of Dataoutput:\n#'+columns+u'\n')
+    # file_handler.write(u'# Projection on x and y axes of %s-%s map\n' % (self.sample_name,self.short_info))
+    # columns=u' '.join(col.dimension+u'['+col.units+u']' for col in [xx, xy, yx, yy])
+    # write_file.write(u'#\n#\n# Begin of Dataoutput:\n#'+columns+u'\n')
     data=numpy.vstack([xx, xy, yx, yy]).transpose()
-    numpy.savetxt(file_name, data, fmt=u'%.10e')
+    numpy.savetxt(file_name, data)
 
 #--------------------------------------MeasurementData-Class-----------------------------------------------------#
 
@@ -1270,7 +1270,7 @@ class HugeMD(MeasurementData):
       self._units=None
       self._dimensions=None
       self._len=None
-      #os.remove(self.tmp_export_file)
+      # os.remove(self.tmp_export_file)
     return self._data
 
   def set_data_object(self, object_):
@@ -1417,13 +1417,13 @@ class HugeMD(MeasurementData):
       self.last_export_output=self.do_export(self.tmp_export_file+u'.gptmp', print_info, seperator, xfrom, xto, only_fitted_columns)
       self.changed_after_export=False
       self.last_export_zrange=self.plot_options.zrange
-    #self.store_data()
+    # self.store_data()
     copyfile(self.tmp_export_file+u'.gptmp', file_name)
     return self.last_export_output
 
   def export_matrix(self, file_name):
     MeasurementData.export_matrix(self, file_name)
-    #self.store_data()    
+    # self.store_data()
 
   do_export=MeasurementData.export
 
@@ -1599,7 +1599,7 @@ class PlotOptions(object):
   free_input=[]
   free_input_after=[]
   tics=[None, None, None]
-  exp_format=[0, 0, 0] # set the axis label format to 10^{%L} for xyz
+  exp_format=[0, 0, 0]  # set the axis label format to 10^{%L} for xyz
   scan_info=[False, None]
 
   def __init__(self, initial_text=u""):
@@ -1704,7 +1704,7 @@ class PlotOptions(object):
         output+=u' border rgb "%s"'%rectangle[6]
       else:
         output+=u' noborder'
-      output+=u' fc rgb "%s"'%rectangle[4] # fill color
+      output+=u' fc rgb "%s"'%rectangle[4]  # fill color
       output+=u' %s # RECTANGLE\n'%rectangle[7]
     for i, ellipses in enumerate(self.ellipses):
       pos=ellipses[0]
@@ -1723,7 +1723,7 @@ class PlotOptions(object):
         output+=u' border rgb "%s"'%ellipses[6]
       else:
         output+=u' noborder'
-      output+=u' fc rgb "%s"'%ellipses[4] # fill color
+      output+=u' fc rgb "%s"'%ellipses[4]  # fill color
       output+=u' %s # ELLIPSE\n'%ellipses[7]
     for i, tics in zip([u'x', u'y', u'cb'], self.tics):
       if tics is not None:
@@ -1885,7 +1885,7 @@ class PlotOptions(object):
       raise ValueError, u'zrange has to be a tuple or list with two elements of float or None'
 
 
-  xrange=property(get_xrange, set_xrange) #@ReservedAssignment
+  xrange=property(get_xrange, set_xrange)  # @ReservedAssignment
   yrange=property(get_yrange, set_yrange)
   zrange=property(get_zrange, set_zrange)
 
@@ -1924,7 +1924,7 @@ class PlotStyle(object):
                  u'bars': u'boxes',
                  u'steps': u'histeps',
                  u'filled': u'filledcurves',
-                 #u'circles': u'circles', 
+                 # u'circles': u'circles',
                  }
   _substyles={
               u'filled': {
@@ -1938,12 +1938,12 @@ class PlotStyle(object):
                          u't. left': u'y1 fillstyle transparent solid 0.5',
                          u't. right': u'y2 fillstyle transparent solid 0.5',
                          },
-              #u'circles': {
-                         #u'default': u'fillstyle transparent solid 0.5', 
-                         #u'empty': u'', 
-                         #u'transparent': u'fillstyle transparent solid 0.5', 
-                         #u'full': u'fillstyle solid 1.', 
-                         #}
+              # u'circles': {
+                         # u'default': u'fillstyle transparent solid 0.5',
+                         # u'empty': u'',
+                         # u'transparent': u'fillstyle transparent solid 0.5',
+                         # u'full': u'fillstyle solid 1.',
+                         # }
               }
 
   _has_points=[u'points', u'linespoints', u'errorbars', u'errorlines']
@@ -2013,7 +2013,7 @@ class PlotStyle(object):
   color=property(_get_color, _set_color)
   with_errorbars=property(_get_werror)
 
-derivatives={# derivatives to numpy base functions for error propagation
+derivatives={  # derivatives to numpy base functions for error propagation
    numpy.sin.__str__(): numpy.cos,
    numpy.cos.__str__(): lambda input_:-numpy.sin(input_),
    numpy.tan.__str__(): lambda input_: 1./numpy.cos(input_)**2,
@@ -2323,7 +2323,7 @@ class PhysicalUnit(object):
     '''
     i=0
     factor=1.
-    #offset=0.
+    # offset=0.
     new=deepcopy(self)
     while (i+1)<len(new._unit_parts):
       item1=sorted(new._unit_parts.keys())[i]
@@ -2340,7 +2340,7 @@ class PhysicalUnit(object):
             new._unit_parts[item2]+=exponent
             del(new._unit_parts[item1])
             factor*=trans[0]**exponent
-            #offset=offset*trans[0]**exponent+trans[1]
+            # offset=offset*trans[0]**exponent+trans[1]
             item1=sorted(new._unit_parts.keys())[i]
             j=i+1
           else:
@@ -2352,11 +2352,11 @@ class PhysicalUnit(object):
             new._unit_parts[item1]+=exponent
             del(new._unit_parts[item2])
             factor*=trans[0]**exponent
-            #offset=offset*trans[0]**exponent+trans[1]
+            # offset=offset*trans[0]**exponent+trans[1]
         else:
           j+=1
       i+=1
-    return new, factor#, offset)
+    return new, factor  # , offset)
 
   def get_transformation(self, conversion):
     '''
@@ -2419,7 +2419,17 @@ class PhysicalConstant(numpy.ndarray):
     Quite similar to PhysicalProperty but only as scalar.
   '''
 
-  def __new__(cls, value, unit, symbol=u'', description=u'', dtype=numpy.float64):
+  def __new__(cls, value, unit=None, symbol=u'', description=u'', dtype=numpy.float64):
+    if unit is None:
+      if type(value) in [PhysicalConstant, PhysicalProperty] and len(value)==1:
+        unit=value.unit
+        if type(value) is PhysicalProperty:
+          symbol=value.dimension
+        else:
+          symbol=value.symbol
+        value=float(value)
+      else:
+        raise ValueError, 'You need to supply value and unit'
     obj=numpy.ndarray.__new__(cls, 1, dtype=dtype)
     obj.__setitem__(0, value)
     obj.unit=PhysicalUnit(unit)
@@ -2468,17 +2478,16 @@ class PhysicalConstant(numpy.ndarray):
       
       :return: PhysicalConstant object with values as result from the function
     '''
-    out_const=out_const.view(type(self))
-    # after calculation the symbol and description will most likely be wrong
-    out_const.symbol=u''
-    out_const.description=u''
-    return out_const
+    # make use of the functionality of a PhysicalProperty
+    PP=PhysicalProperty(self)
+    result=PP.__array_wrap__(out_const, context)
+    return PhysicalConstant(result)
 
   def unit_trans(self, transfere):
     '''
       Transform one unit to another. transfere variable is of type [from,b,a,to].
     '''
-    if transfere[0]==self.unit: # only transform if right u'from' parameter
+    if transfere[0]==self.unit:  # only transform if right u'from' parameter
       output=self*transfere[1]+transfere[2]
       output.unit=PhysicalUnit(transfere[3])
       return output
@@ -2661,9 +2670,9 @@ class PhysicalProperty(numpy.ndarray):
     get called with instances of this class
   '''
 
-  unit_save=True #: if true changes units after arithmetic operation and checks if correct
+  unit_save=True  # : if true changes units after arithmetic operation and checks if correct
 
-  def __new__(cls, dimension_in, unit_in, input_data=[], input_error=None, unit_save=True,
+  def __new__(cls, dimension_in, unit_in=None, input_data=[], input_error=None, unit_save=True,
               dtype=numpy.float32):
     '''
       Class constructor when explcidly called.
@@ -2671,7 +2680,17 @@ class PhysicalProperty(numpy.ndarray):
       :param dimension_in: String with the dimensions for that instance
       :param unit_in: String with unit for that instance
     '''
-    #obj=numpy.ndarray.__new__(cls, len(input_data), dtype=numpy.float32)
+    if unit_in is None:
+      if type(dimension_in) in [PhysicalConstant, PhysicalProperty]:
+        input_data=dimension_in.view(numpy.ndarray)
+        unit_in=dimension_in.unit
+        if type(dimension_in) is PhysicalProperty:
+          dimension_in=dimension_in.dimension
+        else:
+          dimension_in=dimension_in.symbol
+      else:
+        raise ValueError, 'You need to supply dimension and unit'
+    # obj=numpy.ndarray.__new__(cls, len(input_data), dtype=numpy.float32)
     obj=numpy.asarray(input_data, dtype=dtype).view(cls).copy()
     obj.unit=PhysicalUnit(unit_in)
     if type(dimension_in) is str:
@@ -2689,7 +2708,7 @@ class PhysicalProperty(numpy.ndarray):
     self.unit=getattr(obj, 'unit', PhysicalUnit(u''))
     self.dimension=getattr(obj, 'dimension', u"")
     self._error=getattr(obj, '_error', None)
-    #print u"finalize", self.__dict__
+    # print u"finalize", self.__dict__
 
   def __reduce__(self):
     '''
@@ -2845,7 +2864,7 @@ class PhysicalProperty(numpy.ndarray):
     '''
       Transform one unit to another. transfere variable is of type [from,b,a,to].
     '''
-    if transfere[0]==self.unit: # only transform if right u'from' parameter
+    if transfere[0]==self.unit:  # only transform if right u'from' parameter
       self.unit=PhysicalUnit(transfere[3])
       if self.has_error:
         self._error*=transfere[1]
@@ -2860,7 +2879,7 @@ class PhysicalProperty(numpy.ndarray):
       Transform dimension and unit to another. Variable transfere is of type
       [from_dim,from_unit,b,a,to_dim,to_unit].
     '''
-    if len(transfere)>0 and (transfere[1]==self.unit)&(transfere[0]==self.dimension): # only transform if right u'from_dim' and u'from_unit'
+    if len(transfere)>0 and (transfere[1]==self.unit)&(transfere[0]==self.dimension):  # only transform if right u'from_dim' and u'from_unit'
       self.unit=PhysicalUnit(transfere[5])
       self.dimension=transfere[4]
       if self.has_error:
@@ -2883,7 +2902,7 @@ class PhysicalProperty(numpy.ndarray):
     out_arr.unit=self.unit
     out_arr.dimension=self.dimension
     if context:
-      ## make sure only physical properties with the same dimension are compared
+      # # make sure only physical properties with the same dimension are compared
       if context[0].__name__ in compare_functions:
         if hasattr(context[1][1], u'unit'):
           if self.unit!=context[1][1].unit:
@@ -2894,7 +2913,7 @@ class PhysicalProperty(numpy.ndarray):
             else:
               # call the function again with changed unit of other
               return context[0](self, other)
-      ## make sure angular dependent functions are called with radian unit
+      # # make sure angular dependent functions are called with radian unit
       if context[0].__name__ in angle_functions:
         if self.unit!=u'rad':
           try:
@@ -2903,7 +2922,7 @@ class PhysicalProperty(numpy.ndarray):
           except ValueError:
             raise PhysicalWarning, u'Input to function %s needs to be an angle'%context[0].__name__
         out_arr.unit=PhysicalUnit(u'')
-      ## make sure inverse angular functions get called with dimensioinless input
+      # # make sure inverse angular functions get called with dimensioinless input
       elif context[0].__name__.startswith(u'arc'):
         if self.unit==u'':
           out_arr.unit=PhysicalUnit(u'rad')
@@ -3242,7 +3261,7 @@ class PhysicalProperty(numpy.ndarray):
       other=other.view(numpy.ndarray)
     return numpy.ndarray.__ne__(self.view(numpy.ndarray), other)
 
-  def min(self): #@ReservedAssignment
+  def min(self):  # @ReservedAssignment
     '''
       Get minimal value as PhysicalProperty object.
     '''
@@ -3252,7 +3271,7 @@ class PhysicalProperty(numpy.ndarray):
     else:
       return PhysicalProperty(u'min('+self.dimension+u')', self.unit, [numpy.ndarray.min(self)])
 
-  def max(self): #@ReservedAssignment
+  def max(self):  # @ReservedAssignment
     '''
       Get maximal value as PhysicalProperty object.
     '''
@@ -3278,7 +3297,7 @@ class PhysicalProperty(numpy.ndarray):
     else:
       return PhysicalProperty(u'mean('+self.dimension+u')', self.unit, [numpy.ndarray.mean(self)])
 
-  def sum(self, *args, **opts): #@ReservedAssignment
+  def sum(self, *args, **opts):  # @ReservedAssignment
     '''
       Get the sum of value as PhysicalProperty object.
     '''
