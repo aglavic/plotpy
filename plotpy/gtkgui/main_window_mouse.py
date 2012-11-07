@@ -142,14 +142,14 @@ class MainMouse(object):
         if position is not None and self.mouse_position_callback is not None:
           # activate a function registered as callback
           self.mouse_position_callback(position)
-        else:
-          # start a drag operation of the image
-          context=self.drag_begin([("text/uri-list", 0, 1),
-                                   ("text/plain", 0, 1),
-                                   ("image/x-xpixbuf", 0, 1)], gtk.gdk.ACTION_COPY,
-                                  action.button, action)
-          context.set_icon_pixbuf(self.image_pixbuf.scale_simple(100, 70,
-                                                                 gtk.gdk.INTERP_BILINEAR), 0, 0)
+#        else:
+#          # start a drag operation of the image
+#          context=self.drag_begin([("text/uri-list", 0, 1),
+#                                   ("text/plain", 0, 1),
+#                                   ("image/x-xpixbuf", 0, 1)], gtk.gdk.ACTION_COPY,
+#                                  action.button, action)
+#          context.set_icon_pixbuf(self.image_pixbuf.scale_simple(100, 70,
+#                                                                 gtk.gdk.INTERP_BILINEAR), 0, 0)
       if action.button==2:
         # unzoom the plot
         dataset.plot_options.xrange=[None, None]

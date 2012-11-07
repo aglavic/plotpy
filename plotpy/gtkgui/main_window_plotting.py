@@ -761,7 +761,11 @@ class MainPlotting(object):
     pattern_box.show_all()
     cps_dialog=gtk.Dialog(title='Select new color pattern:')
     cps_dialog.set_default_size(400, 400)
-    cps_dialog.vbox.pack_start(pattern_box, False)
+    nb=gtk.Notebook()
+    nb.show()
+    cps_dialog.vbox.add(nb)
+    main_items=gtk.VBox()
+    main_items.pack_start(pattern_box, False)
     try:
       # Not all versions support jpg import
       pixbuf=gtk.gdk.pixbuf_new_from_file(os.path.join(self.active_session.TEMP_DIR, 'colormap.jpg'))
@@ -775,9 +779,14 @@ class MainPlotting(object):
       sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
       sw.add_with_viewport(image)
       sw.show()
-      cps_dialog.vbox.pack_end(sw, True)
+      main_items.pack_end(sw, True)
     except:
       pass
+    main_items.show()
+    nb.append_page(main_items, gtk.Label('Color Pallettes'))
+    advanced_items=self.get_advanced_gp_tab()
+    nb.append_page(advanced_items, gtk.Label('Advanced Gnuplot Settings'))
+
     cps_dialog.add_button('OK', 1)
     cps_dialog.add_button('Apply', 2)
     cps_dialog.add_button('Cancel', 0)
@@ -795,6 +804,25 @@ class MainPlotting(object):
               gnuplot_preferences.defined_color_patterns[active_pattern])
       self.replot()
     cps_dialog.destroy()
+
+  def get_advanced_gp_tab(self):
+    # Create entries for the advanced options of the PlotOptions class
+    advanced_items = gtk.VBox() #
+    pre_entry = VListEntry(self.active_dataset.plot_options.free_input, title='Custom commands before script')
+    pre_entry.show()
+    advanced_items.pack_start(pre_entry, expand=False)
+    advanced_items.show_all()
+    pre_entry.connect('activate', lambda*ignore:self.replot())
+    post_entry = VListEntry(self.active_dataset.plot_options.free_input_after, 
+      title='Custom commands after settings')
+    post_entry.show()
+    advanced_items.pack_start(post_entry, expand=False)
+    button = gtk.Button('Show gnuplot script')
+    button.connect('clicked', self.show_last_plot_params)
+    advanced_items.pack_end(button, expand=False)
+    advanced_items.show_all()
+    post_entry.connect('activate', lambda*ignore:self.replot())
+    return advanced_items
 
   def change_plot_style(self, action):
     '''
@@ -848,25 +876,7 @@ class MainPlotting(object):
     sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
     sw.show_all()
     nb.append_page(sw, gtk.Label('Line Styles'))
-    # Create entries for the advanced options of the PlotOptions class
-    advanced_items=gtk.VBox()
-    #
-    pre_entry=VListEntry(self.active_dataset.plot_options.free_input,
-                         title='Custom commands before script')
-    pre_entry.show()
-    advanced_items.pack_start(pre_entry, expand=False)
-    advanced_items.show_all()
-    pre_entry.connect('activate', lambda *ignore: self.replot())
-    post_entry=VListEntry(self.active_dataset.plot_options.free_input_after,
-                         title='Custom commands after settings')
-    post_entry.show()
-    advanced_items.pack_start(post_entry, expand=False)
-    button=gtk.Button('Show gnuplot script')
-    button.connect('clicked', self.show_last_plot_params)
-    advanced_items.pack_end(button, expand=False)
-    advanced_items.show_all()
-    post_entry.connect('activate', lambda *ignore: self.replot())
-    #
+    advanced_items = self.get_advanced_gp_tab()
     nb.append_page(advanced_items, gtk.Label('Advanced Gnuplot Settings'))
     dialog.show()
     self.open_windows.append(dialog)
