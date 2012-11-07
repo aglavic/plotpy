@@ -5,7 +5,7 @@
 
 import numpy
 import gtk
-import os
+import os, sys
 import shutil
 
 from dialogs import SimpleEntryDialog
@@ -14,7 +14,7 @@ from plotpy import fitdata
 __author__="Artur Glavic"
 __credits__=['Liane Schätzler', 'Emmanuel Kentzinger', 'Werner Schweika',
               'Paul Zakalek', 'Eric Rosén', 'Daniel Schumacher', 'Josef Heinen']
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
+from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__  # @UnusedImport
 __status__="Production"
 
 class MainMouse(object):
@@ -31,19 +31,23 @@ class MainMouse(object):
   active_zoom_last_inside=None
   active_fit_selection_from=None
 
+  active_draw_cycle=False
+
   def update_picture(self, widget, event):
     '''
       After releasing the mouse the picture gets replot.
     '''
-    if event.type==gtk.gdk.FOCUS_CHANGE and self.active_plot_geometry!=(self.widthf, self.heightf) and self.init_complete:
+    if event.type==gtk.gdk.FOCUS_CHANGE and self.active_plot_geometry!=(self.widthf, self.heightf) \
+       and self.init_complete:
       self.replot()
 
   def catch_mouse_position(self, widget, action):
     '''
-      Get the current mouse position when the pointer was mooved on to of the image.
+      Get the current mouse position when the pointer was moved on the image.
     '''
-    if not self.mouse_mode:
+    if not self.mouse_mode or self.active_draw_cycle:
       return
+    self.active_draw_cycle=True
     position=self.get_position_on_plot()
     if position is not None:
       self.xindicator.set_text('%12g'%position[0])
@@ -52,29 +56,31 @@ class MainMouse(object):
         # When a zoom drag is active draw a rectangle on the image
         self.active_zoom_last_inside=position
         az=self.active_zoom_from
+        self.image_pixbuf.render_to_drawable_alpha(self.image_pixmap, 0, 0, 0, 0,
+                                                   -1,-1, 0, 0, 0, 0, 0)
         self.image_pixmap.draw_rectangle(self.get_style().black_gc, False, min(az[4], position[4]),
                                                                             min(az[5], position[5]),
                                          abs(position[4]-az[4]), abs(position[5]-az[5]))
         self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
-        self.statusbar.push(0, 'Zoom: x1=%10g  y1=%10g'%(az[0], az[1]))
-        self.image_pixmap, self.image_mask=self.image_pixbuf.render_pixmap_and_mask()
+        # self.image_pixmap, self.image_mask=self.image_pixbuf.render_pixmap_and_mask()
       elif self.active_fit_selection_from is not None:
         # When a drag is active draw a rectangle on the image
         af=self.active_fit_selection_from
+        self.image_pixbuf.render_to_drawable_alpha(self.image_pixmap, 0, 0, 0, 0,
+                                                   -1,-1, 0, 0, 0, 0, 0)
         self.image_pixmap.draw_rectangle(self.get_style().black_gc, False, min(af[4], position[4]),
                                                                             min(af[5], position[5]),
                                          abs(position[4]-af[4]), abs(position[5]-af[5]))
         self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
-        self.statusbar.push(0, 'Fit-region: x1=%10g  y1=%10g'%(af[0], af[1]))
-        self.image_pixmap, self.image_mask=self.image_pixbuf.render_pixmap_and_mask()
       elif self.mouse_arrow_starting_point is not None:
         # if an arrow drag is active show a different status and draw a line from the starting
         # point to the active mouse position
         ma=self.mouse_arrow_starting_point
+        self.image_pixbuf.render_to_drawable_alpha(self.image_pixmap, 0, 0, 0, 0,
+                                                   -1,-1, 0, 0, 0, 0, 0)
         self.image_pixmap.draw_line(self.get_style().black_gc, ma[4], ma[5], position[4], position[5])
         self.image.set_from_pixmap(self.image_pixmap, self.image_mask)
         self.statusbar.push(0, 'Draw Arrow: x1=%10g y1=%10g'%(ma[0], ma[1]))
-        self.image_pixmap, self.image_mask=self.image_pixbuf.render_pixmap_and_mask()
       else:
         # show the position of the cusor on the plot
         if 'GDK_CONTROL_MASK' in action.state.value_names:
@@ -97,6 +103,12 @@ class MainMouse(object):
       except AttributeError:
         # catch an example when event is triggered after window got closed
         pass
+    # make sure image is redrawn without catching new events in this function
+    self.active_draw_cycle=True
+    while gtk.events_pending():
+      gtk.main_iteration(False)
+    self.active_draw_cycle=False
+
 
   def mouse_press(self, widget, action):
     '''
@@ -112,6 +124,7 @@ class MainMouse(object):
       if position is not None:
         self.active_fit_selection_from=position
         self.image_pixmap, self.image_mask=self.image_pixbuf.render_pixmap_and_mask()
+        self.statusbar.push(0, 'Fit-region: x1=%10g  y1=%10g'%(position[0], position[1]))
       else:
         self.active_fit_selection_from=None
     elif not 'GDK_SHIFT_MASK' in action.state.value_names:
@@ -121,6 +134,7 @@ class MainMouse(object):
         if position is not None:
           self.active_zoom_from=position
           self.active_zoom_last_inside=position
+          self.statusbar.push(0, 'Zoom: x1=%10g  y1=%10g'%(position[0], position[1]))
           self.image_pixmap, self.image_mask=self.image_pixbuf.render_pixmap_and_mask()
         else:
           self.active_zoom_from=None
@@ -338,8 +352,8 @@ class MainMouse(object):
     '''
     position=self.image.get_pointer()
     img_size=self.image.get_allocation()
-    #img_width=float(img_size[2]-img_size[0])
-    #img_height=float(img_size[3]-img_size[1])
+    # img_width=float(img_size[2]-img_size[0])
+    # img_height=float(img_size[3]-img_size[1])
     mr, pr=self.mouse_data_range
     if mr[1]==0. or mr[3]==0.:
       return None

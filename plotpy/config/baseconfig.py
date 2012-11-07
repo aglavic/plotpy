@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 '''
   Basis of the configuration system. The :class:`ConfigProxy` object
   combines module parameter with temporary and user changeable
@@ -14,7 +14,7 @@ from plotpy.configobj import ConfigObj
 class ConfigProxy(object):
   '''
   Handling of configuration options with temporal and fixed storage to .ini files
-  in the use folder.
+  in the used folder.
   Each configuration has it's own ConfigHolder object for access but one .ini file
   can hold several configurations.
   '''
