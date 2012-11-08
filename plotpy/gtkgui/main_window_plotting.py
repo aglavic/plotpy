@@ -850,8 +850,9 @@ class MainPlotting(object):
           title.add(tentry)
           main_items.pack_start(title, expand=False)
           tentry.connect('activate', self.change_plot_shortinfo, dataset)
-          line=StyleLine(dataset.plot_options, self.replot)
+          line=StyleLine(dataset.plot_options)
           line.show()
+          line.connect('changed', lambda *ignore: self.replot())
           main_items.pack_start(line, expand=False)
           i+=1
     else:
@@ -868,8 +869,9 @@ class MainPlotting(object):
         title.add(entry)
         title.add(tentry)
         main_items.pack_start(title, expand=False)
-        line=StyleLine(dataset.plot_options, self.replot)
+        line=StyleLine(dataset.plot_options)
         line.show()
+        line.connect('changed', lambda *ignore: self.replot())
         main_items.pack_start(line, expand=False)
     sw=gtk.ScrolledWindow()
     sw.add_with_viewport(main_items)
@@ -896,8 +898,8 @@ class MainPlotting(object):
     # suggest commen physical units
     exponent_values=['Off', 'No prefactor', 'With Prefactor',
                      'Prefix', 'Prefix+Unit', 'Short', 'Short Exp.']
-    from plotpy.config.transformations import known_unit_transformations
-    unit_suggestions=numpy.array(known_unit_transformations.keys()).flatten()
+    from plotpy.config.transformations import known_transformations
+    unit_suggestions=numpy.array([item[0] for item in known_transformations])
     unit_suggestions=numpy.unique(unit_suggestions)
     entries=[
                              ['x-Dimension', dataset.x.dimension, str],

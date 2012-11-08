@@ -5,7 +5,7 @@
 
 import numpy
 from baseread import Reader
-from plotpy.mds import PhysicalConstant, PhysicalProperty, MeasurementData
+from plotpy.mds import PhysicalConstant, PhysicalProperty, MeasurementData, MeasurementData4D
 from plotpy.constants import m_n, h
 
 class MRReader(Reader):
@@ -17,6 +17,7 @@ class MRReader(Reader):
   parameters=[('tth_offset', 0.), ('phi_offset', 0.),
               ("alpha_i_offset", 0.),
               ('tth_window', 0.1), ('phi_window', 0.5),
+              ('show_4D', False),
               ('show_tth_phi', False), ('show_tth_lambda', False)]
   parameter_units={
                    'tth_offset': u'°',
@@ -112,6 +113,7 @@ class MRReader(Reader):
     phi=(numpy.arctan(y%'m'/(self.header_info['sample_detector_distance']%'m'))
          -self.phi_offset)//u'φ'
     alpha_i=self.header_info['alpha_i']-self.alpha_i_offset
+    k=(2.*numpy.pi/lambda_n*numpy.sin(alpha_i))//u'k'
 
     if self.show_tth_phi:
       # create phi, tth, I grid data
@@ -163,8 +165,32 @@ class MRReader(Reader):
       ds.sample_name=self.header_info['sample']
       ds.short_info=self.block_key
       output.append(ds)
+    if self.show_4D:
+      # create lambda, tth, I grid data
+      TTH=numpy.repeat(tth, k.shape[0]*phi.shape[0]).reshape(tth.shape[0], phi.shape[0],
+                                                             k.shape[0])
+      PHI=numpy.repeat(numpy.tile(phi, tth.shape[0]), k.shape[0]).reshape(tth.shape[0],
+                                                              phi.shape[0], k.shape[0])
+      K=numpy.tile(k, tth.shape[0]*phi.shape[0]).reshape(tth.shape[0], phi.shape[0], k.shape[0])
+      alpha_f=TTH-alpha_i
+      Qx=(K*(numpy.cos(alpha_f)*numpy.cos(PHI)-numpy.cos(alpha_i)))//u"Q_x"
+      Qy=(K*(numpy.cos(alpha_f)*numpy.sin(PHI)))//u"Q_y"
+      Qz=(K*(numpy.sin(alpha_f)+numpy.sin(alpha_i)))//u"Q_z"
+      ds=MeasurementData4D(x=3, y=5, y2=4, z=6)
+      ds.data.append(TTH.flatten()%u'°')
+      ds.data.append(PHI.flatten()%u'°')
+      ds.data.append(K.flatten())
+      ds.data.append(Qx.flatten())
+      ds.data.append(Qy.flatten())
+      ds.data.append(Qz.flatten())
+
+      Is=I.flatten()
+      ds.data.append(PhysicalProperty('I', 'counts', Is, numpy.sqrt(Is)))
+      ds.sample_name=self.header_info['sample']
+      ds.short_info=self.block_key
+      output.append(ds)
     # create reflectivity data
-    Qz=(4.*numpy.pi/lambda_n*numpy.sin(alpha_i))//u'Q_z'
+    Qz=(2.*k*numpy.sin(alpha_i))//u'Q_z'
     x_reg=numpy.where((numpy.abs(tth-alpha_i*2)%u'°')<self.tth_window)[0]
     y_reg=numpy.where((numpy.abs(phi)%u'°')<=self.phi_window)[0]
     y_bg=numpy.where(((numpy.abs(phi)%u'°')>self.phi_window)

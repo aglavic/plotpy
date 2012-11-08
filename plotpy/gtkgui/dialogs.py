@@ -2354,14 +2354,18 @@ class StyleLine(gtk.Table):
   '''
     A line of options for plot styles.
   '''
+  __gsignals__={
+                'changed' : (gobject.SIGNAL_RUN_FIRST, gobject.TYPE_NONE, ()),
+                }
 
-  def __init__(self, plot_options, callback):
+  last_used=None
+
+  def __init__(self, plot_options):
     '''
       Show entries to select plot options.
     '''
     gtk.Table.__init__(self, rows=1, columns=10, homogeneous=False)
     self.plot_options=plot_options
-    self.callback=callback
     self._create_entries()
     self._update_active_entries()
     self._connect_events()
@@ -2500,12 +2504,14 @@ class StyleLine(gtk.Table):
       Activate or deactivate custom settings for the plot.
     '''
     if self.toggle_custom.get_active():
-      self.plot_options._special_plot_parameters=PlotStyle()
+      if self.last_used is None:
+        self.last_used=PlotStyle()
+      self.plot_options._special_plot_parameters=self.last_used
       self.entries['color-button'].set_label('<auto>')
     else:
       self.plot_options._special_plot_parameters=None
     self._update_active_entries()
-    self.callback()
+    self.emit('changed')
 
   def process_changes(self, widget, key):
     '''
@@ -2549,7 +2555,7 @@ class StyleLine(gtk.Table):
     elif key=='substyle':
       substyle_list=sorted(style._substyles[style.style].keys())
       style.substyle=substyle_list[widget.get_active()]
-    self.callback()
+    self.emit('changed')
 
   def change_color(self, widget):
     '''
@@ -2576,11 +2582,11 @@ class StyleLine(gtk.Table):
       else:
         self.entries['color-button'].set_label('#%.2X%.2X%.2X'%tuple(old_color))
     color_dia.destroy()
-    self.callback()
+    self.emit('changed')
 
   def _update_color(self, color_selection):
     self.plot_options._special_plot_parameters.color=color_selection
-    self.callback()
+    self.emit('changed')
 
 #----------------- Dialog to change the color and style of a plot -----------------------
 
