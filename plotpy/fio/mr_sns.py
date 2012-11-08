@@ -7,6 +7,7 @@ import numpy
 from baseread import Reader
 from plotpy.mds import PhysicalConstant, PhysicalProperty, MeasurementData, MeasurementData4D
 from plotpy.constants import m_n, h
+from plotpy.config import mr_sns as config
 
 class MRReader(Reader):
   name=u"MR_SNS"
@@ -27,9 +28,11 @@ class MRReader(Reader):
                    'phi_window': u'°',
                    }
   parameter_description={
-                         'swap_xy': 'Switch x- and y-axes',
-                         'center_x': 'Direct beam center in x direction (ignored for ID01)',
-                         'center_y': 'Direct beam center in y direction (ignored for ID01)',
+                         'tth_window': u'Region used for specular extraction',
+                         'phi_window': u'Region used for specular extraction in y direction',
+                         'show_4D': u'Creat a full 4D dataset containing all information',
+                         'show_tth_phi': u'Creat a map of 2Θ-φ vs. I',
+                         'show_tth_lambda': u'Creat a map of 2Θ-λ vs. I',
                          }  # hover text for description
 
   store_mds=False
@@ -108,6 +111,16 @@ class MRReader(Reader):
     I=self.get_value('bank1/data')
     x=self.get_value('bank1/x_pixel_offset', 'pix_x')
     y=self.get_value('bank1/y_pixel_offset', 'pix_y')
+    xpix=PhysicalProperty('x', 'pix', numpy.arange(x.shape[0]))
+    ypix=PhysicalProperty('y', 'pix', numpy.arange(y.shape[0]))
+    # filter detector sensitive area
+    reg=config.detector_sensitive_area
+    I=I[reg[0]:reg[1], reg[2]:reg[3], :]
+    x=x[reg[0]:reg[1]]
+    y=y[reg[2]:reg[3]]
+    xpix=xpix[reg[0]:reg[1]]
+    ypix=ypix[reg[2]:reg[3]]
+
     tth=(-numpy.arctan(x%'m'/(self.header_info['sample_detector_distance']%'m'))
          +self.header_info['tth']-self.tth_offset)//u'2Θ'
     phi=(numpy.arctan(y%'m'/(self.header_info['sample_detector_distance']%'m'))
@@ -119,11 +132,15 @@ class MRReader(Reader):
       # create phi, tth, I grid data
       TTH=numpy.repeat(tth, phi.shape[0]).reshape(tth.shape[0], phi.shape[0])
       PHI=numpy.tile(phi, tth.shape[0]).reshape(tth.shape[0], phi.shape[0])
-      ds=MeasurementData(zdata=2)
+      X=numpy.repeat(xpix, phi.shape[0]).reshape(tth.shape[0], phi.shape[0])
+      Y=numpy.tile(ypix, tth.shape[0]).reshape(tth.shape[0], phi.shape[0])
+      ds=MeasurementData(zdata=4)
       ds.scan_line=0
       ds.scan_line_constant=1
       ds.data.append(TTH.flatten()%u'°')
       ds.data.append(PHI.flatten()%u'°')
+      ds.data.append(X.flatten())
+      ds.data.append(Y.flatten())
       Is=I.sum(axis=2).flatten()
       ds.data.append(PhysicalProperty('I', 'counts', Is, numpy.sqrt(Is)))
       ds.sample_name=self.header_info['sample']

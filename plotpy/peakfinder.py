@@ -590,7 +590,7 @@ class PeakFinder2D(object):
       Use matplotlib to visualize the peak finding routine.
     '''
     from pylab import figure, show
-    from mpl_toolkits.mplot3d import Axes3D
+    from mpl_toolkits.mplot3d import Axes3D #@UnusedImport
     fig=figure(101)
     ax=fig.add_subplot(111, projection='3d')
     #peaks=self.get_peaks(snr, min_width, max_width, ridge_length, analyze,
@@ -600,7 +600,7 @@ class PeakFinder2D(object):
     x=numpy.repeat(self.xdata, len(scales))
     y=numpy.repeat(self.ydata, len(scales))
     z=numpy.tile(scales, self.xdata.shape[0]*self.xdata.shape[1])
-    ax.scatter(x.flatten(), y.flatten(), z.flatten(), s=cwt.flatten()**2, s=cwt.flatten()**2)
+    ax.scatter(x.flatten(), y.flatten(), z.flatten(), s=cwt.flatten()**2, c=cwt.flatten()**2)
 #    peak_pos=[p[0] for p in peaks]
 #    snr_filtered=self.snr_filtered
 #    length_filtered=self.length_filtered

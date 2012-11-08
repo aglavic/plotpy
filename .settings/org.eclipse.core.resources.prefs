@@ -13,6 +13,7 @@ encoding//plotpy/config/gnuplot_preferences.py=utf-8
 encoding//plotpy/config/in12.py=utf-8
 encoding//plotpy/config/maria.py=utf-8
 encoding//plotpy/config/mbe.py=utf-8
+encoding//plotpy/config/mr_sns.py=utf-8
 encoding//plotpy/config/parallel.py=utf-8
 encoding//plotpy/config/peakfinder.py=utf-8
 encoding//plotpy/config/pnr.py=utf-8

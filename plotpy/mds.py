@@ -1490,8 +1490,10 @@ class MeasurementData4D(MeasurementData):
                                                                    self.y2.max())
     self._slice_center=value
 
-  slice_width=property(_get_slice_width, _set_slice_width, None, u"The width of the slice in y2 to plot")
-  slice_center=property(_get_slice_center, _set_slice_center, None, u"The center in y2 to plot")
+  slice_width=property(_get_slice_width, _set_slice_width, None,
+                       u"The width of the slice in y2 to plot")
+  slice_center=property(_get_slice_center, _set_slice_center, None,
+                        u"The center in y2 to plot")
 
 
   def _get_y2(self):
@@ -1564,11 +1566,21 @@ class MeasurementData4D(MeasurementData):
       slice_idx=numpy.where((data[y2]>=(slice_center-slice_width/2.))&
                             (data[y2]<=(slice_center+slice_width/2.)))[0]
       data=data[:, slice_idx]
+    # constrain to plot region
+    if self.plot_options.xrange!=[None, None]:
+      xrange_idx=numpy.where((data[x]>=self.plot_options.xrange[0])&
+                             (data[x]<=self.plot_options.xrange[1]))[0]
+      data=data[:, xrange_idx]
+    if self.plot_options.yrange!=[None, None]:
+      yrange_idx=numpy.where((data[y]>=self.plot_options.yrange[0])&
+                             (data[y]<=self.plot_options.yrange[1]))[0]
+      data=data[:, yrange_idx]
     I, ignore, ignore=numpy.histogram2d(data[x], data[y], (self.gridsize_x, self.gridsize_y),
                         weights=data[z])
     count, x, y=numpy.histogram2d(data[x], data[y],
                                             (self.gridsize_x, self.gridsize_y))
     I/=numpy.maximum(1, count)
+    I[count==0]=numpy.NaN
     Y, X=numpy.meshgrid(y[1:]+(y[1]-y[0])/2., x[1:]+(x[1]-x[0])/2.)
 
     # Create data as list of x1,y1,z1,x2,y2,z2...,xn,yn,zn
