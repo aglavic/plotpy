@@ -43,7 +43,7 @@ from plotpy.message import warn as _warn
 _package_dir=_os.path.split(_os.path.abspath(__file__))[0]
 
 # prepare user config, if it does not exist
-_config_path=_os.path.expanduser('~/.plotting_gui')
+_config_path=_os.path.expanduser('~/.plotpy')
 if not _os.path.exists(_config_path):
   _os.mkdir(_config_path)
 # define ipython config path to seperate it from normal ipython configuration

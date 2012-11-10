@@ -3297,29 +3297,27 @@ class PhysicalProperty(numpy.ndarray):
     '''
       Get (weighted) mean value as PhysicalProperty object.
     '''
-    if self.has_error:
-      # if the object has an error value calculate the weighted mean
-      data=self.view(numpy.ndarray)
-      error=self._error
-      over_error_sum=(1./error**2).sum()
-      weighted_mean_data=(data/error**2).sum()/over_error_sum
-      weighted_mean_error=numpy.sqrt(1./over_error_sum)
-      return PhysicalProperty(u'mean('+self.dimension+u')', self.unit,
-                              [weighted_mean_data], [weighted_mean_error])
-    else:
-      return PhysicalProperty(u'mean('+self.dimension+u')', self.unit, [numpy.ndarray.mean(self)])
+    return (self.sum()/float(len(self)))//(u'mean('+self.dimension+u')')
 
   def sum(self, *args, **opts):  # @ReservedAssignment
     '''
       Get the sum of value as PhysicalProperty object.
     '''
+    res=numpy.ndarray.sum(self, *args, **opts)
     if self.has_error:
       # if the object has an error value calculate the weighted mean
       output_error=numpy.sqrt((self._error**2).sum(*args, **opts))
-      return PhysicalProperty(u'sum('+self.dimension+u')', self.unit,
+      if res.shape==():
+        return PhysicalProperty(u'sum('+self.dimension+u')', self.unit,
                               [numpy.ndarray.sum(self, *args, **opts)], [output_error])
+      else:
+        return PhysicalProperty(u'sum('+self.dimension+u')', self.unit,
+                              numpy.ndarray.sum(self, *args, **opts), output_error)
     else:
-      return PhysicalProperty(u'sum('+self.dimension+u')', self.unit, [numpy.ndarray.sum(self, *args, **opts)])
+      if res.shape==():
+        return PhysicalProperty(u'sum('+self.dimension+u')', self.unit, [res])
+      else:
+        return PhysicalProperty(u'sum('+self.dimension+u')', self.unit, res)
 
   def reshape(self, *a, **opts):
     '''

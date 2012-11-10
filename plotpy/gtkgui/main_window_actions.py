@@ -493,7 +493,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     text=gtk.TextView()
     text.get_buffer().set_text('')
     text.show_all()
-    #message=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
+    #message=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE,
     #                              message_format=str(self.file_actions.store()))
     message=gtk.Dialog(title='Run Makro...')
     message.vbox.add(text)
@@ -528,7 +528,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     text=gtk.TextView()
     text.get_buffer().set_text(str(self.file_actions.store()))
     text.show_all()
-    #message=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE, 
+    #message=gtk.MessageDialog(parent=self, flags=gtk.DIALOG_DESTROY_WITH_PARENT, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_CLOSE,
     #                              message_format=str(self.file_actions.store()))
     message=gtk.Dialog(title='Action History')
     sw=gtk.ScrolledWindow()
@@ -554,6 +554,11 @@ Gnuplot version %.1f patchlevel %i with terminals:
       This opens a window with an IPython console,
       which has direct access to all important objects.
     '''
+#    from plotpy.ipkernel_handler import IPKernelThread
+#    kernel=IPKernelThread()
+#    kernel.new_qtc()
+#    self.ipkernel=kernel
+#    return
     import IPython
     if IPython.__version__<'0.11':
       from ipython_view import IPythonView, MenuWrapper, FitWrapper #@UnusedImport

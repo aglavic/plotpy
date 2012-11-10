@@ -496,8 +496,8 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     self.connect("configure-event", self.update_size)
     self.image.connect('size-allocate', self.image_resize)
     # entries
-    self.label.connect("activate", self.change) # changed entry triggers change() function 
-    self.label2.connect("activate", self.change) # changed entry triggers change() function 
+    self.label.connect("activate", self.change) # changed entry triggers change() function
+    self.label2.connect("activate", self.change) # changed entry triggers change() function
     self.plot_page_entry.connect("activate", self.iterate_through_measurements)
     self.x_range_in.connect("activate", self.change_range)
     self.x_range_in.connect('event', self.range_event)
@@ -603,8 +603,8 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
         pass
     # save settings to ini file
     if store_config:
-      if not os.path.exists(os.path.expanduser('~')+'/.plotting_gui'):
-        os.mkdir(os.path.expanduser('~')+'/.plotting_gui')
+      if not os.path.exists(os.path.expanduser('~')+'/.plotpy'):
+        os.mkdir(os.path.expanduser('~')+'/.plotpy')
       # ConfigObj config structure for profiles
       self.config_object['profiles']={}
       for ignore, profile in self.profiles.items():

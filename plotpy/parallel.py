@@ -44,7 +44,7 @@ def connect():
             'if not "%s" in sys.path: sys.path.append("%s");'%(config.CLUSTER_PLOTPY_DIR,
                                                                config.CLUSTER_PLOTPY_DIR),
             'import plotpy.plugins',
-            "user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')",
+            "user_folder=os.path.join(os.path.expanduser('~'), '.plotpy')",
             '''if os.path.exists(user_folder) and os.path.exists(os.path.join(user_folder, 'plugins')) \
 and not os.path.join(user_folder, 'plugins') in sys.path: \
 sys.path.append(os.path.join(user_folder, 'plugins'));''',
@@ -224,7 +224,7 @@ if multiprocessing is not None:
               'if not "%s" in sys.path: sys.path.append("%s");'%(config.CLUSTER_PLOTPY_DIR,
                                                                  config.CLUSTER_PLOTPY_DIR),
               'import plugins',
-              "user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')",
+              "user_folder=os.path.join(os.path.expanduser('~'), '.plotpy')",
               '''if os.path.exists(user_folder) and os.path.exists(os.path.join(user_folder, 'plugins')) \
   and not os.path.join(user_folder, 'plugins') in sys.path: \
   sys.path.append(os.path.join(user_folder, 'plugins'));''',

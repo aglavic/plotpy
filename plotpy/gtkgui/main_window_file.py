@@ -635,12 +635,12 @@ class MainFile(object):
     # create the object with association to an inifile in the user folder
     # have to test if this works under windows
     try:
-      self.config_object=ConfigObj(os.path.expanduser('~')+'/.plotting_gui/config.ini', unrepr=True)
+      self.config_object=ConfigObj(os.path.expanduser('~')+'/.plotpy/config.ini', unrepr=True)
     except:
       # If the file is corrupted or with old format (without unrepr) rename it and create a new one
       print 'Corrupted .ini file, renaming it to config.bak.'
-      os.rename(os.path.expanduser('~')+'/.plotting_gui/config.ini', os.path.expanduser('~')+'/.plotting_gui/config.bak')
-      self.config_object=ConfigObj(os.path.expanduser('~')+'/.plotting_gui/config.ini', unrepr=True)
+      os.rename(os.path.expanduser('~')+'/.plotpy/config.ini', os.path.expanduser('~')+'/.plotpy/config.bak')
+      self.config_object=ConfigObj(os.path.expanduser('~')+'/.plotpy/config.ini', unrepr=True)
     self.config_object.indent_type='\t'
     # If the inifile exists import the profiles but override default profile.
     try:

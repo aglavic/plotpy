@@ -21,7 +21,7 @@ unit_prefixes={
                u'f': 1e-15,
                }
 # base SI units where these prfixes apply to
-SI_base_units=[u'm', u'g', u'K', u'T', u'A', u's', u'eV', u'rad']
+SI_base_units=[u'm', u'g', u'K', u'T', u'A', u's', u'eV', u'rad', u"C"]
 
 # define transformations that can be used to convert units
 #                            u'from->to': (factor, offset, [name_from, name_to]),

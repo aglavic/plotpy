@@ -727,7 +727,7 @@ def append_filter(filter_):
 
 try:
   from configobj import ConfigObj
-  config=ConfigObj(os.path.expanduser('~')+'/.plotting_gui/ascii_importer.ini', unrepr=True, indent_type='\t')
+  config=ConfigObj(os.path.expanduser('~')+'/.plotpy/ascii_importer.ini', unrepr=True, indent_type='\t')
   for name, presets in config.items():
     defined_filters.append(AsciiImportFilter(name, presets=presets))
 except ImportError:

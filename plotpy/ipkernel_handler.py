@@ -4,10 +4,23 @@
 '''
 
 from threading import Thread
+from IPython.lib.kernel import connect_qtconsole
 from IPython.zmq.ipkernel import IPKernelApp
 
-class IPKernelThread(Thread):
-  def run(self):
-    self.app=IPKernelApp.instance()
-    self.app.initialize()
-    self.app.start()
+class IPKernelThread(object):
+  def __init__(self):
+    self.kernel=IPKernelApp()
+    self.kernel.initialize(['python', '--gui=gtk'])
+    self.konsoles=[]
+    self.namespace=self.kernel.shell.user_ns
+    self._init_keys=self.namespace.keys()
+
+  def update_ns(self, ns):
+    self.namespace.update(ns)
+
+  def new_qtc(self):
+    '''
+      Run new QT console application.
+    '''
+    return connect_qtconsole(self.kernel.connection_file, profile=self.kernel.profile)
+

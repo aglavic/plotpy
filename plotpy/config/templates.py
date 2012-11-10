@@ -6,7 +6,7 @@
 import os
 
 # Path for the template file
-TEMPLATE_DIRECTORY=os.path.expanduser(os.path.join('~', '.plotting_gui', 'templates'))
+TEMPLATE_DIRECTORY=os.path.expanduser(os.path.join('~', '.plotpy', 'templates'))
 
 if not os.path.exists(TEMPLATE_DIRECTORY):
   os.makedirs(TEMPLATE_DIRECTORY)

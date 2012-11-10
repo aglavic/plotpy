@@ -19,7 +19,7 @@ from plotpy.message import warn
 __all__=[]
 
 global_plugin_path=os.path.abspath(os.path.split(__file__)[0])
-user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui', 'plugins')
+user_folder=os.path.join(os.path.expanduser('~'), '.plotpy', 'plugins')
 
 # plugins from the program folder (also works if program package is in zip file)
 global_plugins=[]

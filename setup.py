@@ -45,7 +45,7 @@ __scripts__=['plot.py']
 __py_modules__=[]
 __package_dir__={}
 __packages__=['plotpy', 'plotpy.config', 'plotpy.config.default_templates',
-            'plotpy.read_data', 'plotpy.sessions',
+            'plotpy.fio', 'plotpy.sessions',
             'plotpy.sessions.reflectometer_fit', 'plotpy.gtkgui', 'plotpy.plugins'] #'plotpy.wxgui', 
 __package_data__={'plotpy.config': ['plotpy.squid_calibration', '*.dat', 'fit/fit.f90',
                             'fit/pnr_multi/*.f90'],
@@ -176,7 +176,7 @@ setup(name=__name__,
 # as these are the versions used in the latest ubuntu versions
 if ('bdist' in sys.argv):
   print "Moving distribution files..."
-  os.chdir('archiv')
+  os.chdir('dist')
   os.rename(__name__+'-'+__version__+'-1.noarch.rpm', __name__+'-'+__version__+'.rpm')
   os.remove(__name__+'-'+__version__+'-1.src.rpm')
   print "Creating debian folder..."
@@ -278,14 +278,14 @@ if ('--install-scripts' in sys.argv) and ('--prefix' in sys.argv):
 # py2exe specific stuff to make it work:
 if "py2exe" in sys.argv and not py2exe_test:
   def xcopy_to_folder(from_folder, to_folder):
-    dest=os.path.join('archiv', to_folder)
+    dest=os.path.join('dist', to_folder)
     if getattr(from_folder, '__iter__', False):
       src=os.path.join(*from_folder)
     else:
       src=from_folder
     print "Copy %s to %s..."%(src, dest)
     try:
-      os.mkdir(os.path.join('archiv', to_folder))
+      os.mkdir(os.path.join('dist', to_folder))
     except OSError:
       print "\tDirectory %s already exists."%dest
     try:
@@ -295,8 +295,8 @@ if "py2exe" in sys.argv and not py2exe_test:
     except:
       print "\tSkipped because of errors!"%src
   print "\nRenaming executable"
-  os.popen('copy archiv\\__init__.exe archiv\\plot.exe')
-  os.popen('del archiv\\__init__.exe')
+  os.popen('copy dist\\__init__.exe archiv\\plot.exe')
+  os.popen('del dist\\__init__.exe')
   print "\n*** Copying gtk stuff ***"
   # the package needs all gtk libraries to work stand alone 
   # (only works if the folders are set right on the building system)
@@ -316,7 +316,7 @@ if "py2exe" in sys.argv and not py2exe_test:
     xcopy_to_folder(src, dest)
   for script_file in glob('scripts\\*.bat'):
     sf=open(script_file, 'r').read()
-    open(os.path.join('archiv', os.path.split(script_file)[1]), 'w').write(sf.replace('plot.py', 'plot'))
+    open(os.path.join('dist', os.path.split(script_file)[1]), 'w').write(sf.replace('plot.py', 'plot'))
 
 # py2app specific stuff to make it work: 
 #if "py2app" in sys.argv:

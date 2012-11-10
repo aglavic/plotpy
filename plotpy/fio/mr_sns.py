@@ -19,13 +19,16 @@ class MRReader(Reader):
               ("alpha_i_offset", 0.),
               ('tth_window', 0.1), ('phi_window', 0.5),
               ('show_4D', False),
-              ('show_tth_phi', False), ('show_tth_lambda', False)]
+              ('show_tth_phi', False), ('show_tth_lambda', False),
+              ('background_method', ("Top/Bottom of Window", "Right of Window")),
+              ('intensity_file', 'None')]
   parameter_units={
                    'tth_offset': u'°',
                    'phi_offset': u'°',
                    'alpha_i_offset': u'°',
                    'tth_window': u'°',
                    'phi_window': u'°',
+                   'intensity_file': 'file',
                    }
   parameter_description={
                          'tth_window': u'Region used for specular extraction',
@@ -45,6 +48,7 @@ class MRReader(Reader):
                     'degree': u'°',
                     'metre': u'm',
                     'millimetre': u'mm',
+                    'picoCoulomb': u'pC',
                     }
 
   def __init__(self):
@@ -116,6 +120,8 @@ class MRReader(Reader):
     # filter detector sensitive area
     reg=config.detector_sensitive_area
     I=I[reg[0]:reg[1], reg[2]:reg[3], :]
+    monitor=PhysicalProperty(self.header_info['monitor'])%'C'
+    I=PhysicalProperty('I', 'counts', I, numpy.sqrt(I))/monitor
     x=x[reg[0]:reg[1]]
     y=y[reg[2]:reg[3]]
     xpix=xpix[reg[0]:reg[1]]
@@ -126,7 +132,7 @@ class MRReader(Reader):
     phi=(numpy.arctan(y%'m'/(self.header_info['sample_detector_distance']%'m'))
          -self.phi_offset)//u'φ'
     alpha_i=self.header_info['alpha_i']-self.alpha_i_offset
-    k=(2.*numpy.pi/lambda_n*numpy.sin(alpha_i))//u'k'
+    k=(2.*numpy.pi/lambda_n)//u'k'
 
     if self.show_tth_phi:
       # create phi, tth, I grid data
@@ -141,8 +147,8 @@ class MRReader(Reader):
       ds.data.append(PHI.flatten()%u'°')
       ds.data.append(X.flatten())
       ds.data.append(Y.flatten())
-      Is=I.sum(axis=2).flatten()
-      ds.data.append(PhysicalProperty('I', 'counts', Is, numpy.sqrt(Is)))
+      Is=I.sum(axis=2).flatten()//"I"
+      ds.data.append(Is)
       ds.sample_name=self.header_info['sample']
       ds.short_info=self.block_key
       ds.is_matrix_data=True
@@ -153,20 +159,30 @@ class MRReader(Reader):
                                           self.phi_window, 1.]],
                                          True, True, 0.5, '#ffffff', True, '#000000', '',
                                          ])
-      ds.plot_options.rectangles.append([
-                                         [[2*float(alpha_i%u'°')-self.tth_window,
-                                           self.phi_window, 1.],
-                                         [2*float(alpha_i%u'°')+self.tth_window,
-                                          2*self.phi_window, 1.]],
-                                         True, True, 0.5, '#ff0000', True, '#000000', '',
-                                         ])
-      ds.plot_options.rectangles.append([
-                                         [[2*float(alpha_i%u'°')-self.tth_window,
-                                           -2*self.phi_window, 1.],
-                                         [2*float(alpha_i%u'°')+self.tth_window,
-                                          -self.phi_window, 1.]],
-                                         True, True, 0.5, '#ff0000', True, '#000000', '',
-                                         ])
+      if self.background_method=="Top/Bottom of Window":
+        ds.plot_options.rectangles.append([
+                                           [[2*float(alpha_i%u'°')-self.tth_window,
+                                             self.phi_window, 1.],
+                                           [2*float(alpha_i%u'°')+self.tth_window,
+                                            2*self.phi_window, 1.]],
+                                           True, True, 0.5, '#ff0000', True, '#000000', '',
+                                           ])
+        ds.plot_options.rectangles.append([
+                                           [[2*float(alpha_i%u'°')-self.tth_window,
+                                             -2*self.phi_window, 1.],
+                                           [2*float(alpha_i%u'°')+self.tth_window,
+                                            -self.phi_window, 1.]],
+                                           True, True, 0.5, '#ff0000', True, '#000000', '',
+                                           ])
+      else:
+        ds.plot_options.rectangles.append([
+                                           [[2*float(alpha_i%u'°')+self.tth_window,
+                                             -self.phi_window, 1.],
+                                           [2*float(alpha_i%u'°')+3*self.tth_window,
+                                            self.phi_window, 1.]],
+                                           True, True, 0.5, '#ff0000', True, '#000000', '',
+                                           ])
+
       output.append(ds)
     if self.show_tth_lambda:
       # create lambda, tth, I grid data
@@ -177,8 +193,8 @@ class MRReader(Reader):
       ds.scan_line_constant=0
       ds.data.append(LAMBDA_N.flatten())
       ds.data.append(TTH.flatten()%u'°')
-      Is=I.sum(axis=1).flatten()
-      ds.data.append(PhysicalProperty('I', 'counts', Is, numpy.sqrt(Is)))
+      Is=I.sum(axis=1).flatten()//"I"
+      ds.data.append(Is)
       ds.sample_name=self.header_info['sample']
       ds.short_info=self.block_key
       output.append(ds)
@@ -188,21 +204,22 @@ class MRReader(Reader):
                                                              k.shape[0])
       PHI=numpy.repeat(numpy.tile(phi, tth.shape[0]), k.shape[0]).reshape(tth.shape[0],
                                                               phi.shape[0], k.shape[0])
+      LAMBDA_N=numpy.tile(lambda_n, tth.shape[0]*phi.shape[0]).reshape(tth.shape[0], phi.shape[0], k.shape[0])
       K=numpy.tile(k, tth.shape[0]*phi.shape[0]).reshape(tth.shape[0], phi.shape[0], k.shape[0])
       alpha_f=TTH-alpha_i
       Qx=(K*(numpy.cos(alpha_f)*numpy.cos(PHI)-numpy.cos(alpha_i)))//u"Q_x"
       Qy=(K*(numpy.cos(alpha_f)*numpy.sin(PHI)))//u"Q_y"
       Qz=(K*(numpy.sin(alpha_f)+numpy.sin(alpha_i)))//u"Q_z"
-      ds=MeasurementData4D(x=3, y=5, y2=4, z=6)
+      ds=MeasurementData4D(x=3, y=5, y2=4, z=7)
       ds.data.append(TTH.flatten()%u'°')
       ds.data.append(PHI.flatten()%u'°')
       ds.data.append(K.flatten())
       ds.data.append(Qx.flatten())
       ds.data.append(Qy.flatten())
       ds.data.append(Qz.flatten())
+      ds.data.append(LAMBDA_N.flatten())
 
-      Is=I.flatten()
-      ds.data.append(PhysicalProperty('I', 'counts', Is, numpy.sqrt(Is)))
+      ds.data.append(I.flatten())
       ds.sample_name=self.header_info['sample']
       ds.short_info=self.block_key
       output.append(ds)
@@ -210,19 +227,24 @@ class MRReader(Reader):
     Qz=(2.*k*numpy.sin(alpha_i))//u'Q_z'
     x_reg=numpy.where((numpy.abs(tth-alpha_i*2)%u'°')<self.tth_window)[0]
     y_reg=numpy.where((numpy.abs(phi)%u'°')<=self.phi_window)[0]
-    y_bg=numpy.where(((numpy.abs(phi)%u'°')>self.phi_window)
+    if self.background_method=="Top/Bottom of Window":
+      x_bg=numpy.where((numpy.abs(tth-alpha_i*2)%u'°')<self.tth_window)[0]
+      y_bg=numpy.where(((numpy.abs(phi)%u'°')>self.phi_window)
                      &((numpy.abs(phi)%u'°')<=2*self.phi_window))[0]
+    else:
+      x_bg=numpy.where((numpy.abs((tth-alpha_i*2)%u'°'-2*self.tth_window))<self.tth_window)[0]
+      y_bg=numpy.where((numpy.abs(phi)%u'°')<=self.phi_window)[0]
 
     ds=MeasurementData()
     ds.scan_line=1
     ds.scan_line_constant=0
     ds.data.append(Qz)
     Is=I[x_reg][:, y_reg].sum(axis=0).sum(axis=0)
-    Ib=I[x_reg][:, y_bg].sum(axis=0).sum(axis=0)
+    Ib=I[x_bg][:, y_bg].sum(axis=0).sum(axis=0)
     Ib*=float(len(Is))/len(Ib)
-    ds.data.append(PhysicalProperty('I_{corr}', 'counts', Is-Ib, numpy.sqrt(Is)))
-    ds.data.append(PhysicalProperty('I_{raw}', 'counts', Is, numpy.sqrt(Is)))
-    ds.data.append(PhysicalProperty('I_{BG}', 'counts', Ib, numpy.sqrt(Ib)))
+    ds.data.append((Is-Ib)//'I_{corr}')
+    ds.data.append(Is//'I_{raw}')
+    ds.data.append(Ib//'I_{BG}')
     ds.sample_name=self.header_info['sample']
     ds.short_info=self.block_key
     output.append(ds)

@@ -857,7 +857,7 @@ def read_full_snapshot(name):
     else:
       dump_file=open(name, 'rb')
     # prepare plugin folders
-    user_folder=os.path.join(os.path.expanduser('~'), '.plotting_gui')
+    user_folder=os.path.join(os.path.expanduser('~'), '.plotpy')
     if not os.path.join(user_folder, 'plugins') in sys.path:
       sys.path.append(os.path.join(user_folder, 'plugins'))
     from plotpy.plugins import global_plugins #@UnusedImport
