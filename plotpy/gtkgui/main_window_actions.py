@@ -34,6 +34,7 @@ class MainActions(MainFile, MainData, MainPlotting, MainMouse):
     Combined actions used in the main window.
   '''
   page2_not_initialized=True
+  ipkernel=None
 
   def activate_about(self, action):
     '''
@@ -549,16 +550,19 @@ Gnuplot version %.1f patchlevel %i with terminals:
     dia.set_default_size(600, 400)
     dia.show()
 
+
+  def open_ipy_qtconsole(self, action=None, commands=[], show_greetings=True):
+    from plotpy.ipkernel_handler import IPKernelGTK
+    kernel_gtk=IPKernelGTK(gui=self, session=self.active_session)
+    kernel_gtk.start()
+    kernel_gtk.new_qtc() #create qtconsole instance
+    self.ipkernel=kernel_gtk
+
   def open_ipy_console(self, action=None, commands=[], show_greetings=True):
     '''
       This opens a window with an IPython console,
       which has direct access to all important objects.
     '''
-#    from plotpy.ipkernel_handler import IPKernelThread
-#    kernel=IPKernelThread()
-#    kernel.new_qtc()
-#    self.ipkernel=kernel
-#    return
     import IPython
     if IPython.__version__<'0.11':
       from ipython_view import IPythonView, MenuWrapper, FitWrapper #@UnusedImport
@@ -619,7 +623,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
       session \tThe active session containing the data objects and settings
               \tAll imported data can be accessed via the session.file_data dictionary
               \tThe data for the selected file is in session.active_file_data
-      plot_gui \tThe window object with all window related funcitons
+      gui     \tThe window object with all window related funcitons
       macros  \tDictionary containing all functions which can be run as 'macros'
       menus   \tAccess all GUI menus as properties of this object.
       action_history \tList of macros activated through the GUI (key, (parameters)).
@@ -757,7 +761,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     # add variables to ipython namespace
     ipview.updateNamespace({
                        'session': self.active_session,
-                       'plot_gui': self,
+                       'gui': self,
                        'self': ipview,
                        'dataset': self.get_active_dataset,
                        'replot': self.replot,

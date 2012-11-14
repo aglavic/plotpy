@@ -99,5 +99,4 @@ encoding//sphinx/conf.py=utf-8
 encoding//tests/datatype.py=utf8
 encoding//tests/main_gui.py=utf8
 encoding/import_debug.py=utf-8
-encoding/plot.py=utf-8
 encoding/setup.py=utf-8

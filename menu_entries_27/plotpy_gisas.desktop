@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=Plot.py (GISAS)
+Comment=grazing incidence scattering session
+Comment[de]=Session für streuung unter streifendem Einfall
+GenericName=Plot.py
+Terminal=false
+Icon=/usr/local/lib/python2.7/dist-packages/plotpy/gtkgui/icons/logoblue.png
+Type=Application
+Exec=/usr/local/bin/plotpy gisas -startuppath %d %f
+Categories=GTK;GNOME;Science;
+X-KDE-StartupNotify=true
+MimeType=text/gisas;

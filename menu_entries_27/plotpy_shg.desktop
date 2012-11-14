@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=Plot.py (SHG)
+Comment=second harmonic generation session
+GenericName=Plot.py
+Terminal=false
+Icon=/usr/local/lib/python2.7/dist-packages/plotpy/gtkgui/icons/logopurple.png
+Type=Application
+Exec=/usr/local/bin/plotpy shg -startuppath %d %f
+Categories=GTK;GNOME;Science;
+X-KDE-StartupNotify=true
+MimeType=text/shg_par;

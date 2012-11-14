@@ -32,5 +32,5 @@ _plotpy() {
   return 0
   }
 
-complete -F _plotpy -o nospace devplot
+complete -F _plotpy -o nospace plotpy
 

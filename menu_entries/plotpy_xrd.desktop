@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=Plot.py (XRD)
+Comment=x-ray diffraction session
+Comment[de]=Röntgendiffraktometrie session
+GenericName=Plot.py
+Terminal=false
+Icon=/usr/local/lib/python2.6/dist-packages/plotpy/gtkgui/icons/logo.png
+Type=Application
+Exec=/usr/local/bin/plotpy xrd -startuppath %d %f
+Categories=GTK;GNOME;Science;
+X-KDE-StartupNotify=true
+MimeType=text/plotpy_xrd;

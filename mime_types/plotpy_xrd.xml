@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
-   <mime-type type="text/4circle">
-     <comment>SPEC data written with 4circle diffractometer</comment>
+   <mime-type type="text/spec">
+     <comment>SPEC data written with e.g. a 4-circle diffractometer</comment>
      <magic priority="50">
        <match value="#F" type="string" offset="0"/>
      </magic>

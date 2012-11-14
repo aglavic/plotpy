@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=Plot.py (SAS)
+Comment=small angle scattering session
+Comment[de]=Kleinwinkelstreuungs Session
+GenericName=Plot.py
+Terminal=false
+Icon=/usr/local/lib/python2.6/dist-packages/plotpy/gtkgui/icons/logoblue.png
+Type=Application
+Exec=/usr/local/bin/plotpy sas -startuppath %d %f
+Categories=GTK;GNOME;Science;
+X-KDE-StartupNotify=true

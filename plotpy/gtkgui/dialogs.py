@@ -885,11 +885,11 @@ class MultipeakDialog(gtk.Dialog):
       Use CWD peak finder to automatically detect peaks.
     '''
     from plotpy.peakfinder import PeakFinder
-    from plotpy.config import user_config
+    from plotpy.config import peakfinder
     ds=self.fit_object.data
     print "Creating CWT peak finder"
     try:
-      preset=user_config['PeakFinder']['Presets']['1']
+      preset=peakfinder.presets['1']
     except KeyError:
       message=gtk.MessageDialog(parent=self, buttons=gtk.BUTTONS_CLOSE,
                                 message_format='''

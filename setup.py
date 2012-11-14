@@ -41,7 +41,7 @@ __author_email__=__email__
 __url__="http://plotpy.sourceforge.net/plotwiki"
 __description__='''Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.'''
 
-__scripts__=['plot.py']
+__scripts__=['scripts/plotpy']
 __py_modules__=[]
 __package_dir__={}
 __packages__=['plotpy', 'plotpy.config', 'plotpy.config.default_templates',
@@ -58,7 +58,6 @@ __data_files__=[('plotpy/doc', glob('plotpy/doc/*.*'))]
 
 if "py2app" in sys.argv:
   import py2app #@UnusedImport @UnresolvedImport
-  __scripts__=['plot.py']
   #__data_files__+=[('../Frameworks', glob('/usr/lib/libwx_mac*'))]
   __options__.update({
               "app": ['plot.py'],
@@ -77,7 +76,7 @@ elif "py2exe" in sys.argv:
   __options__.update({
                 #"setup_requires": ['py2exe'], 
                 #"console": [ "__init__.py"], # set the executable for py2exe
-                "windows": [ "plot.py" ], # executable for py2exe is windows application            
+                "windows": [ "scripts/plotpy" ], # executable for py2exe is windows application
                 "options": {  "py2exe": {
                               "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio, Image, TiffImagePlugin, PngImagePlugin",
                               "optimize": 1, # Keep docstring (e.g. IPython console usage)
@@ -98,12 +97,12 @@ script_files=['scripts/prd', 'scripts/psd', 'scripts/p4d', 'scripts/dnsplot',
               'scripts/treffplot', 'scripts/pin12',
               'scripts/plot_SQUID_data', 'scripts/plot_4circle_data',
               'scripts/plot_reflectometer_data']
-# creat windows batches for the script_files
-win_batches=[script+'.bat' for script in script_files]
-for script in script_files:
-  line=open(script, 'r').readlines()[1]
-  open(script+'.bat', 'w').write(line.replace('$', '%'))
-__scripts__+=script_files+win_batches
+## creat windows batches for the script_files
+#win_batches=[script+'.bat' for script in script_files]
+#for script in script_files:
+#  line=open(script, 'r').readlines()[1]
+#  open(script+'.bat', 'w').write(line.replace('$', '%'))
+#__scripts__+=script_files+win_batches
 
 if '-test' in sys.argv:
   sys.argv.remove('-test')

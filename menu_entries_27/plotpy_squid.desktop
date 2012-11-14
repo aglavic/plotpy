@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=Plot.py (SQUID/PPMS)
+Comment=QuantumDesign SQUID and PPMS session
+GenericName=Plot.py
+Terminal=false
+Icon=/usr/local/lib/python2.7/dist-packages/plotpy/gtkgui/icons/logopurple.png
+Type=Application
+Exec=/usr/local/bin/plotpy squid -startuppath %d %f
+Categories=GTK;GNOME;Science;
+X-KDE-StartupNotify=true
+MimeType=text/plotpy_squid;

@@ -310,6 +310,7 @@ class MainUI(object):
         <separator name='extras3'/>
         <menuitem action='EditUserConfig'/>
         '''
+#        <menuitem action='StartIPKernel'/>
     if self.active_session.DEBUG:
       output+='''
       '''
@@ -661,6 +662,10 @@ class MainUI(object):
         "Open IPython Console", "<control>I", # label, accelerator
         None, # tooltip
         self.open_ipy_console),
+      ("StartIPKernel", None, # name, stock id
+        "Start IPython Kernel", "<control><shift>I", # label, accelerator
+        None, # tooltip
+        self.open_ipy_qtconsole),
       ("OpenDataView", None, # name, stock id
         "Show/Edit Data", "<control><alt>D", # label, accelerator
         None, # tooltip

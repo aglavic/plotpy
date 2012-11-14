@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=Plot.py (MBE)
+Comment=MBE LEED/RHEED/AES and logfile session
+GenericName=Plot.py
+Terminal=false
+Icon=/usr/local/lib/python2.7/dist-packages/plotpy/gtkgui/icons/logogreen.png
+Type=Application
+Exec=/usr/local/bin/plotpy mbe -startuppath %d %f
+Categories=GTK;GNOME;Science;
+X-KDE-StartupNotify=true
+MimeType=text/x-log;text/plotpy_mbe;text/plotpy_aes;image/png;

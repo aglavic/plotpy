@@ -175,7 +175,7 @@ class RedirectOutput(object):
 class RedirectError(RedirectOutput):
   '''
     Class to redirect all error messages to a message dialog when using the GUI.
-    The message dialog has an option to export a bugreport, which includes the active
+    The message dialog has an option to export a bug report, which includes the active
     measurement to help debugging.
   '''
   message_pending=False

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=Plotpy (General)
+Comment=Plotting and data manipulation
+GenericName=Plot.py
+Terminal=false
+Icon=/usr/local/lib/python2.7/dist-packages/plotpy/gtkgui/icons/logo.png
+Type=Application
+Exec=/usr/local/bin/plotpy %f -startuppath %d
+Categories=GTK;GNOME;Science;
+X-KDE-StartupNotify=true
+MimeType=text/plotpy_mdd;

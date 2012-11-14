@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=Plot.py (PNR)
+Comment=polarized neutron reflectometry session
+Comment[de]=Polarisierte Neutronen Reflektometrie session
+GenericName=Plot.py
+Terminal=false
+Icon=/usr/local/lib/python2.6/dist-packages/plotpy/gtkgui/icons/logoyellow.png
+Type=Application
+Exec=/usr/local/bin/plotpy pnr -startuppath %d %f
+Categories=GTK;GNOME;Science;
+X-KDE-StartupNotify=true
+MimeType=text/plotpy_pnr;

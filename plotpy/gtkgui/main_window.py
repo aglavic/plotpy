@@ -617,6 +617,8 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     # close open subwindows
     for window in self.open_windows:
       window.destroy()
+    if self.ipkernel is not None:
+      self.ipkernel.cleanup_consoles()
     # close ipython window
     if getattr(self, 'active_ipython', False):
       self.active_ipython.destroy()

@@ -1,12 +1,12 @@
 Source: plotpy
 Section: scientific
 Priority: extra
-Maintainer: Artur Glavic <a.glavic@fz-juelich.de>
+Maintainer: Artur Glavic <artur.glavic@gmail.com>
 Standards-Version: 3.8.1
-Homepage: http://plotpy.sourceforge.net/plotwiki
+Homepage: http://plotpy.sourceforge.net
 
 Package: plotpy
 Architecture: all
 Depends: python (>= 2.4), gnuplot (>= 4.2), python-numpy (>= 1.0), python-scipy (>= 0.7), python-gtk2 (>= 2.0), python-gobject (>= 2.0), python-imaging, ipython, gfortran, gcc
-Description: Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supported file types are 4circle (.spec)/MPMS,PPMS (.dat/.raw)/reflectometer (.UXD)/TREFF/IN12/DNS and can be widened with plugins.
-
+Description: Program to plot measured data with Gnuplot. Provides a GUI interface, fitting and some other useful functionalities. Supports treatment for XRD, XRR, PND, PNR, SAS, GISAS scattering and other data and can be widened with plugins.
+Replaces: plot-script
