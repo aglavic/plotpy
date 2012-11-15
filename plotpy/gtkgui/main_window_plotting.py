@@ -9,7 +9,7 @@ import numpy
 from time import sleep
 from plotpy import plotting
 from plotpy.config import gnuplot_preferences
-from plotpy.message import warn, info
+from plotpy.message import warn
 from dialogs import LabelArrowDialog, StyleLine, SimpleEntryDialog, \
                     PreviewDialog, VListEntry
 from diverse_classes import PlotProfile
@@ -790,20 +790,24 @@ class MainPlotting(object):
     cps_dialog.add_button('OK', 1)
     cps_dialog.add_button('Apply', 2)
     cps_dialog.add_button('Cancel', 0)
-    result=cps_dialog.run()
-    while result>0:
+    cps_dialog.show()
+    cps_dialog.connect('response', self._change_color_pattern_result,
+                       active_pattern, pattern_box)
+    self.open_windows.append(cps_dialog)
+
+  def _change_color_pattern_result(self, cps_dialog, result, active_pattern, pattern_box):
+    if result>0:
+      pattern_names=sorted(gnuplot_preferences.defined_color_patterns.keys())
       self.file_actions.activate_action('change_color_pattern',
               gnuplot_preferences.defined_color_patterns[pattern_names[pattern_box.get_active()]])
-      self.replot()
       if result==1:
-        break
-      result=cps_dialog.run()
+        cps_dialog.destroy()
     # reset colorscale if cancel was pressed
     if result==0:
       self.file_actions.activate_action('change_color_pattern',
               gnuplot_preferences.defined_color_patterns[active_pattern])
-      self.replot()
-    cps_dialog.destroy()
+      cps_dialog.destroy()
+    self.replot()
 
   def get_advanced_gp_tab(self):
     # Create entries for the advanced options of the PlotOptions class

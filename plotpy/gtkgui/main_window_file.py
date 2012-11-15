@@ -423,7 +423,7 @@ class MainFile(object):
       write_file.write(plot_text+'\n')
       write_file.close()
       if pic_box.get_active():
-        subprocess.call([self.active_session.GNUPLOT_COMMAND,
+        subprocess.call([gnuplot_preferences.gnuplot_command,
                          common_file_prefix+'.gp'],
                         shell=gnuplot_preferences.EMMULATE_SHELL,
                         creationflags=gnuplot_preferences.PROCESS_FLAGS,

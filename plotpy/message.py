@@ -160,16 +160,40 @@ class NiceMessenger(object):
     sys.stdout.flush()
 
 messenger=DefaultMessenger()
+buffering=False
+mbuffer=None
 
 def info(message, group=None, item=None, numitems=1, progress=None):
+  if buffering:
+    mbuffer.append(("info", [message, group, item, numitems, progress]))
   messenger.info(message, group=group, item=item, numitems=numitems, progress=progress)
 
 def warn(message, group=None, item=None, numitems=1, progress=None):
+  if buffering:
+    mbuffer.append(("warn", [message, group, item, numitems, progress]))
   messenger.warn(message, group=group, item=item, numitems=numitems, progress=progress)
 
 def error(message, group=None, item=None, numitems=1, progress=None):
+  if buffering:
+    mbuffer.append(("error", [message, group, item, numitems, progress]))
   messenger.error(message, group=group, item=item, numitems=numitems, progress=progress)
 
+def start_buffering():
+  global buffering, mbuffer
+  buffering=True
+  mbuffer=[]
+
+def flush_buffer():
+  global buffering, mbuffer
+  buffering=False
+  for mtype, message in mbuffer:
+    if mtype=="info":
+      info(*message)
+    elif mtype=="warn":
+      warn(*message)
+    else:
+      error(*message)
+  mbuffer=None
 
 if __name__=='__main__':
   from time import sleep

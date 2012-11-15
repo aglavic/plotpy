@@ -210,13 +210,20 @@ class MRReader(Reader):
       Qx=(K*(numpy.cos(alpha_f)*numpy.cos(PHI)-numpy.cos(alpha_i)))//u"Q_x"
       Qy=(K*(numpy.cos(alpha_f)*numpy.sin(PHI)))//u"Q_y"
       Qz=(K*(numpy.sin(alpha_f)+numpy.sin(alpha_i)))//u"Q_z"
-      ds=MeasurementData4D(x=3, y=5, y2=4, z=7)
+      Pi=(K*(numpy.sin(alpha_i)))//u"p_i"
+      Pf=(K*(numpy.sin(alpha_f)))//u"p_f"
+      PiPf=(Pi-Pf)//"p_i-p_f"
+
+      ds=MeasurementData4D(x=3, y=5, y2=4, z=10)
       ds.data.append(TTH.flatten()%u'°')
       ds.data.append(PHI.flatten()%u'°')
       ds.data.append(K.flatten())
       ds.data.append(Qx.flatten())
       ds.data.append(Qy.flatten())
       ds.data.append(Qz.flatten())
+      ds.data.append(Pi.flatten())
+      ds.data.append(Pf.flatten())
+      ds.data.append(PiPf.flatten())
       ds.data.append(LAMBDA_N.flatten())
 
       ds.data.append(I.flatten())

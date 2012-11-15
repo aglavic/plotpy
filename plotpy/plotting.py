@@ -15,23 +15,10 @@ import subprocess
 import plotpy.config.gnuplot_preferences as gp
 #from time import sleep
 
-__author__="Artur Glavic"
-__credits__=[]
-from info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Production"
 
 # gnuplot instances of persistent plots stay open to allow mouse interaction
 persistent_plots=0
 persistent_plot_instances=[]
-#def close_persistents():
-#  sys.stdout.write('Close')
-#  sys.stdout.flush()
-#  for p in persistent_plot_instances:
-#    p.stdin.write('quit\n')
-#    p.stdin.flush()
-#    p.communicate()
-#atexit.register(close_persistents)
-
 
 maps_with_projection=False
 
@@ -51,7 +38,7 @@ def check_gnuplot_version(session):
       '''
                     )
   write_file.close()
-  params=[session.GNUPLOT_COMMAND, script_name]
+  params=[gp.gnuplot_command, script_name]
   try:
     proc=subprocess.Popen(params,
                         shell=gp.EMMULATE_SHELL,
@@ -65,16 +52,16 @@ def check_gnuplot_version(session):
     terminals=terminals.strip().split()
     terminals=[t.strip() for t in terminals]
     # set the terminal options according to available terminals
-    for term in gp.gui_terminals:
+    for term in gp.GUI_TERMINALS:
       if term in terminals:
         gp.set_output_terminal_gui=" ".join(
-              [term]+gp.gui_terminal_options[term]
+              [term]+gp.GUI_TERMINAL_OPTIONS[term]
                                                              )
         break
-    for term in gp.image_terminals:
+    for term in gp.IMAGE_TERMINALS:
       if term in terminals:
         gp.set_output_terminal_image=" ".join(
-              [term]+gp.image_terminal_options[term]
+              [term]+gp.IMAGE_TERMINAL_OPTIONS[term]
                                                              )
         break
     return (float(version), float(patchlevel)), terminals
@@ -169,7 +156,7 @@ def gnuplot_plotpy(session,
     #write_file.close()
     #params=
     try:
-      persistent=subprocess.Popen([session.GNUPLOT_COMMAND],
+      persistent=subprocess.Popen([gp.gnuplot_command],
                           shell=gp.EMMULATE_SHELL,
                           creationflags=gp.PROCESS_FLAGS,
                           stderr=subprocess.STDOUT,
@@ -180,7 +167,7 @@ def gnuplot_plotpy(session,
       persistent.stdin.flush()
       persistent_plot_instances.append(persistent)
     except:
-      raise RuntimeError, "\nProblem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s"%session.GNUPLOT_COMMAND
+      raise RuntimeError, "\nProblem communicating with Gnuplot, please check your system settings! Gnuplot command used: %s"%gp.gnuplot_command
     return '', []
   try:
     gnuplot_instance.stdin.write('reset\n')
@@ -235,8 +222,8 @@ def replace_ph(session,
   else:
     titles_add=''
   string=string.\
-  replace('[font]', gp.FONT_DESCRIPTION).\
-  replace('[font-file]', gp.FONT_FILE).\
+  replace('[font]', gp.font_description).\
+  replace('[font-file]', gp.font_file).\
   replace('[font-path]', gp.font_path).\
   replace('[width]', session.picture_width).\
   replace('[height]', session.picture_height).\
@@ -654,7 +641,7 @@ def script_header(show_persistent, datasets, output_file):
     if not 'crop' in terminal:
       # crop option is not reset by restor
       terminal+=' nocrop'
-  gnuplot_file_text=gp.GNUPLOT_FILE_HEAD+\
+  gnuplot_file_text=gp.gnuplot_file_head+\
                     'set term '+terminal+'\n'
   if not show_persistent and output_file is not None:
     gnuplot_file_text+='set output "'+output_file+'"\n'

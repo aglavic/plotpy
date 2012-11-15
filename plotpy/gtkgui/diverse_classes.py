@@ -8,6 +8,7 @@
 import gtk
 import sys, os
 
+from plotpy.info import __version__, __email__
 from plotpy.config import gnuplot_preferences
 from plotpy.message import error
 

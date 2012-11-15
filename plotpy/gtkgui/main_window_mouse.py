@@ -5,7 +5,7 @@
 
 import numpy
 import gtk
-import os, sys
+import os
 import shutil
 
 from dialogs import SimpleEntryDialog

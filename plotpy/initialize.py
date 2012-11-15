@@ -100,12 +100,15 @@ def initialize_gui_toolkit():
     Load GUI modules dependent on the toolkit.
   '''
   global gui_main, status_dialog
-  import plotpy.gtkgui.main_window as gui_main #@UnusedImport
   if '--help' not in sys.argv and '--debug' not in sys.argv and len(sys.argv)>1:
+    # buffer infos until GUI is initialized
+    message.start_buffering()
     import plotpy.gtkgui.message_dialog as dialogs
     status_dialog=dialogs.connect_stdout_dialog()
+    message.flush_buffer()
   else:
     status_dialog=None
+  import plotpy.gtkgui.main_window as gui_main #@UnusedImport
   # keyword dialog for file imports
   from plotpy.gtkgui.fio_dialogs import reader_kwd_callback
   from plotpy.fio import reader
@@ -265,7 +268,7 @@ def run(argv=None):
   if argv is None:
     argv=sys.argv[1:]
   argv=map(lambda arg: unicode(arg, message.in_encoding), argv)
-  # interfact to autogenerate bash completion
+  # interface to auto-generate bash completion
   if '--types' in argv[:1]:
     print u" ".join(sorted(get_types()))
     exit(0)

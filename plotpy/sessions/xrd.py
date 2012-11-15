@@ -8,8 +8,6 @@ import numpy
 # import GenericSession, which is the parent class for the squid_session
 from generic import GenericSession
 from plotpy import mds
-# importing preferences and data readout
-from plotpy.config import xrd as config
 
 try:
   from plotpy.gtkgui.xrd import CircleGUI as GUI
@@ -95,7 +93,7 @@ class XRDSession(GUI, GenericSession):
       if set_reciprocal_space:
         hkl=[str(round(dataset.data[h_idx].values[len(dataset)/2], 2)).rstrip('0').rstrip('.').replace('-0', '0'), \
         str(round(dataset.data[k_idx].values[len(dataset)/2], 2)).rstrip('0').rstrip('.').replace('-0', '0'), \
-        str(round(dataset.data[l_idx].values[len(dataset)/2], 2)).rstrip('0').rstrip('.').replace('-0', '0')] # h,k,l information from middle of the Scan with 2 post point digits but with trailing 0 striped      
+        str(round(dataset.data[l_idx].values[len(dataset)/2], 2)).rstrip('0').rstrip('.').replace('-0', '0')] # h,k,l information from middle of the Scan with 2 post point digits but with trailing 0 striped
         if dataset.zdata<0:
           dataset.short_info+=dataset.x.dimension+'-scan around (%s %s %s)'%(hkl[0], hkl[1], hkl[2])
         else:

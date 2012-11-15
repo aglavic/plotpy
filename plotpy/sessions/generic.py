@@ -91,7 +91,7 @@ Options:
 """%(__version__, __email__)
 
   # TODO: implement these settings
-#  '''   
+#  '''
 #
 #  \t-l\t\tList sequences in file.
 #  \t-ls\t\tList selected Sequences.
@@ -101,7 +101,7 @@ Options:
 #  \t-c\t\tJust convert files, do not plot anything
 #  \t-sep [sep]\tUse different seperator for output files (if -gs is given it is ignored)
 #  \t-p\t\tSend plots to printer specified in gnuplot_perferences.py
-#  
+#
 #  \t-gui [tk]\tSet the gui toolkit to tk (gtk/wx)
 #  '''
 
@@ -208,11 +208,11 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
       if fontconfig.font_config is not None:
         font_paths=fontconfig.fc.get_font_folders()
         os.environ['GDLIBRARYPATH']=":".join(font_paths)
-        opts=gnuplot_preferences.image_terminal_options['png']
+        opts=gnuplot_preferences.IMAGE_TERMINAL_OPTIONS['png']
         for i, opt in enumerate(opts):
           if '[font-path]/[font-file]' in opt:
             opts[i]=opt.replace('[font-path]/[font-file]', '[font]')
-      program=self.GNUPLOT_COMMAND
+      program=gnuplot_preferences.gnuplot_command
       try:
         if gnuplot_preferences.EMMULATE_SHELL:
           # run test instance to catch execution error as with shell execution there is no error
@@ -228,7 +228,7 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
                   creationflags=gnuplot_preferences.PROCESS_FLAGS)
         # try to set encoding once, it is not altered by the reset function
         plotting.gnuplot_instance.stdin.write(#@UndefinedVariable
-                  'set encoding '+gnuplot_preferences.ENCODING+'\n')
+                  'set encoding '+gnuplot_preferences.encoding+'\n')
 
       except Exception, error:
         raise RuntimeError, "Problem communicating with Gnuplot: \n%s\nPlease check your system settings! Gnuplot command used: %s"%(error, program)
@@ -374,7 +374,6 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     if os.path.isfile(SCRIPT_PATH):
       # for cxFreeze remove the script name from the path
       SCRIPT_PATH=os.path.split(SCRIPT_PATH)[0]
-    self.GNUPLOT_COMMAND=gnuplot_preferences.GNUPLOT_COMMAND
     gnuplot_preferences.font_path=gnuplot_preferences.font_path.replace('[script-path]', SCRIPT_PATH)
     if 'linux' in sys.platform:
       # Linux case

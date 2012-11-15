@@ -31,12 +31,12 @@ config_file='plotting'
 # [const_value] - first constant data value
 
 #header information printed in gnuplot.tmp file, not really important
-GNUPLOT_FILE_HEAD='#Gnuplot inputfile to plot the data of plot.py\n#[info]\n'
+gnuplot_file_head='#Gnuplot inputfile to plot the data of plot.py\n#[info]\n'
 gnuplot_file_name='gnuplot.tmp'
 # Linux printing command (works properly with .ps, problems with png with wrong size)
 PRINT_COMMAND="lpr -P IFF17c4 -J \'plot.py-output\' %s"
 # Command for script mode to accress gnuplot, change this if you don't have gnuplot in your path
-GNUPLOT_COMMAND="gnuplot"
+gnuplot_command="gnuplot"
 # Emmulate a shell for gnuplot execution (subprocess.Popen)
 EMMULATE_SHELL=False
 # Creation flags for subprocess.Popen
@@ -62,26 +62,25 @@ else:
   except ImportError:
     # if there is no pygame module installed, use the fonts from this program
     font_path=''
-FONT_FILE='Arial.ttf'
+font_file='Arial.ttf'
 font='Arial'
 font_size=24.
-
-FONT_DESCRIPTION='Arial'
+font_description='Arial'
 
 # character encoding in gnuplot (>=4.4)
-ENCODING='utf8'
+encoding='utf8'
 # set the terminal options for the gnuplot output (postscript could need other labels)
 # image teminals with decending priority
-image_terminals=['pngcairo', 'png', 'gif', 'jpeg']
-image_terminal_options={
+IMAGE_TERMINALS=['pngcairo', 'png', 'gif', 'jpeg']
+IMAGE_TERMINAL_OPTIONS={
       'pngcairo': ['enhanced', 'size [width],[height]',
                    'font "[font],[font-size]"', 'lw 2'],
       'png': ['enhanced', 'size [width],[height]',
               'font "'+join_path('[font-path]', '[font-file]')+'" [font-size]',
               'lw 2'],
                         }
-image_terminal_options['gif']=image_terminal_options['png']
-image_terminal_options['jpeg']=image_terminal_options['png']
+IMAGE_TERMINAL_OPTIONS['gif']=IMAGE_TERMINAL_OPTIONS['png']
+IMAGE_TERMINAL_OPTIONS['jpeg']=IMAGE_TERMINAL_OPTIONS['png']
 
 # fallback if terminal was not selected
 set_output_terminal_image='png enhanced size [width],[height] font "'+\
@@ -90,14 +89,14 @@ set_output_terminal_image='png enhanced size [width],[height] font "'+\
 set_output_terminal_ps='postscript landscape enhanced colour "[font]" 16 solid lw 2'
 
 # terminal for external gnuplot window
-gui_terminals=['qt', 'windows', 'wxt', 'aqua', 'x11']
-gui_terminal_options={
+GUI_TERMINALS=['qt', 'windows', 'wxt', 'aqua', 'x11']
+GUI_TERMINAL_OPTIONS={
           'wxt': ['enhanced', 'font "'+join_path('[font-path]', '[font-file]')+'" 16'],
                       }
-gui_terminal_options['aqua']=gui_terminal_options['wxt']
-gui_terminal_options['qt']=gui_terminal_options['wxt']
-gui_terminal_options['windows']=gui_terminal_options['wxt']
-gui_terminal_options['x11']=gui_terminal_options['wxt']
+GUI_TERMINAL_OPTIONS['aqua']=GUI_TERMINAL_OPTIONS['wxt']
+GUI_TERMINAL_OPTIONS['qt']=GUI_TERMINAL_OPTIONS['wxt']
+GUI_TERMINAL_OPTIONS['windows']=GUI_TERMINAL_OPTIONS['wxt']
+GUI_TERMINAL_OPTIONS['x11']=GUI_TERMINAL_OPTIONS['wxt']
 
 set_output_terminal_gui='x11 enhanced' # fallback if terminal was not selected
 

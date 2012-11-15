@@ -332,7 +332,6 @@ class MainUI(object):
       </menu>
       <separator name='static13'/>
       <menu action='HelpMenu'>
-        <menuitem action='ShowConfigPath'/>
         <menuitem action='APIReference'/>
         <menuitem action='CheckForUpdate'/>
       <separator name='help1'/>

@@ -14,11 +14,6 @@ try:
 except ImportError:
   class GUI: pass
 
-__author__="Artur Glavic"
-__credits__=["Ulrich Ruecker"]
-from plotpy.info import __copyright__, __license__, __version__, __maintainer__, __email__ #@UnusedImport
-__status__="Development"
-
 class SHGSession(GUI, GenericSession):
   '''
     Class to handle SHG data sessions
@@ -38,8 +33,8 @@ class SHGSession(GUI, GenericSession):
 
 #  TRANSFORMATIONS=[\
 #  ['','',1,0,'',''],\
-#  ]  
-#  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+[]  
+#  ]
+#  COMMANDLINE_OPTIONS=GenericSession.COMMANDLINE_OPTIONS+[]
   #------------------ local variables -----------------
 
 
@@ -64,13 +59,6 @@ class SHGSession(GUI, GenericSession):
 #      else:
 #        found=False
 #    return (found, last_argument_option)
-
-
-  def read_file(self, file_name):
-    '''
-      Function to read data files.
-    '''
-    return read_data.read_data(file_name)
 
 
   #++++++++++++++++++++++++++ data treatment functions ++++++++++++++++++++++++++++++++

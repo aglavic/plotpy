@@ -298,7 +298,7 @@ class PNRSession(PNRGUI, ReflectometerFitGUI, GenericSession):
     self.RESULT_FILE=config.RESULT_FILE
     GenericSession.__init__(self, arguments)
     if self.add_simdata:
-      simdata=read_data.MeasurementDataTREFF([['Θ', 'mrad'],
+      simdata=MeasurementData([['Θ', 'mrad'],
                              ['2DWindow', 'counts'],
                              ['DetectorTotal', 'counts'],
                              ['error', 'counts'],

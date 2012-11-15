@@ -19,6 +19,7 @@ from plotpy.mds import MeasurementData
 # importing data readout
 from plotpy.config import dns as config
 from plotpy.config import transformations
+from plotpy.fio import dns as read_data
 
 try:
   from plotpy.gtkgui.dns import DNSGUI as GUI

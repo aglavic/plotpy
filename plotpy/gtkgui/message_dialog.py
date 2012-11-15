@@ -4,9 +4,9 @@
 
 import sys
 import gtk
+from time import strftime, time
 from plotpy import message
 from plotpy.config.gui import ICONS
-from time import strftime, time
 
 def connect_stdout_dialog():
   '''
@@ -16,12 +16,12 @@ def connect_stdout_dialog():
   '''
   status_dialog=GUIMessenger('Messages')
   status_dialog.connect('response', lambda*ignore: status_dialog.hide())
-  status_dialog.set_default_size(500, 400)
-  status_dialog.show_all()
-  status_dialog.move(0, 0)
   status_dialog.fileno=lambda : 1
   status_dialog.flush=lambda : True
   sys.stdout=status_dialog
+  status_dialog.set_default_size(500, 400)
+  status_dialog.show_all()
+  status_dialog.move(0, 0)
   return status_dialog
 
 class GUIMessenger(gtk.Dialog):

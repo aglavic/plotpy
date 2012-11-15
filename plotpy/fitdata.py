@@ -197,14 +197,14 @@ class FitFunction(FitFunctionGUI):
         function_parameters.append(params[self.refine_parameters.index(i)])
       else:
         function_parameters.append(self.parameters[i])
-    remove_negative=numpy.where(y>0.)
-    x=numpy.array(x[remove_negative], dtype=numpy.float64, copy=False)
-    y=numpy.array(y[remove_negative], dtype=numpy.float64, copy=False)
+    ypos=y>0.
+    posmin=y[ypos].min()
+    y=numpy.where(ypos, y, posmin)
     if yerror is not None:
-      yerror=numpy.array(yerror[remove_negative], dtype=numpy.float64, copy=False)
-      yerror=numpy.where((numpy.isinf(yerror))+(numpy.isnan(yerror))+(yerror<=0.), 1., yerror)
-      # use error propagation for log(yi)
-      propagated_error=yerror/y
+      yerror_region=numpy.logical_not((numpy.isinf(yerror))|(numpy.isnan(yerror))|(yerror<=0.))
+      yerror_max=yerror[yerror_region].max()
+      # use error propagation for log(yi), use maximum possible error for undefined values
+      propagated_error=numpy.where(yerror_region, yerror/y, yerror_max/posmin)
       err=(numpy.log10(function(function_parameters, x))-numpy.log10(y))/propagated_error
     else:
       err=numpy.log10(function(function_parameters, x))-numpy.log10(y)
@@ -300,7 +300,7 @@ class FitFunction(FitFunctionGUI):
     if progress_bar_update is not None:
       def iterfunct(myfunct, p, iteration, fnorm, functkw=None,
                   parinfo=None, quiet=0, dof=None):
-        # perform custom iteration update   
+        # perform custom iteration update
         return progress_bar_update(step_add=float(iteration)/self.max_iter, info='Iteration %i    χ²=%.6e'%(iteration, fnorm))
     else:
       iterfunct=None
@@ -801,15 +801,14 @@ class FitFunction3D(FitFunctionGUI):
         function_parameters.append(params[self.refine_parameters.index(i)])
       else:
         function_parameters.append(self.parameters[i])
-    remove_negative=numpy.where(z>0.)
-    x=x[remove_negative]
-    y=y[remove_negative]
-    z=z[remove_negative]
+    zpos=z>0.
+    zmin=z[zpos].min()
+    z=numpy.where(zpos, z, zmin)
     if zerror is not None:
-      zerror=zerror[remove_negative]
-      zerror=numpy.where((numpy.isinf(zerror))+(numpy.isnan(zerror))+(zerror<=0.), 1., zerror)
+      zerror_region=numpy.logical_not((numpy.isinf(zerror))|(numpy.isnan(zerror))|(zerror<=0.))
+      zerror_max=zerror[zerror_region].max()
+      propagated_error=numpy.where(zerror_region, zerror/z, zerror_max/zmin)
       # use error propagation for log(yi)
-      propagated_error=zerror/z
       err=(numpy.log10(function(function_parameters, x, y))-numpy.log10(z))/propagated_error
     else:
       err=numpy.log10(function(function_parameters, x, y))-numpy.log10(z)
@@ -916,7 +915,7 @@ class FitFunction3D(FitFunctionGUI):
     if progress_bar_update is not None:
       def iterfunct(myfunct, p, iteration, fnorm, functkw=None,
                   parinfo=None, quiet=0, dof=None):
-        # perform custom iteration update   
+        # perform custom iteration update
         return progress_bar_update(step_add=float(iteration)/self.max_iter,
                             info='Iteration %i    Chi²=%4f'%(iteration, fnorm))
     else:
@@ -1711,9 +1710,9 @@ class FitRelaxingCrystalLayer(FitFunction):
                    'a_bottom', # lattice parameter at the substrate interface
                    'a_infinity', # lattice parameter of bulk
                    'ε', # strain relaxation length of the lattice parameter
-                   'a_substrate', # 
-                   'scaling_substrate', # 
-                   'μ', # absorption coefficient 
+                   'a_substrate', #
+                   'scaling_substrate', #
+                   'μ', # absorption coefficient
                    'I-Kα2', 'λ-Kα2', # Relative intensity and wavelength of Cu-Kα2
                    'BG', # Background
                    ]
@@ -1887,7 +1886,7 @@ class FitSuperlattice(FitFunction):
     # lattice parameters
     d_A=(numpy.pi*2./params['q0_A'])
     d_B=(numpy.pi*2./params['q0_B'])
-    # distance δ of two planes (The given layer thickness and the offset because of only integer lattice planes) 
+    # distance δ of two planes (The given layer thickness and the offset because of only integer lattice planes)
     # and distance fluctuation σ and size fluctuation (e.g. roughness) ω
     params['δ_AB']=(d_A+d_B)/2.
     params['σ_AB']=p[10]
@@ -2183,7 +2182,7 @@ class FitSuperlattice(FitFunction):
       I_B_avg+=P_Bj*F_Bj*F_Bj.conjugate()
       T_B+=P_Bj*exp(1j*q*(t_B[j]-params['δ_AB']))
     # calculate the Intensity (eq(7) in paper)
-    # there can still be an imaginary part becaus of calculation errors 
+    # there can still be an imaginary part becaus of calculation errors
     I_0=abs(M*(I_A_avg+2.*(exp(psi)*abs(Phi_A_avg*F_B_avg)).real+I_B_avg))
     I_1=2.*((exp(-psi)*Phi_B_avg*F_A_avg/(T_A*T_B)+\
                Phi_B_avg*F_A_avg/T_A+\
@@ -2962,7 +2961,7 @@ class FitSession(FitSessionGUI):
   available_functions_2d={
                        FitLinear.name: FitLinear,
                        FitInterpolation.name: FitInterpolation,
-                       #FitDiamagnetism.name: FitDiamagnetism, 
+                       #FitDiamagnetism.name: FitDiamagnetism,
                        FitQuadratic.name: FitQuadratic,
                        FitSinus.name: FitSinus,
                        FitExponential.name: FitExponential,
@@ -2983,14 +2982,14 @@ class FitSession(FitSessionGUI):
                        FitRelaxingCrystalLayer.name: FitRelaxingCrystalLayer,
                        FitOffspecular.name: FitOffspecular,
                        FitFerromagneticOrderparameter.name: FitFerromagneticOrderparameter,
-                       #FitNanoparticleZFC.name: FitNanoparticleZFC, 
-                       #FitNanoparticleZFC2.name: FitNanoparticleZFC2, 
+                       #FitNanoparticleZFC.name: FitNanoparticleZFC,
+                       #FitNanoparticleZFC2.name: FitNanoparticleZFC2,
                        }
   # known fit functions for 3d datasets
   available_functions_3d={
                        FitGaussian3D.name: FitGaussian3D,
                        FitPsdVoigt3D.name: FitPsdVoigt3D,
-                       #FitCuK3D.name: FitCuK3D, 
+                       #FitCuK3D.name: FitCuK3D,
                        FitVoigt3D.name: FitVoigt3D,
                        FitLorentzian3D.name: FitLorentzian3D,
                           }

@@ -16,6 +16,7 @@ from reflectometer_fit.xrr import * #@UnusedWildImport
 
 from plotpy.config import xrr as config
 from plotpy.config import gnuplot_preferences
+from plotpy.fio import reader
 
 try:
   from plotpy.gtkgui.xrr import ReflectometerGUI as GUI
@@ -148,7 +149,7 @@ class ReflectometerSession(GUI, ReflectometerFitGUI, GenericSession):
       #dataset.short_info=' started at Θ='+str(round(th,4))+' 2Θ='+str(round(twoth,4))+' φ='+str(round(phi,4))
       if self.export_for_fit: # export fit files
         self.export_fit(dataset, filename)
-        simu=read_data.read_simulation(self.TEMP_DIR+'fit_temp.sim')
+        simu=reader.open(self.TEMP_DIR+'fit_temp.sim')[0]
         simu.number='sim_'+dataset.number
         simu.short_info='simulation'
         simu.sample_name=dataset.sample_name

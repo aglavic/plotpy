@@ -8,7 +8,8 @@
 
 import os
 import atexit
-from plotpy.configobj import ConfigObj
+from plotpy.message import error
+from plotpy.configobj import ConfigObj, ConfigObjError
 
 
 class ConfigProxy(object):
@@ -48,12 +49,16 @@ class ConfigProxy(object):
         self.storages[storage]=self.tmp_storages[storage]
     elif not storage in self.storages:
       sfile=os.path.join(self.config_path, storage+'.ini')
-      self.storages[storage]=ConfigObj(
-                                      infile=sfile,
-                                      unrepr=True,
-                                      encoding='utf8',
-                                      indent_type='    ',
-                                      )
+      try:
+        self.storages[storage]=ConfigObj(
+                                        infile=sfile,
+                                        unrepr=True,
+                                        encoding='utf8',
+                                        indent_type='    ',
+                                        )
+      except ConfigObjError:
+        error("Could not parse configfile %s, using temporary config.\nFix or delete the file!"%sfile)
+        self.storages[storage]={}
       self.tmp_storages[storage]={}
     self.configs[name]=storage
     if name in self.storages[storage]:
