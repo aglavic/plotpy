@@ -5,6 +5,7 @@
 import gtk
 from dialogs import VListEntry
 import inspect
+from plotpy.decorators import user_menu as FunctionHandler #@UnusedImport
 
 registered_functions=[]
 
@@ -140,125 +141,5 @@ class AutoDialog(gtk.Dialog):
       elif item['type'] is list:
         result[item['arg']]=entry.list_link
     return result
-
-class FunctionHandler(object):
-  '''
-    Class to store and process functions to be used with AutoDialog creation.
-    The class is not instantiated, calling it will add a function to as
-    the FunctionHandler.add_function method does.
-    
-    Functions are added using:
-      FunctionHandler.add_function(function, menu_entry=None,
-                                   description=None, shortcut=None)
-  '''
-  # for easier reading of the code, the convention using cls for classmethods
-  # is replaced by using self instead
-  registered_functions=[]
-  main_gui=None
-
-  def __new__(self, function, menu_entry=None, description=None, shortcut=None):
-    return self.add_function(function, menu_entry, description, shortcut)
-
-  @classmethod
-  def add_function(self, function, menu_entry=None, description=None, shortcut=None):
-    '''
-      Add a function to the list of available objects.
-    '''
-    if menu_entry is None:
-      # if no menu entry is supplied, use the functions name
-      # replacing underscores with spaces and using the first letter
-      # in upper case
-      fname=function.__name__
-      menu_entry=fname[0].upper()+fname[1:].replace('_', ' ')+'...'
-    if not self.check_function(function):
-      raise ValueError, 'function does not have the right format'
-    if function.__doc__ is None:
-      function.__doc__=''
-    # remove the former registered function if it was already registered
-    known_funcs=[item[0].__name__ for item in self.registered_functions]
-    if function.__name__ in known_funcs:
-      self.registered_functions.pop(known_funcs.index(function.__name__))
-    self.registered_functions.append((function, menu_entry, description, shortcut))
-
-  @classmethod
-  def check_function(self, function):
-    '''
-      Check the validity of the function argument specifications.
-    '''
-    argspec=inspect.getargspec(function)
-    args=argspec.args
-    if args[0]=='dataset':
-      if argspec.defaults is not None and len(args)!=(1+len(argspec.defaults)):
-        return False
-      return True
-    elif args[0]=='datasets':
-      if args[1]!='d_index' or (argspec.defaults is not None and
-                                len(args)!=(2+len(argspec.defaults))):
-        return False
-      return True
-    else:
-      return False
-
-  @classmethod
-  def get_menu_string(self):
-    if len(self.registered_functions)==0:
-      return ''
-    else:
-      output='''        </menu>
-        <menu action='UserAddedMenu'>
-    '''
-      for function, ignore, ignore, ignore in self.registered_functions:
-        output+='''          <menuitem action='%s'/>
-        '''%function.__name__.replace('_', '')
-      return output
-
-
-  @classmethod
-  def get_menu_actions(self):
-    if len(self.registered_functions)==0:
-      return ()
-    else:
-      output=[("UserAddedMenu", None, "User-Func.", None, None, None), ]
-      for function, menu_entry, ignore, shortcut in self.registered_functions:
-        output.append(
-                      (function.__name__.replace('_', ''), None,
-                       menu_entry, shortcut,
-                       None, self.call_function)
-                      )
-      return tuple(output)
-
-  @classmethod
-  def call_function(self, action, main_window):
-    '''
-      Open AutoDialog and run the function with the given parameters.
-    '''
-    action_name=action.get_name()
-    action_names=[item[0].__name__.replace('_', '') for item in self.registered_functions]
-    action_index=action_names.index(action_name)
-    function, menu_entry, description, ignore=self.registered_functions[action_index]
-    argspec=inspect.getargspec(function)
-    if argspec.defaults is None:
-      args={}
-      result=True
-    else:
-      dialog=AutoDialog(function, description_text=description, title=menu_entry)
-      result=dialog.run()
-      args=dialog.get_result()
-      dialog.destroy()
-    if result:
-      datasets=main_window.active_session.active_file_data
-      d_index=main_window.index_mess
-      if argspec.args[0]=='dataset':
-        result=function(datasets[d_index], **args)
-      else:
-        result=function(datasets, d_index, **args)
-      if result is None:
-        main_window.rebuild_menus()
-        main_window.replot()
-      else:
-        datasets.append(result)
-        main_window.index_mess=len(datasets)-1
-        main_window.rebuild_menus()
-        main_window.replot()
 
 

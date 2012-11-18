@@ -35,6 +35,7 @@
   is the empty string it will use the default config file.
 '''
 
+# hide imported modules for interactive use with IPython tab completion
 import os as _os
 import pkgutil as _pkgutil
 from baseconfig import ConfigProxy as _ConfigProxy
@@ -56,7 +57,9 @@ def _create_proxy():
   '''
   Read all submodules and if config_file is defined
   add them to the ConfigProxy object that stores
-  all information in .ini files.
+  all information in .ini files. The usage in other
+  modules is the same for both cases when no parameter 
+  is imported dirctly from the submodule.
   '''
   global proxy, __all__
   proxy=_ConfigProxy(_config_path)
@@ -79,7 +82,7 @@ def _create_proxy():
     else:
       # if config_file is not defined in the module, just use the module itself
       config_holder=modi #@UnusedVariable
-    # add item to the package
+    # add item to the package * import
     __all__.append(name)
     exec "global %s;%s=config_holder"%(name, name)
 

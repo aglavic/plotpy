@@ -572,11 +572,8 @@ Gnuplot version %.1f patchlevel %i with terminals:
       import IPython.core.ipapi as ipapi #@Reimport
     from plotpy import  mds
     import pango
-    try:
-      import scipy
-    except ImportError:
-      scipy=None
     from glob import glob
+    from plotpy import config as plotpy_config
     from plotpy.fitdata import new_function
     from plotpy.gtkgui.autodialogs import FunctionHandler
 
@@ -762,6 +759,7 @@ Gnuplot version %.1f patchlevel %i with terminals:
     ipview.updateNamespace({
                        'session': self.active_session,
                        'gui': self,
+                       'config': plotpy_config,
                        'self': ipview,
                        'dataset': self.get_active_dataset,
                        'replot': self.replot,
@@ -773,7 +771,6 @@ Gnuplot version %.1f patchlevel %i with terminals:
                        'mapdata': mapdata,
                        'mapall': mapall,
                        'np': numpy,
-                       'sp': scipy,
                        'mds': mds,
                        'apihelp': apihelp,
                        'macros': self.file_actions.actions,

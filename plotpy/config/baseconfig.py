@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 '''
   Basis of the configuration system. The :class:`ConfigProxy` object
-  combines module parameter with temporary and user changeable
+  combines module parameters with temporary and user changeable
   configuration file options. When used in other modules
-  this facility is completely hidden to the API. 
+  this facility is completely hidden to the API.
+  
+  As each parameter can be accessed as an attribute of the ConfigHolder object
+  it behaves exactly like the according module would to, thus
+  IDEs with context sensitive syntax completion work with it as well.
+  
+  The initialization of all config modules is done in the config __init__ module.
 '''
 
 import os
@@ -108,7 +114,7 @@ class ConfigProxy(object):
       raise KeyError, "%s is no known configuration"%config
     storage=self.configs[config]
     if temporary:
-      # if value has been stored temporarily, return it
+      # store value in temporary dictionary
       self.tmp_storages[storage][config][item]=value
     else:
       self.storages[storage][config][item]=value
@@ -164,25 +170,29 @@ class ConfigHolder(object):
           doc="A representation of this :class:`ConfigHolder` which stores items only for this session.")
 
   def __getattribute__(self, name):
+    """
+      Basis of the parameter access (e.g. can use
+      object.key to access object[key]). If a 
+    """
     if name.startswith('_') or name in dir(ConfigHolder):
       return object.__getattribute__(self, name)
     else:
-      return self._proxy.get_config_item(self._name, name)
+      return self.__getitem__(name)
 
   def __setattr__(self, name, value):
     if name.startswith('_') or name in dir(ConfigHolder):
       object.__setattr__(self, name, value)
     else:
-      if name==name.upper():
-        raise ValueError, "%s is a constant and thus cannot be altered"%name
-      self._proxy.set_config_item(self._name, name, value,
-                                  temporary=self._storetmp)
+      return self.__setitem__(name, value)
 
   def __getitem__(self, name):
-    return self.__getattribute__(name)
+    return self._proxy.get_config_item(self._name, name)
 
   def __setitem__(self, name, value):
-    return self.__setattr__(name, value)
+    if name==name.upper():
+      raise ValueError, "%s is a constant and thus cannot be altered"%name
+    self._proxy.set_config_item(self._name, name, value,
+                                temporary=self._storetmp)
 
   def __contains__(self, other):
     return other in self.keys()
@@ -194,13 +204,13 @@ class ConfigHolder(object):
     return [self[key] for key in self.keys()]
 
   def items(self):
-    return [(key, self[key]) for key in self.keys()]
+    return [(str(key), self[key]) for key in self.keys()]
 
   def __repr__(self):
     output=self.__class__.__name__+'('
     spacer='\n'+' '*len(output)
     output+=repr(dict(self.items())).replace('\n', spacer)
-    output+=' )'
+    output+=')'
     return output
 
   def __dir__(self):
