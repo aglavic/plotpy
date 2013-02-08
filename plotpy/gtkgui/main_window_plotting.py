@@ -1277,7 +1277,7 @@ class MainPlotting(object):
     #font_path, font_name=os.path.split(fontconfig.fc[fname])
     font, fontsize=fname.rsplit(' ', 1)
     font=font.strip(',')
-    gnuplot_preferences.FONT_DESCRIPTION=font
+    gnuplot_preferences.font_description=font
     self.active_session.font_size=float(fontsize)
 
     dia=gtk.MessageDialog(parent=self, type=gtk.MESSAGE_QUESTION,

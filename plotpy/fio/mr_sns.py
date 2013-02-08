@@ -4,16 +4,57 @@
 '''
 
 import numpy
-from baseread import Reader
+from baseread import Reader, TextReader
 from plotpy.mds import PhysicalConstant, PhysicalProperty, MeasurementData, MeasurementData4D
 from plotpy.constants import m_n, h
 from plotpy.config import mr_sns as config
 
-class MRReader(Reader):
+class DatReader(TextReader):
   name=u"MR_SNS"
+  description=u"Reduced data of magnetism reflectometer at SNS"
+  glob_patterns=[u'*.dat']
+  session='pnr'
+
+  store_mds=False
+
+  def read(self):
+    output=[]
+    header_info=self.read_header()
+    data=self.read_data()
+    dataset=MeasurementData()
+    dataset.data.append(PhysicalProperty('Q_z', u'Å^{-1}', data[0], data[3]))
+    dataset.data.append(PhysicalProperty('R', u'', data[1], data[2]))
+    dataset.sample_name=''
+    dataset.short_info=header_info['indices']+' ('+header_info['channel']+')'
+    dataset.logy=True
+    dataset.info=header_info['header']
+    output.append(dataset)
+    return output
+
+  def read_header(self):
+    input_file_lines=self.text_data.splitlines()
+    input_file_lines=map(unicode.strip, input_file_lines)
+    header_lines=filter(lambda line: line.startswith('#'), input_file_lines)
+    output={'indices': '', 'channel': 'x', 'header': '\n'.join(header_lines)}
+    for line in input_file_lines:
+      if "Input file indices:" in line:
+        output['indices']=line.split("Input file indices:")[1].strip()
+      elif "Extracted channels:" in line:
+        output['channel']=line.split("Extracted channels:")[1].strip()
+    return output
+
+  def read_data(self):
+    input_file_lines=self.text_data.splitlines()
+    input_file_lines=map(unicode.strip, input_file_lines)
+    data_lines=filter(lambda line: not line.startswith('#'), input_file_lines)
+    return numpy.array(map(unicode.split, data_lines), dtype=float).transpose()
+
+
+class MRReader(Reader):
+  name=u"MR_SNS_RAW"
   description=u"Data of magnetism reflectometer at SNS"
   glob_patterns=[u'*.nxs']
-  session='pnr'
+  session='none'
 
   parameters=[('tth_offset', 0.), ('phi_offset', 0.),
               ("alpha_i_offset", 0.),
