@@ -48,6 +48,14 @@ class DatReader(TextReader):
       dataset.data.append(PhysicalProperty('scan', u'', data[7]))
       dataset.data.append(PhysicalProperty('item', u'', data[8]))
       dataset.logz=True
+    elif header_info['type'].startswith('GISANS'):
+      dataset.zdata=2
+      dataset.scan_line=0
+      dataset.scan_line_constant=1
+      dataset.data.append(PhysicalProperty('Q_y', u'Å^{-1}', data[0]))
+      dataset.data.append(PhysicalProperty('Q_z', u'Å^{-1}', data[1]))
+      dataset.data.append(PhysicalProperty('I', u'a.u.', data[2], data[3]))
+      dataset.logz=True
     dataset.sample_name=''
     dataset.short_info=header_info['indices']+' ('+header_info['channel']+')'
     dataset.info=header_info['header']
