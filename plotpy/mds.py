@@ -966,7 +966,7 @@ class MeasurementData(object):
       if numpy.float64 in [self.x.dtype, self.y.dtype]:
         format_string="%.15g"
       else:
-        format_string="%.8g"
+        format_string="%.7g"
     xd=self.xdata
     yd=self.ydata
     zd=self.zdata

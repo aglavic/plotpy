@@ -22,11 +22,42 @@ class DatReader(TextReader):
     header_info=self.read_header()
     data=self.read_data()
     dataset=MeasurementData()
-    dataset.data.append(PhysicalProperty('Q_z', u'Å^{-1}', data[0], data[3]))
-    dataset.data.append(PhysicalProperty('R', u'', data[1], data[2]))
+    if header_info['type']=='Specular':
+      dataset.data.append(PhysicalProperty('Q_z', u'Å^{-1}', data[0], data[3]))
+      dataset.data.append(PhysicalProperty('R', u'', data[1], data[2]))
+      dataset.logy=True
+    elif header_info['type']=='OffSpecSmooth':
+      dataset.zdata=2
+      dataset.scan_line=0
+      dataset.scan_line_constant=1
+      dataset.data.append(PhysicalProperty('k_{i,z}-k_{f,z}', u'Å^{-1}', data[0]))
+      dataset.data.append(PhysicalProperty('Q_z', u'Å^{-1}', data[1]))
+      dataset.data.append(PhysicalProperty('I', u'a.u.', data[2]))
+      dataset.logz=True
+    elif header_info['type']=='OffSpec':
+      dataset.xdata=4
+      dataset.zdata=5
+      dataset.scan_line=7
+      dataset.scan_line_constant=6
+      dataset.data.append(PhysicalProperty('Q_x', u'Å^{-1}', data[0]))
+      dataset.data.append(PhysicalProperty('Q_z', u'Å^{-1}', data[1]))
+      dataset.data.append(PhysicalProperty('k_{i,z}', u'Å^{-1}', data[2]))
+      dataset.data.append(PhysicalProperty('k_{f,z}', u'Å^{-1}', data[3]))
+      dataset.data.append(PhysicalProperty('k_{i,z}-k_{f,z}', u'Å^{-1}', data[4]))
+      dataset.data.append(PhysicalProperty('I', u'a.u.', data[5], data[6]))
+      dataset.data.append(PhysicalProperty('scan', u'', data[7]))
+      dataset.data.append(PhysicalProperty('item', u'', data[8]))
+      dataset.logz=True
+    elif header_info['type'].startswith('GISANS'):
+      dataset.zdata=2
+      dataset.scan_line=0
+      dataset.scan_line_constant=1
+      dataset.data.append(PhysicalProperty('Q_y', u'Å^{-1}', data[0]))
+      dataset.data.append(PhysicalProperty('Q_z', u'Å^{-1}', data[1]))
+      dataset.data.append(PhysicalProperty('I', u'a.u.', data[2], data[3]))
+      dataset.logz=True
     dataset.sample_name=''
     dataset.short_info=header_info['indices']+' ('+header_info['channel']+')'
-    dataset.logy=True
     dataset.info=header_info['header']
     output.append(dataset)
     return output
@@ -39,22 +70,33 @@ class DatReader(TextReader):
     for line in input_file_lines:
       if "Input file indices:" in line:
         output['indices']=line.split("Input file indices:")[1].strip()
-      elif "Extracted channels:" in line:
-        output['channel']=line.split("Extracted channels:")[1].strip()
+      elif "Extracted states:" in line:
+        output['channel']=line.split("Extracted states:")[1].strip()
+      elif "Type:" in line:
+        output['type']=line.split("Type:")[1].strip()
     return output
 
   def read_data(self):
     input_file_lines=self.text_data.splitlines()
     input_file_lines=map(unicode.strip, input_file_lines)
-    data_lines=filter(lambda line: not line.startswith('#'), input_file_lines)
-    return numpy.array(map(unicode.split, data_lines), dtype=float).transpose()
+    data_lines=filter(lambda line: not (line.startswith('#') or line==''), input_file_lines)
+    new_line_indices=[i for i in range(len(input_file_lines)) if input_file_lines[i]=='']
+    output_data=numpy.array(map(unicode.split, data_lines), dtype=float).transpose()
+    scan_index=numpy.zeros_like(output_data[0])
+    scan_item=numpy.zeros_like(output_data[0])
+    index_i=0
+    for index in new_line_indices:
+      scan_index[index-index_i:]+=1
+      scan_item[index-index_i:]=numpy.arange(len(output_data[0])-index+index_i)
+      index_i+=1
+    return numpy.vstack([output_data, scan_index, scan_item])
 
 
 class MRReader(Reader):
   name=u"MR_SNS_RAW"
   description=u"Data of magnetism reflectometer at SNS"
   glob_patterns=[u'*.nxs']
-  session='none'
+  session='pnr'
 
   parameters=[('tth_offset', 0.), ('phi_offset', 0.),
               ("alpha_i_offset", 0.),
