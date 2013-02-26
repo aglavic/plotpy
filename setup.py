@@ -1,7 +1,11 @@
 # -*- encoding: utf-8 -*-
 '''
   Script used for setup and installation purpose. 
-  If all works the right way this should test the system environment for all dependencies and create source and binary distributions.
+  If all works the right way this should test the system environment for all dependencies and 
+  create source and binary distributions.
+  
+  Py2Exe is done by putting the folder under a portable python 2.7.x installation and running
+  the setup from this folder as: ..\App\python.exe setup.py py2exe .
   
   The script can create exe stand alone programs under windows, but py2app doesn't word until now.
 '''
@@ -30,7 +34,7 @@ __py_modules__=[]
 __package_dir__={}
 __packages__=['plot_script', 'plot_script.config', 'plot_script.config.default_templates',
             'plot_script.read_data', 'plot_script.sessions',
-            'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui', 'plot_script.plugins'] #'plot_script.wxgui', 
+            'plot_script.sessions.reflectometer_fit', 'plot_script.gtkgui', 'plot_script.plugins'] #'plot_script.wxgui',
 __package_data__={'plot_script.config': ['plot_script.squid_calibration', '*.dat', 'fit/fit.f90',
                             'fit/pnr_multi/*.f90', 'logo*.png'],
                   'plot_script': ['doc/*.*', 'doc/_modules/*.*',
@@ -58,16 +62,18 @@ if "py2app" in sys.argv:
               }
 elif "py2exe" in sys.argv:
   import py2exe #@UnusedImport @UnresolvedImport
+  sys.path.append(glob('..\\App\\Lib\\site-packages\\pyzmq-*\\zmq')[0])
+  sys.path.append("..\\App")
   __options__={
-                #"setup_requires": ['py2exe'], 
+                #"setup_requires": ['py2exe'],
                 #"console": [ "__init__.py"], # set the executable for py2exe
-                "windows": [ "plot.py" ], # executable for py2exe is windows application            
+                "windows": [ "plot.py" ], # executable for py2exe is windows application
                 "options": {  "py2exe": {
                               "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio, Image, TiffImagePlugin, PngImagePlugin",
                               "optimize": 1, # Keep docstring (e.g. IPython console usage)
                               "skip_archive": True, # setting not to move compiled code into library.zip file
                               'packages':'encodings, gtk, IPython, PIL, plot_script',
-                              "dll_excludes": ["MSVCP90.dll", 'libglade-2.0-0.dll'],
+                              "dll_excludes": [],
                               "excludes": "matplotlib, pylab, PyQt4, wx, wxPython, idlelib",
                              },
                            }
@@ -286,9 +292,9 @@ if "py2exe" in sys.argv and not py2exe_test:
   os.popen('copy archiv\\__init__.exe archiv\\plot.exe')
   os.popen('del archiv\\__init__.exe')
   print "\n*** Copying gtk stuff ***"
-  # the package needs all gtk libraries to work stand alone 
+  # the package needs all gtk libraries to work stand alone
   # (only works if the folders are set right on the building system)
-  gtk_folder='C:\\gtk'
+  gtk_folder='..\\App\\Lib\\site-packages\\gtk-2.0\\runtime'
   #gtk_folder='C:\\Python27\\Lib\\site-packages\\gtk-2.0\\runtime'
   for src, dest in [
                     (gtk_folder+'\\etc', 'etc'),
@@ -306,7 +312,7 @@ if "py2exe" in sys.argv and not py2exe_test:
     sf=open(script_file, 'r').read()
     open(os.path.join('archiv', os.path.split(script_file)[1]), 'w').write(sf.replace('plot.py', 'plot'))
 
-# py2app specific stuff to make it work: 
+# py2app specific stuff to make it work:
 #if "py2app" in sys.argv:
 #  subprocess.call(['cp', '-r','config/*','archiv/plot-script.app/Contents/Resources/lib/python2.7/config'])
 if 'clean' in sys.argv:
