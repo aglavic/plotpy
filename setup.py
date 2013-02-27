@@ -64,6 +64,7 @@ elif "py2exe" in sys.argv:
   import py2exe #@UnusedImport @UnresolvedImport
   sys.path.append(glob('..\\App\\Lib\\site-packages\\pyzmq-*\\zmq')[0])
   sys.path.append("..\\App")
+  __data_files__+=[('', ['..\\App\\MSVCP90.dll'])]
   __options__={
                 #"setup_requires": ['py2exe'],
                 #"console": [ "__init__.py"], # set the executable for py2exe
