@@ -64,7 +64,11 @@ elif "py2exe" in sys.argv:
   import py2exe #@UnusedImport @UnresolvedImport
   sys.path.append(glob('..\\App\\Lib\\site-packages\\pyzmq-*\\zmq')[0])
   sys.path.append("..\\App")
-  __data_files__+=[('', glob('..\\App\\msvc*.dll')+['..\\App\\Microsoft.VC90.CRT.manifest'])]
+  __data_files__+=[("Microsoft.VC90.CRT", glob('..\\App\\msvc*.dll')+['..\\App\\Microsoft.VC90.CRT.manifest']),
+                   ("IPython\\config\\profile", glob('..\\App\\Lib\\site-packages\\IPython\\config\\profile\\*.*')+
+                                                glob('..\\App\\Lib\\site-packages\\IPython\\config\\profile\\README*')),
+                   ("IPython\\config\\profile\\cluster", glob('..\\App\\Lib\\site-packages\\IPython\\config\\profile\\cluster\\*')),
+                   ]
   __options__={
                 #"setup_requires": ['py2exe'],
                 #"console": [ "__init__.py"], # set the executable for py2exe
@@ -73,7 +77,7 @@ elif "py2exe" in sys.argv:
                               "includes": "numpy, pango, cairo, pangocairo, atk, gobject, gio, Image, TiffImagePlugin, PngImagePlugin",
                               "optimize": 1, # Keep docstring (e.g. IPython console usage)
                               "skip_archive": True, # setting not to move compiled code into library.zip file
-                              'packages':'encodings, gtk, IPython, PIL, plot_script',
+                              'packages':'encodings, gtk, IPython, zmq, PIL, plot_script',
                               "dll_excludes": [],
                               "excludes": "matplotlib, pylab, PyQt4, wx, wxPython, idlelib",
                              },
