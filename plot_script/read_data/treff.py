@@ -535,8 +535,9 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   sin=numpy.sin
   data_list=[]
   monitor=float(line[columns['Monitor']])
-  img_columns_data=img_data.transpose()
-  calibration=numpy.array(calibration)
+  img_columns_data=img_data[DETECTOR_REGION[0]:DETECTOR_REGION[1],
+                            DETECTOR_REGION[2]:DETECTOR_REGION[3]].transpose()
+  calibration=numpy.array(calibration[DETECTOR_REGION[2]:DETECTOR_REGION[3]])
   filter_indices=numpy.where(calibration>0)
   img_intensities=img_columns_data.sum(axis=1)[filter_indices]
   calibration=calibration[filter_indices]
@@ -545,7 +546,7 @@ def integrate_one_picture_neu(img_file, line, columns, alphai, alphaf_center, ca
   except ValueError:
     return [], None
   errors=numpy.sqrt(img_intensities)/monitor*calibration
-  alphaf=alphaf_center+pixel_width*(CENTER_PIXEL-numpy.arange(DETECTOR_PIXELS))[filter_indices]
+  alphaf=alphaf_center+pixel_width*(CENTER_PIXEL-DETECTOR_REGION[2]-numpy.arange(DETECTOR_PIXELS))[filter_indices]
   # create importent columns
   data_list.append(GRAD_TO_MRAD*(numpy.zeros_like(alphaf)+alphai))
   data_list.append(GRAD_TO_MRAD*alphaf)
