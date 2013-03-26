@@ -81,7 +81,12 @@ class MeasurementData(object):
   '''
   index=0
   # every data value is a pysical property
-  data=[]
+  def _get_data(self):
+    return self._data_buffer
+  def _set_data(self, value):
+    self._data_buffer=BufferList(value)
+  data=property(_get_data, _set_data)
+  _data_buffer=None
   # for plotting the measurement select x and y data
   xdata=0
   ydata=0
@@ -1220,218 +1225,408 @@ class MeasurementData(object):
 
 #--------------------------------------MeasurementData-Class-----------------------------------------------------#
 
-#++++++++++++++++++++++++++++++++++++++    HugeMD-Class     +++++++++++++++++++++++++++++++++++++++++++++++++++++#
 
-class HugeMD(MeasurementData):
+class BufferList(object):
   '''
-    For huge datasets (50 000 points +) this datastructure uses a arbitrary temporary file to sotre exported data.
-    The data is only reexported after a change or changes to the filters.
+  A list object for arrays, storeing unused data to temporary files
+  when hitting a size limit.
+  Every access the limit is checked and the data acessed lates is always
+  kept in memory.
   '''
-
-  changed_after_export=True
-  tmp_export_file=''
-  _last_datapoint=None
-  _units=None
-  _dimensions=None
-  _filters=[]
-  _data=[]
-  _len=None
-  is_matrix_data=True
-
-  # When filters have changed the data has to be reexported
-  def get_filters(self):
-    return self._filters
-  def set_filters(self, value):
-    self.changed_after_export=True
-    self._filters=value
-  filters=property(get_filters, set_filters)
-
-  # since these objects can store a lot of data (Several MB per object) it is a huge memory saving
-  # to pickle the data and unpickle it when it is needed
-
-  def get_data_object(self):
-    if self._data is None:
-      self._data=load(open(self.tmp_export_file, 'rb'))
-      self._units=None
-      self._dimensions=None
-      self._len=None
-      # os.remove(self.tmp_export_file)
-    return self._data
-
-  def set_data_object(self, object_):
-    self._data=object_
-    self.store_data()
-
-  def units(self):
-    if self._units is not None:
-      return self._units
+  
+  _stored_items={} # arrays on disk are stored here as filenames
+  _cached_items={} # arrays in memory are stored here
+  _access_order=[] # a list of the accessed items, last accessed are stored first
+  _next_item=0 # the counter for item indices
+  _limit=1024**1024**2 # size limit in bytes (1 GiB by default)
+  
+  def __init__(self, values):
+    self._associations=[]
+    map(self.append, values)
+  
+  @classmethod
+  def _add_item(cls, item):
+    # add item to cached items and return the caching index
+    idx=cls._next_item
+    cls._cached_items[idx]=item
+    cls._next_item+=1
+    cls._access_order.insert(0, idx)
+    cls._store_if_larger()
+    return idx
+    
+  @classmethod
+  def _get_item(cls, idx):
+    # return an item from cache or load it from disk before
+    if idx in cls._stored_items:
+      cls._restore(idx)
     else:
-      return MeasurementData.units(self)
+      cls._access_order.remove(idx)
+      cls._access_order.insert(0, idx)      
+    item=cls._cached_items[idx]
+    cls._store_if_larger()
+    return item
+    
+  @classmethod
+  def _set_item(cls, idx, item):
+    # exchange the value at a given index
+    if idx in cls._stored_items:
+      cls._restore(idx)
+    cls._cached_items[idx]=item
+  
+  @classmethod
+  def _del_item(cls, idx):
+    # remove item from cache and disk
+    if idx in cls._stored_items:
+      cls._restore(idx)
+    cls._access_order.remove(idx)
+    del(cls._cached_items[idx])
+  
+  @classmethod
+  def _store(cls, idx):
+    # move item from cache to disk
+    if not idx in cls._cached_items:
+      raise IndexError, 'Item not in cache'
+    item=cls._cached_items[idx]
+    fname=cls._get_name(idx)
+    numpy.save(fname, item)
+    del(cls._cached_items[idx])
+    cls._stored_items[idx]=fname
+    cls._access_order.remove(idx)
 
-  def dimensions(self):
-    if self._dimensions is not None:
-      return self._dimensions
+  @classmethod
+  def _restore(cls, idx):
+    # move item from disk to cache
+    if not idx in cls._stored_items:
+      raise IndexError, 'Item not on disk'
+    fname=cls._stored_items[idx]
+    item=numpy.load(fname)
+    os.remove(fname)
+    cls._cached_items[idx]=item
+    del(cls._stored_items[idx])
+    cls._access_order.insert(0, idx)
+  
+  @classmethod
+  def _size_in_memory(cls):
+    # Return size in bytes of all arrays in memory.
+    return sum([item.nbytes for item in cls._cached_items.values()])
+
+  @classmethod
+  def _get_name(cls, idx):
+    # return a name for a given item in temporary path
+    return os.path.join(TEMP_DIR, "BufferListItem_%06i.npy"%idx)     
+
+  @classmethod
+  def _store_if_larger(cls):
+    while cls._size_in_memory()>cls._limit:
+      # save the item not accessed for the longest time
+      cls._store(cls._access_order[-1])
+  
+  def __getitem__(self, item):
+    if type(item) is slice:
+      output_list=[]
+      for idx in self._associations[item.start:item.stop:item.step]:
+        output_list.append(BufferList._get_item(idx))
+      return BufferList(output_list)
     else:
-      return MeasurementData.dimensions(self)
+      return BufferList._get_item(self._associations[item])
 
-  def get_len(self):
-    if self._len is None:
-      return MeasurementData.__len__(self)
-    else:
-      return self._len
+  def __setitem__(self, idx, item):
+    BufferList._set_item(self._associations[idx], item)
+  
+  def __delitem__(self, idx):
+    BufferList._del_item(self._associations[idx])
+    self._associations.pop[idx]
+    
+  def __len__(self):
+    return len(self._associations)
+  
+  def __iter__(self):
+    for idx in self._associations:
+      yield BufferList._get_item(idx)
+  
+  def append(self, item):
+    if not hasattr(item, 'nbytes'):
+      raise ValueError, "Can only store arrays"
+    # add an item to the list by storing it in the class and adding
+    # it's index to this objects associations list
+    self._associations.append(BufferList._add_item(item))
+  
+  def insert(self, idx, item):
+    if not hasattr(item, 'nbytes'):
+      raise ValueError, "Can only store arrays"
+    # add an item to the list by storing it in the class and adding
+    # it's index to this objects associations list
+    self._associations.insert(idx, BufferList._add_item(item))    
+  
+  def pop(self, idx):
+    item=self[idx]
+    del(self[idx])
+    return item
+  
+  def index(self, item):
+    return self.tolist().index(item)
+  
+  def remove(self, item):
+    idx=self.index(item)
+    del(self[idx])
 
-  data=property(get_data_object, set_data_object)
-  __len__=get_len
+  def reverse(self):
+    self._associations.reverse()
+    
+  def tolist(self):
+    return [item for item in self]
 
-  def store_data(self):
-    '''
-      Pickle the data in this object to save memory.
-    '''
-    self._last_datapoint=MeasurementData.last(self)
-    if self._data is not None:
-      self._units=MeasurementData.units(self)
-      self._dimensions=MeasurementData.dimensions(self)
-      if len(self._data)>0:
-        self._len=len(self._data[0])
-      else:
-        self._len=0
-      dump(self._data, open(self.tmp_export_file , 'wb'), 2)
-      self._data=None
-
-  def last(self):
-    if self._last_datapoint:
-      return self._last_datapoint
-    else:
-      return MeasurementData.last(self)
-
-  def __init__(self, *args, **opts):
-    global hmd_file_number
-    self.tmp_export_file=os.path.join(TEMP_DIR, 'HMD_'+str(hmd_file_number)+'.tmp')
-    hmd_file_number+=1
-    MeasurementData.__init__(self, *args, **opts)
+  def __add__(self, other):
+    if isinstance(other, BufferList):
+      other=other.tolist()
+    return BufferList(self.tolist()+other)
+  
+  def __eq__(self, other):
+    return self.tolist()==other.tolist()
+  
+  def __contains__(self, item):
+    return item in self.tolist()
+  
+  def __reversed__(self):
+    return BufferList(reversed(self.tolist()))
 
   def __getstate__(self):
-    '''
-      Define how the class is pickled and copied.
-    '''
-    self.changed_after_export=True
-    # restore saved data, get the object state and save the data again
-    self.data
-    output=dict(MeasurementData.__getstate__(self))
-    self.store_data()
-    return output
-
+    return {'data': self.tolist()}
+  
   def __setstate__(self, state):
-    '''
-      Unpickling the object will set a new temp file name.
-    '''
-    global hmd_file_number
-    tmp_export_file=os.path.join(TEMP_DIR, 'HMD_'+str(hmd_file_number)+'.tmp')
-    state['tmp_export_file']=tmp_export_file
-    MeasurementData.__setstate__(self, state)
-    hmd_file_number+=1
-    self.store_data()
-    self.changed_after_export=True
-
-  def __repr__(self):
-    '''
-      Get object information without reloading the data.
-    '''
-    if self._data is None:
-      output="<HugeMD at %s, points=%i"%(hex(id(self)), self._len)
-      x, y, z=self.xdata, self.ydata, self.zdata
-      dimensions=self.dimensions()
-      if z<0:
-        output+=", x='%s', y='%s'"%(dimensions[x], dimensions[y])
-      else:
-        output+=", x='%s', y='%s', z='%s'"%(dimensions[x], dimensions[y], dimensions[z])
-      output+=", state stored in: '%s'>"%self.tmp_export_file
-    else:
-      '''
-        Define the string representation of the object. Just some useful information for debugging/IPython console
-      '''
-      output="<HugeMD at %s, cols=%i, points=%i"%(hex(id(self)), len(self.data), len(self))
-      if self.zdata<0:
-        output+=", x='%s', y='%s'>"%(self.x.dimension, self.y.dimension)
-      else:
-        output+=", x='%s', y='%s', z='%s'>"%(self.x.dimension, self.y.dimension, self.z.dimension)
-    return output
+    self._associations=[]
+    map(self.append, state['data'])
 
   def __del__(self):
     '''
-      Cleanup after delition of this object.
+      Remove all items from the class when object is deleted.
     '''
-    tmp_export_file=self.tmp_export_file
-    del self.__dict__
-    try:
-      os.remove(tmp_export_file)
-    except OSError:
-      pass
+    map(BufferList._del_item, self._associations)
+    del(self._associations)
+  
+  def __str__(self):
+    return str(self.tolist())
 
-  def process_function(self, function):
-    '''
-      Wrapper to MeasurementData.process_function which sets the data to be reexported after change.
-    '''
-    self.changed_after_export=True
-    output=MeasurementData.process_function(self, function)
-    self.store_data()
-    return output
+  def __repr__(self):
+    return 'BufferList(%s)'%str(self)
+    
 
-  def unit_trans(self, unit_list):
-    '''
-      Wrapper to MeasurementData.unit_trans which sets the data to be reexported after change.
-    '''
-    self.changed_after_export=True
-    output=MeasurementData.unit_trans(self, unit_list)
-    self.store_data()
-    return output
+#++++++++++++++++++++++++++++++++++++++    HugeMD-Class     +++++++++++++++++++++++++++++++++++++++++++++++++++++#
 
-  def unit_trans_one(self, col, unit_lit):
-    '''
-      Wrapper to MeasurementData.unit_trans_one which sets the data to be reexported after change.
-    '''
-    self.changed_after_export=True
-    output=MeasurementData.unit_trans_one(self, col, unit_lit)
-    self.store_data()
-    return output
+#class HugeMD(MeasurementData):
+#  '''
+#    For huge datasets (50 000 points +) this datastructure uses a arbitrary temporary file to sotre exported data.
+#    The data is only reexported after a change or changes to the filters.
+#  '''
+#
+#  changed_after_export=True
+#  tmp_export_file=''
+#  _last_datapoint=None
+#  _units=None
+#  _dimensions=None
+#  _filters=[]
+#  _data=[]
+#  _len=None
+#  is_matrix_data=True
+#
+#  # When filters have changed the data has to be reexported
+#  def get_filters(self):
+#    return self._filters
+#  def set_filters(self, value):
+#    self.changed_after_export=True
+#    self._filters=value
+#  filters=property(get_filters, set_filters)
+#
+#  # since these objects can store a lot of data (Several MB per object) it is a huge memory saving
+#  # to pickle the data and unpickle it when it is needed
+#
+#  def get_data_object(self):
+#    if self._data is None:
+#      self._data=load(open(self.tmp_export_file, 'rb'))
+#      self._units=None
+#      self._dimensions=None
+#      self._len=None
+#      # os.remove(self.tmp_export_file)
+#    return self._data
+#
+#  def set_data_object(self, object_):
+#    self._data=object_
+#    self.store_data()
+#
+#  def units(self):
+#    if self._units is not None:
+#      return self._units
+#    else:
+#      return MeasurementData.units(self)
+#
+#  def dimensions(self):
+#    if self._dimensions is not None:
+#      return self._dimensions
+#    else:
+#      return MeasurementData.dimensions(self)
+#
+#  def get_len(self):
+#    if self._len is None:
+#      return MeasurementData.__len__(self)
+#    else:
+#      return self._len
+#
+#  data=property(get_data_object, set_data_object)
+#  __len__=get_len
+#
+#  def store_data(self):
+#    '''
+#      Pickle the data in this object to save memory.
+#    '''
+#    self._last_datapoint=MeasurementData.last(self)
+#    if self._data is not None:
+#      self._units=MeasurementData.units(self)
+#      self._dimensions=MeasurementData.dimensions(self)
+#      if len(self._data)>0:
+#        self._len=len(self._data[0])
+#      else:
+#        self._len=0
+#      dump(self._data, open(self.tmp_export_file , 'wb'), 2)
+#      self._data=None
+#
+#  def last(self):
+#    if self._last_datapoint:
+#      return self._last_datapoint
+#    else:
+#      return MeasurementData.last(self)
+#
+#  def __init__(self, *args, **opts):
+#    global hmd_file_number
+#    self.tmp_export_file=os.path.join(TEMP_DIR, 'HMD_'+str(hmd_file_number)+'.tmp')
+#    hmd_file_number+=1
+#    MeasurementData.__init__(self, *args, **opts)
+#
+#  def __getstate__(self):
+#    '''
+#      Define how the class is pickled and copied.
+#    '''
+#    self.changed_after_export=True
+#    # restore saved data, get the object state and save the data again
+#    self.data
+#    output=dict(MeasurementData.__getstate__(self))
+#    self.store_data()
+#    return output
+#
+#  def __setstate__(self, state):
+#    '''
+#      Unpickling the object will set a new temp file name.
+#    '''
+#    global hmd_file_number
+#    tmp_export_file=os.path.join(TEMP_DIR, 'HMD_'+str(hmd_file_number)+'.tmp')
+#    state['tmp_export_file']=tmp_export_file
+#    MeasurementData.__setstate__(self, state)
+#    hmd_file_number+=1
+#    self.store_data()
+#    self.changed_after_export=True
+#
+#  def __repr__(self):
+#    '''
+#      Get object information without reloading the data.
+#    '''
+#    if self._data is None:
+#      output="<HugeMD at %s, points=%i"%(hex(id(self)), self._len)
+#      x, y, z=self.xdata, self.ydata, self.zdata
+#      dimensions=self.dimensions()
+#      if z<0:
+#        output+=", x='%s', y='%s'"%(dimensions[x], dimensions[y])
+#      else:
+#        output+=", x='%s', y='%s', z='%s'"%(dimensions[x], dimensions[y], dimensions[z])
+#      output+=", state stored in: '%s'>"%self.tmp_export_file
+#    else:
+#      '''
+#        Define the string representation of the object. Just some useful information for debugging/IPython console
+#      '''
+#      output="<HugeMD at %s, cols=%i, points=%i"%(hex(id(self)), len(self.data), len(self))
+#      if self.zdata<0:
+#        output+=", x='%s', y='%s'>"%(self.x.dimension, self.y.dimension)
+#      else:
+#        output+=", x='%s', y='%s', z='%s'>"%(self.x.dimension, self.y.dimension, self.z.dimension)
+#    return output
+#
+#  def __del__(self):
+#    '''
+#      Cleanup after delition of this object.
+#    '''
+#    tmp_export_file=self.tmp_export_file
+#    del self.__dict__
+#    try:
+#      os.remove(tmp_export_file)
+#    except OSError:
+#      pass
+#
+#  def process_function(self, function):
+#    '''
+#      Wrapper to MeasurementData.process_function which sets the data to be reexported after change.
+#    '''
+#    self.changed_after_export=True
+#    output=MeasurementData.process_function(self, function)
+#    self.store_data()
+#    return output
+#
+#  def unit_trans(self, unit_list):
+#    '''
+#      Wrapper to MeasurementData.unit_trans which sets the data to be reexported after change.
+#    '''
+#    self.changed_after_export=True
+#    output=MeasurementData.unit_trans(self, unit_list)
+#    self.store_data()
+#    return output
+#
+#  def unit_trans_one(self, col, unit_lit):
+#    '''
+#      Wrapper to MeasurementData.unit_trans_one which sets the data to be reexported after change.
+#    '''
+#    self.changed_after_export=True
+#    output=MeasurementData.unit_trans_one(self, col, unit_lit)
+#    self.store_data()
+#    return output
+#
+#  def export(self, file_name, print_info=True, seperator=' ',
+#             xfrom=None, xto=None, only_fitted_columns=False):
+#    if self.changed_after_export or self.plot_options.zrange!=self.last_export_zrange:
+#      print "Exporting large dataset, please stay patient"
+#      self.last_export_output=self.do_export(self.tmp_export_file+'.gptmp', print_info, seperator, xfrom, xto, only_fitted_columns)
+#      self.changed_after_export=False
+#      self.last_export_zrange=self.plot_options.zrange
+#    # self.store_data()
+#    copyfile(self.tmp_export_file+'.gptmp', file_name)
+#    return self.last_export_output
+#
+#  def export_matrix(self, file_name):
+#    MeasurementData.export_matrix(self, file_name)
+#    # self.store_data()
+#
+#  do_export=MeasurementData.export
+#
+#  def __add__(self, other):
+#    output=MeasurementData.__add__(self, other)
+#    output.store_data()
+#    return output
+#
+#  def __sub__(self, other):
+#    output=MeasurementData.__sub__(self, other)
+#    output.store_data()
+#    return output
+#
+#  def __mul__(self, other):
+#    output=MeasurementData.__mul__(self, other)
+#    output.store_data()
+#    return output
+#
+#  def __div__(self, other):
+#    output=MeasurementData.__div__(self, other)
+#    output.store_data()
+#    return output
 
-  def export(self, file_name, print_info=True, seperator=' ',
-             xfrom=None, xto=None, only_fitted_columns=False):
-    if self.changed_after_export or self.plot_options.zrange!=self.last_export_zrange:
-      print "Exporting large dataset, please stay patient"
-      self.last_export_output=self.do_export(self.tmp_export_file+'.gptmp', print_info, seperator, xfrom, xto, only_fitted_columns)
-      self.changed_after_export=False
-      self.last_export_zrange=self.plot_options.zrange
-    # self.store_data()
-    copyfile(self.tmp_export_file+'.gptmp', file_name)
-    return self.last_export_output
-
-  def export_matrix(self, file_name):
-    MeasurementData.export_matrix(self, file_name)
-    # self.store_data()
-
-  do_export=MeasurementData.export
-
-  def __add__(self, other):
-    output=MeasurementData.__add__(self, other)
-    output.store_data()
-    return output
-
-  def __sub__(self, other):
-    output=MeasurementData.__sub__(self, other)
-    output.store_data()
-    return output
-
-  def __mul__(self, other):
-    output=MeasurementData.__mul__(self, other)
-    output.store_data()
-    return output
-
-  def __div__(self, other):
-    output=MeasurementData.__div__(self, other)
-    output.store_data()
-    return output
-
+class HugeMD(MeasurementData):
+  is_matrix_data=True
+  
+  def store_data(self): pass
 
 #--------------------------------------    HugeMD-Class     -----------------------------------------------------#
 
