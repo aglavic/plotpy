@@ -188,7 +188,8 @@ Gnuplot version %.1f patchlevel %i with terminals:
               'SAS': ('sas', 'SASSession'),
               'GISAS': ('kws2', 'KWS2Session'),
               'Reflectometer': ('reflectometer', 'ReflectometerSession'),
-              'TREFF/MARIA': ('treff', 'TreffSession'),
+              'TREFF': ('treff', 'TreffSession'),
+              'MARIA': ('treff', 'TreffSession'),
               'MBE': ('mbe', 'MBESession'),
 
               }
@@ -228,7 +229,10 @@ Gnuplot version %.1f patchlevel %i with terminals:
           return True
       new_session_class=getattr(__import__('sessions.'+sessions[name][0], globals(), locals(),
                                       [sessions[name][1]]), sessions[name][1])
-      new_session=new_session_class([])
+      arguments = []
+      if name == "MARIA":
+        arguments.append("-maria")
+      new_session=new_session_class(arguments)
       if self.active_session is not None:
         self.suspended_sessions.append(self.active_session)
         self.active_session=new_session
