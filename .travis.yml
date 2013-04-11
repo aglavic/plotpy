@@ -34,3 +34,5 @@ install:
   - make
   - make install
   - cd ..
+script:
+  - python plot.py --help
