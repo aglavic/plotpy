@@ -319,13 +319,19 @@ class PeakFinder2D(object):
   '''
 
   def __init__(self,
-               xdata, ydata, zdata,
+               xdata, ydata=None, zdata=None,
                resolution=5,
+               real_noise=False,
                ):
-    self.xdata=numpy.array(xdata)
-    self.ydata=numpy.array(ydata)
-    self.zdata=numpy.array(zdata)
+    if ydata is not None and zdata is not None:
+      self.xdata=numpy.array(xdata)
+      self.ydata=numpy.array(ydata)
+      self.zdata=numpy.array(zdata)
+    else:
+      self.ydata, self.xdata=numpy.mgrid[0:xdata.shape[0], 0:xdata.shape[1]]
+      self.zdata=xdata
     self.resolution=resolution
+    self.real_noise=real_noise
     self.positions=[]
     if not (self.xdata.shape==self.ydata.shape and self.xdata.shape==self.zdata.shape and
             len(self.xdata.shape)!=1):
@@ -354,14 +360,21 @@ class PeakFinder2D(object):
       scale. Strong peaks will produce longer ridge lines than
       weaker or noise, as they start at higher scales.
     '''
+#    from time import time
     cwt=self.CWT.getdata().real
     scales=self.CWT.getscales()
     # initialize ridges starting at smoothest scaling
     ridges=[]
     gaps=[]
     cwt_len=len(cwt)
+#    t1=0.
+#    t2=0.
     for j, cwti in enumerate(reversed(cwt)):
+#      print j, '/', cwt_len
+#      ltime=time()
       local_max_positions=self._find_local_max(cwti)
+#      t1+=time()-ltime
+#      ltime=time()
       for i, ridge in enumerate(ridges):
         # check all ridges for continuation
         if gaps[i]<=maxgap:
@@ -377,15 +390,22 @@ class PeakFinder2D(object):
             local_max_positions[0][idx]=-1000
           else:
             gaps[i]+=1
+#      t2+=time()-ltime
+      # don't add ridges for the last resolution scales
+      if (cwt_len-j-1)<=self.resolution:
+        continue
       for ridge_pos in numpy.array(local_max_positions)[:, local_max_positions[0]>=0].transpose().tolist(): #@NoEffect
         # add new ridges for other local maxima
         gaps.append(0)
         ridges.append([[cwt_len-j-1, ridge_pos[0], ridge_pos[1]]])
+#    print 'next', t1, t2
     # collect some information on the ridge lines
     evaluated_ridges=[]
     ridge_info=[]
     ridge_intensities=[]
     for ridge in ridges:
+      if len(ridge)<=self.resolution:
+        continue
       ridge=numpy.array(ridge)
       # len of ridge line and position of last point
       info=[ridge.shape[0], (ridge[-1][1], ridge[-1][2])]
@@ -393,7 +413,7 @@ class PeakFinder2D(object):
       for rs, rx, ry in ridge:
         ridge_intensity.append(cwt[rs, rx, ry])
       ridge_intensity=numpy.array(ridge_intensity)
-      max_idx=numpy.where(ridge_intensity==ridge_intensity.max())[0][0]
+      max_idx=numpy.argmax(ridge_intensity)
       # scale of maximum coefficient on the ridge line
       #info.append(ridge[max_idx][0])
       info.append(scales[ridge[max_idx][0]])
@@ -405,7 +425,7 @@ class PeakFinder2D(object):
     self.ridge_info=ridge_info
     self.ridge_intensities=ridge_intensities
 
-  def _SNR(self, minimum_noise_level=0.001):
+  def _SNR(self, minimum_noise_level=0.5):
     '''
       Calculate signal to nois ratio. Signal is the highest
       CWT intensity of all scales, noise is the 95% quantile
@@ -414,22 +434,25 @@ class PeakFinder2D(object):
     ridge_info=self.ridge_info
     cwt=self.CWT.getdata().real
     noise_cwt=cwt[0]
-    minimum_noise=float(minimum_noise_level*mquantiles(
-                        noise_cwt,
-                        0.95,
+    minimum_noise=float(mquantiles(
+                        abs(noise_cwt),
+                        minimum_noise_level,
                         3./8., 3./8.))
     for info in ridge_info:
       scale=min(5, info[2])
       signal=info[3]
-      base_left_x=min(0, (info[1][0]-scale*3))
-      base_left_y=min(0, (info[1][1]-scale*3))
-      base_right_x=info[1][0]+scale*3
-      base_right_y=info[1][1]+scale*3
-      noise=mquantiles(noise_cwt[base_left_x:base_right_x+1, base_left_y:base_right_y],
-                       0.95,
-                       3./8., 3./8.)
-      noise=numpy.nan_to_num(noise)
-      noise=float(max([minimum_noise, noise]))
+      if self.real_noise:
+        base_left_x=min(0, (info[1][0]-scale*3))
+        base_left_y=min(0, (info[1][1]-scale*3))
+        base_right_x=info[1][0]+scale*3
+        base_right_y=info[1][1]+scale*3
+        noise=mquantiles(noise_cwt[base_left_x:base_right_x+1, base_left_y:base_right_y],
+                         0.95,
+                         3./8., 3./8.)
+        noise=numpy.nan_to_num(noise)
+        noise=float(max([minimum_noise, noise]))
+      else:
+        noise=minimum_noise
       info.append(signal/noise)
 
   def _find_local_max(self, data, steps=3):
@@ -438,14 +461,17 @@ class PeakFinder2D(object):
       A window of size steps in both dimensions is used to check 
       if the central point is the largest in the window region.
     '''
-    if steps%2==0:
-      steps+=1
-    windows=[]
-    for i in range(steps):
-      for j in range(steps):
-        windows.append(data[i:(-(steps-i-1) or None), j:(-(steps-j-1) or None)])
-    windows=numpy.array(windows)
-    lmax=windows[(steps**2+1)/2-1]==windows.max(axis=0)
+#    if steps%2==0:
+#      steps+=1
+#    windows=[]
+#    for i in range(steps):
+#      for j in range(steps):
+#        windows.append(data[i:(-(steps-i-1) or None), j:(-(steps-j-1) or None)])
+#    windows=numpy.array(windows)
+#    lmax=windows[(steps**2+1)/2-1]==windows.max(axis=0)
+    cen=data[1:-1, 1:-1]
+    lmax=((cen>=data[:-2, 1:-1])&(cen>=data[2:, 1:-1])&
+          (cen>=data[1:-1, :-2])&(cen>=data[1:-1, 2:]))
     idx=numpy.where(lmax)
     idx=(idx[0]+1, idx[1]+1)
     return idx
@@ -782,7 +808,7 @@ class Cwt2D(Cwt):
         # effects in the convolution
         scaled_data=numpy.zeros((ndata*2, mdata*2))
         scaled_data[ndata/2:ndata/2+ndata, mdata/2:mdata/2+mdata]=data
-        OX, OY=numpy.meshgrid(omega_x, omega_y)
+        OY, OX=numpy.meshgrid(omega_y, omega_x)
         datahat=numpy.fft.fft2(scaled_data)
         self.fftdata=datahat
         #self.psihat0=self.wf(omega*self.scales[3*self.nscale/4])
@@ -828,5 +854,5 @@ class MexicanHat2D(Cwt2D):
         bx=s_omega_x**2/2
         ay=s_omega_y**2
         by=s_omega_y**2/2
-        return ax*numpy.exp(-bx)/1.1529702*ay*numpy.exp(-by)/1.1529702
+        return 2.*numpy.pi*(ax+ay)*numpy.exp(-(bx+by))
         #return s_omega**2*numpy.exp(-s_omega**2/2.0)/1.1529702
