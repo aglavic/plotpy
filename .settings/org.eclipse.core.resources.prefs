@@ -74,6 +74,7 @@ encoding//plotpy/gtkgui/xrr.py=utf-8
 encoding//plotpy/info.py=utf-8
 encoding//plotpy/initialize.py=utf8
 encoding//plotpy/ipkernel_handler.py=utf-8
+encoding//plotpy/macros.py=utf-8
 encoding//plotpy/mds.py=utf-8
 encoding//plotpy/option_types.py=utf-8
 encoding//plotpy/parallel.py=utf-8

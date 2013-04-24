@@ -8,6 +8,7 @@ from copy import deepcopy
 from configobj import ConfigObj
 from plotpy.mds import MeasurementData, \
                           PhysicalProperty, PhysicalUnit, HugeMD
+from plotpy.macros import macro
 
 class FileActions:
   '''
@@ -75,6 +76,7 @@ class FileActions:
                  }
     self.fit_functions=fit_functions
 
+  @macro('macro', name='file_action')
   def activate_action(self, action, *args):
     '''
       Every action performed by this class is stored so
