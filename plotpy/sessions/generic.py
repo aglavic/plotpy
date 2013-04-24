@@ -15,6 +15,7 @@ from cPickle import load, dumps#, dump
 
 # importing own modules
 from plotpy import  mds, plotting, parallel
+from plotpy.macros import macro
 from plotpy.message import warn, error
 from plotpy.fio import reader
 from plotpy.config import gnuplot_preferences, transformations
@@ -181,6 +182,8 @@ The gnuplot graph parameters are set in the gnuplot_preferences.py file, if you 
     self.import_plugins() # search the plugin folder for modules
     files.sort()
     transformations.known_transformations+=self.TRANSFORMATIONS
+    # activate this session for the macro framework
+    macro.set_session(self)
     #++++++++++++++++++++++ read files ++++++++++++++++++++++++++++
     self.add_files(files)
 

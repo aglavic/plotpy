@@ -13,6 +13,7 @@ from copy import deepcopy
 from generic import GenericSession
 # import parameter class for fits
 from reflectometer_fit.parameters import FitParameters, LayerParam, MultilayerParam
+from plotpy.macros import macro
 from plotpy.mds import MeasurementData, PhysicalProperty
 from plotpy.config import pnr as config
 from plotpy.config import gnuplot_preferences
@@ -448,7 +449,7 @@ class PNRSession(PNRGUI, ReflectometerFitGUI, GenericSession):
                                                 sigma_gauss=1., bin_distance=alphai_steps)
     dataset.y=savey
     # Try to subtract the off-specular part,
-    # if no off-specular point is present at the specific 
+    # if no off-specular point is present at the specific
     # angle the specular intensity is taken
     off_spec1_x=numpy.round(off_spec1.x, 4).tolist()
     off_spec1_y=off_spec1.y
@@ -466,7 +467,7 @@ class PNRSession(PNRGUI, ReflectometerFitGUI, GenericSession):
         true_specular_data.append(I[i]-off_spec2_y[off_spec2_x.index(specx)])
       else:
         true_specular_data.append(I[i])
-    #true_specular_y=PhysicalProperty('I_{True Specular}', specular.y.unit, true_specular_data, 
+    #true_specular_y=PhysicalProperty('I_{True Specular}', specular.y.unit, true_specular_data,
     #                                 [point.error for point in true_specular_data])
     true_specular_data[numpy.where(true_specular_data<=0)]=true_specular_data[numpy.where(true_specular_data>0)].min()
     true_specular=MeasurementData()

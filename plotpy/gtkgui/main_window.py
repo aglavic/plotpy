@@ -11,6 +11,7 @@ import gtk
 # own modules
 # Module to save and load variables from/to config files
 from plotpy import plotting, config
+from plotpy.macros import macro
 from plotpy.config import gnuplot_preferences
 from plotpy.config import gui as gui_config
 from plotpy.config import fontconfig
@@ -154,6 +155,8 @@ class ApplicationMainWindow(gtk.Window, MainUI, MainActions):
     self.connect('destroy', lambda*w: self.main_quit())
     # Set the title of the window, will be changed when the active plot changes
     self.set_title('Plotting GUI - '+self.input_file_name+" - "+str(self.index_mess))
+    # activate macro framework for functions needing the gui as argument
+    macro.set_gui(self)
 
     #+++++++Build widgets in table structure++++++++
     table=gtk.Table(3, 6, False) # the main table
