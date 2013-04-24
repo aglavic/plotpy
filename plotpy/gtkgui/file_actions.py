@@ -959,7 +959,7 @@ def calculate_savitzky_golay(dataset, window_size=5, order=2, derivative=1):
   derivative=min(order-1, derivative)
   for i in range(1, derivative+1):
     newcols.append([dims[yindex]+("\\047"*i),
-            PhysicalUnit(units[yindex])/PhysicalUnit(units[xindex]+'^%i'%i)])
+            PhysicalUnit(units[yindex])/(PhysicalUnit(units[xindex])**i)])
   output=MeasurementData(newcols, [], 0, 1+derivative)
   xlist=[]
   ylist=[]

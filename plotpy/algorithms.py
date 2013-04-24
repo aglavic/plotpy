@@ -165,7 +165,7 @@ def rebin_2d(data, join_pixels_x, join_pixels_y=None, use_matrix_data_output=Fal
   return output_data
 
 @macro
-def calculate_savitzky_golay(data, window_size=5, order=2, derivative=1):
+def savitzky_golay(data, window_size=5, order=2, derivative=1):
   '''
     Calculate smoothed data with savitzky golay filter up to a maximal derivative.
     
@@ -187,7 +187,7 @@ def calculate_savitzky_golay(data, window_size=5, order=2, derivative=1):
   derivative=min(order-1, derivative)
   for i in range(1, derivative+1):
     newcols.append([dims[yindex]+("\\047"*i),
-            PhysicalUnit(units[yindex])/PhysicalUnit(units[xindex]+'^%i'%i)])
+            PhysicalUnit(units[yindex])/(PhysicalUnit(units[xindex])**i)])
   output=MeasurementData(newcols, [], 0, 1+derivative)
   xlist=[]
   ylist=[]
@@ -208,7 +208,7 @@ def calculate_savitzky_golay(data, window_size=5, order=2, derivative=1):
   # calculate smoothed data and derivatives
   dx=numpy.array([x[1]-x[0]]+(x[1:]-x[:-1]).tolist())
   for i in range(derivative+1):
-    output.data[i+1].values=(savitzky_golay(y, window_size, order, i)/dx**i).tolist()
+    output.data[i+1].values=(_savitzky_golay(y, window_size, order, i)/dx**i).tolist()
   if derivative==0:
     output.short_info=data.short_info+' filtered with moving-window'
   else:
@@ -217,10 +217,10 @@ def calculate_savitzky_golay(data, window_size=5, order=2, derivative=1):
   return output
 
 @macro
-def calculate_butterworth(data, filter_steepness=6, filter_cutoff=0.5, derivative=1):
+def butterworth(data, filter_steepness=6, filter_cutoff=0.5, derivative=1):
   '''
     Calculate a smoothed function as spectral estimate with a Butterworth low-pass
-    filter in frouier space. This can be used to calculate derivatives.
+    filter in Fourier space. This can be used to calculate derivatives.
     
       S. Smith, 
       The Scientist and Engineer’s Guide to Digital Signal Processing, 
@@ -274,7 +274,7 @@ def calculate_butterworth(data, filter_steepness=6, filter_cutoff=0.5, derivativ
   return output
 
 @macro
-def calculate_discrete_derivative(data, points=5):
+def discrete_derivative(data, points=5):
   '''
     Calculate the derivative of a data using step-by-step calculations.
     Not so nice results as the other methods but stable and independent of x-spacing.
@@ -308,7 +308,7 @@ def calculate_discrete_derivative(data, points=5):
   return output
 
 @macro
-def calculate_integral(data):
+def integrate(data):
   '''
     Calculate the integral of a data using the trapezoidal rule.
   '''
@@ -341,13 +341,13 @@ def calculate_integral(data):
 
   #-------- Functions not directly called as actions ------
 
-def savitzky_golay(y, window_size, order, deriv=0):
+def _savitzky_golay(y, window_size, order, deriv=0):
   '''
     Smooth (and optionally differentiate) data with a Savitzky-Golay filter.
     The Savitzky-Golay filter removes high frequency noise from data.
     It has the advantage of preserving the original shape and
     features of the signal better than other types of filtering
-    approaches, such as moving averages techhniques.
+    approaches, such as moving averages techniques.
 
     Notes:
     
