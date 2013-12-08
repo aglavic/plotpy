@@ -322,6 +322,11 @@ class TextReader(Reader):
   def read(self):
     raise NotImplementedError, "TextReader can not be used directly, create a subclass defining a read method!"
 
+  def _get_filelike(self):
+    return StringIO(self.text_data)
+
+  text_file=property(_get_filelike, doc='text data as file like object')
+
 class BinReader(Reader):
   """
     Advanced reader class providing data conversion for
@@ -606,18 +611,17 @@ class ReaderProxy(object):
         first_names.append(filename)
       readers=self._match(name.lower())
       kwds=self._get_kwds(readers[0], path, name)
-      i=0
       if USE_MP:
         # send to worker thread
         results.append(_pool.apply_async(_open, args=(readers[0], filename), kwds=kwds))
       else:
         #try:
-        results.append(readers[i].open(filename, **kwds))
+        results.append(readers[0].open(filename, **kwds))
         #except Exception, err:
         #  # don't stop on read exceptions
         #  error(err.__class__.__name__+': '+str(err), group=u'Reading files', item=filename)
         #  results.append(None)
-        i+=1
+        i=1
         while results[-1] is None and i<len(readers):
           kwds=self._get_kwds(readers[0], path, name)
           # if the reader did not succeed, try another
@@ -627,6 +631,8 @@ class ReaderProxy(object):
             # if this reader could open the file, _promote it
             # to a higher rank
             self._promote(readers[i])
+          else:
+            i+=1
     if USE_MP:
       fetched_results=[]
       fetched_messages=dict((name, []) for name in first_names)

@@ -20,6 +20,10 @@ class DatReader(TextReader):
   def read(self):
     output=[]
     header_info=self.read_header()
+    for item in ['type', 'indices', 'channel', 'header']:
+      if not item in header_info:
+        self.warn('No valid Magnetism Reflectometer file header')
+        return None
     data=self.read_data()
     dataset=MeasurementData()
     if header_info['type']=='Specular':

@@ -659,7 +659,7 @@ class KWSReader(TextReader, GISASBase):
       :return: MeasurementData object with the file data
     '''
     if not self.read_header():
-      self.warn('No valid KWS file format')
+      self.warn('No valid KWS file header')
       return None
 
     self.read_data()
@@ -673,7 +673,6 @@ class KWSReader(TextReader, GISASBase):
   def read_header(self):
     if not (self.text_data[:16]==u'KWS1_MEASUREMENT' or
             self.text_data[:16]==u'KWS2_MEASUREMENT'):
-      self.warn('Wrong file header')
       return False
     self.head_sep=self.text_data.find('$')
     head=self.text_data[:self.head_sep]

@@ -16,10 +16,27 @@ from plotpy.config import pnr, maria
 GRAD_TO_MRAD=numpy.pi/180.*1000.
 GRAD_TO_RAD=numpy.pi/180.
 
+class TreffMariaBase(object):
+  '''
+  Methods common to TREFF, old and new MARIA file formats.
+  '''
+
+  def get_file_data(self, filename):
+    if filename.endswith('.gz'):
+      filename=filename[:-3]
+    jfile=os.path.join(self.origin[0], filename)
+    if os.path.exists(jfile):
+      return open(jfile, 'r').read()
+    if os.path.exists(jfile+'.gz'):
+      return gzip.open(jfile+'.gz', 'r').read()
+    return None
+
+
 class TreffMariaReader(TextReader):
   name=u"TREFF/MARIA"
   description=u"Polarized neutron reflectivity measured with TREFF or MARIA at FRM-II"
-  glob_patterns=[u'*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]']
+  glob_patterns=[u'*[!{.?}][!{.??}][!{.???}][!{.????}][!{.??.????}][!.]',
+                 u'*.dat']
   session='pnr'
 
   allow_multiread=True
@@ -410,16 +427,6 @@ class TreffMariaReader(TextReader):
         imgobj.is_matrix_data=True
       self.data[channel+'_map']=imgobj
 
-  def get_file_data(self, filename):
-    if filename.endswith('.gz'):
-      filename=filename[:-3]
-    jfile=os.path.join(self.origin[0], filename)
-    if os.path.exists(jfile):
-      return open(jfile, 'r').read()
-    if os.path.exists(jfile+'.gz'):
-      return gzip.open(jfile+'.gz', 'r').read()
-    return None
-
   def collect_objects(self):
     output=[]
     for channel in self.data['channels']:
@@ -437,6 +444,255 @@ class TreffMariaReader(TextReader):
       item.sample_name=self.sample_name
       item.info=info
     return output
+
+class MariaReader(TextReader, TreffMariaBase):
+  name=u"TREFF/MARIA"
+  description=u"Polarized neutron reflectivity measured with MARIA at FRM-II"
+  glob_patterns=[u'*.dat']
+  session='pnr'
+
+  mapping=[
+           ('omega', (u'ω', u'°')),
+           ('detarm', (u'2Θ', u'°')),
+           ('full', ('I_{full}', 'counts')),
+           ('roi1', ('I_1', 'counts')),
+           ('roi2', ('I_2', 'counts')),
+           ('roi3', ('I_3', 'counts')),
+           ('roi4', ('I_4', 'counts')),
+           ('roi5', ('I_5', 'counts')),
+           ('roi6', ('I_6', 'counts')),
+           ('monitor1', ('I_{monitor1}', 'counts')),
+           ('monitor2', ('I_{monitor2}', 'counts')),
+           ('time', (u'Time', u's')),
+           ('wavelength', (u'λ_n', u'Å')),
+           ('temperature', (u'T', u'K')),
+          ]
+
+  norm_by='Time'
+  norm_items=[item[1][0] for item in mapping if item[1][0].startswith('I_')]
+
+  allow_multiread=True
+  images_present=False
+  columns=None
+  units=None
+  detector_pixels=maria.DETECTOR_PIXELS
+  calibration=numpy.ones(detector_pixels)
+  center_y=maria.center_x
+  center_x=maria.center_y
+  pixelsize=0.019
+  detector_region=maria.detector_region
+
+  def read(self):
+    if not self.check_valid():
+      self.warn('No valid TREFF or MARIA format')
+      return None
+    self.info('Evaluate Header', 1)
+    self.eval_header()
+    self.data={}
+    self.info('Reading Text', 10)
+    if not self.read_textfile():
+      self.warn('No valid data found')
+      return None
+    if self.images_present:
+      self.info('Reading Images', 20)
+      self.read_images()
+    return self.collect_objects()
+
+  def check_valid(self):
+    '''
+      Test if header is correct and needed files are present.
+    '''
+    if self.text_data.split('\n', 1)[0][:11]==u'#shutter__1':
+
+      return True
+    return False
+
+  def eval_header(self):
+    cols=self.text_data.split('\n', 1)[0][1:].split()
+    self.columns=[col.rsplit('_', 2)[0] for col in cols]
+    self.units=[col.rsplit('_', 2)[1] for col in cols]
+    setfile=os.path.join(self.origin[0], self.origin[1][:-4])+'.set'
+    if os.path.exists(setfile):
+      self.set_info=self.read_metafile(setfile)
+
+  def read_metafile(self, fname):
+    txt=open(fname, 'r').read()
+    txt=unicode(txt, self.encoding, 'ignore')
+    sections=map(unicode.strip, txt.split('---'))
+    head_section=sections[1]
+    sections=[map(unicode.strip, sec.split(':', 1)) for sec in sections[2:] if ':' in sec]
+    meta_data={}
+    # evaluate head information
+    meta_data['command']=' '.join(head_section.split('command:')[1].split('created:')[0]
+                                  .strip().splitlines())
+
+    # evaluate device information
+    for key, data in sections:
+      eval_data={}
+      if 'position:' in data:
+        null=None
+        eval_data['position']=eval(data.split('position:')[1].split('\n')[0])
+      if 'status:' in data:
+        eval_data['status']={}
+
+      if eval_data!={}:
+        meta_data[key]=eval_data
+    return meta_data
+
+  def read_textfile(self):
+    data=numpy.genfromtxt(self.text_file, missing_values=['None'], unpack=True)
+    pol=data[self.columns.index('pflipper')]
+    ana=data[self.columns.index('aflipper')]
+    pp=numpy.where((pol==0)&(ana==0))[0]
+    mm=numpy.where((pol==1)&(ana==1))[0]
+    pm=numpy.where((pol==0)&(ana==1))[0]
+    mp=numpy.where((pol==1)&(ana==0))[0]
+    channels=[('++', pp), ('+-', pm), ('-+', mp), ('--', mm)]
+    
+    data_cols=[]
+    for col, (dim, unit) in self.mapping:
+      if col in self.columns:
+        di=data[self.columns.index(col)]
+        if unit=='counts':
+          data_cols.append(PhysicalProperty(dim, unit, di, numpy.sqrt(di)))
+        else:
+          data_cols.append(PhysicalProperty(dim, unit, di))
+    full_dataobj=MeasurementData(x=2, y=3)
+    full_dataobj.data=data_cols
+#    if self.norm_by in full_dataobj.dimensions():
+#      for col in self.norm_items:
+#        if col in full_dataobj.dimensions():
+#          full_dataobj[col]/=full_dataobj[self.norm_by]
+    full_dataobj.logy=True
+    Qz=4.*numpy.pi/full_dataobj[u'λ_n']*numpy.sin(full_dataobj[u'ω'])
+    full_dataobj.data.insert(2, Qz//'Q_z')
+    
+    self.data['channels']=[]
+    for c, f in channels:
+      if f.any():
+        self.data['channels'].append(c)
+        self.data[c]=full_dataobj[f]
+
+    self.images_present=True
+    self.image_files={}
+    for c, f in channels:
+      if not c in self.data['channels']:
+        continue
+      self.image_files[c]=[]
+      for i in f:
+        ifile=os.path.join(self.origin[0], self.origin[1][:-4])+'_%i.gz'%i
+        if not os.path.exists(ifile):
+          self.images_present=False
+        else:
+          self.image_files[c].append(ifile)
+    return True
+
+  def read_images(self):
+    dr=self.detector_region
+    y_detector=numpy.arange(self.detector_pixels, dtype=numpy.float32)[dr[2]:dr[3]]
+    tth_detector=(y_detector-self.center_y)*self.pixelsize
+    fcount=0.
+    fmax=0
+    for channel in self.data['channels']:
+      fmax+=len(self.data[channel])
+    factor=1./self.calibration[dr[2]:dr[3]]
+    for channel in self.data['channels']:
+      files=self.image_files[channel]
+      self.info('Channel %s - %i/%i files'%(channel, len(files), fmax),
+                progress=20+70.*fcount/fmax)
+      scan=self.data[channel]
+      sdata=scan.data
+      scan_lines=[]
+      for i, filename in enumerate(files):
+        fcount+=1.
+        data=self.get_file_data(filename[:-3])
+        if i%25==0:
+          # update progress every 25 files
+          self.info(progress=20+70.*fcount/fmax)
+        if data is None:
+          continue
+        data=numpy.fromstring(data, sep=' ', dtype=int).astype(numpy.float32)
+        data=data.reshape(numpy.sqrt(data.shape[0]),-1) # create matrix
+        data=data[dr[0]:dr[1], dr[2]:dr[3]]# crop to detector region
+        I=data.sum(axis=0)
+        dI=numpy.sqrt(I)
+        scan_lines.append((scan[i], I*factor, dI*factor))
+      if len(scan_lines)==0:
+        continue
+      out_data=[]
+      om_col=scan.dimensions().index(u'ω')
+      tth_col=scan.dimensions().index(u'2Θ')
+      monitor_col=scan.dimensions().index(u'I_{monitor2}')
+      lambda_col=scan.dimensions().index(u'λ_n')
+      for scan_line in scan_lines:
+        omega=numpy.ones(scan_line[1].shape)*scan_line[0][om_col]
+        y=y_detector
+        tth=tth_detector+scan_line[0][tth_col]
+        monitor=numpy.ones(scan_line[1].shape)*scan_line[0][monitor_col]
+        if lambda_col is None:
+          out_data.append([y, omega, tth, monitor, scan_line[1], scan_line[2]])
+        else:
+          lambda_n=numpy.ones(scan_line[1].shape)*scan_line[0][lambda_col]
+          out_data.append([y, omega, tth, monitor, lambda_n, scan_line[1], scan_line[2]])
+      out_cols=numpy.hstack(out_data)
+      imgobj=MeasurementData(x=5, y=6, zdata=11)
+      imgobj.scan_line=0
+      imgobj.scan_line_constant=1
+      imgobj.data.append(PhysicalProperty('pix_y', '', out_cols[0]))
+      imgobj.data.append(PhysicalProperty(u'ω', sdata[om_col].unit, out_cols[1]))
+      imgobj.data.append(PhysicalProperty(u'2Θ', sdata[tth_col].unit, out_cols[2]))
+      imgobj.data.append(PhysicalProperty(u'I_{monitor}', 'counts', out_cols[3]))
+      if lambda_col is None:
+        imgobj.data.append(PhysicalProperty('I', 'counts', out_cols[4], out_cols[5]))
+        k_n=self.k_n
+      else:
+        k_n=PhysicalProperty('k_n', 'Å^{-1}', 2.*numpy.pi/out_cols[4])
+        imgobj.data.append(PhysicalProperty('I', 'counts', out_cols[5], out_cols[6]))
+      ai=imgobj[u'ω']//'α_i'
+      af=(imgobj[u'2Θ']-ai)//'α_f'
+      afmai=(af-ai)//'α_f-α_i'
+      Qz=(k_n*(numpy.sin(af)+numpy.sin(ai)))//'Q_z'
+      Qx=(k_n*(numpy.cos(af)-numpy.cos(ai)))//'Q_x'
+      Qxz=Qx/Qz//'Q_x/Q_z'
+      imgobj.data.append(ai)
+      imgobj.data.append(af)
+      imgobj.data.append(afmai)
+      imgobj.data.append(Qz)
+      imgobj.data.append(Qx)
+      imgobj.data.append(Qxz)
+      imgobj.xdata=imgobj.dimensions().index('α_i')
+      imgobj.ydata=imgobj.dimensions().index('α_f')
+      Inorm=(imgobj['I']/imgobj['I_{monitor}'])//'I_{norm}'
+      imgobj.data.append(Inorm)
+
+      imgobj.logz=True
+      imgobj.plot_options.xrange=[0., float("%.2g"%ai.max())]
+      imgobj.plot_options.yrange=[0., float("%.2g"%ai.max())]
+      imgobj.plot_options.zrange=[float("%.2g"%(1./sdata[monitor_col].mean())), None]
+
+      if len(imgobj)>100000:
+        # speedup plotting for large datasets
+        imgobj.is_matrix_data=True
+      self.data[channel+'_map']=imgobj
+
+
+  def collect_objects(self):
+    output=[]
+    for channel in self.data['channels']:
+      item=self.data[channel]
+      item.short_info=channel
+      output.append(item)
+    for channel in self.data['channels']:
+      if channel+'_map' in self.data:
+        item=self.data[channel+'_map']
+        item.short_info=channel+u' α_i-α_f map'
+        output.append(item)
+    #for item in output:
+    #  item.sample_name=self.sample_name
+    #  item.info=info
+    return output
+
+
 
 class ZippedTreffMaria(TreffMariaReader, BinReader):
   name=u'Zip(TEEFF/MARIA)'
